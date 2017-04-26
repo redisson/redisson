@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.PubSubMessageListener;
 import org.redisson.PubSubPatternMessageListener;
-import org.redisson.api.listener.MessageListener;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;

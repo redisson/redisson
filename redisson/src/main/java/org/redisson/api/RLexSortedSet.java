@@ -18,8 +18,25 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Set;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
+/**
+ * Sorted set contained values of String type
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirable {
 
+    /**
+     * Returns <code>RMapReduce</code> object associated with this object
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<String, KOut, VOut> mapReduce();
+    
     String pollFirst();
 
     String pollLast();

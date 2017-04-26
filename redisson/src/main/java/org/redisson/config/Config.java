@@ -319,7 +319,7 @@ public class Config {
 	 * 
 	 * @see ReplicatedConnectionManager on how to implement a connection
 	 *      manager.
-	 * @param connectionManager
+	 * @param connectionManager for supply
 	 */
     public void useCustomServers(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;

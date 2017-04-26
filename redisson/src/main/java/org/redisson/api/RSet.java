@@ -17,6 +17,8 @@ package org.redisson.api;
 
 import java.util.Set;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
  *
@@ -26,6 +28,15 @@ import java.util.Set;
  */
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set<V>> {
 
+    /**
+     * Returns <code>RMapReduce</code> object associated with this object
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
+    
     /**
      * Removes and returns random elements from set
      * 

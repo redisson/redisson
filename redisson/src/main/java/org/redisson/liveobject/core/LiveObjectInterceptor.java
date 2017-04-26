@@ -50,13 +50,13 @@ public class LiveObjectInterceptor {
 
     private final RedissonClient redisson;
     private final CodecProvider codecProvider;
-    private final Class originalClass;
+    private final Class<?> originalClass;
     private final String idFieldName;
-    private final Class idFieldType;
+    private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
-    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class entityClass, String idFieldName) {
+    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class<?> entityClass, String idFieldName) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
         this.originalClass = entityClass;
@@ -79,7 +79,7 @@ public class LiveObjectInterceptor {
             @FieldValue("liveObjectId") Object id,
             @FieldProxy("liveObjectId") Setter idSetter,
             @FieldProxy("liveObjectId") Getter idGetter,
-            @FieldValue("liveObjectLiveMap") RMap map,
+            @FieldValue("liveObjectLiveMap") RMap<?, ?> map,
             @FieldProxy("liveObjectLiveMap") Setter mapSetter,
             @FieldProxy("liveObjectLiveMap") Getter mapGetter
     ) throws Exception {

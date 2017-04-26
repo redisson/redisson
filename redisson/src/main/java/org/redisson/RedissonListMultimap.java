@@ -185,7 +185,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         final String keyHash = hash(keyState);
         final String setName = getValuesName(keyHash);
 
-        return new RedissonList<V>(codec, commandExecutor, setName) {
+        return new RedissonList<V>(codec, commandExecutor, setName, null) {
             
             @Override
             public RFuture<Boolean> deleteAsync() {

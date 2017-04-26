@@ -28,7 +28,7 @@ public interface StatusListener extends EventListener {
 
     /**
      * Executes then Redisson successfully subscribed to channel.
-     * Invoked during re-connection
+     * Invoked during re-connection or failover process
      * 
      * @param channel to subscribe
      */

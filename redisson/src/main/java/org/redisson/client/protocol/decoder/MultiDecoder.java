@@ -20,6 +20,12 @@ import java.util.List;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public interface MultiDecoder<T> extends Decoder<Object> {
 
     boolean isApplicable(int paramNum, State state);

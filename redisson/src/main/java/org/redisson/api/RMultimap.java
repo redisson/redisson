@@ -30,6 +30,14 @@ import java.util.Set;
 public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
 
     /**
+     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RReadWriteLock getReadWriteLock(K key);
+    
+    /**
      * Returns <code>RLock</code> instance associated with key
      * 
      * @param key - map key
@@ -236,5 +244,11 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
      */
     long fastRemove(K ... keys);
 
+    /**
+     * Read all keys at once
+     *
+     * @return keys
+     */
+    Set<K> readAllKeySet();
 
 }

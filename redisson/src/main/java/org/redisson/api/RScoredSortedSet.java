@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
@@ -34,6 +35,15 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
         SUM, MAX, MIN
         
     }
+    
+    /**
+     * Returns <code>RMapReduce</code> object associated with this object
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     V pollFirst();
 
@@ -117,8 +127,36 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     
     Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return values
+     */
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return values
+     */
     Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);

@@ -18,7 +18,6 @@ package org.redisson;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,13 +38,14 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.CronSchedule;
+import org.redisson.api.RAtomicLong;
 import org.redisson.api.RFuture;
+import org.redisson.api.RRemoteService;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.annotation.RInject;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -59,12 +59,15 @@ import org.redisson.executor.RemoteExecutorServiceAsync;
 import org.redisson.executor.RemoteExecutorServiceImpl;
 import org.redisson.executor.RemotePromise;
 import org.redisson.executor.ScheduledExecutorRemoteService;
+import org.redisson.misc.Injector;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
+import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -87,9 +90,16 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String schedulerQueueName;
     private final String schedulerChannelName;
     
+    private final String workersChannelName;
+    private final String workersSemaphoreName;
+    private final String workersCounterName;
+    
     private final String tasksCounterName;
     private final String statusName;
     private final RTopic<Integer> terminationTopic;
+    private final RRemoteService remoteService;
+    private final RTopic<String> workersTopic;
+    private int workersGroupListenerId;
 
     private final RemoteExecutorServiceAsync asyncScheduledService;
     private final RemoteExecutorServiceAsync asyncScheduledServiceAtFixed;
@@ -120,6 +130,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         schedulerQueueName = objectName + ":scheduler";
         schedulerTasksName = objectName + ":scheduler-tasks";
         
+        workersChannelName = objectName + ":workers-channel";
+        workersSemaphoreName = objectName + ":workers-semaphore";
+        workersCounterName = objectName + ":workers-counter";
+        
+        remoteService = redisson.getRemoteService(name, codec);
+        workersTopic = redisson.getTopic(workersChannelName);
+        
         ExecutorRemoteService remoteService = new ExecutorRemoteService(codec, redisson, name, commandExecutor);
         remoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         remoteService.setTasksCounterName(tasksCounterName);
@@ -138,13 +155,36 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
     
+    protected String generateRequestId() {
+        byte[] id = new byte[16];
+        // TODO JDK UPGRADE replace to native ThreadLocalRandom
+        ThreadLocalRandom.current().nextBytes(id);
+        return ByteBufUtil.hexDump(id);
+    }
+    
+    @Override
+    public int countActiveWorkers() {
+        String id = generateRequestId();
+        int subscribers = (int) workersTopic.publish(id);
+        RSemaphore semaphore = redisson.getSemaphore(workersSemaphoreName + ":" + id);
+        try {
+            semaphore.tryAcquire(subscribers, 10, TimeUnit.MINUTES);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        RAtomicLong atomicLong = redisson.getAtomicLong(workersCounterName + ":" + id);
+        long result = atomicLong.get();
+        redisson.getKeys().delete(semaphore, atomicLong);
+        return (int) result;
+    }
+    
     @Override
     public void registerWorkers(int workers) {
         registerWorkers(workers, commandExecutor.getConnectionManager().getExecutor());
     }
     
     @Override
-    public void registerWorkers(int workers, ExecutorService executor) {
+    public void registerWorkers(final int workers, ExecutorService executor) {
         QueueTransferTask scheduler = new QueueTransferTask(connectionManager) {
             @Override
             protected RTopic<Long> getTopic() {
@@ -181,7 +221,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
         
-        redisson.getRemoteService(name, codec).register(RemoteExecutorService.class, service, workers, executor);
+        remoteService.register(RemoteExecutorService.class, service, workers, executor);
+        workersGroupListenerId = workersTopic.addListener(new MessageListener<String>() {
+            @Override
+            public void onMessage(String channel, String id) {
+                redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(workers);
+                redisson.getSemaphore(workersSemaphoreName + ":" + id).release();
+            }
+        });
     }
 
     @Override
@@ -195,18 +242,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     private byte[] encode(Object task) {
         // erase RedissonClient field to avoid its serialization
-        Field[] fields = task.getClass().getDeclaredFields();
-        for (Field field : fields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
-                    && field.isAnnotationPresent(RInject.class)) {
-                field.setAccessible(true);
-                try {
-                    field.set(task, null);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
-        }
+        Injector.inject(task, null);
         
         try {
             return codec.getValueEncoder().encode(task);
@@ -238,6 +274,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public void shutdown() {
+        remoteService.deregister(RemoteExecutorService.class);
+        workersTopic.removeListener(workersGroupListenerId);
+        
         commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                      + "if redis.call('get', KEYS[1]) == '0' or redis.call('exists', KEYS[1]) == 0 then "

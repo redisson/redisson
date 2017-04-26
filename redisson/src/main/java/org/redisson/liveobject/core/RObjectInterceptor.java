@@ -32,7 +32,7 @@ public class RObjectInterceptor {
     public static Object intercept(
             @Origin Method method,
             @AllArguments Object[] args,
-            @FieldValue("liveObjectLiveMap") RMap map
+            @FieldValue("liveObjectLiveMap") RMap<?, ?> map
     ) throws Exception {
         throw new UnsupportedOperationException("Please use RLiveObjectService instance for this type of functions");
     }

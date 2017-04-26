@@ -15,6 +15,11 @@
  */
 package org.redisson.client.protocol.convertor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class BooleanReplayConvertor extends SingleConvertor<Boolean> {
 
     @Override

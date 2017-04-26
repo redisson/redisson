@@ -23,6 +23,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.net.URLStreamHandlerFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -32,7 +33,8 @@ import java.net.URLStreamHandlerFactory;
 public class URLBuilder {
 
     private static URLStreamHandlerFactory currentFactory;
-    
+    private static AtomicInteger refCounter = new AtomicInteger();
+
     private final static URLStreamHandlerFactory newFactory = new URLStreamHandlerFactory() {
         @Override
         public URLStreamHandler createURLStreamHandler(String protocol) {
@@ -62,29 +64,44 @@ public class URLBuilder {
         }
     };
     
-    public static synchronized void restoreURLFactory() {
+    private static Field getFactoryField() {
+        Field field;
         try {
-            Field field = URL.class.getDeclaredField("factory");
-            field.setAccessible(true);
-            field.set(null, currentFactory);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+            field = URL.class.getDeclaredField("factory");
+        } catch (NoSuchFieldException e) {
+            try {
+                // used in Android
+                field = URL.class.getDeclaredField("streamHandlerFactory");
+            } catch (Exception e1) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return field;
+    }
+    
+    public static synchronized void restoreURLFactory() {
+        if (refCounter.decrementAndGet() == 0) {
+            try {
+                Field field = getFactoryField();
+                field.setAccessible(true);
+                field.set(null, currentFactory);
+                currentFactory = null;
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
     
     public static synchronized void replaceURLFactory() {
         try {
-            Field field = URL.class.getDeclaredField("factory");
+            refCounter.incrementAndGet();
+            Field field = getFactoryField();
             field.setAccessible(true);
-            currentFactory = (URLStreamHandlerFactory) field.get(null);
-            if (currentFactory != null && currentFactory != newFactory) {
+            final URLStreamHandlerFactory temp = (URLStreamHandlerFactory) field.get(null);
+            if (temp != newFactory) {
+                currentFactory = temp;
                 field.set(null, null);
-            }
-            
-            if (currentFactory != newFactory) {
                 URL.setURLStreamHandlerFactory(newFactory);
-            } else {
-                currentFactory = null;
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);

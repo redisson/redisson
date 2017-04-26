@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.api.RDeque;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -41,12 +42,12 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonDeque(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    protected RedissonDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
     }
 
-    public RedissonDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+    public RedissonDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
     }
 
     @Override

@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -40,22 +39,18 @@ public class RedissonCache implements Cache {
 
     private CacheConfig config;
     
-    private final RedissonClient redisson;
-
     private final AtomicLong hits = new AtomicLong();
 
     private final AtomicLong misses = new AtomicLong();
 
-    public RedissonCache(RedissonClient redisson, RMapCache<Object, Object> mapCache, CacheConfig config) {
+    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config) {
         this.mapCache = mapCache;
         this.map = mapCache;
         this.config = config;
-        this.redisson = redisson;
     }
 
-    public RedissonCache(RedissonClient redisson, RMap<Object, Object> map) {
+    public RedissonCache(RMap<Object, Object> map) {
         this.map = map;
-        this.redisson = redisson;
     }
 
     @Override
@@ -92,11 +87,12 @@ public class RedissonCache implements Cache {
                 throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
             }
         }
-        return (T) value;
+        return (T) fromStoreValue(value);
     }
 
     @Override
     public void put(Object key, Object value) {
+        value = toStoreValue(value);
         if (mapCache != null) {
             mapCache.fastPut(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
         } else {
@@ -105,6 +101,7 @@ public class RedissonCache implements Cache {
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
+        value = toStoreValue(value);
         Object prevValue;
         if (mapCache != null) {
             prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
@@ -155,7 +152,7 @@ public class RedissonCache implements Cache {
                             throw new IllegalStateException(e);
                         }
                     }
-                    map.put(key, value);
+                    put(key, value);
                 }
             } finally {
                 lock.unlock();
@@ -168,7 +165,7 @@ public class RedissonCache implements Cache {
     }
 
     protected Object fromStoreValue(Object storeValue) {
-        if (storeValue == NullValue.INSTANCE) {
+        if (storeValue instanceof NullValue) {
             return null;
         }
         return storeValue;

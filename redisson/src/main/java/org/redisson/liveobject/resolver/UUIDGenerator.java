@@ -29,7 +29,7 @@ public class UUIDGenerator implements RIdResolver<RId, String>{
     public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     
     @Override
-    public String resolve(Class value, RId id, String idFieldName, RedissonClient redisson) {
+    public String resolve(Class<?> value, RId id, String idFieldName, RedissonClient redisson) {
         return UUID.randomUUID().toString();
     }
     

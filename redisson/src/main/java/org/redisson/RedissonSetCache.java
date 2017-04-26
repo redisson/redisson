@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RSetCache;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -38,6 +40,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -59,22 +62,27 @@ import org.redisson.eviction.EvictionScheduler;
  */
 public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<V>, ScanIterator {
 
-    RedissonSetCache(CommandAsyncExecutor commandExecutor, String name) {
+    RedissonClient redisson;
+    
+    public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName(), 0);
+        }
+        this.redisson = redisson;
     }
 
-    RedissonSetCache(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName(), 0);
+        }
+        this.redisson = redisson;
     }
     
-    public RedissonSetCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        evictionScheduler.schedule(getName());
-    }
-
-    public RedissonSetCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        evictionScheduler.schedule(getName());
+    @Override
+    public <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce() {
+        return new RedissonCollectionMapReduce<V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
     }
 
     @Override

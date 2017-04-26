@@ -6,15 +6,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -22,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
@@ -463,7 +464,7 @@ public class RedissonTopicTest {
     }
 
     @Test
-    public void testReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+    public void testReattach() throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -475,14 +476,24 @@ public class RedissonTopicTest {
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
+        final AtomicInteger subscriptions = new AtomicInteger();
         
         RTopic<Integer> topic = redisson.getTopic("topic");
+        topic.addListener(new StatusListener() {
+            
+            @Override
+            public void onUnsubscribe(String channel) {
+            }
+            
+            @Override
+            public void onSubscribe(String channel) {
+                subscriptions.incrementAndGet();
+            }
+        });
         topic.addListener(new MessageListener<Integer>() {
             @Override
             public void onMessage(String channel, Integer msg) {
-                if (msg == 1) {
-                    executed.set(true);
-                }
+                executed.set(true);
             }
         });
         
@@ -498,10 +509,77 @@ public class RedissonTopicTest {
 
         redisson.getTopic("topic").publish(1);
         
-        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
+        await().atMost(2, TimeUnit.SECONDS).untilTrue(executed);
+        await().atMost(2, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
         
         redisson.shutdown();
         runner.stop();
     }
+    
+    @Test
+    public void testReattachInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        final AtomicBoolean executed = new AtomicBoolean();
+        final AtomicInteger subscriptions = new AtomicInteger();
+        
+        RTopic<Integer> topic = redisson.getTopic("topic");
+        topic.addListener(new StatusListener() {
+            
+            @Override
+            public void onUnsubscribe(String channel) {
+            }
+            
+            @Override
+            public void onSubscribe(String channel) {
+                subscriptions.incrementAndGet();
+            }
+        });
+        topic.addListener(new MessageListener<Integer>() {
+            @Override
+            public void onMessage(String channel, Integer msg) {
+                executed.set(true);
+            }
+        });
+        
+        process.getNodes().stream().filter(x -> Arrays.asList(slave1.getPort(), slave2.getPort(), slave3.getPort()).contains(x.getRedisServerPort()))
+                        .forEach(x -> {
+                            try {
+                                x.stop();
+                                Thread.sleep(18000);
+                            } catch (InterruptedException e) {
+                                // TODO Auto-generated catch block
+                                e.printStackTrace();
+                            }
+                        }); 
+
+        Thread.sleep(15000);
+
+        redisson.getTopic("topic").publish(1);
+        
+        await().atMost(75, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        Assert.assertTrue(executed.get());
+        
+        redisson.shutdown();
+        process.shutdown();
+    }
+
 
 }

@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -40,12 +41,12 @@ import org.redisson.connection.decoder.ListDrainToDecoder;
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
     }
 
-    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
     }
 
     @Override

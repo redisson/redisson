@@ -34,6 +34,8 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -47,6 +49,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.Hash;
 
 /**
@@ -67,15 +70,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
     private final UUID id;
+    private final RedissonClient redisson;
     
-    protected RedissonMap(UUID id, CommandAsyncExecutor commandExecutor, String name) {
+    protected RedissonMap(UUID id, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         this.id = id;
+        this.redisson = redisson;
     }
 
-    public RedissonMap(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonMap(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
         this.id = id;
+        this.redisson = redisson;
+    }
+    
+    @Override
+    public <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce() {
+        return new RedissonMapReduce<K, V, KOut, VOut>(this, redisson, commandExecutor.getConnectionManager());
     }
 
     @Override
@@ -268,6 +279,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
+    public Map<K, V> readAllMap() {
+        return get(readAllMapAsync());
+    }
+
+    @Override
+    public RFuture<Map<K, V>> readAllMapAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL, getName());
+    }
+
+    
+    @Override
     public V putIfAbsent(K key, V value) {
         return get(putIfAbsentAsync(key, value));
     }
@@ -390,10 +412,6 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), key);
-    }
-    
-    protected String getName(Object key) {
-        return getName(); 
     }
     
     @Override

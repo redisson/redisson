@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.Callable;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.ExecutorService}
+ * Redis based implementation of {@link java.util.concurrent.ExecutorService}
  * 
  * @author Nikita Koksharov
  *
@@ -33,7 +33,7 @@ public interface RExecutorServiceAsync {
     RFuture<Boolean> deleteAsync();
 
     /**
-     * Submit task for execution in async mode with listeners support 
+     * Use {@link RExecutorService#submit(Callable)} 
      * 
      * @param <T> type of return value
      * @param task - task to execute
@@ -42,7 +42,7 @@ public interface RExecutorServiceAsync {
     <T> RFuture<T> submitAsync(Callable<T> task);
 
     /**
-     * Submit task for execution in async mode with listeners support
+     * Use {@link RExecutorService#submit(Runnable)}
      * 
      * @param task - task to execute
      * @return Future object

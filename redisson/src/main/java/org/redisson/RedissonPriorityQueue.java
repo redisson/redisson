@@ -93,7 +93,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     private RBucket<String> comparatorHolder;
 
     protected RedissonPriorityQueue(CommandExecutor commandExecutor, String name, Redisson redisson) {
-        super(commandExecutor, name);
+        super(commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
@@ -103,7 +103,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
 
     public RedissonPriorityQueue(Codec codec, CommandExecutor commandExecutor, String name, Redisson redisson) {
-        super(codec, commandExecutor, name);
+        super(codec, commandExecutor, name, redisson);
         this.commandExecutor = commandExecutor;
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
