@@ -38,7 +38,7 @@ Features
 * [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
-    Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
+    Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) implementation   
 * [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate-cache) implementation 
 * [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
