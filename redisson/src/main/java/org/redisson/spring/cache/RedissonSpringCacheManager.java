@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.redisson.api.RMap;
@@ -49,7 +50,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     private RedissonClient redisson;
 
     private Map<String, CacheConfig> configMap = new ConcurrentHashMap<String, CacheConfig>();
-    private Map<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
+    private ConcurrentMap<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
 
     private String configLocation;
 
