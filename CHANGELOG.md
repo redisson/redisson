@@ -6,6 +6,31 @@ Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.
 
 ## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
 
+### 26-Apr-2017 - versions 2.9.0 and 3.4.0 released
+
+Feature - __`MapReduceService` added__ More details [here](https://github.com/redisson/redisson/wiki/9.-distributed-services/#95-distributed-mapreduce-service)  
+Feature - `readAllMap` and `readAllMapAsync` methods added to `RMap`  
+Feature - `readAllKeySet` and `getReadWriteLock` methods added to `RMultimap`  
+Feature - `RKeys.delete` by objects method added  
+Feature - `RRemoteService.deregister` method added  
+Feature - `retryAttempts`, `retryInterval` and `timeout` methods added to `RBatch` object  
+Feature - `RMapCache.fastPutIfAbsent` with ttl added (thanks to Dobi)  
+Feature - `EvictionPolicy.WEAK` added for `RLocalCachedMap`  
+Feature - `LocalCachedMapOptions.invalidationPolicy` introduced for `RLocalCachedMap`  
+Feature - `expire`, `expireAt`, `move`, `migrate`, `clearExpire`, `renamenx`, `rename`, `remainTimeToLive` methods added to RKey  
+Improvement - `EvictionPolicy.LRU` optimization for `RLocalCachedMap`  
+Fixed - `RTopic.onSubscribe` should be invoked after failover process  
+Fixed -  Spring boot with redisson 3.3.2 fails without optional actuator dependency (thanks to  Rick Perkowski)  
+Fixed - `RedissonCacheMap.putIfAbsentAsync` doesn't take in account ttl and minIdleTime params (thanks to Dobi)  
+Fixed - Spring cache should put NullValue object instead of null  
+Fixed - Fixed error - No field factory in class Ljava/net/URL  
+Fixed - Spring cache's method with `@Cacheable(sync=true)` annotation never expires (thanks to Dobi)  
+Fixed - spring schema file corrected (thanks to Rui Gu)  
+Fixed - Prevent to set URL.factory to null in case of concurrent URL creation in the URLBuilder (thanks to Björn-Ole Ebers)  
+Fixed - `RMap.addAndGet` causes bad argument (thanks to Rui Gu)  
+Fixed - `RedissonSpringCacheManager` creates new cache on each `getCache` call  
+Fixed - wrong value codec encoder usage for `RedissonLocalCachedMap.fastPutAsync` method
+
 ### 21-Mar-2017 - versions 2.8.2 and 3.3.2 released
 
 Feature - Redisson's Spring custom namespace support (thanks to Rui Gu)  
