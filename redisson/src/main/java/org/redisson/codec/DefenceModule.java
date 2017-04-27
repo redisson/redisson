@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.deser.ValueInstantiator;
 import com.fasterxml.jackson.databind.deser.ValueInstantiators.Base;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.dataformat.avro.PackageVersion;
 
 /**
  * Fix for https://github.com/FasterXML/jackson-databind/issues/1599
@@ -68,10 +67,6 @@ public class DefenceModule extends SimpleModule {
         
     }
 
-    public DefenceModule() {
-        super(PackageVersion.VERSION);
-    }
-    
     @Override
     public void setupModule(SetupContext context) {
         context.addValueInstantiators(new DefenceValueInstantiator());
