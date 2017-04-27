@@ -452,6 +452,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * in <code>GeoUnit</code> units. 
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
@@ -467,6 +468,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * in <code>GeoUnit</code> units and limited by count 
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
@@ -484,6 +486,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and limited by count 
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
@@ -501,6 +504,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * in <code>GeoUnit</code> units. 
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
@@ -515,6 +519,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * in <code>GeoUnit</code> units and limited by count
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
@@ -530,6 +535,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
      * Store result to current Geo.
      * 
+     * @param fromKey - source Geo key
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
