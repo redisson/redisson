@@ -853,7 +853,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         Set<K> mapKeys = new HashSet<K>(keys);
         for (Iterator<K> iterator = mapKeys.iterator(); iterator.hasNext();) {
             K key = iterator.next();
-            CacheValue value = cache.get(key);
+            final CacheKey cacheKey = toCacheKey(key);
+            CacheValue value = cache.get(cacheKey);
             if (value != null) {
                 result.put(key, (V)value.getValue());
                 iterator.remove();
