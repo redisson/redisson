@@ -1,14 +1,14 @@
 Redisson: Redis based In-Memory Data Grid for Java.
 ====
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.4.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson) | [Ultra-fast version](https://redisson.pro)
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.4.1) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson) | [Ultra-fast version](https://redisson.pro)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 ## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.4.0  | 1.8+ | 26.04.2017 |
-| 2.9.0 | 1.6, 1.7, 1.8 and Android | 26.04.2017 |
+| 3.4.1  | 1.8+ | 27.04.2017 |
+| 2.9.1 | 1.6, 1.7, 1.8 and Android | 27.04.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
 
@@ -82,23 +82,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.4.0</version>
+       <version>3.4.1</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.9.0</version>
+       <version>2.9.1</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.4.0'  
+    compile 'org.redisson:redisson:3.4.1'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.9.0'
+    compile 'org.redisson:redisson:2.9.1'
 
 #### Java
 
@@ -123,11 +123,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.4.0&e=jar),
-[Redisson node 3.4.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.4.0&e=jar)  
+[Redisson 3.4.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.4.1&e=jar),
+[Redisson node 3.4.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.4.1&e=jar)  
 
-[Redisson 2.9.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.9.0&e=jar),
-[Redisson node 2.9.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.9.0&e=jar)  
+[Redisson 2.9.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.9.1&e=jar),
+[Redisson node 2.9.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.9.1&e=jar)  
 
 ### Supported by
 
