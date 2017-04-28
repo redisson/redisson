@@ -482,7 +482,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(2);
         assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
     }
 
@@ -492,7 +492,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
 
@@ -502,10 +502,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
     }
 
@@ -514,7 +514,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), 15, 37, 200, GeoUnit.KILOMETERS)).isEqualTo(0);
         assertThat(geoDest.readAll()).isEmpty();
     }
 
@@ -524,7 +524,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(2);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(2);
         assertThat(geoDest.readAll()).containsExactlyInAnyOrder("Palermo", "Catania");
     }
 
@@ -534,7 +534,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
     }
 
@@ -544,10 +544,10 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoDest = redisson.getGeo("test-store");
         geoSource.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(15.087269, 37.502669, "Catania"));
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Catania");
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.ASC, 1)).isEqualTo(1);
         assertThat(geoDest.readAll()).containsExactly("Palermo");
     }
 
@@ -556,7 +556,7 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geoSource = redisson.getGeo("test");
         RGeo<String> geoDest = redisson.getGeo("test-store");
 
-        assertThat(geoDest.radiusStore(geoSource.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(0);
+        assertThat(geoSource.radiusStoreTo(geoDest.getName(), "Palermo", 200, GeoUnit.KILOMETERS)).isEqualTo(0);
         assertThat(geoDest.readAll()).isEmpty();
     }
 

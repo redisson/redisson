@@ -448,25 +448,25 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units. 
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit);
+    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units and limited by count 
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
@@ -474,7 +474,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -482,9 +482,9 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
      * and limited by count 
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param longitude - longitude of object
      * @param latitude - latitude of object
      * @param radius - radius in geo units
@@ -493,47 +493,47 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units. 
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit);
+    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units and limited by count
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit, int count);
+    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
-     * Store result to current Geo.
+     * Store result to <code>destName</code>.
      * 
-     * @param fromKey - source Geo key
+     * @param destName - Geo object destination
      * @param member - object
      * @param radius - radius in geo units
      * @param geoUnit - geo unit
@@ -541,6 +541,6 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreAsync(String fromKey, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
 }
