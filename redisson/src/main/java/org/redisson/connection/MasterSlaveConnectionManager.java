@@ -137,7 +137,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
-    private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
+    private final Map<RedisClient, RedisClientEntry> clientEntries = PlatformDependent.newConcurrentHashMap();
 
     private IdleConnectionWatcher connectionWatcher;
 
@@ -339,12 +339,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RedisClient createClient(NodeType type, String host, int port) {
         RedisClient client = createClient(host, port, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
-        clients.add(new RedisClientEntry(client, commandExecutor, type));
+        clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
 
+    @Override
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client, commandExecutor, null));
+        clientEntries.remove(client);
         client.shutdownAsync();
     }
 
@@ -782,7 +783,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Collection<RedisClientEntry> getClients() {
-        return Collections.unmodifiableCollection(clients);
+        return Collections.unmodifiableCollection(clientEntries.values());
     }
 
     @Override
