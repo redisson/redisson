@@ -6,6 +6,11 @@ Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.
 
 ## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
 
+### 27-Apr-2017 - versions 2.9.1 and 3.4.1 released
+
+Fixed - `RLocalCachedMap.getAll` didn't use cache (thanks to Steve Draper)  
+Fixed - reference to avro module has been removed
+
 ### 26-Apr-2017 - versions 2.9.0 and 3.4.0 released
 
 Feature - __`MapReduceService` added__ More details [here](https://github.com/redisson/redisson/wiki/9.-distributed-services/#95-distributed-mapreduce-service)  
