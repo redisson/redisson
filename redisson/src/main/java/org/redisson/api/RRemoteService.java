@@ -58,6 +58,14 @@ import java.util.concurrent.TimeUnit;
 public interface RRemoteService {
 
     /**
+     * Returns free workers amount available for tasks 
+     * 
+     * @param remoteInterface - remote service interface
+     * @return workers amount
+     */
+    int getFreeWorkers(Class<?> remoteInterface);
+    
+    /**
      * Register remote service with single worker
      *
      * @param <T> type of remote service
