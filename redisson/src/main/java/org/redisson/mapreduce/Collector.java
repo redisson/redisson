@@ -56,7 +56,7 @@ public class Collector<K, V> implements RCollector<K, V> {
     public void emit(K key, V value) {
         try {
             byte[] encodedKey = codec.getValueEncoder().encode(key);
-            long hash = LongHashFunction.xx_r39().hashBytes(encodedKey);
+            long hash = LongHashFunction.xx().hashBytes(encodedKey);
             int part = (int) Math.abs(hash % parts);
             String partName = name + ":" + part;
             
