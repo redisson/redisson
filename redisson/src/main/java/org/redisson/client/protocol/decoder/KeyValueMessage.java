@@ -15,6 +15,13 @@
  */
 package org.redisson.client.protocol.decoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public class KeyValueMessage<K, V> {
 
     private K key;

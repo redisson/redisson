@@ -20,6 +20,13 @@ import java.util.Map;
 
 import org.redisson.RedisClientResult;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public class MapScanResult<K, V> implements RedisClientResult {
 
     private final Long pos;

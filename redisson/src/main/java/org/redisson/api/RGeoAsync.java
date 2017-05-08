@@ -457,7 +457,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
+    RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -474,7 +474,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -493,7 +493,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -508,7 +508,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit);
+    RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -524,7 +524,7 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count);
+    RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -541,6 +541,6 @@ public interface RGeoAsync<V> extends RScoredSortedSetAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    RFuture<Integer> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
 }

@@ -45,6 +45,8 @@ import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
 import org.redisson.client.protocol.decoder.ListResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.Long2MultiDecoder;
+import org.redisson.client.protocol.decoder.LongMultiDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
@@ -76,8 +78,8 @@ public interface RedisCommands {
     RedisCommand<Double> GEODIST = new RedisCommand<Double>("GEODIST", new DoubleReplayConvertor(), 2, Arrays.asList(ValueType.OBJECT, ValueType.OBJECT, ValueType.STRING));
     RedisCommand<List<Object>> GEORADIUS = new RedisCommand<List<Object>>("GEORADIUS", new ObjectListReplayDecoder<Object>());
     RedisCommand<List<Object>> GEORADIUSBYMEMBER = new RedisCommand<List<Object>>("GEORADIUSBYMEMBER", new ObjectListReplayDecoder<Object>(), 2);
-    RedisStrictCommand<Integer> GEORADIUS_STORE_INT = new RedisStrictCommand<Integer>("GEORADIUS", new IntegerReplayConvertor());
-    RedisStrictCommand<Integer> GEORADIUSBYMEMBER_STORE_INT = new RedisStrictCommand<Integer>("GEORADIUSBYMEMBER", new IntegerReplayConvertor(), 2);
+    RedisCommand<Object> GEORADIUS_STORE = new RedisCommand<Object>("GEORADIUS", new Long2MultiDecoder());
+    RedisCommand<Object> GEORADIUSBYMEMBER_STORE = new RedisCommand<Object>("GEORADIUSBYMEMBER", new Long2MultiDecoder(), 2);
     
     RedisStrictCommand<Integer> KEYSLOT = new RedisStrictCommand<Integer>("CLUSTER", "KEYSLOT", new IntegerReplayConvertor());
     RedisStrictCommand<RType> TYPE = new RedisStrictCommand<RType>("TYPE", new TypeConvertor());

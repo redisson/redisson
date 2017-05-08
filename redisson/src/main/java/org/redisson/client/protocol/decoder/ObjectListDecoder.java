@@ -23,6 +23,12 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public class ObjectListDecoder<T> implements MultiDecoder<List<T>> {
 
     private Codec codec;

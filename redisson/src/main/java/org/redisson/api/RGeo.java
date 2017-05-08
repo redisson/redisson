@@ -459,7 +459,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    int radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
+    long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -476,7 +476,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    int radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -495,7 +495,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    int radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -510,7 +510,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    int radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit);
+    long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -526,7 +526,7 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    int radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, int count);
+    long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
@@ -543,6 +543,6 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * @param count - result limit
      * @return length of result
      */
-    int radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
 }

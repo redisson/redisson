@@ -18,6 +18,13 @@ package org.redisson.client.protocol.decoder;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public class MapCacheScanResult<K, V> extends MapScanResult<K, V> {
 
     private final List<K> idleKeys;
