@@ -30,6 +30,7 @@ import org.redisson.api.RGeo;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.GeoEntryCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -404,5 +405,65 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEORADIUSBYMEMBER", postitionDecoder, 2);
         return commandExecutor.readAsync(getName(), codec, command, getName(), member, radius, geoUnit, "WITHCOORD", "COUNT", count, geoOrder);
     }
-    
+
+	@Override
+	public long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit) {
+		return get(radiusStoreToAsync(destName, longitude, latitude, radius, geoUnit));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(), convert(longitude), convert(latitude), radius, geoUnit, "STORE", destName);
+	}
+
+	@Override
+	public long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count) {
+		return get(radiusStoreToAsync(destName, longitude, latitude, radius, geoUnit, count));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(), convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STORE", destName);
+	}
+
+	@Override
+	public long radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
+		return get(radiusStoreToAsync(destName, longitude, latitude, radius, geoUnit, geoOrder, count));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(), convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
+	}
+
+	@Override
+	public long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit) {
+		return get(radiusStoreToAsync(destName, member, radius, geoUnit));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(), member, radius, geoUnit, "STORE", destName);
+	}
+
+	@Override
+	public long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, int count) {
+		return get(radiusStoreToAsync(destName, member, radius, geoUnit, count));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(), member, radius, geoUnit, "COUNT", count, "STORE", destName);
+	}
+
+	@Override
+	public long radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
+        return get(radiusStoreToAsync(destName, member, radius, geoUnit, geoOrder, count));
+	}
+
+	@Override
+	public RFuture<Long> radiusStoreToAsync(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(), member, radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
+	}
+
 }

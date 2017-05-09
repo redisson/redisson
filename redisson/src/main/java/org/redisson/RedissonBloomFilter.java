@@ -113,7 +113,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     private long[] hash(byte[] state, int iterations, long size) {
-        long hash1 = LongHashFunction.xx_r39().hashBytes(state);
+        long hash1 = LongHashFunction.xx().hashBytes(state);
         long hash2 = LongHashFunction.farmUo().hashBytes(state);
 
         long[] indexes = new long[iterations];

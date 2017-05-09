@@ -22,6 +22,12 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public class ListMultiDecoder<T> implements MultiDecoder<Object> {
 
     private final MultiDecoder<?>[] decoders;

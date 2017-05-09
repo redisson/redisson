@@ -21,6 +21,11 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ListIteratorReplayDecoder implements MultiDecoder<ListIteratorResult<Object>> {
 
     @Override

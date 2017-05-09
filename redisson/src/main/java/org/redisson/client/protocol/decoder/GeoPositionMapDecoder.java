@@ -25,6 +25,11 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private final List<Object> args;

@@ -102,6 +102,12 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
     
     @Override
+    public int getFreeWorkers(Class<?> remoteInterface) {
+        Set<RFuture<RemoteServiceRequest>> futuresSet = futures.get(remoteInterface);
+        return futuresSet.size();
+    }
+    
+    @Override
     public <T> void register(Class<T> remoteInterface, T object, int workers) {
         register(remoteInterface, object, workers, commandExecutor.getConnectionManager().getExecutor());
     }

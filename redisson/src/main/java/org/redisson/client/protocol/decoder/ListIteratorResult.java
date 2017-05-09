@@ -15,6 +15,12 @@
  */
 package org.redisson.client.protocol.decoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class ListIteratorResult<V> {
 
     private final V element;

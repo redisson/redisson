@@ -25,6 +25,12 @@ import org.redisson.client.protocol.ScoredEntry;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<ScoredEntry<T>>> {
 
     @Override
