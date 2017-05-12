@@ -4,7 +4,12 @@ Redisson Releases History
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
-## Please take part in [Redisson survey](https://www.surveymonkey.com/r/QXQZH5D)
+### 10-Apr-2017 - versions 2.9.2 and 3.4.2 released
+
+Feature - __Dropwizard metrics integration__ More details [here](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#147-dropwizard-metrics)  
+Feature - `RLocalCachedMap.preloadCache` method added (thanks to Steve Draper)  
+Feature - `RGeo.radiusStoreTo` methods added (thanks to Cory Sherman)  
+Fixed - NoClassDefFoundError exception during using `redisson-all` module
 
 ### 27-Apr-2017 - versions 2.9.1 and 3.4.1 released
 
