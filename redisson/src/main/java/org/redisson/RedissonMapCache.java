@@ -113,6 +113,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
+        checkKey(key);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_CONTAINS_KEY,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "local expireDate = 92233720368547758; " +
@@ -144,6 +146,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_VALUE,
                         "local s = redis.call('hgetall', KEYS[1]); "
                         + "for i, v in ipairs(s) do "
@@ -244,6 +248,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        checkKey(key);
+        checkValue(value);
+        
         if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
@@ -329,6 +336,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE_VALUE,
                   "local value = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "if value == false then "
@@ -347,6 +357,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> getAsync(K key) {
+        checkKey(key);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_GET_TTL,
                    "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                  + "if value == false then "
@@ -383,6 +395,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> putAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                   "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "local value = struct.pack('dLc0', 0, string.len(ARGV[2]), ARGV[2]); "
@@ -397,6 +412,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                  "local value = struct.pack('dLc0', 0, string.len(ARGV[2]), ARGV[2]); "
                  + "if redis.call('hsetnx', KEYS[1], ARGV[1], value) == 1 then "
@@ -419,6 +437,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     
     @Override
     public RFuture<V> addAndGetAsync(K key, Number value) {
+        checkKey(key);
+        checkValue(value);
+        
         byte[] keyState = encodeMapKey(key);
         byte[] valueState;
         try {
@@ -479,6 +500,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        checkKey(key);
+        checkValue(value);
+        
         if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
@@ -537,6 +561,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        checkKey(key);
+        checkValue(value);
+        
         if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
@@ -616,6 +643,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> removeAsync(K key) {
+        checkKey(key);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE,
                   "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('zrem', KEYS[2], ARGV[1]); "
@@ -730,6 +759,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_HSET,
                 "local val = struct.pack('dLc0', 0, string.len(ARGV[2]), ARGV[2]); "
               + "return redis.call('hset', KEYS[1], ARGV[1], val); ",
@@ -738,6 +770,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT_IF_ABSENT,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
               + "if value == false then "
@@ -786,6 +821,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 	
     @Override
 	public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        checkKey(key);
+        checkValue(value);
+        
 		if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
@@ -869,6 +907,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
+        checkKey(key);
+        if (oldValue == null) {
+            throw new NullPointerException("map old value can't be null");
+        }
+        if (newValue == null) {
+            throw new NullPointerException("map new value can't be null");
+        }
+
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REPLACE_VALUE,
                   "local v = redis.call('hget', KEYS[1], ARGV[2]); "
                 + "if v == false then "
@@ -903,6 +949,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<V> replaceAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+        
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REPLACE,
                   "local v = redis.call('hget', KEYS[1], ARGV[2]); "
                 + "if v ~= false then "
@@ -927,6 +976,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
         List<Object> params = new ArrayList<Object>(map.size()*2);
         for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
+            if (t.getKey() == null) {
+                throw new NullPointerException("map key can't be null");
+            }
+            if (t.getValue() == null) {
+                throw new NullPointerException("map value can't be null");
+            }
+            
             params.add(t.getKey());
             params.add(t.getValue());
         }
