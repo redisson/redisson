@@ -43,4 +43,9 @@ public class QueueCommandHolder {
         return sended.compareAndSet(false, true);
     }
 
+    @Override
+    public String toString() {
+        return "QueueCommandHolder [command=" + command + "]";
+    }
+
 }

@@ -13,15 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.client.handler;
 
-import org.redisson.api.NodeType;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RPromise;
 
-public interface ConnectionInitializer {
+import io.netty.channel.ChannelHandlerContext;
 
-    <T extends RedisConnection> void onConnect(RPromise<T> connectionFuture, T conn, NodeType nodeType, MasterSlaveServersConfig config);
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class RedisConnectionHandler extends BaseConnectionHandler<RedisConnection> {
+
+    public RedisConnectionHandler(RedisClient redisClient) {
+        super(redisClient);
+    }
+    
+    @Override
+    RedisConnection createConnection(ChannelHandlerContext ctx) {
+        return new RedisConnection(redisClient, ctx.channel(), connectionPromise);
+    }
 
 }

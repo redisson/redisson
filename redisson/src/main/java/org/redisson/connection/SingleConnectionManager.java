@@ -61,7 +61,14 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {
         MasterSlaveServersConfig newconfig = new MasterSlaveServersConfig();
-        String addr = cfg.getAddress().getHost() + ":" + cfg.getAddress().getPort();
+        
+        newconfig.setSslEnableEndpointIdentification(cfg.isSslEnableEndpointIdentification());
+        newconfig.setSslProvider(cfg.getSslProvider());
+        newconfig.setSslTruststore(cfg.getSslTruststore());
+        newconfig.setSslTruststorePassword(cfg.getSslTruststorePassword());
+        newconfig.setSslKeystore(cfg.getSslKeystore());
+        newconfig.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        
         newconfig.setRetryAttempts(cfg.getRetryAttempts());
         newconfig.setRetryInterval(cfg.getRetryInterval());
         newconfig.setTimeout(cfg.getTimeout());
@@ -69,7 +76,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setPassword(cfg.getPassword());
         newconfig.setDatabase(cfg.getDatabase());
         newconfig.setClientName(cfg.getClientName());
-        newconfig.setMasterAddress(addr);
+        newconfig.setMasterAddress(cfg.getAddress());
         newconfig.setMasterConnectionPoolSize(cfg.getConnectionPoolSize());
         newconfig.setSubscriptionsPerConnection(cfg.getSubscriptionsPerConnection());
         newconfig.setSubscriptionConnectionPoolSize(cfg.getSubscriptionConnectionPoolSize());
@@ -95,7 +102,7 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
                     if (!now.getHostAddress().equals(master.getHostAddress())) {
                         log.info("Detected DNS change. {} has changed from {} to {}", cfg.getAddress().getHost(), master.getHostAddress(), now.getHostAddress());
                         if (currentMaster.compareAndSet(master, now)) {
-                            changeMaster(singleSlotRange.getStartSlot(), cfg.getAddress().getHost(), cfg.getAddress().getPort());
+                            changeMaster(singleSlotRange.getStartSlot(), cfg.getAddress());
                             log.info("Master has been changed");
                         }
                     }

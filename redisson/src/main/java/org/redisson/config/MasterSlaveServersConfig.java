@@ -15,11 +15,9 @@
  */
 package org.redisson.config;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.redisson.misc.URLBuilder;
 
 /**
  * 
@@ -31,12 +29,12 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Redis slave servers addresses
      */
-    private Set<URL> slaveAddresses = new HashSet<URL>();
+    private Set<URI> slaveAddresses = new HashSet<URI>();
 
     /**
      * Redis master server address
      */
-    private URL masterAddress;
+    private URI masterAddress;
 
     /**
      * Database index used for Redis connection
@@ -62,20 +60,21 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
         if (masterAddress != null) {
-            this.masterAddress = URLBuilder.create(masterAddress);
+            this.masterAddress = URI.create(masterAddress);
         }
         return this;
     }
-    public URL getMasterAddress() {
+    public URI getMasterAddress() {
         if (masterAddress != null) {
             return masterAddress;
         }
         return null;
     }
-    public void setMasterAddress(URL masterAddress) {
+    public MasterSlaveServersConfig setMasterAddress(URI masterAddress) {
         if (masterAddress != null) {
             this.masterAddress = masterAddress;
         }
+        return this;
     }
 
     /**
@@ -86,18 +85,18 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     public MasterSlaveServersConfig addSlaveAddress(String ... addresses) {
         for (String address : addresses) {
-            slaveAddresses.add(URLBuilder.create(address));
+            slaveAddresses.add(URI.create(address));
         }
         return this;
     }
-    public MasterSlaveServersConfig addSlaveAddress(URL slaveAddress) {
+    public MasterSlaveServersConfig addSlaveAddress(URI slaveAddress) {
         slaveAddresses.add(slaveAddress);
         return this;
     }
-    public Set<URL> getSlaveAddresses() {
+    public Set<URI> getSlaveAddresses() {
         return slaveAddresses;
     }
-    public void setSlaveAddresses(Set<URL> readAddresses) {
+    public void setSlaveAddresses(Set<URI> readAddresses) {
         this.slaveAddresses = readAddresses;
     }
 

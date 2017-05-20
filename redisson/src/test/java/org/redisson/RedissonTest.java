@@ -351,10 +351,9 @@ public class RedissonTest {
     @Test
     public void testClusterConfig() throws IOException {
         Config originalConfig = new Config();
-        originalConfig.useClusterServers().addNodeAddress("123.123.1.23:1902", "9.3.1.0:1902");
+        originalConfig.useClusterServers().addNodeAddress("redis://123.123.1.23:1902", "redis://9.3.1.0:1902");
         String t = originalConfig.toJSON();
         Config c = Config.fromJSON(t);
-        System.out.println(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
@@ -378,7 +377,7 @@ public class RedissonTest {
     @Test
     public void testMasterSlaveConfigJSON() throws IOException {
         Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
         String t = c2.toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
@@ -387,7 +386,7 @@ public class RedissonTest {
     @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
         String t = c2.toYAML();
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
@@ -410,7 +409,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSingleConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.99.0.1:1111");
+        config.useSingleServer().setAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -419,7 +418,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testClusterConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useClusterServers().addNodeAddress("127.99.0.1:1111");
+        config.useClusterServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -428,7 +427,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testElasticacheConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useElasticacheServers().addNodeAddress("127.99.0.1:1111");
+        config.useElasticacheServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -437,7 +436,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testReplicatedConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useReplicatedServers().addNodeAddress("127.99.0.1:1111");
+        config.useReplicatedServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -446,7 +445,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testMasterSlaveConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useMasterSlaveServers().setMasterAddress("127.99.0.1:1111");
+        config.useMasterSlaveServers().setMasterAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -455,7 +454,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress("127.99.0.1:1111");
+        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);

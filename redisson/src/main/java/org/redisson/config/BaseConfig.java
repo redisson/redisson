@@ -15,6 +15,8 @@
  */
 package org.redisson.config;
 
+import java.net.URI;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -91,6 +93,19 @@ class BaseConfig<T extends BaseConfig<T>> {
      */
     private String clientName;
 
+    private boolean sslEnableEndpointIdentification = true;
+    
+    private SslProvider sslProvider = SslProvider.JDK;
+    
+    private URI sslTruststore;
+    
+    private String sslTruststorePassword;
+    
+    private URI sslKeystore;
+    
+    private String sslKeystorePassword;
+
+    
     BaseConfig() {
     }
 
@@ -106,6 +121,12 @@ class BaseConfig<T extends BaseConfig<T>> {
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
         setFailedAttempts(config.getFailedAttempts());
         setReconnectionTimeout(config.getReconnectionTimeout());
+        setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification());
+        setSslProvider(config.getSslProvider());
+        setSslTruststore(config.getSslTruststore());
+        setSslTruststorePassword(config.getSslTruststorePassword());
+        setSslKeystore(config.getSslKeystore());
+        setSslKeystorePassword(config.getSslKeystorePassword());
     }
 
     /**
@@ -304,4 +325,100 @@ class BaseConfig<T extends BaseConfig<T>> {
         return failedAttempts;
     }
 
+    public boolean isSslEnableEndpointIdentification() {
+        return sslEnableEndpointIdentification;
+    }
+
+    /**
+     * Enables SSL endpoint identification.
+     * <p>
+     * Default is true
+     * 
+     * @param sslEnableEndpointIdentification - boolean value
+     * @return config
+     */
+    public T setSslEnableEndpointIdentification(boolean sslEnableEndpointIdentification) {
+        this.sslEnableEndpointIdentification = sslEnableEndpointIdentification;
+        return (T) this;
+    }
+
+    public SslProvider getSslProvider() {
+        return sslProvider;
+    }
+
+    /**
+     * Defines SSL provider used to handle SSL connections.
+     * <p>
+     * Default is JDK
+     * 
+     * @param sslProvider - ssl provider 
+     * @return config
+     */
+    public T setSslProvider(SslProvider sslProvider) {
+        this.sslProvider = sslProvider;
+        return (T) this;
+    }
+
+    public URI getSslTruststore() {
+        return sslTruststore;
+    }
+
+    /**
+     * Defines path to SSL truststore 
+     * 
+     * @param sslTruststore - path
+     * @return config
+     */
+    public T setSslTruststore(URI sslTruststore) {
+        this.sslTruststore = sslTruststore;
+        return (T) this;
+    }
+
+    public String getSslTruststorePassword() {
+        return sslTruststorePassword;
+    }
+
+    /**
+     * Defines password for SSL truststore
+     * 
+     * @param sslTruststorePassword - password
+     * @return config
+     */
+    public T setSslTruststorePassword(String sslTruststorePassword) {
+        this.sslTruststorePassword = sslTruststorePassword;
+        return (T) this;
+    }
+
+    public URI getSslKeystore() {
+        return sslKeystore;
+    }
+
+    /**
+     * Defines path to SSL keystore
+     * 
+     * @param sslKeystore - path to keystore
+     * @return config
+     */
+    public T setSslKeystore(URI sslKeystore) {
+        this.sslKeystore = sslKeystore;
+        return (T) this;
+    }
+
+    public String getSslKeystorePassword() {
+        return sslKeystorePassword;
+    }
+
+    /**
+     * Defines password for SSL keystore
+     * 
+     * @param sslKeystorePassword - password
+     * @return config
+     */
+    public T setSslKeystorePassword(String sslKeystorePassword) {
+        this.sslKeystorePassword = sslKeystorePassword;
+        return (T) this;
+    }
+
+    
+    
 }
