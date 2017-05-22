@@ -13,36 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
-
-import java.util.List;
-
-import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+package org.redisson.config;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-public class TTLMapValueReplayDecoder<T> implements MultiDecoder<List<T>> {
+public enum SslProvider {
 
-    @Override
-    public Object decode(ByteBuf buf, State state) {
-        return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
-    }
-
-    @Override
-    public List<T> decode(List<Object> parts, State state) {
-        return (List<T>) parts;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return paramNum == 0;
-    }
-
+    /**
+     * Use JDK default implementation to handle SSL connection
+     */
+    JDK,
+    
+    /**
+     * Use OpenSSL-based implementation to handle SSL connection.
+     * <code>netty-tcnative</code> lib is required to be in classpath.
+     */
+    OPENSSL
+    
 }

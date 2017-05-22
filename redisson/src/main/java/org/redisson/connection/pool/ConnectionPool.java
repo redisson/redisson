@@ -20,7 +20,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.NodeType;
@@ -100,8 +99,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
             final int minimumIdleSize, final AtomicInteger initializedConnections) {
 
         if ((checkFreezed && entry.isFreezed()) || !tryAcquireConnection(entry)) {
+            int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
             Throwable cause = new RedisConnectionException(
-                    "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
+                    "Unable to init enough connections amount! Only " + totalInitializedConnections + " from " + minimumIdleSize + " were initialized. Server: "
                                         + entry.getClient().getAddr());
             initPromise.tryFailure(cause);
             return;
@@ -125,9 +125,15 @@ abstract class ConnectionPool<T extends RedisConnection> {
                         releaseConnection(entry);
 
                         if (!future.isSuccess()) {
-                            Throwable cause = new RedisConnectionException(
-                                    "Can't init enough connections amount! Only " + (minimumIdleSize - initializedConnections.get()) + " from " + minimumIdleSize + " were initialized. Server: "
-                                                        + entry.getClient().getAddr(), future.cause());
+                            int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
+                            String errorMsg;
+                            if (totalInitializedConnections == 0) {
+                                errorMsg = "Unable to connect to Redis server: " + entry.getClient().getAddr();
+                            } else {
+                                errorMsg = "Unable to init enough connections amount! Only " + totalInitializedConnections 
+                                        + " from " + minimumIdleSize + " were initialized. Redis server: " + entry.getClient().getAddr();
+                            }
+                            Throwable cause = new RedisConnectionException(errorMsg, future.cause());
                             initPromise.tryFailure(cause);
                             return;
                         }
@@ -337,7 +343,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                        || !entry.isFreezed()) {
+                        || !entry.isFreezed()
+                            || connectionManager.isShuttingDown()) {
                     return;
                 }
 

@@ -28,6 +28,11 @@ import org.redisson.cluster.ClusterSlotRange;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SlotsDecoder implements MultiDecoder<Object> {
 
     @Override

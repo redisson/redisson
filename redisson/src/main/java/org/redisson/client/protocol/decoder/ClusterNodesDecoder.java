@@ -46,7 +46,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
-            String addr = params[1];
+            String addr = "redis://" + params[1].split("@")[0];
             node.setAddress(addr);
 
             String flags = params[2];

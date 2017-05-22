@@ -193,7 +193,7 @@
     <xsd:complexType abstract="true" name="abstractConfig">
         <xsd:complexContent>
             <xsd:extension base="baseType">
-                <xsd:attribute name="threads" type="xsd:int">
+                <xsd:attribute name="threads" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Threads amount shared between all redis node clients.
@@ -202,7 +202,7 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
-                <xsd:attribute name="netty-threads" type="xsd:int">
+                <xsd:attribute name="netty-threads" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Netty worker threads.
@@ -212,7 +212,7 @@
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="redisson-reference-enabled"
-                               type="xsd:boolean">
+                               type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Config option for enabling Redisson Reference feature.
@@ -222,7 +222,7 @@
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="use-linux-native-epoll"
-                               type="xsd:boolean">
+                               type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Config option for using linux native epoll. A separate dependency is
@@ -282,7 +282,7 @@
     </xsd:complexType>
     
     <xsd:complexType abstract="true" name="baseConfig">
-        <xsd:attribute name="idle-connection-timeout" type="xsd:int">
+        <xsd:attribute name="idle-connection-timeout" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         If pooled connection not used for a <code>timeout</code> time
@@ -294,7 +294,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="ping-timeout" type="xsd:int">
+        <xsd:attribute name="ping-timeout" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code>
@@ -304,7 +304,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="connect-timeout" type="xsd:int">
+        <xsd:attribute name="connect-timeout" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Timeout during connecting to any Redis server.
@@ -314,7 +314,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="timeout" type="xsd:int">
+        <xsd:attribute name="timeout" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Redis server response timeout. Starts to countdown when Redis command 
@@ -324,7 +324,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="retry-attempts" type="xsd:int">
+        <xsd:attribute name="retry-attempts" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Command retry attempts.
@@ -333,7 +333,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="retry-interval" type="xsd:int">
+        <xsd:attribute name="retry-interval" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Command retry interval.
@@ -342,7 +342,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="reconnection-timeout" type="xsd:int">
+        <xsd:attribute name="reconnection-timeout" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Reconnection attempt timeout to Redis server then it has been excluded
@@ -357,7 +357,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="failed-attempts" type="xsd:int">
+        <xsd:attribute name="failed-attempts" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Redis server will be excluded from the list of available nodes when 
@@ -377,7 +377,7 @@
              ]]></xsd:documentation>
             </xsd:annotation>
         </xsd:attribute>
-        <xsd:attribute name="subscriptions-per-connection" type="xsd:int">
+        <xsd:attribute name="subscriptions-per-connection" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Subscriptions per Redis connection limit.
@@ -409,7 +409,7 @@
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="slave-connection-minimum-idle-size"
-                               type="xsd:int">
+                               type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Redis 'slave' node minimum idle connection amount for <b>each</b> slave
@@ -419,7 +419,7 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
-                <xsd:attribute name="slave-connection-pool-size" type="xsd:int">
+                <xsd:attribute name="slave-connection-pool-size" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Redis 'slave' node maximum connection pool size for <b>each</b> slave
@@ -430,7 +430,7 @@
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="master-connection-minimum-idle-size"
-                               type="xsd:int">
+                               type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Redis 'master' node minimum idle connection amount for <b>each</b> slave
@@ -441,7 +441,7 @@
                     </xsd:annotation>
                 </xsd:attribute>
                 <xsd:attribute name="master-connection-pool-size"
-                               type="xsd:int">
+                               type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Redis 'master' node maximum connection pool size.
@@ -470,7 +470,7 @@
                 </xsd:attribute>
                 <xsd:attribute
                         name="subscription-connection-minimum-idle-size"
-                        type="xsd:int">
+                        type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Minimum idle subscription connection amount.
@@ -480,7 +480,7 @@
                         </xsd:annotation>
                     </xsd:attribute>
                     <xsd:attribute name="subscription-connection-pool-size"
-                                   type="xsd:int">
+                                   type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Redis subscription connection maximum pool size.
@@ -500,7 +500,7 @@
                     <xsd:element ref="node-address" minOccurs="1"
                                  maxOccurs="unbounded" />
                 </xsd:sequence>
-                <xsd:attribute name="scan-interval" type="xsd:int">
+                <xsd:attribute name="scan-interval" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Replication group scan interval in milliseconds.
@@ -516,7 +516,7 @@
     <xsd:complexType abstract="true" name="abstractReplicatedType">
         <xsd:complexContent>
             <xsd:extension base="abstractClusterType">
-                <xsd:attribute name="database" type="xsd:int">
+                <xsd:attribute name="database" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
         Database index used for Redis connection.
@@ -660,7 +660,7 @@
     </xsd:complexType>
     
     <xsd:complexType abstract="true" name="abstractRemoteOptionsType">
-        <xsd:attribute name="within" use="required" type="xsd:long">
+        <xsd:attribute name="within" use="required" type="xsd:string">
             <xsd:annotation>
                 <xsd:documentation><![CDATA[
         Expected time value.
@@ -739,7 +739,7 @@
                     </xsd:attribute>
                     <xsd:attribute
                         name="subscription-connection-minimum-idle-size"
-                        type="xsd:int">
+                        type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Minimum idle subscription connection amount.
@@ -749,7 +749,7 @@
                         </xsd:annotation>
                     </xsd:attribute>
                     <xsd:attribute name="subscription-connection-pool-size"
-                                   type="xsd:int">
+                                   type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Redis subscription connection maximum pool size.
@@ -759,7 +759,7 @@
                         </xsd:annotation>
                     </xsd:attribute>
                     <xsd:attribute name="connection-minimum-idle-size"
-                                   type="xsd:int">
+                                   type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Minimum idle Redis connection amount.
@@ -768,7 +768,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="connection-pool-size" type="xsd:int">
+                    <xsd:attribute name="connection-pool-size" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Redis connection maximum pool size.
@@ -777,7 +777,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="database" type="xsd:int">
+                    <xsd:attribute name="database" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Database index used for Redis connection.
@@ -786,7 +786,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="dns-monitoring" type="xsd:boolean">
+                    <xsd:attribute name="dns-monitoring" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Should the server address be monitored for changes in DNS? Useful for
@@ -799,7 +799,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="dns-monitoring-interval" type="xsd:long">
+                    <xsd:attribute name="dns-monitoring-interval" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         DNS change monitoring interval in milliseconds.
@@ -837,7 +837,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="database" type="xsd:int">
+                    <xsd:attribute name="database" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Database index used for Redis connection.
@@ -874,7 +874,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="database" type="xsd:int">
+                    <xsd:attribute name="database" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Database index used for Redis connection.
@@ -924,7 +924,7 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                     <xsd:attribute name="invalidate-entry-on-change"
-                                   type="xsd:boolean">
+                                   type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Sets entry invalidation behavior. if <code>true</code> then invalidation
@@ -951,14 +951,14 @@
                          ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="cache-size" type="xsd:int">
+                    <xsd:attribute name="cache-size" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Sets cache size. If size is <code>0</code> then local cache is unbounded.
                  ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="time-to-live" type="xsd:long">
+                    <xsd:attribute name="time-to-live" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Sets time to live value for each map entry in cache.
@@ -977,7 +977,7 @@
                  ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="max-idle" type="xsd:long">
+                    <xsd:attribute name="max-idle" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Sets max idle time value for each map entry in cache.
@@ -2093,7 +2093,7 @@
                          ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="concurrent-workers" type="xsd:int">
+                    <xsd:attribute name="concurrent-workers" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Remote service (RPC service) concurrent workers amount. Remote
@@ -2231,7 +2231,7 @@
                         ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="port" type="xsd:int" default="6379">
+                    <xsd:attribute name="port" type="xsd:string" default="6379">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Redis server port
@@ -2240,7 +2240,7 @@
                          ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="connection-timeout" type="xsd:int">
+                    <xsd:attribute name="connection-timeout" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Timeout during connecting to any Redis server.
@@ -2250,7 +2250,7 @@
                          ]]></xsd:documentation>
                         </xsd:annotation>
                     </xsd:attribute>
-                    <xsd:attribute name="command-timeout" type="xsd:int">
+                    <xsd:attribute name="command-timeout" type="xsd:string">
                         <xsd:annotation>
                             <xsd:documentation><![CDATA[
         Redis server command timeout. Starts to countdown when Redis command 

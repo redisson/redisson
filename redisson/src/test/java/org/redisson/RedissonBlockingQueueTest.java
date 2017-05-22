@@ -65,10 +65,12 @@ public class RedissonBlockingQueueTest extends BaseTest {
                 .nosave()
                 .randomDir()
                 .randomPort()
+                .requirepass("1234")
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort())
+        .setPassword("1234");
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -97,6 +99,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
                 .port(runner.getRedisServerPort())
                 .nosave()
                 .randomDir()
+                .requirepass("1234")
                 .run();
         
         Thread.sleep(1000);
@@ -106,7 +109,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         
         t.join();
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
         
         redisson.shutdown();
         runner.stop();

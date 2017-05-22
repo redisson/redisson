@@ -93,8 +93,8 @@ public interface RCollectionMapReduce<VIn, KOut, VOut> extends RMapReduceExecuto
     /**
      * Defines timeout for MapReduce process
      * 
-     * @param timeout
-     * @param unit
+     * @param timeout for process
+     * @param unit of timeout
      * @return self instance
      */
     RCollectionMapReduce<VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);

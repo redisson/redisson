@@ -13,36 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.decoder;
+package org.redisson.client.handler;
 
-import java.util.List;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisPubSubConnection;
 
-import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+import io.netty.channel.ChannelHandlerContext;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-public class TTLMapValueReplayDecoder<T> implements MultiDecoder<List<T>> {
+public class RedisPubSubConnectionHandler extends BaseConnectionHandler<RedisPubSubConnection> {
 
-    @Override
-    public Object decode(ByteBuf buf, State state) {
-        return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+    public RedisPubSubConnectionHandler(RedisClient redisClient) {
+        super(redisClient);
     }
-
+    
     @Override
-    public List<T> decode(List<Object> parts, State state) {
-        return (List<T>) parts;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return paramNum == 0;
+    RedisPubSubConnection createConnection(ChannelHandlerContext ctx) {
+        return new RedisPubSubConnection(redisClient, ctx.channel(), connectionPromise);
     }
 
 }

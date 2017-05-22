@@ -33,6 +33,7 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessageDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.misc.RPromise;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -53,8 +54,8 @@ public class RedisPubSubConnection extends RedisConnection {
     final Set<String> unsubscibedChannels = new HashSet<String>();
     final Set<String> punsubscibedChannels = new HashSet<String>();
 
-    public RedisPubSubConnection(RedisClient redisClient, Channel channel) {
-        super(redisClient, channel);
+    public RedisPubSubConnection(RedisClient redisClient, Channel channel, RPromise<RedisPubSubConnection> connectionPromise) {
+        super(redisClient, channel, connectionPromise);
     }
 
     public void addListener(RedisPubSubListener listener) {

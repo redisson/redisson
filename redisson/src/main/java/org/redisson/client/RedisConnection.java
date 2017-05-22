@@ -15,6 +15,8 @@
  */
 package org.redisson.client;
 
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,7 @@ import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.QueueCommand;
+import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -49,24 +52,25 @@ public class RedisConnection implements RedisCommands {
 
     final RedisClient redisClient;
 
-    private volatile boolean fastReconnect;
+    private volatile RPromise<Void> fastReconnect;
     private volatile boolean closed;
     volatile Channel channel;
 
-    private ReconnectListener reconnectListener;
+    private RPromise<?> connectionPromise;
     private long lastUsageTime;
 
-    public RedisConnection(RedisClient redisClient, Channel channel) {
-        this(redisClient);
+    public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
+        this.redisClient = redisClient;
+        this.connectionPromise = connectionPromise;
 
         updateChannel(channel);
         lastUsageTime = System.currentTimeMillis();
     }
     
-    protected RedisConnection(RedisClient redisClient) {
-        this.redisClient = redisClient;
+    public <C extends RedisConnection> RPromise<C> getConnectionPromise() {
+        return (RPromise<C>) connectionPromise;
     }
-
+    
     public static <C extends RedisConnection> C getFrom(Channel channel) {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
     }
@@ -85,14 +89,6 @@ public class RedisConnection implements RedisCommands {
 
     public void setLastUsageTime(long lastUsageTime) {
         this.lastUsageTime = lastUsageTime;
-    }
-
-    public void setReconnectListener(ReconnectListener reconnectListener) {
-        this.reconnectListener = reconnectListener;
-    }
-
-    public ReconnectListener getReconnectListener() {
-        return reconnectListener;
     }
 
     public boolean isOpen() {
@@ -182,12 +178,12 @@ public class RedisConnection implements RedisCommands {
             timeout = redisClient.getCommandTimeout();
         }
         
-        if (redisClient.getBootstrap().group().isShuttingDown()) {
+        if (redisClient.getEventLoopGroup().isShuttingDown()) {
             RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
             return RedissonPromise.newFailedFuture(cause);
         }
         
-        final ScheduledFuture<?> scheduledFuture = redisClient.getBootstrap().group().next().schedule(new Runnable() {
+        final ScheduledFuture<?> scheduledFuture = redisClient.getEventLoopGroup().schedule(new Runnable() {
             @Override
             public void run() {
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
@@ -219,16 +215,18 @@ public class RedisConnection implements RedisCommands {
     }
 
     public boolean isFastReconnect() {
-        return fastReconnect;
+        return fastReconnect != null;
     }
     
     public void clearFastReconnect() {
-        fastReconnect = false;
+        fastReconnect.trySuccess(null);
+        fastReconnect = null;
     }
     
-    public ChannelFuture forceFastReconnectAsync() {
-        fastReconnect = true;
-        return channel.close();
+    public RFuture<Void> forceFastReconnectAsync() {
+        fastReconnect = new RedissonPromise<Void>();
+        channel.close();
+        return fastReconnect;
     }
 
     /**

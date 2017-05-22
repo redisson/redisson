@@ -853,7 +853,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         Set<K> mapKeys = new HashSet<K>(keys);
         for (Iterator<K> iterator = mapKeys.iterator(); iterator.hasNext();) {
             K key = iterator.next();
-            CacheValue value = cache.get(key);
+            final CacheKey cacheKey = toCacheKey(key);
+            CacheValue value = cache.get(cacheKey);
             if (value != null) {
                 result.put(key, (V)value.getValue());
                 iterator.remove();
@@ -1083,7 +1084,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         
         return promise;
     }
-    
+
+    @Override
+    public void preloadCache() {
+        //  Best-attempt warmup - just enumerate as an uncached map (super) and
+        //  add anything found into the cache.  This does not guarantee to find
+        //  entries added during the warmUp, but statistically the cache will have
+        //  few misses after this process
+        for(Entry<K,V> entry : super.entrySet()) {
+            CacheKey cacheKey = toCacheKey(entry.getKey());
+            cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+        }
+    }
+
     @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
         final Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();

@@ -88,8 +88,8 @@ public interface RMapReduce<KIn, VIn, KOut, VOut> extends RMapReduceExecutor<VIn
      * Defines timeout for MapReduce process.
      * <code>0</code> means infinity timeout.
      * 
-     * @param timeout
-     * @param unit
+     * @param timeout for process
+     * @param unit of timeout
      * @return self instance
      */
     RMapReduce<KIn, VIn, KOut, VOut> timeout(long timeout, TimeUnit unit);

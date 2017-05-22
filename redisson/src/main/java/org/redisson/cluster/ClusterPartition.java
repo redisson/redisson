@@ -16,12 +16,10 @@
 package org.redisson.cluster;
 
 import java.net.InetSocketAddress;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.redisson.misc.URLBuilder;
 
 /**
  * 
@@ -36,9 +34,9 @@ public class ClusterPartition {
     
     private final String nodeId;
     private boolean masterFail;
-    private URL masterAddress;
-    private final Set<URL> slaveAddresses = new HashSet<URL>();
-    private final Set<URL> failedSlaves = new HashSet<URL>();
+    private URI masterAddress;
+    private final Set<URI> slaveAddresses = new HashSet<URI>();
+    private final Set<URI> failedSlaves = new HashSet<URI>();
     
     private final Set<Integer> slots = new HashSet<Integer>();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
@@ -112,33 +110,30 @@ public class ClusterPartition {
         return new InetSocketAddress(masterAddress.getHost(), masterAddress.getPort());
     }
 
-    public URL getMasterAddress() {
+    public URI getMasterAddress() {
         return masterAddress;
     }
-    public void setMasterAddress(String masterAddress) {
-        setMasterAddress(URLBuilder.create(masterAddress));
-    }
-    public void setMasterAddress(URL masterAddress) {
+    public void setMasterAddress(URI masterAddress) {
         this.masterAddress = masterAddress;
     }
 
-    public void addFailedSlaveAddress(URL address) {
+    public void addFailedSlaveAddress(URI address) {
         failedSlaves.add(address);
     }
-    public Set<URL> getFailedSlaveAddresses() {
+    public Set<URI> getFailedSlaveAddresses() {
         return Collections.unmodifiableSet(failedSlaves);
     }
-    public void removeFailedSlaveAddress(URL uri) {
+    public void removeFailedSlaveAddress(URI uri) {
         failedSlaves.remove(uri);
     }
 
-    public void addSlaveAddress(URL address) {
+    public void addSlaveAddress(URI address) {
         slaveAddresses.add(address);
     }
-    public Set<URL> getSlaveAddresses() {
+    public Set<URI> getSlaveAddresses() {
         return Collections.unmodifiableSet(slaveAddresses);
     }
-    public void removeSlaveAddress(URL uri) {
+    public void removeSlaveAddress(URI uri) {
         slaveAddresses.remove(uri);
         failedSlaves.remove(uri);
     }

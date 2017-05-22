@@ -17,6 +17,11 @@ package org.redisson.client.protocol.decoder;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ScanObjectEntry {
 
     private final ByteBuf buf;

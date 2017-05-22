@@ -975,6 +975,22 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
     
     @Test
+    public void testIntersectionEmpty() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(3, "three");
+        set2.add(4, "four");
+
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.intersection(set1.getName(), set2.getName())).isEqualTo(0);
+
+        assertThat(out.readAll()).isEmpty();
+    }
+
+    @Test
     public void testIntersectionWithWeight() {
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");
