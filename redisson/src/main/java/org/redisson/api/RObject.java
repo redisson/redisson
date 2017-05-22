@@ -26,6 +26,13 @@ import org.redisson.client.codec.Codec;
 public interface RObject extends RObjectAsync {
 
     /**
+     * Update the last access time of an object. 
+     * 
+     * @return <code>true</code> if object was touched else <code>false</code>
+     */
+    boolean touch();
+    
+    /**
      * Transfer an object from source Redis instance to destination Redis instance
      *
      * @param host - destination host

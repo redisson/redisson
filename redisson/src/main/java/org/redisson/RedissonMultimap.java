@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
+import org.redisson.api.RReadWriteLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -69,6 +70,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     public RLock getLock(K key) {
         String lockName = getLockName(key);
         return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+    }
+    
+    @Override
+    public RReadWriteLock getReadWriteLock(K key) {
+        String lockName = getLockName(key);
+        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
     }
     
     private String getLockName(Object key) {
@@ -166,6 +173,16 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public Collection<Entry<K, V>> entries() {
         return new EntrySet();
+    }
+
+    @Override
+    public Set<K> readAllKeySet() {
+        return get(readAllKeySetAsync());
+    }
+
+    @Override
+    public RFuture<Set<K>> readAllKeySetAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HKEYS, getName());
     }
 
     @Override

@@ -27,6 +27,11 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class CacheGetAllDecoder implements MultiDecoder<List<Object>> {
 
     private final List<Object> args;

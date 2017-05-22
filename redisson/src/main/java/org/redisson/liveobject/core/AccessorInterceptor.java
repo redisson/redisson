@@ -118,11 +118,11 @@ public class AccessorInterceptor {
                 RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
                 if (arg != null) {
                     if (rObject instanceof Collection) {
-                        Collection c = (Collection) rObject;
+                        Collection<?> c = (Collection<?>) rObject;
                         c.clear();
                         c.addAll((Collection) arg);
                     } else {
-                        Map m = (Map) rObject;
+                        Map<?, ?> m = (Map<?, ?>) rObject;
                         m.clear();
                         m.putAll((Map) arg);
                     }

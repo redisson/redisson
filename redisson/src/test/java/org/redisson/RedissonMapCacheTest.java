@@ -20,6 +20,8 @@ import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
@@ -557,10 +559,15 @@ public class RedissonMapCacheTest extends BaseTest {
 
         map.putIfAbsent(new SimpleKey("4"), new SimpleValue("4"), 1, TimeUnit.SECONDS);
         Assert.assertEquals(new SimpleValue("4"), map.get(new SimpleKey("4")));
-
+        
         Thread.sleep(1000);
 
         Assert.assertNull(map.get(new SimpleKey("4")));
+        
+        // this should be passed
+        map.putIfAbsent(new SimpleKey("4"), new SimpleValue("4"), 1, TimeUnit.SECONDS);
+        Assert.assertEquals(new SimpleValue("4"), map.get(new SimpleKey("4")));
+        
 
         SimpleKey key1 = new SimpleKey("2");
         SimpleValue value1 = new SimpleValue("4");
@@ -837,5 +844,54 @@ public class RedissonMapCacheTest extends BaseTest {
         public void setTestField(String testField) {
             this.testField = testField;
         }
+    }
+    
+    @Test
+    public void testAddAndGet() {
+        RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", StringCodec.INSTANCE);
+        mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS);
+        mapCache.addAndGet("4", 1L);
+        mapCache.putIfAbsent("4", 0L);
+        Assert.assertEquals("1", mapCache.get("4"));
+        mapCache = redisson.getMapCache("test_put_if_absent_1", StringCodec.INSTANCE);
+        mapCache.putIfAbsent("4", 0L);
+        mapCache.addAndGet("4", 1L);
+        mapCache.putIfAbsent("4", 0L);
+        Assert.assertEquals("1", mapCache.get("4"));
+        RMap map = redisson.getMap("test_put_if_absent_2", StringCodec.INSTANCE);
+        map.putIfAbsent("4", 0L);
+        map.addAndGet("4", 1L);
+        map.putIfAbsent("4", 0L);
+        Assert.assertEquals("1", map.get("4"));
+        RMapCache<String, Object> mapCache1 = redisson.getMapCache("test_put_if_absent_3");
+        mapCache1.putIfAbsent("4", 1.23, 10000L, TimeUnit.SECONDS);
+        mapCache1.addAndGet("4", 1D);
+        Assert.assertEquals(2.23, mapCache1.get("4"));
+    }
+
+    
+    @Test
+    public void testFastPutIfAbsentWithTTL() throws Exception {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simpleTTL");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+        map.fastPutIfAbsent(key, value, 1, TimeUnit.SECONDS);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"), 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(map.get(key)).isEqualTo(value);
+        
+        Thread.sleep(1100);
+        
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("3"), 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("4"), 1, TimeUnit.SECONDS)).isFalse();
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        
+        Thread.sleep(1100);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("4"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS)).isTrue();
+        
+        Thread.sleep(550);
+        assertThat(map.fastPutIfAbsent(key, new SimpleValue("5"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS)).isTrue();
+
     }
 }

@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -25,12 +26,97 @@ import java.util.Collection;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Move object to another database
+     *
+     * @param name of object
+     * @param database - Redis database number
+     * @return <code>true</code> if key was moved else <code>false</code>
+     */
+    boolean move(String name, int database);
+    
+    /**
+     * Transfer an object from source Redis instance to destination Redis instance
+     *
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     */
+    void migrate(String name, String host, int port, int database);
+    
+    /**
+     * Set a timeout for object. After the timeout has expired,
+     * the key will automatically be deleted.
+     *
+     * @param name of object
+     * @param timeToLive - timeout before object will be deleted
+     * @param timeUnit - timeout time unit
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    boolean expire(String name, long timeToLive, TimeUnit timeUnit);
+    
+    /**
+     * Set an expire date for object. When expire date comes
+     * the key will automatically be deleted.
+     * 
+     * @param name of object
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    boolean expireAt(String name, long timestamp);
+    
+    /**
+     * Clear an expire timeout or expire date for object.
+     * 
+     * @param name of object
+     * @return <code>true</code> if timeout was removed
+     *         <code>false</code> if object does not exist or does not have an associated timeout
+     */
+    boolean clearExpire(String name);
+    
+    /**
+     * Rename object with <code>oldName</code> to <code>newName</code>
+     * only if new key is not exists
+     *
+     * @param oldName - old name of object
+     * @param newName - new name of object
+     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
+     */
+    boolean renamenx(String oldName, String newName);
+    
+    /**
+     * Rename current object key to <code>newName</code>
+     *
+     * @param currentName - current name of object
+     * @param newName - new name of object
+     */
+    void rename(String currentName, String newName);
+    
+    /**
+     * Remaining time to live of Redisson object that has a timeout
+     *
+     * @param name of key
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    long remainTimeToLive(String name);
+
+    /**
+     * Update the last access time of an object. 
+     * 
+     * @param names of keys
+     * @return count of objects were touched
+     */
+    long touch(String... names);
+    
+    /**
      * Checks if provided keys exist
      * 
      * @param names of keys
      * @return amount of existing keys
      */
-    Long isExists(String... names);
+    long countExists(String... names);
     
     /**
      * Get Redis object type by key
@@ -128,6 +214,14 @@ public interface RKeys extends RKeysAsync {
      */
     long deleteByPattern(String pattern);
 
+    /**
+     * Delete multiple objects
+     *
+     * @param objects of Redisson
+     * @return number of removed keys
+     */
+    long delete(RObject ... objects);
+    
     /**
      * Delete multiple objects by name
      *

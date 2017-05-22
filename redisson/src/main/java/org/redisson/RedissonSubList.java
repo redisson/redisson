@@ -58,7 +58,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     int size = -1;
 
     protected RedissonSubList(Codec codec, CommandAsyncExecutor commandExecutor, String name, int fromIndex, int toIndex) {
-        super(codec, commandExecutor, name);
+        super(codec, commandExecutor, name, null);
         this.fromIndex = fromIndex;
         this.toIndex.set(toIndex);
     }

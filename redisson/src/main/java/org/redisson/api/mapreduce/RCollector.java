@@ -13,22 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.cache;
+package org.redisson.api.mapreduce;
 
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.SoftReference;
+/**
+ * Stores each key/value mapping during map phase of MapReduce process.
+ * Later used in reduce phase.
+ * 
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
+public interface RCollector<K, V> {
 
-public class CachedValueReference<V> extends SoftReference<V> {
-
-    private final CachedValue<?, ?> owner;
+    /**
+     * Store key/value 
+     * 
+     * @param key available to reduce
+     * @param value available to reduce
+     */
+    void emit(K key, V value);
     
-    public CachedValueReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
-        super(referent, q);
-        this.owner = owner;
-    }
-    
-    public CachedValue<?, ?> getOwner() {
-        return owner;
-    }
-
 }

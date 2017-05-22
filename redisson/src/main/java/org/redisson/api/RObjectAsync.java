@@ -24,6 +24,13 @@ package org.redisson.api;
 public interface RObjectAsync {
 
     /**
+     * Update the last access time of an object in async mode. 
+     * 
+     * @return <code>true</code> if object was touched else <code>false</code>
+     */
+    RFuture<Boolean> touchAsync();
+    
+    /**
      * Transfer an object from source Redis instance to destination Redis instance
      * in async mode
      *

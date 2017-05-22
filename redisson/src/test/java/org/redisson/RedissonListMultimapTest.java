@@ -115,6 +115,16 @@ public class RedissonListMultimapTest extends BaseTest {
         }
 
     }
+    
+    @Test
+    public void testReadAllKeySet() {
+        RListMultimap<String, String> map = redisson.getListMultimap("test1");
+        map.put("1", "4");
+        map.put("2", "5");
+        map.put("3", "6");
+
+        assertThat(map.readAllKeySet()).containsExactly("1", "2", "3");
+    }
 
     @Test
     public void testSize() {

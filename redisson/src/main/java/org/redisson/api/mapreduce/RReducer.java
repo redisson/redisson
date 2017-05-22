@@ -13,30 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.eviction;
+package org.redisson.api.mapreduce;
 
-import org.redisson.api.RFuture;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandAsyncExecutor;
+import java.io.Serializable;
+import java.util.Iterator;
 
 /**
+ * Reduces values mapped by key into single value.
  * 
  * @author Nikita Koksharov
  *
+ * @param <K> key type
+ * @param <V> value type
  */
-public class SetCacheEvictionTask extends EvictionTask {
+public interface RReducer<K, V> extends Serializable {
 
-    private final String name;
-    
-    public SetCacheEvictionTask(String name, CommandAsyncExecutor executor) {
-        super(executor);
-        this.name = name;
-    }
-
-    @Override
-    RFuture<Integer> execute() {
-        return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis());
-    }
+    /**
+     * Invoked for each key
+     * 
+     * @param reducedKey - key
+     * @param iter - collection of values
+     * @return value
+     */
+    V reduce(K reducedKey, Iterator<V> iter);
     
 }

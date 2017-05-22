@@ -25,9 +25,69 @@ import java.util.concurrent.TimeUnit;
  */
 public class LocalCachedMapOptions {
     
-    public enum EvictionPolicy {NONE, LRU, LFU, SOFT};
+    public enum InvalidationPolicy {
+        
+        /**
+         * No invalidation on map changes
+         */
+        NONE, 
+
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         */
+        ON_CHANGE, 
+        
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * <p>
+         * Clear cache if LocalCachedMap instance has been disconnected for a while.
+         * It's applied to avoid stale objects in cache.
+         */
+        ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
+
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * <p>
+         * Store invalidated entry hash in invalidation log for 10 minutes.
+         * Cache keys for stored invalidated entry hashes will be removed 
+         * if LocalCachedMap instance has been disconnected less than 10 minutes 
+         * or whole cache will be cleaned otherwise.
+         * It's applied to avoid stale objects in cache.
+         */
+        ON_CHANGE_WITH_LOAD_ON_RECONNECT
+    }
     
-    private boolean invalidateEntryOnChange;
+    public enum EvictionPolicy {
+        
+        /**
+         * Cache without eviction. 
+         */
+        NONE, 
+        
+        /**
+         * Least Recently Used cache.
+         */
+        LRU, 
+        
+        /**
+         * Least Frequently Used cache.
+         */
+        LFU, 
+        
+        /**
+         * Cache with Soft Reference used for values.
+         * All references will be collected by GC
+         */
+        SOFT, 
+
+        /**
+         * Cache with Weak Reference used for values. 
+         * All references will be collected by GC
+         */
+        WEAK
+    };
+    
+    private InvalidationPolicy invalidationPolicy;
     private EvictionPolicy evictionPolicy;
     private int cacheSize;
     private long timeToLiveInMillis;
@@ -37,7 +97,7 @@ public class LocalCachedMapOptions {
     }
     
     protected LocalCachedMapOptions(LocalCachedMapOptions copy) {
-        this.invalidateEntryOnChange = copy.invalidateEntryOnChange;
+        this.invalidationPolicy = copy.invalidationPolicy;
         this.evictionPolicy = copy.evictionPolicy;
         this.cacheSize = copy.cacheSize;
         this.timeToLiveInMillis = copy.timeToLiveInMillis;
@@ -62,13 +122,9 @@ public class LocalCachedMapOptions {
         return new LocalCachedMapOptions()
                     .cacheSize(0).timeToLive(0).maxIdle(0)
                     .evictionPolicy(EvictionPolicy.NONE)
-                    .invalidateEntryOnChange(true);
+                    .invalidationPolicy(InvalidationPolicy.ON_CHANGE);
     }
     
-    public boolean isInvalidateEntryOnChange() {
-        return invalidateEntryOnChange;
-    }
-
     public EvictionPolicy getEvictionPolicy() {
         return evictionPolicy;
     }
@@ -95,6 +151,27 @@ public class LocalCachedMapOptions {
         this.cacheSize = cacheSize;
         return this;
     }
+    
+    public InvalidationPolicy getInvalidationPolicy() {
+        return invalidationPolicy;
+    }
+
+    /**
+     * Sets entry invalidation policy. 
+     *
+     * @param invalidationPolicy
+     *         <p><code>NONE</code> - no invalidation applied.
+     *         <p><code>ON_CHANGE</code> - invalidation message which removes corresponding entry from cache
+     *                                     will be sent to all other RLocalCachedMap instances on each entry update/remove operation.
+     *         <p><code>ON_CHANGE_WITH_CLEAR_ON_RECONNECT</code> - includes <code>ON_CHANGE</code> policy 
+     *                                     and clears local cache of current instance in case of reconnection to Redis. 
+     * 
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions invalidationPolicy(InvalidationPolicy invalidationPolicy) {
+        this.invalidationPolicy = invalidationPolicy;
+        return this;
+    }
 
     /**
      * Sets entry invalidation behavior. 
@@ -104,9 +181,12 @@ public class LocalCachedMapOptions {
      *         if <code>false</code> then invalidation message won't be sent
      * @return LocalCachedMapOptions instance
      */
+    @Deprecated
     public LocalCachedMapOptions invalidateEntryOnChange(boolean value) {
-        this.invalidateEntryOnChange = value;
-        return this;
+        if (value) {
+            return invalidationPolicy(InvalidationPolicy.ON_CHANGE);
+        }
+        return invalidationPolicy(InvalidationPolicy.NONE);
     }
 
     /**

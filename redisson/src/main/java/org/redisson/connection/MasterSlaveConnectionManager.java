@@ -55,8 +55,8 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
-import org.redisson.pubsub.TransferListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -364,41 +364,41 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
         final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                RFuture<PubSubConnectionEntry> future = psubscribe(channelName, codec, listener, lock);
+                RFuture<PubSubConnectionEntry> future = psubscribe(channelName, codec, lock, listeners);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         RPromise<PubSubConnectionEntry> promise = newPromise();
-        subscribe(codec, channelName, listener, promise, PubSubType.PSUBSCRIBE, semaphore);
+        subscribe(codec, channelName, promise, PubSubType.PSUBSCRIBE, semaphore, listeners);
         return promise;
     }
 
-    public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener) {
+    public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
         final RPromise<PubSubConnectionEntry> result = newPromise();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                RFuture<PubSubConnectionEntry> future = subscribe(codec, channelName, listener, lock);
+                RFuture<PubSubConnectionEntry> future = subscribe(codec, channelName, lock, listeners);
                 future.addListener(new TransferListener<PubSubConnectionEntry>(result));
             }
         });
         return result;
     }
     
-    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?> listener, AsyncSemaphore semaphore) {
+    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         RPromise<PubSubConnectionEntry> promise = newPromise();
-        subscribe(codec, channelName, listener, promise, PubSubType.SUBSCRIBE, semaphore);
+        subscribe(codec, channelName, promise, PubSubType.SUBSCRIBE, semaphore, listeners);
         return promise;
     }
 
@@ -406,18 +406,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return locks[Math.abs(channelName.hashCode() % locks.length)];
     }
     
-    private void subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?> listener, 
-            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+    private void subscribe(final Codec codec, final String channelName, 
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock, final RedisPubSubListener<?>... listeners) {
         final PubSubConnectionEntry connEntry = name2PubSubConnection.get(channelName);
         if (connEntry != null) {
-            connEntry.addListener(channelName, listener);
-            connEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                @Override
-                public void operationComplete(Future<Void> future) throws Exception {
-                    lock.release();
-                    promise.trySuccess(connEntry);
-                }
-            });
+            subscribe(channelName, promise, type, lock, connEntry, listeners);
             return;
         }
 
@@ -431,7 +424,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 
                 final PubSubConnectionEntry freeEntry = freePubSubConnections.peek();
                 if (freeEntry == null) {
-                    connect(codec, channelName, listener, promise, type, lock);
+                    connect(codec, channelName, promise, type, lock, listeners);
                     return;
                 }
                 
@@ -445,14 +438,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     freeEntry.release();
                     freePubSubLock.release();
                     
-                    oldEntry.addListener(channelName, listener);
-                    oldEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                        @Override
-                        public void operationComplete(Future<Void> future) throws Exception {
-                            lock.release();
-                            promise.trySuccess(oldEntry);
-                        }
-                    });
+                    subscribe(channelName, promise, type, lock, oldEntry, listeners);
                     return;
                 }
                 
@@ -461,14 +447,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
                 freePubSubLock.release();
                 
-                freeEntry.addListener(channelName, listener);
-                freeEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                    @Override
-                    public void operationComplete(Future<Void> future) throws Exception {
-                        lock.release();
-                        promise.trySuccess(freeEntry);
-                    }
-                });
+                subscribe(channelName, promise, type, lock, freeEntry, listeners);
                 
                 if (PubSubType.PSUBSCRIBE == type) {
                     freeEntry.psubscribe(codec, channelName);
@@ -480,8 +459,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
-    private void connect(final Codec codec, final String channelName, final RedisPubSubListener<?> listener,
-            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock) {
+    private void subscribe(final String channelName, final RPromise<PubSubConnectionEntry> promise,
+            final PubSubType type, final AsyncSemaphore lock, final PubSubConnectionEntry connEntry,
+            final RedisPubSubListener<?>... listeners) {
+        for (RedisPubSubListener<?> listener : listeners) {
+            connEntry.addListener(channelName, listener);
+        }
+        connEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                lock.release();
+                promise.trySuccess(connEntry);
+            }
+        });
+    }
+
+    private void connect(final Codec codec, final String channelName,
+            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock, final RedisPubSubListener<?>... listeners) {
         final int slot = calcSlot(channelName);
         RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
         connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
@@ -505,29 +499,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     releaseSubscribeConnection(slot, entry);
                     
                     freePubSubLock.release();
-                    
-                    oldEntry.addListener(channelName, listener);
-                    oldEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                        @Override
-                        public void operationComplete(Future<Void> future) throws Exception {
-                            lock.release();
-                            promise.trySuccess(oldEntry);
-                        }
-                    });
+
+                    subscribe(channelName, promise, type, lock, oldEntry, listeners);
                     return;
                 }
                 
                 freePubSubConnections.add(entry);
                 freePubSubLock.release();
                 
-                entry.addListener(channelName, listener);
-                entry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
-                    @Override
-                    public void operationComplete(Future<Void> future) throws Exception {
-                        lock.release();
-                        promise.trySuccess(entry);
-                    }
-                });
+                subscribe(channelName, promise, type, lock, entry, listeners);
                 
                 if (PubSubType.PSUBSCRIBE == type) {
                     entry.psubscribe(codec, channelName);

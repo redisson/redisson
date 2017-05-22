@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -18,10 +17,10 @@ import org.redisson.RedissonMapTest.SimpleKey;
 import org.redisson.RedissonMapTest.SimpleValue;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
-import org.redisson.cache.Cache;
+import org.redisson.api.LocalCachedMapOptions.InvalidationPolicy;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
+import org.redisson.cache.Cache;
 
 import mockit.Deencapsulation;
 
@@ -62,7 +61,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         expectedValuesSet.add(1);
         expectedValuesSet.add(2);
         expectedValuesSet.add(3);
-        HashSet actualValuesSet = new HashSet<>(m.readAllValues());
+        Set<Object> actualValuesSet = new HashSet<>(m.readAllValues());
         Assert.assertEquals(expectedValuesSet, actualValuesSet);
         Map<String, Integer> expectedMap = new HashMap<>();
         expectedMap.put("a", 1);
@@ -91,7 +90,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testInvalidationOnClear() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5);
+        
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -125,7 +127,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5);
+        
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -151,7 +156,11 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(false);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5)
+                .invalidationPolicy(InvalidationPolicy.NONE);
+        
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -177,7 +186,11 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testNoInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(false);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5)
+                .invalidationPolicy(InvalidationPolicy.NONE);
+        
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -200,10 +213,10 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(cache1.size()).isEqualTo(1);
         assertThat(cache2.size()).isEqualTo(1);
     }
-    
+
     @Test
     public void testInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5).invalidateEntryOnChange(true);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5);
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -570,6 +583,17 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(map.fastRemove(2)).isEqualTo(0);
         assertThat(map.size()).isEqualTo(1);
     }
+    
+    @Test
+    public void testFastRemoveEmpty() throws InterruptedException, ExecutionException {
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+                .evictionPolicy(EvictionPolicy.NONE)
+                .cacheSize(3)
+                .invalidationPolicy(InvalidationPolicy.NONE);
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", options);
+        assertThat(map.fastRemove("test")).isZero();
+    }
+
 
     @Test
     public void testFastPut() {

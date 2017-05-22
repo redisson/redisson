@@ -27,6 +27,7 @@ import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.TransferListener;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -97,7 +98,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 }
                 
                 RedisPubSubListener<Object> listener = createListener(channelName, value);
-                connectionManager.subscribe(LongCodec.INSTANCE, channelName, listener, semaphore);
+                connectionManager.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
             }
         };
         semaphore.acquire(listener);

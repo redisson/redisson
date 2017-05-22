@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RBlockingFairQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -51,15 +52,15 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
     private final AtomicInteger instances = new AtomicInteger();
     private final SemaphorePubSub semaphorePubSub;
     
-    protected RedissonBlockingFairQueue(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id) {
-        super(commandExecutor, name);
+    protected RedissonBlockingFairQueue(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
         this.semaphorePubSub = semaphorePubSub;
         this.id = id;
         instances.incrementAndGet();
     }
 
-    protected RedissonBlockingFairQueue(Codec codec, CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id) {
-        super(codec, commandExecutor, name);
+    protected RedissonBlockingFairQueue(Codec codec, CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub, UUID id, RedissonClient redisson) {
+        super(codec, commandExecutor, name, redisson);
         this.semaphorePubSub = semaphorePubSub;
         this.id = id;
         instances.incrementAndGet();

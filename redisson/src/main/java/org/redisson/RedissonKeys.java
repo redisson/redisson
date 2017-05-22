@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,11 +25,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
+import org.redisson.api.RObject;
 import org.redisson.api.RType;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
@@ -132,14 +133,45 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Long isExists(String... names) {
-        return commandExecutor.get(isExistsAsync(names));
+    public long touch(String... names) {
+        return commandExecutor.get(touchAsync(names));
     }
     
     @Override
-    public RFuture<Long> isExistsAsync(String... names) {
-        Object[] params = Arrays.copyOf(names, names.length, Object[].class);
-        return commandExecutor.readAsync((String)null, null, RedisCommands.EXISTS_LONG, params);
+    public RFuture<Long> touchAsync(String... names) {
+        return commandExecutor.writeAllAsync(RedisCommands.TOUCH_LONG, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, names);
+    }
+    
+    @Override
+    public long countExists(String... names) {
+        return commandExecutor.get(countExistsAsync(names));
+    }
+    
+    @Override
+    public RFuture<Long> countExistsAsync(String... names) {
+        return commandExecutor.readAllAsync(RedisCommands.EXISTS_LONG, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, names);
     }
 
     
@@ -227,7 +259,22 @@ public class RedissonKeys implements RKeys {
     public long delete(String ... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
+    
+    @Override
+    public long delete(RObject ... objects) {
+        return commandExecutor.get(deleteAsync(objects));
+    }
 
+    @Override
+    public RFuture<Long> deleteAsync(RObject ... objects) {
+        List<String> keys = new ArrayList<String>();
+        for (RObject obj : objects) {
+            keys.add(obj.getName());
+        }
+        
+        return deleteAsync(keys.toArray(new String[keys.size()]));
+    }
+    
     @Override
     public RFuture<Long> deleteAsync(String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
@@ -338,4 +385,85 @@ public class RedissonKeys implements RKeys {
         }
     }
 
+    @Override
+    public long remainTimeToLive(String name) {
+        return commandExecutor.get(remainTimeToLiveAsync(name));
+    }
+
+    @Override
+    public RFuture<Long> remainTimeToLiveAsync(String name) {
+        return commandExecutor.readAsync(name, StringCodec.INSTANCE, RedisCommands.PTTL, name);
+    }
+
+    @Override
+    public void rename(String currentName, String newName) {
+        commandExecutor.get(renameAsync(currentName, newName));
+    }
+
+    @Override
+    public RFuture<Void> renameAsync(String currentName, String newName) {
+        return commandExecutor.writeAsync(currentName, RedisCommands.RENAME, currentName, newName);
+    }
+
+    @Override
+    public boolean renamenx(String oldName, String newName) {
+        return commandExecutor.get(renamenxAsync(oldName, newName));
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String oldName, String newName) {
+        return commandExecutor.writeAsync(oldName, RedisCommands.RENAMENX, oldName, newName);
+    }
+
+    @Override
+    public boolean clearExpire(String name) {
+        return commandExecutor.get(clearExpireAsync(name));
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync(String name) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PERSIST, name);
+    }
+
+    @Override
+    public boolean expireAt(String name, long timestamp) {
+        return commandExecutor.get(expireAtAsync(name, timestamp));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(String name, long timestamp) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PEXPIREAT, name, timestamp);
+    }
+
+    @Override
+    public boolean expire(String name, long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.get(expireAsync(name, timeToLive, timeUnit));
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(String name, long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PEXPIRE, name, timeUnit.toMillis(timeToLive));
+    }
+
+    @Override
+    public void migrate(String name, String host, int port, int database) {
+        commandExecutor.get(migrateAsync(name, host, port, database));
+    }
+
+    @Override
+    public RFuture<Void> migrateAsync(String name, String host, int port, int database) {
+        return commandExecutor.writeAsync(name, RedisCommands.MIGRATE, host, port, name, database);
+    }
+
+    @Override
+    public boolean move(String name, int database) {
+        return commandExecutor.get(moveAsync(name, database));
+    }
+
+    @Override
+    public RFuture<Boolean> moveAsync(String name, int database) {
+        return commandExecutor.writeAsync(name, RedisCommands.MOVE, name, database);
+    }
+
+    
 }

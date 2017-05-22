@@ -18,11 +18,11 @@ package org.redisson.spring.cache;
 import java.lang.reflect.Constructor;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.springframework.cache.Cache;
 import org.springframework.cache.support.SimpleValueWrapper;
 
@@ -39,18 +39,18 @@ public class RedissonCache implements Cache {
 
     private CacheConfig config;
     
-    private final RedissonClient redisson;
+    private final AtomicLong hits = new AtomicLong();
 
-    public RedissonCache(RedissonClient redisson, RMapCache<Object, Object> mapCache, CacheConfig config) {
+    private final AtomicLong misses = new AtomicLong();
+
+    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config) {
         this.mapCache = mapCache;
         this.map = mapCache;
         this.config = config;
-        this.redisson = redisson;
     }
 
-    public RedissonCache(RedissonClient redisson, RMap<Object, Object> map) {
+    public RedissonCache(RMap<Object, Object> map) {
         this.map = map;
-        this.redisson = redisson;
     }
 
     @Override
@@ -66,12 +66,20 @@ public class RedissonCache implements Cache {
     @Override
     public ValueWrapper get(Object key) {
         Object value = map.get(key);
+        if (value == null) {
+            addCacheMiss();
+        }else{
+            addCacheHit();
+        }
         return toValueWrapper(value);
     }
 
     public <T> T get(Object key, Class<T> type) {
         Object value = map.get(key);
-        if (value != null) {
+        if (value == null) {
+            addCacheMiss();
+        }else{
+            addCacheHit();
             if (value.getClass().getName().equals(NullValue.class.getName())) {
                 return null;
             }
@@ -79,11 +87,12 @@ public class RedissonCache implements Cache {
                 throw new IllegalStateException("Cached value is not of required type [" + type.getName() + "]: " + value);
             }
         }
-        return (T) value;
+        return (T) fromStoreValue(value);
     }
 
     @Override
     public void put(Object key, Object value) {
+        value = toStoreValue(value);
         if (mapCache != null) {
             mapCache.fastPut(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
         } else {
@@ -92,6 +101,7 @@ public class RedissonCache implements Cache {
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
+        value = toStoreValue(value);
         Object prevValue;
         if (mapCache != null) {
             prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
@@ -124,6 +134,7 @@ public class RedissonCache implements Cache {
     public <T> T get(Object key, Callable<T> valueLoader) {
         Object value = map.get(key);
         if (value == null) {
+            addCacheMiss();
             RLock lock = map.getLock(key);
             lock.lock();
             try {
@@ -141,18 +152,20 @@ public class RedissonCache implements Cache {
                             throw new IllegalStateException(e);
                         }
                     }
-                    map.put(key, value);
+                    put(key, value);
                 }
             } finally {
                 lock.unlock();
             }
+        }else{
+            addCacheHit();
         }
         
         return (T) fromStoreValue(value);
     }
 
     protected Object fromStoreValue(Object storeValue) {
-        if (storeValue == NullValue.INSTANCE) {
+        if (storeValue instanceof NullValue) {
             return null;
         }
         return storeValue;
@@ -163,6 +176,28 @@ public class RedissonCache implements Cache {
             return NullValue.INSTANCE;
         }
         return userValue;
+    }
+
+    /** The number of get requests that were satisfied by the cache.
+     * @return the number of hits
+     */
+    long getCacheHits(){
+        return hits.get();
+    }
+
+    /** A miss is a get request that is not satisfied.
+     * @return the number of misses
+     */
+    long getCacheMisses(){
+        return misses.get();
+    }
+
+    private void addCacheHit(){
+        hits.incrementAndGet();
+    }
+
+    private void addCacheMiss(){
+        misses.incrementAndGet();
     }
 
 }

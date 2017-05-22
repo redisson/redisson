@@ -17,6 +17,11 @@ package org.redisson.spring.cache;
 
 import org.springframework.cache.Cache.ValueWrapper;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class NullValue implements ValueWrapper {
 
     public static final NullValue INSTANCE = new NullValue();

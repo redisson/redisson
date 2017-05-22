@@ -18,6 +18,8 @@ package org.redisson.api;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.mapreduce.RCollectionMapReduce;
+
 /**
  * <p>Set-based cache with ability to set TTL for each object.
  * </p>
@@ -37,6 +39,15 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
+    /**
+     * Returns <code>RMapReduce</code> object associated with this map
+     * 
+     * @param <KOut> output key
+     * @param <VOut> output value
+     * @return MapReduce instance
+     */
+    <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
+    
     /**
      * Stores value with specified time to live.
      * Value expires after specified time to live.

@@ -1,6 +1,8 @@
 package org.redisson.spring.support;
 
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.*;
@@ -124,14 +126,24 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
                         2).run();
         System.setProperty("sentinel3Address", sentinel3.getRedisServerAddressAndPort());
-        
+        RedisRunner slave = new RedisRunner().randomPort().randomDir().nosave();
         ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(new RedisRunner().randomPort().randomDir().nosave())
-                .addNode(new RedisRunner().randomPort().randomDir().nosave())
-                .addNode(new RedisRunner().randomPort().randomDir().nosave());
-        List<RedisRunner.RedisProcess> nodes = clusterRunner.run();
-        nodes.stream().forEach((node) -> {
-            System.setProperty("node" + (nodes.indexOf(node) + 1) + "Address", node.getRedisServerAddressAndPort());
+                .addNode(new RedisRunner().randomPort().randomDir().nosave(),//master1
+                        new RedisRunner().randomPort().randomDir().nosave(),//slave1-1
+                        new RedisRunner().randomPort().randomDir().nosave(),//slave1-2
+                        slave)//slave1-3
+                .addNode(new RedisRunner().randomPort().randomDir().nosave(),//master2
+                        new RedisRunner().randomPort().randomDir().nosave(),//slave2-1
+                        new RedisRunner().randomPort().randomDir().nosave())//slave2-2
+                .addNode(new RedisRunner().randomPort().randomDir().nosave(),//master3
+                        new RedisRunner().randomPort().randomDir().nosave(),//slave3-1
+                        new RedisRunner().randomPort().randomDir().nosave())//slave3-2
+                .addNode(slave,//slave1-3
+                        new RedisRunner().randomPort().randomDir().nosave(),//slave1-3-1
+                        new RedisRunner().randomPort().randomDir().nosave());//slave1-3-2
+        final AtomicLong index = new AtomicLong(0);
+        clusterRunner.run().getNodes().stream().forEach((node) -> {
+            System.setProperty("node" + (index.incrementAndGet()) + "Address", node.getRedisServerAddressAndPort());
         });
         
         context = new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/namespace.xml");

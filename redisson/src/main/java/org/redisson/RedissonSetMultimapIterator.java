@@ -28,7 +28,7 @@ public class RedissonSetMultimapIterator<K, V, M> extends RedissonMultiMapIterat
 
     @Override
     protected Iterator<V> getIterator(String name) {
-        RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, map.getValuesName(name));
+        RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, map.getValuesName(name), null);
         return set.iterator();
     }
 

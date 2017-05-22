@@ -191,6 +191,7 @@ public class RedisRunner {
     protected static RedisRunner.RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
 
+    private String path = "";
     private String defaultDir = Paths.get("").toString();
     private boolean nosave = false;
     private boolean randomDir = false;
@@ -271,7 +272,7 @@ public class RedisRunner {
     public RedisProcess runAndCheck() throws IOException, InterruptedException, FailedToStartRedisException {
         List<String> args = new ArrayList(options.values());
         if (sentinelFile != null && sentinelFile.length() > 0) {
-            String confFile = defaultDir + File.pathSeparator + sentinelFile;
+            String confFile = defaultDir + File.separator + sentinelFile;
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 args.stream().forEach((arg) -> {
                     if (arg.contains("--")) {
@@ -289,10 +290,7 @@ public class RedisRunner {
             throw new FailedToStartRedisException();
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                rp.stop();
-            } catch (InterruptedException ex) {
-            }
+            rp.stop();
         }));
         return rp;
     }
@@ -459,6 +457,7 @@ public class RedisRunner {
     public RedisRunner dir(String dir) {
         if (!randomDir) {
             addConfigOption(REDIS_OPTIONS.DIR, dir);
+            this.path = dir;
         }
         return this;
     }
@@ -824,6 +823,10 @@ public class RedisRunner {
     public String defaultDir() {
         return this.defaultDir;
     }
+    
+    public String dir() {
+        return isRandomDir() ? defaultDir() : this.path;
+    }
 
     public String getInitialBindAddr() {
         return bindAddr.size() > 0 ? bindAddr.get(0) : "localhost";
@@ -839,7 +842,7 @@ public class RedisRunner {
     }
 
     public boolean deleteSentinelFile() {
-        File f = new File(defaultDir + File.pathSeparator + sentinelFile);
+        File f = new File(defaultDir + File.separator + sentinelFile);
         if (f.exists()) {
             System.out.println("REDIS RUNNER: Deleting sentinel config file " + f.getAbsolutePath());
             return f.delete();
@@ -849,7 +852,7 @@ public class RedisRunner {
 
     public boolean deleteClusterFile() {
         File f = new File(clusterFile);
-        if (f.exists()) {
+        if (f.exists() && isRandomDir()) {
             System.out.println("REDIS RUNNER: Deleting cluster config file " + f.getAbsolutePath());
             return f.delete();
         }
@@ -857,7 +860,7 @@ public class RedisRunner {
     }
 
     private void makeRandomDefaultDir() {
-        File f = new File(RedissonRuntimeEnvironment.tempDir + File.pathSeparator + UUID.randomUUID());
+        File f = new File(RedissonRuntimeEnvironment.tempDir + File.separator + UUID.randomUUID());
         if (f.exists()) {
             makeRandomDefaultDir();
         } else {
@@ -878,17 +881,36 @@ public class RedisRunner {
             this.runner = runner;
         }
 
-        public int stop() throws InterruptedException {
+        public int stop() {
             if (runner.isNosave() && !runner.isRandomDir()) {
                 RedisClient c = createDefaultRedisClientInstance();
                 RedisConnection connection = c.connect();
-                connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
-                        .await(3, TimeUnit.SECONDS);
+                try {
+                    connection.async(new RedisStrictCommand<Void>("SHUTDOWN", "NOSAVE", new VoidReplayConvertor()))
+                            .await(3, TimeUnit.SECONDS);
+                } catch (InterruptedException interruptedException) {
+                    //shutdown via command failed, lets wait and kill it later.
+                }
                 c.shutdown();
                 connection.closeAsync().syncUninterruptibly();
             }
-            redisProcess.destroy();
-            int exitCode = redisProcess.isAlive() ? redisProcess.waitFor() : redisProcess.exitValue();
+            Process p = redisProcess;
+            p.destroy();
+            boolean normalTermination = false;
+            try {
+                normalTermination = p.waitFor(5, TimeUnit.SECONDS);
+            } catch (InterruptedException ex) {
+                //OK lets hurry up by force kill;
+            }
+            if (!normalTermination) {
+                p = p.destroyForcibly();
+            }
+            cleanup();
+            int exitCode = p.exitValue();
+            return exitCode == 1 && RedissonRuntimeEnvironment.isWindows ? 0 : exitCode;
+        }
+
+        private void cleanup() {
             if (runner.isSentinel()) {
                 runner.deleteSentinelFile();
             }
@@ -898,9 +920,8 @@ public class RedisRunner {
             if (runner.isRandomDir()) {
                 runner.deleteDBfileDir();
             }
-            return exitCode == 1 && RedissonRuntimeEnvironment.isWindows ? 0 : exitCode;
         }
-
+        
         public Process getRedisProcess() {
             return redisProcess;
         }
