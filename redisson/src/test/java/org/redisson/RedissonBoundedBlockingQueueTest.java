@@ -509,10 +509,38 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         queue2.put(5);
         queue2.put(6);
 
-        queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
+        Integer value = queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
+        assertThat(value).isEqualTo(3);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 
+    @Test
+    public void testTakeLastAndOfferFirstTo() throws InterruptedException {
+        final RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("{queue}1");
+        queue1.trySetCapacity(10);
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            try {
+                queue1.put(3);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }, 3, TimeUnit.SECONDS);
+
+        RBoundedBlockingQueue<Integer> queue2 = redisson.getBoundedBlockingQueue("{queue}2");
+        queue2.trySetCapacity(10);
+        queue2.put(4);
+        queue2.put(5);
+        queue2.put(6);
+
+        long startTime = System.currentTimeMillis();
+        Integer value = queue1.takeLastAndOfferFirstTo(queue2.getName());
+        assertThat(System.currentTimeMillis() - startTime).isBetween(3000L, 3200L);
+        assertThat(value).isEqualTo(3);
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
+    }
+
+    
     @Test
     public void testOffer() {
         RBoundedBlockingQueue<Integer> queue = redisson.getBoundedBlockingQueue("blocking:queue");

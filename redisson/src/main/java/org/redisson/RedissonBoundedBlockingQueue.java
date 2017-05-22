@@ -33,6 +33,7 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.concurrent.Future;
@@ -136,7 +137,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     private RPromise<V> wrapTakeFuture(final RFuture<V> takeFuture) {
-        final RPromise<V> result = new PromiseDelegator<V>(commandExecutor.getConnectionManager().<V>newPromise()) {
+        final RPromise<V> result = new RedissonPromise<V>() {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
                 super.cancel(mayInterruptIfRunning);
@@ -253,6 +254,17 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         return wrapTakeFuture(takeFuture);
     }
 
+    @Override
+    public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
+        RFuture<V> res = takeLastAndOfferFirstToAsync(queueName);
+        return res.await().getNow();
+    }
+    
+    @Override
+    public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {
+        return pollLastAndOfferFirstToAsync(queueName, 0, TimeUnit.SECONDS);
+    }
+    
     @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit) {
         RFuture<V> takeFuture = commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
