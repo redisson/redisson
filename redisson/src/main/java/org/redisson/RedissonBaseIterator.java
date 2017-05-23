@@ -26,6 +26,12 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
     private List<ByteBuf> firstValues;
@@ -112,19 +118,17 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                         }
                         finished = true;
                         return false;
-                    } else if (!firstValues.isEmpty()) {
-                        if (res.getPos() == 0) {
-                            if (tryAgain()) {
-                                client = null;
-                                firstValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                                continue;
-                            }
-                            
-                            finished = true;
-                            return false;
+                    } else if (lastValues.isEmpty() && res.getPos() == 0) {
+                        if (tryAgain()) {
+                            client = null;
+                            firstValues = null;
+                            nextIterPos = 0;
+                            prevIterPos = -1;
+                            continue;
                         }
+                        
+                        finished = true;
+                        return false;
                     }
                 }
                 lastIter = res.getValues().iterator();
