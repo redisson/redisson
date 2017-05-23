@@ -101,6 +101,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
                         currentElementRemoved = false;
                         removeExecuted = false;
+                        
                         client = null;
                         firstValues = null;
                         lastValues = null;
@@ -111,6 +112,19 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                         }
                         finished = true;
                         return false;
+                    } else if (!firstValues.isEmpty()) {
+                        if (res.getPos() == 0) {
+                            if (tryAgain()) {
+                                client = null;
+                                firstValues = null;
+                                nextIterPos = 0;
+                                prevIterPos = -1;
+                                continue;
+                            }
+                            
+                            finished = true;
+                            return false;
+                        }
                     }
                 }
                 lastIter = res.getValues().iterator();
