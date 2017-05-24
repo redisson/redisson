@@ -274,7 +274,18 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertEquals("a", set.first());
         Assert.assertEquals("d", set.last());
     }
+    
+    @Test
+    public void testFirstLastScore() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
 
+        assertThat(set.firstScore()).isEqualTo(0.1);
+        assertThat(set.lastScore()).isEqualTo(0.4);
+    }
 
     @Test
     public void testRemoveRangeByScore() {

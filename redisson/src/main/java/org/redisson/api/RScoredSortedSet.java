@@ -52,6 +52,10 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V first();
 
     V last();
+    
+    Double firstScore();
+    
+    Double lastScore();
 
     Long addAll(Map<V, Double> objects);
 
