@@ -230,27 +230,15 @@ public class RedissonKeys implements RKeys {
         };
 
         for (MasterSlaveEntry entry : entries) {
-            RFuture<Collection<String>> findFuture = commandExecutor.readAsync(entry, null, RedisCommands.KEYS, pattern);
-            findFuture.addListener(new FutureListener<Collection<String>>() {
-                @Override
-                public void operationComplete(Future<Collection<String>> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        failed.set(future.cause());
-                        checkExecution(result, failed, count, executed);
-                        return;
-                    }
-
-                    Collection<String> keys = future.getNow();
-                    if (keys.isEmpty()) {
-                        checkExecution(result, failed, count, executed);
-                        return;
-                    }
-
-                    RFuture<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
-                    deleteFuture.addListener(listener);
-                }
-            });
-        }
+            Iterator<String> keysIterator = createKeysIterator(entry, pattern, 10);
+            Collection<String> keys = new HashSet<String>();
+            while (keysIterator.hasNext()) {
+                String key = keysIterator.next();
+                keys.add(key);
+            }
+            RFuture<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
+            deleteFuture.addListener(listener);
+	}
 
         return result;
     }
