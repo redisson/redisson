@@ -45,6 +45,10 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private ResourceLoader resourceLoader;
 
+    private boolean dynamic = true;
+    
+    private boolean allowNullValues = true;
+    
     private Codec codec;
 
     private RedissonClient redisson;
@@ -122,7 +126,37 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.configLocation = configLocation;
         this.codec = codec;
     }
+    
+    /**
+     * Defines possibility of storing {@code null} values.
+     * <p>
+     * Default is <code>true</code>
+     * 
+     * @param allowNullValues - stores if <code>true</code>
+     */
+    public void setAllowNullValues(boolean allowNullValues) {
+        this.allowNullValues = allowNullValues;
+    }
 
+    /**
+     * Defines 'fixed' cache names. 
+     * A new cache instance will not be created in dynamic for non-defined names.
+     * <p>
+     * `null` parameter setups dynamic mode 
+     * 
+     * @param names of caches
+     */
+    public void setCacheNames(Collection<String> names) {
+        if (names != null) {
+            for (String name : names) {
+                getCache(name);
+            }
+            dynamic = false;
+        } else {
+            dynamic = true;
+        }
+    }
+    
     /**
      * Set cache config location
      *
@@ -165,6 +199,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         if (cache != null) {
             return cache;
         }
+        if (!dynamic) {
+            return cache;
+        }
         
         CacheConfig config = configMap.get(name);
         if (config == null) {
@@ -189,7 +226,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMap(name);
         }
         
-        Cache cache = new RedissonCache(map);
+        Cache cache = new RedissonCache(map, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
@@ -205,7 +242,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMapCache(name);
         }
         
-        Cache cache = new RedissonCache(map, config);
+        Cache cache = new RedissonCache(map, config, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;

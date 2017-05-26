@@ -4,7 +4,7 @@ Redisson Releases History
 
 Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
 
-### 10-Apr-2017 - versions 2.9.2 and 3.4.2 released
+### 10-May-2017 - versions 2.9.2 and 3.4.2 released
 
 Feature - __Dropwizard metrics integration__ More details [here](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#147-dropwizard-metrics)  
 Feature - `RLocalCachedMap.preloadCache` method added (thanks to Steve Draper)  

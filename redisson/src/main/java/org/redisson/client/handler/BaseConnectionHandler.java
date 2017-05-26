@@ -73,7 +73,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             futures.add(future);
         }
         if (config.getClientName() != null) {
-            RFuture<Object> future = connection.async(RedisCommands.CLIENT_SETNAME, config.getDatabase());
+            RFuture<Object> future = connection.async(RedisCommands.CLIENT_SETNAME, config.getClientName());
             futures.add(future);
         }
         if (config.isReadOnly()) {

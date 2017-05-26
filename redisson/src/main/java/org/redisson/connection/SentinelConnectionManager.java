@@ -81,7 +81,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 // TODO async
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
-                String masterHost = "redis://" + master.get(0) + ":" + master.get(1);
+                String masterHost = createAddress(master.get(0), master.get(1));
                 this.config.setMasterAddress(masterHost);
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
@@ -97,7 +97,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     String port = map.get("port");
                     String flags = map.get("flags");
 
-                    String host = "redis://" + ip + ":" + port;
+                    String host = createAddress(ip, port);
 
                     this.config.addSlaveAddress(host);
                     slaves.put(host, true);
@@ -132,6 +132,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (RFuture<RedisPubSubConnection> future : connectionFutures) {
             future.awaitUninterruptibly();
         }
+    }
+    
+    private String createAddress(String host, Object port) {
+        if (host.contains(":")) {
+            host = "[" + host + "]";
+        }
+        return "redis://" + host + ":" + port;
     }
 
     @Override
@@ -208,7 +215,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String ip = parts[2];
             String port = parts[3];
 
-            String addr = "redis://" + ip + ":" + port;
+            String addr = createAddress(ip, port);
             URI uri = URIBuilder.create(addr);
             registerSentinel(cfg, uri, c);
         }
@@ -222,7 +229,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             final String ip = parts[2];
             final String port = parts[3];
 
-            final String slaveAddr = "redis://" + ip + ":" + port;
+            final String slaveAddr = createAddress(ip, port);
 
             if (!isUseSameMaster(parts)) {
                 return;
@@ -310,7 +317,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         String slaveAddr = ip + ":" + port;
 
         String master = currentMaster.get();
-        String slaveMaster = "redis://" + parts[6] + ":" + parts[7];
+        String slaveMaster = createAddress(parts[6], parts[7]);
         if (!master.equals(slaveMaster)) {
             log.warn("Skipped slave up {} for master {} differs from current {}", slaveAddr, slaveMaster, master);
             return false;
@@ -370,7 +377,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String port = parts[4];
 
                 String current = currentMaster.get();
-                String newMaster = "redis://" + ip + ":" + port;
+                String newMaster = createAddress(ip, port);
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
                     changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
