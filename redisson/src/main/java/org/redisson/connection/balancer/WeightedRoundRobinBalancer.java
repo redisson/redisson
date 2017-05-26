@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.redisson.connection.ClientConnectionsEntry;
 
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.misc.URIBuilder;
 
 /**
  * Weighted Round Robin balancer.
@@ -77,7 +78,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
      */
     public WeightedRoundRobinBalancer(Map<String, Integer> weights, int defaultWeight) {
         for (Entry<String, Integer> entry : weights.entrySet()) {
-            URI uri = URI.create(entry.getKey());
+            URI uri = URIBuilder.create(entry.getKey());
             InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
             if (entry.getValue() <= 0) {
                 throw new IllegalArgumentException("Weight can't be less than or equal zero");

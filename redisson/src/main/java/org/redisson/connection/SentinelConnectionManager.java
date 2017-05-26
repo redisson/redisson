@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -104,7 +105,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.info("slave: {} added", host);
 
                     if (flags.contains("s_down") || flags.contains("disconnected")) {
-                        URI uri = URI.create(host);
+                        URI uri = URIBuilder.create(host);
                         disconnectedSlaves.add(uri);
                         log.warn("slave: {} is down", host);
                     }
@@ -208,7 +209,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String port = parts[3];
 
             String addr = "redis://" + ip + ":" + port;
-            URI uri = URI.create(addr);
+            URI uri = URIBuilder.create(addr);
             registerSentinel(cfg, uri, c);
         }
     }
@@ -230,7 +231,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-                RFuture<Void> future = entry.addSlave(URI.create(slaveAddr));
+                RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
                 future.addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
@@ -372,7 +373,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String newMaster = "redis://" + ip + ":" + port;
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(singleSlotRange.getStartSlot(), URI.create(newMaster));
+                    changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
                     log.info("master {} changed to {}", current, newMaster);
                 }
             }

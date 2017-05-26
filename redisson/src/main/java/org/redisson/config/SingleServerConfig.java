@@ -16,6 +16,7 @@
 package org.redisson.config;
 
 import java.net.URI;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -125,7 +126,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     public SingleServerConfig setAddress(String address) {
         if (address != null) {
-            this.address = URI.create(address);
+            this.address = URIBuilder.create(address);
         }
         return this;
     }
