@@ -45,6 +45,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private ResourceLoader resourceLoader;
 
+    private boolean dynamic = true;
+    
     private Codec codec;
 
     private RedissonClient redisson;
@@ -124,6 +126,25 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     }
 
     /**
+     * Defines 'fixed' cache names. 
+     * A new cache instance will not be created in dynamic for non-defined names.
+     * <p>
+     * `null` parameter setups dynamic mode 
+     * 
+     * @param names of caches
+     */
+    public void setCacheNames(Collection<String> names) {
+        if (names != null) {
+            for (String name : names) {
+                getCache(name);
+            }
+            dynamic = false;
+        } else {
+            dynamic = true;
+        }
+    }
+    
+    /**
      * Set cache config location
      *
      * @param configLocation object
@@ -163,6 +184,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     public Cache getCache(String name) {
         Cache cache = instanceMap.get(name);
         if (cache != null) {
+            return cache;
+        }
+        if (!dynamic) {
             return cache;
         }
         
