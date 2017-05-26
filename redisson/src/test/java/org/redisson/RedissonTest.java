@@ -6,6 +6,7 @@ import static org.redisson.BaseTest.createInstance;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,9 +34,12 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
+
+import io.netty.buffer.Unpooled;
 
 public class RedissonTest {
 
@@ -76,7 +80,7 @@ public class RedissonTest {
     }
     
     @Test
-    public void testIterator() {
+    public void testIteratorNotLooped() {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
             int i;
             @Override
@@ -100,6 +104,41 @@ public class RedissonTest {
         
         Assert.assertFalse(iter.hasNext());
     }
+    
+    @Test
+    public void testIteratorNotLooped2() {
+        RedissonBaseIterator<Integer> iter = new RedissonBaseIterator<Integer>() {
+            int i;
+            @Override
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+                i++;
+                if (i == 1) {
+                    return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(Unpooled.wrappedBuffer(new byte[] {1}), 1)));
+                }
+                if (i == 2) {
+                    return new ListScanResult(7L, Collections.emptyList());
+                }
+                if (i == 3) {
+                    return new ListScanResult(0L, Collections.emptyList());
+                }
+                if (i == 4) {
+                    return new ListScanResult(14L, Collections.emptyList());
+                }
+                Assert.fail();
+                return null;
+            }
+
+            @Override
+            void remove(Integer value) {
+            }
+            
+        };
+        
+        Assert.assertTrue(iter.hasNext());
+        assertThat(iter.next()).isEqualTo(1);
+        Assert.assertFalse(iter.hasNext());
+    }
+
     
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
@@ -250,7 +289,7 @@ public class RedissonTest {
 
         Assert.assertEquals(0, pp.stop());
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
+        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
