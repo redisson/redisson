@@ -134,7 +134,7 @@ public class ConfigSupport {
         try {
             Method lowMask = URI.class.getDeclaredMethod(methodName, String.class);
             lowMask.setAccessible(true);
-            long lowMaskValue = (long) lowMask.invoke(null, "-_");
+            Long lowMaskValue = (Long) lowMask.invoke(null, "-_");
             
             Field lowDash = URI.class.getDeclaredField(fieldName);
             
