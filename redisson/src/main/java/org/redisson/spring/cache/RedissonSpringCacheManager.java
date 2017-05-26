@@ -47,6 +47,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
     private boolean dynamic = true;
     
+    private boolean allowNullValues = true;
+    
     private Codec codec;
 
     private RedissonClient redisson;
@@ -123,6 +125,17 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         this.redisson = redisson;
         this.configLocation = configLocation;
         this.codec = codec;
+    }
+    
+    /**
+     * Defines possibility of storing {@code null} values.
+     * <p>
+     * Default is <code>true</code>
+     * 
+     * @param allowNullValues - stores if <code>true</code>
+     */
+    public void setAllowNullValues(boolean allowNullValues) {
+        this.allowNullValues = allowNullValues;
     }
 
     /**
@@ -213,7 +226,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMap(name);
         }
         
-        Cache cache = new RedissonCache(map);
+        Cache cache = new RedissonCache(map, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
@@ -229,7 +242,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             map = redisson.getMapCache(name);
         }
         
-        Cache cache = new RedissonCache(map, config);
+        Cache cache = new RedissonCache(map, config, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
