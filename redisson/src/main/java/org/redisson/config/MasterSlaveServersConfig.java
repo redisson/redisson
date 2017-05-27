@@ -18,6 +18,7 @@ package org.redisson.config;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -60,7 +61,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
         if (masterAddress != null) {
-            this.masterAddress = URI.create(masterAddress);
+            this.masterAddress = URIBuilder.create(masterAddress);
         }
         return this;
     }
@@ -85,7 +86,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      */
     public MasterSlaveServersConfig addSlaveAddress(String ... addresses) {
         for (String address : addresses) {
-            slaveAddresses.add(URI.create(address));
+            slaveAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

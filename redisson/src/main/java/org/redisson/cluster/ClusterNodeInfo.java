@@ -18,6 +18,7 @@ package org.redisson.cluster;
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -52,7 +53,7 @@ public class ClusterNodeInfo {
         return address;
     }
     public void setAddress(String address) {
-        this.address = URI.create(address);
+        this.address = URIBuilder.create(address);
     }
 
     public void addSlotRange(ClusterSlotRange range) {

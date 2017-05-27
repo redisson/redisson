@@ -18,6 +18,7 @@ package org.redisson.config;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -53,7 +54,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     public ClusterServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
-            nodeAddresses.add(URI.create(address));
+            nodeAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

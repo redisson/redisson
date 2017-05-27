@@ -6,7 +6,7 @@
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
-       http://redisson.org/schema/redisson classpath:org/redisson/spring/support/redisson-1.0.xsd
+       http://redisson.org/schema/redisson classpath:org/redisson/spring/support/redisson-1.1.xsd
 ">
     <bean id="myCodec" class="org.redisson.codec.MsgPackJacksonCodec"/>
     <bean id="myCodecProvider" class="org.redisson.codec.DefaultCodecProvider"/>
@@ -51,6 +51,12 @@
             password="do_not_use_if_it_is_not_set"
             subscriptions-per-connection="5"
             client-name="none"
+            ssl-enable-endpoint-identification="true"
+            ssl-provider="JDK"
+            ssl-truststore="/tmp/truststore.p12"
+            ssl-truststore-password="no_pass"
+            ssl-keystore="/tmp/keystore.p12"
+            ssl-keystore-password="no_pass"
             load-balancer-ref="myLoadBalancer"
             subscription-connection-minimum-idle-size="1"
             subscription-connection-pool-size="50"
@@ -63,8 +69,8 @@
             master-name="myMaster"
             database="0"
         >
-            <redisson:sentinel-address value="127.0.0.1:26379" />
-            <redisson:sentinel-address value="127.0.0.1:26380" />
+            <redisson:sentinel-address value="redis://127.0.0.1:26379" />
+            <redisson:sentinel-address value="redis://127.0.0.1:26380" />
         </redisson:sentinel-servers>
     </redisson:client>
 </beans>

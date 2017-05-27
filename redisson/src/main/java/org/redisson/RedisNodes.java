@@ -37,6 +37,7 @@ import org.redisson.connection.RedisClientEntry;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -55,7 +56,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public N getNode(String address) {
         Collection<N> clients = (Collection<N>) connectionManager.getClients();
-        URI uri = URI.create(address);
+        URI uri = URIBuilder.create(address);
         InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
         for (N node : clients) {
             if (node.getAddr().equals(addr)) {
