@@ -71,7 +71,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         initTimer(this.config);
 
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(NodeType.MASTER, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -154,7 +154,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<RedisPubSubConnection> registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
-        RedisClient client = createClient(NodeType.MASTER, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
+        RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
             return newSucceededFuture(null);
