@@ -17,6 +17,7 @@ package org.redisson.client;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -27,12 +28,12 @@ public class RedisRedirectException extends RedisException {
 
     private static final long serialVersionUID = 181505625075250011L;
 
-    private int slot;
-    private URI url;
+    private final int slot;
+    private final URI url;
 
     public RedisRedirectException(int slot, String url) {
         this.slot = slot;
-        this.url = URI.create("//" + url);
+        this.url = URIBuilder.create("//" + url);
     }
 
     public int getSlot() {

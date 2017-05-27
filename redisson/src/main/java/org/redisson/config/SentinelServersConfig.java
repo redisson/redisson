@@ -18,6 +18,7 @@ package org.redisson.config;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -67,7 +68,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     public SentinelServersConfig addSentinelAddress(String ... addresses) {
         for (String address : addresses) {
-            sentinelAddresses.add(URI.create(address));
+            sentinelAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

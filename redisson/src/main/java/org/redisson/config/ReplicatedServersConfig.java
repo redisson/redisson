@@ -18,6 +18,7 @@ package org.redisson.config;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import org.redisson.misc.URIBuilder;
 
 /**
  * Configuration for an Azure Redis Cache or AWS ElastiCache servers. 
@@ -61,7 +62,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
      */
     public ReplicatedServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
-            nodeAddresses.add(URI.create(address));
+            nodeAddresses.add(URIBuilder.create(address));
         }
         return this;
     }

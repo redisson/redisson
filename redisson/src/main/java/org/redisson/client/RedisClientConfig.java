@@ -26,6 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.Timer;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -56,11 +57,11 @@ public class RedisClientConfig {
     private String sslKeystorePassword;
     
     public RedisClientConfig setAddress(String host, int port) {
-        this.address = URI.create("redis://" + host + ":" + port);
+        this.address = URIBuilder.create("redis://" + host + ":" + port);
         return this;
     }
     public RedisClientConfig setAddress(String address) {
-        this.address = URI.create(address);
+        this.address = URIBuilder.create(address);
         return this;
     }
     public RedisClientConfig setAddress(URI address) {

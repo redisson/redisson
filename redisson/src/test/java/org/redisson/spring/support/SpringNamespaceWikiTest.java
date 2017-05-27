@@ -2,7 +2,9 @@ package org.redisson.spring.support;
 
 import io.netty.channel.EventLoopGroup;
 import java.lang.reflect.Method;
+import java.util.Map;
 import java.util.concurrent.Executor;
+import static org.hamcrest.Matchers.*;
 import org.junit.Test;
 import org.redisson.ClusterRunner;
 import org.redisson.RedisRunner;
@@ -11,7 +13,10 @@ import org.redisson.config.Config;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import static org.junit.Assert.*;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CodecProvider;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.liveobject.provider.ResolverProvider;
@@ -33,6 +38,27 @@ public class SpringNamespaceWikiTest {
             ((ConfigurableApplicationContext)
                 new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/namespace_wiki_single.xml"))
                 .close();
+        } finally {
+            run.stop();
+        }
+    }
+    
+    @Test
+    public void testRedisClient() throws Exception {
+        RedisRunner.RedisProcess run = new RedisRunner()
+                .requirepass("do_not_use_if_it_is_not_set")
+                .nosave()
+                .randomDir()
+                .run();
+        try {
+            ClassPathXmlApplicationContext context
+                    = new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/namespace_wiki_redis_client.xml");
+            RedisClient redisClient = context.getBean(RedisClient.class);
+            RedisConnection connection = redisClient.connect();
+            Map<String, String> info = connection.sync(RedisCommands.INFO_ALL);
+            assertThat(info, notNullValue());
+            assertThat(info, not(info.isEmpty()));
+            ((ConfigurableApplicationContext) context).close();
         } finally {
             run.stop();
         }
@@ -66,6 +92,12 @@ public class SpringNamespaceWikiTest {
         System.setProperty("redisson.password", "do_not_use_if_it_is_not_set");
         System.setProperty("redisson.subscriptionsPerConnection", "10");
         System.setProperty("redisson.clientName", "client_name");
+        System.setProperty("redisson.sslEnableEndpointIdentification", "true");
+        System.setProperty("redisson.sslProvider", "JDK");
+        System.setProperty("redisson.sslTruststore", "/tmp/truststore.p12");
+        System.setProperty("redisson.sslTruststorePassword", "not_set");
+        System.setProperty("redisson.sslKeystore", "/tmp/keystore.p12");
+        System.setProperty("redisson.sslKeystorePassword", "not_set");
         System.setProperty("redisson.subscriptionConnectionMinimumIdleSize", "11");
         System.setProperty("redisson.subscriptionConnectionPoolSize", "12");
         System.setProperty("redisson.connectionMinimumIdleSize", "13");
