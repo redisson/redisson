@@ -93,27 +93,33 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void monitorDnsChange(final SingleServerConfig cfg) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.scheduleWithFixedDelay(new Runnable() {
+        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
             @Override
             public void run() {
-                try {
-                    InetAddress master = currentMaster.get();
-                    InetAddress now = InetAddress.getByName(cfg.getAddress().getHost());
-                    if (!now.getHostAddress().equals(master.getHostAddress())) {
-                        log.info("Detected DNS change. {} has changed from {} to {}", cfg.getAddress().getHost(), master.getHostAddress(), now.getHostAddress());
-                        if (currentMaster.compareAndSet(master, now)) {
-                            changeMaster(singleSlotRange.getStartSlot(), cfg.getAddress());
-                            log.info("Master has been changed");
+                // As InetAddress.getByName call is blocking. Method should be run in dedicated thread 
+                getExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            InetAddress master = currentMaster.get();
+                            InetAddress now = InetAddress.getByName(cfg.getAddress().getHost());
+                            if (!now.getHostAddress().equals(master.getHostAddress())) {
+                                log.info("Detected DNS change. {} has changed from {} to {}", cfg.getAddress().getHost(), master.getHostAddress(), now.getHostAddress());
+                                if (currentMaster.compareAndSet(master, now)) {
+                                    changeMaster(singleSlotRange.getStartSlot(), cfg.getAddress());
+                                    log.info("Master has been changed");
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error(e.getMessage(), e);
+                        } finally {
+                            monitorDnsChange(cfg);
                         }
                     }
-
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                }
-
+                });
             }
 
-        }, cfg.getDnsMonitoringInterval(), cfg.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
+        }, cfg.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
     }
 
     @Override
