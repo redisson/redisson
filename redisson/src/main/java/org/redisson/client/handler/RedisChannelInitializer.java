@@ -123,18 +123,18 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             
             InputStream stream = config.getSslKeystore().toURL().openStream();
+            char[] password = null;
+            if (config.getSslKeystorePassword() != null) {
+                password = config.getSslKeystorePassword().toCharArray();
+            }
             try {
-                char[] password = null;
-                if (config.getSslKeystorePassword() != null) {
-                    password = config.getSslKeystorePassword().toCharArray();
-                }
                 keyStore.load(stream, password);
             } finally {
                 stream.close();
             }
             
             KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(keyStore, null);
+            keyManagerFactory.init(keyStore, password);
             sslContextBuilder.keyManager(keyManagerFactory);
         }
         
