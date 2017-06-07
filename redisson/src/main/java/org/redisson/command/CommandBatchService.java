@@ -114,9 +114,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
         if (isRedissonReferenceSupportEnabled()) {
             for (int i = 0; i < params.length; i++) {
-                RedissonReference reference = redisson != null
-                        ? RedissonObjectFactory.toReference(redisson, params[i])
-                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
+                RedissonReference reference = RedissonObjectFactory.toReference(connectionManager.getCfg(), params[i]);
                 if (reference != null) {
                     params[i] = reference;
                 }

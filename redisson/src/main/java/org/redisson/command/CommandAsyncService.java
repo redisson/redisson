@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
@@ -484,10 +483,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (isRedissonReferenceSupportEnabled()) {
             try {
                 for (int i = 0; i < params.length; i++) {
-                    RedissonReference reference = redisson != null
-                            ? RedissonObjectFactory.toReference(redisson, params[i])
-                                    : RedissonObjectFactory.toReference(redissonReactive, params[i]);
-                            params[i] = reference == null ? params[i] : reference;
+                    RedissonReference reference = RedissonObjectFactory.toReference(getConnectionManager().getCfg(), params[i]);
+                    if (reference != null) {
+                        params[i] = reference;
+                    }
                 }
             } catch (Exception e) {
                 connectionManager.getShutdownLatch().release();

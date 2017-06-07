@@ -114,8 +114,8 @@ public class Redisson implements RedissonClient {
         
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
-        codecProvider = config.getCodecProvider();
-        resolverProvider = config.getResolverProvider();
+        codecProvider = configCopy.getCodecProvider();
+        resolverProvider = configCopy.getResolverProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {

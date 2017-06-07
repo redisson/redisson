@@ -148,11 +148,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
-    private final boolean sharedEventLoopGroup;
-
-    private final boolean sharedExecutor;
-
     private final CommandSyncService commandExecutor;
+    
+    private final Config cfg;
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -202,11 +200,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             executor = cfg.getExecutor();
         }
-       
+
+        this.cfg = cfg;
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
-        this.sharedEventLoopGroup = cfg.getEventLoopGroup() != null;
-        this.sharedExecutor = cfg.getExecutor() != null;
         this.commandExecutor = new CommandSyncService(this);
     }
 
@@ -222,6 +219,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return connectionWatcher;
     }
 
+    public Config getCfg() {
+        return cfg;
+    }
+    
     @Override
     public MasterSlaveServersConfig getConfig() {
         return config;
@@ -784,8 +785,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
-        
-        if (!sharedExecutor) {
+
+        if (cfg.getExecutor() == null) {
             executor.shutdown();
             try {
                 executor.awaitTermination(timeout, unit);
@@ -794,7 +795,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
         
-        if (!sharedEventLoopGroup) {
+        if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
         timer.stop();
