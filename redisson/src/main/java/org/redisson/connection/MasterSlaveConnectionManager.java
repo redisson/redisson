@@ -373,9 +373,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslTruststorePassword(config.getSslTruststorePassword())
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
-              .setPassword(config.getPassword())
               .setDatabase(config.getDatabase())
               .setClientName(config.getClientName());
+        
+        if (type != NodeType.SENTINEL) {
+            redisConfig.setPassword(config.getPassword());
+        }
+        
         return redisConfig;
     }
 

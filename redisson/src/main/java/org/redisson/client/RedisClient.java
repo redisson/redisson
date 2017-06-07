@@ -44,6 +44,7 @@ import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.GlobalEventExecutor;
+import org.redisson.misc.URIBuilder;
 
 /**
  * Low-level Redis client
@@ -101,7 +102,7 @@ public class RedisClient {
      */
     @Deprecated
     public RedisClient(String address) {
-        this(URI.create(address));
+        this(URIBuilder.create(address));
     }
     
     /*

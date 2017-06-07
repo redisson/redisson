@@ -216,7 +216,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public RFuture<V> pollAsync(long timeout, TimeUnit unit) {
-        RFuture<V> takeFuture = commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
+        RFuture<V> takeFuture = commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), toSeconds(timeout, unit));
         return wrapTakeFuture(takeFuture);
     }
 

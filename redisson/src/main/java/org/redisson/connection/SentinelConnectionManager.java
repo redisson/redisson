@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -71,7 +72,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         initTimer(this.config);
 
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(NodeType.MASTER, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -104,7 +105,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     log.info("slave: {} added", host);
 
                     if (flags.contains("s_down") || flags.contains("disconnected")) {
-                        URI uri = URI.create(host);
+                        URI uri = URIBuilder.create(host);
                         disconnectedSlaves.add(uri);
                         log.warn("slave: {} is down", host);
                     }
@@ -154,7 +155,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<RedisPubSubConnection> registerSentinel(final SentinelServersConfig cfg, final URI addr, final MasterSlaveServersConfig c) {
-        RedisClient client = createClient(NodeType.MASTER, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
+        RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
             return newSucceededFuture(null);
@@ -215,7 +216,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String port = parts[3];
 
             String addr = createAddress(ip, port);
-            URI uri = URI.create(addr);
+            URI uri = URIBuilder.create(addr);
             registerSentinel(cfg, uri, c);
         }
     }
@@ -237,7 +238,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             // to avoid addition twice
             if (slaves.putIfAbsent(slaveAddr, true) == null) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-                RFuture<Void> future = entry.addSlave(URI.create(slaveAddr));
+                RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
                 future.addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {
@@ -379,7 +380,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String newMaster = createAddress(ip, port);
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(singleSlotRange.getStartSlot(), URI.create(newMaster));
+                    changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
                     log.info("master {} changed to {}", current, newMaster);
                 }
             }

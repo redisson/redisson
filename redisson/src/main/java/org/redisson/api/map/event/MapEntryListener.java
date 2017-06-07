@@ -13,10 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.map.event;
 
-public enum NodeType {
+import java.util.EventListener;
 
-    MASTER, SLAVE, SENTINEL
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public interface MapEntryListener extends EventListener {
 
 }

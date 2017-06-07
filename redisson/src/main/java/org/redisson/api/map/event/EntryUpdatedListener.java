@@ -13,10 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.map.event;
 
-public enum NodeType {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
+public interface EntryUpdatedListener<K, V> extends MapEntryListener {
 
-    MASTER, SLAVE, SENTINEL
-
+    void onUpdated(EntryEvent<K, V> event);
+    
 }
