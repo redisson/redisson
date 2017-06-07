@@ -143,6 +143,27 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public RFuture<V> lastAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
     }
+    
+    @Override
+    public Double firstScore() {
+        return get(firstScoreAsync());
+    }
+
+    @Override
+    public RFuture<Double> firstScoreAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE_SCORE, getName(), 0, 0, "WITHSCORES");
+    }
+    
+    @Override
+    public Double lastScore() {
+        return get(lastScoreAsync());
+    }
+
+    @Override
+    public RFuture<Double> lastScoreAsync() {
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANGE_SINGLE_SCORE, getName(), -1, -1, "WITHSCORES");
+    }
+
 
     @Override
     public RFuture<Boolean> addAsync(double score, V object) {

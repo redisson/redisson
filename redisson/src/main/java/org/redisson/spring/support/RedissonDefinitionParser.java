@@ -16,9 +16,9 @@
 package org.redisson.spring.support;
 
 import java.util.List;
+
 import org.redisson.Redisson;
 import org.redisson.config.Config;
-import org.redisson.misc.URLBuilder;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.parsing.CompositeComponentDefinition;
@@ -123,7 +123,7 @@ public final class RedissonDefinitionParser
         String id = parserContext.getReaderContext().generateBeanName(bd);
         helper.registerBeanDefinition(builder, id,
                 helper.parseAliase(element), parserContext);
-        parseAttributes(element, parserContext, builder);
+        helper.parseAttributes(element, parserContext, builder);
         redissonDef.addDependsOn(id);
         parseChildElements(element, id, null, redissonDef, parserContext);
         parserContext.getDelegate().parseQualifierElements(element, bd);
@@ -139,45 +139,6 @@ public final class RedissonDefinitionParser
         redissonDef.addDependsOn(id);
     }
     
-    private void parseAttributes(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
-        NamedNodeMap attributes = element.getAttributes();
-        for (int x = 0; x < attributes.getLength(); x++) {
-            Attr attribute = (Attr) attributes.item(x);
-            if (helper.isEligibleAttribute(attribute)) {
-                String propertyName
-                        = attribute.getLocalName().endsWith(REF_SUFFIX)
-                                ? attribute.getLocalName()
-                                        .substring(0, attribute.getLocalName()
-                                                .length() - REF_SUFFIX.length())
-                                : attribute.getLocalName();
-                propertyName = Conventions
-                        .attributeNameToPropertyName(propertyName);
-                Assert.state(StringUtils.hasText(propertyName),
-                        "Illegal property name returned from"
-                                + " 'extractPropertyName(String)': cannot be"
-                                + " null or empty.");
-                if (attribute.getLocalName().endsWith(REF_SUFFIX)) {
-                    builder.addPropertyReference(propertyName,
-                            attribute.getValue());
-                } else {
-                    Object value = attribute.getValue();
-                    String localName = helper.getName(element);
-                    if ("masterAddress".equals(propertyName)
-                            && ConfigType.masterSlaveServers.name()
-                                    .equals(localName)) {
-                        try {
-                            value = URLBuilder.create((String) value);
-                        } catch (Exception e) {
-                            //value may be a placeholder
-                            value = "redis://" + value;
-                        }
-                    }
-                    builder.addPropertyValue(propertyName, value);
-                }
-            }
-        }
-    }
-    
     @Override
     public BeanDefinition parse(Element element, ParserContext parserContext) {        
         //Sort out the Config Class
@@ -185,7 +146,7 @@ public final class RedissonDefinitionParser
                 = helper.createBeanDefinitionBuilder(element, parserContext,
                         Config.class);
         String configId = helper.getId(null, configBuilder, parserContext);
-        parseAttributes(element, parserContext, configBuilder);
+        helper.parseAttributes(element, parserContext, configBuilder);
         helper.registerBeanDefinition(configBuilder, configId,
                 null, parserContext);
         
@@ -199,7 +160,7 @@ public final class RedissonDefinitionParser
         parserContext.getDelegate().parseQualifierElements(element,
                 builder.getRawBeanDefinition());
         String id = helper.getId(element, builder, parserContext);
-        parseAttributes(element, parserContext, configBuilder);
+        helper.parseAttributes(element, parserContext, configBuilder);
         //Sort out all the nested elements
         parseChildElements(element, configId, id, builder, parserContext);
         

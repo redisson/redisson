@@ -274,7 +274,18 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertEquals("a", set.first());
         Assert.assertEquals("d", set.last());
     }
+    
+    @Test
+    public void testFirstLastScore() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+        set.add(0.4, "d");
 
+        assertThat(set.firstScore()).isEqualTo(0.1);
+        assertThat(set.lastScore()).isEqualTo(0.4);
+    }
 
     @Test
     public void testRemoveRangeByScore() {
@@ -974,6 +985,22 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(out.getScore("two")).isEqualTo(4);
     }
     
+    @Test
+    public void testIntersectionEmpty() {
+        RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
+        set1.add(1, "one");
+        set1.add(2, "two");
+
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        set2.add(3, "three");
+        set2.add(4, "four");
+
+        RScoredSortedSet<String> out = redisson.getScoredSortedSet("out");
+        assertThat(out.intersection(set1.getName(), set2.getName())).isEqualTo(0);
+
+        assertThat(out.readAll()).isEmpty();
+    }
+
     @Test
     public void testIntersectionWithWeight() {
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");

@@ -96,6 +96,22 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
     }
     
     @Test
+    public void testWR() throws InterruptedException {
+        RReadWriteLock rw = redisson.getReadWriteLock("my_read_write_lock");
+        RLock writeLock = rw.writeLock();
+        writeLock.lock();
+        
+        rw.readLock().lock();
+        assertThat(writeLock.isLocked()).isTrue();
+        rw.readLock().unlock();
+        
+        assertThat(writeLock.isLocked()).isTrue();
+        writeLock.unlock();
+        assertThat(writeLock.isLocked()).isFalse();
+    }
+
+    
+    @Test
     public void testWriteReadReentrancy() throws InterruptedException {
         RReadWriteLock readWriteLock = redisson.getReadWriteLock("TEST");
         readWriteLock.writeLock().lock();

@@ -15,6 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface DecoderState {
 
     DecoderState copy();

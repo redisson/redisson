@@ -37,6 +37,10 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> firstAsync();
 
     RFuture<V> lastAsync();
+    
+    RFuture<Double> firstScoreAsync();
+    
+    RFuture<Double> lastScoreAsync();
 
     RFuture<Long> addAllAsync(Map<V, Double> objects);
 

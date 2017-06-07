@@ -19,6 +19,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -928,7 +929,9 @@ public class RedisRunner {
 
         public RedisClient createRedisClientInstance() {
             if (redisProcess.isAlive()) {
-                return new RedisClient(runner.getInitialBindAddr(), runner.getPort());
+                RedisClientConfig config = new RedisClientConfig();
+                        config.setAddress(runner.getInitialBindAddr(), runner.getPort());
+                return RedisClient.create(config);
             }
             throw new IllegalStateException("Redis server instance is not running.");
         }
@@ -952,7 +955,7 @@ public class RedisRunner {
         }
         
         public String getRedisServerAddressAndPort() {
-            return getRedisServerBindAddress() + ":" + getRedisServerPort();
+            return "redis://" + getRedisServerBindAddress() + ":" + getRedisServerPort();
         }
         
         public boolean isAlive() {
@@ -995,7 +998,7 @@ public class RedisRunner {
     }
 
     public static String getDefaultRedisServerBindAddressAndPort() {
-        return defaultRedisInstance.getRedisServerBindAddress()
+        return "redis://" + defaultRedisInstance.getRedisServerBindAddress()
                 + ":"
                 + defaultRedisInstance.getRedisServerPort();
     }

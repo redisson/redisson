@@ -26,6 +26,11 @@ import org.redisson.client.handler.State;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>();

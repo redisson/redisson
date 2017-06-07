@@ -97,7 +97,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     
                 "local counter = redis.call('hincrby', KEYS[1], ARGV[2], -1); " + 
                 "if (counter == 0) then " +
-                    "redis.call('hdel', KEYS[1], ARGV[2]); " +
+                    "redis.call('hdel', KEYS[1], ARGV[2]); " + 
                 "end;" +
                 "redis.call('del', KEYS[1] .. ':' .. ARGV[2] .. ':rwlock_timeout:' .. (counter+1)); " +
                 "if (redis.call('hlen', KEYS[1]) > 1) then " +
@@ -114,9 +114,13 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     "end; " +
                             
                     "if maxRemainTime > 0 then " +
-                        "redis.call('pexpire', KEYS[1], maxRemainTime); " + 
+                        "redis.call('pexpire', KEYS[1], maxRemainTime); " +
                         "return 0; " +
                     "end;" + 
+                        
+                    "if mode == 'write' then " + 
+                        "return 0;" + 
+                    "end; " +
                 "end; " +
                     
                 "redis.call('del', KEYS[1]); " +

@@ -15,11 +15,10 @@
  */
 package org.redisson.config;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.redisson.misc.URLBuilder;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -31,7 +30,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     /**
      * Redis cluster node urls list
      */
-    private List<URL> nodeAddresses = new ArrayList<URL>();
+    private List<URI> nodeAddresses = new ArrayList<URI>();
 
     /**
      * Redis cluster scan interval in milliseconds
@@ -55,14 +54,14 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     public ClusterServersConfig addNodeAddress(String ... addresses) {
         for (String address : addresses) {
-            nodeAddresses.add(URLBuilder.create(address));
+            nodeAddresses.add(URIBuilder.create(address));
         }
         return this;
     }
-    public List<URL> getNodeAddresses() {
+    public List<URI> getNodeAddresses() {
         return nodeAddresses;
     }
-    void setNodeAddresses(List<URL> nodeAddresses) {
+    void setNodeAddresses(List<URI> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
 

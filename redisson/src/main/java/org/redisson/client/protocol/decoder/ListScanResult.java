@@ -20,6 +20,12 @@ import java.util.List;
 
 import org.redisson.RedisClientResult;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class ListScanResult<V> implements RedisClientResult {
 
     private final Long pos;

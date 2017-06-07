@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -47,7 +46,6 @@ import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.Hash;
@@ -69,18 +67,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.MAP);
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
-    private final UUID id;
-    private final RedissonClient redisson;
+    final RedissonClient redisson;
     
-    protected RedissonMap(UUID id, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
-        this.id = id;
         this.redisson = redisson;
     }
 
-    public RedissonMap(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
-        this.id = id;
         this.redisson = redisson;
     }
     
@@ -92,13 +87,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+        return redisson.getLock(lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
+        return redisson.getReadWriteLock(lockName);
     }
     
     private String getLockName(Object key) {
@@ -127,11 +122,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Integer> valueSizeAsync(K key) {
+        checkKey(key);
+        
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.HSTRLEN, getName(key), key);
+    }
+
+    protected void checkKey(Object key) {
         if (key == null) {
             throw new NullPointerException("map key can't be null");
         }
-        
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.HSTRLEN, getName(key), key);
     }
     
     @Override
@@ -146,9 +145,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
+        checkKey(key);
         
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HEXISTS, getName(key), key);
     }
@@ -160,9 +157,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkValue(value);
         
         return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
                 "local s = redis.call('hvals', KEYS[1]);" +
@@ -296,12 +291,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(key);
         
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                  "if redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]) == 1 then "
@@ -319,12 +310,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSETNX, getName(key), key, value);
     }
@@ -336,12 +323,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE_VALUE,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
@@ -352,6 +335,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             Collections.<Object>singletonList(getName(key)), key, value);
     }
 
+    protected void checkValue(Object value) {
+        if (value == null) {
+            throw new NullPointerException("map value can't be null");
+        }
+    }
+
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
         return get(replaceAsync(key, oldValue, newValue));
@@ -359,9 +348,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
+        checkKey(key);
         if (oldValue == null) {
             throw new NullPointerException("map oldValue can't be null");
         }
@@ -387,12 +374,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<V> replaceAsync(K key, V value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REPLACE,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
@@ -407,21 +390,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<V> getAsync(K key) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
+        checkKey(key);
 
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), key);
     }
     
     @Override
     public RFuture<V> putAsync(K key, V value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_PUT,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
@@ -433,9 +410,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<V> removeAsync(K key) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
+        checkKey(key);
 
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_REMOVE,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
@@ -446,12 +421,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<Boolean> fastPutAsync(K key, V value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSET, getName(key), key, value);
     }
@@ -491,12 +462,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RFuture<V> addAndGetAsync(K key, Number value) {
-        if (key == null) {
-            throw new NullPointerException("map key can't be null");
-        }
-        if (value == null) {
-            throw new NullPointerException("map value can't be null");
-        }
+        checkKey(key);
+        checkValue(value);
         
         byte[] keyState = encodeMapKey(key);
         return commandExecutor.writeAsync(getName(key), StringCodec.INSTANCE,

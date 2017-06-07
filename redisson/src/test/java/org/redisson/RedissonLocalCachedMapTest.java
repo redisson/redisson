@@ -26,21 +26,21 @@ import mockit.Deencapsulation;
 
 public class RedissonLocalCachedMapTest extends BaseTest {
 
-    //    @Test
+        @Test
     public void testPerf() {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(100000).invalidateEntryOnChange(true);
+        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.NONE).cacheSize(100000).invalidateEntryOnChange(true);
         Map<String, Integer> map = redisson.getLocalCachedMap("test", options);
         
 //        Map<String, Integer> map = redisson.getMap("test");
 
         
-        for (int i = 0; i < 100000; i++) {
+        for (int i = 0; i < 10000; i++) {
             map.put("" + i, i);
         }
         
         long s = System.currentTimeMillis();
-        for (int i = 0; i < 100; i++) {
-            for (int j = 0; j < 100000; j++) {
+        for (int i = 0; i < 10; i++) {
+            for (int j = 0; j < 10000; j++) {
                 map.get("" + j);
             }
         }

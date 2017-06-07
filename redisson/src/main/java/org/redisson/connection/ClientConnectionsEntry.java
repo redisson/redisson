@@ -21,12 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.client.ReconnectListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.misc.RPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,52 +130,21 @@ public class ClientConnectionsEntry {
     }
 
     public RFuture<RedisConnection> connect() {
-        final RPromise<RedisConnection> connectionFuture = connectionManager.newPromise();
         RFuture<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
                 if (!future.isSuccess()) {
-                    connectionFuture.tryFailure(future.cause());
                     return;
                 }
                 RedisConnection conn = future.getNow();
                 log.debug("new connection created: {}", conn);
 
-                addReconnectListener(connectionFuture, conn);
+                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
             }
 
         });
-        return connectionFuture;
-    }
-
-    private <T extends RedisConnection> void addReconnectListener(RPromise<T> connectionFuture, T conn) {
-        addFireEventListener(conn, connectionFuture);
-
-        conn.setReconnectListener(new ReconnectListener() {
-            @Override
-            public void onReconnect(RedisConnection conn, RPromise<RedisConnection> connectionFuture) {
-                addFireEventListener(conn, connectionFuture);
-            }
-        });
-    }
-
-    private <T extends RedisConnection> void addFireEventListener(T conn, RPromise<T> connectionFuture) {
-        connectionManager.getConnectListener().onConnect(connectionFuture, conn, nodeType, connectionManager.getConfig());
-        
-        if (connectionFuture.isSuccess()) {
-            connectionManager.getConnectionEventsHub().fireConnect(connectionFuture.getNow().getRedisClient().getAddr());
-            return;
-        }
-
-        connectionFuture.addListener(new FutureListener<T>() {
-            @Override
-            public void operationComplete(Future<T> future) throws Exception {
-                if (future.isSuccess()) {
-                    connectionManager.getConnectionEventsHub().fireConnect(future.getNow().getRedisClient().getAddr());
-                }
-            }
-        });
+        return future;
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -185,26 +152,23 @@ public class ClientConnectionsEntry {
     }
 
     public RFuture<RedisPubSubConnection> connectPubSub() {
-        final RPromise<RedisPubSubConnection> connectionFuture = connectionManager.newPromise();
         RFuture<RedisPubSubConnection> future = client.connectPubSubAsync();
         future.addListener(new FutureListener<RedisPubSubConnection>() {
             @Override
             public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
                 if (!future.isSuccess()) {
-                    connectionFuture.tryFailure(future.cause());
                     return;
                 }
                 
                 RedisPubSubConnection conn = future.getNow();
                 log.debug("new pubsub connection created: {}", conn);
 
-                addReconnectListener(connectionFuture, conn);
-                
+                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
 
                 allSubscribeConnections.add(conn);
             }
         });
-        return connectionFuture;
+        return future;
     }
 
     public Queue<RedisPubSubConnection> getAllSubscribeConnections() {

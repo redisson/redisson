@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.net.URL;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,6 +38,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.RedisPubSubConnection;
@@ -121,8 +122,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected EventLoopGroup group;
 
-    protected ConnectionInitializer connectListener = new DefaultConnectionListener();
-
     protected Class<? extends SocketChannel> socketChannelClass;
 
     protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = PlatformDependent.newConcurrentHashMap();
@@ -137,7 +136,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
-    private final Set<RedisClientEntry> clients = Collections.newSetFromMap(PlatformDependent.<RedisClientEntry, Boolean>newConcurrentHashMap());
+    private final Map<RedisClient, RedisClientEntry> clientEntries = PlatformDependent.newConcurrentHashMap();
 
     private IdleConnectionWatcher connectionWatcher;
 
@@ -275,10 +274,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
     }
 
-    public ConnectionInitializer getConnectListener() {
-        return connectListener;
-    }
-
     protected void initEntry(MasterSlaveServersConfig config) {
         HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
         slots.add(singleSlotRange);
@@ -286,7 +281,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         MasterSlaveEntry entry;
         if (config.getReadMode() == ReadMode.MASTER) {
             entry = new SingleEntry(slots, this, config);
-            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
             f.syncUninterruptibly();
         } else {
             entry = createMasterSlaveEntry(config, slots);
@@ -300,17 +295,25 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URL>emptySet());
+        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<URI>emptySet());
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress().getHost(), config.getMasterAddress().getPort());
+        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
         f.syncUninterruptibly();
         return entry;
     }
 
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
+        
+        c.setSslEnableEndpointIdentification(cfg.isSslEnableEndpointIdentification());
+        c.setSslProvider(cfg.getSslProvider());
+        c.setSslTruststore(cfg.getSslTruststore());
+        c.setSslTruststorePassword(cfg.getSslTruststorePassword());
+        c.setSslKeystore(cfg.getSslKeystore());
+        c.setSslKeystorePassword(cfg.getSslKeystorePassword());
+        
         c.setRetryInterval(cfg.getRetryInterval());
         c.setRetryAttempts(cfg.getRetryAttempts());
         c.setTimeout(cfg.getTimeout());
@@ -337,20 +340,47 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RedisClient createClient(NodeType type, String host, int port) {
-        RedisClient client = createClient(host, port, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
-        clients.add(new RedisClientEntry(client, commandExecutor, type));
+    public RedisClient createClient(NodeType type, URI address) {
+        RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
+        clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
 
+    @Override
     public void shutdownAsync(RedisClient client) {
-        clients.remove(new RedisClientEntry(client, commandExecutor, null));
+        clientEntries.remove(client);
         client.shutdownAsync();
     }
 
     @Override
-    public RedisClient createClient(String host, int port, int timeout, int commandTimeout) {
-        return new RedisClient(timer, executor, group, socketChannelClass, host, port, timeout, commandTimeout);
+    public RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout) {
+        RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout);
+        return RedisClient.create(redisConfig);
+    }
+
+    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout) {
+        RedisClientConfig redisConfig = new RedisClientConfig();
+        redisConfig.setAddress(address)
+              .setTimer(timer)
+              .setExecutor(executor)
+              .setGroup(group)
+              .setSocketChannelClass(socketChannelClass)
+              .setConnectTimeout(timeout)
+              .setCommandTimeout(commandTimeout)
+              .setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification())
+              .setSslProvider(config.getSslProvider())
+              .setSslTruststore(config.getSslTruststore())
+              .setSslTruststorePassword(config.getSslTruststorePassword())
+              .setSslKeystore(config.getSslKeystore())
+              .setSslKeystorePassword(config.getSslKeystorePassword())
+              .setDatabase(config.getDatabase())
+              .setClientName(config.getClientName());
+        
+        if (type != NodeType.SENTINEL) {
+            redisConfig.setPassword(config.getPassword());
+        }
+        
+        return redisConfig;
     }
 
     @Override
@@ -655,8 +685,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         getEntry(slotRange.getStartSlot()).slaveDown(host, port, freezeReason);
     }
 
-    protected void changeMaster(int slot, String host, int port) {
-        getEntry(slot).changeMaster(host, port);
+    protected void changeMaster(int slot, URI address) {
+        getEntry(slot).changeMaster(address);
     }
 
     protected void addEntry(Integer slot, MasterSlaveEntry entry) {
@@ -782,7 +812,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Collection<RedisClientEntry> getClients() {
-        return Collections.unmodifiableCollection(clients);
+        return Collections.unmodifiableCollection(clientEntries.values());
     }
 
     @Override
@@ -845,7 +875,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return executor;
     }
     
-    public URL getLastClusterNode() {
+    public URI getLastClusterNode() {
         return null;
     }
 }

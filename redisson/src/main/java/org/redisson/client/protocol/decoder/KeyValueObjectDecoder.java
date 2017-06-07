@@ -22,6 +22,11 @@ import org.redisson.client.handler.State;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class KeyValueObjectDecoder implements MultiDecoder<Object> {
 
     @Override

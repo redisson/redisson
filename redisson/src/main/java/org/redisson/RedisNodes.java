@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -33,11 +34,10 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.URLBuilder;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -56,7 +56,8 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public N getNode(String address) {
         Collection<N> clients = (Collection<N>) connectionManager.getClients();
-        InetSocketAddress addr = URLBuilder.toAddress(address);
+        URI uri = URIBuilder.create(address);
+        InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
         for (N node : clients) {
             if (node.getAddr().equals(addr)) {
                 return node;
@@ -94,17 +95,10 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
                 @Override
                 public void operationComplete(Future<RedisConnection> future) throws Exception {
                     if (future.isSuccess()) {
-                        final RedisConnection c = future.getNow();
-                        RPromise<RedisConnection> connectionFuture = connectionManager.newPromise();
-                        connectionManager.getConnectListener().onConnect(connectionFuture, c, null, connectionManager.getConfig());
-                        connectionFuture.addListener(new FutureListener<RedisConnection>() {
-                            @Override
-                            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                                RFuture<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
-                                result.put(c, r);
-                                latch.countDown();
-                            }
-                        });
+                        RedisConnection c = future.getNow();
+                        RFuture<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
+                        result.put(c, r);
+                        latch.countDown();
                     } else {
                         latch.countDown();
                     }

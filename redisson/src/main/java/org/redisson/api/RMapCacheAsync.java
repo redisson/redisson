@@ -134,7 +134,9 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param unit - time unit
-     * @return <code>true</code> if value has been set successfully
+     * 
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit unit);
 
@@ -160,7 +162,8 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
 
-     * @return <code>true</code> if value has been set successfully
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
     
@@ -186,7 +189,8 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * if <code>maxIdleTime</code> and <code>ttl</code> params are equal to <code>0</code>
      * then entry stores infinitely.
      *
-     * @return previous associated value
+     * @return <code>true</code> if key is a new key in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash
      */
     RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 

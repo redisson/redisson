@@ -19,7 +19,10 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 /**
- * Redis codec interface
+ * Redis codec interface.
+ * <p>
+ * It's required for implementation to have two constructors
+ * default and with ClassLoader object as parameter. 
  *
  * @author Nikita Koksharov
  *

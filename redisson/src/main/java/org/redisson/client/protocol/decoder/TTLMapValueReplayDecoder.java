@@ -22,6 +22,12 @@ import org.redisson.client.handler.State;
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public class TTLMapValueReplayDecoder<T> implements MultiDecoder<List<T>> {
 
     @Override

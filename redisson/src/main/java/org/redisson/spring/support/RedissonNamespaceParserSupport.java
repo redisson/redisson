@@ -25,9 +25,11 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionReaderUtils;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.Conventions;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 
 /**
@@ -39,6 +41,7 @@ public class RedissonNamespaceParserSupport {
     public final static String REDISSON_NAMESPACE
             = "http://redisson.org/schema/redisson";
     
+    static final String REF_SUFFIX = "-ref";
     static final String API_CLASS_PATH_PREFIX = "org.redisson.api.R";
     static final String IMPL_CLASS_PATH_PREFIX = "org.redisson.Redisson";
     
@@ -93,6 +96,33 @@ public class RedissonNamespaceParserSupport {
         return aliases;
     }
 
+    public void parseAttributes(Element element, ParserContext parserContext, BeanDefinitionBuilder builder) {
+        NamedNodeMap attributes = element.getAttributes();
+        for (int x = 0; x < attributes.getLength(); x++) {
+            Attr attribute = (Attr) attributes.item(x);
+            if (isEligibleAttribute(attribute)) {
+                String propertyName
+                        = attribute.getLocalName().endsWith(REF_SUFFIX)
+                                ? attribute.getLocalName()
+                                        .substring(0, attribute.getLocalName()
+                                                .length() - REF_SUFFIX.length())
+                                : attribute.getLocalName();
+                propertyName = Conventions
+                        .attributeNameToPropertyName(propertyName);
+                Assert.state(StringUtils.hasText(propertyName),
+                        "Illegal property name returned from"
+                                + " 'extractPropertyName(String)': cannot be"
+                                + " null or empty.");
+                if (attribute.getLocalName().endsWith(REF_SUFFIX)) {
+                    builder.addPropertyReference(propertyName,
+                            attribute.getValue());
+                } else {
+                    builder.addPropertyValue(propertyName, attribute.getValue());
+                }
+            }
+        }
+    }
+    
     public BeanDefinitionBuilder createBeanDefinitionBuilder(Element element, ParserContext parserContext, Class<?> cls) {
         BeanDefinitionBuilder builder
                 = BeanDefinitionBuilder.genericBeanDefinition();
