@@ -208,17 +208,17 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidationStatusListenerId;
     private volatile long lastInvalidate;
 
-    protected RedissonLocalCachedMap(UUID id, CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(id, commandExecutor, name, redisson);
-        init(id, name, options, redisson, evictionScheduler);
+    protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+        super(commandExecutor, name, redisson);
+        init(name, options, redisson, evictionScheduler);
     }
 
-    protected RedissonLocalCachedMap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(id, codec, connectionManager, name, redisson);
-        init(id, name, options, redisson, evictionScheduler);
+    protected RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+        super(codec, connectionManager, name, redisson);
+        init(name, options, redisson, evictionScheduler);
     }
 
-    private void init(UUID id, String name, LocalCachedMapOptions options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
+    private void init(String name, LocalCachedMapOptions options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
         instanceId = generateId();
         
         if (options.getInvalidationPolicy() == InvalidationPolicy.ON_CHANGE

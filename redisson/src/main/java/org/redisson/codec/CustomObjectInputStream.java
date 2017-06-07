@@ -20,6 +20,11 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class CustomObjectInputStream extends ObjectInputStream {
 
     private ClassLoader classLoader;

@@ -253,17 +253,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options) {
-        return new RedissonLocalCachedMap<K, V>(id, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
+        return new RedissonLocalCachedMap<K, V>(connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options) {
-        return new RedissonLocalCachedMap<K, V>(id, codec, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
+        return new RedissonLocalCachedMap<K, V>(codec, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(id, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
@@ -308,17 +308,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(id, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(id, codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
-        return new RedissonMap<K, V>(id, codec, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override

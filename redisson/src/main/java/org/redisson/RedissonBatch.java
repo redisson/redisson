@@ -102,12 +102,12 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public <K, V> RMapAsync<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(id, executorService, name, null);
+        return new RedissonMap<K, V>(executorService, name, null);
     }
 
     @Override
     public <K, V> RMapAsync<K, V> getMap(String name, Codec codec) {
-        return new RedissonMap<K, V>(id, codec, executorService, name, null);
+        return new RedissonMap<K, V>(codec, executorService, name, null);
     }
 
     @Override
@@ -202,12 +202,12 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public <K, V> RMapCacheAsync<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(id, codec, evictionScheduler, executorService, name, null);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null);
     }
 
     @Override
     public <K, V> RMapCacheAsync<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(id, evictionScheduler, executorService, name, null);
+        return new RedissonMapCache<K, V>(evictionScheduler, executorService, name, null);
     }
 
     @Override

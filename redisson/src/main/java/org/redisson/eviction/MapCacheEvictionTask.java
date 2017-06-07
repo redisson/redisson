@@ -32,31 +32,49 @@ public class MapCacheEvictionTask extends EvictionTask {
     private final String name;
     private final String timeoutSetName;
     private final String maxIdleSetName;
+    private final String expiredChannelName;
     
-    public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName, CommandAsyncExecutor executor) {
+    public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName, String expiredChannelName, CommandAsyncExecutor executor) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
         this.maxIdleSetName = maxIdleSetName;
+        this.expiredChannelName = expiredChannelName;
     }
 
     @Override
     RFuture<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredKeys1 = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                + "for i, key in ipairs(expiredKeys1) do "
+                    + "local v = redis.call('hget', KEYS[1], key); "
+                    + "if v ~= false then "
+                        + "local t, val = struct.unpack('dLc0', v); "
+                        + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
+                        + "redis.call('publish', KEYS[4], msg); "
+                    + "end;"  
+                + "end;" 
               + "if #expiredKeys1 > 0 then "
                   + "redis.call('zrem', KEYS[3], unpack(expiredKeys1)); "
                   + "redis.call('zrem', KEYS[2], unpack(expiredKeys1)); "
                   + "redis.call('hdel', KEYS[1], unpack(expiredKeys1)); "
               + "end; "
               + "local expiredKeys2 = redis.call('zrangebyscore', KEYS[3], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+              + "for i, key in ipairs(expiredKeys2) do "
+                  + "local v = redis.call('hget', KEYS[1], key); "
+                  + "if v ~= false then "
+                      + "local t, val = struct.unpack('dLc0', v); "
+                      + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(val), val); "
+                      + "redis.call('publish', KEYS[4], msg); "
+                  + "end;"  
+              + "end;" 
               + "if #expiredKeys2 > 0 then "
                   + "redis.call('zrem', KEYS[3], unpack(expiredKeys2)); "
                   + "redis.call('zrem', KEYS[2], unpack(expiredKeys2)); "
                   + "redis.call('hdel', KEYS[1], unpack(expiredKeys2)); "
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
-              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName), System.currentTimeMillis(), keysLimit);
+              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName), System.currentTimeMillis(), keysLimit);
     }
     
 }

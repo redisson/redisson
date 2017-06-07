@@ -14,16 +14,25 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.client.codec.LongCodec;
+import org.redisson.api.map.event.EntryCreatedListener;
+import org.redisson.api.map.event.EntryEvent;
+import org.redisson.api.map.event.EntryExpiredListener;
+import org.redisson.api.map.event.EntryRemovedListener;
+import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
+
+import com.jayway.awaitility.Awaitility;
+import com.jayway.awaitility.Duration;
 
 public class RedissonMapCacheTest extends BaseTest {
 
@@ -672,10 +681,163 @@ public class RedissonMapCacheTest extends BaseTest {
     }
 
     @Test
+    public void testCreatedListener() {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        
+        checkCreatedListener(map, 1, 2, () -> map.put(1, 2));
+        checkCreatedListener(map, 10, 2, () -> map.put(10, 2, 2, TimeUnit.SECONDS));
+        checkCreatedListener(map, 2, 5, () -> map.fastPut(2, 5));
+        checkCreatedListener(map, 13, 2, () -> map.fastPut(13, 2, 2, TimeUnit.SECONDS));
+        checkCreatedListener(map, 3, 2, () -> map.putIfAbsent(3, 2));
+        checkCreatedListener(map, 14, 2, () -> map.putIfAbsent(14, 2, 2, TimeUnit.SECONDS));
+        checkCreatedListener(map, 4, 1, () -> map.fastPutIfAbsent(4, 1));
+        checkCreatedListener(map, 15, 2, () -> map.fastPutIfAbsent(15, 2, 2, TimeUnit.SECONDS));
+        checkCreatedListener(map, 5, 0, () -> map.addAndGet(5, 0));
+    }
+
+    private void checkCreatedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
+        AtomicBoolean ref = new AtomicBoolean();
+        int createListener1 = map.addListener(new EntryCreatedListener<Integer, Integer>() {
+
+            @Override
+            public void onCreated(EntryEvent<Integer, Integer> event) {
+                assertThat(event.getKey()).isEqualTo(key);
+                assertThat(event.getValue()).isEqualTo(value);
+                
+                if (!ref.compareAndSet(false, true)) {
+                    Assert.fail();
+                }
+            }
+            
+        });
+        runnable.run();
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        map.removeListener(createListener1);
+    }
+    
+    @Test
+    public void testUpdatedListener() {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+
+        map.put(1, 1);
+        checkUpdatedListener(map, 1, 3, 1, () -> map.put(1, 3));
+        
+        map.put(10, 1);
+        checkUpdatedListener(map, 10, 2, 1, () -> map.put(10, 2, 2, TimeUnit.SECONDS));
+        
+        map.put(2, 1);
+        checkUpdatedListener(map, 2, 5, 1, () -> map.fastPut(2, 5));
+        
+        map.put(13, 1);
+        checkUpdatedListener(map, 13, 2, 1, () -> map.fastPut(13, 2, 2, TimeUnit.SECONDS));
+        
+        map.put(14, 1);
+        checkUpdatedListener(map, 14, 2, 1, () -> map.replace(14, 2));
+        checkUpdatedListener(map, 14, 3, 2, () -> map.replace(14, 2, 3));
+        
+        map.put(5, 1);
+        checkUpdatedListener(map, 5, 4, 1, () -> map.addAndGet(5, 3));
+
+    }
+    
+    @Test
+    public void testExpiredListener() {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+
+        checkExpiredListener(map, 10, 2, () -> map.put(10, 2, 2, TimeUnit.SECONDS));
+        checkExpiredListener(map, 13, 2, () -> map.fastPut(13, 2, 2, TimeUnit.SECONDS));
+        checkExpiredListener(map, 14, 2, () -> map.putIfAbsent(14, 2, 2, TimeUnit.SECONDS));
+        checkExpiredListener(map, 15, 2, () -> map.fastPutIfAbsent(15, 2, 2, TimeUnit.SECONDS));
+    }
+
+    private void checkExpiredListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
+        AtomicBoolean ref = new AtomicBoolean();
+        int createListener1 = map.addListener(new EntryExpiredListener<Integer, Integer>() {
+
+            @Override
+            public void onExpired(EntryEvent<Integer, Integer> event) {
+                assertThat(event.getKey()).isEqualTo(key);
+                assertThat(event.getValue()).isEqualTo(value);
+                
+                if (!ref.compareAndSet(false, true)) {
+                    Assert.fail();
+                }
+            }
+            
+        });
+        runnable.run();
+
+        Awaitility.await().atMost(Duration.ONE_MINUTE).untilTrue(ref);
+        map.removeListener(createListener1);
+    }
+
+    
+    private void checkUpdatedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Integer oldValue, Runnable runnable) {
+        AtomicBoolean ref = new AtomicBoolean();
+        int createListener1 = map.addListener(new EntryUpdatedListener<Integer, Integer>() {
+
+            @Override
+            public void onUpdated(EntryEvent<Integer, Integer> event) {
+                assertThat(event.getKey()).isEqualTo(key);
+                assertThat(event.getValue()).isEqualTo(value);
+                assertThat(event.getOldValue()).isEqualTo(oldValue);
+                
+                if (!ref.compareAndSet(false, true)) {
+                    Assert.fail();
+                }
+            }
+            
+        });
+        runnable.run();
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        map.removeListener(createListener1);
+    }
+
+    @Test
+    public void testRemovedListener() {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+
+        map.put(1, 1);
+        checkRemovedListener(map, 1, 1, () -> map.remove(1, 1));
+        
+        map.put(10, 1);
+        checkRemovedListener(map, 10, 1, () -> map.remove(10));
+        
+        map.put(2, 1);
+        checkRemovedListener(map, 2, 1, () -> map.fastRemove(2));
+    }
+    
+    private void checkRemovedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
+        AtomicBoolean ref = new AtomicBoolean();
+        int createListener1 = map.addListener(new EntryRemovedListener<Integer, Integer>() {
+
+            @Override
+            public void onRemoved(EntryEvent<Integer, Integer> event) {
+                assertThat(event.getKey()).isEqualTo(key);
+                assertThat(event.getValue()).isEqualTo(value);
+                
+                if (!ref.compareAndSet(false, true)) {
+                    Assert.fail();
+                }
+            }
+            
+        });
+        runnable.run();
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        map.removeListener(createListener1);
+    }
+
+    
+    @Test
     public void testFastPut() throws Exception {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
         Assert.assertTrue(map.fastPut(1, 2));
+        assertThat(map.get(1)).isEqualTo(2);
         Assert.assertFalse(map.fastPut(1, 3));
+        assertThat(map.get(1)).isEqualTo(3);
         Assert.assertEquals(1, map.size());
     }
 

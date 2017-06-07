@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -47,7 +46,6 @@ import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.Hash;
@@ -69,18 +67,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.MAP);
     static final RedisCommand<Object> EVAL_PUT = EVAL_REPLACE;
 
-    private final UUID id;
-    private final RedissonClient redisson;
+    final RedissonClient redisson;
     
-    protected RedissonMap(UUID id, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
-        this.id = id;
         this.redisson = redisson;
     }
 
-    public RedissonMap(UUID id, Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name);
-        this.id = id;
         this.redisson = redisson;
     }
     
@@ -92,13 +87,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+        return redisson.getLock(lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
+        return redisson.getReadWriteLock(lockName);
     }
     
     private String getLockName(Object key) {
