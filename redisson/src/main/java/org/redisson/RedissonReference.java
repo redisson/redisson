@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.Serializable;
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
@@ -39,7 +40,7 @@ import org.redisson.reactive.RedissonSetReactive;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonReference {
+public class RedissonReference implements Serializable {
 
     private static final BiHashMap<String, String> reactiveMap = new BiHashMap<String, String>();
 
