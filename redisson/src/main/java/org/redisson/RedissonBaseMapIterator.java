@@ -28,6 +28,14 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> loaded value type
+ */
 public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     private Map<ByteBuf, ByteBuf> firstValues;
@@ -38,7 +46,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     private boolean finished;
     private boolean currentElementRemoved;
-    private boolean removeExecuted;
     protected Map.Entry<ScanObjectEntry, ScanObjectEntry> entry;
 
     @Override
@@ -49,7 +56,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                 free(lastValues);
 
                 currentElementRemoved = false;
-                removeExecuted = false;
                 client = null;
                 firstValues = null;
                 lastValues = null;
@@ -60,15 +66,15 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                 }
                 finished = false;
             }
-            long prevIterPos;
             do {
-                prevIterPos = nextIterPos;
                 MapScanResult<ScanObjectEntry, ScanObjectEntry> res = iterator();
                 if (lastValues != null) {
                     free(lastValues);
                 }
+                
                 lastValues = convert(res.getMap());
                 client = res.getRedisClient();
+                
                 if (nextIterPos == 0 && firstValues == null) {
                     firstValues = lastValues;
                     lastValues = null;
@@ -76,7 +82,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                         client = null;
                         firstValues = null;
                         nextIterPos = 0;
-                        prevIterPos = -1;
                     }
                 } else {
                     if (firstValues.isEmpty()) {
@@ -87,38 +92,38 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                                 client = null;
                                 firstValues = null;
                                 nextIterPos = 0;
-                                prevIterPos = -1;
                                 continue;
                             }
                             if (res.getPos() == 0) {
+                                free(firstValues);
+                                free(lastValues);
+                                
                                 finished = true;
                                 return false;
                             }
                         }
-                    } else if (lastValues.keySet().removeAll(firstValues.keySet())) {
+                    } else if (lastValues.keySet().removeAll(firstValues.keySet())
+                            || (lastValues.isEmpty() && nextIterPos == 0)) {
                         free(firstValues);
                         free(lastValues);
 
                         currentElementRemoved = false;
-                        removeExecuted = false;
+
                         client = null;
                         firstValues = null;
                         lastValues = null;
                         nextIterPos = 0;
-                        prevIterPos = -1;
                         if (tryAgain()) {
                             continue;
                         }
+                        
                         finished = true;
                         return false;
                     }
                 }
                 lastIter = res.getMap().entrySet().iterator();
                 nextIterPos = res.getPos();
-            } while (!lastIter.hasNext() && nextIterPos != prevIterPos);
-            if (prevIterPos == nextIterPos && !removeExecuted) {
-                finished = true;
-            }
+            } while (!lastIter.hasNext());
         }
         return lastIter.hasNext();
         
@@ -184,7 +189,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
         lastIter.remove();
         removeKey();
         currentElementRemoved = true;
-        removeExecuted = true;
         entry = null;
     }
 

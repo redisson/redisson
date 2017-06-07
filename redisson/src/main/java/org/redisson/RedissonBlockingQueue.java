@@ -133,6 +133,17 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
         RFuture<V> res = pollLastAndOfferFirstToAsync(queueName, timeout, unit);
         return res.await().getNow();
     }
+    
+    @Override
+    public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
+        RFuture<V> res = takeLastAndOfferFirstToAsync(queueName);
+        return res.await().getNow();
+    }
+    
+    @Override
+    public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {
+        return pollLastAndOfferFirstToAsync(queueName, 0, TimeUnit.SECONDS);
+    }
 
     @Override
     public int remainingCapacity() {

@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RFuture;
-import org.redisson.api.RQueue;
 import org.redisson.api.RTopic;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -417,7 +416,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     public RFuture<V> peekAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], 0); "
-              + "if v ~= nil then "
+              + "if v ~= false then "
                   + "local randomId, value = struct.unpack('dLc0', v);"
                   + "return value; "
               + "end "
@@ -429,7 +428,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     public RFuture<V> pollAsync() {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                   "local v = redis.call('lpop', KEYS[1]); "
-                + "if v ~= nil then "
+                + "if v ~= false then "
                     + "redis.call('zrem', KEYS[2], v); "
                     + "local randomId, value = struct.unpack('dLc0', v);"
                     + "return value; "
@@ -447,7 +446,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('rpop', KEYS[1]); "
-              + "if v ~= nil then "
+              + "if v ~= false then "
                   + "redis.call('zrem', KEYS[2], v); "
                   + "local randomId, value = struct.unpack('dLc0', v);"
                   + "redis.call('lpush', KEYS[3], value); "

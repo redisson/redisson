@@ -39,18 +39,22 @@ public class RedissonCache implements Cache {
 
     private CacheConfig config;
     
+    private final boolean allowNullValues;
+    
     private final AtomicLong hits = new AtomicLong();
 
     private final AtomicLong misses = new AtomicLong();
 
-    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config) {
+    public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
         this.mapCache = mapCache;
         this.map = mapCache;
         this.config = config;
+        this.allowNullValues = allowNullValues;
     }
 
-    public RedissonCache(RMap<Object, Object> map) {
+    public RedissonCache(RMap<Object, Object> map, boolean allowNullValues) {
         this.map = map;
+        this.allowNullValues = allowNullValues;
     }
 
     @Override
@@ -92,6 +96,15 @@ public class RedissonCache implements Cache {
 
     @Override
     public void put(Object key, Object value) {
+        if (!allowNullValues && value == null) {
+            if (mapCache != null) {
+                mapCache.remove(key);
+            } else {
+                map.remove(key);
+            }
+            return;
+        }
+        
         value = toStoreValue(value);
         if (mapCache != null) {
             mapCache.fastPut(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
@@ -101,13 +114,22 @@ public class RedissonCache implements Cache {
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
-        value = toStoreValue(value);
         Object prevValue;
-        if (mapCache != null) {
-            prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
+        if (!allowNullValues && value == null) {
+            if (mapCache != null) {
+                prevValue = mapCache.get(key);
+            } else {
+                prevValue = map.get(key);
+            }
         } else {
-            prevValue = map.putIfAbsent(key, value);
+            value = toStoreValue(value);
+            if (mapCache != null) {
+                prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
+            } else {
+                prevValue = map.putIfAbsent(key, value);
+            }
         }
+        
         return toValueWrapper(prevValue);
     }
 

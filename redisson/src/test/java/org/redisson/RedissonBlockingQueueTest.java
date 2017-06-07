@@ -296,16 +296,42 @@ public class RedissonBlockingQueueTest extends BaseTest {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
             }
-        }, 10, TimeUnit.SECONDS);
+        }, 5, TimeUnit.SECONDS);
 
         RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("{queue}2");
         queue2.put(4);
         queue2.put(5);
         queue2.put(6);
 
-        queue1.pollLastAndOfferFirstTo(queue2.getName(), 10, TimeUnit.SECONDS);
+        Integer value = queue1.pollLastAndOfferFirstTo(queue2.getName(), 5, TimeUnit.SECONDS);
+        assertThat(value).isEqualTo(3);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
+    
+    @Test
+    public void testTakeLastAndOfferFirstTo() throws InterruptedException {
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("{queue}1");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            try {
+                queue1.put(3);
+            } catch (InterruptedException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }, 3, TimeUnit.SECONDS);
+
+        RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("{queue}2");
+        queue2.put(4);
+        queue2.put(5);
+        queue2.put(6);
+
+        long startTime = System.currentTimeMillis();
+        Integer value = queue1.takeLastAndOfferFirstTo(queue2.getName());
+        assertThat(System.currentTimeMillis() - startTime).isBetween(2900L, 3200L);
+        assertThat(value).isEqualTo(3);
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
+    }
+
 
     @Test
     public void testAddOfferOrigin() {

@@ -26,6 +26,12 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
     private List<ByteBuf> firstValues;
@@ -36,7 +42,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
     private boolean finished;
     private boolean currentElementRemoved;
-    private boolean removeExecuted;
     private V value;
 
     @Override
@@ -47,7 +52,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                 free(lastValues);
 
                 currentElementRemoved = false;
-                removeExecuted = false;
                 client = null;
                 firstValues = null;
                 lastValues = null;
@@ -58,9 +62,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                 }
                 finished = false;
             }
-            long prevIterPos;
             do {
-                prevIterPos = nextIterPos;
                 ListScanResult<ScanObjectEntry> res = iterator(client, nextIterPos);
                 if (lastValues != null) {
                     free(lastValues);
@@ -76,7 +78,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                         client = null;
                         firstValues = null;
                         nextIterPos = 0;
-                        prevIterPos = -1;
                     }
                 } else {
                     if (firstValues.isEmpty()) {
@@ -87,38 +88,38 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                                 client = null;
                                 firstValues = null;
                                 nextIterPos = 0;
-                                prevIterPos = -1;
                                 continue;
                             }
                             if (res.getPos() == 0) {
+                                free(firstValues);
+                                free(lastValues);
+                                
                                 finished = true;
                                 return false;
                             }
                         }
-                    } else if (lastValues.removeAll(firstValues)) {
+                    } else if (lastValues.removeAll(firstValues)
+                            || (lastValues.isEmpty() && nextIterPos == 0)) {
                         free(firstValues);
                         free(lastValues);
 
                         currentElementRemoved = false;
-                        removeExecuted = false;
+                        
                         client = null;
                         firstValues = null;
                         lastValues = null;
                         nextIterPos = 0;
-                        prevIterPos = -1;
                         if (tryAgain()) {
                             continue;
                         }
+                        
                         finished = true;
                         return false;
                     }
                 }
                 lastIter = res.getValues().iterator();
                 nextIterPos = res.getPos();
-            } while (!lastIter.hasNext() && nextIterPos != prevIterPos);
-            if (prevIterPos == nextIterPos && !removeExecuted) {
-                finished = true;
-            }
+            } while (!lastIter.hasNext());
         }
         return lastIter.hasNext();
     }
@@ -170,7 +171,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
         lastIter.remove();
         remove(value);
         currentElementRemoved = true;
-        removeExecuted = true;
     }
 
     abstract void remove(V value);
