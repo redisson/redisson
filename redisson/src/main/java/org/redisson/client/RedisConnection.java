@@ -67,6 +67,10 @@ public class RedisConnection implements RedisCommands {
         lastUsageTime = System.currentTimeMillis();
     }
     
+    protected RedisConnection(RedisClient redisClient) {
+        this.redisClient = redisClient;
+    }
+    
     public <C extends RedisConnection> RPromise<C> getConnectionPromise() {
         return (RPromise<C>) connectionPromise;
     }
