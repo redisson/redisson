@@ -6,7 +6,7 @@
        xsi:schemaLocation="
        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
-       http://redisson.org/schema/redisson classpath:org/redisson/spring/support/redisson-1.0.xsd
+       http://redisson.org/schema/redisson classpath:org/redisson/spring/support/redisson-1.1.xsd
 ">
     <context:property-placeholder system-properties-mode="OVERRIDE"/>
     
@@ -43,7 +43,13 @@
             failed-attempts="${redisson.failedAttempts}"
             password="${redisson.password}"
             subscriptions-per-connection="${redisson.subscriptionsPerConnection}"
-            client-name="${redisson.clientName}"            
+            client-name="${redisson.clientName}"         
+            ssl-enable-endpoint-identification="${redisson.sslEnableEndpointIdentification}"
+            ssl-provider="${redisson.sslProvider}"
+            ssl-truststore="${redisson.sslTruststore}"
+            ssl-truststore-password="${redisson.sslTruststorePassword}"
+            ssl-keystore="${redisson.sslKeystore}"
+            ssl-keystore-password="${redisson.sslKeystorePassword}"   
             address="${redisson.redisAddress}"
             subscription-connection-minimum-idle-size="${redisson.subscriptionConnectionMinimumIdleSize}"
             subscription-connection-pool-size="${redisson.subscriptionConnectionPoolSize}"

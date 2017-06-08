@@ -70,4 +70,9 @@ public class CommandsData implements QueueCommand {
         return promise.tryFailure(cause);
     }
 
+    @Override
+    public String toString() {
+        return "CommandsData [commands=" + commands + "]";
+    }
+
 }

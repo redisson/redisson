@@ -114,8 +114,8 @@ public class Redisson implements RedissonClient {
         
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
-        codecProvider = config.getCodecProvider();
-        resolverProvider = config.getResolverProvider();
+        codecProvider = configCopy.getCodecProvider();
+        resolverProvider = configCopy.getResolverProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {
@@ -137,7 +137,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonClient create() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
 //        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
 //        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
 //        config.useClusterServers().addNodeAddress("127.0.0.1:7000");
@@ -165,7 +165,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonReactiveClient createReactive() {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.0.0.1:6379");
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
 //        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
 //        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
 //        config.useClusterServers().addNodeAddress("127.0.0.1:7000");
@@ -253,17 +253,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options) {
-        return new RedissonLocalCachedMap<K, V>(id, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
+        return new RedissonLocalCachedMap<K, V>(connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options) {
-        return new RedissonLocalCachedMap<K, V>(id, codec, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
+        return new RedissonLocalCachedMap<K, V>(codec, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(id, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
@@ -308,17 +308,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(id, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(id, codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
-        return new RedissonMap<K, V>(id, codec, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override

@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedisClientResult;
@@ -484,10 +483,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (isRedissonReferenceSupportEnabled()) {
             try {
                 for (int i = 0; i < params.length; i++) {
-                    RedissonReference reference = redisson != null
-                            ? RedissonObjectFactory.toReference(redisson, params[i])
-                                    : RedissonObjectFactory.toReference(redissonReactive, params[i]);
-                            params[i] = reference == null ? params[i] : reference;
+                    RedissonReference reference = RedissonObjectFactory.toReference(getConnectionManager().getCfg(), params[i]);
+                    if (reference != null) {
+                        params[i] = reference;
+                    }
                 }
             } catch (Exception e) {
                 connectionManager.getShutdownLatch().release();
@@ -586,8 +585,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     details.setWriteFuture(future);
                 } else {
                     if (log.isDebugEnabled()) {
-                        log.debug("aquired connection for command {} and params {} from slot {} using node {}",
-                                details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr());
+                        log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
+                                details.getCommand(), Arrays.toString(details.getParams()), details.getSource(), connection.getRedisClient().getAddr(), connection);
                     }
                     ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
                     details.setWriteFuture(future);
@@ -660,7 +659,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         };
         
-        final AtomicBoolean canceledByScheduler = new AtomicBoolean();
         final Timeout scheduledFuture;
         if (popTimeout != 0) {
             // to handle cases when connection has been lost
@@ -668,15 +666,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             scheduledFuture = connectionManager.newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
-                    // re-connection wasn't made
+                    // re-connection hasn't been made
                     // and connection is still active
                     if (orignalChannel == connection.getChannel() 
                             && connection.isActive()) {
                         return;
                     }
                     
-                    canceledByScheduler.set(true);
-                    details.getAttemptPromise().trySuccess(null);
+                    if (details.getAttemptPromise().trySuccess(null)) {
+                        connection.forceFastReconnectAsync();
+                    }
                 }
             }, popTimeout, TimeUnit.SECONDS);
         } else {
@@ -694,10 +693,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     connectionManager.getShutdownPromise().removeListener(listener);
                 }
 
-                // handling cancel operation for commands from skipTimeout collection
-                if ((future.isCancelled() && details.getAttemptPromise().cancel(true)) 
-                        || canceledByScheduler.get()) {
-                    connection.forceFastReconnectAsync();
+                // handling cancel operation for blocking commands
+                if (future.isCancelled() && !details.getAttemptPromise().isDone()) {
+                    connection.forceFastReconnectAsync().addListener(new FutureListener<Void>() {
+                        @Override
+                        public void operationComplete(Future<Void> future) throws Exception {
+                            details.getAttemptPromise().cancel(true);
+                        }
+                    });
                     return;
                 }
                 
@@ -722,7 +725,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (!connectionFuture.isSuccess()) {
                     return;
                 }
-                
+
                 RedisConnection connection = connectionFuture.getNow();
                 connectionManager.getShutdownLatch().release();
                 if (isReadOnly) {

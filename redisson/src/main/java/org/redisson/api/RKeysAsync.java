@@ -41,6 +41,7 @@ public interface RKeysAsync {
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
+     * @return void 
      */
     RFuture<Void> migrateAsync(String name, String host, int port, int database);
     
@@ -89,6 +90,7 @@ public interface RKeysAsync {
      *
      * @param currentName - current name of object
      * @param newName - new name of object
+     * @return void
      */
     RFuture<Void> renameAsync(String currentName, String newName);
     

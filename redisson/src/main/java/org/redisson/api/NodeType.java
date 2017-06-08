@@ -17,6 +17,6 @@ package org.redisson.api;
 
 public enum NodeType {
 
-    MASTER, SLAVE
+    MASTER, SLAVE, SENTINEL
 
 }

@@ -17,6 +17,8 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.map.event.MapEntryListener;
+
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
  * {@link #put(Object, Object, long, TimeUnit)} or {@link #putIfAbsent(Object, Object, long, TimeUnit)}
@@ -130,6 +132,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param ttlUnit - time unit
+     * 
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
@@ -177,6 +180,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param ttl - time to live for key\value entry.
      *              If <code>0</code> then stores infinitely.
      * @param ttlUnit - time unit
+     * 
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash
      */
@@ -218,4 +222,24 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
     @Override
     int size();
 
+    /**
+     * Adds map entry listener
+     * 
+     * @see org.redisson.api.map.event.EntryCreatedListener
+     * @see org.redisson.api.map.event.EntryUpdatedListener
+     * @see org.redisson.api.map.event.EntryRemovedListener
+     * @see org.redisson.api.map.event.EntryExpiredListener
+     * 
+     * @param listener - entry listener
+     * @return listener id
+     */
+    int addListener(MapEntryListener listener);
+    
+    /**
+     * Removes map entry listener
+     * 
+     * @param listenerId - listener id
+     */
+    void removeListener(int listenerId);
+    
 }

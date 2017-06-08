@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +30,7 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.command.CommandSyncService;
+import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
@@ -50,7 +51,9 @@ public interface ConnectionManager {
     
     ExecutorService getExecutor();
     
-    URL getLastClusterNode();
+    URI getLastClusterNode();
+    
+    Config getCfg();
 
     boolean isClusterMode();
 
@@ -68,8 +71,6 @@ public interface ConnectionManager {
 
     RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners);
     
-    ConnectionInitializer getConnectListener();
-
     IdleConnectionWatcher getConnectionWatcher();
 
     <R> RFuture<R> newFailedFuture(Throwable cause);
@@ -98,9 +99,9 @@ public interface ConnectionManager {
 
     RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(String host, int port, int timeout, int commandTimeout);
+    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout);
 
-    RedisClient createClient(NodeType type, String host, int port);
+    RedisClient createClient(NodeType type, URI address);
 
     MasterSlaveEntry getEntry(InetSocketAddress addr);
 

@@ -15,13 +15,14 @@
  */
 package org.redisson.connection;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -55,9 +56,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private AtomicReference<URL> currentMaster = new AtomicReference<URL>();
+    private AtomicReference<URI> currentMaster = new AtomicReference<URI>();
 
-    private final Map<URL, RedisConnection> nodeConnections = new HashMap<URL, RedisConnection>();
+    private final Map<URI, RedisConnection> nodeConnections = new HashMap<URI, RedisConnection>();
 
     private ScheduledFuture<?> monitorFuture;
 
@@ -72,7 +73,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         initTimer(this.config);
 
-        for (URL addr : cfg.getNodeAddresses()) {
+        for (URI addr : cfg.getNodeAddresses()) {
             RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
@@ -110,13 +111,13 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
     
-    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URL addr) {
+    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URI addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
             return newSucceededFuture(connection);
         }
 
-        RedisClient client = createClient(addr.getHost(), addr.getPort(), cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
+        RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
         final RPromise<RedisConnection> result = newPromise();
         RFuture<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
@@ -128,26 +129,13 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisConnection connection = future.getNow();
-                RPromise<RedisConnection> promise = newPromise();
-                connectListener.onConnect(promise, connection, null, config);
-                promise.addListener(new FutureListener<RedisConnection>() {
-                    @Override
-                    public void operationComplete(Future<RedisConnection> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-
-                        RedisConnection connection = future.getNow();
-                        if (connection.isActive()) {
-                            nodeConnections.put(addr, connection);
-                            result.trySuccess(connection);
-                        } else {
-                            connection.closeAsync();
-                            result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
-                        }
-                    }
-                });
+                if (connection.isActive()) {
+                    nodeConnections.put(addr, connection);
+                    result.trySuccess(connection);
+                } else {
+                    connection.closeAsync();
+                    result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                }
             }
         });
 
@@ -158,11 +146,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
             @Override
             public void run() {
-                final URL master = currentMaster.get();
+                final URI master = currentMaster.get();
                 log.debug("Current master: {}", master);
                 
                 final AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
-                for (final URL addr : cfg.getNodeAddresses()) {
+                for (final URI addr : cfg.getNodeAddresses()) {
                     if (isShuttingDown()) {
                         return;
                     }
@@ -203,7 +191,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                             log.debug("Current master {} unchanged", master);
                                         } else if (currentMaster.compareAndSet(master, addr)) {
                                             log.info("Master has changed from {} to {}", master, addr);
-                                            changeMaster(singleSlotRange.getStartSlot(), addr.getHost(), addr.getPort());
+                                            changeMaster(singleSlotRange.getStartSlot(), addr);
                                         }
                                     }
                                     

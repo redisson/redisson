@@ -93,6 +93,8 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
     RFuture<Integer> drainToAsync(Collection<? super V> c);
 
     RFuture<V> pollLastAndOfferFirstToAsync(String queueName, long timeout, TimeUnit unit);
+    
+    RFuture<V> takeLastAndOfferFirstToAsync(String queueName);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting up to the

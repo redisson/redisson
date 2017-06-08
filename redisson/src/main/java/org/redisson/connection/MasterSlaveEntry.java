@@ -16,7 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URL;
+import java.net.URI;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -86,23 +86,23 @@ public class MasterSlaveEntry {
         pubSubConnectionHolder = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<URL> disconnectedNodes) {
+    public List<RFuture<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
                     && config.getReadMode() == ReadMode.SLAVE
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
-        RFuture<Void> f = addSlave(config.getMasterAddress().getHost(), config.getMasterAddress().getPort(), freezeMasterAsSlave, NodeType.MASTER);
+        RFuture<Void> f = addSlave(config.getMasterAddress(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
-        for (URL address : config.getSlaveAddresses()) {
-            f = addSlave(address.getHost(), address.getPort(), disconnectedNodes.contains(address), NodeType.SLAVE);
+        for (URI address : config.getSlaveAddresses()) {
+            f = addSlave(address, disconnectedNodes.contains(address), NodeType.SLAVE);
             result.add(f);
         }
         return result;
     }
 
-    public RFuture<Void> setupMasterEntry(String host, int port) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, host, port);
+    public RFuture<Void> setupMasterEntry(URI address) {
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
         masterEntry = new ClientConnectionsEntry(
                 client, 
                 config.getMasterConnectionMinimumIdleSize(), 
@@ -264,7 +264,8 @@ public class MasterSlaveEntry {
         final CommandData<?, ?> commandData = connection.getCurrentCommand();
 
         if (commandData == null 
-                || !commandData.isBlockingCommand()) {
+                || !commandData.isBlockingCommand()
+                    || commandData.getPromise().isDone()) {
             return;
         }
 
@@ -309,12 +310,12 @@ public class MasterSlaveEntry {
         return slaveBalancer.contains(addr);
     }
 
-    public RFuture<Void> addSlave(String host, int port) {
-        return addSlave(host, port, true, NodeType.SLAVE);
+    public RFuture<Void> addSlave(URI address) {
+        return addSlave(address, true, NodeType.SLAVE);
     }
     
-    private RFuture<Void> addSlave(String host, int port, boolean freezed, NodeType mode) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, host, port);
+    private RFuture<Void> addSlave(URI address, boolean freezed, NodeType mode) {
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
@@ -349,16 +350,15 @@ public class MasterSlaveEntry {
     }
 
     /**
-     * Freeze slave with <code>host:port</code> from slaves list.
+     * Freeze slave with <code>redis(s)://host:port</code> from slaves list.
      * Re-attach pub/sub listeners from it to other slave.
      * Shutdown old master client.
      * 
-     * @param host of Redis
-     * @param port of Redis
+     * @param address of Redis
      */
-    public void changeMaster(final String host, final int port) {
+    public void changeMaster(final URI address) {
         final ClientConnectionsEntry oldMaster = masterEntry;
-        RFuture<Void> future = setupMasterEntry(host, port);
+        RFuture<Void> future = setupMasterEntry(address);
         future.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
@@ -369,7 +369,7 @@ public class MasterSlaveEntry {
                 // more than one slave available, so master can be removed from slaves
                 if (config.getReadMode() == ReadMode.SLAVE
                         && slaveBalancer.getAvailableClients() > 1) {
-                    slaveDown(host, port, FreezeReason.SYSTEM);
+                    slaveDown(address.getHost(), address.getPort(), FreezeReason.SYSTEM);
                 }
                 connectionManager.shutdownAsync(oldMaster.getClient());
             }

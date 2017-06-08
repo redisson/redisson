@@ -66,6 +66,7 @@ public class RedissonKeysTest extends BaseTest {
         for (int i = 0; i < 115; i++) {
             String key = "key" + Math.random();
             RBucket<String> bucket = redisson.getBucket(key);
+            keys.add(key);
             bucket.set("someValue");
         }
 

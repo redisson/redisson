@@ -15,9 +15,8 @@
  */
 package org.redisson.config;
 
-import java.net.URL;
-
-import org.redisson.misc.URLBuilder;
+import java.net.URI;
+import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -30,7 +29,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * Redis server address
      *
      */
-    private URL address;
+    private URI address;
 
     /**
      * Minimum idle subscription connection amount
@@ -65,7 +64,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      * <em>NB: applications must ensure the JVM DNS cache TTL is low enough to support this.</em>
      * e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
      */
-    private boolean dnsMonitoring = false;
+    private boolean dnsMonitoring = true;
 
     /**
      * Interval in milliseconds to check DNS
@@ -127,17 +126,17 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
      */
     public SingleServerConfig setAddress(String address) {
         if (address != null) {
-            this.address = URLBuilder.create(address);
+            this.address = URIBuilder.create(address);
         }
         return this;
     }
-    public URL getAddress() {
+    public URI getAddress() {
         if (address != null) {
             return address;
         }
         return null;
     }
-    void setAddress(URL address) {
+    void setAddress(URI address) {
         if (address != null) {
             this.address = address;
         }
@@ -145,8 +144,10 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
 
     /**
      * Monitoring of the endpoint address for DNS changes.
-     *
-     * Default is false
+     * <p>
+     * Applications must ensure the JVM DNS cache TTL is low enough to support this
+     * <p>
+     * Default is <code>true</code>
      *
      * @param dnsMonitoring flag
      * @return config
@@ -162,7 +163,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Interval in milliseconds to check the endpoint DNS if {@link #isDnsMonitoring()} is true.
      *
-     * Default is 5000
+     * Default is <code>5000</code>
      *
      * @param dnsMonitoringInterval time
      * @return config

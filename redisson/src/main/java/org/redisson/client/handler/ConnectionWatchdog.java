@@ -16,15 +16,15 @@
 package org.redisson.client.handler;
 
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.client.protocol.QueueCommandHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,7 +70,6 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             if (!connection.isClosed()) {
                 if (connection.isFastReconnect()) {
                     tryReconnect(connection, 1);
-                    connection.clearFastReconnect();
                 } else {
                     reconnect(connection, 1);
                 }
@@ -81,7 +80,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     
     private void reconnect(final RedisConnection connection, final int attempts){
         int timeout = 2 << attempts;
-        if (bootstrap.group().isShuttingDown()) {
+        if (bootstrap.config().group().isShuttingDown()) {
             return;
         }
         
@@ -94,51 +93,48 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     }
 
     private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
-        if (connection.isClosed() || bootstrap.group().isShuttingDown()) {
+        if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
             return;
         }
 
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
-        bootstrap.connect().addListener(new ChannelFutureListener() {
+        try {
+            bootstrap.connect().addListener(new ChannelFutureListener() {
 
-            @Override
-            public void operationComplete(final ChannelFuture future) throws Exception {
-                if (connection.isClosed() || bootstrap.group().isShuttingDown()) {
-                    return;
-                }
-
-                try {
-                    if (future.isSuccess()) {
-                        log.debug("{} connected to {}", connection, connection.getRedisClient().getAddr());
-                        reconnect(connection, future.channel());
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
                         return;
                     }
-                } catch (RedisException e) {
-                    log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), e);
-                }
 
-                reconnect(connection, nextAttempt);
-            }
-        });
-    }
-
-    private void reconnect(final RedisConnection connection, final Channel channel) {
-        if (connection.getReconnectListener() != null) {
-            // new connection used only for channel init
-            RedisConnection rc = new RedisConnection(connection.getRedisClient(), channel);
-            RPromise<RedisConnection> connectionFuture = new RedissonPromise<RedisConnection>();
-            connection.getReconnectListener().onReconnect(rc, connectionFuture);
-            connectionFuture.addListener(new FutureListener<RedisConnection>() {
-                @Override
-                public void operationComplete(Future<RedisConnection> future) throws Exception {
                     if (future.isSuccess()) {
-                        refresh(connection, channel);
+                        final Channel channel = future.channel();
+
+                        RedisConnection c = RedisConnection.getFrom(channel);
+                        c.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
+                            @Override
+                            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                                if (future.isSuccess()) {
+                                    if (connection.isFastReconnect()) {
+                                        connection.clearFastReconnect();
+                                    }
+                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                    refresh(connection, channel);
+                                } else {
+                                    log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
+                                }
+                                
+                            }
+                        });
+                        return;
                     }
+
+                    reconnect(connection, nextAttempt);
                 }
             });
-        } else {
-            refresh(connection, channel);
+        } catch (RejectedExecutionException e) {
+            // skip
         }
     }
 
@@ -155,26 +151,28 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     }
 
     private void refresh(RedisConnection connection, Channel channel) {
-        CommandData<?, ?> commandData = connection.getCurrentCommand();
+        CommandData<?, ?> currentCommand = connection.getCurrentCommand();
         connection.updateChannel(channel);
         
-        reattachBlockingQueue(connection, commandData);            
+        reattachBlockingQueue(connection, currentCommand);            
         reattachPubSub(connection);
     }
 
-    private void reattachBlockingQueue(RedisConnection connection, final CommandData<?, ?> commandData) {
-        if (commandData == null 
-                || !commandData.isBlockingCommand()
-                    || commandData.getPromise().isDone()) {
+    private void reattachBlockingQueue(RedisConnection connection, CommandData<?, ?> currentCommand) {
+        if (currentCommand == null 
+                || !currentCommand.isBlockingCommand()
+                    || currentCommand.getPromise().isDone()) {
             return;
         }
 
-        ChannelFuture future = connection.send(commandData);
+        log.debug("blocking queue sent " + connection);
+        ChannelFuture future = connection.send(currentCommand);
+        final CommandData<?, ?> cd = currentCommand;
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("Can't reconnect blocking queue to new connection. {}", commandData);
+                    log.error("Can't reconnect blocking queue to new connection. {}", cd);
                 }
             }
         });

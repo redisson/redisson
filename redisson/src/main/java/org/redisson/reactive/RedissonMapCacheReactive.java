@@ -70,12 +70,12 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(id, evictionScheduler, commandExecutor, name, null);
+        this.mapCache = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null);
     }
 
     public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(id, codec, evictionScheduler, commandExecutor, name, null);
+        this.mapCache = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null);
     }
 
     @Override

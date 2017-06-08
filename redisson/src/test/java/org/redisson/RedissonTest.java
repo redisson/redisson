@@ -6,6 +6,7 @@ import static org.redisson.BaseTest.createInstance;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
@@ -33,9 +34,12 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
+
+import io.netty.buffer.Unpooled;
 
 public class RedissonTest {
 
@@ -76,7 +80,7 @@ public class RedissonTest {
     }
     
     @Test
-    public void testIterator() {
+    public void testIteratorNotLooped() {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
             int i;
             @Override
@@ -100,6 +104,41 @@ public class RedissonTest {
         
         Assert.assertFalse(iter.hasNext());
     }
+    
+    @Test
+    public void testIteratorNotLooped2() {
+        RedissonBaseIterator<Integer> iter = new RedissonBaseIterator<Integer>() {
+            int i;
+            @Override
+            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+                i++;
+                if (i == 1) {
+                    return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(Unpooled.wrappedBuffer(new byte[] {1}), 1)));
+                }
+                if (i == 2) {
+                    return new ListScanResult(7L, Collections.emptyList());
+                }
+                if (i == 3) {
+                    return new ListScanResult(0L, Collections.emptyList());
+                }
+                if (i == 4) {
+                    return new ListScanResult(14L, Collections.emptyList());
+                }
+                Assert.fail();
+                return null;
+            }
+
+            @Override
+            void remove(Integer value) {
+            }
+            
+        };
+        
+        Assert.assertTrue(iter.hasNext());
+        assertThat(iter.next()).isEqualTo(1);
+        Assert.assertFalse(iter.hasNext());
+    }
+
     
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
@@ -250,7 +289,7 @@ public class RedissonTest {
 
         Assert.assertEquals(0, pp.stop());
 
-        await().atMost(1, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
+        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
         await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
@@ -351,10 +390,9 @@ public class RedissonTest {
     @Test
     public void testClusterConfig() throws IOException {
         Config originalConfig = new Config();
-        originalConfig.useClusterServers().addNodeAddress("123.123.1.23:1902", "9.3.1.0:1902");
+        originalConfig.useClusterServers().addNodeAddress("redis://123.123.1.23:1902", "redis://9.3.1.0:1902");
         String t = originalConfig.toJSON();
         Config c = Config.fromJSON(t);
-        System.out.println(t);
         assertThat(c.toJSON()).isEqualTo(t);
     }
 
@@ -378,7 +416,7 @@ public class RedissonTest {
     @Test
     public void testMasterSlaveConfigJSON() throws IOException {
         Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
         String t = c2.toJSON();
         Config c = Config.fromJSON(t);
         assertThat(c.toJSON()).isEqualTo(t);
@@ -387,7 +425,7 @@ public class RedissonTest {
     @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("123.1.1.1:1231").addSlaveAddress("82.12.47.12:1028");
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
         String t = c2.toYAML();
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
@@ -410,7 +448,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSingleConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSingleServer().setAddress("127.99.0.1:1111");
+        config.useSingleServer().setAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -419,7 +457,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testClusterConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useClusterServers().addNodeAddress("127.99.0.1:1111");
+        config.useClusterServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -428,7 +466,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testElasticacheConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useElasticacheServers().addNodeAddress("127.99.0.1:1111");
+        config.useElasticacheServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -437,7 +475,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testReplicatedConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useReplicatedServers().addNodeAddress("127.99.0.1:1111");
+        config.useReplicatedServers().addNodeAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -446,7 +484,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testMasterSlaveConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useMasterSlaveServers().setMasterAddress("127.99.0.1:1111");
+        config.useMasterSlaveServers().setMasterAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);
@@ -455,7 +493,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress("127.99.0.1:1111");
+        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111");
         Redisson.create(config);
 
         Thread.sleep(1500);

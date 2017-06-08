@@ -20,6 +20,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
@@ -36,6 +37,8 @@ import io.netty.util.concurrent.FutureListener;
 
 public class RedisClientTest {
 
+    private RedisClient redisClient;
+    
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
         if (!RedissonRuntimeEnvironment.isTravis) {
@@ -55,6 +58,9 @@ public class RedisClientTest {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
         }
+        RedisClientConfig config = new RedisClientConfig();
+        config.setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        redisClient = RedisClient.create(config);
     }
 
     @After
@@ -62,12 +68,12 @@ public class RedisClientTest {
         if (RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.shutDownDefaultRedisServerInstance();
         }
+        redisClient.shutdown();
     }
 
     @Test
     public void testConnectAsync() throws InterruptedException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RFuture<RedisConnection> f = c.connectAsync();
+        RFuture<RedisConnection> f = redisClient.connectAsync();
         final CountDownLatch l = new CountDownLatch(2);
         f.addListener((FutureListener<RedisConnection>) future -> {
             RedisConnection conn = future.get();
@@ -84,8 +90,7 @@ public class RedisClientTest {
 
     @Test
     public void testSubscribe() throws InterruptedException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedisPubSubConnection pubSubConnection = c.connectPubSub();
+        RedisPubSubConnection pubSubConnection = redisClient.connectPubSub();
         final CountDownLatch latch = new CountDownLatch(2);
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
 
@@ -112,10 +117,7 @@ public class RedisClientTest {
 
     @Test
     public void test() throws InterruptedException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
-                RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
-                1000000, 1000000);
-        final RedisConnection conn = c.connect();
+        final RedisConnection conn = redisClient.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
         ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
@@ -136,8 +138,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipeline() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedisConnection conn = c.connect();
+        RedisConnection conn = redisClient.connect();
 
         conn.sync(StringCodec.INSTANCE, RedisCommands.SET, "test", 0);
 
@@ -164,8 +165,7 @@ public class RedisClientTest {
 
     @Test
     public void testBigRequest() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedisConnection conn = c.connect();
+        RedisConnection conn = redisClient.connect();
 
         for (int i = 0; i < 50; i++) {
             conn.sync(StringCodec.INSTANCE, RedisCommands.HSET, "testmap", i, "2");
@@ -179,8 +179,7 @@ public class RedisClientTest {
 
     @Test
     public void testPipelineBigResponse() throws InterruptedException, ExecutionException {
-        RedisClient c = new RedisClient(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedisConnection conn = c.connect();
+        RedisConnection conn = redisClient.connect();
 
         List<CommandData<?, ?>> commands = new ArrayList<CommandData<?, ?>>();
         for (int i = 0; i < 1000; i++) {

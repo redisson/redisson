@@ -34,7 +34,7 @@ abstract class EvictionTask implements Runnable {
 
     final Deque<Integer> sizeHistory = new LinkedList<Integer>();
     final int minDelay = 1;
-    final int maxDelay = 2*60*60;
+    final int maxDelay = 30*60;
     final int keysLimit = 300;
     
     int delay = 10;
