@@ -15,6 +15,8 @@ import org.junit.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
 
+import com.jayway.awaitility.Awaitility;
+
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
     @Test
@@ -317,8 +319,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         });
 
         RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
-        Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
-        Assert.assertFalse("Transient lock expired automatically", lock1.writeLock().isLocked());
+        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
     }
 
     @Test

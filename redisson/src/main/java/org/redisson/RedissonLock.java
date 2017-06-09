@@ -56,9 +56,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
-    public static final long LOCK_EXPIRATION_INTERVAL_SECONDS = 30;
     private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
-    protected long internalLockLeaseTime = TimeUnit.SECONDS.toMillis(LOCK_EXPIRATION_INTERVAL_SECONDS);
+    protected long internalLockLeaseTime;
 
     final UUID id;
 
@@ -70,6 +69,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.id = id;
+        this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
     }
 
     protected String getEntryName() {
@@ -149,7 +149,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
-        RFuture<Boolean> ttlRemainingFuture = tryLockInnerAsync(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
+        RFuture<Boolean> ttlRemainingFuture = tryLockInnerAsync(commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         ttlRemainingFuture.addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -171,7 +171,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
         }
-        RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(LOCK_EXPIRATION_INTERVAL_SECONDS, TimeUnit.SECONDS, threadId, RedisCommands.EVAL_LONG);
+        RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
         ttlRemainingFuture.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(Future<Long> future) throws Exception {
