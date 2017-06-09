@@ -89,6 +89,8 @@ public class Config {
 
     private EventLoopGroup eventLoopGroup;
 
+    private long lockWatchdogTimeout = 30 * 1000;
+    
     public Config() {
     }
 
@@ -101,6 +103,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -556,6 +559,25 @@ public class Config {
 
     public EventLoopGroup getEventLoopGroup() {
         return eventLoopGroup;
+    }
+
+    /**
+     * Works only if lock has been acquired without leaseTimeout parameter definition. 
+     * Lock will be expired after <code>lockWatchdogTimeout</code> if watchdog 
+     * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
+     * <p>  
+     * This prevents against infinity locked locks due to Redisson client crush or 
+     * any other reason when lock can't be released in proper way.
+     * 
+     * @param lockWatchdogTimeout timeout in milliseconds
+     * @return config
+     */
+    public Config setLockWatchdogTimeout(long lockWatchdogTimeout) {
+        this.lockWatchdogTimeout = lockWatchdogTimeout;
+        return this;
+    }
+    public long getLockWatchdogTimeout() {
+        return lockWatchdogTimeout;
     }
 
     /**

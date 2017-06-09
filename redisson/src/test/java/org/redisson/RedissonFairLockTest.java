@@ -13,6 +13,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
 
+import com.jayway.awaitility.Awaitility;
+
 public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
@@ -141,8 +143,8 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getFairLock("lock");
-        Thread.sleep(TimeUnit.SECONDS.toMillis(RedissonLock.LOCK_EXPIRATION_INTERVAL_SECONDS + 1));
-        Assert.assertFalse("Transient lock has not expired automatically", lock.isLocked());
+        
+        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
     @Test
