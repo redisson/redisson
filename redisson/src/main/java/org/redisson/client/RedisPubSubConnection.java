@@ -131,7 +131,9 @@ public class RedisPubSubConnection extends RedisConnection {
     }
     
     @Override
-    public void onDisconnect() {
+    public void fireDisconnected() {
+        super.fireDisconnected();
+        
         Set<String> channels = new HashSet<String>();
         Set<String> pchannels = new HashSet<String>();
         synchronized (this) {
@@ -145,7 +147,7 @@ public class RedisPubSubConnection extends RedisConnection {
             onMessage(new PubSubStatusMessage(PubSubType.PUNSUBSCRIBE, channel));
         }
     }
-
+    
     public void punsubscribe(final String ... channels) {
         synchronized (this) {
             for (String ch : channels) {

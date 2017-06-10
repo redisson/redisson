@@ -290,7 +290,7 @@ public class RedissonTest {
         Assert.assertEquals(0, pp.stop());
 
         await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
-        await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
+        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
 
     @Test

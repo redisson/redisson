@@ -15,8 +15,6 @@
  */
 package org.redisson.client;
 
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -27,7 +25,6 @@ import org.redisson.client.handler.CommandsQueue;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.QueueCommandHolder;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
@@ -58,6 +55,8 @@ public class RedisConnection implements RedisCommands {
 
     private RPromise<?> connectionPromise;
     private long lastUsageTime;
+    private Runnable connectedListener;
+    private Runnable disconnectedListener;
 
     public <C> RedisConnection(RedisClient redisClient, Channel channel, RPromise<C> connectionPromise) {
         this.redisClient = redisClient;
@@ -71,6 +70,26 @@ public class RedisConnection implements RedisCommands {
         this.redisClient = redisClient;
     }
     
+    public void fireConnected() {
+        if (connectedListener != null) {
+            connectedListener.run();
+        }
+    }
+
+    public void setConnectedListener(Runnable connectedListener) {
+        this.connectedListener = connectedListener;
+    }
+
+    public void fireDisconnected() {
+        if (disconnectedListener != null) {
+            disconnectedListener.run();
+        }
+    }
+
+    public void setDisconnectedListener(Runnable disconnectedListener) {
+        this.disconnectedListener = disconnectedListener;
+    }
+
     public <C extends RedisConnection> RPromise<C> getConnectionPromise() {
         return (RPromise<C>) connectionPromise;
     }
@@ -253,7 +272,4 @@ public class RedisConnection implements RedisCommands {
         return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
     }
 
-    public void onDisconnect() {
-    }
-    
 }

@@ -137,14 +137,34 @@ public class ClientConnectionsEntry {
                 if (!future.isSuccess()) {
                     return;
                 }
+                
                 RedisConnection conn = future.getNow();
+                onConnect(conn);
                 log.debug("new connection created: {}", conn);
-
-                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
             }
-
         });
         return future;
+    }
+    
+    private void onConnect(final RedisConnection conn) {
+        conn.setConnectedListener(new Runnable() {
+            @Override
+            public void run() {
+                if (!connectionManager.isShuttingDown()) {
+                    connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
+                }
+            }
+        });
+        conn.setDisconnectedListener(new Runnable() {
+            @Override
+            public void run() {
+                if (!connectionManager.isShuttingDown()) {
+                    connectionManager.getConnectionEventsHub().fireDisconnect(conn.getRedisClient().getAddr());
+                }
+            }
+        });
+        
+        connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -161,9 +181,8 @@ public class ClientConnectionsEntry {
                 }
                 
                 RedisPubSubConnection conn = future.getNow();
+                onConnect(conn);
                 log.debug("new pubsub connection created: {}", conn);
-
-                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
 
                 allSubscribeConnections.add(conn);
             }
