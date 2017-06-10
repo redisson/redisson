@@ -4,7 +4,7 @@ Redisson Releases History
 
 ### 10-Jun-2017 - versions 2.9.3 and 3.4.3 released
 
-__!PRICE REDUCTION!__ - __[Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
+__!PRICE REDUCTION!__ - __Ultra-fast [Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
 
 Feature - __SSL support__  
 Feature - __[RedisLabs](http://redislabs.com) hosting support__  
