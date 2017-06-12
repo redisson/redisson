@@ -6,6 +6,14 @@ Redisson Releases History
 
 __!PRICE REDUCTION!__ - __Ultra-fast [Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
 
+Since this version, if you use programmatic config definition you should define full url with schema.
+
+```java
+config.setAddress("redis://127.0.0.1:6739");
+// or for SSL support
+config.setAddress("rediss://127.0.0.1:6739");
+```
+
 Feature - __SSL support__  
 Feature - __[RedisLabs](http://redislabs.com) hosting support__  
 Feature - `RBlockingQueue.takeLastAndOfferFirstTo` method added  
