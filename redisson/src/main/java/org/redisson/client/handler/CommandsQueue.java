@@ -91,7 +91,7 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ch.pipeline().get(CommandDecoder.class).addPubSubCommand(channel.toString(), cd);
+                        ch.pipeline().get(CommandPubSubDecoder.class).addPubSubCommand(channel.toString(), cd);
                     }
                 }
             } else {

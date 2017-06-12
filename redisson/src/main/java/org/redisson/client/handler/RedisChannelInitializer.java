@@ -84,8 +84,13 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             new ConnectionWatchdog(bootstrap, channels, config.getTimer()),
             CommandEncoder.INSTANCE,
             CommandBatchEncoder.INSTANCE,
-            new CommandsQueue(),
-            new CommandDecoder(config.getExecutor()));
+            new CommandsQueue());
+        
+        if (type == Type.PLAIN) {
+            ch.pipeline().addLast(new CommandDecoder());
+        } else {
+            ch.pipeline().addLast(new CommandPubSubDecoder(config.getExecutor()));
+        }
     }
     
     private void initSsl(final RedisClientConfig config, Channel ch) throws KeyStoreException, IOException,
