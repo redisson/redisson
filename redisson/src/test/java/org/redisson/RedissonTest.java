@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -292,6 +293,48 @@ public class RedissonTest {
         await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
         await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
+    
+    @Test
+    public void testReconnection() throws IOException, InterruptedException, TimeoutException {
+        RedisProcess runner = new RedisRunner()
+                .appendonly(true)
+                .randomDir()
+                .randomPort()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+
+        RedissonClient r = Redisson.create(config);
+        
+        r.getBucket("myBucket").set(1);
+        assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
+        
+        Assert.assertEquals(0, runner.stop());
+        
+        AtomicBoolean hasError = new AtomicBoolean();
+        try {
+            r.getBucket("myBucket").get();
+        } catch (Exception e) {
+            // skip error
+            hasError.set(true);
+        }
+
+        assertThat(hasError.get()).isTrue();
+        
+        RedisProcess pp = new RedisRunner()
+                .appendonly(true)
+                .port(runner.getRedisServerPort())
+                .dir(runner.getDefaultDir())
+                .run();
+
+        assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
+
+        r.shutdown();
+
+        Assert.assertEquals(0, pp.stop());
+    }
+
 
     @Test
     public void testShutdown() {
