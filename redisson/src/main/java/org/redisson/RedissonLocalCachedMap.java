@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.LocalCachedMapOptions;
@@ -87,14 +86,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static class LocalCachedMapInvalidate implements Serializable {
         
         private byte[] excludedId;
-        private List<byte[]> keyHashes;
+        private byte[][] keyHashes;
 
         public LocalCachedMapInvalidate() {
         }
         
-        public LocalCachedMapInvalidate(byte[] excludedId, byte[]... keyHash) {
+        public LocalCachedMapInvalidate(byte[] excludedId, byte[]... keyHashes) {
             super();
-            this.keyHashes = Arrays.asList(keyHash);
+            this.keyHashes = keyHashes;
             this.excludedId = excludedId;
         }
         
@@ -102,7 +101,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             return excludedId;
         }
         
-        public Collection<byte[]> getKeyHashes() {
+        public byte[][] getKeyHashes() {
             return keyHashes;
         }
         
