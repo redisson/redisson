@@ -15,6 +15,11 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubMessage implements Message {
 
     private final String channel;

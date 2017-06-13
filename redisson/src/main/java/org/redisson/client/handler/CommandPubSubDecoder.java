@@ -44,18 +44,20 @@ import io.netty.util.internal.PlatformDependent;
 public class CommandPubSubDecoder extends CommandDecoder {
 
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
-    private final Map<PubSubKey, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
+    private final Map<String, PubSubEntry> entries = new HashMap<String, PubSubEntry>();
+    private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();
 
     private final ExecutorService executor;
+    private final boolean keepOrder;
     
-    public CommandPubSubDecoder(ExecutorService executor) {
+    public CommandPubSubDecoder(ExecutorService executor, boolean keepOrder) {
         this.executor = executor;
+        this.keepOrder = keepOrder;
     }
 
     public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
         String operation = data.getCommand().getName().toLowerCase();
-        pubSubChannels.put(new PubSubKey(channel, operation), data);
+        commands.put(new PubSubKey(channel, operation), data);
     }
 
     @Override
@@ -70,27 +72,68 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 String channelName = ((PubSubStatusMessage) result).getChannel();
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
                 PubSubKey key = new PubSubKey(channelName, operation);
-                CommandData<Object, Object> d = pubSubChannels.get(key);
+                CommandData<Object, Object> d = commands.get(key);
                 if (Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName()).contains(d.getCommand().getName())) {
-                    pubSubChannels.remove(key);
-                    pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
+                    commands.remove(key);
+                    entries.put(channelName, new PubSubEntry(d.getMessageDecoder()));
                 }
                 if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
-                    pubSubChannels.remove(key);
-                    pubSubMessageDecoders.remove(channelName);
+                    commands.remove(key);
+                    entries.remove(key);
                 }
             }
             
             final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
+            
+            if (keepOrder) {
+                PubSubEntry item = entries.get(((Message) result).getChannel());
+                enqueueMessage(result, pubSubConnection, item);
+            } else {
+                executor.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (result instanceof PubSubStatusMessage) {
+                            pubSubConnection.onMessage((PubSubStatusMessage) result);
+                        } else if (result instanceof PubSubMessage) {
+                            pubSubConnection.onMessage((PubSubMessage) result);
+                        } else {
+                            pubSubConnection.onMessage((PubSubPatternMessage) result);
+                        }
+                    }
+                });
+            }
+        }
+    }
+
+    private void enqueueMessage(Object result, final RedisPubSubConnection pubSubConnection, final PubSubEntry entry) {
+        if (result != null) {
+            entry.getQueue().add((Message)result);
+        }
+        
+        if (entry.getSent().compareAndSet(false, true)) {
             executor.execute(new Runnable() {
                 @Override
                 public void run() {
-                    if (result instanceof PubSubStatusMessage) {
-                        pubSubConnection.onMessage((PubSubStatusMessage) result);
-                    } else if (result instanceof PubSubMessage) {
-                        pubSubConnection.onMessage((PubSubMessage) result);
-                    } else {
-                        pubSubConnection.onMessage((PubSubPatternMessage) result);
+                    try {
+                        while (true) {
+                            Message result = entry.getQueue().poll();
+                            if (result != null) {
+                                if (result instanceof PubSubStatusMessage) {
+                                    pubSubConnection.onMessage((PubSubStatusMessage) result);
+                                } else if (result instanceof PubSubMessage) {
+                                    pubSubConnection.onMessage((PubSubMessage) result);
+                                } else {
+                                    pubSubConnection.onMessage((PubSubPatternMessage) result);
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+                    } finally {
+                        entry.getSent().set(false);
+                        if (!entry.getQueue().isEmpty()) {
+                            enqueueMessage(null, pubSubConnection, entry);
+                        }
                     }
                 }
             });
@@ -107,17 +150,17 @@ public class CommandPubSubDecoder extends CommandDecoder {
             if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
                 String channelName = parts.get(1).toString();
                 PubSubKey key = new PubSubKey(channelName, command);
-                CommandData<Object, Object> commandData = pubSubChannels.get(key);
+                CommandData<Object, Object> commandData = commands.get(key);
                 if (commandData == null) {
                     return null;
                 }
                 return commandData.getCommand().getReplayMultiDecoder();
             } else if (parts.get(0).equals("message")) {
                 String channelName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(channelName);
+                return entries.get(channelName).getDecoder();
             } else if (parts.get(0).equals("pmessage")) {
                 String patternName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(patternName);
+                return entries.get(patternName).getDecoder();
             }
         }
 
@@ -129,11 +172,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (data == null && parts != null) {
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
                 String channelName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(channelName);
+                return entries.get(channelName).getDecoder();
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
                 String patternName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(patternName);
+                return entries.get(patternName).getDecoder();
             }
         }
         return super.selectDecoder(data, parts);

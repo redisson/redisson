@@ -375,7 +375,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
               .setDatabase(config.getDatabase())
-              .setClientName(config.getClientName());
+              .setClientName(config.getClientName())
+              .setKeepPubSubOrder(cfg.isKeepPubSubOrder());
         
         if (type != NodeType.SENTINEL) {
             redisConfig.setPassword(config.getPassword());

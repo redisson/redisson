@@ -91,6 +91,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
     
+    private boolean keepPubSubOrder = true;
+    
     public Config() {
     }
 
@@ -103,6 +105,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
@@ -579,6 +582,26 @@ public class Config {
     public long getLockWatchdogTimeout() {
         return lockWatchdogTimeout;
     }
+
+    /**
+     * Define whether keep PubSub messages handling in arrival order 
+     * or handle messages concurrently. 
+     * <p>
+     * This setting applied only for PubSub messages published to single channel.
+     * <p>
+     * Default is <code>true</code>.
+     * 
+     * @param keepPubSubOrder - <code>true</code> if order required, <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setKeepPubSubOrder(boolean keepPubSubOrder) {
+        this.keepPubSubOrder = keepPubSubOrder;
+        return this;
+    }
+    public boolean isKeepPubSubOrder() {
+        return keepPubSubOrder;
+    }
+
 
     /**
      * Read config object stored in JSON format from <code>String</code>
