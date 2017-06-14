@@ -86,7 +86,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
             final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
             
             if (keepOrder) {
-                PubSubEntry item = entries.get(((Message) result).getChannel());
+                String ch = ((Message) result).getChannel();
+                if (result instanceof PubSubPatternMessage) {
+                    ch = ((PubSubPatternMessage)result).getPattern();
+                }
+                PubSubEntry item = entries.get(ch);
                 enqueueMessage(result, pubSubConnection, item);
             } else {
                 executor.execute(new Runnable() {
