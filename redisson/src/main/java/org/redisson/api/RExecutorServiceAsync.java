@@ -39,7 +39,7 @@ public interface RExecutorServiceAsync {
      * @param task - task to execute
      * @return Future object
      */
-    <T> RFuture<T> submitAsync(Callable<T> task);
+    <T> RExecutorFuture<T> submitAsync(Callable<T> task);
 
     /**
      * Use {@link RExecutorService#submit(Runnable)}
@@ -47,6 +47,6 @@ public interface RExecutorServiceAsync {
      * @param task - task to execute
      * @return Future object
      */
-    RFuture<?> submitAsync(Runnable task);
+    RExecutorFuture<?> submitAsync(Runnable task);
     
 }

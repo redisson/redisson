@@ -13,37 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.executor;
-
-import org.redisson.api.RFuture;
-import org.redisson.misc.RedissonPromise;
+package org.redisson.api;
 
 /**
  * 
  * @author Nikita Koksharov
  *
+ * @param <V> value
  */
-public class RemotePromise<T> extends RedissonPromise<T> {
+public interface RExecutorFuture<V> extends RFuture<V> {
 
-    private String requestId;
-    private RFuture<Boolean> addFuture;
+    /**
+     * Returns scheduled task's id.
+     * This id could be used for task cancellation.
+     *  
+     * @see RExecutorService#cancelTask(String)
+     * 
+     * @return task id
+     */
+    String getTaskId();
     
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
-    }
-    public String getRequestId() {
-        return requestId;
-    }
-    
-    public void setAddFuture(RFuture<Boolean> addFuture) {
-        this.addFuture = addFuture;
-    }
-    public RFuture<Boolean> getAddFuture() {
-        return addFuture;
-    }
-    
-    public void doCancel() {
-        super.cancel(true);
-    }
-
 }

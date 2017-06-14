@@ -42,7 +42,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return a Future representing pending completion of the task
      */
     @Override
-    <T> RFuture<T> submit(Callable<T> task);
+    <T> RExecutorFuture<T> submit(Callable<T> task);
     
     /**
      * Submits a Runnable task for execution and returns a Future
@@ -55,7 +55,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return a Future representing pending completion of the task
      */
     @Override
-    <T> RFuture<T> submit(Runnable task, T result);;
+    <T> RExecutorFuture<T> submit(Runnable task, T result);;
 
     /**
      * Submits a Runnable task for execution and returns a Future
@@ -66,7 +66,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return a Future representing pending completion of the task
      */
     @Override
-    RFuture<?> submit(Runnable task);
+    RExecutorFuture<?> submit(Runnable task);
 
     /**
      * Returns executor name
@@ -104,4 +104,14 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      */
     int countActiveWorkers();
     
+    /**
+     * Cancels task by id
+     * 
+     * @see RExecutorFuture#getTaskId()
+     * 
+     * @param taskId - id of task
+     * @return <code>true</code> if task has been canceled successfully
+     */
+    boolean cancelTask(String taskId);
+
 }

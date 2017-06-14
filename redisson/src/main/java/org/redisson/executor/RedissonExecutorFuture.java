@@ -15,35 +15,28 @@
  */
 package org.redisson.executor;
 
-import org.redisson.api.RFuture;
-import org.redisson.misc.RedissonPromise;
+import org.redisson.api.RExecutorFuture;
+import org.redisson.misc.PromiseDelegator;
+import org.redisson.misc.RPromise;
 
 /**
  * 
  * @author Nikita Koksharov
  *
+ * @param <V> value type
  */
-public class RemotePromise<T> extends RedissonPromise<T> {
+public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RExecutorFuture<V> {
 
-    private String requestId;
-    private RFuture<Boolean> addFuture;
+    private final String taskId;
     
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
+    public RedissonExecutorFuture(RPromise<V> promise, String taskId) {
+        super(promise);
+        this.taskId = taskId;
     }
-    public String getRequestId() {
-        return requestId;
-    }
-    
-    public void setAddFuture(RFuture<Boolean> addFuture) {
-        this.addFuture = addFuture;
-    }
-    public RFuture<Boolean> getAddFuture() {
-        return addFuture;
-    }
-    
-    public void doCancel() {
-        super.cancel(true);
+
+    @Override
+    public String getTaskId() {
+        return taskId;
     }
 
 }

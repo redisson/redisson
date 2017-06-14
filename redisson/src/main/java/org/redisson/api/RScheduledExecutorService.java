@@ -109,16 +109,6 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
                                                      TimeUnit unit);
     
     /**
-     * Cancels scheduled task by id
-     * 
-     * @see RScheduledFuture#getTaskId()
-     * 
-     * @param taskId - id of task
-     * @return <code>true</code> if task has been canceled successfully
-     */
-    boolean cancelScheduledTask(String taskId);
-    
-    /**
      * Creates and executes a periodic action with cron schedule object.
      * If any execution of the task
      * encounters an exception, subsequent executions are suppressed.
@@ -132,5 +122,14 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
      * @return future object
      */
     ScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule);
+
+    /**
+     * Use {@link #cancelTask(String)}
+     * 
+     * @param taskId of task
+     * @return boolean
+     */
+    @Deprecated
+    boolean cancelScheduledTask(String taskId);
     
 }

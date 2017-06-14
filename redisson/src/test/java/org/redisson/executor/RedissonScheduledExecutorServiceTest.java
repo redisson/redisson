@@ -102,7 +102,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         
         RScheduledFuture<?> futureAsync = executor.scheduleAsync(new ScheduledLongRunnableTask("executed2"), 1, TimeUnit.SECONDS);
         Thread.sleep(2000);
-        assertThat(executor.cancelScheduledTask(futureAsync.getTaskId())).isTrue();
+        assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
         assertThat(redisson.<Integer>getBucket("executed2").get()).isBetween(1000, Integer.MAX_VALUE);
     }
     
@@ -121,7 +121,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledFuture<?> futureAsync = executor.scheduleWithFixedDelayAsync(new ScheduledRunnableTask("executed2"), 1, 2, TimeUnit.SECONDS);
         Thread.sleep(4000);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(2);
-        assertThat(executor.cancelScheduledTask(futureAsync.getTaskId())).isTrue();
+        assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(2);
     }

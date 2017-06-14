@@ -36,6 +36,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceAck;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
@@ -189,7 +190,7 @@ public abstract class BaseRemoteService {
                 final RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args,
                         optionsCopy, System.currentTimeMillis());
 
-                final RemotePromise<Object> result = new RemotePromise<Object>(commandExecutor.getConnectionManager().newPromise()) {
+                final RemotePromise<Object> result = new RemotePromise<Object>() {
 
                     @Override
                     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -469,7 +470,7 @@ public abstract class BaseRemoteService {
     private RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
             final RBlockingQueue<RemoteServiceAck> responseQueue, String ackName)
             throws InterruptedException {
-        final RPromise<RemoteServiceAck> promise = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<RemoteServiceAck> promise = new RedissonPromise<RemoteServiceAck>();
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
