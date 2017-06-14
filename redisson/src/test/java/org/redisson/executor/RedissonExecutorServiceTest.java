@@ -22,10 +22,14 @@ import org.junit.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedissonNode;
 import org.redisson.RedissonRuntimeEnvironment;
+import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RExecutorService;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
+
+import com.jayway.awaitility.Awaitility;
+import com.jayway.awaitility.Duration;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
@@ -82,6 +86,42 @@ public class RedissonExecutorServiceTest extends BaseTest {
             canceled = true;
         }
         assertThat(canceled).isTrue();
+    }
+
+    @Test
+    public void testBatchSubmitRunnable() throws InterruptedException, ExecutionException, TimeoutException {
+        RExecutorService e = redisson.getExecutorService("test");
+        RExecutorBatchFuture future = e.submit(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
+                    new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
+        
+        future.get(5, TimeUnit.SECONDS);
+        future.getTaskFutures().stream().forEach(x -> x.syncUninterruptibly());
+    }
+    
+    @Test
+    public void testBatchSubmitCallable() throws InterruptedException, ExecutionException, TimeoutException {
+        RExecutorService e = redisson.getExecutorService("test");
+        RExecutorBatchFuture future = e.submit(new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"), 
+                    new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"));
+        
+        future.get(5, TimeUnit.SECONDS);
+        future.getTaskFutures().stream().forEach(x -> assertThat(x.getNow()).isEqualTo("1234"));
+    }
+
+    
+    @Test(expected = NullPointerException.class)
+    public void testBatchExecuteNPE() {
+        RExecutorService e = redisson.getExecutorService("test");
+        e.execute();
+    }
+    
+    @Test
+    public void testBatchExecute() {
+        RExecutorService e = redisson.getExecutorService("test");
+        e.execute(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
+                    new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
+        
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
     }
     
     @Test
