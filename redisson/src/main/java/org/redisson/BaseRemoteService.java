@@ -33,7 +33,7 @@ import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -65,21 +65,21 @@ public abstract class BaseRemoteService {
     protected final Codec codec;
     protected final RedissonClient redisson;
     protected final String name;
-    protected final CommandExecutor commandExecutor;
+    protected final CommandAsyncExecutor commandExecutor;
 
-    public BaseRemoteService(RedissonClient redisson, CommandExecutor commandExecutor) {
+    public BaseRemoteService(RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this(redisson, "redisson_rs", commandExecutor);
     }
 
-    public BaseRemoteService(RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public BaseRemoteService(RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
         this(null, redisson, name, commandExecutor);
     }
 
-    public BaseRemoteService(Codec codec, RedissonClient redisson, CommandExecutor commandExecutor) {
+    public BaseRemoteService(Codec codec, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this(codec, redisson, "redisson_rs", commandExecutor);
     }
 
-    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
         this.codec = codec;
         this.redisson = redisson;
         this.name = name;
@@ -224,7 +224,7 @@ public abstract class BaseRemoteService {
                             return cancel(syncInterface, requestId, request, mayInterruptIfRunning);
                         }
 
-                        boolean removed = remove(requestQueue, request);
+                        boolean removed = commandExecutor.get(removeAsync(requestQueue, request));
                         if (removed) {
                             super.cancel(mayInterruptIfRunning);
                             return true;
@@ -522,8 +522,8 @@ public abstract class BaseRemoteService {
         return future;
     }
 
-    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return requestQueue.remove(request);
+    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return requestQueue.removeAsync(request);
     }
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy, String responseName,

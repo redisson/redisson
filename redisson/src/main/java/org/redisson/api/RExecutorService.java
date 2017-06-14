@@ -32,7 +32,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     String MAPREDUCE_NAME = "redisson_mapreduce";
     
     /**
-     * Submits a value-returning task for execution and returns a
+     * Submits a value-returning task for execution synchronously and returns a
      * Future representing the pending results of the task. The
      * Future's {@code get} method will return the task's result upon
      * successful completion.
@@ -43,6 +43,16 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      */
     @Override
     <T> RExecutorFuture<T> submit(Callable<T> task);
+    
+    /**
+     * Submits tasks batch for execution synchronously. 
+     * All tasks are stored to executor request queue atomically, 
+     * if case of any error none of tasks will be added.
+     * 
+     * @param tasks - tasks to execute
+     * @return Future object
+     */
+    RExecutorBatchFuture submit(Callable<?> ...tasks);
     
     /**
      * Submits a Runnable task for execution and returns a Future
@@ -68,6 +78,16 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     @Override
     RExecutorFuture<?> submit(Runnable task);
 
+    /**
+     * Submits tasks batch for execution synchronously. 
+     * All tasks are stored to executor request queue atomically, 
+     * if case of any error none of tasks will be added.
+     * 
+     * @param tasks - tasks to execute
+     * @return Future object
+     */
+    RExecutorBatchFuture submit(Runnable ...tasks);
+    
     /**
      * Returns executor name
      * 
@@ -113,5 +133,14 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return <code>true</code> if task has been canceled successfully
      */
     boolean cancelTask(String taskId);
+    
+    /**
+     * Submits tasks batch for execution synchronously. 
+     * All tasks are stored to executor request queue atomically, 
+     * if case of any error none of tasks will be added.
+     * 
+     * @param tasks - tasks to execute
+     */
+    void execute(Runnable ...tasks);
 
 }

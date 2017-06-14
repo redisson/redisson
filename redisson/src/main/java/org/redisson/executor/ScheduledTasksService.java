@@ -37,13 +37,13 @@ import io.netty.util.TimerTask;
  * @author Nikita Koksharov
  *
  */
-public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
+public class ScheduledTasksService extends TasksService {
 
     private String requestId;
     private String schedulerQueueName;
     private String schedulerChannelName;
     
-    public ScheduledExecutorRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
         super(codec, redisson, name, commandExecutor);
     }
     
@@ -119,7 +119,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
             commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
-                    ScheduledExecutorRemoteService.super.awaitResultAsync(optionsCopy, result, request, responseName);
+                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseName);
                 }
             }, delay, TimeUnit.MILLISECONDS);
         } else {
@@ -128,8 +128,8 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
     }
 
     @Override
-    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return commandExecutor.evalWrite(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('zrem', KEYS[2], ARGV[1]) > 0 then "
                       + "redis.call('hdel', KEYS[6], ARGV[1]); "

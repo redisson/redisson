@@ -128,7 +128,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed() {
-        ScheduledExecutorRemoteService scheduledRemoteService = new ScheduledExecutorRemoteService(codec, redisson, name, commandExecutor);
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);

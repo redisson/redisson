@@ -26,7 +26,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RemoteServiceCancelRequest;
@@ -41,14 +41,14 @@ import io.netty.util.concurrent.FutureListener;
  * @author Nikita Koksharov
  *
  */
-public class ExecutorRemoteService extends BaseRemoteService {
+public class TasksService extends BaseRemoteService {
 
     protected String terminationTopicName;
     protected String tasksCounterName;
     protected String statusName;
     protected String tasksName;
     
-    public ExecutorRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public TasksService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
         super(codec, redisson, name, commandExecutor);
     }
     
@@ -95,8 +95,12 @@ public class ExecutorRemoteService extends BaseRemoteService {
         return promise;
     }
 
+    protected CommandAsyncExecutor getAddCommandExecutor() {
+        return commandExecutor;
+    }
+    
     protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return getAddCommandExecutor().evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "redis.call('rpush', KEYS[3], ARGV[2]); "
                     + "redis.call('hset', KEYS[4], ARGV[1], ARGV[2]);"
@@ -109,8 +113,8 @@ public class ExecutorRemoteService extends BaseRemoteService {
     }
     
     @Override
-    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return commandExecutor.evalWrite(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "local task = redis.call('hget', KEYS[5], ARGV[1]); " + 
                     "if task ~= false and redis.call('lrem', KEYS[1], 1, task) > 0 then "
                       + "redis.call('hdel', KEYS[5], ARGV[1]); "
@@ -129,45 +133,59 @@ public class ExecutorRemoteService extends BaseRemoteService {
               request.getRequestId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
-    public RFuture<Boolean> cancelExecutionAsync(String requestId) {
-        Class<?> syncInterface = RemoteExecutorService.class;
+    public RFuture<Boolean> cancelExecutionAsync(final String requestId) {
+        final Class<?> syncInterface = RemoteExecutorService.class;
         String requestQueueName = getRequestQueueName(syncInterface);
-        String cancelRequestName = getCancelRequestQueueName(syncInterface, requestId);
 
         if (!redisson.getMap(tasksName, LongCodec.INSTANCE).containsKey(requestId)) {
             return RedissonPromise.newSucceededFuture(false);
         }
+
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         
         RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
 
         RemoteServiceRequest request = new RemoteServiceRequest(requestId);
-        if (remove(requestQueue, request)) {
-            return RedissonPromise.newSucceededFuture(true);
-        }
-        
-        RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = redisson.getBlockingQueue(cancelRequestName, getCodec());
-        cancelRequestQueue.putAsync(new RemoteServiceCancelRequest(true, requestId + ":cancel-response"));
-        cancelRequestQueue.expireAsync(60, TimeUnit.SECONDS);
-        
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        String responseQueueName = getResponseQueueName(syncInterface, requestId + ":cancel-response");
-        RBlockingQueue<RemoteServiceCancelResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, getCodec());
-        final RFuture<RemoteServiceCancelResponse> response = responseQueue.pollAsync(60, TimeUnit.SECONDS);
-        response.addListener(new FutureListener<RemoteServiceCancelResponse>() {
+        RFuture<Boolean> removeFuture = removeAsync(requestQueue, request);
+        removeFuture.addListener(new FutureListener<Boolean>() {
             @Override
-            public void operationComplete(Future<RemoteServiceCancelResponse> future) throws Exception {
+            public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
                     result.tryFailure(future.cause());
                     return;
                 }
                 
-                if (response.getNow() == null) {
-                    result.trySuccess(false);
-                    return;
+                if (future.getNow()) {
+                    result.trySuccess(true);
+                } else {
+                    String cancelRequestName = getCancelRequestQueueName(syncInterface, requestId);
+                    
+                    RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = redisson.getBlockingQueue(cancelRequestName, getCodec());
+                    cancelRequestQueue.putAsync(new RemoteServiceCancelRequest(true, requestId + ":cancel-response"));
+                    cancelRequestQueue.expireAsync(60, TimeUnit.SECONDS);
+                    
+                    String responseQueueName = getResponseQueueName(syncInterface, requestId + ":cancel-response");
+                    RBlockingQueue<RemoteServiceCancelResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, getCodec());
+                    final RFuture<RemoteServiceCancelResponse> response = responseQueue.pollAsync(60, TimeUnit.SECONDS);
+                    response.addListener(new FutureListener<RemoteServiceCancelResponse>() {
+                        @Override
+                        public void operationComplete(Future<RemoteServiceCancelResponse> future) throws Exception {
+                            if (!future.isSuccess()) {
+                                result.tryFailure(future.cause());
+                                return;
+                            }
+                            
+                            if (response.getNow() == null) {
+                                result.trySuccess(false);
+                                return;
+                            }
+                            result.trySuccess(response.getNow().isCanceled());
+                        }
+                    });
                 }
-                result.trySuccess(response.getNow().isCanceled());
             }
         });
+
         return result;
     }
     

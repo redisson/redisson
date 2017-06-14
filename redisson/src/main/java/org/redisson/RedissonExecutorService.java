@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.CronSchedule;
 import org.redisson.api.RAtomicLong;
+import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RFuture;
 import org.redisson.api.RRemoteService;
@@ -53,14 +54,16 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.executor.ExecutorRemoteService;
+import org.redisson.executor.RedissonExecutorBatchFuture;
 import org.redisson.executor.RedissonExecutorFuture;
 import org.redisson.executor.RedissonScheduledFuture;
 import org.redisson.executor.RemoteExecutorService;
 import org.redisson.executor.RemoteExecutorServiceAsync;
 import org.redisson.executor.RemoteExecutorServiceImpl;
 import org.redisson.executor.RemotePromise;
-import org.redisson.executor.ScheduledExecutorRemoteService;
+import org.redisson.executor.ScheduledTasksService;
+import org.redisson.executor.TasksBatchService;
+import org.redisson.executor.TasksService;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
@@ -110,8 +113,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final RemoteExecutorServiceAsync asyncService;
     private final RemoteExecutorServiceAsync asyncServiceWithoutResult;
     
-    private final ScheduledExecutorRemoteService scheduledRemoteService;
-    private final ExecutorRemoteService executorRemoteService;
+    private final ScheduledTasksService scheduledRemoteService;
     
     private final Map<Class<?>, byte[]> class2bytes = PlatformDependent.newConcurrentHashMap();
 
@@ -144,7 +146,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         remoteService = redisson.getRemoteService(name, codec);
         workersTopic = redisson.getTopic(workersChannelName);
         
-        executorRemoteService = new ExecutorRemoteService(codec, redisson, name, commandExecutor);
+        TasksService executorRemoteService = new TasksService(codec, redisson, name, commandExecutor);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
@@ -152,7 +154,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.DAYS));
         asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         
-        scheduledRemoteService = new ScheduledExecutorRemoteService(codec, redisson, name, commandExecutor);
+        scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor);
         scheduledRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);
@@ -246,6 +248,36 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] state = encode(task);
         RemotePromise<Void> promise = (RemotePromise<Void>)asyncServiceWithoutResult.executeRunnable(task.getClass().getName(), classBody, state);
         execute(promise);
+    }
+    
+    @Override
+    public void execute(Runnable ...tasks) {
+        if (tasks.length == 0) {
+            throw new NullPointerException("Tasks are not defined");
+        }
+
+        TasksBatchService executorRemoteService = createBatchService();
+        RemoteExecutorServiceAsync asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
+        for (Runnable task : tasks) {
+            check(task);
+            byte[] classBody = getClassBody(task);
+            byte[] state = encode(task);
+            asyncServiceWithoutResult.executeRunnable(task.getClass().getName(), classBody, state);
+        }
+        
+        List<Boolean> result = (List<Boolean>) executorRemoteService.executeAdd();
+        if (!result.get(0)) {
+            throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
+        }
+    }
+
+    private TasksBatchService createBatchService() {
+        TasksBatchService executorRemoteService = new TasksBatchService(codec, redisson, name, commandExecutor);
+        executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
+        executorRemoteService.setTasksCounterName(tasksCounterName);
+        executorRemoteService.setStatusName(statusName);
+        executorRemoteService.setTasksName(tasksName);
+        return executorRemoteService;
     }
     
     private byte[] encode(Object task) {
@@ -395,6 +427,77 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         addListener(result);
         return new RedissonExecutorFuture<T>(result, result.getRequestId());
     }
+    
+    @Override
+    public RExecutorBatchFuture submit(Callable<?> ...tasks) {
+        if (tasks.length == 0) {
+            throw new NullPointerException("Tasks are not defined");
+        }
+
+        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        TasksBatchService executorRemoteService = createBatchService();
+        RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.DAYS));
+        for (Callable<?> task : tasks) {
+            check(task);
+            byte[] classBody = getClassBody(task);
+            byte[] state = encode(task);
+            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(task.getClass().getName(), classBody, state);
+            RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise, promise.getRequestId());
+            result.add(executorFuture);
+        }
+        
+        List<Boolean> addResult = (List<Boolean>) executorRemoteService.executeAdd();
+        if (!addResult.get(0)) {
+            throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
+        }
+        
+        return new RedissonExecutorBatchFuture(result);
+    }
+    
+    @Override
+    public RExecutorBatchFuture submitAsync(Callable<?> ...tasks) {
+        if (tasks.length == 0) {
+            throw new NullPointerException("Tasks are not defined");
+        }
+
+        TasksBatchService executorRemoteService = createBatchService();
+        RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.DAYS));
+        final List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        for (Callable<?> task : tasks) {
+            check(task);
+            byte[] classBody = getClassBody(task);
+            byte[] state = encode(task);
+            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(task.getClass().getName(), classBody, state);
+            RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise, promise.getRequestId());
+            result.add(executorFuture);
+        }
+        
+        executorRemoteService.executeAddAsync().addListener(new FutureListener<List<Boolean>>() {
+
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<List<Boolean>> future) throws Exception {
+                if (!future.isSuccess()) {
+                    for (RExecutorFuture<?> executorFuture : result) {
+                        ((RPromise<Void>)executorFuture).tryFailure(future.cause());
+                    }
+                    return;
+                }
+                
+                for (Boolean bool : future.getNow()) {
+                    if (!bool) {
+                        RejectedExecutionException ex = new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
+                        for (RExecutorFuture<?> executorFuture : result) {
+                            ((RPromise<Void>)executorFuture).tryFailure(ex);
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+
+        return new RedissonExecutorBatchFuture(result);
+    }
+
 
     private <T> void addListener(final RemotePromise<T> result) {
         result.getAddFuture().addListener(new FutureListener<Boolean>() {
@@ -453,6 +556,77 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return new RedissonExecutorFuture<T>(resultFuture, future.getRequestId());
     }
 
+    @Override
+    public RExecutorBatchFuture submit(Runnable ...tasks) {
+        if (tasks.length == 0) {
+            throw new NullPointerException("Tasks are not defined");
+        }
+
+        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        TasksBatchService executorRemoteService = createBatchService();
+        RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.DAYS));
+        for (Runnable task : tasks) {
+            check(task);
+            byte[] classBody = getClassBody(task);
+            byte[] state = encode(task);
+            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(task.getClass().getName(), classBody, state);
+            RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise, promise.getRequestId());
+            result.add(executorFuture);
+        }
+        
+        List<Boolean> addResult = (List<Boolean>) executorRemoteService.executeAdd();
+        if (!addResult.get(0)) {
+            throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
+        }
+        
+        return new RedissonExecutorBatchFuture(result);
+    }
+    
+    @Override
+    public RExecutorBatchFuture submitAsync(Runnable ...tasks) {
+        if (tasks.length == 0) {
+            throw new NullPointerException("Tasks are not defined");
+        }
+
+        TasksBatchService executorRemoteService = createBatchService();
+        RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().expectResultWithin(1, TimeUnit.DAYS));
+        final List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        for (Runnable task : tasks) {
+            check(task);
+            byte[] classBody = getClassBody(task);
+            byte[] state = encode(task);
+            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(task.getClass().getName(), classBody, state);
+            RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise, promise.getRequestId());
+            result.add(executorFuture);
+        }
+        
+        executorRemoteService.executeAddAsync().addListener(new FutureListener<List<Boolean>>() {
+
+            @Override
+            public void operationComplete(io.netty.util.concurrent.Future<List<Boolean>> future) throws Exception {
+                if (!future.isSuccess()) {
+                    for (RExecutorFuture<?> executorFuture : result) {
+                        ((RPromise<Void>)executorFuture).tryFailure(future.cause());
+                    }
+                    return;
+                }
+                
+                for (Boolean bool : future.getNow()) {
+                    if (!bool) {
+                        RejectedExecutionException ex = new RejectedExecutionException("Task rejected. ExecutorService is in shutdown state");
+                        for (RExecutorFuture<?> executorFuture : result) {
+                            ((RPromise<Void>)executorFuture).tryFailure(ex);
+                        }
+                        break;
+                    }
+                }
+            }
+        });
+
+        return new RedissonExecutorBatchFuture(result);
+    }
+
+    
     @Override
     public RExecutorFuture<?> submit(Runnable task) {
         RemotePromise<Void> promise = (RemotePromise<Void>) ((PromiseDelegator<Void>) submitAsync(task)).getInnerPromise();
