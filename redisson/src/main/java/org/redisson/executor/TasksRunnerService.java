@@ -41,7 +41,7 @@ import io.netty.buffer.Unpooled;
  * @author Nikita Koksharov
  *
  */
-public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteParams {
+public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
 
     private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
     
@@ -59,7 +59,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
     private String schedulerQueueName;
     private String schedulerChannelName;
     
-    public RemoteExecutorServiceImpl(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
+    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;

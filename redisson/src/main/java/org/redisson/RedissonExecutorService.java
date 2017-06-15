@@ -59,7 +59,7 @@ import org.redisson.executor.RedissonExecutorFuture;
 import org.redisson.executor.RedissonScheduledFuture;
 import org.redisson.executor.RemoteExecutorService;
 import org.redisson.executor.RemoteExecutorServiceAsync;
-import org.redisson.executor.RemoteExecutorServiceImpl;
+import org.redisson.executor.TasksRunnerService;
 import org.redisson.executor.RemotePromise;
 import org.redisson.executor.ScheduledTasksService;
 import org.redisson.executor.TasksBatchService;
@@ -222,8 +222,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         };
         scheduler.start();
         
-        RemoteExecutorServiceImpl service = 
-                new RemoteExecutorServiceImpl(commandExecutor, redisson, codec, requestQueueName);
+        TasksRunnerService service = 
+                new TasksRunnerService(commandExecutor, redisson, codec, requestQueueName);
         service.setStatusName(statusName);
         service.setTasksCounterName(tasksCounterName);
         service.setTasksName(tasksName);
