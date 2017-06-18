@@ -318,5 +318,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected void enableRedissonReferenceSupport() {
         this.commandExecutor.enableRedissonReferenceSupport(this);
     }
+    
+    @Override
+    protected void finalize() throws Throwable {
+        if (!isShutdown() && !isShuttingDown()) {
+            shutdown();
+        }
+    }
 }
 

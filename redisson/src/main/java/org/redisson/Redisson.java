@@ -633,5 +633,11 @@ public class Redisson implements RedissonClient {
     }
     
 
+    @Override
+    protected void finalize() throws Throwable {
+        if (!isShutdown() && !isShuttingDown()) {
+            shutdown();
+        }
+    }
 }
 
