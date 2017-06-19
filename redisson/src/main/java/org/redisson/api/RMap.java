@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.api.map.MapLoader;
 import org.redisson.api.mapreduce.RMapReduce;
 
 /**
@@ -35,6 +36,37 @@ import org.redisson.api.mapreduce.RMapReduce;
  */
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
+    /**
+     * Loads all map entries to this Redis map.
+     * 
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     */
+    void loadAll(boolean replaceExistingValues, int parallelism);
+    
+    /**
+     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * 
+     * @param keys - map keys
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     */
+    void loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
+    
+    /**
+     * Returns the value to which the specified key is mapped,
+     * or {@code null} if this map contains no mapping for the key.
+     * 
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined 
+     * then value will be loaded in read-through mode. 
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the value to which the specified key is mapped, or
+     *         {@code null} if this map contains no mapping for the key
+     */
+    @Override
+    V get(Object key);
+    
     /**
      * Returns <code>RMapReduce</code> object associated with this map
      * 
@@ -81,14 +113,16 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     V addAndGet(K key, Number delta);
 
     /**
-     * Gets a map slice contains the mappings with defined <code>keys</code>
-     * by one operation. This operation <b>NOT</b> traverses all map entries
-     * like any other <code>filter*</code> method, so works faster.
+     * Gets a map slice contained the mappings with defined <code>keys</code>
+     * by one operation.
+     *
+     * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined 
+     * then value/values will be loaded in read-through mode. 
      *
      * The returned map is <b>NOT</b> backed by the original map.
      *
      * @param keys - map keys
-     * @return Map object
+     * @return Map slice
      */
     Map<K, V> getAll(Set<K> keys);
 

@@ -24,7 +24,7 @@ import org.redisson.cache.Cache;
 
 import mockit.Deencapsulation;
 
-public class RedissonLocalCachedMapTest extends BaseTest {
+public class RedissonLocalCachedMapTest extends BaseMapTest {
 
         @Test
     public void testPerf() {
@@ -48,6 +48,12 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     }
     
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().mapLoader(createMapLoader(map));
+        return redisson.getLocalCachedMap("test", options);        
+    }
+        
     @Test
     public void testReadValuesAndEntries() {
         RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
@@ -127,7 +133,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5);
         
@@ -156,7 +162,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
                 .invalidationPolicy(InvalidationPolicy.NONE);
@@ -186,7 +192,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testNoInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
                 .invalidationPolicy(InvalidationPolicy.NONE);
@@ -216,7 +222,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5);
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5);
         RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
         Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
         
@@ -242,7 +248,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testLFU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -260,7 +266,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testLRU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);

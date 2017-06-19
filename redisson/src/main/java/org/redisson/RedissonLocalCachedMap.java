@@ -207,17 +207,17 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidationStatusListenerId;
     private volatile long lastInvalidate;
 
-    protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(commandExecutor, name, redisson);
+    protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+        super(commandExecutor, name, redisson, options.getMapLoader(), options.getMapWriter());
         init(name, options, redisson, evictionScheduler);
     }
 
-    protected RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(codec, connectionManager, name, redisson);
+    protected RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+        super(codec, connectionManager, name, redisson, options.getMapLoader(), options.getMapWriter());
         init(name, options, redisson, evictionScheduler);
     }
 
-    private void init(String name, LocalCachedMapOptions options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
+    private void init(String name, LocalCachedMapOptions<K, V> options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
         instanceId = generateId();
         
         if (options.getInvalidationPolicy() == InvalidationPolicy.ON_CHANGE
@@ -234,7 +234,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         addListeners(name, options, redisson);
     }
 
-    private void addListeners(String name, final LocalCachedMapOptions options, final RedissonClient redisson) {
+    private void addListeners(String name, final LocalCachedMapOptions<K, V> options, final RedissonClient redisson) {
         invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
 
         if (options.getInvalidationPolicy() == InvalidationPolicy.NONE) {
@@ -316,7 +316,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         });
     }
 
-    protected Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions options) {
+    protected Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<K, V> options) {
         if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
             return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }

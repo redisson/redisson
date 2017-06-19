@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,7 +33,7 @@ import org.redisson.codec.MsgPackJacksonCodec;
 import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
 
-public class RedissonMapCacheTest extends BaseTest {
+public class RedissonMapCacheTest extends BaseMapTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -136,6 +135,11 @@ public class RedissonMapCacheTest extends BaseTest {
             return true;
         }
 
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        return redisson.getMapCache("test", createMapLoader(map), null);        
     }
     
     @Test

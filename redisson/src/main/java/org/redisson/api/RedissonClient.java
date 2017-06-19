@@ -17,6 +17,8 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 import org.redisson.codec.CodecProvider;
@@ -98,6 +100,8 @@ public interface RedissonClient {
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
+    
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
 
     /**
      * Returns map-based cache instance by name.
@@ -111,6 +115,8 @@ public interface RedissonClient {
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name);
+    
+    <K, V> RMapCache<K, V> getMapCache(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
 
     /**
      * Returns object holder instance by name.
@@ -248,7 +254,7 @@ public interface RedissonClient {
      * @param options - local map options
      * @return LocalCachedMap object
      */
-    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options);
+    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options);
     
     /**
      * Returns local cached map instance by name
@@ -261,7 +267,7 @@ public interface RedissonClient {
      * @param options - local map options
      * @return LocalCachedMap object
      */
-    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options);
+    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options);
     
     /**
      * Returns map instance by name.
@@ -272,6 +278,8 @@ public interface RedissonClient {
      * @return Map object
      */
     <K, V> RMap<K, V> getMap(String name);
+    
+    <K, V> RMap<K, V> getMap(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
 
     /**
      * Returns map instance by name
@@ -284,6 +292,8 @@ public interface RedissonClient {
      * @return Map object
      */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
+    
+    <K, V> RMap<K, V> getMap(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
 
     /**
      * Returns Set based Multimap instance by name.

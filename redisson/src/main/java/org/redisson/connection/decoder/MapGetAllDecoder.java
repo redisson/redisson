@@ -17,6 +17,7 @@ package org.redisson.connection.decoder;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,7 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
-            return Collections.emptyMap();
+            return new HashMap<Object, Object>();
         }
         Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
         for (int index = 0; index < args.size()-shiftIndex; index++) {

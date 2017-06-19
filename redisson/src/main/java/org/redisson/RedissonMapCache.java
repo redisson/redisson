@@ -21,7 +21,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +31,8 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -94,21 +95,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     static final RedisCommand<Object> EVAL_PUT = new RedisCommand<Object>("EVAL", 6, ValueType.MAP, ValueType.MAP_VALUE);
     static final RedisCommand<Object> EVAL_PUT_IF_ABSENT = new RedisCommand<Object>("EVAL", 5, ValueType.MAP, ValueType.MAP_VALUE);
 
-    RedissonMapCache(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
-        super(commandExecutor, name, redisson);
-    }
-    
-    RedissonMapCache(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
-        super(codec, commandExecutor, name, redisson);
-    }
-    
-    public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
-        super(commandExecutor, name, redisson);
+    public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, 
+            String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        super(commandExecutor, name, redisson, mapLoader, mapWriter);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
 
-    public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
-        super(codec, commandExecutor, name, redisson);
+    public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, 
+            String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        super(codec, commandExecutor, name, redisson, mapLoader, mapWriter);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
     
@@ -185,11 +180,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Map<K, V>> getAllAsync(final Set<K> keys) {
-        if (keys.isEmpty()) {
-            return newSucceededFuture(Collections.<K, V>emptyMap());
-        }
-
+    protected RFuture<Map<K, V>> getAllValuesAsync(Set<K> keys) {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(System.currentTimeMillis());
         args.addAll(keys);
@@ -230,9 +221,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                       + "end; "
                       + "return map;",
                 Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName()), args.toArray());
-        
     }
-
+    
     @Override
     public V putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit) {
         return get(putIfAbsentAsync(key, value, ttl, ttlUnit));
@@ -364,7 +354,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<V> getAsync(K key) {
+    protected RFuture<V> getValueAsync(K key) {
         checkKey(key);
         
         return commandExecutor.evalWriteAsync(getName(key), codec, EVAL_GET_TTL,

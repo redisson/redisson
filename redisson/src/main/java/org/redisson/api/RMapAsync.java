@@ -18,6 +18,9 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.redisson.api.map.MapLoader;
+
 import java.util.Set;
 
 /**
@@ -31,6 +34,23 @@ import java.util.Set;
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
     /**
+     * Loads all map entries to this Redis map.
+     * 
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     */
+    RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism);
+    
+    /**
+     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * 
+     * @param keys - map keys
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     */
+    RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
+    
+    /**
      * Returns size of value mapped by key in bytes
      * 
      * @param key - map key
@@ -38,6 +58,18 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Integer> valueSizeAsync(K key);
     
+    /**
+     * Gets a map slice contained the mappings with defined <code>keys</code>
+     * by one operation.
+     *
+     * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined 
+     * then value/values will be loaded in read-through mode. 
+     *
+     * The returned map is <b>NOT</b> backed by the original map.
+     *
+     * @param keys - map keys
+     * @return Map slice
+     */
     RFuture<Map<K, V>> getAllAsync(Set<K> keys);
 
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
@@ -105,6 +137,17 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Map<K, V>> readAllMapAsync();
 
+    /**
+     * Returns the value to which the specified key is mapped,
+     * or {@code null} if this map contains no mapping for the key.
+     * 
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined 
+     * then value will be loaded in read-through mode. 
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the value to which the specified key is mapped, or
+     *         {@code null} if this map contains no mapping for the key
+     */
     RFuture<V> getAsync(K key);
 
     RFuture<V> putAsync(K key, V value);

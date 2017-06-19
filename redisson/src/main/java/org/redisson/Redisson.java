@@ -69,6 +69,8 @@ import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
 import org.redisson.command.CommandExecutor;
@@ -252,18 +254,23 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions options) {
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, LocalCachedMapOptions<K, V> options) {
         return new RedissonLocalCachedMap<K, V>(connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
-    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions options) {
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec, LocalCachedMapOptions<K, V> options) {
         return new RedissonLocalCachedMap<K, V>(codec, connectionManager.getCommandExecutor(), name, options, evictionScheduler, this);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
-        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name, this, null, null);
+    }
+    
+    @Override
+    public <K, V> RMap<K, V> getMap(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        return new RedissonMap<K, V>(connectionManager.getCommandExecutor(), name, this, mapLoader, mapWriter);
     }
 
     @Override
@@ -308,17 +315,32 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
-        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this, null, null);
     }
 
     @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this, mapLoader, mapWriter);
+    }
+    
+    @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this, null, null);
+    }
+    
+    @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this, mapLoader, mapWriter);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
-        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name, this, null, null);
+    }
+    
+    @Override
+    public <K, V> RMap<K, V> getMap(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+        return new RedissonMap<K, V>(codec, connectionManager.getCommandExecutor(), name, this, mapLoader, mapWriter);
     }
 
     @Override

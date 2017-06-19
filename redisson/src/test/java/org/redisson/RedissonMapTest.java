@@ -25,7 +25,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
-public class RedissonMapTest extends BaseTest {
+public class RedissonMapTest extends BaseMapTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -129,6 +129,11 @@ public class RedissonMapTest extends BaseTest {
 
     }
 
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        return redisson.getMap("test", createMapLoader(map), null);        
+    }
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = redisson.getMap("getAll");
@@ -153,7 +158,7 @@ public class RedissonMapTest extends BaseTest {
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
         assertThat(mapStr.get("1")).isEqualTo(112);
     }
-
+    
     @Test
     public void testValueSize() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
