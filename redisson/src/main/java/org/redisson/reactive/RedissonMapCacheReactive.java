@@ -63,9 +63,6 @@ import reactor.rx.Streams;
  */
 public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive implements RMapCacheReactive<K, V>, MapReactive<K, V> {
 
-    private static final RedisCommand<MapScanResult<Object, Object>> EVAL_HSCAN = 
-            new RedisCommand<MapScanResult<Object, Object>>("EVAL", new NestedMultiDecoder(new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
-
     private final RMapCache<K, V> mapCache;
 
     public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {

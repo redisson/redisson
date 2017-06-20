@@ -138,8 +138,75 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
     
     @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        return redisson.getMapCache("test", null, createMapWriter(map));        
+    }
+    
+    @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
         return redisson.getMapCache("test", createMapLoader(map), null);        
+    }
+    
+    @Test
+    public void testWriterPutIfAbsent() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.putIfAbsent("1", "11", 10, TimeUnit.SECONDS);
+        map.putIfAbsent("1", "00", 10, TimeUnit.SECONDS);
+        map.putIfAbsent("2", "22", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterPutTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+        
+        map.put("1", "11", 10, TimeUnit.SECONDS);
+        map.put("2", "22", 10, TimeUnit.SECONDS);
+        map.put("3", "33", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterFastPutIfAbsentTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.fastPutIfAbsent("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("1", "00", 10, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("2", "22", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterFastPutTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.fastPut("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPut("2", "22", 10, TimeUnit.SECONDS);
+        map.fastPut("3", "33", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
     }
     
     @Test

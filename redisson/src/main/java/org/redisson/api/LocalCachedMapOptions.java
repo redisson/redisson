@@ -25,6 +25,8 @@ import org.redisson.api.map.MapWriter;
  * 
  * @author Nikita Koksharov
  *
+ * @param <K> key type
+ * @param <V> value type
  */
 public class LocalCachedMapOptions<K, V> {
     
@@ -119,6 +121,9 @@ public class LocalCachedMapOptions<K, V> {
      *      .evictionPolicy(EvictionPolicy.NONE)
      *      .invalidateEntryOnChange(true);
      * </pre>
+     * 
+     * @param <K> key type
+     * @param <V> value type
      * 
      * @return LocalCachedMapOptions instance
      * 

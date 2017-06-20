@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -10,14 +11,196 @@ import java.util.Map;
 import org.junit.Test;
 import org.redisson.api.RMap;
 import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
 
 public abstract class BaseMapTest extends BaseTest {
 
+    protected abstract <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map);
+    
     protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
+
+    @Test
+    public void testWriterAddAndGet() {
+        Map<String, Integer> store = new HashMap<>();
+        RMap<String, Integer> map = getWriterTestMap("test", store);
+
+        assertThat(map.addAndGet("1", 11)).isEqualTo(11);
+        assertThat(map.addAndGet("1", 7)).isEqualTo(18);
+        
+        Map<String, Integer> expected = new HashMap<>();
+        expected.put("1", 18);
+        assertThat(store).isEqualTo(expected);
+    }
+
+    
+    @Test
+    public void testWriterFastRemove() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.put("2", "22");
+        map.put("3", "33");
+        
+        map.fastRemove("1", "2", "4");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterFastPut() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.fastPut("1", "11");
+        map.fastPut("2", "22");
+        map.fastPut("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterRemove() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.remove("1");
+        map.put("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterReplaceKeyValue() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.replace("1", "00");
+        map.replace("2", "22");
+        map.put("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "00");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterReplaceKeyOldNewValue() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.replace("1", "11", "00");
+        map.put("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "00");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterRemoveKeyValue() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.put("1", "11");
+        map.put("2", "22");
+        map.put("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+        
+        map.remove("1", "11");
+        
+        Map<String, String> expected2 = new HashMap<>();
+        expected2.put("2", "22");
+        expected2.put("3", "33");
+        assertThat(store).isEqualTo(expected2);
+    }
+    
+    @Test
+    public void testWriterFastPutIfAbsent() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.fastPutIfAbsent("1", "11");
+        map.fastPutIfAbsent("1", "00");
+        map.fastPutIfAbsent("2", "22");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterPutIfAbsent() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        map.putIfAbsent("1", "11");
+        map.putIfAbsent("1", "00");
+        map.putIfAbsent("2", "22");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterPutAll() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+
+        Map<String, String> newMap = new HashMap<>();
+        newMap.put("1", "11");
+        newMap.put("2", "22");
+        newMap.put("3", "33");
+        map.putAll(newMap);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+
+    
+    @Test
+    public void testWriterPut() {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriterTestMap("test", store);
+        
+        map.put("1", "11");
+        map.put("2", "22");
+        map.put("3", "33");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
     
     @Test
     public void testLoadAllReplaceValues() {
-        Map<String, String> cache = new HashMap<String, String>();
+        Map<String, String> cache = new HashMap<>();
         for (int i = 0; i < 10; i++) {
             cache.put("" + i, "" + i + "" + i);
         }
@@ -56,6 +239,34 @@ public abstract class BaseMapTest extends BaseTest {
         for (int i = 0; i < 100; i++) {
             assertThat(map.containsKey("" + i)).isTrue();
         }
+    }
+    
+    protected <K, V> MapWriter<K, V> createMapWriter(Map<K, V> map) {
+        return new MapWriter<K, V>() {
+
+            @Override
+            public void write(K key, V value) {
+                map.put(key, value);
+            }
+
+            @Override
+            public void writeAll(Map<K, V> values) {
+                map.putAll(values);
+            }
+
+            @Override
+            public void delete(K key) {
+                map.remove(key);
+            }
+
+            @Override
+            public void deleteAll(Collection<K> keys) {
+                for (K key : keys) {
+                    map.remove(key);
+                }
+            }
+            
+        };
     }
     
     protected <K, V> MapLoader<K, V> createMapLoader(Map<K, V> map) {

@@ -49,6 +49,12 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
     
     @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().mapWriter(createMapWriter(map));
+        return redisson.getLocalCachedMap("test", options);        
+    }
+        
+    @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
         LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().mapLoader(createMapLoader(map));
         return redisson.getLocalCachedMap("test", options);        

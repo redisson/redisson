@@ -134,6 +134,11 @@ public class RedissonMapTest extends BaseMapTest {
         return redisson.getMap("test", createMapLoader(map), null);        
     }
     
+    @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        return redisson.getMap("test", null, createMapWriter(map));        
+    }
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = redisson.getMap("getAll");

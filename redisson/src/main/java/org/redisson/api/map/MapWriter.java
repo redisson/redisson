@@ -19,11 +19,12 @@ import java.util.Collection;
 import java.util.Map;
 
 /**
+ * Map writer used for write-through operations.
  * 
  * @author Nikita Koksharov
  *
- * @param <K>
- * @param <V>
+ * @param <K> key type
+ * @param <V> value type
  */
 public interface MapWriter<K, V> {
 
