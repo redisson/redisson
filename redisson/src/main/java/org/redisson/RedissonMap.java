@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.RFuture;
@@ -263,16 +262,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<Void> result = new MapWriterPromise<Void>(future, commandExecutor) {
+        RPromise<Void> result = new MapWriterExecutorPromise<Void>(future, commandExecutor) {
             @Override
-            public void execute(Future<Void> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.writeAll((Map<K, V>) map);
-                        trySuccess(null);
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.writeAll((Map<K, V>) map);
             }
         };
         return result;
@@ -372,24 +365,18 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         if (mapWriter == null) {
             return future;
         }
-        
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                if (future.getNow() == null) {
-                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, value);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<V> future) {
+                return future.getNow() == null;
             }
         };
-
         return result;
     }
 
@@ -418,20 +405,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                if (future.getNow()) {
-                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, value);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<Boolean> future) {
+                return future.getNow();
             }
         };
 
@@ -457,20 +439,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                if (future.getNow()) {
-                    executorService.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.delete((K) key);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.delete((K) key);
+            }
+            
+            @Override
+            protected boolean condition(Future<Boolean> future) {
+                return future.getNow();
             }
         };
 
@@ -514,20 +491,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                if (future.getNow()) {
-                    executorService.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, newValue);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, newValue);
+            }
+            
+            @Override
+            protected boolean condition(Future<Boolean> future) {
+                return future.getNow();
             }
         };
 
@@ -560,20 +532,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                if (future.getNow() != null) {
-                    executorService.execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, value);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<V> future) {
+                return future.getNow() != null;
             }
         };
 
@@ -777,16 +744,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.write(key, value);
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.write(key, value);
             }
         };
 
@@ -811,16 +772,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.delete(key);
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.delete(key);
             }
         };
 
@@ -845,16 +800,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.write(key, value);
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.write(key, value);
             }
         };
 
@@ -961,21 +910,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkKey(key);
         checkValue(value);
         
-        RFuture<V> future = addAndGetOperationAsync(key, value);
+        final RFuture<V> future = addAndGetOperationAsync(key, value);
         if (mapWriter == null) {
             return future;
         }
 
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.write(key, future.getNow());
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.write(key, future.getNow());
             }
         };
 

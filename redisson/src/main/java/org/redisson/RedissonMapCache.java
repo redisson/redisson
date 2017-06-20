@@ -320,20 +320,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
         
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                if (future.getNow() == null) {
-                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, value);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<V> future) {
+                return future.getNow() == null;
             }
         };
 
@@ -593,16 +588,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.write(key, value);
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.write(key, value);
             }
         };
         return result;
@@ -708,16 +697,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
         
-        RPromise<V> result = new MapWriterPromise<V>(future, commandExecutor) {
+        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
             @Override
-            public void execute(final Future<V> future, ExecutorService executorService) {
-                executorService.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.write(key, value);
-                        trySuccess(future.getNow());
-                    }
-                });
+            public void executeWriter() {
+                mapWriter.write(key, value);
             }
         };
 
@@ -1143,20 +1126,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterPromise<Boolean>(future, commandExecutor) {
+        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
             @Override
-            public void execute(final Future<Boolean> future, ExecutorService executorService) {
-                if (future.getNow()) {
-                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            mapWriter.write(key, value);
-                            trySuccess(future.getNow());
-                        }
-                    });
-                } else {
-                    trySuccess(future.getNow());
-                }
+            protected void executeWriter() {
+                mapWriter.write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<Boolean> future) {
+                return future.getNow();
             }
         };
 
