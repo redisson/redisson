@@ -39,6 +39,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      * 
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
      * @param parallelism - parallelism level, used to increase speed of process execution
+     * @return void
      */
     RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism);
     
@@ -48,6 +49,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      * @param keys - map keys
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
      * @param parallelism - parallelism level, used to increase speed of process execution
+     * @return void
      */
     RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
     
