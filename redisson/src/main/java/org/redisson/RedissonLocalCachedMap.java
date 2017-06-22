@@ -206,12 +206,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private volatile long lastInvalidate;
 
     protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(commandExecutor, name, redisson, options.getMapLoader(), options.getMapWriter());
+        super(commandExecutor, name, redisson, options);
         init(name, options, redisson, evictionScheduler);
     }
 
     protected RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(codec, connectionManager, name, redisson, options.getMapLoader(), options.getMapWriter());
+        super(codec, connectionManager, name, redisson, options);
         init(name, options, redisson, evictionScheduler);
     }
 

@@ -31,13 +31,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.api.MapOptions;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.map.MapLoader;
-import org.redisson.api.map.MapWriter;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -72,21 +72,18 @@ import io.netty.util.concurrent.FutureListener;
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     final RedissonClient redisson;
-    MapLoader<K, V> mapLoader;
-    MapWriter<K, V> mapWriter;
+    final MapOptions<K, V> options;
     
-    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(commandExecutor, name);
         this.redisson = redisson;
-        this.mapLoader = mapLoader;
-        this.mapWriter = mapWriter;
+        this.options = options;
     }
 
-    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
+    public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(codec, commandExecutor, name);
         this.redisson = redisson;
-        this.mapLoader = mapLoader;
-        this.mapWriter = mapWriter;
+        this.options = options;
     }
     
     @Override
@@ -192,7 +189,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         RFuture<Map<K, V>> future = getAllValuesAsync(keys);
-        if (mapLoader == null) {
+        if (hasNoLoader()) {
             return future;
         }
 
@@ -221,6 +218,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
         });
         return result;
+    }
+
+    protected boolean hasNoLoader() {
+        return options == null || options.getLoader() == null;
     }
 
     protected RFuture<Map<K, V>> getAllValuesAsync(final Set<K> keys) {
@@ -258,17 +259,26 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         RFuture<Void> future = putAllOperationAsync(map);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Void> result = new MapWriterExecutorPromise<Void>(future, commandExecutor) {
+        MapWriterTask<Void> listener = new MapWriterTask<Void>() {
             @Override
-            public void executeWriter() {
-                mapWriter.writeAll((Map<K, V>) map);
+            public void execute() {
+                options.getWriter().writeAll((Map<K, V>) map);
             }
         };
-        return result;
+        return mapWriterFuture(future, listener);
+    }
+
+    protected <M> RFuture<M> mapWriterFuture(RFuture<M> future, MapWriterTask<M> listener) {
+        if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+            future.addListener(new MapWriteBehindListener<M>(commandExecutor, listener));
+            return future;
+        }        
+
+        return new MapWriterPromise<M>(future, commandExecutor, listener);
     }
 
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
@@ -362,22 +372,27 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(key);
         
         RFuture<V> future = putIfAbsentOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
-
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, value);
+            public void execute() {
+                options.getWriter().write(key, value);
             }
             
             @Override
             protected boolean condition(Future<V> future) {
                 return future.getNow() == null;
             }
+
         };
-        return result;
+        return mapWriterFuture(future, listener);
+    }
+
+    protected boolean hasNoWriter() {
+        return options == null || options.getWriter() == null;
     }
 
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
@@ -401,23 +416,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         RFuture<Boolean> future = fastPutIfAbsentOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, value);
+            public void execute() {
+                options.getWriter().write(key, value);
             }
             
             @Override
             protected boolean condition(Future<Boolean> future) {
                 return future.getNow();
             }
-        };
 
-        return result;
+        };
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
@@ -435,23 +450,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         RFuture<Boolean> future = removeOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.delete((K) key);
+            public void execute() {
+                options.getWriter().delete((K) key);
             }
             
             @Override
             protected boolean condition(Future<Boolean> future) {
                 return future.getNow();
             }
-        };
 
-        return result;
+        };
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
@@ -487,23 +502,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         RFuture<Boolean> future = replaceOperationAsync(key, oldValue, newValue);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, newValue);
+            public void execute() {
+                options.getWriter().write(key, newValue);
             }
             
             @Override
             protected boolean condition(Future<Boolean> future) {
                 return future.getNow();
             }
-        };
 
-        return result;
+        };
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
@@ -528,23 +543,23 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         RFuture<V> future = replaceOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, value);
+            public void execute() {
+                options.getWriter().write(key, value);
             }
             
             @Override
             protected boolean condition(Future<V> future) {
                 return future.getNow() != null;
             }
-        };
 
-        return result;
+        };
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<V> replaceOperationAsync(final K key, final V value) {
@@ -568,7 +583,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkKey(key);
 
         RFuture<V> future = getOperationAsync(key);
-        if (mapLoader == null) {
+        if (hasNoLoader()) {
             return future;
         }
         
@@ -602,7 +617,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync(mapLoader.loadAllKeys(), replaceExistingValues, parallelism, null);
+        return loadAllAsync(options.getLoader().loadAllKeys(), replaceExistingValues, parallelism, null);
     }
     
     @Override
@@ -740,18 +755,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         RFuture<V> future = putOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            public void executeWriter() {
-                mapWriter.write(key, value);
+            public void execute() {
+                options.getWriter().write(key, value);
             }
         };
-
-        return result;
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<V> putOperationAsync(K key, V value) {
@@ -768,18 +782,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkKey(key);
 
         RFuture<V> future = removeOperationAsync(key);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            public void executeWriter() {
-                mapWriter.delete(key);
+            public void execute() {
+                options.getWriter().delete(key);
             }
         };
-
-        return result;
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<V> removeOperationAsync(K key) {
@@ -796,18 +809,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         RFuture<Boolean> future = fastPutOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            public void executeWriter() {
-                mapWriter.write(key, value);
+            public void execute() {
+                options.getWriter().write(key, value);
             }
         };
-
-        return result;
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
@@ -829,12 +841,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return newSucceededFuture(0L);
         }
 
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return fastRemoveOperationAsync(keys);
         }
-        
-        RFuture<List<Long>> future = fastRemoveOperationBatchAsync(keys);            
 
+        RFuture<List<Long>> future = fastRemoveOperationBatchAsync(keys);            
         final RPromise<Long> result = new RedissonPromise<Long>();
         future.addListener(new FutureListener<List<Long>>() {
             @Override
@@ -844,19 +855,37 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                     return;
                 }
                 
+                if (future.getNow().isEmpty()) {
+                    result.trySuccess(0L);
+                    return;
+                }
+                
                 final List<K> deletedKeys = new ArrayList<K>();
                 for (int i = 0; i < future.getNow().size(); i++) {
                     if (future.getNow().get(i) == 1) {
                         deletedKeys.add(keys[i]);
                     }
                 }
-                commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        mapWriter.deleteAll(deletedKeys);
-                        result.trySuccess((long)deletedKeys.size());
-                    }
-                });
+                
+                if (options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+                    result.trySuccess((long)deletedKeys.size());
+                    
+                    MapWriterTask<List<Long>> listener = new MapWriterTask<List<Long>>() {
+                        @Override
+                        public void execute() {
+                            options.getWriter().deleteAll(deletedKeys);
+                        }
+                    };
+                    future.addListener(new MapWriteBehindListener<List<Long>>(commandExecutor, listener));
+                } else {
+                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            options.getWriter().deleteAll(deletedKeys);
+                            result.trySuccess((long)deletedKeys.size());
+                        }
+                    });
+                }
             }
         });
         return result;
@@ -911,18 +940,18 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         checkValue(value);
         
         final RFuture<V> future = addAndGetOperationAsync(key, value);
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
 
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            public void executeWriter() {
-                mapWriter.write(key, future.getNow());
+            public void execute() {
+                options.getWriter().write(key, future.getNow());
             }
         };
-
-        return result;
+        
+        return mapWriterFuture(future, listener);
     }
 
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
@@ -1096,7 +1125,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                final V value = mapLoader.load(key);
+                final V value = options.getLoader().load(key);
                 if (value == null) {
                     result.trySuccess(value);
                     return;

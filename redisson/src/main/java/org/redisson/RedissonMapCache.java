@@ -23,16 +23,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.api.map.MapLoader;
-import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -59,7 +57,6 @@ import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -86,14 +83,14 @@ import io.netty.util.concurrent.FutureListener;
 public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, 
-            String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
-        super(commandExecutor, name, redisson, mapLoader, mapWriter);
+            String name, RedissonClient redisson, MapOptions<K, V> options) {
+        super(commandExecutor, name, redisson, options);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor, 
-            String name, RedissonClient redisson, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter) {
-        super(codec, commandExecutor, name, redisson, mapLoader, mapWriter);
+            String name, RedissonClient redisson, MapOptions<K, V> options) {
+        super(codec, commandExecutor, name, redisson, options);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
     
@@ -316,14 +313,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 				+ "end; ",
 				Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key)), 
 				System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, value);
+            protected void execute() {
+                options.getWriter().write(key, value);
             }
             
             @Override
@@ -331,9 +328,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 return future.getNow() == null;
             }
         };
-
-        return result;
-        
+        return mapWriterFuture(future, listener);
     }
 
     @Override
@@ -584,17 +579,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            public void executeWriter() {
-                mapWriter.write(key, value);
+            protected void execute() {
+                options.getWriter().write(key, value);
             }
         };
-        return result;
+        return mapWriterFuture(future, listener);
     }
 
     @Override
@@ -693,19 +688,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 + "return val",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<V> result = new MapWriterExecutorPromise<V>(future, commandExecutor) {
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
             @Override
-            public void executeWriter() {
-                mapWriter.write(key, value);
+            protected void execute() {
+                options.getWriter().write(key, value);
             }
         };
-
-        return result;
-
+        return mapWriterFuture(future, listener);
     }
 
     String getTimeoutSetNameByKey(Object key) {
@@ -1122,23 +1115,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 			+ "end; ",
 			Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key)), 
 			System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
-        if (mapWriter == null) {
+        if (hasNoWriter()) {
             return future;
         }
         
-        RPromise<Boolean> result = new MapWriterExecutorPromise<Boolean>(future, commandExecutor) {
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
             @Override
-            protected void executeWriter() {
-                mapWriter.write(key, value);
+            protected void execute() {
+                options.getWriter().write(key, value);
             }
-            
             @Override
             protected boolean condition(Future<Boolean> future) {
                 return future.getNow();
             }
         };
-
-        return result;
+        return mapWriterFuture(future, listener);
 	}
 
     @Override

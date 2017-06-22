@@ -15,8 +15,6 @@
  */
 package org.redisson;
 
-import java.util.concurrent.ExecutorService;
-
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RedissonPromise;
@@ -30,23 +28,35 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @param <R> result type
  */
-public abstract class MapWriterPromise<R> extends RedissonPromise<R> {
+public class MapWriterPromise<R> extends RedissonPromise<R> {
 
-    public MapWriterPromise(RFuture<R> f, final CommandAsyncExecutor commandExecutor) {
-        super();
+    public MapWriterPromise(RFuture<R> f, final CommandAsyncExecutor commandExecutor, final MapWriterTask<R> task) {
         f.addListener(new FutureListener<R>() {
             @Override
-            public void operationComplete(Future<R> future) throws Exception {
+            public void operationComplete(final Future<R> future) throws Exception {
                 if (!future.isSuccess()) {
                     tryFailure(future.cause());
                     return;
                 }
-                
-                execute(future, commandExecutor.getConnectionManager().getExecutor());
+
+                if (task.condition(future)) {
+                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                task.execute();
+                            } catch (Exception e) {
+                                tryFailure(e);
+                                return;
+                            }
+                            trySuccess(future.getNow());
+                        }
+                    });
+                } else {
+                    trySuccess(future.getNow());
+                }
             }
         });
     }
-    
-    public abstract void execute(Future<R> future, ExecutorService executorService);
-    
+
 }

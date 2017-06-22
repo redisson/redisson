@@ -17,11 +17,9 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.map.MapLoader;
-import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
-import org.redisson.config.Config;
 import org.redisson.codec.CodecProvider;
+import org.redisson.config.Config;
 import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
@@ -89,25 +87,39 @@ public interface RedissonClient {
     /**
      * Returns map-based cache instance by <code>name</code>
      * using provided <code>codec</code> for both cache keys and values.
-     * Supports entry eviction with a given TTL value.
-     *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
      *
      * @param <K> type of key
      * @param <V> type of value
-     * @param name - name of object
+     * @param name - object name
      * @param codec - codec for keys and values
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
     
-    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
+    /**
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - object name
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options);
 
     /**
      * Returns map-based cache instance by name.
-     * Supports entry eviction with a given TTL value.
-     *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
      *
      * @param <K> type of key
      * @param <V> type of value
@@ -116,7 +128,19 @@ public interface RedissonClient {
      */
     <K, V> RMapCache<K, V> getMapCache(String name);
     
-    <K, V> RMapCache<K, V> getMapCache(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
+    /**
+     * Returns map-based cache instance by name.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, MapOptions<K, V> options);
 
     /**
      * Returns object holder instance by name.
@@ -278,8 +302,17 @@ public interface RedissonClient {
      * @return Map object
      */
     <K, V> RMap<K, V> getMap(String name);
-    
-    <K, V> RMap<K, V> getMap(String name, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
+
+    /**
+     * Returns map instance by name.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMap<K, V> getMap(String name, MapOptions<K, V> options);
 
     /**
      * Returns map instance by name
@@ -292,8 +325,19 @@ public interface RedissonClient {
      * @return Map object
      */
     <K, V> RMap<K, V> getMap(String name, Codec codec);
-    
-    <K, V> RMap<K, V> getMap(String name, Codec codec, MapLoader<K, V> mapLoader, MapWriter<K, V> mapWriter);
+
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMap<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
      * Returns Set based Multimap instance by name.

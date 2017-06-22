@@ -28,7 +28,7 @@ import org.redisson.api.map.MapWriter;
  * @param <K> key type
  * @param <V> value type
  */
-public class LocalCachedMapOptions<K, V> {
+public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     
     public enum InvalidationPolicy {
         
@@ -264,33 +264,17 @@ public class LocalCachedMapOptions<K, V> {
     public LocalCachedMapOptions<K, V> maxIdle(long maxIdle, TimeUnit timeUnit) {
         return maxIdle(timeUnit.toMillis(maxIdle));
     }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer, org.redisson.api.MapOptions.WriteMode writeMode) {
+        super.writer(writer, writeMode);
+        return this;
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> loader(MapLoader<K, V> loader) {
+        super.loader(loader);
+        return this;
+    }
 
-    /**
-     * Sets map writer object used for write-through operations.
-     * 
-     * @param writer object
-     * @return LocalCachedMapOptions instance
-     */
-    public LocalCachedMapOptions<K, V> mapWriter(MapWriter<K, V> writer) {
-        this.mapWriter = writer;
-        return this;
-    }
-    public MapWriter<K, V> getMapWriter() {
-        return mapWriter;
-    }
-    
-    /**
-     * Sets map reader object used for write-through operations.
-     * 
-     * @param loader object
-     * @return LocalCachedMapOptions instance
-     */
-    public LocalCachedMapOptions<K, V> mapLoader(MapLoader<K, V> loader) {
-        this.mapLoader = loader;
-        return this;
-    }
-    public MapLoader<K, V> getMapLoader() {
-        return mapLoader;
-    }
-    
 }

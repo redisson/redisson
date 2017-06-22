@@ -18,6 +18,8 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.MapOptions;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -131,12 +133,14 @@ public class RedissonMapTest extends BaseMapTest {
 
     @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
-        return redisson.getMap("test", createMapLoader(map), null);        
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
+        return redisson.getMap("test", options);        
     }
     
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
-        return redisson.getMap("test", null, createMapWriter(map));        
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map), WriteMode.WRITE_THROUGH);
+        return redisson.getMap("test", options);        
     }
     
     @Test

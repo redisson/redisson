@@ -18,6 +18,7 @@ import org.redisson.RedissonMapTest.SimpleValue;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.InvalidationPolicy;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
 import org.redisson.cache.Cache;
@@ -50,13 +51,13 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
-        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().mapWriter(createMapWriter(map));
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().writer(createMapWriter(map), WriteMode.WRITE_THROUGH);
         return redisson.getLocalCachedMap("test", options);        
     }
         
     @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
-        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().mapLoader(createMapLoader(map));
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().loader(createMapLoader(map));
         return redisson.getLocalCachedMap("test", options);        
     }
         
