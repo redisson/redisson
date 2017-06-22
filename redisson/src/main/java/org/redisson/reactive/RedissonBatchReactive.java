@@ -87,22 +87,22 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        return new RedissonMapReactive<K, V>(executorService, name);
+        return new RedissonMapReactive<K, V>(executorService, name, null);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        return new RedissonMapReactive<K, V>(codec, executorService, name);
+        return new RedissonMapReactive<K, V>(codec, executorService, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, executorService, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, executorService, name, null);
     }
 
     @Override

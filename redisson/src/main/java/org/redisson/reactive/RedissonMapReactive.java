@@ -16,12 +16,15 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
+import org.redisson.api.MapOptions;
+import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
@@ -46,16 +49,56 @@ import reactor.rx.Streams;
  */
 public class RedissonMapReactive<K, V> extends RedissonExpirableReactive implements RMapReactive<K, V>, MapReactive<K, V> {
 
-    private final RedissonMap<K, V> instance;
+    private final RMapAsync<K, V> instance;
 
-    public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
         super(commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
+        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
     }
 
-    public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
         super(codec, commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
+        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+    }
+
+    @Override
+    public Publisher<Void> loadAll(boolean replaceExistingValues, int parallelism) {
+        return reactive(instance.loadAllAsync(replaceExistingValues, parallelism));
+    }
+
+    @Override
+    public Publisher<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
+        return reactive(instance.loadAllAsync(keys, replaceExistingValues, parallelism));
+    }
+    
+    @Override
+    public Publisher<Boolean> fastPutIfAbsent(K key, V value) {
+        return reactive(instance.fastPutIfAbsentAsync(key, value));
+    }
+
+    @Override
+    public Publisher<Set<K>> readAllKeySet() {
+        return reactive(instance.readAllKeySetAsync());
+    }
+
+    @Override
+    public Publisher<Collection<V>> readAllValues() {
+        return reactive(instance.readAllValuesAsync());
+    }
+
+    @Override
+    public Publisher<Set<Entry<K, V>>> readAllEntrySet() {
+        return reactive(instance.readAllEntrySetAsync());
+    }
+
+    @Override
+    public Publisher<Map<K, V>> readAllMap() {
+        return reactive(instance.readAllMapAsync());
+    }
+    
+    @Override
+    public Publisher<Integer> valueSize(K key) {
+        return reactive(instance.valueSizeAsync(key));
     }
 
     @Override

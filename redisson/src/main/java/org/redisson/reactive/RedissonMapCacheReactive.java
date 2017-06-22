@@ -16,24 +16,20 @@
 package org.redisson.reactive;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMapCache;
-import org.redisson.api.RMapCache;
+import org.redisson.api.MapOptions;
+import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.NestedMultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
@@ -63,16 +59,16 @@ import reactor.rx.Streams;
  */
 public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive implements RMapCacheReactive<K, V>, MapReactive<K, V> {
 
-    private final RMapCache<K, V> mapCache;
+    private final RMapCacheAsync<K, V> mapCache;
 
-    public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
         super(commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, null);
+        this.mapCache = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options);
     }
 
-    public RedissonMapCacheReactive(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
         super(codec, commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, null);
+        this.mapCache = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options);
     }
 
     @Override
@@ -108,10 +104,6 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     @Override
     public Publisher<V> put(K key, V value, long ttl, TimeUnit unit) {
         return reactive(mapCache.putAsync(key, value, ttl, unit));
-    }
-
-    String getTimeoutSetName() {
-        return "redisson__timeout__set__{" + getName() + "}";
     }
 
     @Override
@@ -298,6 +290,74 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
                 return t + u;
             }
         }).next().poll();
+    }
+
+    @Override
+    public Publisher<Void> loadAll(boolean replaceExistingValues, int parallelism) {
+        return reactive(mapCache.loadAllAsync(replaceExistingValues, parallelism));
+    }
+
+    @Override
+    public Publisher<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
+        return reactive(mapCache.loadAllAsync(keys, replaceExistingValues, parallelism));
+    }
+
+    @Override
+    public Publisher<Integer> valueSize(K key) {
+        return reactive(mapCache.valueSizeAsync(key));
+    }
+
+    @Override
+    public Publisher<Boolean> fastPutIfAbsent(K key, V value) {
+        return reactive(mapCache.fastPutIfAbsentAsync(key, value));
+    }
+
+    @Override
+    public Publisher<Set<K>> readAllKeySet() {
+        return reactive(mapCache.readAllKeySetAsync());
+    }
+
+    @Override
+    public Publisher<Collection<V>> readAllValues() {
+        return reactive(mapCache.readAllValuesAsync());
+    }
+
+    @Override
+    public Publisher<Set<Entry<K, V>>> readAllEntrySet() {
+        return reactive(mapCache.readAllEntrySetAsync());
+    }
+
+    @Override
+    public Publisher<Map<K, V>> readAllMap() {
+        return reactive(mapCache.readAllMapAsync());
+    }
+
+    @Override
+    public Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
+            TimeUnit maxIdleUnit) {
+        return reactive(mapCache.putIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    }
+
+    @Override
+    public Publisher<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        return reactive(mapCache.putAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    }
+
+    @Override
+    public Publisher<Boolean> fastPut(K key, V value, long ttl, TimeUnit unit) {
+        return reactive(mapCache.fastPutAsync(key, value, ttl, unit));
+    }
+
+    @Override
+    public Publisher<Boolean> fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
+            TimeUnit maxIdleUnit) {
+        return reactive(mapCache.fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    }
+
+    @Override
+    public Publisher<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
+            TimeUnit maxIdleUnit) {
+        return reactive(mapCache.fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
     }
 
 }
