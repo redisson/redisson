@@ -47,7 +47,8 @@ public class MapOptions<K, V> {
     
     private MapLoader<K, V> loader;
     private MapWriter<K, V> writer;
-    private WriteMode writeMode;
+    private WriteMode writeMode = WriteMode.WRITE_THROUGH;
+    private int writeBehindThreads = 1;
     
     protected MapOptions() {
     }
@@ -75,26 +76,53 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets map writer object used for write-through operations.
+     * Sets {@link MapWriter} object.
      * 
      * @param writer object
-     * @param writeMode for writer
      * @return MapOptions instance
      */
-    public MapOptions<K, V> writer(MapWriter<K, V> writer, WriteMode writeMode) {
+    public MapOptions<K, V> writer(MapWriter<K, V> writer) {
         this.writer = writer;
-        this.writeMode = writeMode;
         return this;
     }
     public MapWriter<K, V> getWriter() {
         return writer;
+    }
+    
+    /**
+     * Sets threads amount used in write behind mode.
+     * <p>
+     * Default is <code>1</code>
+     * 
+     * @param writeBehindThreads - threads amount
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
+        this.writeBehindThreads = writeBehindThreads;
+        return this;
+    }
+    public int getWriteBehindThreads() {
+        return writeBehindThreads;
+    }
+    
+    /**
+     * Sets write mode. 
+     * <p>
+     * Default is <code>{@link WriteMode#WRITE_THROUGH}</code>
+     * 
+     * @param writeMode - write mode
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writeMode(WriteMode writeMode) {
+        this.writeMode = writeMode;
+        return this;
     }
     public WriteMode getWriteMode() {
         return writeMode;
     }
     
     /**
-     * Sets map reader object used for write-through operations.
+     * Sets {@link MapLoader} object.
      * 
      * @param loader object
      * @return MapOptions instance

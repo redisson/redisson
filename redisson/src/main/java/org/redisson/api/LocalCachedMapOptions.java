@@ -266,15 +266,23 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     @Override
-    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer, org.redisson.api.MapOptions.WriteMode writeMode) {
-        super.writer(writer, writeMode);
-        return this;
+    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writer(writer);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindThreads(writeBehindThreads);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writeMode(org.redisson.api.MapOptions.WriteMode writeMode) {
+        return (LocalCachedMapOptions<K, V>) super.writeMode(writeMode);
     }
     
     @Override
     public LocalCachedMapOptions<K, V> loader(MapLoader<K, V> loader) {
-        super.loader(loader);
-        return this;
+        return (LocalCachedMapOptions<K, V>) super.loader(loader);
     }
 
 }

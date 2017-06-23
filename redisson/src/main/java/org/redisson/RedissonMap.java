@@ -28,7 +28,9 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.MapOptions;
@@ -71,6 +73,8 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
+    final AtomicInteger writeBehindCurrentThreads = new AtomicInteger();
+    final Queue<Runnable> writeBehindTasks;
     final RedissonClient redisson;
     final MapOptions<K, V> options;
     
@@ -78,12 +82,22 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         super(commandExecutor, name);
         this.redisson = redisson;
         this.options = options;
+        if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+            writeBehindTasks = new ConcurrentLinkedQueue<Runnable>();
+        } else {
+            writeBehindTasks = null;
+        }
     }
 
     public RedissonMap(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(codec, commandExecutor, name);
         this.redisson = redisson;
         this.options = options;
+        if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
+            writeBehindTasks = new ConcurrentLinkedQueue<Runnable>();
+        } else {
+            writeBehindTasks = null;
+        }
     }
     
     @Override
@@ -274,7 +288,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     protected <M> RFuture<M> mapWriterFuture(RFuture<M> future, MapWriterTask<M> listener) {
         if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
-            future.addListener(new MapWriteBehindListener<M>(commandExecutor, listener));
+            future.addListener(new MapWriteBehindListener<M>(commandExecutor, listener, writeBehindCurrentThreads, writeBehindTasks, options.getWriteBehindThreads()));
             return future;
         }        
 
@@ -876,7 +890,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                             options.getWriter().deleteAll(deletedKeys);
                         }
                     };
-                    future.addListener(new MapWriteBehindListener<List<Long>>(commandExecutor, listener));
+                    future.addListener(new MapWriteBehindListener<List<Long>>(commandExecutor, listener, writeBehindCurrentThreads, writeBehindTasks, options.getWriteBehindThreads()));
                 } else {
                     commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
                         @Override

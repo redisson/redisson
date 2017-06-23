@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
-import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -141,7 +140,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
-        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map), WriteMode.WRITE_THROUGH);
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
         return redisson.getMapCache("test", options);        
     }
     

@@ -16,8 +16,7 @@
 package org.redisson;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
@@ -36,16 +35,19 @@ public class MapWriteBehindListener<R> implements FutureListener<R> {
 
     private static final Logger log = LoggerFactory.getLogger(MapWriteBehindListener.class);
     
-    private static final AtomicBoolean sent = new AtomicBoolean();
-    private static final Queue<Runnable> operations = new ConcurrentLinkedQueue<Runnable>();
-    
+    private final AtomicInteger writeBehindCurrentThreads;
+    private final Queue<Runnable> writeBehindTasks;
+    private final int threadsAmount;
     private final MapWriterTask<R> task;
     private final CommandAsyncExecutor commandExecutor;
     
-    public MapWriteBehindListener(CommandAsyncExecutor commandExecutor, MapWriterTask<R> task) {
+    public MapWriteBehindListener(CommandAsyncExecutor commandExecutor, MapWriterTask<R> task, AtomicInteger writeBehindCurrentThreads, Queue<Runnable> writeBehindTasks, int threadsAmount) {
         super();
+        this.threadsAmount = threadsAmount;
         this.commandExecutor = commandExecutor;
         this.task = task;
+        this.writeBehindCurrentThreads = writeBehindCurrentThreads;
+        this.writeBehindTasks = writeBehindTasks;
     }
 
     @Override
@@ -66,16 +68,16 @@ public class MapWriteBehindListener<R> implements FutureListener<R> {
 
     private void enqueueRunnable(Runnable runnable) {
         if (runnable != null) {
-            operations.add(runnable);
+            writeBehindTasks.add(runnable);
         }
         
-        if (sent.compareAndSet(false, true)) {
+        if (writeBehindCurrentThreads.incrementAndGet() <= threadsAmount) {
             commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
                     try {
                         while (true) {
-                            Runnable runnable = operations.poll();
+                            Runnable runnable = writeBehindTasks.poll();
                             if (runnable != null) {
                                 runnable.run();
                             } else {
@@ -83,13 +85,14 @@ public class MapWriteBehindListener<R> implements FutureListener<R> {
                             }
                         }
                     } finally {
-                        sent.set(false);
-                        if (!operations.isEmpty()) {
+                        if (writeBehindCurrentThreads.decrementAndGet() == 0 && !writeBehindTasks.isEmpty()) {
                             enqueueRunnable(null);
                         }
                     }
                 }
             });
+        } else {
+            writeBehindCurrentThreads.decrementAndGet();
         }
     }
 
