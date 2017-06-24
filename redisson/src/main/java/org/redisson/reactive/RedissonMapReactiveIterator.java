@@ -31,6 +31,14 @@ import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> entry type
+ */
 public class RedissonMapReactiveIterator<K, V, M> {
 
     private final MapReactive<K, V> map;

@@ -25,6 +25,12 @@ import reactor.rx.Promise;
 import reactor.rx.Promises;
 import reactor.rx.action.support.DefaultSubscriber;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class PublisherAdder<V> {
 
     private final RCollectionReactive<V> destination;

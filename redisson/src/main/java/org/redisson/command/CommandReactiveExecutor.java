@@ -27,6 +27,8 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 
+import reactor.fn.Supplier;
+
 /**
  *
  * @author Nikita Koksharov
@@ -34,7 +36,7 @@ import org.redisson.connection.MasterSlaveEntry;
  */
 public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
-    <R> Publisher<R> reactive(RFuture<R> future);
+    <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier);
 
     ConnectionManager getConnectionManager();
 

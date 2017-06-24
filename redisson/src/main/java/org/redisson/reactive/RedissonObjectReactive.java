@@ -22,6 +22,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 
@@ -43,8 +44,8 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this.commandExecutor = commandExecutor;
     }
 
-    public <R> Publisher<R> reactive(RFuture<R> future) {
-        return commandExecutor.reactive(future);
+    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
+        return commandExecutor.reactive(supplier);
     }
 
     public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name) {

@@ -19,11 +19,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
@@ -47,6 +51,7 @@ import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.reactive.NettyFuturePublisher;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -55,6 +60,8 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
+import reactor.fn.Supplier;
+import reactor.rx.action.support.DefaultSubscriber;
 
 public class CommandBatchService extends CommandReactiveService {
 
@@ -86,6 +93,7 @@ public class CommandBatchService extends CommandReactiveService {
 
     private final AtomicInteger index = new AtomicInteger();
 
+    private Queue<Publisher<?>> publishers = new ConcurrentLinkedQueue<Publisher<?>>();
     private ConcurrentMap<MasterSlaveEntry, Entry> commands = PlatformDependent.newConcurrentHashMap();
 
     private volatile boolean executed;
@@ -94,6 +102,13 @@ public class CommandBatchService extends CommandReactiveService {
         super(connectionManager);
     }
 
+    @Override
+    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
+        NettyFuturePublisher<R> publisher = new NettyFuturePublisher<R>(supplier);
+        publishers.add(publisher);
+        return publisher;
+    }
+    
     @Override
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt) {
@@ -141,6 +156,15 @@ public class CommandBatchService extends CommandReactiveService {
             throw new IllegalStateException("Batch already executed!");
         }
 
+        for (Publisher<?> publisher : publishers) {
+            publisher.subscribe(new DefaultSubscriber<Object>() {
+                @Override
+                public void onSubscribe(Subscription s) {
+                    s.request(1);
+                }
+            });
+        }
+        
         if (commands.isEmpty()) {
             return connectionManager.newSucceededFuture(null);
         }
@@ -188,6 +212,15 @@ public class CommandBatchService extends CommandReactiveService {
     public RFuture<List<?>> executeAsync(long responseTimeout, int retryAttempts, long retryInterval) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
+        }
+        
+        for (Publisher<?> publisher : publishers) {
+            publisher.subscribe(new DefaultSubscriber<Object>() {
+                @Override
+                public void onSubscribe(Subscription s) {
+                    s.request(1);
+                }
+            });
         }
 
         if (commands.isEmpty()) {

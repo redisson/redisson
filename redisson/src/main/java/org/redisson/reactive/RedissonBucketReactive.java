@@ -23,6 +23,12 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public class RedissonBucketReactive<V> extends RedissonExpirableReactive implements RBucketReactive<V> {
 
     public RedissonBucketReactive(CommandReactiveExecutor connectionManager, String name) {

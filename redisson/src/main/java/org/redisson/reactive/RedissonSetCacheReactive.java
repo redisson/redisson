@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetCache;
+import org.redisson.api.RFuture;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -32,6 +33,8 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
+
+import reactor.fn.Supplier;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -73,12 +76,22 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return reactive(instance.containsAsync(o));
+    public Publisher<Boolean> contains(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
-    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(InetSocketAddress client, long startPos) {
-        return reactive(instance.scanIteratorAsync(getName(), client, startPos));
+    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(final InetSocketAddress client, final long startPos) {
+        return reactive(new Supplier<RFuture<ListScanResult<ScanObjectEntry>>>() {
+            @Override
+            public RFuture<ListScanResult<ScanObjectEntry>> get() {
+                return instance.scanIteratorAsync(getName(), client, startPos);
+            }
+        });
     }
 
     @Override
@@ -92,8 +105,13 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Boolean> add(V value, long ttl, TimeUnit unit) {
-        return reactive(instance.addAsync(value, ttl, unit));
+    public Publisher<Boolean> add(final V value, final long ttl, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.addAsync(value, ttl, unit);
+            }
+        });
     }
 
     private byte[] encode(V value) throws IOException {
@@ -120,13 +138,23 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Boolean> remove(Object o) {
-        return reactive(instance.removeAsync(o));
+    public Publisher<Boolean> remove(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return reactive(instance.containsAllAsync(c));
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
     }
 
     @Override
@@ -152,13 +180,23 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return reactive(instance.retainAllAsync(c));
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return reactive(instance.removeAllAsync(c));
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override

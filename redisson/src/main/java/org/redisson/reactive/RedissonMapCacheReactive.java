@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMapCache;
 import org.redisson.api.MapOptions;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
@@ -36,6 +37,7 @@ import org.redisson.eviction.EvictionScheduler;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
+import reactor.fn.Supplier;
 import reactor.rx.Streams;
 
 /**
@@ -72,108 +74,213 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Publisher<Boolean> containsKey(Object key) {
-        return reactive(mapCache.containsKeyAsync(key));
+    public Publisher<Boolean> containsKey(final Object key) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.containsKeyAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> containsValue(Object value) {
-        return reactive(mapCache.containsValueAsync(value));
+    public Publisher<Boolean> containsValue(final Object value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.containsValueAsync(value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Map<K, V>> getAll(Set<K> keys) {
-        return reactive(mapCache.getAllAsync(keys));
+    public Publisher<Map<K, V>> getAll(final Set<K> keys) {
+        return reactive(new Supplier<RFuture<Map<K, V>>>() {
+            @Override
+            public RFuture<Map<K, V>> get() {
+                return mapCache.getAllAsync(keys);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit) {
-        return reactive(mapCache.putIfAbsentAsync(key, value, ttl, unit));
+    public Publisher<V> putIfAbsent(final K key, final V value, final long ttl, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putIfAbsentAsync(key, value, ttl, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> remove(Object key, Object value) {
-        return reactive(mapCache.removeAsync(key, value));
+    public Publisher<Boolean> remove(final Object key, final Object value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.removeAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> get(K key) {
-        return reactive(mapCache.getAsync(key));
+    public Publisher<V> get(final K key) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.getAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> put(K key, V value, long ttl, TimeUnit unit) {
-        return reactive(mapCache.putAsync(key, value, ttl, unit));
+    public Publisher<V> put(final K key, final V value, final long ttl, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putAsync(key, value, ttl, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> remove(K key) {
-        return reactive(mapCache.removeAsync(key));
+    public Publisher<V> remove(final K key) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.removeAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> fastRemove(K ... keys) {
-        return reactive(mapCache.fastRemoveAsync(keys));
+    public Publisher<Long> fastRemove(final K ... keys) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return mapCache.fastRemoveAsync(keys);
+            }
+        });
     }
 
     @Override
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return reactive(((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos));
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(final InetSocketAddress client, final long startPos) {
+        return reactive(new Supplier<RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>>>() {
+            @Override
+            public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> get() {
+                return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos);
+            }
+        });
     }
 
     @Override
     public Publisher<Boolean> delete() {
-        return reactive(mapCache.deleteAsync());
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.deleteAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
-        return reactive(mapCache.expireAsync(timeToLive, timeUnit));
+    public Publisher<Boolean> expire(final long timeToLive, final TimeUnit timeUnit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.expireAsync(timeToLive, timeUnit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> expireAt(long timestamp) {
-        return reactive(mapCache.expireAtAsync(timestamp));
+    public Publisher<Boolean> expireAt(final long timestamp) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.expireAtAsync(timestamp);
+            }
+        });
     }
 
     @Override
     public Publisher<Boolean> clearExpire() {
-        return reactive(mapCache.clearExpireAsync());
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.clearExpireAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
-        return reactive(mapCache.putAllAsync(map));
+    public Publisher<Void> putAll(final Map<? extends K, ? extends V> map) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return mapCache.putAllAsync(map);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> addAndGet(K key, Number delta) {
-        return reactive(mapCache.addAndGetAsync(key, delta));
+    public Publisher<V> addAndGet(final K key, final Number delta) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.addAndGetAsync(key, delta);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPut(K key, V value) {
-        return reactive(mapCache.fastPutAsync(key, value));
+    public Publisher<Boolean> fastPut(final K key, final V value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.fastPutAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> put(K key, V value) {
-        return reactive(mapCache.putAsync(key, value));
+    public Publisher<V> put(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> replace(K key, V value) {
-        return reactive(mapCache.replaceAsync(key, value));
+    public Publisher<V> replace(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.replaceAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> replace(K key, V oldValue, V newValue) {
-        return reactive(mapCache.replaceAsync(key, oldValue, newValue));
+    public Publisher<Boolean> replace(final K key, final V oldValue, final V newValue) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.replaceAsync(key, oldValue, newValue);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> putIfAbsent(K key, V value) {
-        return reactive(mapCache.putIfAbsentAsync(key, value));
+    public Publisher<V> putIfAbsent(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putIfAbsentAsync(key, value);
+            }
+        });
     }
 
     @Override
@@ -203,7 +310,12 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<Integer> size() {
-        return reactive(mapCache.sizeAsync());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return mapCache.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -293,71 +405,136 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Publisher<Void> loadAll(boolean replaceExistingValues, int parallelism) {
-        return reactive(mapCache.loadAllAsync(replaceExistingValues, parallelism));
+    public Publisher<Void> loadAll(final boolean replaceExistingValues, final int parallelism) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return mapCache.loadAllAsync(replaceExistingValues, parallelism);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return reactive(mapCache.loadAllAsync(keys, replaceExistingValues, parallelism));
+    public Publisher<Void> loadAll(final Set<? extends K> keys, final boolean replaceExistingValues, final int parallelism) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return mapCache.loadAllAsync(keys, replaceExistingValues, parallelism);
+            }
+        });
     }
 
     @Override
-    public Publisher<Integer> valueSize(K key) {
-        return reactive(mapCache.valueSizeAsync(key));
+    public Publisher<Integer> valueSize(final K key) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return mapCache.valueSizeAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPutIfAbsent(K key, V value) {
-        return reactive(mapCache.fastPutIfAbsentAsync(key, value));
+    public Publisher<Boolean> fastPutIfAbsent(final K key, final V value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.fastPutIfAbsentAsync(key, value);
+            }
+        });
     }
 
     @Override
     public Publisher<Set<K>> readAllKeySet() {
-        return reactive(mapCache.readAllKeySetAsync());
+        return reactive(new Supplier<RFuture<Set<K>>>() {
+            @Override
+            public RFuture<Set<K>> get() {
+                return mapCache.readAllKeySetAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Collection<V>> readAllValues() {
-        return reactive(mapCache.readAllValuesAsync());
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return mapCache.readAllValuesAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Set<Entry<K, V>>> readAllEntrySet() {
-        return reactive(mapCache.readAllEntrySetAsync());
+        return reactive(new Supplier<RFuture<Set<Entry<K, V>>>>() {
+            @Override
+            public RFuture<Set<Entry<K, V>>> get() {
+                return mapCache.readAllEntrySetAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Map<K, V>> readAllMap() {
-        return reactive(mapCache.readAllMapAsync());
+        return reactive(new Supplier<RFuture<Map<K, V>>>() {
+            @Override
+            public RFuture<Map<K, V>> get() {
+                return mapCache.readAllMapAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<V> putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
-            TimeUnit maxIdleUnit) {
-        return reactive(mapCache.putIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    public Publisher<V> putIfAbsent(final K key, final V value, final long ttl, final TimeUnit ttlUnit, final long maxIdleTime,
+            final TimeUnit maxIdleUnit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        return reactive(mapCache.putAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    public Publisher<V> put(final K key, final V value, final long ttl, final TimeUnit ttlUnit, final long maxIdleTime, final TimeUnit maxIdleUnit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return mapCache.putAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPut(K key, V value, long ttl, TimeUnit unit) {
-        return reactive(mapCache.fastPutAsync(key, value, ttl, unit));
+    public Publisher<Boolean> fastPut(final K key, final V value, final long ttl, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.fastPutAsync(key, value, ttl, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
-            TimeUnit maxIdleUnit) {
-        return reactive(mapCache.fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    public Publisher<Boolean> fastPut(final K key, final V value, final long ttl, final TimeUnit ttlUnit, final long maxIdleTime,
+            final TimeUnit maxIdleUnit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime,
-            TimeUnit maxIdleUnit) {
-        return reactive(mapCache.fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    public Publisher<Boolean> fastPutIfAbsent(final K key, final V value, final long ttl, final TimeUnit ttlUnit, final long maxIdleTime,
+            final TimeUnit maxIdleUnit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return mapCache.fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+            }
+        });
     }
 
 }

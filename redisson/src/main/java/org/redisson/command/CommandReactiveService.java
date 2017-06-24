@@ -28,6 +28,8 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.reactive.NettyFuturePublisher;
 
+import reactor.fn.Supplier;
+
 /**
  *
  * @author Nikita Koksharov
@@ -40,31 +42,47 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> evalWriteAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params) {
-        RFuture<R> f = evalWriteAllAsync(command, callback, script, keys, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> evalWriteAllReactive(final RedisCommand<T> command, final SlotCallback<T, R> callback, final String script, final List<Object> keys, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return evalWriteAllAsync(command, callback, script, keys, params);
+            };
+        });
     }
 
-    public <R> Publisher<R> reactive(RFuture<R> future) {
-        return new NettyFuturePublisher<R>(future);
-    }
-
-    @Override
-    public <T, R> Publisher<Collection<R>> readAllReactive(RedisCommand<T> command, Object ... params) {
-        RFuture<Collection<R>> f = readAllAsync(command, params);
-        return new NettyFuturePublisher<Collection<R>>(f);
-    }
-
-    @Override
-    public <T, R> Publisher<R> readRandomReactive(RedisCommand<T> command, Object ... params) {
-        RFuture<R> f = readRandomAsync(command, params);
-        return new NettyFuturePublisher<R>(f);
+    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
+        return new NettyFuturePublisher<R>(supplier);
     }
 
     @Override
-    public <T, R> Publisher<R> readReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        RFuture<R> f = readAsync(client, key, codec, command, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<Collection<R>> readAllReactive(final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<Collection<R>>>() {
+            @Override
+            public RFuture<Collection<R>> get() {
+                return readAllAsync(command, params);
+            };
+        });
+    }
+
+    @Override
+    public <T, R> Publisher<R> readRandomReactive(final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return readRandomAsync(command, params);
+            };
+        });
+    }
+
+    @Override
+    public <T, R> Publisher<R> readReactive(final InetSocketAddress client, final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return readAsync(client, key, codec, command, params);
+            };
+        });
     }
 
     @Override
@@ -73,15 +91,23 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        RFuture<R> f = writeAsync(key, codec, command, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> writeReactive(final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return writeAsync(key, codec, command, params);
+            };
+        });
     }
 
     @Override
-    public <T, R> Publisher<R> writeReactive(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params) {
-        RFuture<R> f = writeAsync(entry, codec, command, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> writeReactive(final MasterSlaveEntry entry, final Codec codec, final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return writeAsync(entry, codec, command, params);
+            };
+        });
     }
 
     @Override
@@ -90,43 +116,67 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> readReactive(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        RFuture<R> f = readAsync(key, codec, command, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> readReactive(final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return readAsync(key, codec, command, params);
+            };
+        });
     }
 
     @Override
-    public <T, R> Publisher<R> evalReadReactive(String key, Codec codec, RedisCommand<T> evalCommandType,
-            String script, List<Object> keys, Object... params) {
-        RFuture<R> f = evalReadAsync(key, codec, evalCommandType, script, keys, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> evalReadReactive(final String key, final Codec codec, final RedisCommand<T> evalCommandType,
+            final String script, final List<Object> keys, final Object... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return evalReadAsync(key, codec, evalCommandType, script, keys, params);
+            };
+        });
     }
 
     @Override
-    public <T, R> Publisher<R> evalReadReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType,
-            String script, List<Object> keys, Object ... params) {
-        RFuture<R> f = evalReadAsync(client, key, codec, evalCommandType, script, keys, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> evalReadReactive(final InetSocketAddress client, final String key, final Codec codec, final RedisCommand<T> evalCommandType,
+            final String script, final List<Object> keys, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return evalReadAsync(client, key, codec, evalCommandType, script, keys, params);
+            };
+        });
     }
 
 
     @Override
-    public <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType,
-            String script, List<Object> keys, Object... params) {
-        RFuture<R> f = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return new NettyFuturePublisher<R>(f);
+    public <T, R> Publisher<R> evalWriteReactive(final String key, final Codec codec, final RedisCommand<T> evalCommandType,
+            final String script, final List<Object> keys, final Object... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+            };
+        });
     }
 
     @Override
-    public <T> Publisher<Void> writeAllReactive(RedisCommand<T> command, Object ... params) {
-        RFuture<Void> f = writeAllAsync(command, params);
-        return new NettyFuturePublisher<Void>(f);
+    public <T> Publisher<Void> writeAllReactive(final RedisCommand<T> command, final Object ... params) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return writeAllAsync(command, params);
+            }   
+        });
     }
 
     @Override
-    public <R, T> Publisher<R> writeAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params) {
-        RFuture<R> f = writeAllAsync(command, callback, params);
-        return new NettyFuturePublisher<R>(f);
+    public <R, T> Publisher<R> writeAllReactive(final RedisCommand<T> command, final SlotCallback<T, R> callback, final Object ... params) {
+        return reactive(new Supplier<RFuture<R>>() {
+            @Override
+            public RFuture<R> get() {
+                return writeAllAsync(command, callback, params);
+            };
+        });
     }
 
 

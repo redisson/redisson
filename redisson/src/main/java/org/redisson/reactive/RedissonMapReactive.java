@@ -24,6 +24,7 @@ import java.util.Set;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
 import org.redisson.api.MapOptions;
+import org.redisson.api.RFuture;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.codec.Codec;
@@ -35,6 +36,7 @@ import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
+import reactor.fn.Supplier;
 import reactor.rx.Streams;
 
 
@@ -62,114 +64,224 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     }
 
     @Override
-    public Publisher<Void> loadAll(boolean replaceExistingValues, int parallelism) {
-        return reactive(instance.loadAllAsync(replaceExistingValues, parallelism));
+    public Publisher<Void> loadAll(final boolean replaceExistingValues, final int parallelism) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.loadAllAsync(replaceExistingValues, parallelism);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return reactive(instance.loadAllAsync(keys, replaceExistingValues, parallelism));
+    public Publisher<Void> loadAll(final Set<? extends K> keys, final boolean replaceExistingValues, final int parallelism) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.loadAllAsync(keys, replaceExistingValues, parallelism);
+            }
+        });
     }
     
     @Override
-    public Publisher<Boolean> fastPutIfAbsent(K key, V value) {
-        return reactive(instance.fastPutIfAbsentAsync(key, value));
+    public Publisher<Boolean> fastPutIfAbsent(final K key, final V value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.fastPutIfAbsentAsync(key, value);
+            }
+        });
     }
 
     @Override
     public Publisher<Set<K>> readAllKeySet() {
-        return reactive(instance.readAllKeySetAsync());
+        return reactive(new Supplier<RFuture<Set<K>>>() {
+            @Override
+            public RFuture<Set<K>> get() {
+                return instance.readAllKeySetAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Collection<V>> readAllValues() {
-        return reactive(instance.readAllValuesAsync());
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.readAllValuesAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Set<Entry<K, V>>> readAllEntrySet() {
-        return reactive(instance.readAllEntrySetAsync());
+        return reactive(new Supplier<RFuture<Set<Entry<K, V>>>>() {
+            @Override
+            public RFuture<Set<Entry<K, V>>> get() {
+                return instance.readAllEntrySetAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Map<K, V>> readAllMap() {
-        return reactive(instance.readAllMapAsync());
+        return reactive(new Supplier<RFuture<Map<K, V>>>() {
+            @Override
+            public RFuture<Map<K, V>> get() {
+                return instance.readAllMapAsync();
+            }
+        });
     }
     
     @Override
-    public Publisher<Integer> valueSize(K key) {
-        return reactive(instance.valueSizeAsync(key));
+    public Publisher<Integer> valueSize(final K key) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.valueSizeAsync(key);
+            }
+        });
     }
 
     @Override
     public Publisher<Integer> size() {
-        return reactive(instance.sizeAsync());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> containsKey(Object key) {
-        return reactive(instance.containsKeyAsync(key));
+    public Publisher<Boolean> containsKey(final Object key) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsKeyAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> containsValue(Object value) {
-        return reactive(instance.containsValueAsync(value));
+    public Publisher<Boolean> containsValue(final Object value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsValueAsync(value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Map<K, V>> getAll(Set<K> keys) {
-        return reactive(instance.getAllAsync(keys));
+    public Publisher<Map<K, V>> getAll(final Set<K> keys) {
+        return reactive(new Supplier<RFuture<Map<K, V>>>() {
+            @Override
+            public RFuture<Map<K, V>> get() {
+                return instance.getAllAsync(keys);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> putAll(Map<? extends K, ? extends V> map) {
-        return reactive(instance.putAllAsync(map));
+    public Publisher<Void> putAll(final Map<? extends K, ? extends V> map) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.putAllAsync(map);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> putIfAbsent(K key, V value) {
-        return reactive(instance.putIfAbsentAsync(key, value));
+    public Publisher<V> putIfAbsent(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.putIfAbsentAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> remove(Object key, Object value) {
-        return reactive(instance.removeAsync(key, value));
+    public Publisher<Boolean> remove(final Object key, final Object value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> replace(K key, V oldValue, V newValue) {
-        return reactive(instance.replaceAsync(key, oldValue, newValue));
+    public Publisher<Boolean> replace(final K key, final V oldValue, final V newValue) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.replaceAsync(key, oldValue, newValue);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> replace(K key, V value) {
-        return reactive(instance.replaceAsync(key, value));
+    public Publisher<V> replace(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.replaceAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> get(K key) {
-        return reactive(instance.getAsync(key));
+    public Publisher<V> get(final K key) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.getAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> put(K key, V value) {
-        return reactive(instance.putAsync(key, value));
+    public Publisher<V> put(final K key, final V value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.putAsync(key, value);
+            }
+        });
     }
 
 
     @Override
-    public Publisher<V> remove(K key) {
-        return reactive(instance.removeAsync(key));
+    public Publisher<V> remove(final K key) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.removeAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> fastPut(K key, V value) {
-        return reactive(instance.fastPutAsync(key, value));
+    public Publisher<Boolean> fastPut(final K key, final V value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.fastPutAsync(key, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> fastRemove(K ... keys) {
-        return reactive(instance.fastRemoveAsync(keys));
+    public Publisher<Long> fastRemove(final K ... keys) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.fastRemoveAsync(keys);
+            }
+        });
     }
 
     public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
@@ -202,8 +314,13 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     }
 
     @Override
-    public Publisher<V> addAndGet(K key, Number value) {
-        return reactive(instance.addAndGetAsync(key, value));
+    public Publisher<V> addAndGet(final K key, final Number value) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.addAndGetAsync(key, value);
+            }
+        });
     }
 
     @Override

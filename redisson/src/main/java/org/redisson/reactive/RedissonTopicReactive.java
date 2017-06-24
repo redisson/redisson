@@ -35,6 +35,7 @@ import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import reactor.fn.Supplier;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -81,20 +82,25 @@ public class RedissonTopicReactive<M> implements RTopicReactive<M> {
     }
 
     private Publisher<Integer> addListener(final RedisPubSubListener<?> pubSubListener) {
-        final RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
-        future.addListener(new FutureListener<PubSubConnectionEntry>() {
+        return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
             @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-
-                promise.trySuccess(System.identityHashCode(pubSubListener));
+            public RFuture<Integer> get() {
+                final RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+                future.addListener(new FutureListener<PubSubConnectionEntry>() {
+                    @Override
+                    public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            promise.tryFailure(future.cause());
+                            return;
+                        }
+                        
+                        promise.trySuccess(System.identityHashCode(pubSubListener));
+                    }
+                });
+                return promise;
             }
         });
-        return new NettyFuturePublisher<Integer>(promise);
     }
 
 

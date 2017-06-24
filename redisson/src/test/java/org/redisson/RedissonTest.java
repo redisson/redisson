@@ -182,7 +182,7 @@ public class RedissonTest {
         private String field;
     }
 
-    @Test(expected = RedisException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSer() {
         Config config = new Config();
         config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());

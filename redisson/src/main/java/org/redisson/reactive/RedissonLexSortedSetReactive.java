@@ -25,6 +25,11 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactive<String> implements RLexSortedSetReactive {
 
     public RedissonLexSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {

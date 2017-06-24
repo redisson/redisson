@@ -29,6 +29,7 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.RedissonList;
+import org.redisson.api.RFuture;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -39,6 +40,7 @@ import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
+import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 import reactor.rx.subscription.ReactiveSubscription;
@@ -150,8 +152,13 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Boolean> remove(Object o) {
-        return reactive(instance.removeAsync(o));
+    public Publisher<Boolean> remove(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(o);
+            }
+        });
     }
 
     protected Publisher<Boolean> remove(Object o, int count) {
@@ -159,8 +166,13 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return reactive(instance.containsAllAsync(c));
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
     }
 
     @Override
@@ -221,13 +233,23 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return reactive(instance.removeAllAsync(c));
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return reactive(instance.retainAllAsync(c));
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
@@ -255,23 +277,43 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<V> remove(long index) {
-        return reactive(instance.removeAsync(index));
+    public Publisher<V> remove(final long index) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.removeAsync(index);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return reactive(instance.containsAsync(o));
+    public Publisher<Boolean> contains(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> indexOf(Object o) {
-        return reactive(instance.indexOfAsync(o, new LongReplayConvertor()));
+    public Publisher<Long> indexOf(final Object o) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.indexOfAsync(o, new LongReplayConvertor());
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> lastIndexOf(Object o) {
-        return reactive(instance.lastIndexOfAsync(o, new LongReplayConvertor()));
+    public Publisher<Long> lastIndexOf(final Object o) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.lastIndexOfAsync(o, new LongReplayConvertor());
+            }
+        });
     }
 
     @Override

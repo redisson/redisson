@@ -34,6 +34,7 @@ import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import reactor.fn.Supplier;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -59,18 +60,28 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     }
 
     @Override
-    public Publisher<Integer> addListener(PatternStatusListener listener) {
-        RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        addListener(new PubSubPatternStatusListener(listener, name), promise);
-        return new NettyFuturePublisher<Integer>(promise);
+    public Publisher<Integer> addListener(final PatternStatusListener listener) {
+        return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                addListener(new PubSubPatternStatusListener(listener, name), promise);
+                return promise;
+            }
+        });
     };
 
     @Override
-    public Publisher<Integer> addListener(PatternMessageListener<M> listener) {
-        RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
-        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
-        addListener(pubSubListener, promise);
-        return new NettyFuturePublisher<Integer>(promise);
+    public Publisher<Integer> addListener(final PatternMessageListener<M> listener) {
+        return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
+                addListener(pubSubListener, promise);
+                return promise;
+            }
+        });
     }
 
     private void addListener(final RedisPubSubListener<M> pubSubListener, final RPromise<Integer> promise) {
