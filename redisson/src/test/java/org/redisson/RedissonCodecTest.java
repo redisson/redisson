@@ -16,7 +16,7 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.JsonJacksonMapValueCodec;
+import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.codec.AvroJacksonCodec;
 import org.redisson.codec.CborJacksonCodec;
 import org.redisson.codec.FstCodec;
@@ -43,8 +43,8 @@ public class RedissonCodecTest extends BaseTest {
     private Codec snappyCodec = new SnappyCodec();
     private Codec msgPackCodec = new MsgPackJacksonCodec();
     private Codec lz4Codec = new LZ4Codec();
-    private Codec jsonListOfStringCodec = new JsonJacksonMapValueCodec<List<String>>(new TypeReference<List<String>>() {
-    });
+    private Codec jsonListOfStringCodec = new JsonJacksonMapCodec(
+                    new TypeReference<String>() {}, new TypeReference<List<String>>() {});
 
     @Test
     public void testLZ4() {
