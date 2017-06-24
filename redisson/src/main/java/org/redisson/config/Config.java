@@ -565,7 +565,7 @@ public class Config {
     }
 
     /**
-     * Works only if lock has been acquired without leaseTimeout parameter definition. 
+     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
      * Lock will be expired after <code>lockWatchdogTimeout</code> if watchdog 
      * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
      * <p>  
@@ -584,10 +584,10 @@ public class Config {
     }
 
     /**
-     * Define whether keep PubSub messages handling in arrival order 
+     * Defines whether keep PubSub messages handling in arrival order 
      * or handle messages concurrently. 
      * <p>
-     * This setting applied only for PubSub messages published to single channel.
+     * This setting applied only for PubSub messages per channel.
      * <p>
      * Default is <code>true</code>.
      * 

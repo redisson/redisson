@@ -35,8 +35,6 @@ import io.netty.buffer.ByteBufInputStream;
  * @author Nikita Koksharov
  * @author Andrej Kazakov
  *
- * @param <K>
- * @param <V>
  */
 public class JsonJacksonMapCodec extends JsonJacksonCodec {
     
