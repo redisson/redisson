@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -94,7 +93,6 @@ public class RedissonKeysReactive implements RKeysReactive {
 
                     private List<String> firstValues;
                     private long nextIterPos;
-                    private InetSocketAddress client;
 
                     private long currentIndex;
 
@@ -115,8 +113,6 @@ public class RedissonKeysReactive implements RKeysReactive {
 
                             @Override
                             public void onNext(ListScanResult<String> res) {
-                                client = res.getRedisClient();
-
                                 long prevIterPos = nextIterPos;
                                 if (nextIterPos == 0 && firstValues == null) {
                                     firstValues = res.getValues();
