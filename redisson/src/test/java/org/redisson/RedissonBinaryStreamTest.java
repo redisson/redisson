@@ -115,7 +115,7 @@ public class RedissonBinaryStreamTest extends BaseTest {
         stream.set(bytes);
         
         assertThat(stream.size()).isEqualTo(bytes.length);
-        assertThat(redisson.getBucket("test:parts").isExists()).isTrue();
+        assertThat(redisson.getBucket("{test}:parts").isExists()).isTrue();
         assertThat(redisson.getBucket("test").size()).isEqualTo(512*1024*1024);
         assertThat(redisson.getBucket("test:1").size()).isEqualTo(bytes.length - 512*1024*1024);
     }
