@@ -54,9 +54,20 @@ Features
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
 * With over 1000 unit tests  
 
-Who uses Redisson
+Used by
 ================================
-[Electronic Arts](http://ea.com), [Baidu](http://baidu.com), [New Relic Synthetics](https://newrelic.com/synthetics), [Brookhaven National Laboratory](http://bnl.gov/), [Singtel](http://singtel.com), [Infor](http://www.infor.com/), [Netflix Dyno client](https://github.com/Netflix/dyno), [Ocous](http://www.ocous.com/), [Invaluable](http://www.invaluable.com/), [Clover](https://www.clover.com/) , [Apache Karaf Decanter](https://karaf.apache.org/projects.html#decanter), [Atmosphere Framework](http://async-io.org/), [BrandsEye](http://brandseye.com), [Datorama](http://datorama.com/), [BrightCloud](http://brightcloud.com/), [Azar](http://azarlive.com/), [Snapfish](http://snapfish.com), [Crimson Hexagon](http://www.crimsonhexagon.com), [Quby](http://quby.com/), [Base CRM](http://getbase.com)
+[![SAP](https://redisson.org/assets/logos/client12.png "SAP")](http://www.sap.com/) . . 
+[![EA](https://redisson.org/assets/logos/client1.png "EA")](http://ea.com/) . .
+[![BROOKHAVEN](https://redisson.org/assets/logos/client6.png "Brookhaven National Laboratory")](http://bnl.gov/) . .
+[![New Relic Synthetics](https://redisson.org/assets/logos/client3.png "New Relic Synthetics")](http://newrelic.com/synthetics) . .
+[![Singtel](https://redisson.org/assets/logos/client5.png "New Relic Synthetics")](http://singtel.com/) . .
+[![Netflix](https://redisson.org/assets/logos/client10.png "Netflix")](https://netflix.com/) . .
+[![Baidu](https://redisson.org/assets/logos/client2.png "Baidu")](http://baidu.com/)  
+[![Infor](https://redisson.org/assets/logos/client4.png "Infor")](http://www.infor.com/) . .
+[![Crimson Hexagon](https://redisson.org/assets/logos/client7.png "Crimson Hexagon")](https://www.crimsonhexagon.com/) . .
+[![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/) . .
+[![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) . .
+[![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
 
 Articles
 ================================
