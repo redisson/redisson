@@ -70,7 +70,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Long> size() {
+    public Publisher<Integer> size() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD, getName());
     }
 
@@ -114,7 +114,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Long> add(V value) {
+    public Publisher<Integer> add(V value) {
         long timeoutDate = 92233720368547758L;
         return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
@@ -147,9 +147,9 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceeded(0L);
+            return newSucceeded(0);
         }
 
         long score = 92233720368547758L - System.currentTimeMillis();
@@ -185,7 +185,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this).addAll(c);
     }
 

@@ -15,24 +15,25 @@
  */
 package org.redisson.reactive;
 
-import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Map;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonScoredSortedSet;
+import org.redisson.api.RFuture;
+import org.redisson.api.RScoredSortedSet.Aggregate;
+import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
+
+import reactor.fn.Supplier;
 
 /**
  * 
@@ -42,92 +43,136 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactive implements RScoredSortedSetReactive<V> {
 
+    private final RScoredSortedSetAsync<V> instance;
+    
     public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
     }
 
     public RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
     }
 
     @Override
     public Publisher<V> pollFirst() {
-        return poll(0);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollFirstAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<V> pollLast() {
-        return poll(-1);
-    }
-
-    private Publisher<V> poll(int index) {
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_OBJECT,
-                "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2]); "
-                + "if v[1] ~= nil then "
-                    + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
-                    + "return v[1]; "
-                + "end "
-                + "return nil;",
-                Collections.<Object>singletonList(getName()), index, index);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<V> first() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), 0, 0);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.firstAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<V> last() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_SINGLE, getName(), -1, -1);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.lastAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> add(double score, V object) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_BOOL, getName(), BigDecimal.valueOf(score).toPlainString(), object);
+    public Publisher<Boolean> add(final double score, final V object) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.addAsync(score, object);
+            }
+        });
     }
 
     @Override
-    public Publisher<Integer> removeRangeByRank(int startIndex, int endIndex) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREMRANGEBYRANK, getName(), startIndex, endIndex);
+    public Publisher<Integer> removeRangeByRank(final int startIndex, final int endIndex) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.removeRangeByRankAsync(startIndex, endIndex);
+            }
+        });
     }
 
     @Override
-    public Publisher<Integer> removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREMRANGEBYSCORE, getName(), startValue, endValue);
-    }
-
-    private String value(String element, boolean inclusive) {
-        if (!inclusive) {
-            element = "(" + element;
-        }
-        return element;
+    public Publisher<Integer> removeRangeByScore(final double startScore, final boolean startScoreInclusive, final double endScore, final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.removeRangeByScoreAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> remove(Object object) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZREM, getName(), object);
+    public Publisher<Boolean> remove(final V object) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(object);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD, getName());
+    public Publisher<Integer> size() {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), o);
+    public Publisher<Boolean> contains(final V o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Double> getScore(V o) {
-        return commandExecutor.readReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZSCORE, getName(), o);
+    public Publisher<Double> getScore(final V o) {
+        return reactive(new Supplier<RFuture<Double>>() {
+            @Override
+            public RFuture<Double> get() {
+                return instance.getScoreAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> rank(V o) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANK, getName(), o);
+    public Publisher<Integer> rank(final V o) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.rankAsync(o);
+            }
+        });
     }
 
     private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
@@ -145,98 +190,268 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return commandExecutor.evalReadReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                "local s = redis.call('zrange', KEYS[1], 0, -1);" +
-                        "for i = 1, table.getn(s), 1 do " +
-                            "for j = 1, table.getn(ARGV), 1 do "
-                            + "if ARGV[j] == s[i] "
-                            + "then table.remove(ARGV, j) end "
-                        + "end; "
-                       + "end;"
-                       + "return table.getn(ARGV) == 0 and 1 or 0; ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                        "local v = 0 " +
-                        "for i = 1, table.getn(ARGV), 1 do "
-                            + "if redis.call('zrem', KEYS[1], ARGV[i]) == 1 "
-                            + "then v = 1 end "
-                        +"end "
-                       + "return v ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4, ValueType.OBJECTS),
-                    "local changed = 0 " +
-                    "local s = redis.call('zrange', KEYS[1], 0, -1) "
-                       + "local i = 1 "
-                       + "while i <= table.getn(s) do "
-                            + "local element = s[i] "
-                            + "local isInAgrs = false "
-                            + "for j = 1, table.getn(ARGV), 1 do "
-                                + "if ARGV[j] == element then "
-                                    + "isInAgrs = true "
-                                    + "break "
-                                + "end "
-                            + "end "
-                            + "if isInAgrs == false then "
-                                + "redis.call('zrem', KEYS[1], element) "
-                                + "changed = 1 "
-                            + "end "
-                            + "i = i + 1 "
-                       + "end "
-                       + "return changed ",
-                Collections.<Object>singletonList(getName()), c.toArray());
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Double> addScore(V object, Number value) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZINCRBY,
-                                   getName(), new BigDecimal(value.toString()).toPlainString(), object);
+    public Publisher<Double> addScore(final V object, final Number value) {
+        return reactive(new Supplier<RFuture<Double>>() {
+            @Override
+            public RFuture<Double> get() {
+                return instance.addScoreAsync(object, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<V>> valueRange(int startIndex, int endIndex) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE, getName(), startIndex, endIndex);
+    public Publisher<Collection<V>> valueRange(final int startIndex, final int endIndex) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeAsync(startIndex, endIndex);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<ScoredEntry<V>>> entryRange(int startIndex, int endIndex) {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGE_ENTRY, getName(), startIndex, endIndex, "WITHSCORES");
+    public Publisher<Collection<ScoredEntry<V>>> entryRange(final int startIndex, final int endIndex) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeAsync(startIndex, endIndex);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue);
+    public Publisher<Collection<V>> valueRange(final double startScore, final boolean startScoreInclusive, final double endScore, final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<ScoredEntry<V>>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES");
+    public Publisher<Collection<ScoredEntry<V>>> entryRange(final double startScore, final boolean startScoreInclusive, final double endScore, final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<V>> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_LIST, getName(), startValue, endValue, "LIMIT", offset, count);
+    public Publisher<Collection<V>> valueRange(final double startScore, final boolean startScoreInclusive, final double endScore, final boolean endScoreInclusive, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count);
+            }
+        });
     }
 
     @Override
-    public Publisher<Collection<ScoredEntry<V>>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
-        String startValue = value(BigDecimal.valueOf(startScore).toPlainString(), startScoreInclusive);
-        String endValue = value(BigDecimal.valueOf(endScore).toPlainString(), endScoreInclusive);
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZRANGEBYSCORE_ENTRY, getName(), startValue, endValue, "WITHSCORES", "LIMIT", offset, count);
+    public Publisher<Collection<ScoredEntry<V>>> entryRange(final double startScore, final boolean startScoreInclusive, final double endScore, final boolean endScoreInclusive, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> count(final double startScore, final boolean startScoreInclusive, final double endScore,
+            final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> readAll() {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> intersection(final String... names) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.intersectionAsync(names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> intersection(final Aggregate aggregate, final String... names) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.intersectionAsync(aggregate, names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> intersection(final Map<String, Double> nameWithWeight) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.intersectionAsync(nameWithWeight);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> intersection(final Aggregate aggregate, final Map<String, Double> nameWithWeight) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.intersectionAsync(aggregate, nameWithWeight);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> union(final String... names) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.unionAsync(names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> union(final Aggregate aggregate, final String... names) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.unionAsync(aggregate, names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> union(final Map<String, Double> nameWithWeight) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.unionAsync(nameWithWeight);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> union(final Aggregate aggregate, final Map<String, Double> nameWithWeight) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.unionAsync(aggregate, nameWithWeight);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> valueRangeReversed(final int startIndex, final int endIndex) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeReversedAsync(startIndex, endIndex);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> valueRangeReversed(final double startScore, final boolean startScoreInclusive, final double endScore,
+            final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> valueRangeReversed(final double startScore, final boolean startScoreInclusive, final double endScore,
+            final boolean endScoreInclusive, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.valueRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<ScoredEntry<V>>> entryRangeReversed(final int startIndex, final int endIndex) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeReversedAsync(startIndex, endIndex);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<ScoredEntry<V>>> entryRangeReversed(final double startScore, final boolean startScoreInclusive,
+            final double endScore, final boolean endScoreInclusive) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<ScoredEntry<V>>> entryRangeReversed(final double startScore, final boolean startScoreInclusive,
+            final double endScore, final boolean endScoreInclusive, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Collection<ScoredEntry<V>>>>() {
+            @Override
+            public RFuture<Collection<ScoredEntry<V>>> get() {
+                return instance.entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count);
+            }
+        });
     }
 
 }

@@ -39,9 +39,9 @@ public interface RListReactive<V> extends RCollectionReactive<V> {
 
     Publisher<Long> indexOf(Object o);
 
-    Publisher<Long> add(long index, V element);
+    Publisher<Integer> add(long index, V element);
 
-    Publisher<Long> addAll(long index, Collection<? extends V> coll);
+    Publisher<Integer> addAll(long index, Collection<? extends V> coll);
 
     Publisher<Void> fastSet(long index, V element);
 

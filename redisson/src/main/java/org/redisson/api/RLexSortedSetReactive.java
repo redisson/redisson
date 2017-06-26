@@ -45,7 +45,7 @@ public interface RLexSortedSetReactive extends RCollectionReactive<String> {
 
     Publisher<Integer> lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Long> rank(String o);
+    Publisher<Integer> rank(String o);
 
     Publisher<Collection<String>> valueRange(int startIndex, int endIndex);
 

@@ -54,6 +54,6 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
 
     Publisher<V> take();
 
-    Publisher<Long> put(V e);
+    Publisher<Integer> put(V e);
 
 }

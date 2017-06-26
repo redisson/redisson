@@ -48,7 +48,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
     }
 
     @Override
-    public Publisher<Long> put(V e) {
+    public Publisher<Integer> put(V e) {
         return offer(e);
     }
 

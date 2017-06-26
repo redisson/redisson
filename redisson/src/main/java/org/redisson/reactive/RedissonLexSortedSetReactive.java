@@ -37,7 +37,7 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends String> c) {
+    public Publisher<Integer> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>(this).addAll(c);
     }
 
@@ -135,12 +135,12 @@ public class RedissonLexSortedSetReactive extends RedissonScoredSortedSetReactiv
     }
 
     @Override
-    public Publisher<Long> add(String e) {
+    public Publisher<Integer> add(String e) {
         return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.ZADD_RAW, getName(), 0, e);
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends String> c) {
+    public Publisher<Integer> addAll(Collection<? extends String> c) {
         List<Object> params = new ArrayList<Object>(2*c.size());
         for (Object param : c) {
             params.add(0);

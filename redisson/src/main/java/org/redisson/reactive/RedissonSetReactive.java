@@ -57,12 +57,12 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this).addAll(c);
     }
 
     @Override
-    public Publisher<Long> size() {
+    public Publisher<Integer> size() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD, getName());
     }
 
@@ -81,7 +81,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Long> add(V e) {
+    public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, getName(), e);
     }
 
@@ -136,7 +136,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);

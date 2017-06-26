@@ -67,7 +67,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> size() {
+    public Publisher<Integer> size() {
         return commandExecutor.readReactive(getName(), codec, LLEN, getName());
     }
 
@@ -147,7 +147,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> add(V e) {
+    public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), e);
     }
 
@@ -176,11 +176,11 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this) {
 
             @Override
-            public Long sum(Long first, Long second) {
+            public Integer sum(Integer first, Integer second) {
                 return second;
             }
 
@@ -188,7 +188,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return size();
         }
@@ -200,7 +200,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(long index, Collection<? extends V> coll) {
+    public Publisher<Integer> addAll(long index, Collection<? extends V> coll) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("index: " + index);
         }
@@ -272,7 +272,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> add(long index, V element) {
+    public Publisher<Integer> add(long index, V element) {
         return addAll(index, Collections.singleton(element));
     }
 

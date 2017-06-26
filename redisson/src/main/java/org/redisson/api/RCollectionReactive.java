@@ -33,18 +33,18 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
 
     Publisher<Boolean> removeAll(Collection<?> c);
 
-    Publisher<Boolean> contains(Object o);
+    Publisher<Boolean> contains(V o);
 
     Publisher<Boolean> containsAll(Collection<?> c);
 
-    Publisher<Boolean> remove(Object o);
+    Publisher<Boolean> remove(V o);
 
-    Publisher<Long> size();
+    Publisher<Integer> size();
 
-    Publisher<Long> add(V e);
+    Publisher<Integer> add(V e);
 
-    Publisher<Long> addAll(Publisher<? extends V> c);
+    Publisher<Integer> addAll(Publisher<? extends V> c);
 
-    Publisher<Long> addAll(Collection<? extends V> c);
+    Publisher<Integer> addAll(Collection<? extends V> c);
 
 }

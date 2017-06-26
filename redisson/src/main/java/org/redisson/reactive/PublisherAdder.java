@@ -39,19 +39,19 @@ public class PublisherAdder<V> {
         this.destination = destination;
     }
 
-    public Long sum(Long first, Long second) {
+    public Integer sum(Integer first, Integer second) {
         return first + second;
     }
 
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
-        final Promise<Long> promise = Promises.prepare();
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
+        final Promise<Integer> promise = Promises.prepare();
 
         c.subscribe(new DefaultSubscriber<V>() {
 
             volatile boolean completed;
             AtomicLong values = new AtomicLong();
             Subscription s;
-            Long lastSize = 0L;
+            Integer lastSize = 0;
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -62,7 +62,7 @@ public class PublisherAdder<V> {
             @Override
             public void onNext(V o) {
                 values.getAndIncrement();
-                destination.add(o).subscribe(new DefaultSubscriber<Long>() {
+                destination.add(o).subscribe(new DefaultSubscriber<Integer>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -75,7 +75,7 @@ public class PublisherAdder<V> {
                     }
 
                     @Override
-                    public void onNext(Long o) {
+                    public void onNext(Integer o) {
                         lastSize = sum(lastSize, o);
                         s.request(1);
                         if (values.decrementAndGet() == 0 && completed) {
