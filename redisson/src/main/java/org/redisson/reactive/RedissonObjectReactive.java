@@ -15,12 +15,16 @@
  */
 package org.redisson.reactive;
 
+import java.io.IOException;
+
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonReference;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObjectReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.misc.RedissonObjectFactory;
 
 import reactor.fn.Supplier;
 import reactor.rx.Stream;
@@ -64,6 +68,51 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     @Override
     public Codec getCodec() {
         return codec;
+    }
+    
+    protected byte[] encode(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
+    protected byte[] encodeMapKey(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getMapKeyEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    protected byte[] encodeMapValue(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
+        try {
+            return codec.getMapValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
     
     @Override

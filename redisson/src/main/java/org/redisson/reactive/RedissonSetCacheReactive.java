@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -114,27 +113,17 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         });
     }
 
-    private byte[] encode(V value) throws IOException {
-        return codec.getValueEncoder().encode(value);
-    }
-
     @Override
     public Publisher<Long> add(V value) {
-        try {
-            byte[] objectState = encode(value);
-
-            long timeoutDate = 92233720368547758L;
-            return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
-                    "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
-                    + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
-                        + "return 0;"
-                    + "end; " +
-                    "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
-                    "return 1; ",
-                    Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        long timeoutDate = 92233720368547758L;
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
+                + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
+                    + "return 0;"
+                + "end; " +
+                "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                "return 1; ",
+                Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, encode(value));
     }
 
     @Override
@@ -166,14 +155,10 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         long score = 92233720368547758L - System.currentTimeMillis();
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
-        try {
-            for (V value : c) {
-                byte[] objectState = encode(value);
-                params.add(score);
-                params.add(objectState);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        for (V value : c) {
+            byte[] objectState = encode(value);
+            params.add(score);
+            params.add(objectState);
         }
 
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, params.toArray());

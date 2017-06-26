@@ -32,11 +32,11 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
-    protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
+    public RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    protected RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 
@@ -89,7 +89,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                     Collections.<Object>singletonList(getName()));
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GETSET, getName(), newValue);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GETSET, getName(), encode(newValue));
     }
 
     @Override

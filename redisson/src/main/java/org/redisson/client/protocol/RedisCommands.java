@@ -277,7 +277,7 @@ public interface RedisCommands {
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
     RedisStrictCommand<Long> GET_LONG = new RedisStrictCommand<Long>("GET", new LongReplayConvertor());
     RedisStrictCommand<Integer> GET_INTEGER = new RedisStrictCommand<Integer>("GET", new IntegerReplayConvertor());
-    RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET", 2);
+    RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET");
     RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
     RedisCommand<Object> APPEND = new RedisCommand<Object>("APPEND");
     RedisCommand<Object> SETRANGE = new RedisCommand<Object>("SETRANGE");
