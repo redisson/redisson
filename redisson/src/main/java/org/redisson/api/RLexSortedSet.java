@@ -16,9 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.Set;
-
-import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 /**
  * Sorted set contained values of String type
@@ -26,24 +23,11 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
  * @author Nikita Koksharov
  *
  */
-public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirable {
-
-    /**
-     * Returns <code>RMapReduce</code> object associated with this object
-     * 
-     * @param <KOut> output key
-     * @param <VOut> output value
-     * @return MapReduce instance
-     */
-    <KOut, VOut> RCollectionMapReduce<String, KOut, VOut> mapReduce();
+public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, RExpirable {
     
     String pollFirst();
 
     String pollLast();
-
-    String first();
-
-    String last();
 
     /**
      * Returns rank of value, with the scores ordered from high to low.
@@ -52,13 +36,6 @@ public interface RLexSortedSet extends RLexSortedSetAsync, Set<String>, RExpirab
      * @return rank or <code>null</code> if value does not exist
      */
     Integer revRank(String o);
-    
-    /**
-     * Read all values at once.
-     * 
-     * @return collection of values
-     */
-    Collection<String> readAll();
     
     int removeRangeTail(String fromElement, boolean fromInclusive);
     
