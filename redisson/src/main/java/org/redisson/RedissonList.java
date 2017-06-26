@@ -662,12 +662,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Integer> addAfterAsync(V elementToFind, V element) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "AFTER", elementToFind, element);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "AFTER", encode(elementToFind), encode(element));
     }
 
     @Override
     public RFuture<Integer> addBeforeAsync(V elementToFind, V element) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "BEFORE", elementToFind, element);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "BEFORE", encode(elementToFind), encode(element));
     }
 
     @Override
