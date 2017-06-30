@@ -167,7 +167,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    protected RFuture<Map<K, V>> getAllValuesAsync(Set<K> keys) {
+    protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(System.currentTimeMillis());
         args.addAll(keys);
@@ -334,23 +334,38 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
-                  "local value = redis.call('hget', KEYS[1], ARGV[1]); "
-                + "if value == false then "
-                    + "return 0; "
-                + "end;"
-                + "local t, val = struct.unpack('dLc0', value); "
-                + "if val == ARGV[2] then "
-                    + "redis.call('zrem', KEYS[2], ARGV[1]); "
-                    + "redis.call('zrem', KEYS[3], ARGV[1]); "
-                    + "redis.call('hdel', KEYS[1], ARGV[1]); "
-                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[1]), ARGV[1], string.len(val), val); "
+                    "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                  + "if value == false then "
+                      + "return 0; "
+                  + "end; "
+                  + "local t, val = struct.unpack('dLc0', value); "
+                  + "local expireDate = 92233720368547758; " +
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                  + "if expireDateScore ~= false then "
+                      + "expireDate = tonumber(expireDateScore) "
+                  + "end; "
+                  + "if t ~= 0 then "
+                      + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                      + "if expireIdle ~= false then "
+                          + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                      + "end; "
+                  + "end; "
+                  + "if expireDate <= tonumber(ARGV[1]) then "
+                      + "return 0; "
+                  + "end; "
+              
+                + "if val == ARGV[3] then "
+                    + "redis.call('zrem', KEYS[2], ARGV[2]); "
+                    + "redis.call('zrem', KEYS[3], ARGV[2]); "
+                    + "redis.call('hdel', KEYS[1], ARGV[2]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
                     + "redis.call('publish', KEYS[4], msg); "
                     + "return 1; "
                 + "else "
                     + "return 0; "
                 + "end",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getRemovedChannelNameByKey(key)), 
-                encodeMapKey(key), encodeMapValue(value));
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -395,40 +410,71 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
-                  "local v = redis.call('hget', KEYS[1], ARGV[1]); "
-                + "local value = struct.pack('dLc0', 0, string.len(ARGV[2]), ARGV[2]); "
-                + "redis.call('hset', KEYS[1], ARGV[1], value); "
-                + "if v == false then "
-                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[1]), ARGV[1], string.len(ARGV[2]), ARGV[2]); "
-                    + "redis.call('publish', KEYS[2], msg); "
+                  "local v = redis.call('hget', KEYS[1], ARGV[2]); " + 
+                  "local exists = false;"
+                + "if v ~= false then "
+                  + "local t, val = struct.unpack('dLc0', v); "
+                  + "local expireDate = 92233720368547758; "
+                  + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                  + "if expireDateScore ~= false then "
+                      + "expireDate = tonumber(expireDateScore) "
+                  + "end; "
+                  + "if t ~= 0 then "
+                      + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                      + "if expireIdle ~= false then "
+                          + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                      + "end; "
+                  + "end; "
+                  + "if expireDate > tonumber(ARGV[1]) then "
+                      + "exists = true; "
+                  + "end; "           
+              + "end; "
+                
+                + "local value = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
+                + "redis.call('hset', KEYS[1], ARGV[2], value); "
+                + "if exists == false then "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                    + "redis.call('publish', KEYS[4], msg); "
                     + "return nil; "
                 + "end; "
+                    
                 + "local t, val = struct.unpack('dLc0', v); "
-                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[1]), ARGV[1], string.len(ARGV[2]), ARGV[2], string.len(val), val); "
-                + "redis.call('publish', KEYS[3], msg); "
+                + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
+                + "redis.call('publish', KEYS[5], msg); "
                 + "return val; ",
-                Arrays.<Object>asList(getName(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
-                encodeMapKey(key), encodeMapValue(value));
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
-    public RFuture<V> putIfAbsentOperationAsync(K key, V value) {
+    protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
-                 "local value = struct.pack('dLc0', 0, string.len(ARGV[2]), ARGV[2]); "
-                 + "if redis.call('hsetnx', KEYS[1], ARGV[1], value) == 1 then "
-                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[1]), ARGV[1], string.len(ARGV[2]), ARGV[2]); "
-                    + "redis.call('publish', KEYS[2], msg); "
-                    + "return nil;"
-                + "else "
-                    + "local v = redis.call('hget', KEYS[1], ARGV[1]); "
-                    + "if v == false then "
-                        + "return nil; "
-                    + "end; "
-                    + "local t, val = struct.unpack('dLc0', v); "
-                    + "return val; "
-                + "end",
-                Arrays.<Object>asList(getName(key), getCreatedChannelNameByKey(key)), 
-                encodeMapKey(key), encodeMapValue(value));
+                "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+              + "if value ~= false then "
+                  + "local t, val = struct.unpack('dLc0', value); "
+                  + "local expireDate = 92233720368547758; "
+                  + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                  + "if expireDateScore ~= false then "
+                      + "expireDate = tonumber(expireDateScore) "
+                  + "end; "
+                  + "if t ~= 0 then "
+                      + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                      + "if expireIdle ~= false then "
+                          + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                      + "end; "
+                  + "end; "
+                  + "if expireDate > tonumber(ARGV[1]) then "
+                      + "return val; "
+                  + "end; "           
+              + "end; "
+                
+                 + "local value = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
+                 + "redis.call('hset', KEYS[1], ARGV[2], value); "
+                 + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                 + "redis.call('publish', KEYS[4], msg); "
+                 + "return nil;",
+                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key)), 
+                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -519,16 +565,33 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             throw new NullPointerException("maxIdleUnit param can't be null");
         }
 
+        RFuture<Boolean> future = fastPutOperationAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+        
+        if (hasNoWriter()) {
+            return future;
+        }
+        
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
+            @Override
+            protected void execute() {
+                options.getWriter().write(key, value);
+            }
+        };
+        return mapWriterFuture(future, listener);
+    }
+
+    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        long currentTime = System.currentTimeMillis();
         long ttlTimeout = 0;
         if (ttl > 0) {
-            ttlTimeout = System.currentTimeMillis() + ttlUnit.toMillis(ttl);
+            ttlTimeout = currentTime + ttlUnit.toMillis(ttl);
         }
 
         long maxIdleTimeout = 0;
         long maxIdleDelta = 0;
         if (maxIdleTime > 0) {
             maxIdleDelta = maxIdleUnit.toMillis(maxIdleTime);
-            maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
+            maxIdleTimeout = currentTime + maxIdleDelta;
         }
 
         RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
@@ -578,18 +641,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 + "end;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
-        
-        if (hasNoWriter()) {
-            return future;
-        }
-        
-        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-        };
-        return mapWriterFuture(future, listener);
+        return future;
     }
 
     @Override
@@ -637,6 +689,22 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
         }
 
+        RFuture<V> future = putOperationAsync(key, value, ttlTimeout, maxIdleTimeout, maxIdleDelta);
+        if (hasNoWriter()) {
+            return future;
+        }
+        
+        MapWriterTask<V> listener = new MapWriterTask<V>() {
+            @Override
+            protected void execute() {
+                options.getWriter().write(key, value);
+            }
+        };
+        return mapWriterFuture(future, listener);
+    }
+
+    protected RFuture<V> putOperationAsync(final K key, final V value, long ttlTimeout, long maxIdleTimeout,
+            long maxIdleDelta) {
         RFuture<V> future = commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local insertable = false; "
               + "local v = redis.call('hget', KEYS[1], ARGV[5]); "
@@ -688,17 +756,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 + "return val",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key), getUpdatedChannelNameByKey(key)), 
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
-        if (hasNoWriter()) {
-            return future;
-        }
-        
-        MapWriterTask<V> listener = new MapWriterTask<V>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-        };
-        return mapWriterFuture(future, listener);
+        return future;
     }
 
     String getTimeoutSetNameByKey(Object key) {
@@ -777,19 +835,36 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public RFuture<V> removeOperationAsync(K key) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
-                  "local v = redis.call('hget', KEYS[1], ARGV[1]); "
-                + "redis.call('zrem', KEYS[2], ARGV[1]); "
-                + "redis.call('zrem', KEYS[3], ARGV[1]); "
-                + "redis.call('hdel', KEYS[1], ARGV[1]); "
-                + "if v ~= false then "
-                    + "local t, val = struct.unpack('dLc0', v); "
-                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[1]), ARGV[1], string.len(val), val); "
-                    + "redis.call('publish', KEYS[4], msg); "
-                    + "return val; "
-                + "end; "
-                + "return v",
+                "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+              + "if value == false then "
+                  + "return nil; "
+              + "end; "
+
+              + "local t, val = struct.unpack('dLc0', value); "
+              + "local expireDate = 92233720368547758; " +
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+              + "if expireDateScore ~= false then "
+                  + "expireDate = tonumber(expireDateScore) "
+              + "end; "
+              + "if t ~= 0 then "
+                  + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                  + "if expireIdle ~= false then "
+                     + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                  + "end; "
+              + "end; "
+              + "if expireDate <= tonumber(ARGV[1]) then "
+                  + "return nil; "
+              + "end; "
+
+              + "redis.call('zrem', KEYS[2], ARGV[2]); "
+              + "redis.call('zrem', KEYS[3], ARGV[2]); "
+              + "redis.call('hdel', KEYS[1], ARGV[2]); "
+                  
+                + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(val), val); "
+                + "redis.call('publish', KEYS[4], msg); "
+                + "return val; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getRemovedChannelNameByKey(key)), 
-                encodeMapKey(key));
+                System.currentTimeMillis(), encodeMapKey(key));
     }
 
     @Override
@@ -1149,11 +1224,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 + "if t ~= 0 then "
                     + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
                     + "if expireIdle ~= false then "
-                        + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                            + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                            + "redis.call('hset', KEYS[1], ARGV[2], value); "
-                            + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[2]); "
-                        + "end; "
                         + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
                     + "end; "
                 + "end; "
@@ -1171,26 +1241,38 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<V> replaceOperationAsync(K key, V value) {
+    protected RFuture<V> replaceOperationAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
-                  "local v = redis.call('hget', KEYS[1], ARGV[2]); "
-                + "if v ~= false then "
-                    + "local t, val = struct.unpack('dLc0', v); "
-                    + "if t ~= 0 then "
-                        + "t = t + tonumber(ARGV[1]); "
-                    + "end; "
+                    "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                  + "if value == false then "
+                      + "return nil; "
+                  + "end; "
+                  + "local t, val = struct.unpack('dLc0', value); "
+                  + "local expireDate = 92233720368547758; " +
+                    "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                  + "if expireDateScore ~= false then "
+                      + "expireDate = tonumber(expireDateScore) "
+                  + "end; "
+                  + "if t ~= 0 then "
+                      + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                      + "if expireIdle ~= false then "
+                          + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                      + "end; "
+                  + "end; "
+                  + "if expireDate <= tonumber(ARGV[1]) then "
+                      + "return nil; "
+                  + "end; "
+                
                     + "local value = struct.pack('dLc0', t, string.len(ARGV[3]), ARGV[3]); "
                     + "redis.call('hset', KEYS[1], ARGV[2], value); "
                     
                     + "local msg = struct.pack('Lc0Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3], string.len(val), val); "
-                    + "redis.call('publish', KEYS[3], msg); "
+                    + "redis.call('publish', KEYS[4], msg); "
                     
-                    + "return val; "
-                + "else "
-                    + "return nil; "
-                + "end",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getUpdatedChannelNameByKey(key)), 
+                    + "return val; ",
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getUpdatedChannelNameByKey(key)), 
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
+
     }
 
     @Override
