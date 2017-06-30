@@ -202,7 +202,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return newSucceededFuture(Collections.<K, V>emptyMap());
         }
 
-        RFuture<Map<K, V>> future = getAllValuesAsync(keys);
+        RFuture<Map<K, V>> future = getAllOperationAsync(keys);
         if (hasNoLoader()) {
             return future;
         }
@@ -238,7 +238,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return options == null || options.getLoader() == null;
     }
 
-    protected RFuture<Map<K, V>> getAllValuesAsync(final Set<K> keys) {
+    protected RFuture<Map<K, V>> getAllOperationAsync(final Set<K> keys) {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         args.addAll(keys);

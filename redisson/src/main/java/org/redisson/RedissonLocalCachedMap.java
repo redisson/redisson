@@ -45,6 +45,8 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
+import org.redisson.cache.LocalCachedMapClear;
+import org.redisson.cache.LocalCachedMapInvalidate;
 import org.redisson.cache.NoneCacheMap;
 import org.redisson.cache.ReferenceCacheMap;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -78,34 +80,6 @@ import io.netty.util.internal.ThreadLocalRandom;
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonLocalCachedMap.class);
-    
-    public static class LocalCachedMapClear implements Serializable {
-        
-    }
-    
-    public static class LocalCachedMapInvalidate implements Serializable {
-        
-        private byte[] excludedId;
-        private byte[][] keyHashes;
-
-        public LocalCachedMapInvalidate() {
-        }
-        
-        public LocalCachedMapInvalidate(byte[] excludedId, byte[]... keyHashes) {
-            super();
-            this.keyHashes = keyHashes;
-            this.excludedId = excludedId;
-        }
-        
-        public byte[] getExcludedId() {
-            return excludedId;
-        }
-        
-        public byte[][] getKeyHashes() {
-            return keyHashes;
-        }
-        
-    }
     
     public static class CacheKey implements Serializable {
         
@@ -344,6 +318,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
+        checkKey(key);
+        
         CacheKey cacheKey = toCacheKey(key);
         if (!cache.containsKey(cacheKey)) {
             return super.containsKeyAsync(key);
@@ -353,6 +329,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
+        checkValue(value);
+        
         CacheValue cacheValue = new CacheValue(null, value);
         if (!cache.containsValue(cacheValue)) {
             return super.containsValueAsync(value);
@@ -362,9 +340,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<V> getAsync(final Object key) {
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         final CacheKey cacheKey = toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
@@ -414,7 +390,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     
     @Override
-    public RFuture<V> putOperationAsync(K key, V value) {
+    protected RFuture<V> putOperationAsync(K key, V value) {
         byte[] mapKey = encodeMapKey(key);
         CacheKey cacheKey = toCacheKey(mapKey);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
@@ -424,13 +400,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                   "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "if redis.call('hset', KEYS[1], ARGV[1], ARGV[2]) == 0 then "
-                    + "if ARGV[4] == '1' then "
-                        + "redis.call('publish', KEYS[2], ARGV[3]); "
-                    + "end;"
-                    + "if ARGV[4] == '2' then "
-                        + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
-                        + "redis.call('publish', KEYS[2], ARGV[3]); "
-                    + "end;"
+                + "if ARGV[4] == '1' then "
+                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                + "end;"
+                + "if ARGV[4] == '2' then "
+                    + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
+                    + "redis.call('publish', KEYS[2], ARGV[3]); "
+                + "end;"
                 + "end; "
                 + "return v; ",
                 Arrays.<Object>asList(getName(), invalidationTopic.getChannelNames().get(0), getUpdatesLogName()), 
@@ -1058,7 +1034,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         });
         return future;
     }
-
+    
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
         final List<V> result = new ArrayList<V>();
@@ -1315,11 +1291,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "if ARGV[3] == '1' then "
                         + "redis.call('publish', KEYS[2], ARGV[4]); "
-                   + "end;"
-                   + "if ARGV[3] == '2' then "
+                    + "end;"
+                    + "if ARGV[3] == '2' then "
                         + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
                         + "redis.call('publish', KEYS[2], ARGV[4]); "
-                   + "end;"
+                    + "end;"
                     + "return redis.call('hdel', KEYS[1], ARGV[1]) "
                 + "else "
                     + "return 0 "

@@ -15,12 +15,14 @@
  */
 package org.redisson.cache;
 
+import java.io.Serializable;
+
 /**
- * Created by jribble on 2/20/17.
+ * 
+ * @author Nikita Koksharov
+ *
  */
-public interface CachedValue<K, V> extends ExpirableValue {
+@SuppressWarnings("serial")
+public class LocalCachedMapClear implements Serializable {
 
-    K getKey();
-
-    V getValue();
 }

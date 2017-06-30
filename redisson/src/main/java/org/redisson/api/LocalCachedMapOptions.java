@@ -97,8 +97,6 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private int cacheSize;
     private long timeToLiveInMillis;
     private long maxIdleInMillis;
-    private MapLoader<K, V> mapLoader;
-    private MapWriter<K, V> mapWriter;
     
     private LocalCachedMapOptions() {
     }
