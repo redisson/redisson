@@ -39,20 +39,27 @@ public class LRUCacheMapTest {
 
     @Test
     public void testSizeLRUEviction() throws InterruptedException {
-        Cache<Integer, Integer> map = new LRUCacheMap<Integer, Integer>(3, 0, 0);
+        Cache<Integer, Integer> map = new LRUCacheMap<Integer, Integer>(10, 0, 0);
         map.put(1, 0);
         map.put(2, 0);
+        map.put(3, 0);
+        map.put(4, 0);
         map.put(5, 0);
+        map.put(6, 0);
+        map.put(7, 0);
+        map.put(8, 0);
+        map.put(9, 0);
+        map.put(10, 0);
 
         map.get(1);
-        map.put(3, 0);
+        map.put(13, 0);
         
-        assertThat(map.keySet()).containsOnly(3, 1, 5);
+        assertThat(map.keySet()).contains(13, 1).hasSize(10);
         
         map.get(1);
-        map.put(4, 0);
+        map.put(14, 0);
         
-        assertThat(map.keySet()).containsOnly(4, 1, 3);
+        assertThat(map.keySet()).contains(14, 1).hasSize(10);
     }
     
     @Test
@@ -65,7 +72,7 @@ public class LRUCacheMapTest {
         
         map.put(3, 0);
         
-        assertThat(map.keySet()).containsOnly(3, 2);
+        assertThat(map.keySet()).contains(3).hasSize(2);
         
         map.put(4, 0);
         
