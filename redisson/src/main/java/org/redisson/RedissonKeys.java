@@ -201,7 +201,7 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public RFuture<Long> deleteByPatternAsync(String pattern) {
+    public RFuture<Long> deleteByPatternAsync(final String pattern) {
         final int batchSize = 100;
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
@@ -221,7 +221,7 @@ public class RedissonKeys implements RKeys {
             }
         };
 
-        for (MasterSlaveEntry entry : entries) {
+        for (final MasterSlaveEntry entry : entries) {
             commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
