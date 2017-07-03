@@ -59,10 +59,10 @@ import org.redisson.executor.RedissonExecutorFuture;
 import org.redisson.executor.RedissonScheduledFuture;
 import org.redisson.executor.RemoteExecutorService;
 import org.redisson.executor.RemoteExecutorServiceAsync;
-import org.redisson.executor.TasksRunnerService;
 import org.redisson.executor.RemotePromise;
 import org.redisson.executor.ScheduledTasksService;
 import org.redisson.executor.TasksBatchService;
+import org.redisson.executor.TasksRunnerService;
 import org.redisson.executor.TasksService;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
@@ -119,14 +119,16 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     private final String name;
     private final String requestQueueName;
+    private final QueueTransferService queueTransferService;
     
-    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name) {
+    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name, QueueTransferService queueTransferService) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
         this.connectionManager = commandExecutor.getConnectionManager();
         this.name = name;
         this.redisson = redisson;
+        this.queueTransferService = queueTransferService;
         
         requestQueueName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
         String objectName = requestQueueName;
@@ -195,7 +197,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public void registerWorkers(final int workers, ExecutorService executor) {
-        QueueTransferTask scheduler = new QueueTransferTask(connectionManager) {
+        QueueTransferTask task = new QueueTransferTask(connectionManager) {
             @Override
             protected RTopic<Long> getTopic() {
                 return new RedissonTopic<Long>(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
@@ -220,7 +222,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                       System.currentTimeMillis(), 100);
             }
         };
-        scheduler.start();
+        queueTransferService.schedule(getName(), task);
         
         TasksRunnerService service = 
                 new TasksRunnerService(commandExecutor, redisson, codec, requestQueueName);
@@ -314,6 +316,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public void shutdown() {
+        queueTransferService.remove(getName());
         remoteService.deregister(RemoteExecutorService.class);
         workersTopic.removeListener(workersGroupListenerId);
         
