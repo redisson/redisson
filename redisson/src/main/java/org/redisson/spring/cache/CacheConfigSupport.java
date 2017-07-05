@@ -56,7 +56,7 @@ public class CacheConfigSupport {
         return jsonMapper.readValue(inputStream, new TypeReference<Map<String, CacheConfig>>() {});
     }
 
-    public String toJSON(Map<String, CacheConfig> configs) throws IOException {
+    public String toJSON(Map<String, ? extends CacheConfig> configs) throws IOException {
         return jsonMapper.writeValueAsString(configs);
     }
 
@@ -80,7 +80,7 @@ public class CacheConfigSupport {
         return yamlMapper.readValue(inputStream, new TypeReference<Map<String, CacheConfig>>() {});
     }
 
-    public String toYAML(Map<String, CacheConfig> configs) throws IOException {
+    public String toYAML(Map<String, ? extends CacheConfig> configs) throws IOException {
         return yamlMapper.writeValueAsString(configs);
     }
 

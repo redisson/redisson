@@ -98,7 +98,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private long timeToLiveInMillis;
     private long maxIdleInMillis;
     
-    private LocalCachedMapOptions() {
+    protected LocalCachedMapOptions() {
     }
     
     protected LocalCachedMapOptions(LocalCachedMapOptions<K, V> copy) {
