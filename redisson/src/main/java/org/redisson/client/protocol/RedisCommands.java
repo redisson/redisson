@@ -224,8 +224,6 @@ public interface RedisCommands {
     RedisStrictCommand<Integer> EVAL_INTEGER = new RedisStrictCommand<Integer>("EVAL", new IntegerReplayConvertor());
     RedisStrictCommand<Long> EVAL_LONG = new RedisStrictCommand<Long>("EVAL");
     RedisStrictCommand<Void> EVAL_VOID = new RedisStrictCommand<Void>("EVAL", new VoidReplayConvertor());
-    RedisCommand<Void> EVAL_VOID_WITH_VALUES = new RedisCommand<Void>("EVAL", new VoidReplayConvertor(), 4, ValueType.OBJECTS);
-    RedisCommand<Void> EVAL_VOID_WITH_VALUES_6 = new RedisCommand<Void>("EVAL", new VoidReplayConvertor(), 6, ValueType.OBJECTS);
     RedisCommand<List<Object>> EVAL_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>());
     RedisCommand<Set<Object>> EVAL_SET = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>());
     RedisCommand<Object> EVAL_OBJECT = new RedisCommand<Object>("EVAL");

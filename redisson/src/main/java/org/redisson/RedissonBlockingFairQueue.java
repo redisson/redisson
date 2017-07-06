@@ -174,7 +174,7 @@ public class RedissonBlockingFairQueue<V> extends RedissonBlockingQueue<V> imple
     @Override
     public void destroy() {
         if (instances.decrementAndGet() == 0) {
-            get(commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID_WITH_VALUES,
+            get(commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                     "for i = 1, #ARGV, 1 do "
                         + "redis.call('lrem', KEYS[1], 0, ARGV[i]);"
                     +"end; ",
