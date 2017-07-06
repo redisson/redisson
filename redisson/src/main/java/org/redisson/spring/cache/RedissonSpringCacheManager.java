@@ -195,9 +195,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     }
     
     protected CacheConfig createDefaultConfig() {
-        return new LocalCachedCacheConfig();
+        return new CacheConfig();
     }
-
 
     @Override
     public Cache getCache(String name) {
