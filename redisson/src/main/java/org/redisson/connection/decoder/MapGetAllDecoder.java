@@ -16,7 +16,6 @@
 package org.redisson.connection.decoder;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +26,11 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private final int shiftIndex;

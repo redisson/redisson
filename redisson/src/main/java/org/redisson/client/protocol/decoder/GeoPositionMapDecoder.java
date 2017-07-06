@@ -54,12 +54,12 @@ public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> 
             return Collections.emptyMap();
         }
         Map<Object, Object> result = new HashMap<Object, Object>(parts.size());
-        for (int index = 0; index < args.size()-1; index++) {
+        for (int index = 0; index < args.size(); index++) {
             Object value = parts.get(index);
             if (value == null || value == Collections.emptyMap()) {
                 continue;
             }
-            result.put(args.get(index+1), value);
+            result.put(args.get(index), value);
         }
         return result;
     }
