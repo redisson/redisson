@@ -122,7 +122,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         for (Object member : members) {
             params.add(encode(member));
         }
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH", new MapGetAllDecoder(Arrays.asList(members), 0));
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH", new MapGetAllDecoder((List<Object>)Arrays.asList(members), 0));
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), command, params.toArray());
     }
     
@@ -139,7 +139,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(encode(member));
         }
         
-        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoPositionMapDecoder(Arrays.asList(members)), true);
+        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoPositionMapDecoder((List<Object>)Arrays.asList(members)), true);
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), command, params.toArray());
     }

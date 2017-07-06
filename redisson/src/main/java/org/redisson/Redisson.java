@@ -70,8 +70,6 @@ import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.map.MapLoader;
-import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
 import org.redisson.command.CommandExecutor;
@@ -376,7 +374,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name);
+        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService);
     }
     
     @Override
@@ -387,7 +385,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
-        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name);
+        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService);
     }
     
     @Override
