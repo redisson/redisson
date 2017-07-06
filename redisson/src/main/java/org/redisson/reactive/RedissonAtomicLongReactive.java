@@ -15,17 +15,14 @@
  */
 package org.redisson.reactive;
 
-import java.util.Collections;
-
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonAtomicLong;
+import org.redisson.api.RAtomicLongAsync;
 import org.redisson.api.RAtomicLongReactive;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.api.RFuture;
 import org.redisson.command.CommandReactiveExecutor;
 
+import reactor.fn.Supplier;
 import reactor.rx.Streams;
 
 /**
@@ -36,29 +33,41 @@ import reactor.rx.Streams;
  */
 public class RedissonAtomicLongReactive extends RedissonExpirableReactive implements RAtomicLongReactive {
 
+    private final RAtomicLongAsync instance;
+    
     public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonAtomicLong(commandExecutor, name);
     }
 
     @Override
-    public Publisher<Long> addAndGet(long delta) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.INCRBY, getName(), delta);
+    public Publisher<Long> addAndGet(final long delta) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.addAndGetAsync(delta);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> compareAndSet(long expect, long update) {
-        return commandExecutor.evalWriteReactive(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('get', KEYS[1]) == ARGV[1] then "
-                     + "redis.call('set', KEYS[1], ARGV[2]); "
-                     + "return 1 "
-                   + "else "
-                     + "return 0 end",
-                Collections.<Object>singletonList(getName()), expect, update);
+    public Publisher<Boolean> compareAndSet(final long expect, final long update) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.compareAndSetAsync(expect, update);
+            }
+        });
     }
 
     @Override
     public Publisher<Long> decrementAndGet() {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.DECR, getName());
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.decrementAndGetAsync();
+            }
+        });
     }
 
     @Override
@@ -68,23 +77,33 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
     @Override
     public Publisher<Long> getAndAdd(final long delta) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, new RedisStrictCommand<Long>("INCRBY", new SingleConvertor<Long>() {
+        return reactive(new Supplier<RFuture<Long>>() {
             @Override
-            public Long convert(Object obj) {
-                return ((Long) obj) - delta;
+            public RFuture<Long> get() {
+                return instance.getAndAddAsync(delta);
             }
-        }), getName(), delta);
+        });
     }
 
 
     @Override
-    public Publisher<Long> getAndSet(long newValue) {
-        return commandExecutor.writeReactive(getName(), LongCodec.INSTANCE, RedisCommands.GETSET, getName(), newValue);
+    public Publisher<Long> getAndSet(final long newValue) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.getAndSetAsync(newValue);
+            }
+        });
     }
 
     @Override
     public Publisher<Long> incrementAndGet() {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.INCR, getName());
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.incrementAndGetAsync();
+            }
+        });
     }
 
     @Override
@@ -98,8 +117,13 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     }
 
     @Override
-    public Publisher<Void> set(long newValue) {
-        return commandExecutor.writeReactive(getName(), StringCodec.INSTANCE, RedisCommands.SET, getName(), newValue);
+    public Publisher<Void> set(final long newValue) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(newValue);
+            }
+        });
     }
 
     public String toString() {

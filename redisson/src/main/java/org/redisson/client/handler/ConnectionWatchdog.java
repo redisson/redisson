@@ -16,7 +16,6 @@
 package org.redisson.client.handler;
 
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +23,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.QueueCommandHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +64,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (connection != null) {
-            connection.onDisconnect();
+            connection.fireDisconnected();
             if (!connection.isClosed()) {
                 if (connection.isFastReconnect()) {
                     tryReconnect(connection, 1);
@@ -152,6 +150,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private void refresh(RedisConnection connection, Channel channel) {
         CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        connection.fireConnected();
         connection.updateChannel(channel);
         
         reattachBlockingQueue(connection, currentCommand);            

@@ -317,7 +317,7 @@ public class RedissonScoredSortedSetReactiveTest extends BaseReactiveTest {
     @Test
     public void testAddAndGet() throws InterruptedException {
         RScoredSortedSetReactive<Integer> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
-        set.add(1, 100);
+        sync(set.add(1, 100));
 
         Double res = sync(set.addScore(100, 11));
         Assert.assertEquals(12, (double)res, 0);

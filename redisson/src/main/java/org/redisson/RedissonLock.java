@@ -434,6 +434,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return forceUnlockAsync();
     }
 
+    @Override
     public RFuture<Void> unlockAsync() {
         long threadId = Thread.currentThread().getId();
         return unlockAsync(threadId);
@@ -462,6 +463,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     }
     
+    @Override
     public RFuture<Void> unlockAsync(final long threadId) {
         final RPromise<Void> result = newPromise();
         RFuture<Boolean> future = unlockInnerAsync(threadId);
@@ -491,15 +493,23 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return result;
     }
 
+    @Override
     public RFuture<Void> lockAsync() {
         return lockAsync(-1, null);
     }
 
-    public RFuture<Void> lockAsync(final long leaseTime, final TimeUnit unit) {
+    @Override
+    public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit) {
         final long currentThreadId = Thread.currentThread().getId();
         return lockAsync(leaseTime, unit, currentThreadId);
     }
 
+    @Override
+    public RFuture<Void> lockAsync(long currentThreadId) {
+        return lockAsync(-1, null, currentThreadId);
+    }
+    
+    @Override
     public RFuture<Void> lockAsync(final long leaseTime, final TimeUnit unit, final long currentThreadId) {
         final RPromise<Void> result = newPromise();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
@@ -605,6 +615,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return tryLockAsync(Thread.currentThread().getId());
     }
 
+    @Override
     public RFuture<Boolean> tryLockAsync(long threadId) {
         return tryAcquireOnceAsync(-1, null, threadId);
     }
@@ -620,6 +631,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return tryLockAsync(waitTime, leaseTime, unit, currentThreadId);
     }
 
+    @Override
     public RFuture<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit,
             final long currentThreadId) {
         final RPromise<Boolean> result = newPromise();

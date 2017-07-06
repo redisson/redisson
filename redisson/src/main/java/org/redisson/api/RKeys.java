@@ -187,7 +187,7 @@ public interface RKeys extends RKeysAsync {
     String randomKey();
 
     /**
-     * Find keys by key search pattern
+     * Find keys by key search pattern at once
      *
      *  Supported glob-style patterns:
      *    h?llo subscribes to hello, hallo and hxllo

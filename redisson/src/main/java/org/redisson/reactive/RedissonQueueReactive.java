@@ -39,7 +39,7 @@ public class RedissonQueueReactive<V> extends RedissonListReactive<V> implements
     }
 
     @Override
-    public Publisher<Long> offer(V e) {
+    public Publisher<Integer> offer(V e) {
         return add(e);
     }
 

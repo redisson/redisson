@@ -30,6 +30,14 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<List<V>>, RandomAccess {
 
     /**
+     * Loads elements by specified <code>indexes</code>
+     * 
+     * @param indexes of elements
+     * @return list of elements
+     */
+    List<V> get(int ...indexes);
+    
+    /**
      * Returns <code>RMapReduce</code> object associated with this map
      * 
      * @param <KOut> output key

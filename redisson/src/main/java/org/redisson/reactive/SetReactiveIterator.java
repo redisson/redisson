@@ -29,6 +29,12 @@ import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public abstract class SetReactiveIterator<V> extends Stream<V> {
 
     @Override

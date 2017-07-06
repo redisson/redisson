@@ -28,6 +28,11 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonScriptReactive implements RScriptReactive {
 
     private final CommandReactiveExecutor commandExecutor;

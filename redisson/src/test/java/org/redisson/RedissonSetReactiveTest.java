@@ -258,7 +258,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         RSetReactive<Integer> set = redisson.getSet("set");
         RSetReactive<Integer> otherSet = redisson.getSet("otherSet");
 
-        set.add(1);
+        sync(set.add(1));
 
         Assert.assertFalse(sync(set.move("otherSet", 2)));
 

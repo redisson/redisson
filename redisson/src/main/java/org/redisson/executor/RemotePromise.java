@@ -16,22 +16,17 @@
 package org.redisson.executor;
 
 import org.redisson.api.RFuture;
-import org.redisson.misc.PromiseDelegator;
-import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RemotePromise<T> extends PromiseDelegator<T> {
+public class RemotePromise<T> extends RedissonPromise<T> {
 
     private String requestId;
     private RFuture<Boolean> addFuture;
-    
-    public RemotePromise(RPromise<T> promise) {
-        super(promise);
-    }
     
     public void setRequestId(String requestId) {
         this.requestId = requestId;

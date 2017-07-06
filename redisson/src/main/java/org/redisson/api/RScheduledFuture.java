@@ -23,16 +23,6 @@ import java.util.concurrent.ScheduledFuture;
  *
  * @param <V> value
  */
-public interface RScheduledFuture<V> extends RFuture<V>, ScheduledFuture<V> {
+public interface RScheduledFuture<V> extends RExecutorFuture<V>, ScheduledFuture<V> {
 
-    /**
-     * Returns scheduled task id
-     * Which could be canceled later.
-     *  
-     * @see RScheduledExecutorService#cancelScheduledTask(String)
-     * 
-     * @return task id
-     */
-    String getTaskId();
-    
 }

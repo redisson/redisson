@@ -17,18 +17,13 @@ package org.redisson.client.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisOutOfMemoryException;
-import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.codec.StringCodec;
@@ -36,16 +31,11 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.SlotsDecoder;
-import org.redisson.client.protocol.pubsub.Message;
-import org.redisson.client.protocol.pubsub.PubSubMessage;
-import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
-import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
@@ -56,7 +46,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * Redis protocol command decoder
@@ -68,26 +57,11 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandDecoder extends ReplayingDecoder<State> {
 
-    private final Logger log = LoggerFactory.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
-    public static final char CR = '\r';
-    public static final char LF = '\n';
+    private static final char CR = '\r';
+    private static final char LF = '\n';
     private static final char ZERO = '0';
-
-    // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<String, MultiDecoder<Object>> pubSubMessageDecoders = new HashMap<String, MultiDecoder<Object>>();
-    private final Map<PubSubKey, CommandData<Object, Object>> pubSubChannels = PlatformDependent.newConcurrentHashMap();
-
-    private final ExecutorService executor;
-    
-    public CommandDecoder(ExecutorService executor) {
-        this.executor = executor;
-    }
-
-    public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
-        String operation = data.getCommand().getName().toLowerCase();
-        pubSubChannels.put(new PubSubKey(channel, operation), data);
-    }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
@@ -117,7 +91,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         state().setDecoderState(null);
 
         if (data == null) {
-            decode(in, null, null, ctx.channel());
+            while (in.writerIndex() > in.readerIndex()) {
+                decode(in, null, null, ctx.channel());
+            }
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
@@ -161,7 +137,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), secondLevel.getSize(), secondLevel.getParts());
             
             Channel channel = ctx.channel();
-            MultiDecoder<Object> decoder = messageDecoder(cmd, firstLevel.getParts(), channel);
+            MultiDecoder<Object> decoder = messageDecoder(cmd, firstLevel.getParts());
             if (decoder != null) {
                 Object result = decoder.decode(firstLevel.getParts(), state());
                 if (data != null) {
@@ -222,7 +198,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel) throws IOException {
+    protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel) throws IOException {
         int code = in.readByte();
         if (code == '+') {
             ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
@@ -316,60 +292,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         }
 
-        MultiDecoder<Object> decoder = messageDecoder(data, respParts, channel);
+        MultiDecoder<Object> decoder = messageDecoder(data, respParts);
         if (decoder == null) {
             return;
         }
 
         Object result = decoder.decode(respParts, state());
-        if (data != null) {
-            handleResult(data, parts, result, true, channel);
-            return;
-        }
-
-        if (result instanceof Message) {
-            // store current message index
-            checkpoint();
-
-            handlePublishSubscribe(data, null, channel, result);
-            // has next messages?
-            if (in.writerIndex() > in.readerIndex()) {
-                decode(in, data, null, channel);
-            }
-        }
+        decodeResult(data, parts, channel, result);
     }
 
-    private void handlePublishSubscribe(CommandData<Object, Object> data, List<Object> parts,
-            Channel channel, final Object result) {
-        if (result instanceof PubSubStatusMessage) {
-            String channelName = ((PubSubStatusMessage) result).getChannel();
-            String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
-            PubSubKey key = new PubSubKey(channelName, operation);
-            CommandData<Object, Object> d = pubSubChannels.get(key);
-            if (Arrays.asList(RedisCommands.PSUBSCRIBE.getName(), RedisCommands.SUBSCRIBE.getName()).contains(d.getCommand().getName())) {
-                pubSubChannels.remove(key);
-                pubSubMessageDecoders.put(channelName, d.getMessageDecoder());
-            }
-            if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
-                pubSubChannels.remove(key);
-                pubSubMessageDecoders.remove(channelName);
-            }
+    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
+            Object result) throws IOException {
+        if (data != null) {
+            handleResult(data, parts, result, true, channel);
         }
-
-        final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
-        executor.execute(new Runnable() {
-            @Override
-            public void run() {
-                if (result instanceof PubSubStatusMessage) {
-                    pubSubConnection.onMessage((PubSubStatusMessage) result);
-                } else if (result instanceof PubSubMessage) {
-                    pubSubConnection.onMessage((PubSubMessage) result);
-                } else {
-                    pubSubConnection.onMessage((PubSubPatternMessage) result);
-                }
-            }
-        });
-        
     }
 
     private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult, Channel channel) {
@@ -389,44 +325,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    private MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts, Channel channel) {
+    protected MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
             if (parts.isEmpty()) {
                 return null;
             }
-            String command = parts.get(0).toString();
-            if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
-                String channelName = parts.get(1).toString();
-                PubSubKey key = new PubSubKey(channelName, command);
-                CommandData<Object, Object> commandData = pubSubChannels.get(key);
-                if (commandData == null) {
-                    return null;
-                }
-                return commandData.getCommand().getReplayMultiDecoder();
-            } else if (parts.get(0).equals("message")) {
-                String channelName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(channelName);
-            } else if (parts.get(0).equals("pmessage")) {
-                String patternName = (String) parts.get(1);
-                return pubSubMessageDecoders.get(patternName);
-            }
         }
-
         return data.getCommand().getReplayMultiDecoder();
     }
 
-    private Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
+    protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
         if (data == null) {
-            if (parts != null) {
-                if (parts.size() == 2 && "message".equals(parts.get(0))) {
-                    String channelName = (String) parts.get(1);
-                    return pubSubMessageDecoders.get(channelName);
-                }
-                if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
-                    String patternName = (String) parts.get(1);
-                    return pubSubMessageDecoders.get(patternName);
-                }
-            }
             return StringCodec.INSTANCE.getValueDecoder();
         }
 

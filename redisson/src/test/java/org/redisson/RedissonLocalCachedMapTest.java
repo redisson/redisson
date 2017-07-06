@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -24,9 +25,40 @@ import org.redisson.cache.Cache;
 
 import mockit.Deencapsulation;
 
-public class RedissonLocalCachedMapTest extends BaseTest {
+public class RedissonLocalCachedMapTest extends BaseMapTest {
 
-        @Test
+    public abstract class InvalidationTest {
+
+        RLocalCachedMap<String, Integer> map1;
+        RLocalCachedMap<String, Integer> map2;
+        Cache<CacheKey, CacheValue> cache1;
+        Cache<CacheKey, CacheValue> cache2;
+        
+        public void execute() throws InterruptedException {
+            LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5);
+            map1 = redisson.getLocalCachedMap("test", options);
+            cache1 = Deencapsulation.getField(map1, "cache");
+            
+            map2 = redisson.getLocalCachedMap("test", options);
+            cache2 = Deencapsulation.getField(map2, "cache");
+            
+            map1.put("1", 1);
+            map1.put("2", 2);
+            
+            assertThat(map2.get("1")).isEqualTo(1);
+            assertThat(map2.get("2")).isEqualTo(2);
+            
+            assertThat(cache1.size()).isEqualTo(2);
+            assertThat(cache2.size()).isEqualTo(2);
+            
+            test();
+        }
+        
+        public abstract void test() throws InterruptedException;
+        
+    }
+
+//        @Test
     public void testPerf() {
         LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.NONE).cacheSize(100000).invalidateEntryOnChange(true);
         Map<String, Integer> map = redisson.getLocalCachedMap("test", options);
@@ -48,6 +80,18 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     }
     
+    @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().writer(createMapWriter(map));
+        return redisson.getLocalCachedMap("test", options);        
+    }
+        
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().loader(createMapLoader(map));
+        return redisson.getLocalCachedMap("test", options);        
+    }
+        
     @Test
     public void testReadValuesAndEntries() {
         RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
@@ -90,73 +134,39 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     @Test
     public void testInvalidationOnClear() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
-                .evictionPolicy(EvictionPolicy.LFU)
-                .cacheSize(5);
-        
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
-        
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
-        
-        map1.put("1", 1);
-        map1.put("2", 2);
-        map2.put("3", 2);
-        map2.put("4", 2);
-        
-        assertThat(map1.size()).isEqualTo(4);
-        assertThat(map2.size()).isEqualTo(4);
-        
-        assertThat(map1.readAllEntrySet()).hasSize(4);
-        assertThat(map2.readAllEntrySet()).hasSize(4);
-        
-        assertThat(cache1.size()).isEqualTo(4);
-        assertThat(cache2.size()).isEqualTo(4);
-        
-        map1.clear();
-        
-        Thread.sleep(50);
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.clear();
 
-        assertThat(cache1.size()).isZero();
-        assertThat(cache2.size()).isZero();
-        
-        assertThat(map1.size()).isZero();
-        assertThat(map2.size()).isZero();
+                Thread.sleep(50);
+                assertThat(cache1.size()).isZero();
+                assertThat(cache2.size()).isZero();
+                
+                assertThat(map1.size()).isZero();
+                assertThat(map2.size()).isZero();
+            }
+        }.execute();
     }
     
     @Test
     public void testInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
-                .evictionPolicy(EvictionPolicy.LFU)
-                .cacheSize(5);
-        
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
-        
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
-        
-        map1.put("1", 1);
-        map1.put("2", 2);
-        
-        assertThat(map2.get("1")).isEqualTo(1);
-        assertThat(map2.get("2")).isEqualTo(2);
-        
-        assertThat(cache1.size()).isEqualTo(2);
-        assertThat(cache2.size()).isEqualTo(2);
-
-        map1.put("1", 3);
-        map2.put("2", 4);
-        Thread.sleep(50);
-        
-        assertThat(cache1.size()).isEqualTo(1);
-        assertThat(cache2.size()).isEqualTo(1);
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.put("1", 3);
+                map2.put("2", 4);
+                Thread.sleep(50);
+                
+                assertThat(cache1.size()).isEqualTo(1);
+                assertThat(cache2.size()).isEqualTo(1);
+            }
+        }.execute();
     }
     
     @Test
     public void testNoInvalidationOnUpdate() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
                 .invalidationPolicy(InvalidationPolicy.NONE);
@@ -179,14 +189,14 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         map1.put("1", 3);
         map2.put("2", 4);
         Thread.sleep(50);
-        
+
         assertThat(cache1.size()).isEqualTo(2);
         assertThat(cache2.size()).isEqualTo(2);
     }
     
     @Test
     public void testNoInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults()
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
                 .cacheSize(5)
                 .invalidationPolicy(InvalidationPolicy.NONE);
@@ -213,36 +223,25 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(cache1.size()).isEqualTo(1);
         assertThat(cache2.size()).isEqualTo(1);
     }
-
+    
     @Test
     public void testInvalidationOnRemove() throws InterruptedException {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5);
-        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
-        
-        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
-        Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
-        
-        map1.put("1", 1);
-        map1.put("2", 2);
-        
-        assertThat(map2.get("1")).isEqualTo(1);
-        assertThat(map2.get("2")).isEqualTo(2);
-        
-        assertThat(cache1.size()).isEqualTo(2);
-        assertThat(cache2.size()).isEqualTo(2);
-
-        map1.remove("1");
-        map2.remove("2");
-        Thread.sleep(50);
-        
-        assertThat(cache1.size()).isEqualTo(0);
-        assertThat(cache2.size()).isEqualTo(0);
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.remove("1");
+                map2.remove("2");
+                Thread.sleep(50);
+                
+                assertThat(cache1.size()).isEqualTo(0);
+                assertThat(cache2.size()).isEqualTo(0);
+            }
+        }.execute();
     }
     
     @Test
     public void testLFU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LFU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -260,7 +259,7 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     
     @Test
     public void testLRU() {
-        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().evictionPolicy(EvictionPolicy.LRU).cacheSize(5));
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
 
         map.put("12", 1);
@@ -289,6 +288,21 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(map.size()).isEqualTo(3);
     }
 
+    @Test
+    public void testInvalidationOnPut() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.put("1", 10);
+                map1.put("2", 20);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).hasSize(2);
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
+    }
     
     @Test
     public void testPut() {
@@ -335,6 +349,25 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         assertThat(filtered1).isEqualTo(expectedMap);
     }
 
+    @Test
+    public void testInvalidationOnPutAll() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                Map<String, Integer> entries = new HashMap<>();
+                entries.put("1", 10);
+                entries.put("2", 20);
+                map1.putAll(entries);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).hasSize(2);
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
+    }
+
+    
     @Test
     public void testPutAll() throws InterruptedException {
         Map<Integer, String> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
@@ -447,6 +480,23 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     }
     
     @Test
+    public void testInvalidationOnRemoveValue() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.remove("1", 1);
+                map1.remove("2", 2);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).isEmpty();
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
+    }
+
+    
+    @Test
     public void testRemoveValue() {
         RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple12", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
@@ -480,6 +530,23 @@ public class RedissonLocalCachedMapTest extends BaseTest {
     }
     
     @Test
+    public void testInvalidationOnReplaceOldValue() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.replace("1", 1, 10);
+                map1.replace("2", 2, 20);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).hasSize(2);
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
+    }
+
+    
+    @Test
     public void testReplaceOldValueFail() {
         RMap<SimpleKey, SimpleValue> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
@@ -508,6 +575,22 @@ public class RedissonLocalCachedMapTest extends BaseTest {
         SimpleValue val1 = map.get(new SimpleKey("1"));
         Assert.assertEquals("3", val1.getValue());
         assertThat(cache.size()).isEqualTo(1);
+    }
+    
+    @Test
+    public void testInvalidationOnReplaceValue() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.replace("1", 10);
+                map1.replace("2", 20);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).hasSize(2);
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
     }
     
     @Test
@@ -544,17 +627,18 @@ public class RedissonLocalCachedMapTest extends BaseTest {
 
     
     @Test
-    public void testFastRemoveAsync() throws InterruptedException, ExecutionException {
-        RMap<Integer, Integer> map = redisson.getLocalCachedMap("simple", LocalCachedMapOptions.defaults());
-        Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
-        map.put(1, 3);
-        map.put(3, 5);
-        map.put(4, 6);
-        map.put(7, 8);
+    public void testInvalidationOnFastRemove() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.fastRemove("1", "2", "3");
 
-        assertThat(map.fastRemoveAsync(1, 3, 7).get()).isEqualTo(3);
-        assertThat(cache.size()).isEqualTo(1);
-        assertThat(map.size()).isEqualTo(1);
+                Thread.sleep(50);
+                
+                assertThat(cache1).isEmpty();
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
     }
 
     @Test
@@ -592,6 +676,22 @@ public class RedissonLocalCachedMapTest extends BaseTest {
                 .invalidationPolicy(InvalidationPolicy.NONE);
         RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", options);
         assertThat(map.fastRemove("test")).isZero();
+    }
+
+    @Test
+    public void testInvalidationOnFastPut() throws InterruptedException {
+        new InvalidationTest() {
+            @Override
+            public void test() throws InterruptedException {
+                map1.fastPut("1", 10);
+                map1.fastPut("2", 20);
+
+                Thread.sleep(50);
+                
+                assertThat(cache1).hasSize(2);
+                assertThat(cache2).isEmpty();
+            }
+        }.execute();
     }
 
 

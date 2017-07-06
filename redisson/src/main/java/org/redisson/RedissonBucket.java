@@ -32,11 +32,11 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
 
-    protected RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
+    public RedissonBucket(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
     }
 
-    protected RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonBucket(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
     }
 
@@ -56,22 +56,22 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         }
 
         if (update == null) {
-            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('get', KEYS[1]) == ARGV[1] then "
                             + "redis.call('del', KEYS[1]); "
                             + "return 1 "
                           + "else "
                             + "return 0 end",
-                    Collections.<Object>singletonList(getName()), expect);
+                    Collections.<Object>singletonList(getName()), encode(expect));
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('get', KEYS[1]) == ARGV[1] then "
                      + "redis.call('set', KEYS[1], ARGV[2]); "
                      + "return 1 "
                    + "else "
                      + "return 0 end",
-                Collections.<Object>singletonList(getName()), expect, update);
+                Collections.<Object>singletonList(getName()), encode(expect), encode(update));
     }
 
     @Override
@@ -89,7 +89,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
                     Collections.<Object>singletonList(getName()));
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GETSET, getName(), newValue);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GETSET, getName(), encode(newValue));
     }
 
     @Override
@@ -123,7 +123,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
             return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET, getName(), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET, getName(), encode(value));
     }
 
     @Override
@@ -137,7 +137,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
             throw new IllegalArgumentException("Value can't be null");
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PSETEX, getName(), timeUnit.toMillis(timeToLive), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PSETEX, getName(), timeUnit.toMillis(timeToLive), encode(value));
     }
 
     @Override
@@ -146,7 +146,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
             return commandExecutor.readAsync(getName(), codec, RedisCommands.NOT_EXISTS, getName());
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETNX, getName(), value);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETNX, getName(), encode(value));
     }
 
     @Override
@@ -154,7 +154,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         if (value == null) {
             throw new IllegalArgumentException("Value can't be null");
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), value, "PX", timeUnit.toMillis(timeToLive), "NX");
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "NX");
     }
 
     @Override

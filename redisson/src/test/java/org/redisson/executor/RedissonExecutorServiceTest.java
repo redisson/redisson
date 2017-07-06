@@ -11,23 +11,25 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.junit.After;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
-import static org.redisson.BaseTest.createConfig;
 import org.redisson.RedissonNode;
 import org.redisson.RedissonRuntimeEnvironment;
+import org.redisson.api.RExecutorBatchFuture;
+import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RExecutorService;
-import org.redisson.api.RScheduledExecutorService;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
+
+import com.jayway.awaitility.Awaitility;
+import com.jayway.awaitility.Duration;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
@@ -75,25 +77,65 @@ public class RedissonExecutorServiceTest extends BaseTest {
         }
     }
 
-    private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
-        assertThat(future1.cancel(true)).isTrue();
+    private void cancel(RExecutorFuture<?> future) throws InterruptedException, ExecutionException {
+        assertThat(future.cancel(true)).isTrue();
         boolean canceled = false;
         try {
-            future1.get();
+            future.get();
         } catch (CancellationException e) {
             canceled = true;
         }
         assertThat(canceled).isTrue();
     }
+
+    @Test
+    public void testBatchSubmitRunnable() throws InterruptedException, ExecutionException, TimeoutException {
+        RExecutorService e = redisson.getExecutorService("test");
+        RExecutorBatchFuture future = e.submit(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
+                    new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
+        
+        future.get(5, TimeUnit.SECONDS);
+        future.getTaskFutures().stream().forEach(x -> x.syncUninterruptibly());
+    }
     
     @Test
-    public void testShutdownWithCancelAndOfflineExecutor() throws InterruptedException, ExecutionException {
-        RScheduledExecutorService executor = redisson.getExecutorService("test2");
-        ScheduledFuture<?> future1 = executor.schedule(new RunnableRedissonTask("executed1"), 1, TimeUnit.SECONDS);
-        cancel(future1);
+    public void testBatchSubmitCallable() throws InterruptedException, ExecutionException, TimeoutException {
+        RExecutorService e = redisson.getExecutorService("test");
+        RExecutorBatchFuture future = e.submit(new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"), 
+                    new IncrementCallableTask("myCounter"), new IncrementCallableTask("myCounter"));
+        
+        future.get(5, TimeUnit.SECONDS);
+        future.getTaskFutures().stream().forEach(x -> assertThat(x.getNow()).isEqualTo("1234"));
+    }
+
+    
+    @Test(expected = NullPointerException.class)
+    public void testBatchExecuteNPE() {
+        RExecutorService e = redisson.getExecutorService("test");
+        e.execute();
+    }
+    
+    @Test
+    public void testBatchExecute() {
+        RExecutorService e = redisson.getExecutorService("test");
+        e.execute(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
+                    new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
+        
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
+    }
+    
+    @Test
+    public void testCancelAndInterrupt() throws InterruptedException, ExecutionException {
+        RExecutorService executor = redisson.getExecutorService("test");
+        RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));
         Thread.sleep(2000);
-        assertThat(redisson.getAtomicLong("executed1").isExists()).isFalse();
-        assertThat(executor.delete()).isFalse();
+        cancel(future);
+        assertThat(redisson.<Integer>getBucket("executed1").get()).isBetween(1000, Integer.MAX_VALUE);
+        
+        RExecutorFuture<?> futureAsync = executor.submitAsync(new ScheduledLongRunnableTask("executed2"));
+        Thread.sleep(2000);
+        assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
+        assertThat(redisson.<Integer>getBucket("executed2").get()).isBetween(1000, Integer.MAX_VALUE);
     }
     
     @Test

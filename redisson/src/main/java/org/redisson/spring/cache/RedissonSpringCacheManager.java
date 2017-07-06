@@ -41,22 +41,23 @@ import org.springframework.core.io.ResourceLoader;
  * @author Nikita Koksharov
  *
  */
+@SuppressWarnings("unchecked")
 public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderAware, InitializingBean {
 
-    private ResourceLoader resourceLoader;
+    ResourceLoader resourceLoader;
 
     private boolean dynamic = true;
     
     private boolean allowNullValues = true;
     
-    private Codec codec;
+    Codec codec;
 
-    private RedissonClient redisson;
+    RedissonClient redisson;
 
-    private Map<String, CacheConfig> configMap = new ConcurrentHashMap<String, CacheConfig>();
+    Map<String, CacheConfig> configMap = new ConcurrentHashMap<String, CacheConfig>();
     private ConcurrentMap<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
 
-    private String configLocation;
+    String configLocation;
 
     /**
      * Creates CacheManager supplied by Redisson instance
@@ -74,7 +75,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param redisson object
      * @param config object
      */
-    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config) {
+    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, ? extends CacheConfig> config) {
         this(redisson, config, null);
     }
 
@@ -88,9 +89,9 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param config object
      * @param codec object
      */
-    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, CacheConfig> config, Codec codec) {
+    public RedissonSpringCacheManager(RedissonClient redisson, Map<String, ? extends CacheConfig> config, Codec codec) {
         this.redisson = redisson;
-        this.configMap = config;
+        this.configMap = (Map<String, CacheConfig>) config;
         this.codec = codec;
     }
 
@@ -171,8 +172,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      *
      * @param config object
      */
-    public void setConfig(Map<String, CacheConfig> config) {
-        this.configMap = config;
+    public void setConfig(Map<String, ? extends CacheConfig> config) {
+        this.configMap = (Map<String, CacheConfig>) config;
     }
 
     /**
@@ -192,6 +193,11 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     public void setCodec(Codec codec) {
         this.codec = codec;
     }
+    
+    protected CacheConfig createDefaultConfig() {
+        return new LocalCachedCacheConfig();
+    }
+
 
     @Override
     public Cache getCache(String name) {
@@ -205,26 +211,21 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         
         CacheConfig config = configMap.get(name);
         if (config == null) {
-            config = new CacheConfig();
+            config = createDefaultConfig();
             configMap.put(name, config);
 
-            return createMap(name);
+            return createMap(name, config);
         }
         
         if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
-            return createMap(name);
+            return createMap(name, config);
         }
         
         return createMapCache(name, config);
     }
 
-    private Cache createMap(String name) {
-        RMap<Object, Object> map;
-        if (codec != null) {
-            map = redisson.getMap(name, codec);
-        } else {
-            map = redisson.getMap(name);
-        }
+    private Cache createMap(String name, CacheConfig config) {
+        RMap<Object, Object> map = getMap(name, config);
         
         Cache cache = new RedissonCache(map, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
@@ -234,13 +235,15 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         return cache;
     }
 
-    private Cache createMapCache(String name, CacheConfig config) {
-        RMapCache<Object, Object> map;
+    protected RMap<Object, Object> getMap(String name, CacheConfig config) {
         if (codec != null) {
-            map = redisson.getMapCache(name, codec);
-        } else {
-            map = redisson.getMapCache(name);
+            return redisson.getMap(name, codec);
         }
+        return redisson.getMap(name);
+    }
+
+    private Cache createMapCache(String name, CacheConfig config) {
+        RMapCache<Object, Object> map = getMapCache(name, config);
         
         Cache cache = new RedissonCache(map, config, allowNullValues);
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
@@ -248,6 +251,13 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             cache = oldCache;
         }
         return cache;
+    }
+
+    protected RMapCache<Object, Object> getMapCache(String name, CacheConfig config) {
+        if (codec != null) {
+            return redisson.getMapCache(name, codec);
+        }
+        return redisson.getMapCache(name);
     }
 
     @Override
@@ -268,11 +278,11 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
 
         Resource resource = resourceLoader.getResource(configLocation);
         try {
-            this.configMap = CacheConfig.fromJSON(resource.getInputStream());
+            this.configMap = (Map<String, CacheConfig>) CacheConfig.fromJSON(resource.getInputStream());
         } catch (IOException e) {
             // try to read yaml
             try {
-                this.configMap = CacheConfig.fromYAML(resource.getInputStream());
+                this.configMap = (Map<String, CacheConfig>) CacheConfig.fromYAML(resource.getInputStream());
             } catch (IOException e1) {
                 throw new BeanDefinitionStoreException(
                         "Could not parse cache configuration at [" + configLocation + "]", e1);

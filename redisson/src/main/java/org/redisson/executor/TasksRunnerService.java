@@ -16,7 +16,6 @@
 package org.redisson.executor;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.Callable;
@@ -26,7 +25,6 @@ import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.annotation.RInject;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -43,7 +41,7 @@ import io.netty.buffer.Unpooled;
  * @author Nikita Koksharov
  *
  */
-public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteParams {
+public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
 
     private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
     
@@ -57,11 +55,11 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
     private String tasksCounterName;
     private String statusName;
     private String terminationTopicName;
-    private String schedulerTasksName; 
+    private String tasksName; 
     private String schedulerQueueName;
     private String schedulerChannelName;
     
-    public RemoteExecutorServiceImpl(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
+    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
@@ -81,8 +79,8 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         this.schedulerChannelName = schedulerChannelName;
     }
     
-    public void setSchedulerTasksName(String schedulerTasksName) {
-        this.schedulerTasksName = schedulerTasksName;
+    public void setTasksName(String tasksName) {
+        this.tasksName = tasksName;
     }
     
     public void setTasksCounterName(String tasksCounterName) {
@@ -102,7 +100,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         long newStartTime = System.currentTimeMillis() + period;
         RFuture<Void> future = asyncScheduledServiceAtFixed().scheduleAtFixedRate(className, classBody, state, newStartTime, period);
         try {
-            executeRunnable(className, classBody, state);
+            executeRunnable(className, classBody, state, null);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             future.cancel(true);
@@ -115,7 +113,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
         Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
         RFuture<Void> future = asyncScheduledServiceAtFixed().schedule(className, classBody, state, nextStartDate.getTime(), cronExpression);
         try {
-            executeRunnable(className, classBody, state);
+            executeRunnable(className, classBody, state, null);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             future.cancel(true);
@@ -130,13 +128,13 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed() {
-        ScheduledExecutorRemoteService scheduledRemoteService = new ScheduledExecutorRemoteService(codec, redisson, name, commandExecutor);
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
-        scheduledRemoteService.setSchedulerTasksName(schedulerTasksName);
+        scheduledRemoteService.setTasksName(tasksName);
         scheduledRemoteService.setRequestId(requestId.get());
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;
@@ -144,7 +142,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
     
     @Override
     public void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay) {
-        executeRunnable(className, classBody, state);
+        executeRunnable(className, classBody, state, null);
         long newStartTime = System.currentTimeMillis() + delay;
         asyncScheduledServiceAtFixed().scheduleWithFixedDelay(className, classBody, state, newStartTime, delay);
     }
@@ -161,7 +159,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
     
     @Override
     public Object executeCallable(String className, byte[] classBody, byte[] state) {
-        return executeCallable(className, classBody, state, null);
+        return executeCallable(className, classBody, state, requestId.get());
     }
     
     private Object executeCallable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
@@ -197,7 +195,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
 
     @Override
     public void executeRunnable(String className, byte[] classBody, byte[] state) {
-        executeRunnable(className, classBody, state, null);
+        executeRunnable(className, classBody, state, requestId.get());
     }
     
     private void executeRunnable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
@@ -246,7 +244,7 @@ public class RemoteExecutorServiceImpl implements RemoteExecutorService, RemoteP
                         + "redis.call('publish', KEYS[3], ARGV[2]);"
                     + "end;"
                   + "end;",  
-                    Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, schedulerTasksName),
+                    Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName),
                     RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, scheduledRequestId);
             return;
         }

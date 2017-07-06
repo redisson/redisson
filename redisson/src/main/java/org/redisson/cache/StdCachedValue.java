@@ -35,21 +35,26 @@ public class StdCachedValue<K, V> implements CachedValue<K, V> {
         this.ttl = ttl;
         this.key = key;
         this.maxIdleTime = maxIdleTime;
-        creationTime = System.currentTimeMillis();
-        lastAccess = creationTime;
+        
+        if (ttl != 0 || maxIdleTime != 0) {
+            creationTime = System.currentTimeMillis();
+            lastAccess = creationTime;
+        }
     }
 
     @Override
     public boolean isExpired() {
-        boolean result = false;
+        if (maxIdleTime == 0 && ttl == 0) {
+            return false;
+        }
         long currentTime = System.currentTimeMillis();
         if (ttl != 0 && creationTime + ttl < currentTime) {
-            result = true;
+            return true;
         }
         if (maxIdleTime != 0 && lastAccess + maxIdleTime < currentTime) {
-            result = true;
+            return true;
         }
-        return result;
+        return false;
     }
 
     @Override

@@ -282,7 +282,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     }
     
     private String getPartsName() {
-        return getName() + ":parts";
+        return suffixName(getName(), "parts");
     }
     
     @Override

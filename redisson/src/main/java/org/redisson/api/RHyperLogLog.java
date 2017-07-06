@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 
 /**
+ * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.
  * 
  * @author Nikita Koksharov
  *

@@ -34,7 +34,7 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong {
 
-    protected RedissonAtomicLong(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonAtomicLong(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 

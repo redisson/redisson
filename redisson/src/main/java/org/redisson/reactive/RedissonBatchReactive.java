@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RAtomicLongReactive;
@@ -25,6 +24,7 @@ import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
+import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
@@ -43,14 +43,19 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
+import reactor.fn.Supplier;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
-    private final UUID id;
 
-    public RedissonBatchReactive(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
-        this.id = id;
+    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandBatchService(connectionManager);
     }
@@ -87,22 +92,22 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        return new RedissonMapReactive<K, V>(executorService, name);
+        return new RedissonMapReactive<K, V>(executorService, name, null);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        return new RedissonMapReactive<K, V>(codec, executorService, name);
+        return new RedissonMapReactive<K, V>(codec, executorService, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, executorService, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, executorService, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, executorService, name, null);
     }
 
     @Override
@@ -202,7 +207,12 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Publisher<List<?>> execute() {
-        return new NettyFuturePublisher<List<?>>(executorService.executeAsync());
+        return new NettyFuturePublisher<List<?>>(new Supplier<RFuture<List<?>>>() {
+            @Override
+            public RFuture<List<?>> get() {
+                return executorService.executeAsync();
+            }
+        });
     }
 
     public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {

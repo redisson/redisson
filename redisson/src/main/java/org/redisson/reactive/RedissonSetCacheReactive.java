@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetCache;
+import org.redisson.api.RFuture;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -32,6 +32,8 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
+
+import reactor.fn.Supplier;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -68,17 +70,27 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Long> size() {
+    public Publisher<Integer> size() {
         return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD, getName());
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return reactive(instance.containsAsync(o));
+    public Publisher<Boolean> contains(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
-    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(InetSocketAddress client, long startPos) {
-        return reactive(instance.scanIteratorAsync(getName(), client, startPos));
+    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(final InetSocketAddress client, final long startPos) {
+        return reactive(new Supplier<RFuture<ListScanResult<ScanObjectEntry>>>() {
+            @Override
+            public RFuture<ListScanResult<ScanObjectEntry>> get() {
+                return instance.scanIteratorAsync(getName(), client, startPos);
+            }
+        });
     }
 
     @Override
@@ -92,77 +104,88 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     }
 
     @Override
-    public Publisher<Boolean> add(V value, long ttl, TimeUnit unit) {
-        return reactive(instance.addAsync(value, ttl, unit));
-    }
-
-    private byte[] encode(V value) throws IOException {
-        return codec.getValueEncoder().encode(value);
-    }
-
-    @Override
-    public Publisher<Long> add(V value) {
-        try {
-            byte[] objectState = encode(value);
-
-            long timeoutDate = 92233720368547758L;
-            return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
-                    "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
-                    + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
-                        + "return 0;"
-                    + "end; " +
-                    "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
-                    "return 1; ",
-                    Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, objectState);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public Publisher<Boolean> add(final V value, final long ttl, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.addAsync(value, ttl, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> remove(Object o) {
-        return reactive(instance.removeAsync(o));
+    public Publisher<Integer> add(V value) {
+        long timeoutDate = 92233720368547758L;
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
+                + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
+                    + "return 0;"
+                + "end; " +
+                "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
+                "return 1; ",
+                Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, encode(value));
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return reactive(instance.containsAllAsync(c));
+    public Publisher<Boolean> remove(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceeded(0L);
+            return newSucceeded(0);
         }
 
         long score = 92233720368547758L - System.currentTimeMillis();
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
-        try {
-            for (V value : c) {
-                byte[] objectState = encode(value);
-                params.add(score);
-                params.add(objectState);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        for (V value : c) {
+            byte[] objectState = encode(value);
+            params.add(score);
+            params.add(objectState);
         }
 
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.ZADD_RAW, params.toArray());
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return reactive(instance.retainAllAsync(c));
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return reactive(instance.removeAllAsync(c));
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this).addAll(c);
     }
 

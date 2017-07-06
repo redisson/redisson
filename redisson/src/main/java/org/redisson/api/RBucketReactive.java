@@ -21,13 +21,28 @@ import org.reactivestreams.Publisher;
 
 
 /**
- *  object functions
+ * Object holder. Max size of object is 512MB
  *
  * @author Nikita Koksharov
  *
  * @param <V> - the type of object
  */
 public interface RBucketReactive<V> extends RExpirableReactive {
+
+    /**
+     * Returns size of object in bytes
+     * 
+     * @return object size
+     */
+    Publisher<Long> size();
+    
+    Publisher<Boolean> trySet(V value);
+
+    Publisher<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
+
+    Publisher<Boolean> compareAndSet(V expect, V update);
+
+    Publisher<V> getAndSet(V newValue);
 
     Publisher<V> get();
 

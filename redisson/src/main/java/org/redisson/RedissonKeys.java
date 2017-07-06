@@ -18,9 +18,7 @@ package org.redisson;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -48,6 +46,7 @@ import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 
 /**
  * 
@@ -202,16 +201,8 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public RFuture<Long> deleteByPatternAsync(String pattern) {
-        if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, "local keys = redis.call('keys', ARGV[1]) "
-                              + "local n = 0 "
-                              + "for i=1, #keys,5000 do "
-                                  + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
-                              + "end "
-                          + "return n;",Collections.emptyList(), pattern);
-        }
-
+    public RFuture<Long> deleteByPatternAsync(final String pattern) {
+        final int batchSize = 100;
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
@@ -230,16 +221,38 @@ public class RedissonKeys implements RKeys {
             }
         };
 
-        for (MasterSlaveEntry entry : entries) {
-            Iterator<String> keysIterator = createKeysIterator(entry, pattern, 10);
-            Collection<String> keys = new HashSet<String>();
-            while (keysIterator.hasNext()) {
-                String key = keysIterator.next();
-                keys.add(key);
-            }
-            RFuture<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
-            deleteFuture.addListener(listener);
-	}
+        for (final MasterSlaveEntry entry : entries) {
+            commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    long count = 0;
+                    try {
+                        Iterator<String> keysIterator = createKeysIterator(entry, pattern, batchSize);
+                        List<String> keys = new ArrayList<String>();
+                        while (keysIterator.hasNext()) {
+                            String key = keysIterator.next();
+                            keys.add(key);
+                            
+                            if (keys.size() % batchSize == 0) {
+                                count += delete(keys.toArray(new String[keys.size()]));
+                                keys.clear();
+                            }
+                        }
+                        
+                        if (!keys.isEmpty()) {
+                            count += delete(keys.toArray(new String[keys.size()]));
+                            keys.clear();
+                        }
+                        
+                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newSucceededFuture(count);
+                        future.addListener(listener);
+                    } catch (Exception e) {
+                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newFailedFuture(e);
+                        future.addListener(listener);
+                    }
+                }
+            });
+        }
 
         return result;
     }

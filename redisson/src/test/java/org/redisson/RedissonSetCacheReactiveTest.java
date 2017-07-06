@@ -86,9 +86,9 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testRemove() throws InterruptedException, ExecutionException {
         RSetCacheReactive<Integer> set = redisson.getSetCache("simple");
-        set.add(1, 1, TimeUnit.SECONDS);
-        set.add(3, 2, TimeUnit.SECONDS);
-        set.add(7, 3, TimeUnit.SECONDS);
+        sync(set.add(1, 1, TimeUnit.SECONDS));
+        sync(set.add(3, 2, TimeUnit.SECONDS));
+        sync(set.add(7, 3, TimeUnit.SECONDS));
 
         Assert.assertTrue(sync(set.remove(1)));
         Assert.assertFalse(sync(set.contains(1)));
@@ -107,7 +107,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     public void testIteratorSequence() throws InterruptedException {
         RSetCacheReactive<Long> set = redisson.getSetCache("set");
         for (int i = 0; i < 1000; i++) {
-            set.add(Long.valueOf(i));
+            sync(set.add(Long.valueOf(i)));
         }
 
         Thread.sleep(1000);
@@ -267,11 +267,11 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testClearExpire() throws InterruptedException {
         RSetCacheReactive<String> cache = redisson.getSetCache("simple");
-        cache.add("8", 1, TimeUnit.SECONDS);
+        sync(cache.add("8", 1, TimeUnit.SECONDS));
 
-        cache.expireAt(System.currentTimeMillis() + 100);
+        sync(cache.expireAt(System.currentTimeMillis() + 100));
 
-        cache.clearExpire();
+        sync(cache.clearExpire());
 
         Thread.sleep(500);
 

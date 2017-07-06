@@ -923,6 +923,10 @@ public class RedisRunner {
             }
         }
         
+        public String getDefaultDir() {
+            return runner.getDefaultDir();
+        }
+        
         public Process getRedisProcess() {
             return redisProcess;
         }
@@ -993,6 +997,10 @@ public class RedisRunner {
         return defaultRedisInstance.createRedisClientInstance();
     }
 
+    public String getDefaultDir() {
+        return defaultDir;
+    }
+    
     public static RedisRunner.RedisProcess getDefaultRedisServerInstance() {
         return defaultRedisInstance;
     }

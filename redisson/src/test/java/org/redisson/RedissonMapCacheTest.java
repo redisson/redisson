@@ -15,10 +15,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
@@ -27,14 +28,15 @@ import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
 import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
-import org.redisson.client.codec.StringCodec;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
 import com.jayway.awaitility.Awaitility;
 import com.jayway.awaitility.Duration;
 
-public class RedissonMapCacheTest extends BaseTest {
+public class RedissonMapCacheTest extends BaseMapTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -136,6 +138,80 @@ public class RedissonMapCacheTest extends BaseTest {
             return true;
         }
 
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
+        return redisson.getMapCache("test", options);        
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
+        return redisson.getMapCache("test", options);        
+    }
+    
+    @Test
+    public void testWriterPutIfAbsent() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.putIfAbsent("1", "11", 10, TimeUnit.SECONDS);
+        map.putIfAbsent("1", "00", 10, TimeUnit.SECONDS);
+        map.putIfAbsent("2", "22", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterPutTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+        
+        map.put("1", "11", 10, TimeUnit.SECONDS);
+        map.put("2", "22", 10, TimeUnit.SECONDS);
+        map.put("3", "33", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterFastPutIfAbsentTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.fastPutIfAbsent("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("1", "00", 10, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("2", "22", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        assertThat(store).isEqualTo(expected);
+    }
+    
+    @Test
+    public void testWriterFastPutTTL() {
+        Map<String, String> store = new HashMap<>();
+        RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
+
+        map.fastPut("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPut("2", "22", 10, TimeUnit.SECONDS);
+        map.fastPut("3", "33", 10, TimeUnit.SECONDS);
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("1", "11");
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
     }
     
     @Test
@@ -446,6 +522,21 @@ public class RedissonMapCacheTest extends BaseTest {
 
         Assert.assertEquals(0, map.size());
     }
+    
+    @Test
+    public void testRemoveValueTTL() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(1000);
+        
+        boolean res = map.remove(new SimpleKey("1"), new SimpleValue("2"));
+        Assert.assertFalse(res);
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        Assert.assertNull(val1);
+    }
+
 
     @Test
     public void testRemoveValueFail() {
@@ -491,8 +582,8 @@ public class RedissonMapCacheTest extends BaseTest {
     }
 
     @Test
-    public void testReplaceValue() {
-        ConcurrentMap<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+    public void testReplaceValue() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
         map.put(new SimpleKey("1"), new SimpleValue("2"));
 
         SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
@@ -502,6 +593,19 @@ public class RedissonMapCacheTest extends BaseTest {
         Assert.assertEquals("3", val1.getValue());
     }
 
+    @Test
+    public void testReplaceValueTTL() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
+        map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS);
+
+        Thread.sleep(1000);
+        
+        SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
+        assertThat(res).isNull();
+
+        SimpleValue val1 = map.get(new SimpleKey("1"));
+        assertThat(val1).isNull();
+    }
 
     @Test
     public void testReplace() {
@@ -842,69 +946,74 @@ public class RedissonMapCacheTest extends BaseTest {
     }
 
     @Test
-    public void testPutIdle() throws InterruptedException {
-        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        map.put(1, 2, 0, null, 2, TimeUnit.SECONDS);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(2100);
-        assertThat(map.get(1)).isNull();
-    }
+    public void testIdle() throws InterruptedException {
+        testExpiration(map -> {
+            map.put("12", 1, 0, null, 1, TimeUnit.SECONDS);
+            map.put("14", 2, 0, null, 2, TimeUnit.SECONDS);
+            map.put("15", 3, 0, null, 3, TimeUnit.SECONDS);
+        });
 
+        testExpiration(map -> {
+            map.fastPut("12", 1, 0, null, 1, TimeUnit.SECONDS);
+            map.fastPut("14", 2, 0, null, 2, TimeUnit.SECONDS);
+            map.fastPut("15", 3, 0, null, 3, TimeUnit.SECONDS);
+        });
+
+        testExpiration(map -> {
+            map.putIfAbsent("12", 1, 0, null, 1, TimeUnit.SECONDS);
+            map.putIfAbsent("14", 2, 0, null, 2, TimeUnit.SECONDS);
+            map.putIfAbsent("15", 3, 0, null, 3, TimeUnit.SECONDS);
+        });
+
+        testExpiration(map -> {
+            map.fastPutIfAbsent("12", 1, 0, null, 1, TimeUnit.SECONDS);
+            map.fastPutIfAbsent("14", 2, 0, null, 2, TimeUnit.SECONDS);
+            map.fastPutIfAbsent("15", 3, 0, null, 3, TimeUnit.SECONDS);
+        });
+    }
+    
     @Test
-    public void testPutIfAbsentIdle() throws InterruptedException {
-        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        assertThat(map.putIfAbsent(1, 2, 0, null, 2, TimeUnit.SECONDS)).isNull();
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(2100);
-        assertThat(map.get(1)).isNull();
+    public void testTTL() throws InterruptedException {
+        testExpiration(map -> {
+            map.put("12", 1, 1, TimeUnit.SECONDS);
+            map.put("14", 2, 2, TimeUnit.SECONDS);
+            map.put("15", 3, 3, TimeUnit.SECONDS);
+        });
+
+        testExpiration(map -> {
+            map.fastPut("12", 1, 1, TimeUnit.SECONDS);
+            map.fastPut("14", 2, 2, TimeUnit.SECONDS);
+            map.fastPut("15", 3, 3, TimeUnit.SECONDS);
+        });
+
+        testExpiration(map -> {
+            map.putIfAbsent("12", 1, 1, TimeUnit.SECONDS);
+            map.putIfAbsent("14", 2, 2, TimeUnit.SECONDS);
+            map.putIfAbsent("15", 3, 3, TimeUnit.SECONDS);
+        });
+
+        testExpiration(map -> {
+            map.fastPutIfAbsent("12", 1, 1, TimeUnit.SECONDS);
+            map.fastPutIfAbsent("14", 2, 2, TimeUnit.SECONDS);
+            map.fastPutIfAbsent("15", 3, 3, TimeUnit.SECONDS);
+        });
     }
 
-    @Test
-    public void testFastPutIdle() throws InterruptedException {
-        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        assertThat(map.fastPut(1, 2, 0, null, 2, TimeUnit.SECONDS)).isTrue();
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(1000);
-        assertThat(map.get(1)).isEqualTo(2);
-        Thread.sleep(2100);
-        assertThat(map.get(1)).isNull();
-    }
+    protected void testExpiration(Consumer<RMapCache<String, Integer>> callback) throws InterruptedException {
+        RMapCache<String, Integer> map = redisson.getMapCache("simple");
 
-    @Test
-    public void testFastPutWithTTL() throws Exception {
-        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        Assert.assertTrue(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
-        Assert.assertFalse(map.fastPut(1, 2, 2, TimeUnit.SECONDS));
-        Assert.assertEquals(1, map.size());
-    }
+        callback.accept(map);
 
-    @Test
-    public void testFastPutWithTTLandMaxIdle() throws Exception {
-        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
-        Assert.assertTrue(map.fastPut(1, 2, 200, TimeUnit.SECONDS, 100, TimeUnit.SECONDS));
-        Assert.assertFalse(map.fastPut(1, 2, 200, TimeUnit.SECONDS, 100, TimeUnit.SECONDS));
-        Assert.assertEquals(1, map.size());
+        Thread.sleep(1000);
+        
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isEqualTo(2);
+        assertThat(map.get("15")).isEqualTo(3);
+        
+        map.clear();
     }
-
+    
+    
     @Test
     public void testEquals() {
         RMapCache<String, String> map = redisson.getMapCache("simple");
@@ -1010,22 +1119,22 @@ public class RedissonMapCacheTest extends BaseTest {
     
     @Test
     public void testAddAndGet() {
-        RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", StringCodec.INSTANCE);
-        mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS);
+        RMapCache<String, Object> mapCache = redisson.getMapCache("test_put_if_absent", LongCodec.INSTANCE);
+        assertThat(mapCache.putIfAbsent("4", 0L, 10000L, TimeUnit.SECONDS)).isNull();
+        assertThat(mapCache.addAndGet("4", 1L)).isEqualTo(1L);
+        assertThat(mapCache.putIfAbsent("4", 0L)).isEqualTo(1L);
+        Assert.assertEquals(1L, mapCache.get("4"));
+        mapCache = redisson.getMapCache("test_put_if_absent_1", LongCodec.INSTANCE);
+        mapCache.putIfAbsent("4", 0L);
         mapCache.addAndGet("4", 1L);
         mapCache.putIfAbsent("4", 0L);
-        Assert.assertEquals("1", mapCache.get("4"));
-        mapCache = redisson.getMapCache("test_put_if_absent_1", StringCodec.INSTANCE);
-        mapCache.putIfAbsent("4", 0L);
-        mapCache.addAndGet("4", 1L);
-        mapCache.putIfAbsent("4", 0L);
-        Assert.assertEquals("1", mapCache.get("4"));
-        RMap map = redisson.getMap("test_put_if_absent_2", StringCodec.INSTANCE);
+        Assert.assertEquals(1L, mapCache.get("4"));
+        RMap map = redisson.getMap("test_put_if_absent_2", LongCodec.INSTANCE);
         map.putIfAbsent("4", 0L);
         map.addAndGet("4", 1L);
         map.putIfAbsent("4", 0L);
-        Assert.assertEquals("1", map.get("4"));
-        RMapCache<String, Object> mapCache1 = redisson.getMapCache("test_put_if_absent_3");
+        Assert.assertEquals(1L, map.get("4"));
+        RMapCache<String, Object> mapCache1 = redisson.getMapCache("test_put_if_absent_3", DoubleCodec.INSTANCE);
         mapCache1.putIfAbsent("4", 1.23, 10000L, TimeUnit.SECONDS);
         mapCache1.addAndGet("4", 1D);
         Assert.assertEquals(2.23, mapCache1.get("4"));

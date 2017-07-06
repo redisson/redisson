@@ -73,13 +73,13 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testAddAllWithIndex() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new Promise<Long>() {
+        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new Promise<Integer>() {
 
             @Override
-            public void onNext(Long element) {
-                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new Promise<Long>() {
+            public void onNext(Integer element) {
+                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new Promise<Integer>() {
                     @Override
-                    public void onNext(Long value) {
+                    public void onNext(Integer value) {
                         latch.countDown();
                     }
 
@@ -105,12 +105,12 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testAdd() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.add(1L).subscribe(new Promise<Long>() {
+        list.add(1L).subscribe(new Promise<Integer>() {
             @Override
-            public void onNext(Long value) {
-                list.add(2L).subscribe(new Promise<Long>() {
+            public void onNext(Integer value) {
+                list.add(2L).subscribe(new Promise<Integer>() {
                     @Override
-                    public void onNext(Long value) {
+                    public void onNext(Integer value) {
                         latch.countDown();
                     }
 

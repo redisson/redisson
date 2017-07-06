@@ -29,6 +29,14 @@ import java.util.RandomAccess;
 public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<V>>, RandomAccess {
 
     /**
+     * Loads elements by specified <code>indexes</code>
+     * 
+     * @param indexes of elements
+     * @return elements
+     */
+    RFuture<List<V>> getAsync(int ...indexes);
+    
+    /**
      * Add <code>element</code> after <code>elementToFind</code>
      * 
      * @param elementToFind - object to find

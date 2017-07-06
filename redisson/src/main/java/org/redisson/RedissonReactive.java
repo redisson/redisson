@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.redisson.api.ClusterNode;
+import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicLongReactive;
@@ -101,12 +102,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, null);
     }
 
     @Override
@@ -133,6 +134,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
+    
+    
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLogReactive<V>(commandExecutor, name);
@@ -155,12 +158,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        return new RedissonMapReactive<K, V>(commandExecutor, name);
+        return new RedissonMapReactive<K, V>(commandExecutor, name, null);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        return new RedissonMapReactive<K, V>(codec, commandExecutor, name);
+        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, null);
     }
 
     @Override
@@ -265,7 +268,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        RedissonBatchReactive batch = new RedissonBatchReactive(id, evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
         if (config.isRedissonReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
@@ -317,6 +320,29 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     protected void enableRedissonReferenceSupport() {
         this.commandExecutor.enableRedissonReferenceSupport(this);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options) {
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
+        return new RedissonMapReactive<K, V>(commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, options);
     }
 }
 
