@@ -281,10 +281,10 @@ public interface RedisCommands {
     RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
     RedisCommand<Object> APPEND = new RedisCommand<Object>("APPEND");
     RedisCommand<Object> SETRANGE = new RedisCommand<Object>("SETRANGE");
-    RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor(), 2);
-    RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor(), 2);
-    RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor(), 2);
-    RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor(), 3);
+    RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor());
+    RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor());
+    RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor());
+    RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor());
     
     RedisStrictCommand<Long> TOUCH_LONG = new RedisStrictCommand<Long>("TOUCH");
     RedisStrictCommand<Boolean> TOUCH = new RedisStrictCommand<Boolean>("TOUCH", new BooleanReplayConvertor());
