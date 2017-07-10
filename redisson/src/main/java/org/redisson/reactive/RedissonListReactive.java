@@ -35,6 +35,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -68,7 +69,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, LLEN, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.LLEN_INT, getName());
     }
 
     @Override
@@ -220,7 +221,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
         args.addAll(coll);
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 5, ValueType.OBJECTS),
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -332,8 +333,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             }
         }).count().next().poll();
 
-        boolean res = count.equals(Streams.wrap(size()).next().poll());
-        res &= count.equals(Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll());
+        boolean res = count.intValue() == Streams.wrap(size()).next().poll();
+        res &= count.intValue() == Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll();
         return res;
     }
 

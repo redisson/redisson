@@ -63,7 +63,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD_INT, getName());
     }
 
     @Override
