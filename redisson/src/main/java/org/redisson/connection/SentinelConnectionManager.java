@@ -71,6 +71,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         initTimer(this.config);
 
+        if (cfg.getMasterName() == null) {
+            throw new IllegalArgumentException("masterName parameter is not defined!");
+        }
+        
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
             try {
@@ -119,6 +123,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (currentMaster.get() == null) {
+            stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
         init(this.config);

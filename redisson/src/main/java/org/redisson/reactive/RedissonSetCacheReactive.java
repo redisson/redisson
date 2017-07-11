@@ -71,7 +71,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD, getName());
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD_INT, getName());
     }
 
     @Override
@@ -116,7 +116,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     @Override
     public Publisher<Integer> add(V value) {
         long timeoutDate = 92233720368547758L;
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
                 + "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then "
                     + "return 0;"
