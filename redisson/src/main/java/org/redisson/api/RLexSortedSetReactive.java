@@ -19,34 +19,32 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
-public interface RLexSortedSetReactive extends RCollectionReactive<String> {
+public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>, RCollectionReactive<String> {
 
-    Publisher<Integer> removeRangeByLex(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Publisher<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Integer> removeRangeTailByLex(String fromElement, boolean fromInclusive);
+    Publisher<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Integer> removeRangeHeadByLex(String toElement, boolean toInclusive);
+    Publisher<Integer> removeRangeHead(String toElement, boolean toInclusive);
 
-    Publisher<Integer> lexCountTail(String fromElement, boolean fromInclusive);
+    Publisher<Integer> countTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Integer> lexCountHead(String toElement, boolean toInclusive);
+    Publisher<Integer> countHead(String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> lexRangeTail(String fromElement, boolean fromInclusive);
+    Publisher<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Collection<String>> lexRangeHead(String toElement, boolean toInclusive);
+    Publisher<Collection<String>> rangeHead(String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Publisher<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> lexRangeTail(String fromElement, boolean fromInclusive, int offset, int count);
+    Publisher<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
 
-    Publisher<Collection<String>> lexRangeHead(String toElement, boolean toInclusive, int offset, int count);
+    Publisher<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
 
-    Publisher<Collection<String>> lexRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    Publisher<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
-    Publisher<Integer> lexCount(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Publisher<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Integer> rank(String o);
-
-    Publisher<Collection<String>> valueRange(int startIndex, int endIndex);
+    Publisher<Collection<String>> range(int startIndex, int endIndex);
 
 }
