@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>2.9.4-SNAPSHOT</version>
+    <version>2.9.4</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
@@ -27,7 +27,7 @@
         <url>scm:git:git@github.com:redisson/redisson.git</url>
         <connection>scm:git:git@github.com:redisson/redisson.git</connection>
         <developerConnection>scm:git:git@github.com:redisson/redisson.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>redisson-2.9.4</tag>
     </scm>
 
     <prerequisites>
