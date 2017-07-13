@@ -2,9 +2,30 @@ Redisson Releases History
 ================================
 ### Please Note: trunk is current development branch.
 
-### 10-Jun-2017 - versions 2.9.3 and 3.4.3 released
+__[Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
 
-__!PRICE REDUCTION!__ - __Ultra-fast [Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
+### 12-Jul-2017 - versions 2.9.4 and 3.4.4 released
+
+Feature - [Config.performanceMode](https://github.com/redisson/redisson/wiki/2.-Configuration/_edit#performancemode) setting added  
+Feature - JsonJacksonMapCodec codec added  
+Feature - [Amazon Ion](https://amzn.github.io/ion-docs/) codec added  
+Feature - [read-through, write-through and write-behind](https://github.com/redisson/redisson/wiki/7.-Distributed-collections/#714-map-persistence) support for RMap objects  
+Feature - `RExecutorService` should return RExecutorFuture object with taskId  
+Feature - added `RList.get` method to load elements in a batch  
+Feature - ability to submit few tasks atomically (in batch) through `RExecutorService` interface  
+Feature - [Config.keepPubSubOrder](https://github.com/redisson/redisson/wiki/2.-Configuration#keeppubsuborder) setting added  
+Improvement - make `RMapReactive` and `RMapCacheReactive` interfaces match with `RMap` and `RMapCache`  
+Improvement - `RLexSortedSet` should extend `RSortedSet`  
+Fixed - `RMapCache` `remove`, `put`, `putIfAbsent` and `replace` methods aren't respect entry expiration  
+Fixed - `SCAN` command should be used in `RKeys.deleteByPattern` method  
+Fixed - `RBinaryStream` doesn't work in Redis cluster environment  
+Fixed - `SELECT` command shouldn't be executed on Sentinel servers  
+Fixed - Stackoverflow error arise during decoding of large amount of PubSub messages  
+Fixed - `LocalCachedMapInvalidate` object can't be serialized by Kryo codec  
+Fixed - `XMLGregorianCalendar` type handling in JSON codec  
+Fixed - Reactive Stream methods shouldn't be executed immediately after `Publisher` object creation  
+
+### 10-Jun-2017 - versions 2.9.3 and 3.4.3 released
 
 Since this version, if you use programmatic config definition you should define full url with schema.
 
