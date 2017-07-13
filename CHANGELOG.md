@@ -6,6 +6,7 @@ __[Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and su
 
 ### 12-Jul-2017 - versions 2.9.4 and 3.4.4 released
 
+Feature - [Config.performanceMode](https://github.com/redisson/redisson/wiki/2.-Configuration/_edit#performancemode) setting added  
 Feature - JsonJacksonMapCodec codec added  
 Feature - [Amazon Ion](https://amzn.github.io/ion-docs/) codec added  
 Feature - [read-through, write-through and write-behind](https://github.com/redisson/redisson/wiki/7.-Distributed-collections/#714-map-persistence) support for RMap objects  
