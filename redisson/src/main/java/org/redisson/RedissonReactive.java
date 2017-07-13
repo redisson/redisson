@@ -35,6 +35,7 @@ import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
@@ -63,6 +64,7 @@ import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListReactive;
+import org.redisson.reactive.RedissonLockReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
@@ -99,6 +101,10 @@ public class RedissonReactive implements RedissonReactiveClient {
         codecProvider = config.getCodecProvider();
     }
 
+    @Override
+    public RLockReactive getLock(String name) {
+        return new RedissonLockReactive(commandExecutor, name, id);
+    }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
