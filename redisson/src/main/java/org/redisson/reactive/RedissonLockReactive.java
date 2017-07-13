@@ -23,6 +23,7 @@ import org.redisson.RedissonLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLockAsync;
 import org.redisson.api.RLockReactive;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.Supplier;
@@ -38,9 +39,13 @@ public class RedissonLockReactive extends RedissonExpirableReactive implements R
     
     public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name, UUID id) {
         super(connectionManager, name);
-        instance = new RedissonLock(connectionManager, name, id);
+        instance = createLock(connectionManager, name, id);
     }
 
+    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name, UUID id) {
+        return new RedissonLock(commandExecutor, name, id);
+    }
+    
     @Override
     public Publisher<Boolean> forceUnlock() {
         return reactive(new Supplier<RFuture<Boolean>>() {

@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.api;
 
-import java.util.UUID;
 import java.util.concurrent.locks.Lock;
-
-import org.redisson.api.RLock;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.command.CommandAsyncExecutor;
 
 /**
  * A {@code ReadWriteLock} maintains a pair of associated {@link
@@ -35,23 +30,20 @@ import org.redisson.command.CommandAsyncExecutor;
  * @author Nikita Koksharov
  *
  */
-public class RedissonReadWriteLock extends RedissonExpirable implements RReadWriteLock {
+public interface RReadWriteLockReactive extends RExpirableReactive {
 
-    private final UUID id;
+    /**
+     * Returns the lock used for reading.
+     *
+     * @return the lock used for reading
+     */
+    RLockReactive readLock();
 
-    public RedissonReadWriteLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
-        super(commandExecutor, name);
-        this.id = id;
-    }
-
-    @Override
-    public RLock readLock() {
-        return new RedissonReadLock(commandExecutor, getName(), id);
-    }
-
-    @Override
-    public RLock writeLock() {
-        return new RedissonWriteLock(commandExecutor, getName(), id);
-    }
+    /**
+     * Returns the lock used for writing.
+     *
+     * @return the lock used for writing
+     */
+    RLockReactive writeLock();
 
 }
