@@ -303,7 +303,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
 //    @Override
     public RFuture<V> pollAsync() {
-        long threadId = Thread.currentThread().getId();
+        final long threadId = Thread.currentThread().getId();
         final RPromise<V> result = new RedissonPromise<V>();
         lock.lockAsync(threadId).addListener(new FutureListener<Void>() {
             @Override
