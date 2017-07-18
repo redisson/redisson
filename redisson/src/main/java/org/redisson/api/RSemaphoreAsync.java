@@ -116,15 +116,6 @@ public interface RSemaphoreAsync extends RExpirableAsync {
     RFuture<Void> releaseAsync(int permits);
 
     /**
-     * Use {@link #trySetPermitsAsync(int)}
-     * 
-     * @param permits amount
-     * @return void
-     */
-    @Deprecated
-    RFuture<Void> setPermitsAsync(int permits);
-    
-    /**
      * Sets number of permits.
      *
      * @param permits - number of permits

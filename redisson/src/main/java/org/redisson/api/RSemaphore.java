@@ -221,14 +221,6 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
     int drainPermits();
 
     /**
-     * Use {@link #trySetPermits(int)}
-     * 
-     * @param permits amount
-     */
-    @Deprecated
-    void setPermits(int permits);
-
-    /**
      * Sets number of permits.
      *
      * @param permits - number of permits
