@@ -6,7 +6,7 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.api.RBlockingFairQueue;
+import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RQueue;
 
@@ -14,7 +14,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
 
     @Test
     public void testRemove() throws InterruptedException {
-        RBlockingFairQueue<String> blockingFairQueue = redisson.getBlockingFairQueue("delay_queue");
+        RBlockingQueue<String> blockingFairQueue = redisson.getBlockingQueue("delay_queue");
         RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(blockingFairQueue);
         
         delayedQueue.offer("1_1_1", 3, TimeUnit.SECONDS);
@@ -30,7 +30,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testRemoveAll() throws InterruptedException {
-        RBlockingFairQueue<String> blockingFairQueue = redisson.getBlockingFairQueue("delay_queue");
+        RBlockingQueue<String> blockingFairQueue = redisson.getBlockingQueue("delay_queue");
         RDelayedQueue<String> delayedQueue = redisson.getDelayedQueue(blockingFairQueue);
         
         delayedQueue.offer("1_1_1", 3, TimeUnit.SECONDS);
@@ -49,7 +49,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueueRetainAll() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
         dealyedQueue.offer(1, 2, TimeUnit.SECONDS);
@@ -67,7 +67,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueueReadAll() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
         dealyedQueue.offer(1, 2, TimeUnit.SECONDS);
@@ -80,7 +80,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueueRemoveAll() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
         dealyedQueue.offer(1, 2, TimeUnit.SECONDS);
@@ -96,7 +96,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueueContainsAll() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
@@ -111,7 +111,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueueContains() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
@@ -126,7 +126,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
 
     @Test
     public void testDealyedQueueRemove() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
@@ -142,7 +142,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueuePeek() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
@@ -156,7 +156,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueuePollLastAndOfferFirstTo() {
-        RBlockingFairQueue<Integer> queue1 = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("test");
         RDelayedQueue<Integer> dealyedQueue = redisson.getDelayedQueue(queue1);
         
         dealyedQueue.offer(3, 5, TimeUnit.SECONDS);
@@ -176,7 +176,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDelayedQueueOrder() {
-        RBlockingFairQueue<String> queue = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<String> queue = redisson.getBlockingQueue("test");
         RDelayedQueue<String> dealyedQueue = redisson.getDelayedQueue(queue);
         
         dealyedQueue.offer("1", 1, TimeUnit.SECONDS);
@@ -200,7 +200,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueuePoll() throws InterruptedException {
-        RBlockingFairQueue<String> queue = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<String> queue = redisson.getBlockingQueue("test");
         RDelayedQueue<String> dealyedQueue = redisson.getDelayedQueue(queue);
         
         dealyedQueue.offer("1", 1, TimeUnit.SECONDS);
@@ -224,7 +224,7 @@ public class RedissonDelayedQueueTest extends BaseTest {
     
     @Test
     public void testDealyedQueue() throws InterruptedException {
-        RBlockingFairQueue<String> queue = redisson.getBlockingFairQueue("test");
+        RBlockingQueue<String> queue = redisson.getBlockingQueue("test");
         RDelayedQueue<String> dealyedQueue = redisson.getDelayedQueue(queue);
         
         dealyedQueue.offer("1", 1, TimeUnit.SECONDS);

@@ -30,7 +30,6 @@ import org.redisson.api.RBatch;
 import org.redisson.api.RBinaryStream;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
-import org.redisson.api.RBlockingFairQueue;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RBoundedBlockingQueue;
@@ -453,16 +452,6 @@ public class Redisson implements RedissonClient {
         return new RedissonPatternTopic<M>(codec, connectionManager.getCommandExecutor(), pattern);
     }
 
-    @Override
-    public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name) {
-        return new RedissonBlockingFairQueue<V>(connectionManager.getCommandExecutor(), name, semaphorePubSub, id, this);
-    }
-    
-    @Override
-    public <V> RBlockingFairQueue<V> getBlockingFairQueue(String name, Codec codec) {
-        return new RedissonBlockingFairQueue<V>(codec, connectionManager.getCommandExecutor(), name, semaphorePubSub, id, this);
-    }
-    
     @Override
     public <V> RDelayedQueue<V> getDelayedQueue(RQueue<V> destinationQueue) {
         if (destinationQueue == null) {
