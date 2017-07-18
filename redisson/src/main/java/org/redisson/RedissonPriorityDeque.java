@@ -22,11 +22,14 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RPriorityDeque;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -37,7 +40,6 @@ import org.redisson.command.CommandExecutor;
  */
 public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implements RPriorityDeque<V> {
 
-    private static final RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor(), 2, ValueType.OBJECTS);
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
@@ -51,24 +53,13 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public void addFirst(V e) {
-        get(addFirstAsync(e));
-    }
-
-//    @Override
-    public RFuture<Void> addFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), e);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void addLast(V e) {
-        get(addLastAsync(e));
+        throw new UnsupportedOperationException();
     }
-
-//    @Override
-    public RFuture<Void> addLastAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RPUSH_VOID, getName(), e);
-    }
-
 
     @Override
     public Iterator<V> descendingIterator() {
@@ -122,22 +113,12 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public boolean offerFirst(V e) {
-        return get(offerFirstAsync(e));
-    }
-
-//    @Override
-    public RFuture<Boolean> offerFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), e);
-    }
-
-//    @Override
-    public RFuture<Boolean> offerLastAsync(V e) {
-        return offerAsync(e);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public boolean offerLast(V e) {
-        return get(offerLastAsync(e));
+        throw new UnsupportedOperationException();
     }
 
 //    @Override
@@ -150,19 +131,9 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
         return get(peekFirstAsync());
     }
 
-//    @Override
-    public RFuture<V> peekLastAsync() {
-        return getLastAsync();
-    }
-
     @Override
     public V peekLast() {
         return get(getLastAsync());
-    }
-
-//    @Override
-    public RFuture<V> pollFirstAsync() {
-        return pollAsync();
     }
 
     @Override
@@ -170,11 +141,44 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
         return poll();
     }
 
-//    @Override
     public RFuture<V> pollLastAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
+        long threadId = Thread.currentThread().getId();
+        final RPromise<V> result = new RedissonPromise<V>();
+        lock.lockAsync(threadId).addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                RFuture<V> f = commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
+                f.addListener(new FutureListener<V>() {
+                    @Override
+                    public void operationComplete(Future<V> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            result.tryFailure(future.cause());
+                            return;
+                        }
+                        
+                        final V value = future.getNow();
+                        lock.unlockAsync(threadId).addListener(new FutureListener<Void>() {
+                            @Override
+                            public void operationComplete(Future<Void> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    result.tryFailure(future.cause());
+                                    return;
+                                }
+                                
+                                result.trySuccess(value);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        return result;
     }
-
 
     @Override
     public V pollLast() {
@@ -191,14 +195,9 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
         return removeFirst();
     }
 
-//    @Override
-    public RFuture<Void> pushAsync(V e) {
-        return addFirstAsync(e);
-    }
-
     @Override
     public void push(V e) {
-        addFirst(e);
+        throw new UnsupportedOperationException();
     }
 
 //    @Override
@@ -218,7 +217,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
 //    @Override
     public RFuture<V> removeLastAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPOP, getName());
+        return pollLastAsync();
     }
 
     @Override

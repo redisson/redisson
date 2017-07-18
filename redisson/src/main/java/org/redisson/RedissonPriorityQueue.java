@@ -35,6 +35,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  *
@@ -89,7 +94,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     CommandExecutor commandExecutor;
     
-    private RLock lock;
+    RLock lock;
     private RBucket<String> comparatorHolder;
 
     protected RedissonPriorityQueue(CommandExecutor commandExecutor, String name, Redisson redisson) {
@@ -298,7 +303,42 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
 //    @Override
     public RFuture<V> pollAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPOP, getName());
+        long threadId = Thread.currentThread().getId();
+        final RPromise<V> result = new RedissonPromise<V>();
+        lock.lockAsync(threadId).addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                RFuture<V> f = commandExecutor.writeAsync(getName(), codec, RedisCommands.LPOP, getName());
+                f.addListener(new FutureListener<V>() {
+                    @Override
+                    public void operationComplete(Future<V> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            result.tryFailure(future.cause());
+                            return;
+                        }
+                        
+                        final V value = future.getNow();
+                        lock.unlockAsync(threadId).addListener(new FutureListener<Void>() {
+                            @Override
+                            public void operationComplete(Future<Void> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    result.tryFailure(future.cause());
+                                    return;
+                                }
+                                
+                                result.trySuccess(value);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        return result;
     }
 
     public V getFirst() {
