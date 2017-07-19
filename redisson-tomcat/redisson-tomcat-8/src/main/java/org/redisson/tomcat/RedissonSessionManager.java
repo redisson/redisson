@@ -105,10 +105,12 @@ public class RedissonSessionManager extends ManagerBase {
     }
     
     @Override
-    public void remove(Session session) {
-        super.remove(session);
+    public void remove(Session session, boolean update) {
+        super.remove(session, update);
         
-        getMap(session.getId()).delete();
+        if (session.getIdInternal() != null) {
+            ((RedissonSession)session).delete();
+        }
     }
     
     public RedissonClient getRedisson() {

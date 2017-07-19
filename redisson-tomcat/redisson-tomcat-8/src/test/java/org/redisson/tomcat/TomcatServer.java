@@ -28,7 +28,7 @@ public class TomcatServer {
 
         tomcat.setBaseDir("."); // location where temp dir is created
         tomcat.setPort(port);
-        tomcat.getHost().setAppBase(".");
+        tomcat.getHost().setAppBase(appBase);
 
         tomcat.addWebapp(contextPath, appBase + "webapp");
     }

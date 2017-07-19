@@ -1,6 +1,8 @@
 package org.redisson.tomcat;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.apache.catalina.LifecycleException;
 import org.apache.http.client.ClientProtocolException;
@@ -10,6 +12,9 @@ import org.apache.http.cookie.Cookie;
 import org.apache.http.impl.client.BasicCookieStore;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 public class RedissonSessionManagerTest {
 
@@ -95,7 +100,12 @@ public class RedissonSessionManagerTest {
 
 
     @Test
-    public void testInvalidate() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
+    public void testInvalidate() throws Exception {
+        File f = Paths.get("").toAbsolutePath().resolve("src/test/webapp/WEB-INF/redisson.yaml").toFile();
+        Config config = Config.fromYAML(f);
+        RedissonClient r = Redisson.create(config);
+        r.getKeys().flushall();
+
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
         server.start();
@@ -115,9 +125,12 @@ public class RedissonSessionManagerTest {
         cookieStore.addCookie(cookie);
         executor.use(cookieStore);
         read(executor, "test", "null");
+        invalidate(executor);
         
         Executor.closeIdleConnections();
         server.stop();
+        
+        Assert.assertEquals(0, r.getKeys().count());
     }
     
     private void write(Executor executor, String key, String value) throws IOException, ClientProtocolException {
