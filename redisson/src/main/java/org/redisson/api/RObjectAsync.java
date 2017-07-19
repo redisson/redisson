@@ -57,6 +57,16 @@ public interface RObjectAsync {
     RFuture<Boolean> deleteAsync();
 
     /**
+     * Delete the objects.
+     * Actual removal will happen later asynchronously.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @return <code>true</code> if it was exist and deleted else <code>false</code>
+     */
+    RFuture<Boolean> unlinkAsync();
+    
+    /**
      * Rename current object key to <code>newName</code>
      * in async mode
      *

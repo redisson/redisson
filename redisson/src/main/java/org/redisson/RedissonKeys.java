@@ -36,6 +36,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
@@ -278,9 +279,23 @@ public class RedissonKeys implements RKeys {
     }
     
     @Override
+    public long unlink(String ... keys) {
+        return commandExecutor.get(deleteAsync(keys));
+    }
+
+    @Override
+    public RFuture<Long> unlinkAsync(String ... keys) {
+        return executeAsync(RedisCommands.UNLINK, keys);
+    }
+
+    @Override
     public RFuture<Long> deleteAsync(String ... keys) {
+        return executeAsync(RedisCommands.DEL, keys);
+    }
+    
+    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            return commandExecutor.writeAsync(null, RedisCommands.DEL, keys);
+            return commandExecutor.writeAsync(null, command, keys);
         }
 
         Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
@@ -320,7 +335,7 @@ public class RedissonKeys implements RKeys {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             for (String key : entry.getValue()) {
-                executorService.writeAsync(entry.getKey(), null, RedisCommands.DEL, key);
+                executorService.writeAsync(entry.getKey(), null, command, key);
             }
 
             RFuture<List<?>> future = executorService.executeAsync();
@@ -351,6 +366,27 @@ public class RedissonKeys implements RKeys {
         });
     }
 
+    @Override
+    public void flushdbParallel() {
+        commandExecutor.get(flushdbParallelAsync());
+    }
+
+    @Override
+    public RFuture<Void> flushdbParallelAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB_ASYNC);
+    }
+
+    @Override
+    public void flushallParallel() {
+        commandExecutor.get(flushallParallelAsync());
+    }
+
+    @Override
+    public RFuture<Void> flushallParallelAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL_ASYNC);
+    }
+
+    
     @Override
     public void flushdb() {
         commandExecutor.get(flushdbAsync());

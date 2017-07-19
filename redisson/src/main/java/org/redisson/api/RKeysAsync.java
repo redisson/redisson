@@ -189,6 +189,17 @@ public interface RKeysAsync {
     RFuture<Long> deleteAsync(String ... keys);
 
     /**
+     * Delete multiple objects by name.
+     * Actual removal will happen later asynchronously.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @param keys
+     * @return number of removed keys
+     */
+    RFuture<Long> unlinkAsync(String ... keys);
+    
+    /**
      * Returns the number of keys in the currently-selected database in async mode
      *
      * @return number of keys
@@ -207,4 +218,24 @@ public interface RKeysAsync {
      */
     RFuture<Void> flushallAsync();
 
+    /**
+     * Delete all keys of currently selected database
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @return void
+     */
+    RFuture<Void> flushdbParallelAsync();
+
+    /**
+     * Delete all keys of all existing databases
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @return void
+     */
+    RFuture<Void> flushallParallelAsync();
+    
 }
