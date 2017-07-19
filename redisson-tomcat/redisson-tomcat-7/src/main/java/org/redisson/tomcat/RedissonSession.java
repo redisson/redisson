@@ -56,6 +56,11 @@ public class RedissonSession extends StandardSession {
         map = redissonManager.getMap(id);
     }
     
+    public void delete() {
+        map.delete();
+        map = null;
+    }
+    
     @Override
     public void setCreationTime(long time) {
         super.setCreationTime(time);

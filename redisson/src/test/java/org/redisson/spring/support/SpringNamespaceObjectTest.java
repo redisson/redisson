@@ -27,7 +27,6 @@ import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBinaryStream;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RBlockingDeque;
-import org.redisson.api.RBlockingFairQueue;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RBoundedBlockingQueue;
@@ -169,7 +168,6 @@ public class SpringNamespaceObjectTest extends BaseTest {
             {"lex-sorted-set", RLexSortedSet.class, null},
             {"topic", RTopic.class, null},
             {"pattern-topic", RPatternTopic.class, null},
-            {"blocking-fair-queue", RBlockingFairQueue.class, null},
             {"queue", RQueue.class, null},
             {"delayed-queue", RDelayedQueue.class, "queue"},
             {"priority-queue", RPriorityQueue.class, null},
@@ -228,7 +226,6 @@ public class SpringNamespaceObjectTest extends BaseTest {
             {"lex-sorted-set-ext", RLexSortedSet.class, null},
             {"topic-ext", RTopic.class, null},
             {"pattern-topic-ext", RPatternTopic.class, null},
-            {"blocking-fair-queue-ext", RBlockingFairQueue.class, null},
             {"queue-ext", RQueue.class, null},
             {"delayed-queue-ext", RDelayedQueue.class, "queue-ext"},
             {"priority-queue-ext", RPriorityQueue.class, null},

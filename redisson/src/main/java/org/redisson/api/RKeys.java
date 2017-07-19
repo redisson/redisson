@@ -231,6 +231,17 @@ public interface RKeys extends RKeysAsync {
     long delete(String ... keys);
 
     /**
+     * Delete multiple objects by name.
+     * Actual removal will happen later asynchronously.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @param keys
+     * @return number of removed keys
+     */
+    long unlink(String ... keys);
+    
+    /**
      * Returns the number of keys in the currently-selected database
      *
      * @return count of keys
@@ -243,8 +254,26 @@ public interface RKeys extends RKeysAsync {
     void flushdb();
 
     /**
+     * Delete all keys of currently selected database 
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     */
+    void flushdbParallel();
+
+    /**
      * Delete all keys of all existing databases
      */
     void flushall();
+    
+    /**
+     * Delete all keys of all existing databases
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     */
+    void flushallParallel();
 
 }

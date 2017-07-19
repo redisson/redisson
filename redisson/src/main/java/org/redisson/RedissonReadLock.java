@@ -26,7 +26,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
 
 import io.netty.util.concurrent.Future;
@@ -40,16 +40,13 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonReadLock extends RedissonLock implements RLock {
 
-    private final CommandExecutor commandExecutor;
-
-    protected RedissonReadLock(CommandExecutor commandExecutor, String name, UUID id) {
+    public RedissonReadLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name, id);
-        this.commandExecutor = commandExecutor;
     }
 
     @Override
     String getChannelName() {
-        return "redisson_rwlock__{" + getName() + "}";
+        return prefixName("redisson_rwlock", getName());
     }
     
     String getWriteLockName(long threadId) {
@@ -159,7 +156,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     public boolean isLocked() {
-        String res = commandExecutor.write(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
+        RFuture<String> future = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.HGET, getName(), "mode");
+        String res = get(future);
         return "read".equals(res);
     }
 

@@ -40,7 +40,6 @@ public class RedissonSession extends StandardSession {
     public RedissonSession(RedissonSessionManager manager) {
         super(manager);
         this.redissonManager = manager;
-        
         try {
             Field attr = StandardSession.class.getDeclaredField("attributes");
             attrs = (Map<String, Object>) attr.get(this);
@@ -55,6 +54,11 @@ public class RedissonSession extends StandardSession {
     public void setId(String id, boolean notify) {
         super.setId(id, notify);
         map = redissonManager.getMap(id);
+    }
+    
+    public void delete() {
+        map.delete();
+        map = null;
     }
     
     @Override

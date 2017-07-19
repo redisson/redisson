@@ -31,6 +31,24 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns readWriteLock instance by name.
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RReadWriteLockReactive getReadWriteLock(String name);
+    
+    /**
+     * Returns lock instance by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getLock(String name);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Supports value eviction with a given TTL value.
      *

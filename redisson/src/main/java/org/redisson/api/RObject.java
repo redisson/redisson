@@ -64,6 +64,16 @@ public interface RObject extends RObjectAsync {
     boolean delete();
 
     /**
+     * Delete the objects.
+     * Actual removal will happen later asynchronously.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @return <code>true</code> if it was exist and deleted else <code>false</code>
+     */
+    boolean unlink();
+    
+    /**
      * Rename current object key to <code>newName</code>
      *
      * @param newName - new name of object

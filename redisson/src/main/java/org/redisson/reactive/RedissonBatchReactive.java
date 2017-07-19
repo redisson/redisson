@@ -39,7 +39,7 @@ import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandBatchService;
+import org.redisson.command.CommandReactiveBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -53,11 +53,11 @@ import reactor.fn.Supplier;
 public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
-    private final CommandBatchService executorService;
+    private final CommandReactiveBatchService executorService;
 
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandBatchService(connectionManager);
+        this.executorService = new CommandReactiveBatchService(connectionManager);
     }
 
     @Override

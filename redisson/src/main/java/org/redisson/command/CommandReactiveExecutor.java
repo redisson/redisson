@@ -38,8 +38,6 @@ public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier);
 
-    ConnectionManager getConnectionManager();
-
     <T, R> Publisher<R> evalReadReactive(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType,
             String script, List<Object> keys, Object ... params);
 

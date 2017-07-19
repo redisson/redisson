@@ -496,22 +496,6 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
-    public void setPermits(int permits) {
-        get(setPermitsAsync(permits));
-    }
-    
-    @Override
-    public RFuture<Void> setPermitsAsync(int permits) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
-                "local value = redis.call('get', KEYS[1]); " +
-                "if (value == false or value == 0) then "
-                    + "redis.call('set', KEYS[1], ARGV[1]); "
-                    + "redis.call('publish', KEYS[2], ARGV[1]); "
-                + "end;",
-                Arrays.<Object>asList(getName(), getChannelName()), permits);
-    }
-    
-    @Override
     public boolean trySetPermits(int permits) {
         return get(trySetPermitsAsync(permits));
     }

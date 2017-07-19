@@ -30,7 +30,7 @@ import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.pubsub.LockPubSub;
 import org.slf4j.Logger;
@@ -63,9 +63,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     protected static final LockPubSub PUBSUB = new LockPubSub();
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
 
-    protected RedissonLock(CommandExecutor commandExecutor, String name, UUID id) {
+    public RedissonLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.id = id;
@@ -417,12 +417,14 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isHeldByCurrentThread() {
-        return commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
+        RFuture<Boolean> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(Thread.currentThread().getId()));
+        return get(future);
     }
 
     @Override
     public int getHoldCount() {
-        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
+        RFuture<Long> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
+        Long res = get(future);
         if (res == null) {
             return 0;
         }
