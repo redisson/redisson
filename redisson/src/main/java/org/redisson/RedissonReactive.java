@@ -43,6 +43,7 @@ import org.redisson.api.RQueueReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RSemaphoreReactive;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
@@ -55,6 +56,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
@@ -73,6 +75,7 @@ import org.redisson.reactive.RedissonQueueReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonScriptReactive;
+import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
@@ -91,7 +94,9 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
     protected final CodecProvider codecProvider;
+    
     protected final UUID id = UUID.randomUUID();
+    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
     
     protected RedissonReactive(Config config) {
         this.config = config;
@@ -103,6 +108,11 @@ public class RedissonReactive implements RedissonReactiveClient {
         codecProvider = config.getCodecProvider();
     }
 
+    @Override
+    public RSemaphoreReactive getSemaphore(String name) {
+        return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
+    }
+    
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
         return new RedissonReadWriteLockReactive(commandExecutor, name, id);
