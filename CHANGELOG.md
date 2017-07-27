@@ -16,6 +16,7 @@ Feature - ability to submit few tasks atomically (in batch) through `RExecutorSe
 Feature - [Config.keepPubSubOrder](https://github.com/redisson/redisson/wiki/2.-Configuration#keeppubsuborder) setting added  
 Improvement - make `RMapReactive` and `RMapCacheReactive` interfaces match with `RMap` and `RMapCache`  
 Improvement - `RLexSortedSet` should extend `RSortedSet`  
+Fixed - connection listener is not invoked in some cases  
 Fixed - `RMapCache` `remove`, `put`, `putIfAbsent` and `replace` methods aren't respect entry expiration  
 Fixed - `SCAN` command should be used in `RKeys.deleteByPattern` method  
 Fixed - `RBinaryStream` doesn't work in Redis cluster environment  
