@@ -67,7 +67,7 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
         try {
             this.codec = codec.getClass().getConstructor(ClassLoader.class).newInstance(classLoader);
         } catch (Exception e) {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
         }
     }
     

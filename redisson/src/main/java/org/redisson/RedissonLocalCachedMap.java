@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.AbstractCollection;
@@ -60,13 +61,17 @@ import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.ThreadLocalRandom;
@@ -178,6 +183,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidationListenerId;
     private int invalidationStatusListenerId;
     private volatile long lastInvalidate;
+    private Codec topicCodec;
 
     protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
         super(commandExecutor, name, redisson, options);
@@ -207,7 +213,28 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     private void addListeners(String name, final LocalCachedMapOptions<K, V> options, final RedissonClient redisson) {
-        invalidationTopic = new RedissonTopic<Object>(commandExecutor, suffixName(name, "topic"));
+        topicCodec = codec;
+        
+        LocalCachedMapInvalidate msg = new LocalCachedMapInvalidate(new byte[] {1, 2, 3}, new byte[] {4, 5, 6});
+        ByteBuf buf = null;
+        try {
+            byte[] s = topicCodec.getValueEncoder().encode(msg);
+            buf = Unpooled.wrappedBuffer(s);
+            msg = (LocalCachedMapInvalidate) topicCodec.getValueDecoder().decode(buf, null);
+            if (!Arrays.equals(msg.getExcludedId(), new byte[] {1, 2, 3}) 
+                    || !Arrays.equals(msg.getKeyHashes()[0], new byte[] {4, 5, 6})) {
+                throw new IllegalArgumentException();
+            }
+        } catch (Exception e) {
+            log.warn("Defined {} codec doesn't encode service messages properly. Default JsonJacksonCodec used to encode messages!", topicCodec.getClass());
+            topicCodec = new JsonJacksonCodec();
+        } finally {
+            if (buf != null) {
+                buf.release();
+            }
+        }
+        
+        invalidationTopic = new RedissonTopic<Object>(topicCodec, commandExecutor, suffixName(name, "topic"));
 
         if (options.getInvalidationPolicy() == InvalidationPolicy.NONE) {
             return;
@@ -1345,4 +1372,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return future;
     }
 
+    protected byte[] encode(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return topicCodec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
 }

@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.cache;
 
+import java.io.Serializable;
+
 import org.springframework.cache.Cache.ValueWrapper;
 
 /**
@@ -22,8 +24,10 @@ import org.springframework.cache.Cache.ValueWrapper;
  * @author Nikita Koksharov
  *
  */
-public class NullValue implements ValueWrapper {
+public class NullValue implements ValueWrapper, Serializable {
 
+    private static final long serialVersionUID = -8310337775544536701L;
+    
     public static final NullValue INSTANCE = new NullValue();
 
     @Override

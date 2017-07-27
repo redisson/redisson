@@ -27,6 +27,7 @@ import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
 /**
@@ -134,6 +135,11 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         try {
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
+            
             redisson = Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
