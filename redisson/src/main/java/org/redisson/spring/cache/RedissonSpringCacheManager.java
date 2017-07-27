@@ -55,7 +55,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
     RedissonClient redisson;
 
     Map<String, CacheConfig> configMap = new ConcurrentHashMap<String, CacheConfig>();
-    private ConcurrentMap<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
+    ConcurrentMap<String, Cache> instanceMap = new ConcurrentHashMap<String, Cache>();
 
     String configLocation;
 
