@@ -82,12 +82,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
         
-        timer.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
-            }
-        }, timeout, TimeUnit.MILLISECONDS);
+        try {
+            timer.newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
+                }
+            }, timeout, TimeUnit.MILLISECONDS);
+        } catch (IllegalStateException e) {
+            // skip
+        }
     }
 
     private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
