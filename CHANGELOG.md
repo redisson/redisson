@@ -2,7 +2,25 @@ Redisson Releases History
 ================================
 ### Please Note: trunk is current development branch.
 
-__[Redisson PRO](https://redisson.pro)__ now costs only __$975__ per year and supports unlimited Redisson instances  
+Try __[Redisson PRO](https://redisson.pro)__ version.
+
+### 28-Jul-2017 - versions 2.10.0 and 3.5.0 released
+
+Feature - __Local Cache support for Hibernate Cache__ Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1431-hibernate-cache-local-cache) for more details  
+Feature - __Local Cache support for Spring Cache__ Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache) for more details  
+Feature - __`RedissonLocalCachedMapCache` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#713-map-local-cache-for-expiring-entries) for more details  
+Feature - __`BlockingFairDeque` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections#714-blocking-fair-deque) for more details  
+Feature - __`RLockReactive` object added__  
+Feature - __`RReadWriteLockReactive` object added__  
+Feature - __`RSemaphoreReactive` object added__  
+Feature - `unlink`, `flushdbParallel`, `flushallParallel` methods added  
+Fixed - ContextClassLoader should be used by Redisson Codec for Tomcat session's object serialization  
+Fixed - Spring Cache `NullValue` does not implement Serializable  
+Fixed - `RLocalCachedMap` doesn't work with non-json and non-binary codecs  
+Fixed - Tomcat RedissonSessionManager doesn't remove session on invalidation/expiration  
+Fixed - `RedissonBatch` shouldn't require `reactor.fn.Supplier` dependency  
+Fixed - Spring Session 1.3.x compatibility (thanks to Vcgoyo)  
+Fixed - priority queues should acquire lock before polling the element  
 
 ### 12-Jul-2017 - versions 2.9.4 and 3.4.4 released
 
