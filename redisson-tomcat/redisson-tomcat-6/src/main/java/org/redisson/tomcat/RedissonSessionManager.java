@@ -17,6 +17,7 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -114,9 +115,18 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public Session findSession(String id) throws IOException {
         Session result = super.findSession(id);
         if (result == null && id != null) {
+            Map<String, Object> attrs = getMap(id).readAllMap();
+            if (attrs.isEmpty()) {
+                log.info("Session " + id + " can't be found");
+                return null;
+            }
+            
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
-            session.load();
+            session.load(attrs);
+            
+            session.access();
+            session.endAccess();
             return session;
         }
         

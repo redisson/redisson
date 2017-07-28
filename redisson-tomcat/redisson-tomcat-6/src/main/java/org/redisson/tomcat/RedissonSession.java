@@ -19,7 +19,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
@@ -163,24 +162,30 @@ public class RedissonSession extends StandardSession {
         }
     }
     
-    public void load() {
-        Set<Entry<String, Object>> entrySet = map.readAllEntrySet();
-        for (Entry<String, Object> entry : entrySet) {
-            if ("session:creationTime".equals(entry.getKey())) {
-                creationTime = (Long) entry.getValue();
-            } else if ("session:lastAccessedTime".equals(entry.getKey())) {
-                lastAccessedTime = (Long) entry.getValue();
-            } else if ("session:thisAccessedTime".equals(entry.getKey())) {
-                thisAccessedTime = (Long) entry.getValue();
-            } else if ("session:maxInactiveInterval".equals(entry.getKey())) {
-                maxInactiveInterval = (Integer) entry.getValue();
-            } else if ("session:isValid".equals(entry.getKey())) {
-                isValid = (Boolean) entry.getValue();
-            } else if ("session:isNew".equals(entry.getKey())) {
-                isNew = (Boolean) entry.getValue();
-            } else {
-                setAttribute(entry.getKey(), entry.getValue(), false);
-            }
+    public void load(Map<String, Object> attrs) {
+        Long creationTime = (Long) attrs.remove("session:creationTime");
+        if (creationTime != null) {
+            this.creationTime = creationTime;
+        }
+        Long lastAccessedTime = (Long) attrs.remove("session:lastAccessedTime");
+        if (lastAccessedTime != null) {
+            this.lastAccessedTime = lastAccessedTime;
+        }
+        Long thisAccessedTime = (Long) attrs.remove("session:thisAccessedTime");
+        if (thisAccessedTime != null) {
+            this.thisAccessedTime = thisAccessedTime;
+        }
+        Boolean isValid = (Boolean) attrs.remove("session:isValid");
+        if (isValid != null) {
+            this.isValid = isValid;
+        }
+        Boolean isNew = (Boolean) attrs.remove("session:isNew");
+        if (isNew != null) {
+            this.isNew = isNew;
+        }
+
+        for (Entry<String, Object> entry : attrs.entrySet()) {
+            setAttribute(entry.getKey(), entry.getValue(), false);
         }
     }
     
