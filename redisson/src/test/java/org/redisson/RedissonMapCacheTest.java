@@ -433,6 +433,19 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testPutAllBig() {
+        Map<Integer, String> joinMap = new HashMap<Integer, String>();
+        for (int i = 0; i < 100000; i++) {
+            joinMap.put(i, "" + i);
+        }
+        
+        Map<Integer, String> map = redisson.getMapCache("simple");
+        map.putAll(joinMap);
+        
+        assertThat(map.size()).isEqualTo(joinMap.size());
+    }
+    
+    @Test
     public void testPutAll() {
         Map<Integer, String> map = redisson.getMapCache("simple");
         map.put(1, "1");
