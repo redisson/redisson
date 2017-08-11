@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RMap;
+import org.redisson.tomcat.RedissonSessionManager.ReadMode;
 
 /**
  * Redisson Session object for Apache Tomcat
@@ -35,10 +36,13 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
+    private final RedissonSessionManager.ReadMode readMode;
     
-    public RedissonSession(RedissonSessionManager manager) {
+    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode) {
         super(manager);
         this.redissonManager = manager;
+        this.readMode = readMode;
+        
         try {
             Field attr = StandardSession.class.getDeclaredField("attributes");
             attrs = (Map<String, Object>) attr.get(this);
@@ -49,6 +53,15 @@ public class RedissonSession extends StandardSession {
 
     private static final long serialVersionUID = -2518607181636076487L;
 
+    @Override
+    public Object getAttribute(String name) {
+        if (readMode == ReadMode.REDIS) {
+            return map.get(name);
+        }
+
+        return super.getAttribute(name);
+    }
+    
     @Override
     public void setId(String id, boolean notify) {
         super.setId(id, notify);

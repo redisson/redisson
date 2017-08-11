@@ -39,10 +39,22 @@ import org.redisson.config.Config;
  */
 public class RedissonSessionManager extends ManagerBase {
 
+    public enum ReadMode {REDIS, MEMORY}
+    
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
     private RedissonClient redisson;
     private String configPath;
+    
+    private ReadMode readMode = ReadMode.MEMORY;
+    
+    public String getReadMode() {
+        return readMode.toString();
+    }
+
+    public void setReadMode(String readMode) {
+        this.readMode = ReadMode.valueOf(readMode);
+    }
     
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
@@ -112,7 +124,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this);
+        return new RedissonSession(this, readMode);
     }
     
     @Override
