@@ -32,6 +32,11 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ClientConnectionsEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
