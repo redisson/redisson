@@ -204,7 +204,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
 
         RedisConnectionException exception = new RedisConnectionException(
-                "Can't aquire connection to " + entry.getClient().getAddr());
+                "Can't aquire connection to " + entry);
         return connectionManager.newFailedFuture(exception);
     }
 
