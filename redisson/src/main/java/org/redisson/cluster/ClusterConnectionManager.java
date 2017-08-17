@@ -76,7 +76,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
     
     private volatile URI lastClusterNode;
-
+    
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
 
@@ -92,13 +92,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
                 List<ClusterNodeInfo> nodes = connection.sync(RedisCommands.CLUSTER_NODES);
                 
-                if (log.isDebugEnabled()) {
-                    StringBuilder nodesValue = new StringBuilder();
-                    for (ClusterNodeInfo clusterNodeInfo : nodes) {
-                        nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
-                    }
-                    log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                StringBuilder nodesValue = new StringBuilder();
+                for (ClusterNodeInfo clusterNodeInfo : nodes) {
+                    nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
                 }
+                log.info("Redis cluster nodes configuration got from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
 
                 lastClusterNode = addr;
                 
@@ -185,15 +183,15 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisConnection connection = future.getNow();
-                if (connection.isActive()) {
-                    nodeConnections.put(addr, connection);
-                    result.trySuccess(connection);
-                } else {
-                    connection.closeAsync();
-                    result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
-                }
-            }
-        });
+                        if (connection.isActive()) {
+                            nodeConnections.put(addr, connection);
+                            result.trySuccess(connection);
+                        } else {
+                            connection.closeAsync();
+                            result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                        }
+                    }
+                });
 
         return result;
     }
