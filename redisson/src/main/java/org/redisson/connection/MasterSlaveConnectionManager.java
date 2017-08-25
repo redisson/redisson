@@ -683,10 +683,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entries.get(slot);
     }
     
-    protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
-        getEntry(slotRange.getStartSlot()).slaveDown(host, port, freezeReason);
-    }
-
     protected void changeMaster(int slot, URI address) {
         getEntry(slot).changeMaster(address);
     }
