@@ -16,6 +16,7 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -44,9 +45,10 @@ public class LoadBalancerManager {
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final ConnectionManager connectionManager;
-    private final Map<InetSocketAddress, ClientConnectionsEntry> addr2Entry = PlatformDependent.newConcurrentHashMap();
     private final PubSubConnectionPool pubSubConnectionPool;
     private final SlaveConnectionPool slaveConnectionPool;
+    
+    private final Map<String, ClientConnectionsEntry> ip2Entry = PlatformDependent.newConcurrentHashMap();
 
     public LoadBalancerManager(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry entry) {
         this.connectionManager = connectionManager;
@@ -65,7 +67,8 @@ public class LoadBalancerManager {
                     return;
                 }
                 if (counter.decrementAndGet() == 0) {
-                    addr2Entry.put(entry.getClient().getAddr(), entry);
+                    String addr = convert(entry.getClient().getConfig().getAddress());
+                    ip2Entry.put(addr, entry);
                     result.trySuccess(null);
                 }
             }
@@ -80,7 +83,7 @@ public class LoadBalancerManager {
 
     public int getAvailableClients() {
         int count = 0;
-        for (ClientConnectionsEntry connectionEntry : addr2Entry.values()) {
+        for (ClientConnectionsEntry connectionEntry : ip2Entry.values()) {
             if (!connectionEntry.isFreezed()) {
                 count++;
             }
@@ -88,11 +91,10 @@ public class LoadBalancerManager {
         return count;
     }
 
-    public boolean unfreeze(String host, int port, FreezeReason freezeReason) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
-        ClientConnectionsEntry entry = addr2Entry.get(addr);
+    public boolean unfreeze(URI address, FreezeReason freezeReason) {
+        ClientConnectionsEntry entry = getEntry(address);
         if (entry == null) {
-            throw new IllegalStateException("Can't find " + addr + " in slaves!");
+            throw new IllegalStateException("Can't find " + address + " in slaves!");
         }
 
         synchronized (entry) {
@@ -111,10 +113,19 @@ public class LoadBalancerManager {
         return false;
     }
     
-    public ClientConnectionsEntry freeze(String host, int port, FreezeReason freezeReason) {
-        InetSocketAddress addr = new InetSocketAddress(host, port);
-        ClientConnectionsEntry connectionEntry = addr2Entry.get(addr);
+    private String convert(URI address) {
+        InetSocketAddress addr = new InetSocketAddress(address.getHost(), address.getPort());
+        return addr.getAddress().getHostAddress() + ":" + addr.getPort();
+    }
+    
+    public ClientConnectionsEntry freeze(URI address, FreezeReason freezeReason) {
+        ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
+    }
+
+    protected ClientConnectionsEntry getEntry(URI address) {
+        String addr = convert(address);
+        return ip2Entry.get(addr);
     }
 
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
@@ -143,11 +154,15 @@ public class LoadBalancerManager {
     }
 
     public boolean contains(InetSocketAddress addr) {
-        return addr2Entry.containsKey(addr);
+        return ip2Entry.containsKey(addr.getAddress().getHostAddress() + ":" + addr.getPort());
+    }
+    
+    public boolean contains(String addr) {
+        return ip2Entry.containsKey(addr);
     }
     
     public RFuture<RedisConnection> getConnection(RedisCommand<?> command, InetSocketAddress addr) {
-        ClientConnectionsEntry entry = addr2Entry.get(addr);
+        ClientConnectionsEntry entry = ip2Entry.get(addr.getAddress().getHostAddress());
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
@@ -160,23 +175,23 @@ public class LoadBalancerManager {
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
-        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+        ClientConnectionsEntry entry = ip2Entry.get(connection.getRedisClient().getAddr().getAddress().getHostAddress());
         pubSubConnectionPool.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        ClientConnectionsEntry entry = addr2Entry.get(connection.getRedisClient().getAddr());
+        ClientConnectionsEntry entry = ip2Entry.get(connection.getRedisClient().getAddr().getAddress().getHostAddress());
         slaveConnectionPool.returnConnection(entry, connection);
     }
 
     public void shutdown() {
-        for (ClientConnectionsEntry entry : addr2Entry.values()) {
+        for (ClientConnectionsEntry entry : ip2Entry.values()) {
             entry.getClient().shutdown();
         }
     }
 
     public void shutdownAsync() {
-        for (ClientConnectionsEntry entry : addr2Entry.values()) {
+        for (ClientConnectionsEntry entry : ip2Entry.values()) {
             connectionManager.shutdownAsync(entry.getClient());
         }
     }

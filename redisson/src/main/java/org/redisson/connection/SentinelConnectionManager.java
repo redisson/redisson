@@ -171,7 +171,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             @Override
             public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.warn("Can't connect to sentinel: {}:{}", addr.getHost(), addr.getPort());
+                    log.warn("Can't connect to sentinel: {}", addr);
                     return;
                 }
 
@@ -220,8 +220,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String ip = parts[2];
             String port = parts[3];
 
-            String addr = createAddress(ip, port);
-            URI uri = URIBuilder.create(addr);
+            URI uri = convert(ip, port);
             registerSentinel(cfg, uri, c);
         }
     }
@@ -253,11 +252,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             return;
                         }
 
-                        if (entry.slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                        URI uri = convert(ip, port);
+                        if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
                             String slaveAddr = ip + ":" + port;
                             log.info("slave: {} added", slaveAddr);
                         }
                     }
+
                 });
             } else {
                 slaveUp(ip, port);
@@ -267,6 +268,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    protected URI convert(String ip, String port) {
+        String addr = createAddress(ip, port);
+        URI uri = URIBuilder.create(addr);
+        return uri;
+    }
+    
     private void onNodeDown(URI sentinelAddr, String msg) {
         String[] parts = msg.split(" ");
 
@@ -309,7 +316,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             log.warn("slave: {}:{} has down", ip, port);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            if (entry.slaveDown(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+            URI uri = convert(ip, port);
+            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
                 log.warn("slave: {}:{} has down", ip, port);
             }
         }
@@ -367,7 +375,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
 
-        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+        URI uri = convert(ip, port);
+        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(uri, FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
         }

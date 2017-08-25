@@ -129,8 +129,8 @@ public class MasterSlaveEntry {
         return slaveDown(e, freezeReason == FreezeReason.SYSTEM);
     }
     
-    public boolean slaveDown(String host, int port, FreezeReason freezeReason) {
-        ClientConnectionsEntry entry = slaveBalancer.freeze(host, port, freezeReason);
+    public boolean slaveDown(URI address, FreezeReason freezeReason) {
+        ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
             return false;
         }
@@ -141,9 +141,9 @@ public class MasterSlaveEntry {
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
         if (config.getReadMode() == ReadMode.SLAVE && slaveBalancer.getAvailableClients() == 0) {
-            InetSocketAddress addr = masterEntry.getClient().getAddr();
-            if (slaveUp(addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM)) {
-                log.info("master {}:{} used as slave", addr.getHostName(), addr.getPort());
+            URI addr = masterEntry.getClient().getConfig().getAddress();
+            if (slaveUp(addr, FreezeReason.SYSTEM)) {
+                log.info("master {} used as slave", addr);
             }
         }
         
@@ -309,7 +309,11 @@ public class MasterSlaveEntry {
     public boolean hasSlave(InetSocketAddress addr) {
         return slaveBalancer.contains(addr);
     }
-
+    
+    public boolean hasSlave(String addr) {
+        return slaveBalancer.contains(addr);
+    }
+    
     public RFuture<Void> addSlave(URI address) {
         return addSlave(address, true, NodeType.SLAVE);
     }
@@ -334,17 +338,18 @@ public class MasterSlaveEntry {
         return masterEntry.getClient();
     }
 
-    public boolean slaveUp(String host, int port, FreezeReason freezeReason) {
-        if (!slaveBalancer.unfreeze(host, port, freezeReason)) {
+    public boolean slaveUp(URI address, FreezeReason freezeReason) {
+        if (!slaveBalancer.unfreeze(address, freezeReason)) {
             return false;
         }
 
+        InetSocketAddress naddress = new InetSocketAddress(address.getHost(), address.getPort());
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
         if (config.getReadMode() == ReadMode.SLAVE
-                && (!addr.getHostName().equals(host) || port != addr.getPort())) {
-            slaveDown(addr.getHostName(), addr.getPort(), FreezeReason.SYSTEM);
-            log.info("master {}:{} excluded from slaves", addr.getHostName(), addr.getPort());
+                && (!addr.getAddress().getHostAddress().equals(naddress.getAddress().getHostAddress()) || naddress.getPort() != addr.getPort())) {
+            slaveDown(address, FreezeReason.SYSTEM);
+            log.info("master {} excluded from slaves", addr);
         }
         return true;
     }
@@ -369,7 +374,7 @@ public class MasterSlaveEntry {
                 // more than one slave available, so master can be removed from slaves
                 if (config.getReadMode() == ReadMode.SLAVE
                         && slaveBalancer.getAvailableClients() > 1) {
-                    slaveDown(address.getHost(), address.getPort(), FreezeReason.SYSTEM);
+                    slaveDown(address, FreezeReason.SYSTEM);
                 }
                 connectionManager.shutdownAsync(oldMaster.getClient());
             }

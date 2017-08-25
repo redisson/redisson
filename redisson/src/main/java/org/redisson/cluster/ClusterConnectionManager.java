@@ -424,7 +424,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         aliveSlaves.removeAll(newPart.getFailedSlaveAddresses());
         for (URI uri : aliveSlaves) {
             currentPart.removeFailedSlaveAddress(uri);
-            if (entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+            if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
                 log.info("slave: {} has up for slot ranges: {}", uri, currentPart.getSlotRanges());
             }
         }
@@ -433,7 +433,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         failedSlaves.removeAll(currentPart.getFailedSlaveAddresses());
         for (URI uri : failedSlaves) {
             currentPart.addFailedSlaveAddress(uri);
-            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
                 log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
             }
         }
@@ -446,7 +446,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (URI uri : removedSlaves) {
             currentPart.removeSlaveAddress(uri);
 
-            if (entry.slaveDown(uri.getHost(), uri.getPort(), FreezeReason.MANAGER)) {
+            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
                 log.info("slave {} removed for slot ranges: {}", uri, currentPart.getSlotRanges());
             }
         }
@@ -464,7 +464,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     }
 
                     currentPart.addSlaveAddress(uri);
-                    entry.slaveUp(uri.getHost(), uri.getPort(), FreezeReason.MANAGER);
+                    entry.slaveUp(uri, FreezeReason.MANAGER);
                     log.info("slave: {} added for slot ranges: {}", uri, currentPart.getSlotRanges());
                 }
             });
