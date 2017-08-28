@@ -20,12 +20,14 @@ import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
@@ -40,6 +42,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class LoadBalancerManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -56,6 +63,25 @@ public class LoadBalancerManager {
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
+    public void changeType(InetSocketAddress addr, NodeType nodeType) {
+        ClientConnectionsEntry entry = ip2Entry.get(addr.getAddress().getHostAddress() + ":" + addr.getPort());
+        changeType(addr, nodeType, entry);
+    }
+
+    protected void changeType(Object addr, NodeType nodeType, ClientConnectionsEntry entry) {
+        if (entry != null) {
+            if (connectionManager.isClusterMode()) {
+                entry.getClient().getConfig().setReadOnly(nodeType == NodeType.SLAVE && connectionManager.getConfig().getReadMode() != ReadMode.MASTER);
+            }
+            entry.setNodeType(nodeType);
+        }
+    }
+    
+    public void changeType(URI address, NodeType nodeType) {
+        ClientConnectionsEntry entry = getEntry(address);
+        changeType(address, nodeType, entry);
+    }
+    
     public RFuture<Void> add(final ClientConnectionsEntry entry) {
         final RPromise<Void> result = connectionManager.newPromise();
         FutureListener<Void> listener = new FutureListener<Void>() {
@@ -67,7 +93,7 @@ public class LoadBalancerManager {
                     return;
                 }
                 if (counter.decrementAndGet() == 0) {
-                    String addr = convert(entry.getClient().getConfig().getAddress());
+                    String addr = entry.getClient().getIpAddr();
                     ip2Entry.put(addr, entry);
                     result.trySuccess(null);
                 }
@@ -123,7 +149,7 @@ public class LoadBalancerManager {
         return freeze(connectionEntry, freezeReason);
     }
 
-    protected ClientConnectionsEntry getEntry(URI address) {
+    private ClientConnectionsEntry getEntry(URI address) {
         String addr = convert(address);
         return ip2Entry.get(addr);
     }

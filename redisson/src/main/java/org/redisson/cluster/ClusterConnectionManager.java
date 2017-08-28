@@ -251,7 +251,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                         final MasterSlaveEntry e;
                         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
-                        if (config.getReadMode() == ReadMode.MASTER) {
+                        if (config.isSkipSlavesInit()) {
                             e = new SingleEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
                         } else {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
@@ -508,8 +508,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
                     // does partition has a new master?
                     if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
-                        log.info("changing master from {} to {} for {}",
-                                currentPart.getMasterAddress(), newMasterPart.getMasterAddress(), slot);
                         URI newUri = newMasterPart.getMasterAddress();
                         URI oldUri = currentPart.getMasterAddress();
                         

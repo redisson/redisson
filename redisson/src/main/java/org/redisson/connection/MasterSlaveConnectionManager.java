@@ -51,8 +51,6 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -280,7 +278,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         slots.add(singleSlotRange);
 
         MasterSlaveEntry entry;
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.isSkipSlavesInit()) {
             entry = new SingleEntry(slots, this, config);
             RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
             f.syncUninterruptibly();
@@ -349,7 +347,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdownAsync(RedisClient client) {
-        clientEntries.remove(client);
+        if (clientEntries.remove(client) == null) {
+            log.error("Can't find client {}", client);
+        }
         client.shutdownAsync();
     }
 

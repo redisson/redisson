@@ -256,6 +256,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     public ReadMode getReadMode() {
         return readMode;
     }
+    
+    public boolean isSkipSlavesInit() {
+        return getReadMode() == ReadMode.MASTER && getSubscriptionMode() == SubscriptionMode.MASTER;
+    }
 
     /**
      * Set node type used for subscription operation.

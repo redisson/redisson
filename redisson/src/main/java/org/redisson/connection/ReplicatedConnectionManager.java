@@ -192,7 +192,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                         if (master.equals(addr)) {
                                             log.debug("Current master {} unchanged", master);
                                         } else if (currentMaster.compareAndSet(master, addr)) {
-                                            log.info("Master has changed from {} to {}", master, addr);
                                             changeMaster(singleSlotRange.getStartSlot(), addr);
                                         }
                                     }

@@ -41,6 +41,7 @@ import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SentinelServersConfig;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -240,7 +241,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null) {
+            if (slaves.putIfAbsent(slaveAddr, true) == null && !config.isSkipSlavesInit()) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
                 future.addListener(new FutureListener<Void>() {
@@ -312,7 +313,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.isSkipSlavesInit()) {
             log.warn("slave: {}:{} has down", ip, port);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
@@ -369,7 +370,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.isSkipSlavesInit()) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
             return;
@@ -395,7 +396,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
                     changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
-                    log.info("master {} changed to {}", current, newMaster);
                 }
             }
         } else {
