@@ -236,7 +236,7 @@ public interface RKeys extends RKeysAsync {
      * <p>
      * Requires Redis 4.0+
      * 
-     * @param keys
+     * @param keys of objects
      * @return number of removed keys
      */
     long unlink(String ... keys);

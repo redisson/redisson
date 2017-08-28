@@ -281,7 +281,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Interval in milliseconds to check the endpoint DNS if {@link #isDnsMonitoring()} is true.<p>
+     * Interval in milliseconds to check the endpoint's DNS<p>
      * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
      * Set <code>-1</code> to disable.
      * <p>
