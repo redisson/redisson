@@ -39,6 +39,11 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());

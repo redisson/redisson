@@ -175,6 +175,9 @@ public class RedisClient {
         this.commandTimeout = config.getCommandTimeout();
     }
 
+    public String getIpAddr() {
+        return addr.getAddress().getHostAddress() + ":" + addr.getPort();
+    }
 
     public InetSocketAddress getAddr() {
         return addr;

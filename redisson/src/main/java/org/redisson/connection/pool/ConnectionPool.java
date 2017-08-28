@@ -341,19 +341,23 @@ abstract class ConnectionPool<T extends RedisConnection> {
         connectionManager.newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                        || !entry.isFreezed()
+                synchronized (entry) {
+                    if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                            || !entry.isFreezed()
                             || connectionManager.isShuttingDown()) {
-                    return;
+                        return;
+                    }
                 }
 
                 RFuture<RedisConnection> connectionFuture = entry.getClient().connectAsync();
                 connectionFuture.addListener(new FutureListener<RedisConnection>() {
                     @Override
                     public void operationComplete(Future<RedisConnection> future) throws Exception {
-                        if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                || !entry.isFreezed()) {
-                            return;
+                        synchronized (entry) {
+                            if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                                    || !entry.isFreezed()) {
+                                return;
+                            }
                         }
 
                         if (!future.isSuccess()) {
@@ -371,9 +375,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             @Override
                             public void operationComplete(Future<String> future) throws Exception {
                                 try {
-                                    if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                        || !entry.isFreezed()) {
-                                        return;
+                                    synchronized (entry) {
+                                        if (entry.getFreezeReason() != FreezeReason.RECONNECT
+                                                || !entry.isFreezed()) {
+                                            return;
+                                        }
                                     }
 
                                     if (future.isSuccess() && "PONG".equals(future.getNow())) {
@@ -385,13 +391,13 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                                 throws Exception {
                                                 if (entry.getNodeType() == NodeType.SLAVE) {
                                                     masterSlaveEntry.slaveUp(entry.getClient().getConfig().getAddress(), FreezeReason.RECONNECT);
-                                                    log.info("slave {} successfully reconnected", entry.getClient().getAddr());
+                                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
                                                 } else {
                                                     synchronized (entry) {
                                                         if (entry.getFreezeReason() == FreezeReason.RECONNECT) {
                                                             entry.setFreezed(false);
                                                             entry.setFreezeReason(null);
-                                                            log.info("host {} successfully reconnected", entry.getClient().getAddr());
+                                                            log.info("host {} has been successfully reconnected", entry.getClient().getAddr());
                                                         }
                                                     }
                                                 }

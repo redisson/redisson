@@ -39,16 +39,15 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -67,13 +66,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
         super(config);
-
-        this.config = create(cfg);
-        initTimer(this.config);
-
+        
         if (cfg.getMasterName() == null) {
             throw new IllegalArgumentException("masterName parameter is not defined!");
         }
+
+        this.config = create(cfg);
+        initTimer(this.config);
         
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
@@ -126,8 +125,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
-        init(this.config);
-
+        
+        initSingleEntry();
+        
         List<RFuture<RedisPubSubConnection>> connectionFutures = new ArrayList<RFuture<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
         for (URI addr : cfg.getSentinelAddresses()) {
             RFuture<RedisPubSubConnection> future = registerSentinel(cfg, addr, this.config);
@@ -240,7 +240,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null) {
+            if (slaves.putIfAbsent(slaveAddr, true) == null && !config.checkSkipSlavesInit()) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
                 future.addListener(new FutureListener<Void>() {
@@ -312,7 +312,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.checkSkipSlavesInit()) {
             log.warn("slave: {}:{} has down", ip, port);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
@@ -369,7 +369,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.checkSkipSlavesInit()) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
             return;
@@ -395,7 +395,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
                     changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
-                    log.info("master {} changed to {}", current, newMaster);
                 }
             }
         } else {

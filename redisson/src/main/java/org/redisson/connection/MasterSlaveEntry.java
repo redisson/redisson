@@ -42,6 +42,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
+import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,10 +86,14 @@ public class MasterSlaveEntry {
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionHolder = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
+    
+    public MasterSlaveServersConfig getConfig() {
+        return config;
+    }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
-                    && config.getReadMode() == ReadMode.SLAVE
+                    && !config.checkSkipSlavesInit()
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
@@ -120,15 +125,6 @@ public class MasterSlaveEntry {
         return writeConnectionHolder.add(masterEntry);
     }
 
-    private boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
-        ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
-        if (e == null) {
-            return false;
-        }
-        
-        return slaveDown(e, freezeReason == FreezeReason.SYSTEM);
-    }
-    
     public boolean slaveDown(URI address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
@@ -140,7 +136,7 @@ public class MasterSlaveEntry {
 
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
-        if (config.getReadMode() == ReadMode.SLAVE && slaveBalancer.getAvailableClients() == 0) {
+        if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             URI addr = masterEntry.getClient().getConfig().getAddress();
             if (slaveUp(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} used as slave", addr);
@@ -153,7 +149,7 @@ public class MasterSlaveEntry {
             if (connection == null) {
                 break;
             }
-           
+            
             connection.closeAsync().addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
@@ -318,13 +314,13 @@ public class MasterSlaveEntry {
         return addSlave(address, true, NodeType.SLAVE);
     }
     
-    private RFuture<Void> addSlave(URI address, boolean freezed, NodeType mode) {
+    private RFuture<Void> addSlave(URI address, boolean freezed, NodeType nodeType) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
         ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                 this.config.getSlaveConnectionMinimumIdleSize(),
                 this.config.getSlaveConnectionPoolSize(),
                 this.config.getSubscriptionConnectionMinimumIdleSize(),
-                this.config.getSubscriptionConnectionPoolSize(), connectionManager, mode);
+                this.config.getSubscriptionConnectionPoolSize(), connectionManager, nodeType);
         if (freezed) {
             synchronized (entry) {
                 entry.setFreezed(freezed);
@@ -346,7 +342,7 @@ public class MasterSlaveEntry {
         InetSocketAddress naddress = new InetSocketAddress(address.getHost(), address.getPort());
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (config.getReadMode() == ReadMode.SLAVE
+        if (!config.checkSkipSlavesInit()
                 && (!addr.getAddress().getHostAddress().equals(naddress.getAddress().getHostAddress()) || naddress.getPort() != addr.getPort())) {
             slaveDown(address, FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
@@ -369,14 +365,21 @@ public class MasterSlaveEntry {
             public void operationComplete(Future<Void> future) throws Exception {
                 writeConnectionHolder.remove(oldMaster);
                 pubSubConnectionHolder.remove(oldMaster);
-                slaveDown(oldMaster, FreezeReason.MANAGER);
+                
+                oldMaster.freezeMaster(FreezeReason.MANAGER);
+                slaveDown(oldMaster, false);
+                slaveDown(URIBuilder.create("redis://" + oldMaster.getClient().getIpAddr()), FreezeReason.MANAGER);
+
+                slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
+                slaveBalancer.changeType(address, NodeType.MASTER);
 
                 // more than one slave available, so master can be removed from slaves
-                if (config.getReadMode() == ReadMode.SLAVE
+                if (!config.checkSkipSlavesInit()
                         && slaveBalancer.getAvailableClients() > 1) {
                     slaveDown(address, FreezeReason.SYSTEM);
                 }
                 connectionManager.shutdownAsync(oldMaster.getClient());
+                log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), address);
             }
         });
     }
@@ -415,10 +418,16 @@ public class MasterSlaveEntry {
     }
 
     public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            return connectionWriteOp(command);
+        }
         return slaveBalancer.nextConnection(command);
     }
 
     public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, InetSocketAddress addr) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            return connectionWriteOp(command);
+        }
         return slaveBalancer.getConnection(command, addr);
     }
 
@@ -443,6 +452,10 @@ public class MasterSlaveEntry {
     }
 
     public void releaseRead(RedisConnection connection) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            releaseWrite(connection);
+            return;
+        }
         slaveBalancer.returnConnection(connection);
     }
 

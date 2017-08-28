@@ -54,17 +54,17 @@ public class ClientConnectionsEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    private final NodeType nodeType;
+    private NodeType nodeType;
     private ConnectionManager connectionManager;
 
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
-            ConnectionManager connectionManager, NodeType serverMode) {
+            ConnectionManager connectionManager, NodeType nodeType) {
         this.client = client;
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
         this.connectionManager = connectionManager;
-        this.nodeType = serverMode;
+        this.nodeType = nodeType;
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
@@ -72,7 +72,10 @@ public class ClientConnectionsEntry {
         }
         connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
     }
-
+    
+    public void setNodeType(NodeType nodeType) {
+        this.nodeType = nodeType;
+    }
     public NodeType getNodeType() {
         return nodeType;
     }

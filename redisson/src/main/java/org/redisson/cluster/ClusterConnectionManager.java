@@ -82,7 +82,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         this.config = create(cfg);
         initTimer(this.config);
-        init(this.config);
 
         Throwable lastException = null;
         List<String> failedMasters = new ArrayList<String>();
@@ -196,10 +195,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
-    @Override
-    protected void initEntry(MasterSlaveServersConfig config) {
-    }
-
     private RFuture<Collection<RFuture<Void>>> addMasterEntry(final ClusterPartition partition, final ClusterServersConfig cfg) {
         if (partition.isMasterFail()) {
             RedisException e = new RedisException("Failed to add master: " +
@@ -251,7 +246,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                         final MasterSlaveEntry e;
                         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
-                        if (config.getReadMode() == ReadMode.MASTER) {
+                        if (config.checkSkipSlavesInit()) {
                             e = new SingleEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
                         } else {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
@@ -508,8 +503,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     ClusterPartition newMasterPart = find(newPartitions, slot);
                     // does partition has a new master?
                     if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
-                        log.info("changing master from {} to {} for {}",
-                                currentPart.getMasterAddress(), newMasterPart.getMasterAddress(), slot);
                         URI newUri = newMasterPart.getMasterAddress();
                         URI oldUri = currentPart.getMasterAddress();
                         
