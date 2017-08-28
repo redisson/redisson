@@ -86,10 +86,14 @@ public class MasterSlaveEntry {
         writeConnectionHolder = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionHolder = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
+    
+    public MasterSlaveServersConfig getConfig() {
+        return config;
+    }
 
     public List<RFuture<Void>> initSlaveBalancer(Collection<URI> disconnectedNodes) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
-                    && !config.isSkipSlavesInit()
+                    && !config.checkSkipSlavesInit()
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
@@ -132,7 +136,7 @@ public class MasterSlaveEntry {
 
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
-        if (!config.isSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
+        if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             URI addr = masterEntry.getClient().getConfig().getAddress();
             if (slaveUp(addr, FreezeReason.SYSTEM)) {
                 log.info("master {} used as slave", addr);
@@ -338,7 +342,7 @@ public class MasterSlaveEntry {
         InetSocketAddress naddress = new InetSocketAddress(address.getHost(), address.getPort());
         InetSocketAddress addr = masterEntry.getClient().getAddr();
         // exclude master from slaves
-        if (!config.isSkipSlavesInit()
+        if (!config.checkSkipSlavesInit()
                 && (!addr.getAddress().getHostAddress().equals(naddress.getAddress().getHostAddress()) || naddress.getPort() != addr.getPort())) {
             slaveDown(address, FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
@@ -370,7 +374,7 @@ public class MasterSlaveEntry {
                 slaveBalancer.changeType(address, NodeType.MASTER);
 
                 // more than one slave available, so master can be removed from slaves
-                if (!config.isSkipSlavesInit()
+                if (!config.checkSkipSlavesInit()
                         && slaveBalancer.getAvailableClients() > 1) {
                     slaveDown(address, FreezeReason.SYSTEM);
                 }

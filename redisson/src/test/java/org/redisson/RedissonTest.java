@@ -32,7 +32,6 @@ import org.redisson.api.NodesGroup;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -536,7 +535,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111");
+        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111").setMasterName("test");
         Redisson.create(config);
 
         Thread.sleep(1500);

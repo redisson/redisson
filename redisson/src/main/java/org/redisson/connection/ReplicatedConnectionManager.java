@@ -101,7 +101,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             throw new RedisConnectionException("Can't connect to servers!");
         }
 
-        init(this.config);
+        initSingleEntry();
 
         scheduleMasterChangeCheck(cfg);
     }

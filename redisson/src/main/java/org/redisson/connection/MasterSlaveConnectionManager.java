@@ -126,6 +126,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected final Queue<PubSubConnectionEntry> freePubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
 
+    protected DNSMonitor dnsMonitor;
+    
     protected MasterSlaveServersConfig config;
 
     private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
@@ -159,7 +161,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
         initTimer(cfg);
-        init(cfg);
+        this.config = cfg;
+        initSingleEntry();
     }
 
     public MasterSlaveConnectionManager(Config cfg) {
@@ -235,19 +238,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new HashSet<MasterSlaveEntry>(entries.values());
     }
     
-    protected void init(MasterSlaveServersConfig config) {
-        this.config = config;
-
-        connectionWatcher = new IdleConnectionWatcher(this, config);
-
-        try {
-            initEntry(config);
-        } catch (RuntimeException e) {
-            stopThreads();
-            throw e;
-        }
-    }
-
     protected void initTimer(MasterSlaveServersConfig config) {
         int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
@@ -271,26 +261,38 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             throw new IllegalStateException(e);
         }
         
+        connectionWatcher = new IdleConnectionWatcher(this, config);
     }
 
-    protected void initEntry(MasterSlaveServersConfig config) {
-        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-        slots.add(singleSlotRange);
-
-        MasterSlaveEntry entry;
-        if (config.isSkipSlavesInit()) {
-            entry = new SingleEntry(slots, this, config);
-            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
-            f.syncUninterruptibly();
-        } else {
-            entry = createMasterSlaveEntry(config, slots);
-        }
-        
-        for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
-            addEntry(slot, entry);
+    protected void initSingleEntry() {
+        try {
+            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+            slots.add(singleSlotRange);
+    
+            MasterSlaveEntry entry;
+            if (config.checkSkipSlavesInit()) {
+                entry = new SingleEntry(slots, this, config);
+                RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
+                f.syncUninterruptibly();
+            } else {
+                entry = createMasterSlaveEntry(config, slots);
+            }
+            
+            for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
+                addEntry(slot, entry);
+            }
+            
+            if (config.getDnsMonitoringInterval() != -1) {
+                dnsMonitor = new DNSMonitor(this, Collections.singleton(config.getMasterAddress()), 
+                        config.getSlaveAddresses(), config.getDnsMonitoringInterval());
+                dnsMonitor.start();
+            }
+        } catch (RuntimeException e) {
+            stopThreads();
+            throw e;
         }
     }
-
+    
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
@@ -775,6 +777,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        if (dnsMonitor != null) {
+            dnsMonitor.stop();
+        }
+
         shutdownLatch.close();
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
