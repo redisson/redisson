@@ -65,6 +65,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     private int subscriptionConnectionPoolSize = 50;
 
+    private long dnsMonitoringInterval = 5000;
+    
     public BaseMasterSlaveServersConfig() {
     }
 
@@ -79,6 +81,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setReadMode(config.getReadMode());
         setSubscriptionMode(config.getSubscriptionMode());
+        setDnsMonitoringInterval(config.getDnsMonitoringInterval());
     }
 
     /**
@@ -256,6 +259,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     public ReadMode getReadMode() {
         return readMode;
     }
+    
+    public boolean checkSkipSlavesInit() {
+        return getReadMode() == ReadMode.MASTER && getSubscriptionMode() == SubscriptionMode.MASTER;
+    }
 
     /**
      * Set node type used for subscription operation.
@@ -273,5 +280,22 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         return subscriptionMode;
     }
 
-
+    /**
+     * Interval in milliseconds to check the endpoint's DNS<p>
+     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
+     * Set <code>-1</code> to disable.
+     * <p>
+     * Default is <code>5000</code>.
+     *
+     * @param dnsMonitoringInterval time
+     * @return config
+     */
+    public T setDnsMonitoringInterval(long dnsMonitoringInterval) {
+        this.dnsMonitoringInterval = dnsMonitoringInterval;
+        return (T) this;
+    }
+    public long getDnsMonitoringInterval() {
+        return dnsMonitoringInterval;
+    }
+    
 }

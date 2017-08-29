@@ -39,6 +39,11 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -82,12 +87,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
         
-        timer.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
-            }
-        }, timeout, TimeUnit.MILLISECONDS);
+        try {
+            timer.newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
+                }
+            }, timeout, TimeUnit.MILLISECONDS);
+        } catch (IllegalStateException e) {
+            // skip
+        }
     }
 
     private void tryReconnect(final RedisConnection connection, final int nextAttempt) {

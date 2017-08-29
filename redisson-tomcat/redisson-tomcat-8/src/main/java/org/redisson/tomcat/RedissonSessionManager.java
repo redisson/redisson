@@ -17,6 +17,7 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -27,6 +28,7 @@ import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
 /**
@@ -37,10 +39,22 @@ import org.redisson.config.Config;
  */
 public class RedissonSessionManager extends ManagerBase {
 
+    public enum ReadMode {REDIS, MEMORY}
+    
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
     private RedissonClient redisson;
     private String configPath;
+    
+    private ReadMode readMode = ReadMode.MEMORY;
+    
+    public String getReadMode() {
+        return readMode.toString();
+    }
+
+    public void setReadMode(String readMode) {
+        this.readMode = ReadMode.valueOf(readMode);
+    }
     
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
@@ -90,9 +104,18 @@ public class RedissonSessionManager extends ManagerBase {
     public Session findSession(String id) throws IOException {
         Session result = super.findSession(id);
         if (result == null && id != null) {
+            Map<String, Object> attrs = getMap(id).readAllMap();
+            if (attrs.isEmpty()) {
+                log.info("Session " + id + " can't be found");
+                return null;
+            }
+            
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
-            session.load();
+            session.load(attrs);
+            
+            session.access();
+            session.endAccess();
             return session;
         }
         
@@ -101,7 +124,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this);
+        return new RedissonSession(this, readMode);
     }
     
     @Override
@@ -134,6 +157,11 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         try {
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
+            
             redisson = Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);

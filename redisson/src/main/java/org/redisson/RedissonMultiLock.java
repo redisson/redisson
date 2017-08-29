@@ -20,16 +20,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -224,14 +221,6 @@ public class RedissonMultiLock implements Lock {
     @Override
     public Condition newCondition() {
         throw new UnsupportedOperationException();
-    }
-
-    protected boolean isLockFailed(Future<Boolean> future) {
-        return !future.isSuccess();
-    }
-
-    protected boolean isAllLocksAcquired(AtomicReference<RLock> lockedLockHolder, AtomicReference<Throwable> failed, Queue<RLock> lockedLocks) {
-        return lockedLockHolder.get() == null && failed.get() == null;
     }
 
 }

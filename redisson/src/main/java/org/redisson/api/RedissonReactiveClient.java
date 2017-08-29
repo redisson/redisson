@@ -31,6 +31,14 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns semaphore instance by name
+     *
+     * @param name - name of object
+     * @return Semaphore object
+     */
+    RSemaphoreReactive getSemaphore(String name);
+    
+    /**
      * Returns readWriteLock instance by name.
      *
      * @param name - name of object

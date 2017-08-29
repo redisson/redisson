@@ -27,7 +27,7 @@ import org.redisson.api.RSemaphore;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
@@ -48,9 +48,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     private final SemaphorePubSub semaphorePubSub;
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
 
-    protected RedissonSemaphore(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
+    public RedissonSemaphore(CommandAsyncExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.semaphorePubSub = semaphorePubSub;
@@ -478,7 +478,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public int drainPermits() {
-        Long res = commandExecutor.evalWrite(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        RFuture<Long> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false or value == 0) then " +
                     "return 0; " +
@@ -486,12 +486,14 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 "redis.call('set', KEYS[1], 0); " +
                 "return value;",
                 Collections.<Object>singletonList(getName()));
+        Long res = get(future);
         return res.intValue();
     }
 
     @Override
     public int availablePermits() {
-        Long res = commandExecutor.write(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        RFuture<Long> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getName());
+        Long res = get(future);
         return res.intValue();
     }
 

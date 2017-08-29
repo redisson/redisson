@@ -1576,18 +1576,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
-                "for i, value in ipairs(ARGV) do "
-                        + "if i % 2 == 0 then "
+                  "for i=1, #ARGV, 5000 do "
+                    + "redis.call('hmset', KEYS[1], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
+                + "end; "
+
+                + "for i, value in ipairs(ARGV) do "
+                    + "if i % 2 == 0 then "
                         + "local val = struct.pack('dLc0', 0, string.len(value), value); "
                         + "ARGV[i] = val; "
                         + "local key = ARGV[i-1];"
 
                         + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value); "
                         + "redis.call('publish', KEYS[2], msg); "
-                        + "end;"
                     + "end;"
-                    + "return redis.call('hmset', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getCreatedChannelName()), params.toArray());
+                + "end;",
+            Arrays.<Object>asList(getName(), getCreatedChannelName()), params.toArray());
     }
 
     @Override
