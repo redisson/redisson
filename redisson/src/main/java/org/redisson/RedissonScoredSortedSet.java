@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -25,8 +24,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
@@ -182,13 +181,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getName());
-        try {
-            for (Entry<V, Double> entry : objects.entrySet()) {
-                params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
-                params.add(codec.getValueEncoder().encode(entry.getKey()));
-            }
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
+        for (Entry<V, Double> entry : objects.entrySet()) {
+            params.add(BigDecimal.valueOf(entry.getValue()).toPlainString());
+            params.add(encode(entry.getKey()));
         }
 
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, params.toArray());

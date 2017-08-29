@@ -17,6 +17,11 @@ package org.redisson.client.protocol;
 
 import java.io.IOException;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface Encoder {
 
     byte[] encode(Object in) throws IOException;

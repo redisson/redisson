@@ -118,12 +118,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
     
     private String getLockName(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        byte[] keyState = encodeMapKey(key);
+        return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
     }
     
     @Override

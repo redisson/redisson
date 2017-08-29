@@ -231,14 +231,10 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
         
         return commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                 "local expireDate = 92233720368547758; " +
@@ -289,14 +285,10 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
         
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                         "local expireDate = 92233720368547758; " +
@@ -330,14 +322,10 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        byte[] keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
 
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                     "local expireDate = 92233720368547758; " +

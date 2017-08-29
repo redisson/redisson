@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -79,12 +78,8 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     private String getLockName(Object key) {
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
-        }
+        byte[] keyState = encodeMapKey(key);
+        return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
     }
     
     protected String hash(byte[] objectState) {
