@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.5.0  | 1.8+ | 28.07.2017 |
-| 2.10.0 | 1.6, 1.7, 1.8 and Android | 28.07.2017 |
+| 3.5.1  | 1.8+ | 29.08.2017 |
+| 2.10.1 | 1.6, 1.7, 1.8 and Android | 29.08.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
 
