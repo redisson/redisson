@@ -16,6 +16,7 @@
 package org.redisson.liveobject.resolver;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import java.io.IOException;
 import org.redisson.client.codec.Codec;
@@ -29,7 +30,6 @@ import org.redisson.codec.JsonJacksonCodec;
 public class DefaultNamingScheme extends AbstractNamingScheme implements NamingScheme {
 
     public static final DefaultNamingScheme INSTANCE = new DefaultNamingScheme(new JsonJacksonCodec());
-    private static final char[] hexArray = "0123456789ABCDEF".toCharArray();
 
     public DefaultNamingScheme(Codec codec) {
         super(codec);
@@ -79,14 +79,8 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         }
     }
 
-    private static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
+    private static String bytesToHex(ByteBuf bytes) {
+        return ByteBufUtil.hexDump(bytes);
     }
 
     private static byte[] hexToBytes(String s) {

@@ -15,7 +15,6 @@
  */
 package org.redisson.codec;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -32,7 +31,9 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 
 /**
  * 
@@ -126,15 +127,16 @@ public class KryoCodec implements Codec {
     private final Encoder encoder = new Encoder() {
 
         @Override
-        public byte[] encode(Object in) throws IOException {
+        public ByteBuf encode(Object in) throws IOException {
             Kryo kryo = null;
             try {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+                ByteBufOutputStream baos = new ByteBufOutputStream(out);
                 Output output = new Output(baos);
                 kryo = kryoPool.get();
                 kryo.writeClassAndObject(output, in);
                 output.close();
-                return baos.toByteArray();
+                return baos.buffer();
             } catch (Exception e) {
                 if (e instanceof RuntimeException) {
                     throw (RuntimeException) e;

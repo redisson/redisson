@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
@@ -23,7 +24,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
 import net.jpountz.lz4.LZ4Compressor;
 import net.jpountz.lz4.LZ4Factory;
 import net.jpountz.lz4.LZ4SafeDecompressor;
@@ -42,6 +43,7 @@ import net.jpountz.lz4.LZ4SafeDecompressor;
  */
 public class LZ4Codec implements Codec {
 
+    private static final int DECOMPRESSION_HEADER_SIZE = Integer.SIZE / 8;
     private final LZ4Factory factory = LZ4Factory.fastestInstance();
 
     private final Codec innerCodec;
@@ -57,16 +59,19 @@ public class LZ4Codec implements Codec {
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            byte[] bytes = new byte[buf.readableBytes()];
-            buf.readBytes(bytes);
-
+            int decompressSize = buf.readInt();
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(decompressSize);
+            
             LZ4SafeDecompressor decompressor = factory.safeDecompressor();
-            bytes = decompressor.decompress(bytes, bytes.length*3);
-            ByteBuf bf = Unpooled.wrappedBuffer(bytes);
+            ByteBuffer outBuffer = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
+            int pos = outBuffer.position();
+            decompressor.decompress(buf.internalNioBuffer(buf.readerIndex(), buf.readableBytes()), outBuffer);
+            int compressedLength = outBuffer.position() - pos;
+            out.writerIndex(compressedLength);
             try {
-                return innerCodec.getValueDecoder().decode(bf, state);
+                return innerCodec.getValueDecoder().decode(out, state);
             } finally {
-                bf.release();
+                out.release();
             }
         }
     };
@@ -74,10 +79,22 @@ public class LZ4Codec implements Codec {
     private final Encoder encoder = new Encoder() {
 
         @Override
-        public byte[] encode(Object in) throws IOException {
+        public ByteBuf encode(Object in) throws IOException {
             LZ4Compressor compressor = factory.fastCompressor();
-            byte[] bytes = innerCodec.getValueEncoder().encode(in);
-            return compressor.compress(bytes);
+            ByteBuf bytes = innerCodec.getValueEncoder().encode(in);
+            ByteBuffer srcBuf = bytes.internalNioBuffer(bytes.readerIndex(), bytes.readableBytes());
+            
+            int outMaxLength = compressor.maxCompressedLength(bytes.readableBytes());
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(outMaxLength + DECOMPRESSION_HEADER_SIZE);
+            out.writeInt(bytes.readableBytes());
+            ByteBuffer outBuf = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
+            int pos = outBuf.position();
+
+            compressor.compress(srcBuf, outBuf);
+            
+            int compressedLength = outBuf.position() - pos;
+            out.writerIndex(out.writerIndex() + compressedLength);
+            return out;
         }
     };
 

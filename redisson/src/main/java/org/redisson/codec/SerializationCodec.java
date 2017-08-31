@@ -15,7 +15,6 @@
  */
 package org.redisson.codec;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -26,7 +25,9 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 
 /**
  *
@@ -58,12 +59,13 @@ public class SerializationCodec implements Codec {
     private final Encoder encoder = new Encoder() {
 
         @Override
-        public byte[] encode(Object in) throws IOException {
-            ByteArrayOutputStream result = new ByteArrayOutputStream();
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            ByteBufOutputStream result = new ByteBufOutputStream(out);
             ObjectOutputStream outputStream = new ObjectOutputStream(result);
             outputStream.writeObject(in);
             outputStream.close();
-            return result.toByteArray();
+            return result.buffer();
         }
     };
     

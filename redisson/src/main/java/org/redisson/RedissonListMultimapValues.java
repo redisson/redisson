@@ -42,6 +42,8 @@ import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * List based Multimap Cache values holder
  *
@@ -231,7 +233,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         args.add(System.currentTimeMillis());
         args.add(keyState);
         args.addAll(c);
@@ -285,7 +287,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         args.add(System.currentTimeMillis());
         args.add(keyState);
         args.addAll(c);
@@ -322,7 +324,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         args.add(System.currentTimeMillis());
         args.add(keyState);
         args.addAll(c);

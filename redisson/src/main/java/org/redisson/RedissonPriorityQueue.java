@@ -38,6 +38,7 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
@@ -200,7 +201,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 index = res.getIndex() + 1;
             }
                 
-            byte[] encodedValue = encode(value);
+            ByteBuf encodedValue = encode(value);
             
             commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
                "local len = redis.call('llen', KEYS[1]);"

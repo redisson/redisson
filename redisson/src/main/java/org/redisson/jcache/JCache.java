@@ -74,6 +74,7 @@ import org.redisson.jcache.JMutableEntry.Action;
 import org.redisson.jcache.configuration.JCacheConfiguration;
 import org.redisson.misc.Hash;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -573,8 +574,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     
     private String getLockName(Object key) {
-        byte[] keyState = encodeMapKey(key);
-        return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+        ByteBuf keyState = encodeMapKey(key);
+        try {
+            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+        } finally {
+            keyState.release();
+        }
     }
 
     @Override

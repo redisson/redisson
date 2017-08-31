@@ -59,6 +59,7 @@ import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
@@ -118,8 +119,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
     
     private String getLockName(Object key) {
-        byte[] keyState = encodeMapKey(key);
-        return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
+        ByteBuf keyState = encodeMapKey(key);
+        try {
+            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
+        } finally {
+            keyState.release();
+        }
     }
     
     @Override
@@ -965,7 +970,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         RFuture<V> future = commandExecutor.writeAsync(getName(key), StringCodec.INSTANCE,
                 new RedisCommand<Object>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
                 getName(key), keyState, new BigDecimal(value.toString()).toPlainString());

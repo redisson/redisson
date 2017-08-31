@@ -152,6 +152,16 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         out.writeBytes(arg);
         out.writeBytes(CRLF);
     }
+    
+    private void writeArgument(ByteBuf out, ByteBuf arg) {
+        out.writeByte(BYTES_PREFIX);
+        out.writeBytes(convert(arg.readableBytes()));
+        out.writeBytes(CRLF);
+        out.writeBytes(arg);
+        arg.release();
+        out.writeBytes(CRLF);
+    }
+
 
     static final char[] DIGITTENS = { '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '1', '1', '1', '1', '1',
             '1', '1', '1', '1', '2', '2', '2', '2', '2', '2', '2', '2', '2', '2', '3', '3', '3', '3', '3', '3', '3',

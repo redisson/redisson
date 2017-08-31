@@ -33,6 +33,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
+import io.netty.buffer.ByteBuf;
 import reactor.fn.Supplier;
 
 /**
@@ -156,7 +157,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
         for (V value : c) {
-            byte[] objectState = encode(value);
+            ByteBuf objectState = encode(value);
             params.add(score);
             params.add(objectState);
         }

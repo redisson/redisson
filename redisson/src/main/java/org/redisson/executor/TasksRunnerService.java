@@ -33,6 +33,7 @@ import org.redisson.misc.Injector;
 import org.redisson.remote.RemoteParams;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 
 /**
@@ -165,7 +166,8 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     private Object executeCallable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
         ByteBuf buf = null;
         try {
-            buf = Unpooled.wrappedBuffer(state);
+            buf = ByteBufAllocator.DEFAULT.buffer(state.length);
+            buf.writeBytes(state);
             
             RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());
             cl.loadClass(className, classBody);
@@ -201,7 +203,8 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     private void executeRunnable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
         ByteBuf buf = null;
         try {
-            buf = Unpooled.wrappedBuffer(state);
+            buf = ByteBufAllocator.DEFAULT.buffer(state.length);
+            buf.writeBytes(state);
             
             RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());
             cl.loadClass(className, classBody);

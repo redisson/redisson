@@ -35,6 +35,7 @@ import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
 
+import io.netty.buffer.ByteBuf;
 import net.openhft.hashing.LongHashFunction;
 
 /**
@@ -78,7 +79,10 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean add(T object) {
-        byte[] state = encode(object);
+        ByteBuf state = encode(object);
+        long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+        long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+        state.release();
 
         while (true) {
             if (size == 0) {
@@ -88,7 +92,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             int hashIterations = this.hashIterations;
             long size = this.size;
 
-            long[] indexes = hash(state, hashIterations, size);
+            long[] indexes = hash(hash1, hash2, hashIterations, size);
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
@@ -112,10 +116,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
     }
 
-    private long[] hash(byte[] state, int iterations, long size) {
-        long hash1 = LongHashFunction.xx().hashBytes(state);
-        long hash2 = LongHashFunction.farmUo().hashBytes(state);
-
+    private long[] hash(long hash1, long hash2, int iterations, long size) {
         long[] indexes = new long[iterations];
         long hash = hash1;
         for (int i = 0; i < iterations; i++) {
@@ -131,7 +132,10 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean contains(T object) {
-        byte[] state = encode(object);
+        ByteBuf state = encode(object);
+        long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+        long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+        state.release();
 
         while (true) {
             if (size == 0) {
@@ -141,7 +145,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             int hashIterations = this.hashIterations;
             long size = this.size;
 
-            long[] indexes = hash(state, hashIterations, size);
+            long[] indexes = hash(hash1, hash2, hashIterations, size);
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);

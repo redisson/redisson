@@ -42,6 +42,8 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
  * {@link RSetCache#add(Object, long, TimeUnit)} method.
@@ -203,7 +205,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             throw new NullPointerException("TimeUnit param can't be null");
         }
 
-        byte[] objectState = encode(value);
+        ByteBuf objectState = encode(value);
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(value), codec, RedisCommands.EVAL_BOOLEAN,
@@ -276,7 +278,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
         for (V value : c) {
-            byte[] objectState = encode(value);
+            ByteBuf objectState = encode(value);
             params.add(score);
             params.add(objectState);
         }

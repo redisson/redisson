@@ -15,20 +15,31 @@
  */
 package org.redisson.client.protocol;
 
-import java.io.UnsupportedEncodingException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.CharsetUtil;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class DefaultParamsEncoder implements Encoder {
 
     @Override
-    public byte[] encode(Object in) {
+    public ByteBuf encode(Object in) {
         if (in instanceof byte[]) {
-            return (byte[]) in;
+            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+            buf.writeBytes((byte[])in);
+            return buf;
         }
-        try {
-            return in.toString().getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException(e);
+        if (in instanceof ByteBuf) {
+            return (ByteBuf) in;
         }
+        
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
+        buf.writeCharSequence(in.toString(), CharsetUtil.UTF_8);
+        return buf;
     }
 
 }

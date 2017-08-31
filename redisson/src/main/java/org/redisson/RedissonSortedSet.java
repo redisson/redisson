@@ -41,6 +41,8 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  *
  * @author Nikita Koksharov
@@ -221,7 +223,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             if (res.getIndex() < 0) {
                 int index = -(res.getIndex() + 1);
                 
-                byte[] encodedValue = encode(value);
+                ByteBuf encodedValue = encode(value);
                 
                 commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
                    "local len = redis.call('llen', KEYS[1]);"

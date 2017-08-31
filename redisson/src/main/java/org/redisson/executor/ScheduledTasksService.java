@@ -29,6 +29,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.remote.RemoteServiceRequest;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 
@@ -62,7 +63,7 @@ public class ScheduledTasksService extends TasksService {
     @Override
     protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
         Long startTime = (Long)request.getArgs()[3];
-        byte[] encodedRequest = encode(request);
+        ByteBuf encodedRequest = encode(request);
         
         if (requestId != null) {
             return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,

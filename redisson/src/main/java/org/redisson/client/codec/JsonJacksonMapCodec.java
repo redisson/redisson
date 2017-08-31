@@ -27,7 +27,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 
 /**
  * Type based codec for RMap objects
@@ -46,8 +48,11 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
 
     private final Encoder encoder = new Encoder() {
         @Override
-        public byte[] encode(Object in) throws IOException {
-            return mapper.writeValueAsBytes(in);
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            ByteBufOutputStream os = new ByteBufOutputStream(out);
+            mapper.writeValue(os, in);
+            return os.buffer();
         }
     };
     

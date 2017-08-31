@@ -36,6 +36,8 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * @author Nikita Koksharov
  *
@@ -71,8 +73,8 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
     
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
-        byte[] keyState = encodeMapKey(key);
-        String keyHash = hash(keyState);
+        ByteBuf keyState = encodeMapKey(key);
+        String keyHash = hashAndRelease(keyState);
 
         String setName = getValuesName(keyHash);
         return commandExecutor.readAsync(getName(), codec, LLEN_VALUE, setName);
@@ -80,7 +82,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf valueState = encodeMapValue(value);
 
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local keys = redis.call('hgetall', KEYS[1]); " +
@@ -107,9 +109,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
-        byte[] keyState = encodeMapKey(key);
-        String keyHash = hash(keyState);
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf keyState = encodeMapKey(key);
+        String keyHash = hashAndRelease(keyState);
+        ByteBuf valueState = encodeMapValue(value);
 
         String setName = getValuesName(keyHash);
 
@@ -131,9 +133,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Boolean> putAsync(K key, V value) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf valueState = encodeMapValue(value);
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -145,9 +147,9 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf valueState = encodeMapValue(value);
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -162,12 +164,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
     @Override
     public RFuture<Boolean> putAllAsync(K key, Iterable<? extends V> values) {
         List<Object> params = new ArrayList<Object>();
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         params.add(keyState);
         String keyHash = hash(keyState);
         params.add(keyHash);
         for (Object value : values) {
-            byte[] valueState = encodeMapValue(value);
+            ByteBuf valueState = encodeMapValue(value);
             params.add(valueState);
         }
 
@@ -181,14 +183,15 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RList<V> get(K key) {
-        final byte[] keyState = encodeMapKey(key);
-        final String keyHash = hash(keyState);
+        final ByteBuf keyState = encodeMapKey(key);
+        final String keyHash = hashAndRelease(keyState);
         final String setName = getValuesName(keyHash);
 
         return new RedissonList<V>(codec, commandExecutor, setName, null) {
             
             @Override
             public RFuture<Boolean> deleteAsync() {
+                ByteBuf keyState = encodeMapKey(key);
                 return RedissonListMultimap.this.fastRemoveAsync(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
             }
             
@@ -232,8 +235,8 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
-        byte[] keyState = encodeMapKey(key);
-        String keyHash = hash(keyState);
+        ByteBuf keyState = encodeMapKey(key);
+        String keyHash = hashAndRelease(keyState);
         String setName = getValuesName(keyHash);
 
         return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE, setName, 0, -1);
@@ -246,7 +249,7 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
 
         String setName = getValuesName(keyHash);
@@ -266,12 +269,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
     @Override
     public RFuture<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values) {
         List<Object> params = new ArrayList<Object>();
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         params.add(keyState);
         String keyHash = hash(keyState);
         params.add(keyHash);
         for (Object value : values) {
-            byte[] valueState = encodeMapValue(value);
+            ByteBuf valueState = encodeMapValue(value);
             params.add(valueState);
         }
 

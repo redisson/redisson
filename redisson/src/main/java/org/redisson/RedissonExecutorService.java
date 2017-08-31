@@ -71,6 +71,8 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
@@ -286,10 +288,18 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         // erase RedissonClient field to avoid its serialization
         Injector.inject(task, null);
         
+        ByteBuf buf = null;
         try {
-            return codec.getValueEncoder().encode(task);
+            buf = codec.getValueEncoder().encode(task);
+            byte[] dst = new byte[buf.readableBytes()];
+            buf.readBytes(dst);
+            return dst;
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
+        } finally {
+            if (buf != null) {
+                buf.release();
+            }
         }
     }
 
