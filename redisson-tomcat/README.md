@@ -34,7 +34,7 @@ Usage
       for Tomcat 7.x  
       [redisson-tomcat-7-3.5.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.5.0&e=jar)  
       for Tomcat 8.x  
-      [redisson-tomcat-8-3.5.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.5.1&e=jar)
+      [redisson-tomcat-8-3.5.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.5.1&e=jar)
   
 2. __For JDK 1.6+__  
       [redisson-all-2.10.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.1&e=jar)
