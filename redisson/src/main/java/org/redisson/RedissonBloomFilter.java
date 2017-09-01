@@ -76,13 +76,21 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
         return (long) (-n * Math.log(p) / (Math.log(2) * Math.log(2)));
     }
+    
+    private long[] hash(Object object) {
+        ByteBuf state = encode(object);
+        try {
+            long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+            long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
+            return new long[] {hash1, hash2};
+        } finally {
+            state.release();
+        }
+    }
 
     @Override
     public boolean add(T object) {
-        ByteBuf state = encode(object);
-        long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-        long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-        state.release();
+        long[] hashes = hash(object);
 
         while (true) {
             if (size == 0) {
@@ -92,7 +100,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             int hashIterations = this.hashIterations;
             long size = this.size;
 
-            long[] indexes = hash(hash1, hash2, hashIterations, size);
+            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
@@ -132,10 +140,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean contains(T object) {
-        ByteBuf state = encode(object);
-        long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-        long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-        state.release();
+        long[] hashes = hash(object);
 
         while (true) {
             if (size == 0) {
@@ -145,7 +150,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             int hashIterations = this.hashIterations;
             long size = this.size;
 
-            long[] indexes = hash(hash1, hash2, hashIterations, size);
+            long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);

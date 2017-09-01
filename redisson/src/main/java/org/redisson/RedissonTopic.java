@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
@@ -27,7 +28,14 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -42,11 +50,11 @@ public class RedissonTopic<M> implements RTopic<M> {
     private final String name;
     private final Codec codec;
 
-    protected RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonTopic(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.codec = codec;
@@ -63,9 +71,24 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public RFuture<Long> publishAsync(M message) {
-        return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, message);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, encode(message));
     }
 
+    protected ByteBuf encode(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
     @Override
     public int addListener(StatusListener listener) {
         return addListener(new PubSubStatusListener<Object>(listener, name));
@@ -81,6 +104,23 @@ public class RedissonTopic<M> implements RTopic<M> {
         RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
+    }
+    
+    public RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
+        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+        RPromise<Integer> result = new RedissonPromise<Integer>();
+        future.addListener(new FutureListener<PubSubConnectionEntry>() {
+            @Override
+            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                result.trySuccess(System.identityHashCode(pubSubListener));
+            }
+        });
+        return result;
     }
 
     @Override
