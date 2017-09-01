@@ -86,7 +86,7 @@ public class AsyncDetails<V, R> {
         this.exception = exception;
         this.timeout = timeout;
     }
-
+    
     public ChannelFuture getWriteFuture() {
         return writeFuture;
     }
@@ -142,6 +142,9 @@ public class AsyncDetails<V, R> {
 
     public int getAttempt() {
         return attempt;
+    }
+    public void incAttempt() {
+        attempt++;
     }
 
 

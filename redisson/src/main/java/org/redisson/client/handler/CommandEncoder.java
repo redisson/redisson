@@ -28,9 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.handler.codec.MessageToByteEncoder;
 import io.netty.util.CharsetUtil;
 
@@ -100,7 +100,11 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
                     }
                 }
                 
-                writeArgument(out, encoder.encode(param));
+                ByteBuf buf = encoder.encode(param);
+                writeArgument(out, buf);
+                if (!(param instanceof ByteBuf)) {
+                    buf.release();
+                }
                 
                 i++;
             }
@@ -157,8 +161,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         out.writeByte(BYTES_PREFIX);
         out.writeBytes(convert(arg.readableBytes()));
         out.writeBytes(CRLF);
-        out.writeBytes(arg);
-        arg.release();
+        out.writeBytes(arg, arg.readerIndex(), arg.readableBytes());
         out.writeBytes(CRLF);
     }
 
