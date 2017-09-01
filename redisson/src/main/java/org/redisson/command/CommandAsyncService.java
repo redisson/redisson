@@ -548,7 +548,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Command execution timeout for command: " + command + " with params: " + LogHelper.toString(details.getParams())));
+                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams() + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts")));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     free(details);
@@ -648,6 +648,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException(
                     "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
+            if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
+                details.getAttemptPromise().tryFailure(details.getException());
+                free(details);
+            }
             return;
         }
 
