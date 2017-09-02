@@ -71,7 +71,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.ThreadLocalRandom;
@@ -335,7 +334,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     private CacheKey toCacheKey(Object key) {
         ByteBuf encoded = encodeMapKey(key);
-        return toCacheKey(encoded);
+        try {
+            return toCacheKey(encoded);
+        } finally {
+            encoded.release();
+        }
     }
     
     private CacheKey toCacheKey(ByteBuf encodedKey) {

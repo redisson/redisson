@@ -29,6 +29,7 @@ import org.redisson.misc.RPromise;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 public class AsyncDetails<V, R> {
 
@@ -44,7 +45,7 @@ public class AsyncDetails<V, R> {
     Object[] params;
     RPromise<R> mainPromise;
     int attempt;
-
+    FutureListener<R> mainPromiseListener;
 
     private volatile ChannelFuture writeFuture;
 
@@ -147,6 +148,16 @@ public class AsyncDetails<V, R> {
         attempt++;
     }
 
-
+    public void setupMainPromiseListener(FutureListener<R> mainPromiseListener) {
+        this.mainPromiseListener = mainPromiseListener;
+        mainPromise.addListener(mainPromiseListener);
+    }
+    
+    public void removeMainPromiseListener() {
+        if (mainPromiseListener != null) {
+            mainPromise.removeListener(mainPromiseListener);
+            mainPromiseListener = null;
+        }
+    }
 
 }

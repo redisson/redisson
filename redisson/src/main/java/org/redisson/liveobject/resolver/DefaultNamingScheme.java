@@ -80,7 +80,11 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     private static String bytesToHex(ByteBuf bytes) {
-        return ByteBufUtil.hexDump(bytes);
+        try {
+            return ByteBufUtil.hexDump(bytes);
+        } finally {
+            bytes.release();
+        }
     }
 
     private static byte[] hexToBytes(String s) {

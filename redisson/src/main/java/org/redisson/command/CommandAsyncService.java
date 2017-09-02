@@ -79,7 +79,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class CommandAsyncService implements CommandAsyncExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
+    static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
     protected RedissonClient redisson;
@@ -510,6 +510,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.init(connectionFuture, attemptPromise,
                 readOnlyMode, source, codec, command, params, mainPromise, attempt);
 
+        FutureListener<R> mainPromiseListener = new FutureListener<R>() {
+            @Override
+            public void operationComplete(Future<R> future) throws Exception {
+                if (future.isCancelled() && connectionFuture.cancel(false)) {
+                    log.debug("Connection obtaining canceled for {}", command);
+                    details.getTimeout().cancel();
+                    if (details.getAttemptPromise().cancel(false)) {
+                        free(params);
+                    }
+                }
+            }
+        };
+        
         final TimerTask retryTimerTask = new TimerTask() {
 
             @Override
@@ -540,9 +553,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getMainPromise().isCancelled()) {
                     if (details.getAttemptPromise().cancel(false)) {
+                        free(details);
                         AsyncDetails.release(details);
                     }
-                    free(details);
                     return;
                 }
 
@@ -551,7 +564,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams() + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts")));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
-                    free(details);
                     return;
                 }
                 if (!details.getAttemptPromise().cancel(false)) {
@@ -563,6 +575,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     log.debug("attempt {} for command {} and params {}",
                             count, details.getCommand(), Arrays.toString(details.getParams()));
                 }
+                details.removeMainPromiseListener();
                 async(details.isReadOnlyMode(), details.getSource(), details.getCodec(), details.getCommand(), details.getParams(), details.getMainPromise(), count);
                 AsyncDetails.release(details);
             }
@@ -571,7 +584,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
-
+        details.setupMainPromiseListener(mainPromiseListener);
+        
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
@@ -645,7 +659,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     private <V, R> void checkWriteFuture(final AsyncDetails<V, R> details, final RedisConnection connection) {
         ChannelFuture future = details.getWriteFuture();
+        if (details.getAttemptPromise().isDone()) {
+            return;
+        }
+        
         if (!future.isSuccess()) {
+            log.trace("Can't write {} to {}", details.getCommand(), connection);
             details.setException(new WriteRedisConnectionException(
                     "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
@@ -656,7 +675,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         details.getTimeout().cancel();
-        free(details);
         
         long timeoutTime = connectionManager.getConfig().getTimeout();
         if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())) {
@@ -728,6 +746,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 // handling cancel operation for blocking commands
                 if (future.isCancelled() && !details.getAttemptPromise().isDone()) {
+                    log.debug("Canceled blocking operation {} used {}", details.getCommand(), connection);
                     connection.forceFastReconnectAsync().addListener(new FutureListener<Void>() {
                         @Override
                         public void operationComplete(Future<Void> future) throws Exception {
@@ -782,6 +801,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return;
         }
 
+        details.removeMainPromiseListener();
+
         if (future.cause() instanceof RedisMovedException) {
             RedisMovedException ex = (RedisMovedException)future.cause();
             async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), details.getCodec(),
@@ -818,6 +839,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return;
         }
 
+        free(details);
+        
         if (future.isSuccess()) {
             R res = future.getNow();
             if (res instanceof RedisClientResult) {
