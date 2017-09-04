@@ -72,9 +72,9 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     public Object resolveId(String name) {
         String decode = name.substring(name.indexOf("{") + 1, name.indexOf("}"));
         
-        ByteBuf b = ByteBufAllocator.DEFAULT.buffer(decode.length()*2); 
-        b.writeBytes(ByteBufUtil.decodeHexDump(decode));
+        ByteBuf b = ByteBufAllocator.DEFAULT.buffer(decode.length()/2); 
         try {
+            b.writeBytes(ByteBufUtil.decodeHexDump(decode));
             return codec.getMapKeyDecoder().decode(b, new State(false));
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to decode [" + decode + "] into object", ex);
