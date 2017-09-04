@@ -58,6 +58,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
@@ -484,7 +485,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     
     @Override
     public RFuture<V> addAndGetOperationAsync(K key, Number value) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         return commandExecutor.evalWriteAsync(getName(key), StringCodec.INSTANCE,
                 new RedisCommand<Object>("EVAL", new NumberConvertor(value.getClass())),
                   "local value = redis.call('hget', KEYS[1], ARGV[2]); "
@@ -921,17 +922,29 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
-        return get(scanIteratorAsync(name, client, startPos));
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+        return get(scanIteratorAsync(name, client, startPos, pattern));
     }
     
-    public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorAsync(final String name, InetSocketAddress client, long startPos) {
+    public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorAsync(final String name, InetSocketAddress client, long startPos, String pattern) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(System.currentTimeMillis());
+        params.add(startPos);
+        if (pattern != null) {
+            params.add(pattern);
+        }
+        
         RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL", 
                 new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(new MapScanCodec(codec)), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
         RFuture<MapCacheScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, name, codec, EVAL_HSCAN,
                 "local result = {}; "
                 + "local idleKeys = {}; "
-                + "local res = redis.call('hscan', KEYS[1], ARGV[2]); "
+                + "local res; "
+                + "if (#ARGV == 3) then "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'match', ARGV[3]); "
+                + "else "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2]); "
+                + "end;"
                 + "local currentTime = tonumber(ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "
                     + "if i % 2 == 0 then "
@@ -959,7 +972,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; "
                     + "end; "
                 + "end;"
-                + "return {res[1], result, idleKeys};", Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name)), System.currentTimeMillis(), startPos);
+                + "return {res[1], result, idleKeys};", 
+                Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name)), 
+                params.toArray());
         
         f.addListener(new FutureListener<MapCacheScanResult<ScanObjectEntry, ScanObjectEntry>>() {
             @Override
@@ -1291,15 +1306,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
-                  "for i=1, #ARGV, 5000 do "
-                    + "redis.call('hmset', KEYS[1], unpack(ARGV, i, math.min(i+4999, table.getn(ARGV)))) "
-                + "end; "
-
-                + "for i, value in ipairs(ARGV) do "
+                  "for i, value in ipairs(ARGV) do "
                     + "if i % 2 == 0 then "
                         + "local val = struct.pack('dLc0', 0, string.len(value), value); "
-                        + "ARGV[i] = val; "
                         + "local key = ARGV[i-1];"
+                        + "redis.call('hmset', KEYS[1], key, val); "
                         
                         + "local msg = struct.pack('Lc0Lc0', string.len(key), key, string.len(value), value); "
                         + "redis.call('publish', KEYS[2], msg); "

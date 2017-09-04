@@ -48,6 +48,7 @@ import org.redisson.remote.RemoteServiceTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -109,7 +110,7 @@ public abstract class BaseRemoteService {
         return redisson.getConfig().getCodec();
     }
 
-    protected byte[] encode(Object obj) {
+    protected ByteBuf encode(Object obj) {
         try {
             return getCodec().getValueEncoder().encode(obj);
         } catch (IOException e) {

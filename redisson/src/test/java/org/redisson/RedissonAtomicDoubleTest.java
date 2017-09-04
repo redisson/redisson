@@ -28,6 +28,14 @@ public class RedissonAtomicDoubleTest extends BaseTest {
     }
 
     @Test
+    public void testDecrementAndGet() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.set(19.30);
+        assertThat(al.decrementAndGet()).isEqualTo(18.30);
+        assertThat(al.get()).isEqualTo(18.30);
+    }
+    
+    @Test
     public void testIncrementAndGet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");
         assertThat(al.incrementAndGet()).isEqualTo(1);

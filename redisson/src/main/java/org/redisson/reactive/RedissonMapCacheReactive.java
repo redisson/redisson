@@ -168,7 +168,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
         return reactive(new Supplier<RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>>>() {
             @Override
             public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> get() {
-                return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos);
+                return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos, null);
             }
         });
     }

@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.util.CharsetUtil;
 
 public class JsonJacksonMapValueCodecTest extends BaseTest {
 
@@ -50,7 +51,7 @@ public class JsonJacksonMapValueCodecTest extends BaseTest {
 
     @Test
     public void shouldSerializeTheMapCorrectly() throws Exception {
-        assertThat(new String(mapCodec.getMapValueEncoder().encode(map), "UTF-8"))
+        assertThat(mapCodec.getMapValueEncoder().encode(map).toString(CharsetUtil.UTF_8))
                 .isEqualTo("{\"foo\":[\"bar\"]}");
     }
 
@@ -65,7 +66,7 @@ public class JsonJacksonMapValueCodecTest extends BaseTest {
 
     @Test
     public void shouldSerializeTheStringCorrectly() throws Exception {
-        assertThat(new String(stringCodec.getMapValueEncoder().encode("foo"), "UTF-8"))
+        assertThat(mapCodec.getMapValueEncoder().encode("foo").toString(CharsetUtil.UTF_8))
                 .isEqualTo("\"foo\"");
     }
 }

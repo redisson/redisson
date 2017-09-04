@@ -123,6 +123,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     Double addScore(V object, Number value);
 
+    /**
+     * Adds score to element and returns its rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return rank
+     */
+    Integer addScoreAndGetRank(V object, Number value);
+
+    /**
+     * Adds score to element and returns its reverse rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return reverse rank
+     */
+    Integer addScoreAndGetRevRank(V object, Number value);
+    
     Collection<V> valueRange(int startIndex, int endIndex);
     
     Collection<V> valueRangeReversed(int startIndex, int endIndex);

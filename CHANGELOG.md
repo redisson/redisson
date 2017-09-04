@@ -4,6 +4,15 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 29-Aug-2017 - versions 2.10.1 and 3.5.1 released
+
+Feature - DNS monitoring support for Sentinel, Master/Slave and Replicated mode  
+Feature - `org.redisson.codec.CompositeCodec` added  
+Feature - added `readMode` property for Tomcat RedissonSessionManager  
+Fixed - `RMapCache.putAll` couldn't handle map with entries amount larger than 5000  
+Fixed - master entry should be shutdown in slaveConnectionPool during master change process  
+Fixed - Redisson's Tomcat Session attributes should be read first to avoid invalidated session exception  
+
 ### 28-Jul-2017 - versions 2.10.0 and 3.5.0 released
 
 Feature - __Local Cache support for Hibernate Cache__ Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1431-hibernate-cache-local-cache) for more details  

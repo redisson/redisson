@@ -17,8 +17,15 @@ package org.redisson.client.protocol;
 
 import java.io.IOException;
 
+import io.netty.buffer.ByteBuf;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface Encoder {
 
-    byte[] encode(Object in) throws IOException;
+    ByteBuf encode(Object in) throws IOException;
 
 }

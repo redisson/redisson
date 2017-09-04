@@ -30,7 +30,7 @@ public class ErrorsCodec implements Codec {
 
     private final Encoder encoder = new Encoder() {
         @Override
-        public byte[] encode(Object in) throws IOException {
+        public ByteBuf encode(Object in) throws IOException {
             throw new RuntimeException();
         }
     };

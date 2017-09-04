@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
+import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,6 +31,7 @@ import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
@@ -495,6 +497,43 @@ public class RedissonMapCacheTest extends BaseMapTest {
         Assert.assertTrue(map.values().contains(new SimpleValue("2")));
     }
 
+    @Test
+    public void testKeySetByPattern() {
+        RMapCache<String, String> map = redisson.getMapCache("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200", 1, TimeUnit.MINUTES);
+        map.put("30", "300");
+
+        assertThat(map.keySet("?0")).containsExactly("10", "20", "30");
+        assertThat(map.keySet("1")).isEmpty();
+        assertThat(map.keySet("10")).containsExactly("10");
+    }
+
+    @Test
+    public void testValuesByPattern() {
+        RMapCache<String, String> map = redisson.getMapCache("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200", 1, TimeUnit.MINUTES);
+        map.put("30", "300");
+
+        assertThat(map.values("?0")).containsExactly("100", "200", "300");
+        assertThat(map.values("1")).isEmpty();
+        assertThat(map.values("10")).containsExactly("100");
+    }
+
+    @Test
+    public void testEntrySetByPattern() {
+        RMapCache<String, String> map = redisson.getMapCache("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200", 1, TimeUnit.MINUTES);
+        map.put("30", "300");
+
+        assertThat(map.entrySet("?0")).containsExactly(new AbstractMap.SimpleEntry("10", "100"), new AbstractMap.SimpleEntry("20", "200"), new AbstractMap.SimpleEntry("30", "300"));
+        assertThat(map.entrySet("1")).isEmpty();
+        assertThat(map.entrySet("10")).containsExactly(new AbstractMap.SimpleEntry("10", "100"));
+    }
+
+    
     @Test
     public void testContainsValue() throws InterruptedException {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple01", new MsgPackJacksonCodec());

@@ -123,11 +123,8 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                             @Override
                             public void operationComplete(Future<RedisConnection> future) throws Exception {
                                 if (future.isSuccess()) {
-                                    if (connection.isFastReconnect()) {
-                                        connection.clearFastReconnect();
-                                    }
-                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     refresh(connection, channel);
+                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                 } else {
                                     log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
                                 }
@@ -162,6 +159,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         connection.fireConnected();
         connection.updateChannel(channel);
         
+        if (connection.isFastReconnect()) {
+            connection.clearFastReconnect();
+        }
+
         reattachBlockingQueue(connection, currentCommand);            
         reattachPubSub(connection);
     }

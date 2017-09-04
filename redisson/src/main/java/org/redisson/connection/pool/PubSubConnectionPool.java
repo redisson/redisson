@@ -17,7 +17,6 @@ package org.redisson.connection.pool;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ClientConnectionsEntry;

@@ -42,7 +42,9 @@ import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
 
 /**
  *
@@ -66,8 +68,16 @@ public class JsonJacksonCodec implements Codec {
 
     private final Encoder encoder = new Encoder() {
         @Override
-        public byte[] encode(Object in) throws IOException {
-            return mapObjectMapper.writeValueAsBytes(in);
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            try {
+                ByteBufOutputStream os = new ByteBufOutputStream(out);
+                mapObjectMapper.writeValue(os, in);
+                return os.buffer();
+            } catch (IOException e) {
+                out.release();
+                throw e;
+            }
         }
     };
 

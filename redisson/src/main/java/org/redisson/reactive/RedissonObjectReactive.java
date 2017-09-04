@@ -26,6 +26,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.misc.RedissonObjectFactory;
 
+import io.netty.buffer.ByteBuf;
 import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
@@ -70,7 +71,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         return codec;
     }
     
-    protected byte[] encode(Object value) {
+    protected ByteBuf encode(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -85,7 +86,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         }
     }
     
-    protected byte[] encodeMapKey(Object value) {
+    protected ByteBuf encodeMapKey(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -100,7 +101,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         }
     }
 
-    protected byte[] encodeMapValue(Object value) {
+    protected ByteBuf encodeMapValue(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
