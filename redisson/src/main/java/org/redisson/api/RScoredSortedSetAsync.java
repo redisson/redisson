@@ -88,6 +88,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     RFuture<Double> addScoreAsync(V object, Number value);
 
+    /**
+     * Adds score to element and returns its reverse rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return reverse rank
+     */
+    RFuture<Integer> addScoreAndGetRevRankAsync(V object, Number value);
+    
+    /**
+     * Adds score to element and returns its rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return rank
+     */
+    RFuture<Integer> addScoreAndGetRankAsync(V object, Number value);
+    
     RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
     
     RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex);

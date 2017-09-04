@@ -965,6 +965,46 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         res2 = set2.getScore("1");
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
     }
+    
+    @Test
+    public void testAddScoreAndGetRank() throws InterruptedException {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        Integer res1 = set.addScoreAndGetRank("12", 12);
+        assertThat(res1).isEqualTo(0);
+        Integer res2 = set.addScoreAndGetRank("15", 10);
+        assertThat(res2).isEqualTo(0);
+        
+        assertThat(set.rank("12")).isEqualTo(1);
+        assertThat(set.rank("15")).isEqualTo(0);
+        
+        Integer res3 = set.addScoreAndGetRank("12", 2);
+        assertThat(res3).isEqualTo(1);
+        Double score = set.getScore("12");
+        assertThat(score).isEqualTo(14);
+    }
+    
+    @Test
+    public void testAddScoreAndGetRevRank() throws InterruptedException {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        Integer res1 = set.addScoreAndGetRevRank("12", 12);
+        assertThat(res1).isEqualTo(0);
+        Integer res2 = set.addScoreAndGetRevRank("15", 10);
+        assertThat(res2).isEqualTo(1);
+        
+        assertThat(set.revRank("12")).isEqualTo(0);
+        assertThat(set.revRank("15")).isEqualTo(1);
+        
+        Integer res3 = set.addScoreAndGetRevRank("12", 2);
+        assertThat(res3).isEqualTo(0);
+        Integer res4 = set.addScoreAndGetRevRank("15", -1);
+        assertThat(res4).isEqualTo(1);
+        Double score = set.getScore("12");
+        assertThat(score).isEqualTo(14);
+    }
+
+
 
     @Test
     public void testIntersection() {
