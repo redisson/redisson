@@ -15,13 +15,15 @@
  */
 package org.redisson.liveobject.resolver;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import java.io.IOException;
+
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.codec.JsonJacksonCodec;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 
 /**
  *
@@ -69,7 +71,9 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     @Override
     public Object resolveId(String name) {
         String decode = name.substring(name.indexOf("{") + 1, name.indexOf("}"));
-        ByteBuf b = Unpooled.wrappedBuffer(hexToBytes(decode));
+        
+        ByteBuf b = ByteBufAllocator.DEFAULT.buffer(decode.length()*2); 
+        b.writeBytes(ByteBufUtil.decodeHexDump(decode));
         try {
             return codec.getMapKeyDecoder().decode(b, new State(false));
         } catch (IOException ex) {
@@ -85,15 +89,6 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         } finally {
             bytes.release();
         }
-    }
-
-    private static byte[] hexToBytes(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
-        }
-        return data;
     }
 
 }
