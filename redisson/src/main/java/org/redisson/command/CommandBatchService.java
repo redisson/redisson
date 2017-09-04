@@ -440,7 +440,7 @@ public class CommandBatchService extends CommandAsyncService {
 
     private void checkConnectionFuture(final Entry entry, final NodeSource source,
             final RPromise<Void> mainPromise, final RPromise<Void> attemptPromise, final AsyncDetails details,
-            RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout, int attempts) {
+            RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout, final int attempts) {
         if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
             return;
         }
