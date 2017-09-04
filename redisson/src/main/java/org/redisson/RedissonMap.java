@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
@@ -322,17 +321,29 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public Set<K> keySet() {
-        return new KeySet();
+        return keySet(null);
+    }
+    
+    public Set<K> keySet(String pattern) {
+        return new KeySet(pattern);
     }
 
     @Override
     public Collection<V> values() {
-        return new Values();
+        return values(null);
     }
 
+    public Collection<V> values(String keyPattern) {
+        return new Values(keyPattern);
+    }
+    
     @Override
     public Set<java.util.Map.Entry<K, V>> entrySet() {
-        return new EntrySet();
+        return entrySet(null);
+    }
+    
+    public Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern) {
+        return new EntrySet(keyPattern);
     }
 
     @Override
@@ -938,9 +949,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+        if (pattern == null) {
+            RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
+                                    = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+            return get(f);
+        }
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-            = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+                                    = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos, "MATCH", pattern);
         return get(f);
     }
 
@@ -1020,8 +1036,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return h;
     }
 
-    protected Iterator<K> keyIterator() {
-        return new RedissonMapIterator<K, V, K>(RedissonMap.this) {
+    protected Iterator<K> keyIterator(String pattern) {
+        return new RedissonMapIterator<K, V, K>(RedissonMap.this, pattern) {
             @Override
             protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (K) entry.getKey().getObj();
@@ -1029,11 +1045,17 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         };
     }
     
-    final class KeySet extends AbstractSet<K> {
+    class KeySet extends AbstractSet<K> {
+
+        private final String pattern;
+        
+        public KeySet(String pattern) {
+            this.pattern = pattern;
+        }
 
         @Override
         public Iterator<K> iterator() {
-            return keyIterator();
+            return keyIterator(pattern);
         }
 
         @Override
@@ -1048,6 +1070,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         @Override
         public int size() {
+            if (pattern != null) {
+                int size = 0;
+                for (K val : this) {
+                    size++;
+                }
+                return size;
+            }
             return RedissonMap.this.size();
         }
 
@@ -1058,8 +1087,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected Iterator<V> valueIterator() {
-        return new RedissonMapIterator<K, V, V>(RedissonMap.this) {
+    protected Iterator<V> valueIterator(String pattern) {
+        return new RedissonMapIterator<K, V, V>(RedissonMap.this, pattern) {
             @Override
             protected V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (V) entry.getValue().getObj();
@@ -1069,9 +1098,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     final class Values extends AbstractCollection<V> {
 
+        private final String keyPattern;
+        
+        public Values(String keyPattern) {
+            this.keyPattern = keyPattern;
+        }
+
         @Override
         public Iterator<V> iterator() {
-            return valueIterator();
+            return valueIterator(keyPattern);
         }
 
         @Override
@@ -1081,6 +1116,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         @Override
         public int size() {
+            if (keyPattern != null) {
+                int size = 0;
+                for (V val : this) {
+                    size++;
+                }
+                return size;
+            }
+
             return RedissonMap.this.size();
         }
 
@@ -1091,8 +1134,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected Iterator<Map.Entry<K,V>> entryIterator() {
-        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this);
+    protected Iterator<Map.Entry<K,V>> entryIterator(String pattern) {
+        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this, pattern);
     }
 
     private void loadValue(final K key, final RPromise<V> result, final boolean replaceValue) {
@@ -1179,8 +1222,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
+        private final String keyPattern;
+        
+        public EntrySet(String keyPattern) {
+            this.keyPattern = keyPattern;
+        }
+
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return entryIterator();
+            return entryIterator(keyPattern);
         }
 
         public final boolean contains(Object o) {
@@ -1203,6 +1252,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         public final int size() {
+            if (keyPattern != null) {
+                int size = 0;
+                for (Entry val : this) {
+                    size++;
+                }
+                return size;
+            }
+            
             return RedissonMap.this.size();
         }
 

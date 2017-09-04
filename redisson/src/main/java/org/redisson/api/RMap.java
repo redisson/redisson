@@ -291,22 +291,80 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Returns key set. 
      * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
+     * 
+     * @return key set
      */
     @Override
     Set<K> keySet();
 
     /**
-     * Returns values collections. 
+     * Returns key set matches pattern. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @param pattern - key pattern
+     * @return key set
+     */
+    Set<K> keySet(String pattern);
+
+    
+    /**
+     * Returns values collection. 
      * This method <b>DOESN'T</b> fetch all of them as {@link #readAllValues()} does.
+     * 
+     * @return value collection
      */
     @Override
     Collection<V> values();
 
     /**
-     * Returns values collections. 
+     * Returns values collection matches key pattern. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllValues()} does.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @param keyPattern - key pattern
+     * @return value collection
+     */
+    Collection<V> values(String keyPattern);
+
+    /**
+     * Returns map entries collection. 
      * This method <b>DOESN'T</b> fetch all of them as {@link #readAllEntrySet()} does.
+     * 
+     * @return map entries collection
      */
     @Override
     Set<java.util.Map.Entry<K, V>> entrySet();
+
+    /**
+     * Returns map entries collection matches key pattern. 
+     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllEntrySet()} does.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @param keyPattern - key pattern
+     * @return map entries collection
+     */
+    Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern);
     
 }

@@ -667,18 +667,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public Set<K> keySet() {
-        return new KeySet();
+    public Set<K> keySet(String pattern) {
+        return new KeySet(pattern);
     }
 
     @Override
-    public Collection<V> values() {
-        return new Values();
+    public Collection<V> values(String keyPattern) {
+        return new Values(keyPattern);
     }
 
     @Override
-    public Set<java.util.Map.Entry<K, V>> entrySet() {
-        return new EntrySet();
+    public Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern) {
+        return new EntrySet(keyPattern);
     }
 
     private Iterator<Map.Entry<K,V>> cacheEntrySetIterator() {
@@ -732,9 +732,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     final class KeySet extends AbstractSet<K> {
 
+        private final String pattern;
+        
+        public KeySet(String pattern) {
+            this.pattern = pattern;
+        }
+
         @Override
         public Iterator<K> iterator() {
-            return new CompositeIterable<K>(cacheKeySetIterator(), RedissonLocalCachedMap.super.keySet().iterator()) {
+            return new CompositeIterable<K>(cacheKeySetIterator(), RedissonLocalCachedMap.super.keySet(pattern).iterator()) {
 
                 @Override
                 boolean isCacheContains(Object object) {
@@ -769,9 +775,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     final class Values extends AbstractCollection<V> {
 
+        private final String keyPattern;
+        
+        public Values(String keyPattern) {
+            this.keyPattern = keyPattern;
+        }
+
         @Override
         public Iterator<V> iterator() {
-            final Iterator<Map.Entry<K, V>> iter = RedissonLocalCachedMap.this.entrySet().iterator();
+            final Iterator<Map.Entry<K, V>> iter = RedissonLocalCachedMap.this.entrySet(keyPattern).iterator();
             return new Iterator<V>() {
 
                 @Override
@@ -810,8 +822,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
+        private final String keyPattern;
+        
+        public EntrySet(String keyPattern) {
+            this.keyPattern = keyPattern;
+        }
+
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return new CompositeIterable<Map.Entry<K,V>>(cacheEntrySetIterator(), RedissonLocalCachedMap.super.entrySet().iterator()) {
+            return new CompositeIterable<Map.Entry<K,V>>(cacheEntrySetIterator(), RedissonLocalCachedMap.super.entrySet(keyPattern).iterator()) {
 
                 @Override
                 boolean isCacheContains(Map.Entry<K,V> entry) {

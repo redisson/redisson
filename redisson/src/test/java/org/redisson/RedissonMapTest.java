@@ -446,7 +446,43 @@ public class RedissonMapTest extends BaseMapTest {
         Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
     }
+    
+    @Test
+    public void testKeySetByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
 
+        assertThat(map.keySet("?0")).containsExactly("10", "20", "30");
+        assertThat(map.keySet("1")).isEmpty();
+        assertThat(map.keySet("10")).containsExactly("10");
+    }
+
+    @Test
+    public void testValuesByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        assertThat(map.values("?0")).containsExactly("100", "200", "300");
+        assertThat(map.values("1")).isEmpty();
+        assertThat(map.values("10")).containsExactly("100");
+    }
+
+    @Test
+    public void testEntrySetByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        assertThat(map.entrySet("?0")).containsExactly(new AbstractMap.SimpleEntry("10", "100"), new AbstractMap.SimpleEntry("20", "200"), new AbstractMap.SimpleEntry("30", "300"));
+        assertThat(map.entrySet("1")).isEmpty();
+        assertThat(map.entrySet("10")).containsExactly(new AbstractMap.SimpleEntry("10", "100"));
+    }
+    
     @Test
     public void testReadAllKeySet() {
         RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");

@@ -20,16 +20,26 @@ import java.util.Map.Entry;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> loaded value type
+ */
 public class RedissonMapIterator<K, V, M> extends RedissonBaseMapIterator<K, V, M> {
 
     private final RedissonMap<K, V> map;
+    private final String pattern;
 
-    public RedissonMapIterator(RedissonMap<K, V> map) {
+    public RedissonMapIterator(RedissonMap<K, V> map, String pattern) {
         this.map = map;
+        this.pattern = pattern;
     }
 
     protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
-        return map.scanIterator(map.getName(), client, nextIterPos);
+        return map.scanIterator(map.getName(), client, nextIterPos, pattern);
     }
 
     protected void removeKey() {
