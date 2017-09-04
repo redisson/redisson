@@ -164,9 +164,8 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     }
     
     private Object executeCallable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
-        ByteBuf buf = null;
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
         try {
-            buf = ByteBufAllocator.DEFAULT.buffer(state.length);
             buf.writeBytes(state);
             
             RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());
@@ -201,9 +200,8 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     }
     
     private void executeRunnable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
-        ByteBuf buf = null;
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
         try {
-            buf = ByteBufAllocator.DEFAULT.buffer(state.length);
             buf.writeBytes(state);
             
             RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());

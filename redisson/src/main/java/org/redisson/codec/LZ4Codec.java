@@ -61,14 +61,13 @@ public class LZ4Codec implements Codec {
         public Object decode(ByteBuf buf, State state) throws IOException {
             int decompressSize = buf.readInt();
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer(decompressSize);
-            
-            LZ4SafeDecompressor decompressor = factory.safeDecompressor();
-            ByteBuffer outBuffer = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
-            int pos = outBuffer.position();
-            decompressor.decompress(buf.internalNioBuffer(buf.readerIndex(), buf.readableBytes()), outBuffer);
-            int compressedLength = outBuffer.position() - pos;
-            out.writerIndex(compressedLength);
             try {
+                LZ4SafeDecompressor decompressor = factory.safeDecompressor();
+                ByteBuffer outBuffer = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
+                int pos = outBuffer.position();
+                decompressor.decompress(buf.internalNioBuffer(buf.readerIndex(), buf.readableBytes()), outBuffer);
+                int compressedLength = outBuffer.position() - pos;
+                out.writerIndex(compressedLength);
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
                 out.release();
@@ -91,7 +90,7 @@ public class LZ4Codec implements Codec {
             int pos = outBuf.position();
 
             compressor.compress(srcBuf, outBuf);
-            
+
             int compressedLength = outBuf.position() - pos;
             out.writerIndex(out.writerIndex() + compressedLength);
             return out;

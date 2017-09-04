@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedisClientResult;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
@@ -643,17 +644,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     protected void free(final Object[] params) {
         for (Object obj : params) {
-            if (obj instanceof ByteBuf) {
-                ((ByteBuf)obj).release();
-            }
+            ReferenceCountUtil.safeRelease(obj);
         }
     }
 
     protected <V, R> void free(final AsyncDetails<V, R> details) {
         for (Object obj : details.getParams()) {
-            if (obj instanceof ByteBuf) {
-                ((ByteBuf)obj).release();
-            }
+            ReferenceCountUtil.safeRelease(obj);
         }
     }
     

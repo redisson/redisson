@@ -17,7 +17,7 @@ package org.redisson.client.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.CharsetUtil;
+import io.netty.buffer.ByteBufUtil;
 
 /**
  * 
@@ -29,16 +29,18 @@ public class DefaultParamsEncoder implements Encoder {
     @Override
     public ByteBuf encode(Object in) {
         if (in instanceof byte[]) {
-            ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-            buf.writeBytes((byte[])in);
-            return buf;
+            byte[] payload = (byte[])in;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(payload.length);
+            out.writeBytes(payload);
+            return out;
         }
         if (in instanceof ByteBuf) {
             return (ByteBuf) in;
         }
-        
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
-        buf.writeCharSequence(in.toString(), CharsetUtil.UTF_8);
+
+        String payload = in.toString();
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(ByteBufUtil.utf8MaxBytes(payload));
+        ByteBufUtil.writeUtf8(buf, payload);
         return buf;
     }
 

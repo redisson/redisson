@@ -81,11 +81,16 @@ public class FstCodec implements Codec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            ByteBufOutputStream os = new ByteBufOutputStream(out);
-            FSTObjectOutput oos = config.getObjectOutput(os);
-            oos.writeObject(in);
-            oos.flush();
-            return os.buffer();
+            try {
+                ByteBufOutputStream os = new ByteBufOutputStream(out);
+                FSTObjectOutput oos = config.getObjectOutput(os);
+                oos.writeObject(in);
+                oos.flush();
+                return os.buffer();
+            } catch (IOException e) {
+                out.release();
+                throw e;
+            }
         }
     };
 
