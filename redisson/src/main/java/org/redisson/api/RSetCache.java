@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -39,6 +40,14 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
  */
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
+    /**
+     * Returns values iterator matches <code>pattern</code>. 
+     * 
+     * @param pattern for values
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern);
+    
     /**
      * Returns <code>RMapReduce</code> object associated with this map
      * 

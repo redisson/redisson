@@ -92,18 +92,23 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos);
+    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+        if (pattern == null) {
+            RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos);
+            return get(f);
+        }
+
+        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos, "MATCH", pattern);
         return get(f);
     }
 
     @Override
-    public Iterator<V> iterator() {
+    public Iterator<V> iterator(final String pattern) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos);
+                return scanIterator(getName(), client, nextIterPos, pattern);
             }
 
             @Override
@@ -112,6 +117,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
             }
             
         };
+    }
+    
+    @Override
+    public Iterator<V> iterator() {
+        return iterator(null);
     }
 
     @Override
