@@ -213,6 +213,31 @@ public class RedissonMapCacheTest extends BaseMapTest {
         expected.put("3", "33");
         assertThat(store).isEqualTo(expected);
     }
+
+    @Test
+    public void testFastPutMaxSize() {
+        final int maxSize = 2;
+        Map<String, String> store = new LinkedHashMap<String, String>() {
+            @Override
+            protected boolean removeEldestEntry(Entry<String, String> eldest) {
+                return size() > maxSize;
+            }
+        };
+        MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(createMapWriter(store));
+        options.maxSize(maxSize);
+        RMapCache<String, String> map = redisson.getMapCache("test", options);
+
+        map.fastPut("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPut("2", "22", 10, TimeUnit.SECONDS);
+        map.fastPut("3", "33", 10, TimeUnit.SECONDS);
+
+        assertThat(map.size()).isEqualTo(maxSize);
+
+        Map<String, String> expected = new HashMap<>();
+        expected.put("2", "22");
+        expected.put("3", "33");
+        assertThat(store).isEqualTo(expected);
+    }
     
     @Test
     public void testOrdering() {
