@@ -36,8 +36,9 @@ public class ByteArrayCodec implements Codec {
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            out.writeBytes((byte[])in);
+            byte[] payload = (byte[])in;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(payload.length);
+            out.writeBytes(payload);
             return out;
         }
     };

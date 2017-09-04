@@ -65,9 +65,9 @@ public class SnappyCodec implements Codec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            snappyDecoder.get().decode(buf, out);
-            snappyDecoder.get().reset();
             try {
+                snappyDecoder.get().decode(buf, out);
+                snappyDecoder.get().reset();
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
                 out.release();

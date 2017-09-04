@@ -18,6 +18,7 @@ package org.redisson.client.codec;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
+import io.netty.buffer.ByteBufUtil;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -40,9 +41,16 @@ public class StringCodec implements Codec {
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-            out.writeCharSequence(in.toString(), charset);
-            return out;
+            if (CharsetUtil.UTF_8.equals(charset)) {
+                String payload = in.toString();
+                ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(ByteBufUtil.utf8MaxBytes(payload));
+                ByteBufUtil.writeUtf8(buf, payload);
+                return buf;
+            } else {
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+                out.writeCharSequence(in.toString(), charset);
+                return out;
+            }
         }
     };
 

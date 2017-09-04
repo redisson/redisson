@@ -41,30 +41,35 @@ public class Hash {
         long h2 = LongHashFunction.xx().hashBytes(b);
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
-        buf.writeLong(h1).writeLong(h2);
-        byte[] dst = new byte[buf.readableBytes()]; 
-        buf.readBytes(dst);
         try {
+            buf.writeLong(h1).writeLong(h2);
+            byte[] dst = new byte[buf.readableBytes()];
+            buf.readBytes(dst);
             return dst;
         } finally {
             buf.release();
         }
     }
 
-    
+
     public static String hashToBase64(ByteBuf objectState) {
         ByteBuffer bf = objectState.internalNioBuffer(objectState.readerIndex(), objectState.readableBytes());
         long h1 = LongHashFunction.farmUo().hashBytes(bf);
         long h2 = LongHashFunction.xx().hashBytes(bf);
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
-        buf.writeLong(h1).writeLong(h2);
-
-        ByteBuf b = Base64.encode(buf);
-        String s = b.toString(CharsetUtil.UTF_8);
-        b.release();
-        buf.release();
-        return s.substring(0, s.length() - 2);
+        try {
+            buf.writeLong(h1).writeLong(h2);
+            ByteBuf b = Base64.encode(buf);
+            try {
+                String s = b.toString(CharsetUtil.UTF_8);
+                return s.substring(0, s.length() - 2);
+            } finally {
+                b.release();
+            }
+        } finally {
+            buf.release();
+        }
     }
     
 }

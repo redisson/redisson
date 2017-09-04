@@ -129,8 +129,8 @@ public class KryoCodec implements Codec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             Kryo kryo = null;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
                 ByteBufOutputStream baos = new ByteBufOutputStream(out);
                 Output output = new Output(baos);
                 kryo = kryoPool.get();
@@ -138,6 +138,7 @@ public class KryoCodec implements Codec {
                 output.close();
                 return baos.buffer();
             } catch (Exception e) {
+                out.release();
                 if (e instanceof RuntimeException) {
                     throw (RuntimeException) e;
                 }
