@@ -77,7 +77,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Finally return the reverse rank of the item
      * @param score - object score
      * @param object - object itself
-     * @return rank
+     * @return reverse rank
      */
     RFuture<Integer> addAndGetRevRankAsync(double score, V object);
 

@@ -104,7 +104,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * Finally return the reverse rank of the item
      * @param score - object score
      * @param object - object itself
-     * @return rank
+     * @return reverse rank
      */
     Integer addAndGetRevRank(double score, V object);
 
