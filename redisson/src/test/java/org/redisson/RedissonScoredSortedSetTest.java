@@ -390,6 +390,32 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddAndGetRankAsync() throws InterruptedException, ExecutionException {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RFuture<Integer> future = set.addAndGetRankAsync(0.3, 1);
+        Assert.assertEquals(new Integer(0), future.get());
+        RFuture<Integer> future2 = set.addAndGetRankAsync(0.4, 2);
+        Assert.assertEquals(new Integer(1), future2.get());
+        RFuture<Integer> future3 = set.addAndGetRankAsync(0.2, 3);
+        Assert.assertEquals(new Integer(0), future3.get());
+
+        Assert.assertTrue(set.contains(3));
+    }
+
+    @Test
+    public void testAddAndGetRevRankAsync() throws InterruptedException, ExecutionException {
+        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
+        RFuture<Integer> future = set.addAndGetRevRankAsync(0.3, 1);
+        Assert.assertEquals(new Integer(0), future.get());
+        RFuture<Integer> future2 = set.addAndGetRevRankAsync(0.4, 2);
+        Assert.assertEquals(new Integer(0), future2.get());
+        RFuture<Integer> future3 = set.addAndGetRevRankAsync(0.2, 3);
+        Assert.assertEquals(new Integer(2), future3.get());
+
+        Assert.assertTrue(set.contains(3));
+    }
+
+    @Test
     public void testRemoveAsync() throws InterruptedException, ExecutionException {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("simple");
         set.add(0.11, 1);
