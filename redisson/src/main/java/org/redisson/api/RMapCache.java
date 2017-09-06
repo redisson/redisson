@@ -40,6 +40,14 @@ import org.redisson.api.map.event.MapEntryListener;
 public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
     /**
+     * Tries to set max size of the map.
+     *
+     * @param maxSize - max size
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    boolean trySetMaxSize(int maxSize);
+    
+    /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>

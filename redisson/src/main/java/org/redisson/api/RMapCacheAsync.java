@@ -38,6 +38,14 @@ import java.util.concurrent.TimeUnit;
 public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
     /**
+     * Tries to set max size of the map.
+     *
+     * @param maxSize - max size
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    RFuture<Boolean> trySetMaxSizeAsync(int maxSize);
+    
+    /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>

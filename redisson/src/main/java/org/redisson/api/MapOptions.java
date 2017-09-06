@@ -134,5 +134,5 @@ public class MapOptions<K, V> {
     public MapLoader<K, V> getLoader() {
         return loader;
     }
-    
+
 }
