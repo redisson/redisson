@@ -86,26 +86,26 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
-        super(commandExecutor, name, redisson, options);
-        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
+        this(evictionScheduler, commandExecutor, name, redisson, 0, options);
+    }
 
-        if (options != null) {
-            this.maxSize = options.getMaxSize();
-        } else {
-            this.maxSize = 0;
-        }
+    public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
+                            String name, RedissonClient redisson, int maxSize, MapOptions<K, V> options) {
+        super(commandExecutor, name, redisson, options);
+        this.maxSize = maxSize;
+        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
-        super(codec, commandExecutor, name, redisson, options);
-        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
+        this(codec, evictionScheduler, commandExecutor, name, redisson, 0, options);
+    }
 
-        if (options != null) {
-            this.maxSize = options.getMaxSize();
-        } else {
-            this.maxSize = 0;
-        }
+    public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
+                            String name, RedissonClient redisson, int maxSize, MapOptions<K, V> options) {
+        super(codec, commandExecutor, name, redisson, options);
+        this.maxSize = maxSize;
+        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
     }
 
     @Override

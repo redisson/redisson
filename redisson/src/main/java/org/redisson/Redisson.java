@@ -317,6 +317,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, int maxSize, MapOptions<K, V> options) {
+        return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this, maxSize, options);
+    }
+
+    @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, MapOptions<K, V> options) {
         return new RedissonMapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name, this, options);
     }
@@ -328,6 +333,11 @@ public class Redisson implements RedissonClient {
     
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this, options);
+    }
+
+    @Override
+    public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, int maxSize, MapOptions<K, V> options) {
         return new RedissonMapCache<K, V>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name, this, options);
     }
 

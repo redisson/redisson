@@ -98,6 +98,23 @@ public interface RedissonClient {
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
+
+    /**
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - object name
+     * @param codec - codec for keys and values
+     * @param maxSize - map max size in Redis
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec, int maxSize, MapOptions<K, V> options);
     
     /**
      * Returns map-based cache instance by <code>name</code>
@@ -127,6 +144,21 @@ public interface RedissonClient {
      * @return MapCache object
      */
     <K, V> RMapCache<K, V> getMapCache(String name);
+
+    /**
+     * Returns map-based cache instance by name.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param maxSize - map max size in Redis
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCache<K, V> getMapCache(String name, int maxSize, MapOptions<K, V> options);
     
     /**
      * Returns map-based cache instance by name.
