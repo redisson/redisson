@@ -119,6 +119,32 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Integer addAndGetRank(double score, V object) {
+        return get(addAndGetRankAsync(score, object));
+    }
+
+    @Override
+    public RFuture<Integer> addAndGetRankAsync(double score, V object) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]);" +
+                "return redis.call('zrank', KEYS[1], ARGV[2]); ",
+                Collections.<Object>singletonList(getName()), new BigDecimal(score).toPlainString(), encode(object));
+    }
+
+    @Override
+    public Integer addAndGetRevRank(double score, V object) {
+        return get(addAndGetRevRankAsync(score, object));
+    }
+
+    @Override
+    public RFuture<Integer> addAndGetRevRankAsync(double score, V object) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
+                "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]);" +
+                "return redis.call('zrevrank', KEYS[1], ARGV[2]); ",
+                Collections.<Object>singletonList(getName()), new BigDecimal(score).toPlainString(), encode(object));
+    }
+
+    @Override
     public boolean tryAdd(double score, V object) {
         return get(tryAddAsync(score, object));
     }
