@@ -91,6 +91,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     boolean add(double score, V object);
 
     /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return rank
+     */
+    Integer addAndGetRank(double score, V object);
+
+    /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the reverse rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return rank
+     */
+    Integer addAndGetRevRank(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Works only with <b>Redis 3.0.2 and higher.</b>
