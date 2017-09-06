@@ -225,9 +225,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
                 return size() > maxSize;
             }
         };
-        MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(createMapWriter(store));
-        RMapCache<String, String> map = redisson.getMapCache("test", options);
-        map.trySetMaxSize(maxSize);
+        RMapCache<String, String> map = redisson.getMapCache("test", maxSize, null);
 
         assertThat(map.fastPutIfAbsent("01", "00")).isTrue();
         assertThat(map.fastPutIfAbsent("02", "00")).isTrue();
@@ -243,7 +241,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         expected.put("2", "22");
         expected.put("3", "33");
         assertThat(store).isEqualTo(expected);
-        
+
         assertThat(map.get("2")).isEqualTo("22");
         assertThat(map.get("0")).isNull();
         assertThat(map.putIfAbsent("2", "3")).isEqualTo("22");
@@ -1261,4 +1259,3 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     }
 }
-

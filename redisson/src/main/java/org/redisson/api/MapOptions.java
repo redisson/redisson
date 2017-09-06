@@ -49,7 +49,7 @@ public class MapOptions<K, V> {
     private MapWriter<K, V> writer;
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindThreads = 1;
-    
+
     protected MapOptions() {
     }
     
@@ -134,5 +134,4 @@ public class MapOptions<K, V> {
     public MapLoader<K, V> getLoader() {
         return loader;
     }
-
 }
