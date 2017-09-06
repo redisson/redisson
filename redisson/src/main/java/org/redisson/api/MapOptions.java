@@ -49,7 +49,6 @@ public class MapOptions<K, V> {
     private MapWriter<K, V> writer;
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindThreads = 1;
-    private int maxSize = 0;
     
     protected MapOptions() {
     }
@@ -136,19 +135,4 @@ public class MapOptions<K, V> {
         return loader;
     }
 
-    /**
-     * Sets max size of the map.
-     * <p>
-     * Currently only RedissonMapCache is supported.
-     *
-     * @param maxSize - max size
-     * @return MapOptions instance
-     */
-    public MapOptions<K, V> maxSize(int maxSize) {
-        this.maxSize = maxSize;
-        return this;
-    }
-    public int getMaxSize() {
-        return maxSize;
-    }
 }

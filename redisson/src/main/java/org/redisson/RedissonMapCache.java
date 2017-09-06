@@ -15,9 +15,16 @@
  */
 package org.redisson;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import java.math.BigDecimal;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapCache;
@@ -51,15 +58,9 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
 
-import java.math.BigDecimal;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
+import io.netty.buffer.ByteBuf;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -82,32 +83,39 @@ import java.util.concurrent.TimeUnit;
  */
 public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
-    private final int maxSize;
-
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(commandExecutor, name, redisson, options);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
-
-        if (options != null) {
-            this.maxSize = options.getMaxSize();
-        } else {
-            this.maxSize = 0;
-        }
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(codec, commandExecutor, name, redisson, options);
         evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName());
-
-        if (options != null) {
-            this.maxSize = options.getMaxSize();
-        } else {
-            this.maxSize = 0;
-        }
     }
 
+    @Override
+    public boolean trySetMaxSize(int permits) {
+        return get(trySetMaxSizeAsync(permits));
+    }
+    
+    @Override
+    public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
+        if (maxSize <= 0) {
+            throw new IllegalArgumentException("maxSize should be greater than zero");
+        }
+        
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hget', KEYS[1], 'max-size'); " +
+                "if (value == false) then "
+                    + "redis.call('hset', KEYS[1], 'max-size', ARGV[1]); "
+                    + "return 1;"
+                + "end;"
+                + "return 0;",
+                Arrays.<Object>asList(getOptionsName()), maxSize);
+    }
+    
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkKey(key);
@@ -117,8 +125,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local expireDate = 92233720368547758; " +
                 "if value ~= false then " +
                 "" +
-                "    local maxSize = tonumber(ARGV[3]); " +
-                "    if maxSize ~= 0 then " +
+                "    local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                "    if maxSize ~= nil and maxSize ~= 0 then " +
                 "        redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
                 "    end;" +
                 "" +
@@ -144,8 +152,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "    return 1;" +
                 "end;" +
                 "return 0; ",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), maxSize);
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsName()),
+                System.currentTimeMillis(), encodeMapKey(key));
     }
 
     @Override
@@ -160,8 +168,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "        if ARGV[2] == val then " +
                 "            local key = s[i - 1]; " +
                 "" +
-                "            local maxSize = tonumber(ARGV[3]); " +
-                "            if maxSize ~= 0 then " +
+                "            local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                "            if maxSize ~= nil and maxSize ~= 0 then " +
                 "                redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
                 "            end; " +
                 "" +
@@ -189,30 +197,34 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "    end;" +
                 "end;" +
                 "return 0;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                System.currentTimeMillis(), encodeMapValue(value), maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis(), encodeMapValue(value));
     }
 
     @Override
     protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
-        List<Object> args = new ArrayList<Object>(keys.size() + 2);
+        List<Object> args = new ArrayList<Object>(keys.size() + 1);
+        List<Object> plainKeys = new ArrayList<Object>(keys.size());
+        
         args.add(System.currentTimeMillis());
-        args.add(maxSize);
-        args.addAll(keys);
+        for (K key : keys) {
+            plainKeys.add(key);
+            args.add(encodeMapKey(key));
+        }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 2), 8, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(plainKeys, 0), ValueType.MAP_VALUE),
             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores'); " +
             "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
-            "local maxSize = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
             "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
             "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); " +
+            "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));" +
             "for i = #map, 1, -1 do " +
             "    local value = map[i]; " +
             "    if value ~= false then " +
             "        local key = ARGV[i]; " +
             "        local t, val = struct.unpack('dLc0', value); " +
             "        map[i] = val; " +
-            "        if maxSize ~= 0 then " +
+            "        if maxSize ~= nil and maxSize ~= 0 then " +
             "            redis.call('zadd', KEYS[4], currentTime, key); " +
             "        end; " +
             "        if hasExpire then " +
@@ -236,7 +248,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "    end; " +
             "end; " +
             "return map;",
-            Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()), args.toArray());
+            Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()), 
+            args.toArray());
     }
 
     @Override
@@ -328,8 +341,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "end; "
 
                             // last access time
-                            + "local maxSize = tonumber(ARGV[7]); " +
-                            "if maxSize ~= 0 then " +
+                            + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); " +
+                            "if maxSize ~= nil and maxSize ~= 0 then " +
                             "    local currentTime = tonumber(ARGV[1]); " +
                             "    local lastAccessTimeSetName = KEYS[5]; " +
                             "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
@@ -365,8 +378,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return val; "
                         + "end; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         if (hasNoWriter()) {
             return future;
         }
@@ -411,8 +424,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "if val == ARGV[3] then "
                             + "redis.call('zrem', KEYS[2], ARGV[2]); "
                             + "redis.call('zrem', KEYS[3], ARGV[2]); "
-                            + "local maxSize = tonumber(ARGV[4]); " +
-                                "if maxSize ~= 0 then " +
+                            + "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); " +
+                                "if maxSize ~= nil and maxSize ~= 0 then " +
                                 "   redis.call('zrem', KEYS[5], ARGV[2]); " +
                                 "end; "
                             + "redis.call('hdel', KEYS[1], ARGV[2]); "
@@ -423,8 +436,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0; "
                         + "end",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getRemovedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -456,13 +469,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "if expireDate <= tonumber(ARGV[1]) then "
                             + "return nil; "
                         + "end; "
-                        + "local maxSize = tonumber(ARGV[3]); " +
-                        "if maxSize ~= 0 then " +
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
                         "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
                         "end; "
                         + "return val; ",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), maxSize);
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key));
     }
 
     @Override
@@ -497,9 +510,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "redis.call('hset', KEYS[1], ARGV[2], value);" +
                 "local currentTime = tonumber(ARGV[1]);" +
                 "local lastAccessTimeSetName = KEYS[6];" +
-                "local maxSize = tonumber(ARGV[4]);" +
+                "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
                 "if exists == false then" +
-                "    if maxSize ~= 0 then" +
+                "    if maxSize ~= nil and maxSize ~= 0 then" +
                 "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]);" +
                 "        local cacheSize = tonumber(redis.call('hlen', KEYS[1]));" +
                 "        if cacheSize >= maxSize then" +
@@ -522,7 +535,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "    redis.call('publish', KEYS[4], msg);" +
                 "    return nil;" +
                 "else" +
-                "    if maxSize ~= 0 then" +
+                "    if maxSize ~= nil and maxSize ~= 0 then" +
                 "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]);" +
                 "    end;" +
                 "end;" +
@@ -532,15 +545,15 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "redis.call('publish', KEYS[5], msg);" +
                 "return val;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
-                        + "local maxSize = tonumber(ARGV[4]); "
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size'));"
                         + "local lastAccessTimeSetName = KEYS[5]; "
                         + "local currentTime = tonumber(ARGV[1]); "
                         + "if value ~= false then "
@@ -557,7 +570,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "end; "
                             + "end; "
                             + "if expireDate > tonumber(ARGV[1]) then "
-                                + "if maxSize ~= 0 then "
+                                + "if maxSize ~= nil and maxSize ~= 0 then "
                                 + "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); "
                                 + "end; "
                                 + "return val; "
@@ -568,7 +581,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('hset', KEYS[1], ARGV[2], value); "
 
                         // last access time
-                        + "if maxSize ~= 0 then " +
+                        + "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
                         "    local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
                         "    if cacheSize >= maxSize then " +
@@ -592,8 +605,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('publish', KEYS[4], msg); "
                         + "return nil;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -643,8 +656,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('hset', KEYS[1], ARGV[2], newValuePack); "
 
                         // last access time
-                        + "local maxSize = tonumber(ARGV[4]); " +
-                        "if maxSize ~= 0 then " +
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    local currentTime = tonumber(ARGV[1]); " +
                         "    local lastAccessTimeSetName = KEYS[6]; " +
                         "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
@@ -668,8 +681,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         + "return tostring(newValue); ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), keyState, new BigDecimal(value.toString()).toPlainString(), maxSize);
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), keyState, new BigDecimal(value.toString()).toPlainString());
     }
 
     @Override
@@ -775,8 +788,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; " +
 
                         // last access time
-                        "local maxSize = tonumber(ARGV[7]); " +
-                        "if maxSize ~= 0 then " +
+                        "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    local currentTime = tonumber(ARGV[1]); " +
                         "    local lastAccessTimeSetName = KEYS[6]; " +
                         "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
@@ -810,8 +823,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0;"
                         + "end;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
 
@@ -911,8 +924,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; "
 
                         // last access time
-                        + "local maxSize = tonumber(ARGV[7]); " +
-                        "if maxSize ~= 0 then " +
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    local currentTime = tonumber(ARGV[1]); " +
                         "    local lastAccessTimeSetName = KEYS[6]; " +
                         "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
@@ -950,8 +963,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         + "return val",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
 
@@ -966,6 +979,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     String getTimeoutSetName() {
         return prefixName("redisson__timeout__set", getName());
     }
+    
+    String getLastAccessTimeSetNameByKey(Object key) {
+        return prefixName("redisson__map_cache__last_access__set", getName(key));
+    }
+
+    String getLastAccessTimeSetName() {
+        return prefixName("redisson__map_cache__last_access__set", getName());
+    }
 
     String getIdleSetNameByKey(Object key) {
         return prefixName("redisson__idle__set", getName(key));
@@ -979,6 +1000,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return prefixName("redisson__idle__set", getName());
     }
 
+    String getOptionsName() {
+        return suffixName(getName(), "redisson_options");
+    }
+    
+    String getOptionsName(Object key) {
+        return suffixName(getName(key), "redisson_options");
+    }
+    
     String getCreatedChannelNameByKey(Object key) {
         return prefixName("redisson_map_cache_created", getName(key));
     }
@@ -1054,8 +1083,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         + "redis.call('zrem', KEYS[2], ARGV[2]); "
                         + "redis.call('zrem', KEYS[3], ARGV[2]); "
-                        + "local maxSize = tonumber(ARGV[3])"
-                        + "if maxSize ~= 0 then"
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size'));"
+                        + "if maxSize ~= nil and maxSize ~= 0 then"
                         + "    redis.call('zrem', KEYS[5], ARGV[2]); "
                         + "end;"
                         + "redis.call('hdel', KEYS[1], ARGV[2]); "
@@ -1064,21 +1093,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('publish', KEYS[4], msg); "
                         + "return val; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getRemovedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key));
     }
 
     @Override
     protected RFuture<List<Long>> fastRemoveOperationBatchAsync(K... keys) {
-        List<Object> args = new ArrayList<Object>(keys.length + 1);
-        args.add(maxSize);
+        List<Object> args = new ArrayList<Object>(keys.length);
         for (K key : keys) {
             args.add(encodeMapKey(key));
         }
 
         RFuture<List<Long>> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
-                "local maxSize = tonumber(table.remove(ARGV, 1)); "
-                        + "if maxSize ~= 0 then "
+                "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
+                        + "if maxSize ~= nil and maxSize ~= 0 then "
                         + "    redis.call('zrem', KEYS[5], unpack(ARGV)); "
                         + "end; " +
                         "redis.call('zrem', KEYS[3], unpack(ARGV)); " +
@@ -1098,22 +1126,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "table.insert(result, val); "
                         + "end;"
                         + "return result;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName()),
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
                 args.toArray());
         return future;
     }
 
     @Override
     protected RFuture<Long> fastRemoveOperationAsync(K ... keys) {
-        List<Object> params = new ArrayList<Object>(keys.length + 1);
-        params.add(maxSize);
+        List<Object> params = new ArrayList<Object>(keys.length);
         for (K key : keys) {
             params.add(encodeMapKey(key));
         }
 
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
-                "local maxSize = tonumber(table.remove(ARGV, 1)); "
-                        + "if maxSize ~= 0 then "
+                "local maxSize = tonumber(redis.call('hget', KEYS[6], 'max-size')); "
+                        + "if maxSize ~= nil and maxSize ~= 0 then "
                         + "    redis.call('zrem', KEYS[5], unpack(ARGV)); "
                         + "end; " +
                         "redis.call('zrem', KEYS[3], unpack(ARGV)); " +
@@ -1127,7 +1154,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; " +
                         "end; " +
                         "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName()),
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getRemovedChannelName(), getLastAccessTimeSetName(), getOptionsName()),
                 params.toArray());
     }
 
@@ -1260,8 +1287,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('hset', KEYS[1], ARGV[2], val); " +
 
                         // last access time
-                        "local maxSize = tonumber(ARGV[4]);" +
-                        "if maxSize ~= 0 then " +
+                        "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    local currentTime = tonumber(ARGV[1]); " +
                         "    local lastAccessTimeSetName = KEYS[6]; " +
                         "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
@@ -1294,8 +1321,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0;"
                         + "end;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -1303,7 +1330,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "local lastAccessTimeSetName = KEYS[5]; "
-                        + "local maxSize = tonumber(ARGV[4]); "
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); "
                         + "local currentTime = tonumber(ARGV[1]); "
                         + "if value == false then "
                             + "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
@@ -1313,7 +1340,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                             // last access time
 
-                            "if maxSize ~= 0 then " +
+                            "if maxSize ~= nil and maxSize ~= 0 then " +
                             "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
                             "    local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
                             "    if cacheSize >= maxSize then " +
@@ -1336,7 +1363,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 1; "
                         + "end; "
 
-                        + "if maxSize ~= 0 then "
+                        + "if maxSize ~= nil and maxSize ~= 0 then "
                         + "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); "
                         + "end; "
                         + "local t, val = struct.unpack('dLc0', value); "
@@ -1369,8 +1396,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('publish', KEYS[4], msg); "
                         + "return 1; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -1456,8 +1483,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "        redis.call('zrem', KEYS[3], ARGV[5]); " +
                         "    end; " +
                              // last access time
-                        "    local maxSize = tonumber(ARGV[7]); " +
-                        "    if maxSize ~= 0 then " +
+                        "    local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); " +
+                        "    if maxSize ~= nil and maxSize ~= 0 then " +
                         "        local currentTime = tonumber(ARGV[1]); " +
                         "        local lastAccessTimeSetName = KEYS[5]; " +
                         "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
@@ -1488,8 +1515,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    return 0; " +
                         "end; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key)),
-                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value), maxSize);
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         if (hasNoWriter()) {
             return future;
         }
@@ -1505,14 +1532,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             }
         };
         return mapWriterFuture(future, listener);
-    }
-
-    private String getLastAccessTimeSetNameByKey(Object key) {
-        return prefixName("redisson__last_access__set", getName(key));
-    }
-
-    private String getLastAccessTimeSetName() {
-        return prefixName("redisson__last_access__set", getName());
     }
 
     @Override
@@ -1679,14 +1698,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, 
+                getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName());
     }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local maxSize = tonumber(ARGV[2]); " +
-                        "if maxSize ~= 0 then " +
+                "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
+                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
+                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
                         "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
                         "end; " +
                         "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
@@ -1694,24 +1716,26 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
                         "redis.call('pexpire', KEYS[3], ARGV[1]); " +
                         "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                timeUnit.toMillis(timeToLive), maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                timeUnit.toMillis(timeToLive));
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "local maxSize = tonumber(ARGV[2]); " +
-                        "if maxSize ~= 0 then " +
-                        "   redis.call('pexpire', KEYS[4], ARGV[1]); " +
+                "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
+                        "if maxSize ~= nil and maxSize ~= 0 then " +
+                        "    redis.call('pexpire', KEYS[5], ARGV[1]); " +
+                        "    redis.call('zadd', KEYS[4], 92233720368547758, 'redisson__expiretag'); " +
+                        "    redis.call('pexpire', KEYS[4], ARGV[1]); " +
                         "end; " +
                         "redis.call('zadd', KEYS[2], 92233720368547758, 'redisson__expiretag'); " +
                         "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
                         "redis.call('zadd', KEYS[3], 92233720368547758, 'redisson__expiretag'); " +
                         "redis.call('pexpire', KEYS[3], ARGV[1]); " +
                         "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                timestamp, maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                timestamp);
     }
 
     @Override
@@ -1728,7 +1752,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     @Override
     public RFuture<Set<K>> readAllKeySetAsync() {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_KEY_SET,
-                "local s = redis.call('hgetall', KEYS[1]); "
+                "local s = redis.call('hgetall', KEYS[1]); " + 
+                "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));"
                         + "local result = {}; "
                         + "for i, v in ipairs(s) do "
                             + "if i % 2 == 0 then "
@@ -1746,8 +1771,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                     + "local value = struct.pack('dLc0', t, string.len(val), val); "
                                     + "redis.call('hset', KEYS[1], key, value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
-                                    + "local maxSize = tonumber(ARGV[2]); "
-                                    + "if maxSize ~= 0 then "
+                                    + "if maxSize ~= nil and maxSize ~= 0 then "
                                     + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
                                     + "end; "
                                 + "end; "
@@ -1760,8 +1784,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "end; "
                         + "end;" +
                         "return result;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                System.currentTimeMillis(), maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis());
     }
 
     @Override
@@ -1773,6 +1797,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.evalWriteAsync(getName(), codec, evalCommandType,
                 "local s = redis.call('hgetall', KEYS[1]); "
                         + "local result = {}; "
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));"
                         + "for i, v in ipairs(s) do "
                             + "if i % 2 == 0 then "
                                 + "local t, val = struct.unpack('dLc0', v); "
@@ -1789,8 +1814,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                             + "local value = struct.pack('dLc0', t, string.len(val), val); "
                                             + "redis.call('hset', KEYS[1], key, value); "
                                             + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
-                                            + "local maxSize = tonumber(ARGV[2]); "
-                                            + "if maxSize ~= 0 then "
+                                            + "if maxSize ~= nil and maxSize ~= 0 then "
                                             + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
                                             + "end; "
                                         + "end; "
@@ -1804,8 +1828,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "end; "
                         + "end;" +
                         "return result;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                System.currentTimeMillis(), maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis());
     }
 
     @Override
@@ -1819,6 +1843,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
                 "local s = redis.call('hgetall', KEYS[1]); "
                     + "local result = {}; "
+                    + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); "
                     + "for i, v in ipairs(s) do "
                         + "if i % 2 == 0 then "
                             + "local t, val = struct.unpack('dLc0', v); "
@@ -1835,8 +1860,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                     + "local value = struct.pack('dLc0', t, string.len(val), val); "
                                     + "redis.call('hset', KEYS[1], key, value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
-                                    + "local maxSize = tonumber(ARGV[2]); "
-                                    + "if maxSize ~= 0 then "
+                                    + "if maxSize ~= nil and maxSize ~= 0 then "
                                     + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
                                     + "end; "
                                 + "end; "
@@ -1849,7 +1873,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; "
                     + "end;" +
                     "return result;",
-                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName()),
-                System.currentTimeMillis(), maxSize);
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
+                System.currentTimeMillis());
     }
 }
