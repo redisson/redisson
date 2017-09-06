@@ -205,12 +205,12 @@ public class LoadBalancerManager {
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
-        ClientConnectionsEntry entry = ip2Entry.get(contains(connection.getRedisClient().getAddr()));
+        ClientConnectionsEntry entry = ip2Entry.get(convert(connection.getRedisClient().getAddr()));
         pubSubConnectionPool.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        ClientConnectionsEntry entry = ip2Entry.get(contains(connection.getRedisClient().getAddr()));
+        ClientConnectionsEntry entry = ip2Entry.get(convert(connection.getRedisClient().getAddr()));
         slaveConnectionPool.returnConnection(entry, connection);
     }
 
