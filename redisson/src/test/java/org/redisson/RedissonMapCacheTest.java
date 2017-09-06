@@ -217,7 +217,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
-    public void testMaxSize() {
+    public void testFastPutMaxSize() {
         final int maxSize = 2;
         Map<String, String> store = new LinkedHashMap<String, String>() {
             @Override
@@ -226,16 +226,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
             }
         };
         MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(createMapWriter(store));
+        options.maxSize(maxSize);
         RMapCache<String, String> map = redisson.getMapCache("test", options);
-        map.trySetMaxSize(maxSize);
 
-        assertThat(map.fastPutIfAbsent("01", "00")).isTrue();
-        assertThat(map.fastPutIfAbsent("02", "00")).isTrue();
-        assertThat(map.put("03", "00")).isNull();
-        assertThat(map.fastPutIfAbsent("04", "00", 10, TimeUnit.SECONDS)).isTrue();
-        assertThat(map.fastPut("1", "11", 10, TimeUnit.SECONDS)).isTrue();
-        assertThat(map.fastPut("2", "22", 10, TimeUnit.SECONDS)).isTrue();
-        assertThat(map.fastPut("3", "33", 10, TimeUnit.SECONDS)).isTrue();
+        map.fastPut("1", "11", 10, TimeUnit.SECONDS);
+        map.fastPut("2", "22", 10, TimeUnit.SECONDS);
+        map.fastPut("3", "33", 10, TimeUnit.SECONDS);
 
         assertThat(map.size()).isEqualTo(maxSize);
 
@@ -243,20 +239,6 @@ public class RedissonMapCacheTest extends BaseMapTest {
         expected.put("2", "22");
         expected.put("3", "33");
         assertThat(store).isEqualTo(expected);
-        
-        assertThat(map.get("2")).isEqualTo("22");
-        assertThat(map.get("0")).isNull();
-        assertThat(map.putIfAbsent("2", "3")).isEqualTo("22");
-        assertThat(map.putIfAbsent("3", "4", 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)).isEqualTo("33");
-        assertThat(map.containsKey("2")).isTrue();
-        assertThat(map.containsKey("0")).isFalse();
-        assertThat(map.containsValue("22")).isTrue();
-        assertThat(map.containsValue("00")).isFalse();
-        assertThat(map.getAll(new HashSet<String>(Arrays.asList("2", "3")))).isEqualTo(expected);
-        assertThat(map.remove("2", "33")).isFalse();
-        assertThat(map.remove("2", "22")).isTrue();
-        assertThat(map.remove("0")).isNull();
-        assertThat(map.remove("3")).isEqualTo("33");
     }
     
     @Test
@@ -1261,4 +1243,3 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     }
 }
-
