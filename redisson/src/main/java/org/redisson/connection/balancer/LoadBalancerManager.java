@@ -64,7 +64,7 @@ public class LoadBalancerManager {
     }
 
     public void changeType(InetSocketAddress addr, NodeType nodeType) {
-        ClientConnectionsEntry entry = ip2Entry.get(addr.getAddress().getHostAddress() + ":" + addr.getPort());
+        ClientConnectionsEntry entry = ip2Entry.get(convert(addr));
         changeType(addr, nodeType, entry);
     }
 
@@ -141,7 +141,7 @@ public class LoadBalancerManager {
     
     private String convert(URI address) {
         InetSocketAddress addr = new InetSocketAddress(address.getHost(), address.getPort());
-        return addr.getAddress().getHostAddress() + ":" + addr.getPort();
+        return convert(addr);
     }
     
     public ClientConnectionsEntry freeze(URI address, FreezeReason freezeReason) {
@@ -180,7 +180,11 @@ public class LoadBalancerManager {
     }
 
     public boolean contains(InetSocketAddress addr) {
-        return ip2Entry.containsKey(addr.getAddress().getHostAddress() + ":" + addr.getPort());
+        return ip2Entry.containsKey(convert(addr));
+    }
+
+    protected String convert(InetSocketAddress addr) {
+        return addr.getAddress().getHostAddress() + ":" + addr.getPort();
     }
     
     public boolean contains(String addr) {
@@ -188,7 +192,7 @@ public class LoadBalancerManager {
     }
     
     public RFuture<RedisConnection> getConnection(RedisCommand<?> command, InetSocketAddress addr) {
-        ClientConnectionsEntry entry = ip2Entry.get(addr.getAddress().getHostAddress());
+        ClientConnectionsEntry entry = ip2Entry.get(convert(addr));
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);
         }
@@ -201,12 +205,12 @@ public class LoadBalancerManager {
     }
 
     public void returnPubSubConnection(RedisPubSubConnection connection) {
-        ClientConnectionsEntry entry = ip2Entry.get(connection.getRedisClient().getAddr().getAddress().getHostAddress());
+        ClientConnectionsEntry entry = ip2Entry.get(contains(connection.getRedisClient().getAddr()));
         pubSubConnectionPool.returnConnection(entry, connection);
     }
 
     public void returnConnection(RedisConnection connection) {
-        ClientConnectionsEntry entry = ip2Entry.get(connection.getRedisClient().getAddr().getAddress().getHostAddress());
+        ClientConnectionsEntry entry = ip2Entry.get(contains(connection.getRedisClient().getAddr()));
         slaveConnectionPool.returnConnection(entry, connection);
     }
 
