@@ -33,13 +33,16 @@ public class MapCacheEvictionTask extends EvictionTask {
     private final String timeoutSetName;
     private final String maxIdleSetName;
     private final String expiredChannelName;
+    private final String lastAccessTimeSetName;
     
-    public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName, String expiredChannelName, CommandAsyncExecutor executor) {
+    public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName, 
+            String expiredChannelName, String lastAccessTimeSetName, CommandAsyncExecutor executor) {
         super(executor);
         this.name = name;
         this.timeoutSetName = timeoutSetName;
         this.maxIdleSetName = maxIdleSetName;
         this.expiredChannelName = expiredChannelName;
+        this.lastAccessTimeSetName = lastAccessTimeSetName;
     }
 
     @Override
@@ -55,6 +58,7 @@ public class MapCacheEvictionTask extends EvictionTask {
                     + "end;"  
                 + "end;" 
               + "if #expiredKeys1 > 0 then "
+                  + "redis.call('zrem', KEYS[4], unpack(expiredKeys1)); "
                   + "redis.call('zrem', KEYS[3], unpack(expiredKeys1)); "
                   + "redis.call('zrem', KEYS[2], unpack(expiredKeys1)); "
                   + "redis.call('hdel', KEYS[1], unpack(expiredKeys1)); "
@@ -69,12 +73,14 @@ public class MapCacheEvictionTask extends EvictionTask {
                   + "end;"  
               + "end;" 
               + "if #expiredKeys2 > 0 then "
+                  + "redis.call('zrem', KEYS[4], unpack(expiredKeys2)); "
                   + "redis.call('zrem', KEYS[3], unpack(expiredKeys2)); "
                   + "redis.call('zrem', KEYS[2], unpack(expiredKeys2)); "
                   + "redis.call('hdel', KEYS[1], unpack(expiredKeys2)); "
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
-              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName), System.currentTimeMillis(), keysLimit);
+              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName), 
+              System.currentTimeMillis(), keysLimit);
     }
     
 }
