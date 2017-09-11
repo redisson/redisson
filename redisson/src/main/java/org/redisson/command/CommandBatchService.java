@@ -298,7 +298,6 @@ public class CommandBatchService extends CommandAsyncService {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
                             if (details.getAttempt() == attempts) {
                                 if (details.getWriteFuture().cancel(false)) {
-                                    free(entry);
                                     if (details.getException() == null) {
                                         details.setException(new RedisTimeoutException("Unable to send batch after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
