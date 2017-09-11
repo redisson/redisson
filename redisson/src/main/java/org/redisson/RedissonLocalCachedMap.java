@@ -964,8 +964,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     private void cacheMap(Map<?, ?> map) {
         for (java.util.Map.Entry<?, ?> entry : map.entrySet()) {
-            ByteBuf mapKey = encodeMapKey(entry.getKey());
-            CacheKey cacheKey = toCacheKey(mapKey);
+            CacheKey cacheKey = toCacheKey(entry.getKey());
             CacheValue cacheValue = new CacheValue(entry.getKey(), entry.getValue());
             cache.put(cacheKey, cacheValue);
         }
@@ -1258,9 +1257,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<V> replaceAsync(final K key, final V value) {
-        final ByteBuf keyState = encodeMapKey(key);
-        final CacheKey cacheKey = toCacheKey(keyState);
-        
         RFuture<V> future = super.replaceAsync(key, value);
         future.addListener(new FutureListener<V>() {
             @Override
@@ -1270,6 +1266,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
                 
                 if (future.getNow() != null) {
+                    CacheKey cacheKey = toCacheKey(key);
                     cache.put(cacheKey, new CacheValue(key, value));
                 }
             }
