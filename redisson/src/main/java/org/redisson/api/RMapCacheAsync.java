@@ -44,7 +44,14 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
     RFuture<Boolean> trySetMaxSizeAsync(int maxSize);
-    
+
+    /**
+     * Set max size of the map.
+     *
+     * @param maxSize - max size
+     */
+    RFuture<Void> setMaxSizeAsync(int maxSize);
+
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
