@@ -240,9 +240,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                             + ". channel: " + channel + " data: " + data));
                 } else {
                     if (data != null) {
-                        data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + data));
+                        data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                     } else {
-                        log.error("Error: {} channel: {} data: {}", error, channel, data);
+                        log.error("Error: {} channel: {} data: {}", error, channel, LogHelper.toString(data));
                     }
                 }
             } finally {
@@ -320,7 +320,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             parts.add(result);
         } else {
             if (data != null && !data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
-                log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, data, result);
+                log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, LogHelper.toString(data), LogHelper.toString(result));
             }
         }
     }
