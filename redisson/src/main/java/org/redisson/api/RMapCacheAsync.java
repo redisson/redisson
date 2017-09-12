@@ -38,7 +38,17 @@ import java.util.concurrent.TimeUnit;
 public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
     /**
-     * Tries to set max size of the map.
+     * Sets max size of the map.
+     * Superfluous elements are evicted using LRU algorithm.
+     * 
+     * @param maxSize - max size
+     * @return void
+     */
+    RFuture<Void> setMaxSizeAsync(int maxSize);
+    
+    /**
+     * Tries to set max size of the map. 
+     * Superfluous elements are evicted using LRU algorithm. 
      *
      * @param maxSize - max size
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.

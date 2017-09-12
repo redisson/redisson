@@ -194,7 +194,7 @@ public interface RKeysAsync {
      * <p>
      * Requires Redis 4.0+
      * 
-     * @param keys
+     * @param keys - object names
      * @return number of removed keys
      */
     RFuture<Long> unlinkAsync(String ... keys);
