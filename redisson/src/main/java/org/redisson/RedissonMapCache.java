@@ -96,13 +96,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public boolean trySetMaxSize(int permits) {
-        return get(trySetMaxSizeAsync(permits));
+    public boolean trySetMaxSize(int maxSize) {
+        return get(trySetMaxSizeAsync(maxSize));
     }
     
     @Override
     public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
-        if (maxSize <= 0) {
+        if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
         
@@ -110,13 +110,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
     
     @Override
-    public void setMaxSize(int permits) {
-        get(setMaxSizeAsync(permits));
+    public void setMaxSize(int maxSize) {
+        get(setMaxSizeAsync(maxSize));
     }
     
     @Override
     public RFuture<Void> setMaxSizeAsync(int maxSize) {
-        if (maxSize <= 0) {
+        if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
         

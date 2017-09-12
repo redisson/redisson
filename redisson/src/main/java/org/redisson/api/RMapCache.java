@@ -44,6 +44,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * Superfluous elements are evicted using LRU algorithm.
      * 
      * @param maxSize - max size
+     *                  If <code>0</code> the cache is unbounded (default).
      */
     void setMaxSize(int maxSize);
     
@@ -53,6 +54,7 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      *
      * @param maxSize - max size
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     *         If <code>0</code> the cache is unbounded (default).
      */
     boolean trySetMaxSize(int maxSize);
     
