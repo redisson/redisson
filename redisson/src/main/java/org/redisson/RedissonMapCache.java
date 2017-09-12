@@ -96,8 +96,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public boolean trySetMaxSize(int permits) {
-        return get(trySetMaxSizeAsync(permits));
+    public boolean trySetMaxSize(int maxSize) {
+        return get(trySetMaxSizeAsync(maxSize));
     }
     
     @Override
@@ -110,8 +110,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
     
     @Override
-    public void setMaxSize(int permits) {
-        get(setMaxSizeAsync(permits));
+    public void setMaxSize(int maxSize) {
+        get(setMaxSizeAsync(maxSize));
     }
     
     @Override
