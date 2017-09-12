@@ -28,7 +28,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import io.netty.util.ReferenceCountUtil;
 import org.redisson.RedisClientResult;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
@@ -64,10 +63,10 @@ import org.redisson.misc.RedissonObjectFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
@@ -538,6 +537,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (details.getConnectionFuture().isSuccess()) {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
                             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
+                                if (details.getWriteFuture().cancel(false)) {
+                                    if (details.getException() == null) {
+                                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams() + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts")));
+                                    }
+                                    details.getAttemptPromise().tryFailure(details.getException());
+                                }
                                 return;
                             }
                             details.incAttempt();

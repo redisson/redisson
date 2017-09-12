@@ -45,6 +45,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
 
@@ -296,6 +297,12 @@ public class CommandBatchService extends CommandAsyncService {
                     if (connectionFuture.isSuccess()) {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
                             if (details.getAttempt() == attempts) {
+                                if (details.getWriteFuture().cancel(false)) {
+                                    if (details.getException() == null) {
+                                        details.setException(new RedisTimeoutException("Unable to send batch after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                                    }
+                                    details.getAttemptPromise().tryFailure(details.getException());
+                                }
                                 return;
                             }
                             details.incAttempt();

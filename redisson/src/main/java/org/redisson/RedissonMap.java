@@ -849,7 +849,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
-        return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSET, getName(key), key, value);
+        return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSET, getName(key), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override

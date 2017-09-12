@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.junit.Assert;
@@ -218,16 +219,17 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testMaxSize() {
-        final int maxSize = 2;
+        final AtomicInteger maxSize = new AtomicInteger(2);
         Map<String, String> store = new LinkedHashMap<String, String>() {
             @Override
             protected boolean removeEldestEntry(Entry<String, String> eldest) {
-                return size() > maxSize;
+                return size() > maxSize.get();
             }
         };
         MapOptions<String, String> options = MapOptions.<String, String>defaults().writer(createMapWriter(store));
         RMapCache<String, String> map = redisson.getMapCache("test", options);
-        map.trySetMaxSize(maxSize);
+        assertThat(map.trySetMaxSize(maxSize.get())).isTrue();
+        assertThat(map.trySetMaxSize(1)).isFalse();
 
         assertThat(map.fastPutIfAbsent("01", "00")).isTrue();
         assertThat(map.fastPutIfAbsent("02", "00")).isTrue();
@@ -237,7 +239,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.fastPut("2", "22", 10, TimeUnit.SECONDS)).isTrue();
         assertThat(map.fastPut("3", "33", 10, TimeUnit.SECONDS)).isTrue();
 
-        assertThat(map.size()).isEqualTo(maxSize);
+        assertThat(map.size()).isEqualTo(maxSize.get());
 
         Map<String, String> expected = new HashMap<>();
         expected.put("2", "22");
@@ -257,7 +259,111 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.remove("2", "22")).isTrue();
         assertThat(map.remove("0")).isNull();
         assertThat(map.remove("3")).isEqualTo("33");
-    }
+
+        maxSize.set(6);
+        map.setMaxSize(maxSize.get());
+        assertThat(map.fastPut("01", "00")).isTrue();
+        assertThat(map.fastPut("02", "00")).isTrue();
+        assertThat(map.fastPut("03", "00")).isTrue();
+        assertThat(map.fastPut("04", "00")).isTrue();
+        assertThat(map.fastPut("05", "00")).isTrue();
+        assertThat(map.fastPut("06", "00")).isTrue();
+        assertThat(map.fastPut("07", "00")).isTrue();
+
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("02", "03", "04", "05", "06", "07");
+        
+        map.put("08", "00");
+        map.put("09", "00");
+        map.put("10", "00");
+        map.put("11", "00");
+        map.put("12", "00");
+        map.put("13", "00");
+        map.put("14", "00");
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("09", "10", "11", "12", "13", "14");
+        
+        map.putIfAbsent("15", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("16", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("17", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("18", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("19", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("20", "00", 1, TimeUnit.SECONDS);
+        map.putIfAbsent("21", "00", 1, TimeUnit.SECONDS);
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("16", "17", "18", "19", "20", "21");
+
+        map.putIfAbsent("22", "00");
+        map.putIfAbsent("23", "00");
+        map.putIfAbsent("24", "00");
+        map.putIfAbsent("25", "00");
+        map.putIfAbsent("26", "00");
+        map.putIfAbsent("27", "00");
+        map.putIfAbsent("28", "00");
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("23", "24", "25", "26", "27", "28");
+
+        map.fastPut("29", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("30", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("31", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("32", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("33", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("34", "00", 1, TimeUnit.SECONDS);
+        map.fastPut("35", "00", 1, TimeUnit.SECONDS);
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("30", "31", "32", "33", "34", "35");
+
+        map.put("36", "00", 1, TimeUnit.SECONDS);
+        map.put("37", "00", 1, TimeUnit.SECONDS);
+        map.put("38", "00", 1, TimeUnit.SECONDS);
+        map.put("39", "00", 1, TimeUnit.SECONDS);
+        map.put("40", "00", 1, TimeUnit.SECONDS);
+        map.put("41", "00", 1, TimeUnit.SECONDS);
+        map.put("42", "00", 1, TimeUnit.SECONDS);
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("37", "38", "39", "40", "41", "42");
+
+        map.fastPutIfAbsent("43", "00");
+        map.fastPutIfAbsent("44", "00");
+        map.fastPutIfAbsent("45", "00");
+        map.fastPutIfAbsent("46", "00");
+        map.fastPutIfAbsent("47", "00");
+        map.fastPutIfAbsent("48", "00");
+        map.fastPutIfAbsent("49", "00");
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("44", "45", "46", "47", "48", "49");
+
+        map.fastPutIfAbsent("50", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("51", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("52", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("53", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("54", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("55", "00", 1, TimeUnit.SECONDS);
+        map.fastPutIfAbsent("56", "00", 1, TimeUnit.SECONDS);
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("51", "52", "53", "54", "55", "56");
+
+        Map<String, String> newMap = new LinkedHashMap<>();
+        newMap.put("57", "00");
+        newMap.put("58", "00");
+        newMap.put("59", "00");
+        newMap.put("60", "00");
+        newMap.put("61", "00");
+        newMap.put("62", "00");
+        newMap.put("63", "00");
+        map.putAll(newMap);
+        
+        assertThat(map.size()).isEqualTo(maxSize.get());
+        assertThat(map.keySet()).containsExactly("58", "59", "60", "61", "62", "63");
+
+    }    
     
     @Test
     public void testOrdering() {
