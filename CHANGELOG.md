@@ -4,6 +4,19 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 12-Sep-2017 - versions 2.10.2 and 3.5.2 released
+Feature - added `addScoreAndGetRank` and `addScoreAndGetRevRank` methods to `RScoredSortedSet` object  
+Feature - added `addAndGetRank` and `addAndGetRevRank` methods to `RScoredSortedSet` object (thanks to @zuanoc)  
+Feature - added support for bounded `RMapCache` object using `trySetMaxSize` `setMaxSize` methods (thanks to @johnou)  
+Feature - added search by pattern using `iterator` method of `RSet` objects  
+Feature - added search by pattern using `keySet`, `values` and `entrySet` methods of `RMap` objects  
+Feature - `addScoreAndGetRank` and `addScoreAndGetRevRank` methods were added to `RScoredSortedSet` object  
+Improvement - memory allocation optimization during encoding process  
+Fixed - fixed NPE in LoadBalancerManager (regression since 2.10.1 and 3.5.1)  
+Fixed - `RAtomicDouble.decrementAndGet`  
+Fixed - connection could be in closed state during reconnection process for blocking queue  
+
+
 ### 29-Aug-2017 - versions 2.10.1 and 3.5.1 released
 
 Feature - DNS monitoring support for Sentinel, Master/Slave and Replicated mode  
