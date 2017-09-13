@@ -55,6 +55,10 @@ public class LZ4Codec implements Codec {
     public LZ4Codec(Codec innerCodec) {
         this.innerCodec = innerCodec;
     }
+    
+    public LZ4Codec(ClassLoader classLoader) {
+        this(new FstCodec(classLoader));
+    }
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
@@ -79,21 +83,28 @@ public class LZ4Codec implements Codec {
 
         @Override
         public ByteBuf encode(Object in) throws IOException {
-            LZ4Compressor compressor = factory.fastCompressor();
-            ByteBuf bytes = innerCodec.getValueEncoder().encode(in);
-            ByteBuffer srcBuf = bytes.internalNioBuffer(bytes.readerIndex(), bytes.readableBytes());
-            
-            int outMaxLength = compressor.maxCompressedLength(bytes.readableBytes());
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(outMaxLength + DECOMPRESSION_HEADER_SIZE);
-            out.writeInt(bytes.readableBytes());
-            ByteBuffer outBuf = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
-            int pos = outBuf.position();
-
-            compressor.compress(srcBuf, outBuf);
-
-            int compressedLength = outBuf.position() - pos;
-            out.writerIndex(out.writerIndex() + compressedLength);
-            return out;
+            ByteBuf bytes = null;
+            try {
+                LZ4Compressor compressor = factory.fastCompressor();
+                bytes = innerCodec.getValueEncoder().encode(in);
+                ByteBuffer srcBuf = bytes.internalNioBuffer(bytes.readerIndex(), bytes.readableBytes());
+                
+                int outMaxLength = compressor.maxCompressedLength(bytes.readableBytes());
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer(outMaxLength + DECOMPRESSION_HEADER_SIZE);
+                out.writeInt(bytes.readableBytes());
+                ByteBuffer outBuf = out.internalNioBuffer(out.writerIndex(), out.writableBytes());
+                int pos = outBuf.position();
+                
+                compressor.compress(srcBuf, outBuf);
+                
+                int compressedLength = outBuf.position() - pos;
+                out.writerIndex(out.writerIndex() + compressedLength);
+                return out;
+            } finally {
+                if (bytes != null) {
+                    bytes.release();
+                }
+            }
         }
     };
 
