@@ -703,24 +703,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
         return entry.connectionWriteOp(command);
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
-        // workaround for slots in migration state
+        // slots handling during migration state
         if (source.getRedirect() != null) {
-            MasterSlaveEntry e = getEntry(source.getAddr());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
-            }
-            return e;
+            return getEntry(source.getAddr());
         }
         
-        MasterSlaveEntry e = getEntry(source.getSlot());
-        if (e == null) {
-            throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
-        }
-        return e;
+        return getEntry(source.getSlot());
     }
 
     @Override
@@ -739,8 +735,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     }
                 }
             }
+            
+            if (entry == null) {
+                RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+                return RedissonPromise.newFailedFuture(ex);
+            }
+            
             return entry.connectionReadOp(command, source.getAddr());
         }
+        
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
+
         return entry.connectionReadOp(command);
     }
 
@@ -758,7 +766,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        entry.releaseWrite(connection);
+        if (entry == null) {
+            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+        } else {
+            entry.releaseWrite(connection);
+        }
     }
 
     @Override
@@ -767,7 +779,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        entry.releaseRead(connection);
+        if (entry == null) {
+            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+        } else {
+            entry.releaseRead(connection);
+        }
+        
     }
 
     @Override
