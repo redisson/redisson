@@ -753,11 +753,21 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
-        return getEntry(slot).nextPubSubConnection();
+        MasterSlaveEntry entry = getEntry(slot);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
+        return entry.nextPubSubConnection();
     }
 
-    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry entry) {
-        this.getEntry(slot).returnPubSubConnection(entry);
+    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
+        MasterSlaveEntry entry = getEntry(slot);
+        if (entry == null) {
+            log.error("Node for slot: " + slot + " hasn't been discovered yet");
+        } else {
+            entry.returnPubSubConnection(pubSubEntry);
+        }
     }
 
     @Override
