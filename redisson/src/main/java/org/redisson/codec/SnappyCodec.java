@@ -60,6 +60,10 @@ public class SnappyCodec implements Codec {
         this.innerCodec = innerCodec;
     }
 
+    public SnappyCodec(ClassLoader classLoader) {
+        this(new FstCodec(classLoader));
+    }
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         
         @Override
@@ -67,9 +71,9 @@ public class SnappyCodec implements Codec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 snappyDecoder.get().decode(buf, out);
-                snappyDecoder.get().reset();
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
+                snappyDecoder.get().reset();
                 out.release();
             }
         }
@@ -80,10 +84,14 @@ public class SnappyCodec implements Codec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf buf = innerCodec.getValueEncoder().encode(in);
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(1024*100);
-            snappyEncoder.get().encode(buf, out, buf.readableBytes());
-            snappyEncoder.get().reset();
-            return out;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(buf.readableBytes() + 128);
+            try {
+                snappyEncoder.get().encode(buf, out, buf.readableBytes());
+                return out;
+            } finally {
+                buf.release();
+                snappyEncoder.get().reset();
+            }
         }
     };
 
