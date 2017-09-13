@@ -23,6 +23,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
@@ -247,7 +248,11 @@ public abstract class BaseRemoteService {
                         String canceRequestName = getCancelRequestQueueName(remoteInterface, requestId);
                         cancelExecution(optionsCopy, responseName, request, mayInterruptIfRunning, canceRequestName, this);
 
-                        awaitUninterruptibly(60, TimeUnit.SECONDS);
+                        try {
+                            awaitUninterruptibly(60, TimeUnit.SECONDS);
+                        } catch (CancellationException e) {
+                            // skip
+                        }
                         return isCancelled();
                     }
                 };
