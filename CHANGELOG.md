@@ -4,6 +4,9 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 13-Sep-2017 - versions 2.10.3 and 3.5.3 released
+Fixed - ByteBufs are not released properly in SnappyCodec and LZ4Codec (regression since 2.10.2 and 3.5.2)
+
 ### 12-Sep-2017 - versions 2.10.2 and 3.5.2 released
 Feature - added `addScoreAndGetRank` and `addScoreAndGetRevRank` methods to `RScoredSortedSet` object  
 Feature - added `addAndGetRank` and `addAndGetRevRank` methods to `RScoredSortedSet` object (thanks to @zuanoc)  
