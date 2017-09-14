@@ -34,6 +34,7 @@ import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
 import org.redisson.config.Config;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -104,9 +105,9 @@ public class RedissonObjectFactory {
         Class<? extends Object> type = rr.getType();
         CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
         if (type != null) {
-            if (type.isAnnotationPresent(REntity.class)) {
+            if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
                 RLiveObjectService liveObjectService = redisson.getLiveObjectService();
-                REntity anno = type.getAnnotation(REntity.class);
+                REntity anno = ClassUtils.getAnnotation(type, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
@@ -151,7 +152,7 @@ public class RedissonObjectFactory {
     }
 
     public static RedissonReference toReference(Config config, Object object) {
-        if (object != null && object.getClass().isAnnotationPresent(REntity.class)) {
+        if (object != null && ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
             throw new IllegalArgumentException("REntity should be attached to Redisson before save");
         }
         
@@ -169,14 +170,14 @@ public class RedissonObjectFactory {
         try {
             if (object instanceof RLiveObject) {
                 Class<? extends Object> rEntity = object.getClass().getSuperclass();
-                REntity anno = rEntity.getAnnotation(REntity.class);
+                REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(config.getCodecProvider().getCodec(anno, (Class) rEntity));
                 String name = Introspectior
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();
-                Class<?> type = rEntity.getDeclaredField(name).getType();
+                Class<?> type = ClassUtils.getDeclaredField(rEntity, name).getType();
                 return new RedissonReference(rEntity,
                         ns.getName(rEntity, type, name, ((RLiveObject) object).getLiveObjectId()));
             }

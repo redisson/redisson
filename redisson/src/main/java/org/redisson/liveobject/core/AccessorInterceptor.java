@@ -30,6 +30,7 @@ import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.misc.RedissonObjectFactory;
@@ -73,7 +74,7 @@ public class AccessorInterceptor {
         }
 
         String fieldName = getFieldName(method);
-        Class<?> fieldType = me.getClass().getSuperclass().getDeclaredField(fieldName).getType();
+        Class<?> fieldType = ClassUtils.getDeclaredField(me.getClass().getSuperclass(), fieldName).getType();
         
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
@@ -92,7 +93,7 @@ public class AccessorInterceptor {
         }
         if (isSetter(method, fieldName)) {
             Object arg = args[0];
-            if (arg != null && arg.getClass().isAnnotationPresent(REntity.class)) {
+            if (arg != null && ClassUtils.isAnnotationPresent(arg.getClass(), REntity.class)) {
                 throw new IllegalStateException("REntity object should be attached to Redisson first");
             }
             
@@ -100,7 +101,7 @@ public class AccessorInterceptor {
                 RLiveObject liveObject = (RLiveObject) arg;
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
-                REntity anno = rEntity.getAnnotation(REntity.class);
+                REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
@@ -113,8 +114,8 @@ public class AccessorInterceptor {
             if (!(arg instanceof RObject)
                     && (arg instanceof Collection || arg instanceof Map)
                     && TransformationMode.ANNOTATION_BASED
-                            .equals(me.getClass().getSuperclass()
-                            .getAnnotation(REntity.class).fieldTransformation())) {
+                            .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
+                            REntity.class).fieldTransformation())) {
                 RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
                 if (arg != null) {
                     if (rObject instanceof Collection) {

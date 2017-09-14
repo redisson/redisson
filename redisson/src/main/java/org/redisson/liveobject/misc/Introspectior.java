@@ -16,6 +16,11 @@
 package org.redisson.liveobject.misc;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.description.method.MethodDescription;
@@ -59,8 +64,15 @@ public class Introspectior {
     }
 
     public static FieldList<FieldDescription.InDefinedShape> getFieldsWithAnnotation(Class<?> c, Class<? extends Annotation> a) {
-        return getTypeDescription(c)
-                .getDeclaredFields()
+        return getAllFields(c)
                 .filter(ElementMatchers.isAnnotatedWith(a));
+    }
+
+    public static FieldList<FieldDescription.InDefinedShape> getAllFields(Class<?> cls) {
+        List<Field> fields = new ArrayList<>();
+        for (Class<?> c = cls; c != null; c = c.getSuperclass()) {
+            Collections.addAll(fields, c.getDeclaredFields());
+        }
+        return new FieldList.ForLoadedFields(fields);
     }
 }
