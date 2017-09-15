@@ -21,6 +21,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.api.RObject;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
+import org.redisson.liveobject.misc.ClassUtils;
 
 /**
  *
@@ -44,7 +45,7 @@ public class DefaultCodecProvider implements CodecProvider {
 
     @Override
     public <T extends Codec> T getCodec(REntity anno, Class<?> cls) {
-        if (!cls.isAnnotationPresent(anno.annotationType())) {
+        if (!ClassUtils.isAnnotationPresent(cls, anno.annotationType())) {
             throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
         }
         return this.<T>getCodec((Class<T>) anno.codec());
@@ -53,7 +54,7 @@ public class DefaultCodecProvider implements CodecProvider {
     @Override
     public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName) {
         try {
-            if (!cls.getField(fieldName).isAnnotationPresent(anno.getClass())) {
+            if (!ClassUtils.getDeclaredField(cls, fieldName).isAnnotationPresent(anno.getClass())) {
                 throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");
             }
         } catch (Exception ex) {

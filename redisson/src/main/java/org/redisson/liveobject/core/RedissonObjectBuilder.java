@@ -44,6 +44,7 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.CodecProvider;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.misc.RedissonObjectFactory;
 
@@ -116,12 +117,12 @@ public class RedissonObjectBuilder {
      * WARNING: rEntity has to be the class of @This object.
      */
     private Codec getFieldCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
-        Field field = rEntity.getDeclaredField(fieldName);
+        Field field = ClassUtils.getDeclaredField(rEntity, fieldName);
         if (field.isAnnotationPresent(RObjectField.class)) {
             RObjectField anno = field.getAnnotation(RObjectField.class);
             return codecProvider.getCodec(anno, rEntity, rObjectClass, fieldName);
         } else {
-            REntity anno = rEntity.getAnnotation(REntity.class);
+            REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
             return codecProvider.getCodec(anno, (Class<?>) rEntity);
         }
     }
@@ -131,7 +132,7 @@ public class RedissonObjectBuilder {
      */
     private NamingScheme getFieldNamingScheme(Class<?> rEntity, String fieldName, Codec c) throws Exception {
         if (!namingSchemeCache.containsKey(fieldName)) {
-            REntity anno = rEntity.getAnnotation(REntity.class);
+            REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
             namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
                     .getDeclaredConstructor(Codec.class)
                     .newInstance(c));

@@ -68,6 +68,9 @@ Used by
 [![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) &nbsp;&nbsp;&nbsp;
 [![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
 [![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)
+[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)
+[![ISONAS](https://redisson.org/assets/logos/client16.png "ISONAS")](http://www.isonas.com/)
+
 
 Success stories
 ================================

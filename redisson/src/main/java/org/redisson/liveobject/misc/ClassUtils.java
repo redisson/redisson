@@ -45,9 +45,15 @@
 
 package org.redisson.liveobject.misc;
 
+import org.redisson.api.RObject;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
@@ -57,7 +63,7 @@ public class ClassUtils {
     
     public static void setField(Object obj, String fieldName, Object value) {
         try {
-            Field field = obj.getClass().getDeclaredField(fieldName);
+            Field field = getDeclaredField(obj.getClass(), fieldName);
             if (!field.isAccessible()) {
                 field.setAccessible(true);
             }
@@ -69,7 +75,7 @@ public class ClassUtils {
     
     public static <T extends Annotation> T getAnnotation(Class<?> clazz, String fieldName, Class<T> annotationClass) {
         try {
-            Field field = clazz.getDeclaredField(fieldName);
+            Field field = getDeclaredField(clazz, fieldName);
             if (!field.isAccessible()) {
                 field.setAccessible(true);
             }
@@ -78,10 +84,19 @@ public class ClassUtils {
             return null;
         }
     }
-    
+
+    public static <T extends Annotation> T getAnnotation(Class<?> clazz, Class<T> annotationClass) {
+        for (Class<?> c : getClassHierarchy(clazz)) {
+            if (c.getAnnotation(annotationClass) != null) {
+                return c.getAnnotation(annotationClass);
+            }
+        }
+        return null;
+    }
+
     public static <T> T getField(Object obj, String fieldName) {
         try {
-            Field field = obj.getClass().getDeclaredField(fieldName);
+            Field field = getDeclaredField(obj.getClass(), fieldName);
             if (!field.isAccessible()) {
                 field.setAccessible(true);
             }
@@ -89,6 +104,38 @@ public class ClassUtils {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }
+    }
+
+    public static Field getDeclaredField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        for (Class c : getClassHierarchy(clazz)) {
+            for (Field field : c.getDeclaredFields()) {
+                if (field.getName().equals(fieldName)) {
+                    return field;
+                }
+            }
+        }
+        throw new NoSuchFieldException("No such field: " + fieldName);
+    }
+
+    public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
+        for (Class<?> c : getClassHierarchy(clazz)) {
+            if (c.isAnnotationPresent(annotation)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Iterable<Class<?>> getClassHierarchy(Class<?> clazz) {
+        // Don't descend into hierarchy for RObjects
+        if (Arrays.asList(clazz.getInterfaces()).contains(RObject.class)) {
+            return Collections.singleton(clazz);
+        }
+        List<Class<?>> classes = new ArrayList<>();
+        for (Class c = clazz; c != null; c = c.getSuperclass()) {
+            classes.add(c);
+        }
+        return classes;
     }
     
     /**
