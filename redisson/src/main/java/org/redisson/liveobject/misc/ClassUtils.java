@@ -129,9 +129,9 @@ public class ClassUtils {
     private static Iterable<Class<?>> getClassHierarchy(Class<?> clazz) {
         // Don't descend into hierarchy for RObjects
         if (Arrays.asList(clazz.getInterfaces()).contains(RObject.class)) {
-            return Collections.singleton(clazz);
+            return Collections.<Class<?>>singleton(clazz);
         }
-        List<Class<?>> classes = new ArrayList<>();
+        List<Class<?>> classes = new ArrayList<Class<?>>();
         for (Class c = clazz; c != null; c = c.getSuperclass()) {
             classes.add(c);
         }

@@ -69,7 +69,7 @@ public class Introspectior {
     }
 
     public static FieldList<FieldDescription.InDefinedShape> getAllFields(Class<?> cls) {
-        List<Field> fields = new ArrayList<>();
+        List<Field> fields = new ArrayList<Field>();
         for (Class<?> c = cls; c != null; c = c.getSuperclass()) {
             Collections.addAll(fields, c.getDeclaredFields());
         }
