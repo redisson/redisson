@@ -418,11 +418,14 @@ public class CommandBatchService extends CommandAsyncService {
 
     private void checkWriteFuture(Entry entry, final RPromise<Void> attemptPromise, AsyncDetails details,
             final RedisConnection connection, ChannelFuture future, boolean noResult, long responseTimeout, int attempts) {
+        if (future.isCancelled() || details.getAttemptPromise().isDone()) {
+            return;
+        }
+        
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
             if (details.getAttempt() == attempts) {
                 details.getAttemptPromise().tryFailure(details.getException());
-                free(entry);
             }
             return;
         }
@@ -448,7 +451,7 @@ public class CommandBatchService extends CommandAsyncService {
     private void checkConnectionFuture(final Entry entry, final NodeSource source,
             final RPromise<Void> mainPromise, final RPromise<Void> attemptPromise, final AsyncDetails details,
             RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout, final int attempts) {
-        if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
+        if (connFuture.isCancelled()) {
             return;
         }
 
@@ -458,6 +461,11 @@ public class CommandBatchService extends CommandAsyncService {
             return;
         }
 
+        if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
+            releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+            return;
+        }
+        
         final RedisConnection connection = connFuture.getNow();
 
         List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
