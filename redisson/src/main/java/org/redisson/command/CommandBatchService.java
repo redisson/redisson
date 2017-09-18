@@ -45,7 +45,6 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
-import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
 
@@ -277,7 +276,7 @@ public class CommandBatchService extends CommandAsyncService {
                 if (future.isCancelled() && connectionFuture.cancel(false)) {
                     log.debug("Connection obtaining canceled for batch");
                     details.getTimeout().cancel();
-                    if (details.getAttemptPromise().cancel(false)) {
+                    if (attemptPromise.cancel(false)) {
                         free(entry);
                     }
                 }
@@ -301,7 +300,7 @@ public class CommandBatchService extends CommandAsyncService {
                                     if (details.getException() == null) {
                                         details.setException(new RedisTimeoutException("Unable to send batch after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
-                                    details.getAttemptPromise().tryFailure(details.getException());
+                                    attemptPromise.tryFailure(details.getException());
                                 }
                                 return;
                             }
@@ -418,14 +417,14 @@ public class CommandBatchService extends CommandAsyncService {
 
     private void checkWriteFuture(Entry entry, final RPromise<Void> attemptPromise, AsyncDetails details,
             final RedisConnection connection, ChannelFuture future, boolean noResult, long responseTimeout, int attempts) {
-        if (future.isCancelled() || details.getAttemptPromise().isDone()) {
+        if (future.isCancelled() || attemptPromise.isDone()) {
             return;
         }
         
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
             if (details.getAttempt() == attempts) {
-                details.getAttemptPromise().tryFailure(details.getException());
+                attemptPromise.tryFailure(details.getException());
             }
             return;
         }
@@ -461,8 +460,8 @@ public class CommandBatchService extends CommandAsyncService {
             return;
         }
 
-        if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
-            releaseConnection(source, connFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+        if (attemptPromise.isDone() || details.getMainPromise().isDone()) {
+            releaseConnection(source, connFuture, details.isReadOnlyMode(), attemptPromise, details);
             return;
         }
         
