@@ -460,7 +460,7 @@ public class CommandBatchService extends CommandAsyncService {
             return;
         }
 
-        if (attemptPromise.isDone() || details.getMainPromise().isDone()) {
+        if (attemptPromise.isDone() || mainPromise.isDone()) {
             releaseConnection(source, connFuture, details.isReadOnlyMode(), attemptPromise, details);
             return;
         }
