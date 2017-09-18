@@ -1613,5 +1613,28 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(so.getName()).isEqualTo("name");
     }
 
+    @REntity
+    public static class HasIsAccessor {
+        @RId(generator = LongGenerator.class)
+        private Long id;
+
+        boolean good;
+
+        public boolean isGood() {
+            return good;
+        }
+
+        public void setGood(boolean good) {
+            this.good = good;
+        }
+    }
+
+    @Test
+    public void testIsAccessor() {
+        HasIsAccessor o = new HasIsAccessor();
+        o.setGood(true);
+        o = redisson.getLiveObjectService().persist(o);
+        assertThat(o.isGood()).isEqualTo(true);
+    }
 
 }

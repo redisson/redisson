@@ -148,7 +148,9 @@ public class AccessorInterceptor {
     }
 
     private String getFieldName(Method method) {
-        return method.getName().substring(3, 4).toLowerCase() + method.getName().substring(4);
+        String name = method.getName();
+        int i = name.startsWith("is") ? 3 : 4;
+        return name.substring(i - 1, i).toLowerCase() + name.substring(i);
     }
 
     private boolean isGetter(Method method, String fieldName) {
