@@ -59,6 +59,12 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
     
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (acceptOutboundMessage(msg)) {
+            if (!promise.setUncancellable()) {
+                return;
+            }
+        }
+
         try {
             super.write(ctx, msg, promise);
         } catch (Exception e) {

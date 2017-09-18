@@ -1,5 +1,7 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -9,13 +11,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
+import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
@@ -39,6 +41,16 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> t = batch.execute();
         System.out.println(t);
+    }
+    
+    @Test
+    public void testWriteTimeout() {
+        RBatch batch = redisson.createBatch();
+        for (int i = 0; i < 200000; i++) {
+            RMapCacheAsync<String, String> map = batch.getMapCache("test");
+            map.putAsync("" + i, "" + i, 10, TimeUnit.SECONDS);
+        }
+        batch.execute();
     }
     
     @Test
