@@ -34,6 +34,7 @@ public class MapCacheEvictionTask extends EvictionTask {
     private final String maxIdleSetName;
     private final String expiredChannelName;
     private final String lastAccessTimeSetName;
+    private final String executeTaskOnceLatchName;
     
     public MapCacheEvictionTask(String name, String timeoutSetName, String maxIdleSetName, 
             String expiredChannelName, String lastAccessTimeSetName, CommandAsyncExecutor executor) {
@@ -43,12 +44,24 @@ public class MapCacheEvictionTask extends EvictionTask {
         this.maxIdleSetName = maxIdleSetName;
         this.expiredChannelName = expiredChannelName;
         this.lastAccessTimeSetName = lastAccessTimeSetName;
+        this.executeTaskOnceLatchName = prefixName("redisson__execute_task_once_latch", name);
     }
 
+    protected String prefixName(String prefix, String name) {
+        if (name.contains("{")) {
+            return prefix + ":" + name;
+        }
+        return prefix + ":{" + name + "}";
+    }
+    
     @Override
     RFuture<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
-                "local expiredKeys1 = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                "if redis.call('setnx', KEYS[6], ARGV[4]) == 0 then "
+                 + "return 0;"
+              + "end;"
+              + "redis.call('expire', KEYS[6], ARGV[3]); "
+               +"local expiredKeys1 = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
                 + "for i, key in ipairs(expiredKeys1) do "
                     + "local v = redis.call('hget', KEYS[1], key); "
                     + "if v ~= false then "
@@ -85,8 +98,8 @@ public class MapCacheEvictionTask extends EvictionTask {
                   + "redis.call('hdel', KEYS[1], unpack(expiredKeys2)); "
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
-              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName), 
-              System.currentTimeMillis(), keysLimit);
+              Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName, executeTaskOnceLatchName), 
+              System.currentTimeMillis(), keysLimit, delay, 1);
     }
     
 }
