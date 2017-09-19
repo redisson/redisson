@@ -33,11 +33,11 @@ import io.netty.util.concurrent.FutureListener;
 abstract class EvictionTask implements Runnable {
 
     final Deque<Integer> sizeHistory = new LinkedList<Integer>();
-    final int minDelay = 1;
+    final int minDelay = 5;
     final int maxDelay = 30*60;
-    final int keysLimit = 300;
+    final int keysLimit = 100;
     
-    int delay = 10;
+    int delay = 5;
 
     final CommandAsyncExecutor executor;
     
