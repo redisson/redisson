@@ -67,9 +67,10 @@ Used by
 [![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/) &nbsp;&nbsp;&nbsp;
 [![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) &nbsp;&nbsp;&nbsp;
 [![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
-[![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)
-[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)
-[![ISONAS](https://redisson.org/assets/logos/client16.png "ISONAS")](http://www.isonas.com/)
+[![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
+[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)&nbsp;&nbsp;&nbsp;
+[![ISONAS](https://redisson.org/assets/logos/client16.png "ISONAS")](http://www.isonas.com/)&nbsp;&nbsp;&nbsp;
+[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)&nbsp;&nbsp;&nbsp;
 
 
 Success stories
