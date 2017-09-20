@@ -216,7 +216,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
             return createMap(name, config);
         }
         
-        if (config.getMaxIdleTime() == 0 && config.getTTL() == 0) {
+        if (config.getMaxIdleTime() == 0 && config.getTTL() == 0 && config.getMaxSize() == 0) {
             return createMap(name, config);
         }
         
@@ -248,6 +248,8 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
         Cache oldCache = instanceMap.putIfAbsent(name, cache);
         if (oldCache != null) {
             cache = oldCache;
+        } else {
+            map.setMaxSize(config.getMaxSize());
         }
         return cache;
     }
