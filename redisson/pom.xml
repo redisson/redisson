@@ -231,6 +231,7 @@
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.6.14</version>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
