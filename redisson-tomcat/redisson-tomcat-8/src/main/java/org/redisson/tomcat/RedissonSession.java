@@ -118,6 +118,10 @@ public class RedissonSession extends StandardSession {
         super.setValid(isValid);
         
         if (map != null) {
+            if (!isValid && !map.isExists()) {
+                return;
+            }
+            
             map.fastPut("session:isValid", isValid);
         }
     }
