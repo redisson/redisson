@@ -248,6 +248,10 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionCreatedEvent(this, session));
             }
         } else if (deletedTopic.getPatternNames().contains(pattern)) {
+            if (!body.contains(":")) {
+                return;
+            }
+            
             String id = body.split(":")[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
@@ -257,6 +261,10 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionDeletedEvent(this, id));
             }
         } else if (expiredTopic.getPatternNames().contains(pattern)) {
+            if (!body.contains(":")) {
+                return;
+            }
+
             String id = body.split(":")[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
