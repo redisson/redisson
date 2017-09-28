@@ -135,10 +135,13 @@ public class RedissonNode {
         }
         
         int mapReduceWorkers = config.getMapReduceWorkers();
-        if (mapReduceWorkers == 0) {
-            mapReduceWorkers = Runtime.getRuntime().availableProcessors();
+        if (mapReduceWorkers != -1) {
+            if (mapReduceWorkers == 0) {
+                mapReduceWorkers = Runtime.getRuntime().availableProcessors();
+            }
+            redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(mapReduceWorkers);
+            log.info("{} map reduce worker(s) registered", mapReduceWorkers);
         }
-        redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(mapReduceWorkers);
         
         for (Entry<String, Integer> entry : config.getExecutorServiceWorkers().entrySet()) {
             String name = entry.getKey();
@@ -192,10 +195,6 @@ public class RedissonNode {
      * @return RedissonNode instance
      */
     public static RedissonNode create(RedissonNodeConfig config, Redisson redisson) {
-        if (config.getExecutorServiceWorkers().isEmpty()) {
-            throw new IllegalArgumentException("Executor service workers are empty");
-        }
-        
         return new RedissonNode(config, redisson);
     }
     

@@ -143,6 +143,8 @@ public class MasterSlaveEntry {
             }
         }
         
+        entry.reset();
+        
         // close all connections
         while (true) {
             final RedisConnection connection = entry.pollConnection();

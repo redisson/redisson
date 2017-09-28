@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable Release Version | JDK Version compatibility | Release Date |
 | ------------- | ------------- | ------------|
-| 3.5.2  | 1.8+ | 12.09.2017 |
-| 2.10.2 | 1.6, 1.7, 1.8 and Android | 12.09.2017 |
+| 3.5.3  | 1.8+ | 13.09.2017 |
+| 2.10.3 | 1.6, 1.7, 1.8 and Android | 13.09.2017 |
 
 __NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
 
@@ -67,7 +67,11 @@ Used by
 [![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/) &nbsp;&nbsp;&nbsp;
 [![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) &nbsp;&nbsp;&nbsp;
 [![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
-[![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)
+[![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
+[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)&nbsp;&nbsp;&nbsp;
+[![ISONAS](https://redisson.org/assets/logos/client16.png "ISONAS")](http://www.isonas.com/)  
+[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
+
 
 Success stories
 ================================
@@ -82,23 +86,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.5.2</version>
+       <version>3.5.3</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.10.2</version>
+       <version>2.10.3</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.5.2'  
+    compile 'org.redisson:redisson:3.5.3'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.10.2'
+    compile 'org.redisson:redisson:2.10.3'
 
 #### Java
 
@@ -123,11 +127,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.5.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.5.2&e=jar),
-[Redisson node 3.5.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.2&e=jar)  
+[Redisson 3.5.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.5.3&e=jar),
+[Redisson node 3.5.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.3&e=jar)  
 
-[Redisson 2.10.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.10.2&e=jar),
-[Redisson node 2.10.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.2&e=jar)  
+[Redisson 2.10.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.10.3&e=jar),
+[Redisson node 2.10.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.3&e=jar)  
 
 ### Supported by
 

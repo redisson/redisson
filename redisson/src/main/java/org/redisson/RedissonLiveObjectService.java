@@ -112,8 +112,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     
     private <T> Object generateId(Class<T> entityClass) throws NoSuchFieldException {
         String idFieldName = getRIdFieldName(entityClass);
-        RId annotation = entityClass
-                .getDeclaredField(idFieldName)
+        RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
         Resolver resolver = resolverProvider.getResolver(entityClass,
                 annotation.generator(), annotation);
@@ -182,7 +181,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             throw new IllegalArgumentException("This REntity already exists.");
         }
         
-        for (FieldDescription.InDefinedShape field : Introspectior.getFieldsDescription(detachedObject.getClass())) {
+        for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
             Object object = ClassUtils.getField(detachedObject, field.getName());
             
             if (object == null) {
@@ -198,7 +197,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 
                 if (rObject instanceof Collection) {
                     for (Object obj : (Collection<Object>)object) {
-                        if (obj != null && obj.getClass().isAnnotationPresent(REntity.class)) {
+                        if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
                             if (persisted == null) {
                                 if (checkCascade(detachedObject, type, field.getName())) {
@@ -216,7 +215,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         Object key = entry.getKey();
                         Object value = entry.getValue();
 
-                        if (key != null && key.getClass().isAnnotationPresent(REntity.class)) {
+                        if (key != null && ClassUtils.isAnnotationPresent(key.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(key);
                             if (persisted == null) {
                                 if (checkCascade(detachedObject, type, field.getName())) {
@@ -226,7 +225,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             key = persisted;
                         }
 
-                        if (value != null && value.getClass().isAnnotationPresent(REntity.class)) {
+                        if (value != null && ClassUtils.isAnnotationPresent(value.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(value);
                             if (persisted == null) {
                                 if (checkCascade(detachedObject, type, field.getName())) {
@@ -240,7 +239,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                 }
                 excludedFields.add(field.getName());
-            } else if (object.getClass().isAnnotationPresent(REntity.class)) {
+            } else if (ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
                 Object persisted = alreadyPersisted.get(object);
                 if (persisted == null) {
                     if (checkCascade(detachedObject, type, field.getName())) {
@@ -576,7 +575,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (entityClass.isAnonymousClass() || entityClass.isLocalClass()) {
             throw new IllegalArgumentException(entityClass.getName() + " is not publically accessable.");
         }
-        if (!entityClass.isAnnotationPresent(REntity.class)) {
+        if (!ClassUtils.isAnnotationPresent(entityClass, REntity.class)) {
             throw new IllegalArgumentException("REntity annotation is missing from class type declaration.");
         }
         FieldList<FieldDescription.InDefinedShape> fieldsWithRIdAnnotation
@@ -591,11 +590,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String idFieldName = idFieldDescription.getName();
         Field idField = null;
         try {
-            idField = entityClass.getDeclaredField(idFieldName);
+            idField = ClassUtils.getDeclaredField(entityClass, idFieldName);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        if (idField.getType().isAnnotationPresent(REntity.class)) {
+        if (ClassUtils.isAnnotationPresent(idField.getType(), REntity.class)) {
             throw new IllegalArgumentException("Field with RId annotation cannot be a type of which class is annotated with REntity.");
         }
         if (idField.getType().isAssignableFrom(RObject.class)) {

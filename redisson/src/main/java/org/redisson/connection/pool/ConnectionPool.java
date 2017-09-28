@@ -198,8 +198,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        if (((entry.getNodeType() == NodeType.MASTER && entry.getFreezeReason() == FreezeReason.SYSTEM) || !entry.isFreezed())
-                && tryAcquireConnection(entry)) {
+        if ((!entry.isFreezed() || entry.getFreezeReason() == FreezeReason.SYSTEM) && 
+        		tryAcquireConnection(entry)) {
             return acquireConnection(command, entry);
         }
 

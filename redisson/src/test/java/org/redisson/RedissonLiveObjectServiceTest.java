@@ -1129,11 +1129,9 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         SimpleObject s = new SimpleObject();
         s = service.persist(s);
-        
         so.setSo(s);
         assertThat(s.getId()).isNotNull();
         so.getObjects().add(s);
-        
         so = redisson.getLiveObjectService().detach(so);
         assertThat(so.getSo().getId()).isEqualTo(s.getId());
         assertThat(so.getObjects().get(0).getId()).isEqualTo(so.getSo().getId());
@@ -1462,5 +1460,181 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         sg = redisson.getLiveObjectService().persist(sg);
         assertThat(sg.getName()).isEqualTo("1234");
     }
+
+    @REntity
+    public static class Animal {
+
+        @RId(generator = LongGenerator.class)
+        private Long id;
+
+        private String name;
+
+        protected Animal() {
+        }
+
+        public Animal(String name) {
+            super();
+            this.name = name;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+    }
+
+    public static class Dog extends Animal {
+        private String breed;
+
+        public Dog(String name) {
+            super(name);
+        }
+
+        protected Dog() {
+        }
+
+        public void setBreed(String breed) {
+            this.breed = breed;
+        }
+
+        public String getBreed() {
+            return breed;
+        }
+    }
+
+    @Test
+    public void testInheritedREntity() {
+        Dog d = new Dog("Fido");
+        d.setBreed("lab");
+
+        d = redisson.getLiveObjectService().persist(d);
+
+        assertThat(d.getName()).isEqualTo("Fido");
+        assertThat(d.getBreed()).isEqualTo("lab");
+    }
+
+    @Test
+    public void testMapOfInheritedEntity() {
+        RMap<String, Dog> dogs = redisson.getMap("dogs");
+        Dog d = new Dog("Fido");
+        d = redisson.getLiveObjectService().persist(d);
+        d.setBreed("lab");
+        dogs.put("key", d);
+        dogs = redisson.getMap("dogs");
+        assertThat(dogs.size()).isEqualTo(1);
+        assertThat(dogs.get("key").getBreed()).isEqualTo("lab");
+    }
+
+    public static class MyCustomer extends Customer {
+
+        @RCascade(RCascadeType.ALL)
+        private List<Order> specialOrders = new ArrayList<>();
+
+        public MyCustomer() {
+        }
+
+        public MyCustomer(String id) {
+            super(id);
+        }
+
+        public void addSpecialOrder(Order order) {
+            getSpecialOrders().add(order);
+        }
+
+        public void setSpecialOrders(List<Order> orders) {
+            this.specialOrders = orders;
+        }
+
+        public List<Order> getSpecialOrders() {
+            return specialOrders;
+        }
+    }
     
+    @Test
+    public void testCyclicRefsWithInheritedREntity() {
+        MyCustomer customer = new MyCustomer("12");
+        customer = redisson.getLiveObjectService().persist(customer);
+        Order order = new Order();
+        order = redisson.getLiveObjectService().persist(order);
+        order.setCustomer(customer);
+        customer.getOrders().add(order);
+        Order special = new Order();
+        special = redisson.getLiveObjectService().persist(special);
+        order.setCustomer(customer);
+        customer.addSpecialOrder(special);
+
+        customer = redisson.getLiveObjectService().detach(customer);
+        assertThat(customer.getClass()).isSameAs(MyCustomer.class);
+        assertThat(customer.getId()).isNotNull();
+        List<Order> orders = customer.getOrders();
+        assertThat(orders.get(0)).isNotNull();
+        List<Order> specials = customer.getSpecialOrders();
+        assertThat(specials.get(0)).isNotNull();
+
+        customer = redisson.getLiveObjectService().get(MyCustomer.class, customer.getId());
+        assertThat(customer.getId()).isNotNull();
+        assertThat(customer.getOrders().get(0)).isNotNull();
+        assertThat(customer.getSpecialOrders().get(0)).isNotNull();
+    }
+
+    public static class MyObjectWithList extends ObjectWithList {
+        protected MyObjectWithList() {
+            super();
+        }
+
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    @Test
+    public void testStoreInnerObjectWithInheritedREntity() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        MyObjectWithList so = new MyObjectWithList();
+        so = service.persist(so);
+
+        SimpleObject s = new SimpleObject();
+        s = service.persist(s);
+
+        so.setSo(s);
+        assertThat(s.getId()).isNotNull();
+        so.getObjects().add(s);
+        so.setName("name");
+
+        so = redisson.getLiveObjectService().detach(so);
+        assertThat(so.getSo().getId()).isEqualTo(s.getId());
+        assertThat(so.getObjects().get(0).getId()).isEqualTo(so.getSo().getId());
+        assertThat(so.getName()).isEqualTo("name");
+    }
+
+    @REntity
+    public static class HasIsAccessor {
+        @RId(generator = LongGenerator.class)
+        private Long id;
+
+        boolean good;
+
+        public boolean isGood() {
+            return good;
+        }
+
+        public void setGood(boolean good) {
+            this.good = good;
+        }
+    }
+
+    @Test
+    public void testIsAccessor() {
+        HasIsAccessor o = new HasIsAccessor();
+        o.setGood(true);
+        o = redisson.getLiveObjectService().persist(o);
+        assertThat(o.isGood()).isEqualTo(true);
+    }
+
 }

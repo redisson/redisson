@@ -127,7 +127,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         Session result = super.findSession(id);
         if (result == null && id != null) {
             Map<String, Object> attrs = getMap(id).readAllMap();
-            if (attrs.isEmpty()) {
+            if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
                 log.info("Session " + id + " can't be found");
                 return null;
             }

@@ -19,9 +19,11 @@ import java.io.Serializable;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.redisson.Redisson;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
@@ -144,7 +146,8 @@ public class CoordinatorTask<KOut, VOut> implements Callable<Object>, Serializab
         }
 
         if (timeout > 0) {
-            java.util.concurrent.Future<?> collatorFuture = redisson.getConfig().getExecutor().submit(collatorTask);
+            ExecutorService executor = ((Redisson) redisson).getConnectionManager().getExecutor();
+            java.util.concurrent.Future<?> collatorFuture = executor.submit(collatorTask);
             try {
                 return collatorFuture.get(timeout - timeSpent, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {

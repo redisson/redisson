@@ -321,7 +321,9 @@ public class RedissonKeys implements RKeys {
                 if (future.isSuccess()) {
                     List<Long> result = (List<Long>) future.get();
                     for (Long res : result) {
-                        count.addAndGet(res);
+                        if (res != null) {
+                            count.addAndGet(res);
+                        }
                     }
                 } else {
                     failed.set(future.cause());

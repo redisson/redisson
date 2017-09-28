@@ -33,6 +33,8 @@ public class CacheConfig {
     private long ttl;
 
     private long maxIdleTime;
+    
+    private int maxSize;
 
     /**
      * Creates config object with
@@ -70,6 +72,21 @@ public class CacheConfig {
      */
     public void setTTL(long ttl) {
         this.ttl = ttl;
+    }
+
+    
+    public int getMaxSize() {
+        return maxSize;
+    }
+
+    /**
+     * Set max size of map. Superfluous elements are evicted using LRU algorithm.
+     *
+     * @param maxSize - max size
+     *                  If <code>0</code> the cache is unbounded (default).
+     */
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
     }
 
     public long getMaxIdleTime() {

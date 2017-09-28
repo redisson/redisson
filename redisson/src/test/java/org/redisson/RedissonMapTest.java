@@ -27,6 +27,8 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
+import net.bytebuddy.utility.RandomString;
+
 public class RedissonMapTest extends BaseMapTest {
 
     public static class SimpleKey implements Serializable {
@@ -419,6 +421,16 @@ public class RedissonMapTest extends BaseMapTest {
         
         assertThat(rmap.entrySet()).containsExactlyElementsOf(map.entrySet());
         assertThat(rmap.readAllEntrySet()).containsExactlyElementsOf(map.entrySet());
+    }
+    
+    @Test
+    public void testWriteTimeout() {
+        Map<String, String> map = redisson.getMap("simple");
+        Map<String, String> joinMap = new HashMap<>();
+        for (int i = 0; i < 200000; i++) {
+            joinMap.put(RandomString.make(1024), RandomString.make(1024));
+        }
+        map.putAll(joinMap);
     }
     
     @Test

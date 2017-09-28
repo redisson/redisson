@@ -50,7 +50,11 @@ public class RedissonNodeConfig extends Config {
     
     /**
      * MapReduce workers amount. 
-     * 0 = current_processors_amount
+     * <p>
+     * <code>0 = current_processors_amount</code>
+     * <p>
+     * <code>-1 = disable MapReduce workers</code>
+     * 
      * <p>
      * Default is <code>0</code>
      * 

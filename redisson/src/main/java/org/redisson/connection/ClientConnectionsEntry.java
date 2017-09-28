@@ -111,6 +111,11 @@ public class ClientConnectionsEntry {
     public void setFreezed(boolean freezed) {
         this.freezed = freezed;
     }
+    
+    public void reset() {
+        freeConnectionsCounter.removeListeners();
+        freeSubscribeConnectionsCounter.removeListeners();
+    }
 
     public int getFreeAmount() {
         return freeConnectionsCounter.getCounter();

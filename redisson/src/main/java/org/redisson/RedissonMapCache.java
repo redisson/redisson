@@ -86,13 +86,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(commandExecutor, name, redisson, options);
-        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+        }
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(codec, commandExecutor, name, redisson, options);
-        evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+        if (evictionScheduler != null) {
+            evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
+        }
     }
 
     @Override
