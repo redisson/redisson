@@ -147,13 +147,13 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>[3.1,)</version>
+            <version>[3.1,4.3)</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>[3.1,)</version>
+            <version>[3.1,4.3)</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
