@@ -4,6 +4,22 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 28-Sep-2017 - versions 2.10.4 and 3.5.4 released
+Feature - added `maxSize` setting for `SpringCacheManager`  
+Feature - allow `LiveObjectService` to work with classes that inherit from REntities (thanks to @sdjacobs)  
+Improvement - `RMapCache` entires eviction process optimized  
+Improvement - handling of slave down process  
+Fixed - operation on slave coldn't be executed after its restart (thanks to @xavierfacq) 
+Fixed - `ArrayIndexOutOfBoundsException` in RedissonSessionRepository  
+Fixed - storing Live Objects in Redisson's collection objects (thanks to Rui Gu)  
+Fixed - cancel write operation for commands belong to disconnected connection  
+Fixed - possible race-condition during cancellation of write operation to Redis connection  
+Fixed - accessor methods in Live Objects break if they start with 'is' (thanks to @sdjacobs)  
+Fixed - MapReduce `Collator` couldn't be executed if timeout was defined  
+Fixed - RedissonKeys.delete throws `NullPointerException` in some cases  
+Fixed - `CancellationException` handling during RemotePromise cancellation  
+Fixed - `RedisNodeNotFoundException` should be supplied to Failed Promise  
+
 ### 13-Sep-2017 - versions 2.10.3 and 3.5.3 released
 Fixed - ByteBufs are not released properly in SnappyCodec and LZ4Codec (regression since 2.10.2 and 3.5.2)
 
