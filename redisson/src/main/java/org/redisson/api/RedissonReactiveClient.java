@@ -31,6 +31,32 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns semaphore instance by name
+     *
+     * @param name - name of object
+     * @return Semaphore object
+     */
+    RSemaphoreReactive getSemaphore(String name);
+    
+    /**
+     * Returns readWriteLock instance by name.
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RReadWriteLockReactive getReadWriteLock(String name);
+    
+    /**
+     * Returns lock instance by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getLock(String name);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Supports value eviction with a given TTL value.
      *
@@ -58,9 +84,9 @@ public interface RedissonReactiveClient {
     /**
      * Returns map-based cache instance by name
      * using provided codec for both cache keys and values.
-     * Supports entry eviction with a given TTL value.
-     *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.</p>
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec)}.
      *
      * @param <K> type of keys
      * @param <V> type of values
@@ -71,10 +97,26 @@ public interface RedissonReactiveClient {
     <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
 
     /**
+     * Returns map-based cache instance by <code>name</code>
+     * using provided <code>codec</code> for both cache keys and values.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, Codec, MapOptions)}.
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - object name
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options);
+
+    /**
      * Returns map-based cache instance by name.
-     * Supports entry eviction with a given TTL value.
-     *
-     * <p>If eviction is not required then it's better to use regular map {@link #getMap(String)}.</p>
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String)}.
      *
      * @param <K> type of keys
      * @param <V> type of values
@@ -83,6 +125,20 @@ public interface RedissonReactiveClient {
      */
     <K, V> RMapCacheReactive<K, V> getMapCache(String name);
 
+    /**
+     * Returns map-based cache instance by name.
+     * Supports entry eviction with a given MaxIdleTime and TTL settings.
+     * <p>
+     * If eviction is not required then it's better to use regular map {@link #getMap(String, MapOptions)}.</p>
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return MapCache object
+     */
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options);
+    
     /**
      * Returns object holder instance by name
      * 
@@ -163,6 +219,17 @@ public interface RedissonReactiveClient {
     <K, V> RMapReactive<K, V> getMap(String name);
 
     /**
+     * Returns map instance by name.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options);
+
+    /**
      * Returns map instance by name
      * using provided codec for both map keys and values.
      *
@@ -173,6 +240,19 @@ public interface RedissonReactiveClient {
      * @return Map object
      */
     <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
+
+    /**
+     * Returns map instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @param options - map options
+     * @return Map object
+     */
+    <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options);
 
     /**
      * Returns set instance by name.

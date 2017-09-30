@@ -17,7 +17,9 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.SortedSet;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLexSortedSet;
@@ -233,5 +235,30 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     public RFuture<Collection<String>> rangeAsync(int startIndex, int endIndex) {
         return valueRangeAsync(startIndex, endIndex);
     }
-    
+
+    @Override
+    public boolean trySetComparator(Comparator<? super String> comparator) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Comparator<? super String> comparator() {
+        return null;
+    }
+
+    @Override
+    public SortedSet<String> subSet(String fromElement, String toElement) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public SortedSet<String> headSet(String toElement) {
+        return subSet(null, toElement);
+    }
+
+    @Override
+    public SortedSet<String> tailSet(String fromElement) {
+        return subSet(fromElement, null);
+    }
+
 }

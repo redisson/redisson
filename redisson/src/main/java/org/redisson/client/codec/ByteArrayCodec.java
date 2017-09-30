@@ -22,6 +22,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 
 /**
  * 
@@ -34,8 +35,11 @@ public class ByteArrayCodec implements Codec {
 
     private final Encoder encoder = new Encoder() {
         @Override
-        public byte[] encode(Object in) throws IOException {
-            return (byte[]) in;
+        public ByteBuf encode(Object in) throws IOException {
+            byte[] payload = (byte[])in;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(payload.length);
+            out.writeBytes(payload);
+            return out;
         }
     };
 

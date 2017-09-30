@@ -51,8 +51,6 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -128,6 +126,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected final Queue<PubSubConnectionEntry> freePubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
 
+    protected DNSMonitor dnsMonitor;
+    
     protected MasterSlaveServersConfig config;
 
     private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
@@ -148,11 +148,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
-    private final boolean sharedEventLoopGroup;
-
-    private final boolean sharedExecutor;
-
     private final CommandSyncService commandExecutor;
+    
+    private final Config cfg;
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -163,7 +161,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
         initTimer(cfg);
-        init(cfg);
+        this.config = cfg;
+        initSingleEntry();
     }
 
     public MasterSlaveConnectionManager(Config cfg) {
@@ -202,11 +201,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else {
             executor = cfg.getExecutor();
         }
-       
+
+        this.cfg = cfg;
         this.codec = cfg.getCodec();
         this.shutdownPromise = newPromise();
-        this.sharedEventLoopGroup = cfg.getEventLoopGroup() != null;
-        this.sharedExecutor = cfg.getExecutor() != null;
         this.commandExecutor = new CommandSyncService(this);
     }
 
@@ -222,6 +220,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return connectionWatcher;
     }
 
+    public Config getCfg() {
+        return cfg;
+    }
+    
     @Override
     public MasterSlaveServersConfig getConfig() {
         return config;
@@ -236,19 +238,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return new HashSet<MasterSlaveEntry>(entries.values());
     }
     
-    protected void init(MasterSlaveServersConfig config) {
-        this.config = config;
-
-        connectionWatcher = new IdleConnectionWatcher(this, config);
-
-        try {
-            initEntry(config);
-        } catch (RuntimeException e) {
-            stopThreads();
-            throw e;
-        }
-    }
-
     protected void initTimer(MasterSlaveServersConfig config) {
         int[] timeouts = new int[]{config.getRetryInterval(), config.getTimeout(), config.getReconnectionTimeout()};
         Arrays.sort(timeouts);
@@ -272,26 +261,38 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             throw new IllegalStateException(e);
         }
         
+        connectionWatcher = new IdleConnectionWatcher(this, config);
     }
 
-    protected void initEntry(MasterSlaveServersConfig config) {
-        HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
-        slots.add(singleSlotRange);
-
-        MasterSlaveEntry entry;
-        if (config.getReadMode() == ReadMode.MASTER) {
-            entry = new SingleEntry(slots, this, config);
-            RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
-            f.syncUninterruptibly();
-        } else {
-            entry = createMasterSlaveEntry(config, slots);
-        }
-        
-        for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
-            addEntry(slot, entry);
+    protected void initSingleEntry() {
+        try {
+            HashSet<ClusterSlotRange> slots = new HashSet<ClusterSlotRange>();
+            slots.add(singleSlotRange);
+    
+            MasterSlaveEntry entry;
+            if (config.checkSkipSlavesInit()) {
+                entry = new SingleEntry(slots, this, config);
+                RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
+                f.syncUninterruptibly();
+            } else {
+                entry = createMasterSlaveEntry(config, slots);
+            }
+            
+            for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
+                addEntry(slot, entry);
+            }
+            
+            if (config.getDnsMonitoringInterval() != -1) {
+                dnsMonitor = new DNSMonitor(this, Collections.singleton(config.getMasterAddress()), 
+                        config.getSlaveAddresses(), config.getDnsMonitoringInterval());
+                dnsMonitor.start();
+            }
+        } catch (RuntimeException e) {
+            stopThreads();
+            throw e;
         }
     }
-
+    
     protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
             HashSet<ClusterSlotRange> slots) {
         MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
@@ -348,7 +349,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdownAsync(RedisClient client) {
-        clientEntries.remove(client);
+        if (clientEntries.remove(client) == null) {
+            log.error("Can't find client {}", client);
+        }
         client.shutdownAsync();
     }
 
@@ -373,10 +376,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslTruststorePassword(config.getSslTruststorePassword())
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
-              .setDatabase(config.getDatabase())
-              .setClientName(config.getClientName());
+              .setClientName(config.getClientName())
+              .setKeepPubSubOrder(cfg.isKeepPubSubOrder());
         
         if (type != NodeType.SENTINEL) {
+            redisConfig.setDatabase(config.getDatabase());
             redisConfig.setPassword(config.getPassword());
         }
         
@@ -681,10 +685,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return entries.get(slot);
     }
     
-    protected void slaveDown(ClusterSlotRange slotRange, String host, int port, FreezeReason freezeReason) {
-        getEntry(slotRange.getStartSlot()).slaveDown(host, port, freezeReason);
-    }
-
     protected void changeMaster(int slot, URI address) {
         getEntry(slot).changeMaster(address);
     }
@@ -703,24 +703,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
         return entry.connectionWriteOp(command);
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
-        // workaround for slots in migration state
+        // slots handling during migration state
         if (source.getRedirect() != null) {
-            MasterSlaveEntry e = getEntry(source.getAddr());
-            if (e == null) {
-                throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
-            }
-            return e;
+            return getEntry(source.getAddr());
         }
         
-        MasterSlaveEntry e = getEntry(source.getSlot());
-        if (e == null) {
-            throw new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
-        }
-        return e;
+        return getEntry(source.getSlot());
     }
 
     @Override
@@ -739,17 +735,39 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                     }
                 }
             }
+            
+            if (entry == null) {
+                RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+                return RedissonPromise.newFailedFuture(ex);
+            }
+            
             return entry.connectionReadOp(command, source.getAddr());
         }
+        
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
+
         return entry.connectionReadOp(command);
     }
 
     RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
-        return getEntry(slot).nextPubSubConnection();
+        MasterSlaveEntry entry = getEntry(slot);
+        if (entry == null) {
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet");
+            return RedissonPromise.newFailedFuture(ex);
+        }
+        return entry.nextPubSubConnection();
     }
 
-    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry entry) {
-        this.getEntry(slot).returnPubSubConnection(entry);
+    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
+        MasterSlaveEntry entry = getEntry(slot);
+        if (entry == null) {
+            log.error("Node for slot: " + slot + " hasn't been discovered yet");
+        } else {
+            entry.returnPubSubConnection(pubSubEntry);
+        }
     }
 
     @Override
@@ -758,7 +776,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        entry.releaseWrite(connection);
+        if (entry == null) {
+            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+        } else {
+            entry.releaseWrite(connection);
+        }
     }
 
     @Override
@@ -767,7 +789,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             entry = getEntry(source);
         }
-        entry.releaseRead(connection);
+        if (entry == null) {
+            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+        } else {
+            entry.releaseRead(connection);
+        }
+        
     }
 
     @Override
@@ -777,6 +804,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown(long quietPeriod, long timeout, TimeUnit unit) {
+        if (dnsMonitor != null) {
+            dnsMonitor.stop();
+        }
+
         shutdownLatch.close();
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
@@ -784,8 +815,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : entries.values()) {
             entry.shutdown();
         }
-        
-        if (!sharedExecutor) {
+
+        if (cfg.getExecutor() == null) {
             executor.shutdown();
             try {
                 executor.awaitTermination(timeout, unit);
@@ -794,7 +825,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
         
-        if (!sharedEventLoopGroup) {
+        if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
         timer.stop();

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Iterator;
 import java.util.Set;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -28,6 +29,14 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
  */
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set<V>> {
 
+    /**
+     * Returns values iterator matches <code>pattern</code>. 
+     * 
+     * @param pattern for values
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern);
+    
     /**
      * Returns <code>RMapReduce</code> object associated with this object
      * 

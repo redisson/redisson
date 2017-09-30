@@ -48,7 +48,7 @@ public interface RDequeReactive<V> extends RQueueReactive<V> {
 
     Publisher<V> peekFirst();
 
-    Publisher<Long> offerLast(V e);
+    Publisher<Integer> offerLast(V e);
 
     Publisher<V> getLast();
 

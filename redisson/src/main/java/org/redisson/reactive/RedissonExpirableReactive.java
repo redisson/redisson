@@ -25,7 +25,11 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 abstract class RedissonExpirableReactive extends RedissonObjectReactive implements RExpirableReactive {
 
     RedissonExpirableReactive(CommandReactiveExecutor connectionManager, String name) {

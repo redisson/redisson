@@ -15,6 +15,11 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubStatusMessage implements Message {
 
     private final PubSubType type;

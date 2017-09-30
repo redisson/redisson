@@ -33,20 +33,38 @@ public interface RExecutorServiceAsync {
     RFuture<Boolean> deleteAsync();
 
     /**
-     * Use {@link RExecutorService#submit(Callable)} 
+     * Submits task for execution asynchronously  
      * 
      * @param <T> type of return value
      * @param task - task to execute
      * @return Future object
      */
-    <T> RFuture<T> submitAsync(Callable<T> task);
+    <T> RExecutorFuture<T> submitAsync(Callable<T> task);
 
     /**
-     * Use {@link RExecutorService#submit(Runnable)}
+     * Submits tasks batch for execution asynchronously. All tasks are stored to executor request queue atomically, 
+     * if case of any error none of tasks will be added.
+     * 
+     * @param tasks - tasks to execute
+     * @return Future object
+     */
+    RExecutorBatchFuture submitAsync(Callable<?> ...tasks);
+    
+    /**
+     * Submits task for execution asynchronously
      * 
      * @param task - task to execute
      * @return Future object
      */
-    RFuture<?> submitAsync(Runnable task);
+    RExecutorFuture<?> submitAsync(Runnable task);
+    
+    /**
+     * Submits tasks batch for execution asynchronously. All tasks are stored to executor request queue atomically, 
+     * if case of any error none of tasks will be added.
+     * 
+     * @param tasks - tasks to execute
+     * @return Future object
+     */
+    RExecutorBatchFuture submitAsync(Runnable ...tasks);
     
 }

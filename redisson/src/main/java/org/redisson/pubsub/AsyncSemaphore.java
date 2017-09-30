@@ -17,8 +17,6 @@ package org.redisson.pubsub;
 
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
@@ -55,6 +53,12 @@ public class AsyncSemaphore {
     public int queueSize() {
         synchronized (this) {
             return listeners.size();
+        }
+    }
+    
+    public void removeListeners() {
+        synchronized (this) {
+            listeners.clear();
         }
     }
     

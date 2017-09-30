@@ -40,6 +40,25 @@ import org.redisson.api.map.event.MapEntryListener;
 public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
 
     /**
+     * Sets max size of the map.
+     * Superfluous elements are evicted using LRU algorithm.
+     * 
+     * @param maxSize - max size
+     *                  If <code>0</code> the cache is unbounded (default).
+     */
+    void setMaxSize(int maxSize);
+    
+    /**
+     * Tries to set max size of the map. 
+     * Superfluous elements are evicted using LRU algorithm. 
+     *
+     * @param maxSize - max size
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     *         If <code>0</code> the cache is unbounded (default).
+     */
+    boolean trySetMaxSize(int maxSize);
+    
+    /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
      * <p>

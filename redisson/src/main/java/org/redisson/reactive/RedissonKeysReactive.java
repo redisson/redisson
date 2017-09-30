@@ -15,28 +15,32 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.RedissonKeys;
+import org.redisson.api.RFuture;
 import org.redisson.api.RKeysReactive;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 
+import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 import reactor.rx.subscription.ReactiveSubscription;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonKeysReactive implements RKeysReactive {
 
     private final CommandReactiveService commandExecutor;
@@ -50,12 +54,17 @@ public class RedissonKeysReactive implements RKeysReactive {
     }
 
     @Override
-    public Publisher<Integer> getSlot(String key) {
-        return commandExecutor.reactive(instance.getSlotAsync(key));
+    public Publisher<Integer> getSlot(final String key) {
+        return commandExecutor.reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.getSlotAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<String> getKeysByPattern(String pattern) {
+    public Publisher<String> getKeysByPattern(final String pattern) {
         List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             publishers.add(createKeysIterator(entry, pattern));
@@ -84,7 +93,6 @@ public class RedissonKeysReactive implements RKeysReactive {
 
                     private List<String> firstValues;
                     private long nextIterPos;
-                    private InetSocketAddress client;
 
                     private long currentIndex;
 
@@ -105,8 +113,6 @@ public class RedissonKeysReactive implements RKeysReactive {
 
                             @Override
                             public void onNext(ListScanResult<String> res) {
-                                client = res.getRedisClient();
-
                                 long prevIterPos = nextIterPos;
                                 if (nextIterPos == 0 && firstValues == null) {
                                     firstValues = res.getValues();
@@ -155,33 +161,63 @@ public class RedissonKeysReactive implements RKeysReactive {
     }
 
     @Override
-    public Publisher<Collection<String>> findKeysByPattern(String pattern) {
-        return commandExecutor.reactive(instance.findKeysByPatternAsync(pattern));
+    public Publisher<Collection<String>> findKeysByPattern(final String pattern) {
+        return commandExecutor.reactive(new Supplier<RFuture<Collection<String>>>() {
+            @Override
+            public RFuture<Collection<String>> get() {
+                return instance.findKeysByPatternAsync(pattern);
+            }
+        });
     }
 
     @Override
     public Publisher<String> randomKey() {
-        return commandExecutor.reactive(instance.randomKeyAsync());
+        return commandExecutor.reactive(new Supplier<RFuture<String>>() {
+            @Override
+            public RFuture<String> get() {
+                return instance.randomKeyAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> deleteByPattern(String pattern) {
-        return commandExecutor.reactive(instance.deleteByPatternAsync(pattern));
+    public Publisher<Long> deleteByPattern(final String pattern) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.deleteByPatternAsync(pattern);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> delete(String ... keys) {
-        return commandExecutor.reactive(instance.deleteAsync(keys));
+    public Publisher<Long> delete(final String ... keys) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.deleteAsync(keys);
+            }
+        });
     }
 
     @Override
     public Publisher<Void> flushdb() {
-        return commandExecutor.reactive(instance.flushdbAsync());
+        return commandExecutor.reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.flushdbAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Void> flushall() {
-        return commandExecutor.reactive(instance.flushallAsync());
+        return commandExecutor.reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.flushallAsync();
+            }
+        });
     }
 
 }

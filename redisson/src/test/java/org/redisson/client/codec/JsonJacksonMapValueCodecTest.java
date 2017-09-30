@@ -1,12 +1,6 @@
 package org.redisson.client.codec;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import org.junit.Before;
-import org.junit.Test;
-import org.redisson.client.handler.State;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -14,23 +8,38 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
+import org.redisson.BaseTest;
+import org.redisson.api.RMap;
+import org.redisson.client.handler.State;
 
-public class JsonJacksonMapValueCodecTest {
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    private final JsonJacksonMapValueCodec<Map<String, List<String>>> mapCodec = new JsonJacksonMapValueCodec<Map<String, List<String>>>(new TypeReference<Map<String, List<String>>>() {
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.util.CharsetUtil;
+
+public class JsonJacksonMapValueCodecTest extends BaseTest {
+
+    private final JsonJacksonMapCodec mapCodec = new JsonJacksonMapCodec(null, new TypeReference<Map<String, List<String>>>() {
     });
 
-    private final JsonJacksonMapValueCodec<String> stringCodec = new JsonJacksonMapValueCodec<String>(String.class);
+    private final JsonJacksonMapCodec stringCodec = new JsonJacksonMapCodec(null, String.class);
 
-    private HashMap<String, List<String>> map;
+    private HashMap<String, List<String>> map = new HashMap<String, List<String>>();
 
-    @Before
-    public void setUp() throws Exception {
-        map = new HashMap<String, List<String>>();
+    {
         map.put("foo", new ArrayList<String>(Arrays.asList("bar")));
     }
 
+    @Test
+    public void testMap() {
+        RMap<String, byte[]> map = redisson.getMap("anyMap", new JsonJacksonMapCodec(String.class, byte[].class));
+        map.put(String.valueOf("2"), new byte[]{1, 2, 3});
+        assertThat(map.get("2")).isEqualTo(new byte[] {1, 2, 3});
+    }
+    
     @Test
     public void shouldDeserializeTheMapCorrectly() throws Exception {
         ByteBuf buf = new PooledByteBufAllocator(true).buffer();
@@ -42,7 +51,7 @@ public class JsonJacksonMapValueCodecTest {
 
     @Test
     public void shouldSerializeTheMapCorrectly() throws Exception {
-        assertThat(new String(mapCodec.getMapValueEncoder().encode(map), "UTF-8"))
+        assertThat(mapCodec.getMapValueEncoder().encode(map).toString(CharsetUtil.UTF_8))
                 .isEqualTo("{\"foo\":[\"bar\"]}");
     }
 
@@ -57,7 +66,7 @@ public class JsonJacksonMapValueCodecTest {
 
     @Test
     public void shouldSerializeTheStringCorrectly() throws Exception {
-        assertThat(new String(stringCodec.getMapValueEncoder().encode("foo"), "UTF-8"))
+        assertThat(mapCodec.getMapValueEncoder().encode("foo").toString(CharsetUtil.UTF_8))
                 .isEqualTo("\"foo\"");
     }
 }

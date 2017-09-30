@@ -20,7 +20,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 
 /**
  * A {@code ReadWriteLock} maintains a pair of associated {@link
@@ -38,11 +38,9 @@ import org.redisson.command.CommandExecutor;
 public class RedissonReadWriteLock extends RedissonExpirable implements RReadWriteLock {
 
     private final UUID id;
-    private final CommandExecutor commandExecutor;
 
-    RedissonReadWriteLock(CommandExecutor commandExecutor, String name, UUID id) {
+    public RedissonReadWriteLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
         super(commandExecutor, name);
-        this.commandExecutor = commandExecutor;
         this.id = id;
     }
 

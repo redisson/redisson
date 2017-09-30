@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.BitSet;
 
 /**
+ * Vector of bits that grows as needed. Asynchronous interface.
  *
  * @author Nikita Koksharov
  *

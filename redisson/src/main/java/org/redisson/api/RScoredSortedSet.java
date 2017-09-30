@@ -91,6 +91,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     boolean add(double score, V object);
 
     /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return rank
+     */
+    Integer addAndGetRank(double score, V object);
+
+    /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the reverse rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return reverse rank
+     */
+    Integer addAndGetRevRank(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Works only with <b>Redis 3.0.2 and higher.</b>
@@ -123,6 +141,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     Double addScore(V object, Number value);
 
+    /**
+     * Adds score to element and returns its rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return rank
+     */
+    Integer addScoreAndGetRank(V object, Number value);
+
+    /**
+     * Adds score to element and returns its reverse rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return reverse rank
+     */
+    Integer addScoreAndGetRevRank(V object, Number value);
+    
     Collection<V> valueRange(int startIndex, int endIndex);
     
     Collection<V> valueRangeReversed(int startIndex, int endIndex);
@@ -171,6 +207,8 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
 
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    
     Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**

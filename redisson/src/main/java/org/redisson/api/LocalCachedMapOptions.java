@@ -17,13 +17,18 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
+
 /**
  * RLocalCachedMap options object. Used to specify RLocalCachedMap settings.
  * 
  * @author Nikita Koksharov
  *
+ * @param <K> key type
+ * @param <V> value type
  */
-public class LocalCachedMapOptions {
+public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     
     public enum InvalidationPolicy {
         
@@ -93,10 +98,10 @@ public class LocalCachedMapOptions {
     private long timeToLiveInMillis;
     private long maxIdleInMillis;
     
-    private LocalCachedMapOptions() {
+    protected LocalCachedMapOptions() {
     }
     
-    protected LocalCachedMapOptions(LocalCachedMapOptions copy) {
+    protected LocalCachedMapOptions(LocalCachedMapOptions<K, V> copy) {
         this.invalidationPolicy = copy.invalidationPolicy;
         this.evictionPolicy = copy.evictionPolicy;
         this.cacheSize = copy.cacheSize;
@@ -115,11 +120,14 @@ public class LocalCachedMapOptions {
      *      .invalidateEntryOnChange(true);
      * </pre>
      * 
+     * @param <K> key type
+     * @param <V> value type
+     * 
      * @return LocalCachedMapOptions instance
      * 
      */
-    public static LocalCachedMapOptions defaults() {
-        return new LocalCachedMapOptions()
+    public static <K, V> LocalCachedMapOptions<K, V> defaults() {
+        return new LocalCachedMapOptions<K, V>()
                     .cacheSize(0).timeToLive(0).maxIdle(0)
                     .evictionPolicy(EvictionPolicy.NONE)
                     .invalidationPolicy(InvalidationPolicy.ON_CHANGE);
@@ -147,7 +155,7 @@ public class LocalCachedMapOptions {
      * @param cacheSize - size of cache
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions cacheSize(int cacheSize) {
+    public LocalCachedMapOptions<K, V> cacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
         return this;
     }
@@ -168,7 +176,7 @@ public class LocalCachedMapOptions {
      * 
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions invalidationPolicy(InvalidationPolicy invalidationPolicy) {
+    public LocalCachedMapOptions<K, V> invalidationPolicy(InvalidationPolicy invalidationPolicy) {
         this.invalidationPolicy = invalidationPolicy;
         return this;
     }
@@ -182,7 +190,7 @@ public class LocalCachedMapOptions {
      * @return LocalCachedMapOptions instance
      */
     @Deprecated
-    public LocalCachedMapOptions invalidateEntryOnChange(boolean value) {
+    public LocalCachedMapOptions<K, V> invalidateEntryOnChange(boolean value) {
         if (value) {
             return invalidationPolicy(InvalidationPolicy.ON_CHANGE);
         }
@@ -199,7 +207,7 @@ public class LocalCachedMapOptions {
      *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions evictionPolicy(EvictionPolicy evictionPolicy) {
+    public LocalCachedMapOptions<K, V> evictionPolicy(EvictionPolicy evictionPolicy) {
         if (evictionPolicy == null) {
             throw new NullPointerException("evictionPolicy can't be null");
         }
@@ -214,7 +222,7 @@ public class LocalCachedMapOptions {
      * @param timeToLiveInMillis - time to live in milliseconds
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions timeToLive(long timeToLiveInMillis) {
+    public LocalCachedMapOptions<K, V> timeToLive(long timeToLiveInMillis) {
         this.timeToLiveInMillis = timeToLiveInMillis;
         return this;
     }
@@ -227,7 +235,7 @@ public class LocalCachedMapOptions {
      * @param timeUnit - time unit
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions timeToLive(long timeToLive, TimeUnit timeUnit) {
+    public LocalCachedMapOptions<K, V> timeToLive(long timeToLive, TimeUnit timeUnit) {
         return timeToLive(timeUnit.toMillis(timeToLive));
     }
 
@@ -238,7 +246,7 @@ public class LocalCachedMapOptions {
      * @param maxIdleInMillis - time to live in milliseconds
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions maxIdle(long maxIdleInMillis) {
+    public LocalCachedMapOptions<K, V> maxIdle(long maxIdleInMillis) {
         this.maxIdleInMillis = maxIdleInMillis;
         return this;
     }
@@ -251,9 +259,28 @@ public class LocalCachedMapOptions {
      * @param timeUnit - time unit
      * @return LocalCachedMapOptions instance
      */
-    public LocalCachedMapOptions maxIdle(long maxIdle, TimeUnit timeUnit) {
-        return timeToLive(timeUnit.toMillis(maxIdle));
+    public LocalCachedMapOptions<K, V> maxIdle(long maxIdle, TimeUnit timeUnit) {
+        return maxIdle(timeUnit.toMillis(maxIdle));
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writer(writer);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindThreads(writeBehindThreads);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writeMode(org.redisson.api.MapOptions.WriteMode writeMode) {
+        return (LocalCachedMapOptions<K, V>) super.writeMode(writeMode);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> loader(MapLoader<K, V> loader) {
+        return (LocalCachedMapOptions<K, V>) super.loader(loader);
     }
 
-    
 }

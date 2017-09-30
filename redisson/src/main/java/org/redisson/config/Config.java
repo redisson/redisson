@@ -89,6 +89,10 @@ public class Config {
 
     private EventLoopGroup eventLoopGroup;
 
+    private long lockWatchdogTimeout = 30 * 1000;
+    
+    private boolean keepPubSubOrder = true;
+    
     public Config() {
     }
 
@@ -101,6 +105,8 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
+        setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -557,6 +563,45 @@ public class Config {
     public EventLoopGroup getEventLoopGroup() {
         return eventLoopGroup;
     }
+
+    /**
+     * This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
+     * Lock will be expired after <code>lockWatchdogTimeout</code> if watchdog 
+     * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
+     * <p>  
+     * This prevents against infinity locked locks due to Redisson client crush or 
+     * any other reason when lock can't be released in proper way.
+     * 
+     * @param lockWatchdogTimeout timeout in milliseconds
+     * @return config
+     */
+    public Config setLockWatchdogTimeout(long lockWatchdogTimeout) {
+        this.lockWatchdogTimeout = lockWatchdogTimeout;
+        return this;
+    }
+    public long getLockWatchdogTimeout() {
+        return lockWatchdogTimeout;
+    }
+
+    /**
+     * Defines whether keep PubSub messages handling in arrival order 
+     * or handle messages concurrently. 
+     * <p>
+     * This setting applied only for PubSub messages per channel.
+     * <p>
+     * Default is <code>true</code>.
+     * 
+     * @param keepPubSubOrder - <code>true</code> if order required, <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setKeepPubSubOrder(boolean keepPubSubOrder) {
+        this.keepPubSubOrder = keepPubSubOrder;
+        return this;
+    }
+    public boolean isKeepPubSubOrder() {
+        return keepPubSubOrder;
+    }
+
 
     /**
      * Read config object stored in JSON format from <code>String</code>

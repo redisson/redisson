@@ -31,6 +31,14 @@ import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> entry type
+ */
 public class RedissonMapReactiveIterator<K, V, M> {
 
     private final MapReactive<K, V> map;
@@ -74,6 +82,16 @@ public class RedissonMapReactiveIterator<K, V, M> {
                             public void onSubscribe(Subscription s) {
                                 s.request(Long.MAX_VALUE);
                             }
+                            
+                            private void free(Map<ByteBuf, ByteBuf> map) {
+                                if (map == null) {
+                                    return;
+                                }
+                                for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
+                                    entry.getKey().release();
+                                    entry.getValue().release();
+                                }
+                            }
 
                             @Override
                             public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
@@ -81,6 +99,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
                                 if (iterPos == 0 && firstValues == null) {
                                     firstValues = convert(res.getMap());
                                 } else if (convert(res.getMap()).equals(firstValues)) {
+                                    free(firstValues);
                                     m.onComplete();
                                     currentIndex = 0;
                                     return;

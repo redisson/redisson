@@ -15,10 +15,12 @@
  */
 package org.redisson;
 
+import java.io.Serializable;
 import org.redisson.client.codec.Codec;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
 import org.redisson.api.annotation.REntity;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.misc.BiHashMap;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
@@ -39,7 +41,7 @@ import org.redisson.reactive.RedissonSetReactive;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class RedissonReference {
+public class RedissonReference implements Serializable {
 
     private static final BiHashMap<String, String> reactiveMap = new BiHashMap<String, String>();
 
@@ -76,7 +78,7 @@ public class RedissonReference {
     }
 
     public RedissonReference(Class type, String keyName, Codec codec) {
-        if (!type.isAnnotationPresent(REntity.class) && !RObject.class.isAssignableFrom(type) && !RObjectReactive.class.isAssignableFrom(type)) {
+        if (!ClassUtils.isAnnotationPresent(type, REntity.class) && !RObject.class.isAssignableFrom(type) && !RObjectReactive.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
         this.type = RObjectReactive.class.isAssignableFrom(type)
@@ -129,7 +131,7 @@ public class RedissonReference {
      * @param type the type to set
      */
     public void setType(Class<?> type) {
-        if (!type.isAnnotationPresent(REntity.class) && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
+        if (!ClassUtils.isAnnotationPresent(type, REntity.class) && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
         this.type = type.getName();

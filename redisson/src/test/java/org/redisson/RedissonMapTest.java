@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
@@ -25,7 +26,9 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
-public class RedissonMapTest extends BaseTest {
+import net.bytebuddy.utility.RandomString;
+
+public class RedissonMapTest extends BaseMapTest {
 
     public static class SimpleKey implements Serializable {
 
@@ -129,6 +132,18 @@ public class RedissonMapTest extends BaseTest {
 
     }
 
+    @Override
+    protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().loader(createMapLoader(map));
+        return redisson.getMap("test", options);        
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
+        return redisson.getMap("test", options);        
+    }
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = redisson.getMap("getAll");
@@ -153,7 +168,7 @@ public class RedissonMapTest extends BaseTest {
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);
         assertThat(mapStr.get("1")).isEqualTo(112);
     }
-
+    
     @Test
     public void testValueSize() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
@@ -408,6 +423,16 @@ public class RedissonMapTest extends BaseTest {
     }
     
     @Test
+    public void testWriteTimeout() {
+        Map<String, String> map = redisson.getMap("simple");
+        Map<String, String> joinMap = new HashMap<>();
+        for (int i = 0; i < 200000; i++) {
+            joinMap.put(RandomString.make(1024), RandomString.make(1024));
+        }
+        map.putAll(joinMap);
+    }
+    
+    @Test
     public void testPutAll() {
         Map<Integer, String> map = redisson.getMap("simple");
         map.put(1, "1");
@@ -433,7 +458,43 @@ public class RedissonMapTest extends BaseTest {
         Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
         Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
     }
+    
+    @Test
+    public void testKeySetByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
 
+        assertThat(map.keySet("?0")).containsExactly("10", "20", "30");
+        assertThat(map.keySet("1")).isEmpty();
+        assertThat(map.keySet("10")).containsExactly("10");
+    }
+
+    @Test
+    public void testValuesByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        assertThat(map.values("?0")).containsExactly("100", "200", "300");
+        assertThat(map.values("1")).isEmpty();
+        assertThat(map.values("10")).containsExactly("100");
+    }
+
+    @Test
+    public void testEntrySetByPattern() {
+        RMap<String, String> map = redisson.getMap("simple", StringCodec.INSTANCE);
+        map.put("10", "100");
+        map.put("20", "200");
+        map.put("30", "300");
+
+        assertThat(map.entrySet("?0")).containsExactly(new AbstractMap.SimpleEntry("10", "100"), new AbstractMap.SimpleEntry("20", "200"), new AbstractMap.SimpleEntry("30", "300"));
+        assertThat(map.entrySet("1")).isEmpty();
+        assertThat(map.entrySet("10")).containsExactly(new AbstractMap.SimpleEntry("10", "100"));
+    }
+    
     @Test
     public void testReadAllKeySet() {
         RMap<SimpleKey, SimpleValue> map = redisson.getMap("simple");

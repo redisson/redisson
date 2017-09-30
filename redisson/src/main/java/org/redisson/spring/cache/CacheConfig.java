@@ -33,6 +33,8 @@ public class CacheConfig {
     private long ttl;
 
     private long maxIdleTime;
+    
+    private int maxSize;
 
     /**
      * Creates config object with
@@ -72,6 +74,21 @@ public class CacheConfig {
         this.ttl = ttl;
     }
 
+    
+    public int getMaxSize() {
+        return maxSize;
+    }
+
+    /**
+     * Set max size of map. Superfluous elements are evicted using LRU algorithm.
+     *
+     * @param maxSize - max size
+     *                  If <code>0</code> the cache is unbounded (default).
+     */
+    public void setMaxSize(int maxSize) {
+        this.maxSize = maxSize;
+    }
+
     public long getMaxIdleTime() {
         return maxIdleTime;
     }
@@ -93,7 +110,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromJSON(String content) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromJSON(String content) throws IOException {
         return new CacheConfigSupport().fromJSON(content);
     }
 
@@ -104,7 +121,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromJSON(InputStream inputStream) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromJSON(InputStream inputStream) throws IOException {
         return new CacheConfigSupport().fromJSON(inputStream);
     }
 
@@ -115,7 +132,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromJSON(File file) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromJSON(File file) throws IOException {
         return new CacheConfigSupport().fromJSON(file);
     }
 
@@ -126,7 +143,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromJSON(URL url) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromJSON(URL url) throws IOException {
         return new CacheConfigSupport().fromJSON(url);
     }
 
@@ -137,7 +154,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromJSON(Reader reader) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromJSON(Reader reader) throws IOException {
         return new CacheConfigSupport().fromJSON(reader);
     }
 
@@ -148,7 +165,7 @@ public class CacheConfig {
      * @return json string
      * @throws IOException error
      */
-    public static String toJSON(Map<String, CacheConfig> config) throws IOException {
+    public static String toJSON(Map<String, ? extends CacheConfig> config) throws IOException {
         return new CacheConfigSupport().toJSON(config);
     }
 
@@ -159,7 +176,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromYAML(String content) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromYAML(String content) throws IOException {
         return new CacheConfigSupport().fromYAML(content);
     }
 
@@ -170,7 +187,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException  error
      */
-    public static Map<String, CacheConfig> fromYAML(InputStream inputStream) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromYAML(InputStream inputStream) throws IOException {
         return new CacheConfigSupport().fromYAML(inputStream);
     }
 
@@ -181,7 +198,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromYAML(File file) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromYAML(File file) throws IOException {
         return new CacheConfigSupport().fromYAML(file);
     }
 
@@ -192,7 +209,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromYAML(URL url) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromYAML(URL url) throws IOException {
         return new CacheConfigSupport().fromYAML(url);
     }
 
@@ -203,7 +220,7 @@ public class CacheConfig {
      * @return config
      * @throws IOException error
      */
-    public static Map<String, CacheConfig> fromYAML(Reader reader) throws IOException {
+    public static Map<String, ? extends CacheConfig> fromYAML(Reader reader) throws IOException {
         return new CacheConfigSupport().fromYAML(reader);
     }
 
@@ -214,7 +231,7 @@ public class CacheConfig {
      * @return yaml string
      * @throws IOException error
      */
-    public static String toYAML(Map<String, CacheConfig> config) throws IOException {
+    public static String toYAML(Map<String, ? extends CacheConfig> config) throws IOException {
         return new CacheConfigSupport().toYAML(config);
     }
 

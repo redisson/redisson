@@ -30,7 +30,7 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
 
     Publisher<V> poll();
 
-    Publisher<Long> offer(V e);
+    Publisher<Integer> offer(V e);
 
     Publisher<V> pollLastAndOfferFirstTo(String queueName);
 

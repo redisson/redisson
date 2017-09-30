@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Geospatial items holder. Asynchronous interface.
  * 
  * @author Nikita Koksharov
  *

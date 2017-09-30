@@ -29,16 +29,19 @@ import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.RedissonList;
+import org.redisson.api.RFuture;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
 import reactor.fn.Function;
+import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 import reactor.rx.subscription.ReactiveSubscription;
@@ -65,8 +68,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> size() {
-        return commandExecutor.readReactive(getName(), codec, LLEN, getName());
+    public Publisher<Integer> size() {
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.LLEN_INT, getName());
     }
 
     @Override
@@ -145,13 +148,18 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> add(V e) {
+    public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), e);
     }
 
     @Override
-    public Publisher<Boolean> remove(Object o) {
-        return reactive(instance.removeAsync(o));
+    public Publisher<Boolean> remove(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(o);
+            }
+        });
     }
 
     protected Publisher<Boolean> remove(Object o, int count) {
@@ -159,16 +167,21 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return reactive(instance.containsAllAsync(c));
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this) {
 
             @Override
-            public Long sum(Long first, Long second) {
+            public Integer sum(Integer first, Integer second) {
                 return second;
             }
 
@@ -176,7 +189,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return size();
         }
@@ -188,7 +201,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> addAll(long index, Collection<? extends V> coll) {
+    public Publisher<Integer> addAll(long index, Collection<? extends V> coll) {
         if (index < 0) {
             throw new IndexOutOfBoundsException("index: " + index);
         }
@@ -208,7 +221,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
         args.addAll(coll);
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Long>("EVAL", new LongReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 5, ValueType.OBJECTS),
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -221,13 +234,23 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return reactive(instance.removeAllAsync(c));
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return reactive(instance.retainAllAsync(c));
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
@@ -250,28 +273,48 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     @Override
-    public Publisher<Long> add(long index, V element) {
+    public Publisher<Integer> add(long index, V element) {
         return addAll(index, Collections.singleton(element));
     }
 
     @Override
-    public Publisher<V> remove(long index) {
-        return reactive(instance.removeAsync(index));
+    public Publisher<V> remove(final long index) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.removeAsync(index);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return reactive(instance.containsAsync(o));
+    public Publisher<Boolean> contains(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> indexOf(Object o) {
-        return reactive(instance.indexOfAsync(o, new LongReplayConvertor()));
+    public Publisher<Long> indexOf(final Object o) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.indexOfAsync(o, new LongReplayConvertor());
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> lastIndexOf(Object o) {
-        return reactive(instance.lastIndexOfAsync(o, new LongReplayConvertor()));
+    public Publisher<Long> lastIndexOf(final Object o) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.lastIndexOfAsync(o, new LongReplayConvertor());
+            }
+        });
     }
 
     @Override
@@ -290,8 +333,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             }
         }).count().next().poll();
 
-        boolean res = count.equals(Streams.wrap(size()).next().poll());
-        res &= count.equals(Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll());
+        boolean res = count.intValue() == Streams.wrap(size()).next().poll();
+        res &= count.intValue() == Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll();
         return res;
     }
 

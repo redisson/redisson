@@ -30,14 +30,24 @@ public interface RLockAsync extends RExpirableAsync {
     
     RFuture<Void> unlockAsync();
     
+    RFuture<Void> unlockAsync(long threadId);
+    
     RFuture<Boolean> tryLockAsync();
 
     RFuture<Void> lockAsync();
 
+    RFuture<Void> lockAsync(long threadId);
+    
     RFuture<Void> lockAsync(long leaseTime, TimeUnit unit);
-
+    
+    RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long threadId);
+    
+    RFuture<Boolean> tryLockAsync(long threadId);
+    
     RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
 
     RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
 
+    RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+    
 }

@@ -41,6 +41,8 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  *
  * @author Nikita Koksharov
@@ -171,12 +173,12 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public Set<V> readAll() {
+    public Collection<V> readAll() {
         return get(readAllAsync());
     }
 
     @Override
-    public RFuture<Set<V>> readAllAsync() {
+    public RFuture<Collection<V>> readAllAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.LRANGE_SET, getName(), 0, -1);
     }
     
@@ -221,7 +223,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
             if (res.getIndex() < 0) {
                 int index = -(res.getIndex() + 1);
                 
-                byte[] encodedValue = encode(value);
+                ByteBuf encodedValue = encode(value);
                 
                 commandExecutor.evalWrite(getName(), RedisCommands.EVAL_VOID, 
                    "local len = redis.call('llen', KEYS[1]);"
@@ -267,7 +269,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     @Override
-    public RFuture<Boolean> removeAsync(final V value) {
+    public RFuture<Boolean> removeAsync(final Object value) {
         final RPromise<Boolean> promise = newPromise();
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override

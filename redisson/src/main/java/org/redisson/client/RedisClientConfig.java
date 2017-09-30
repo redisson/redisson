@@ -48,6 +48,7 @@ public class RedisClientConfig {
     private int database;
     private String clientName;
     private boolean readOnly;
+    private boolean keepPubSubOrder = true;
     
     private boolean sslEnableEndpointIdentification = true;
     private SslProvider sslProvider = SslProvider.JDK;
@@ -55,6 +56,7 @@ public class RedisClientConfig {
     private String sslTruststorePassword;
     private URI sslKeystore;
     private String sslKeystorePassword;
+    
     
     public RedisClientConfig setAddress(String host, int port) {
         this.address = URIBuilder.create("redis://" + host + ":" + port);
@@ -201,6 +203,11 @@ public class RedisClientConfig {
         return this;
     }
 
-    
-    
+    public boolean isKeepPubSubOrder() {
+        return keepPubSubOrder;
+    }
+    public void setKeepPubSubOrder(boolean keepPubSubOrder) {
+        this.keepPubSubOrder = keepPubSubOrder;
+    }
+
 }

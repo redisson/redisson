@@ -17,7 +17,9 @@ package org.redisson.codec;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -47,6 +49,11 @@ public class AvroJacksonCodec extends JsonJacksonCodec {
             this.schema = schema;
         }
 
+        @Override
+        public void writeValue(OutputStream out, Object value)
+                throws IOException, JsonGenerationException, JsonMappingException {
+            writerFor(type).with(schema).writeValue(out, value);
+        }
         @Override
         public byte[] writeValueAsBytes(Object value) throws JsonProcessingException {
             return writerFor(type).with(schema).writeValueAsBytes(value);

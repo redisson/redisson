@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
@@ -45,6 +44,8 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * @author Nikita Koksharov
@@ -79,17 +80,26 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     private String getLockName(Object key) {
+        ByteBuf keyState = encodeMapKey(key);
         try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
-        } catch (IOException e) {
-            throw new IllegalStateException(e);
+            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
+        } finally {
+            keyState.release();
         }
     }
     
-    protected String hash(byte[] objectState) {
+    protected String hash(ByteBuf objectState) {
         return Hash.hashToBase64(objectState);
     }
+
+    protected String hashAndRelease(ByteBuf objectState) {
+        try {
+            return Hash.hashToBase64(objectState);
+        } finally {
+            objectState.release();
+        }
+    }
+
 
     @Override
     public int size() {
@@ -200,7 +210,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         List<Object> listKeys = new ArrayList<Object>(keys.length + 1);
         listKeys.add(getName());
         for (K key : keys) {
-            byte[] keyState = encodeMapKey(key);
+            ByteBuf keyState = encodeMapKey(key);
             mapKeys.add(keyState);
             String keyHash = hash(keyState);
             String name = getValuesName(keyHash);

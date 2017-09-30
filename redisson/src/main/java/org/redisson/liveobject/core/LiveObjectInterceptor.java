@@ -30,6 +30,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.codec.CodecProvider;
+import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
@@ -61,11 +62,11 @@ public class LiveObjectInterceptor {
         this.codecProvider = codecProvider;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
-        REntity anno = (REntity) entityClass.getAnnotation(REntity.class);
+        REntity anno = (REntity) ClassUtils.getAnnotation(entityClass, REntity.class);
         this.codecClass = anno.codec();
         try {
             this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
-            this.idFieldType = originalClass.getDeclaredField(idFieldName).getType();
+            this.idFieldType = ClassUtils.getDeclaredField(originalClass, idFieldName).getType();
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         }

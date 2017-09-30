@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import org.redisson.api.ClusterNode;
+import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicLongReactive;
@@ -34,12 +35,15 @@ import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.RQueueReactive;
+import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RSemaphoreReactive;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
@@ -52,6 +56,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
@@ -62,12 +67,15 @@ import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListReactive;
+import org.redisson.reactive.RedissonLockReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
 import org.redisson.reactive.RedissonQueueReactive;
+import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonScriptReactive;
+import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
@@ -86,7 +94,9 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
     protected final CodecProvider codecProvider;
+    
     protected final UUID id = UUID.randomUUID();
+    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
     
     protected RedissonReactive(Config config) {
         this.config = config;
@@ -98,15 +108,29 @@ public class RedissonReactive implements RedissonReactiveClient {
         codecProvider = config.getCodecProvider();
     }
 
+    @Override
+    public RSemaphoreReactive getSemaphore(String name) {
+        return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
+    }
+    
+    @Override
+    public RReadWriteLockReactive getReadWriteLock(String name) {
+        return new RedissonReadWriteLockReactive(commandExecutor, name, id);
+    }
+    
+    @Override
+    public RLockReactive getLock(String name) {
+        return new RedissonLockReactive(commandExecutor, name, id);
+    }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, codec, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, null);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(id, evictionScheduler, commandExecutor, name);
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, null);
     }
 
     @Override
@@ -133,6 +157,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
+    
+    
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLogReactive<V>(commandExecutor, name);
@@ -155,12 +181,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        return new RedissonMapReactive<K, V>(commandExecutor, name);
+        return new RedissonMapReactive<K, V>(commandExecutor, name, null);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        return new RedissonMapReactive<K, V>(codec, commandExecutor, name);
+        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, null);
     }
 
     @Override
@@ -265,7 +291,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        RedissonBatchReactive batch = new RedissonBatchReactive(id, evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
         if (config.isRedissonReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
@@ -317,6 +343,29 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     protected void enableRedissonReferenceSupport() {
         this.commandExecutor.enableRedissonReferenceSupport(this);
+    }
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options) {
+        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
+        return new RedissonMapReactive<K, V>(commandExecutor, name, options);
+    }
+
+
+    @Override
+    public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
+        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, options);
     }
 }
 

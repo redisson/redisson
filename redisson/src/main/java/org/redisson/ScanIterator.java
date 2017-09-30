@@ -20,9 +20,14 @@ import java.net.InetSocketAddress;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface ScanIterator {
 
-    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos);
+    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern);
 
     boolean remove(Object value);
     

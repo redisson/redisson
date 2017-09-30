@@ -56,7 +56,12 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
-public class CommandBatchService extends CommandReactiveService {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class CommandBatchService extends CommandAsyncService {
 
     public static class Entry {
 
@@ -114,9 +119,7 @@ public class CommandBatchService extends CommandReactiveService {
         }
         if (isRedissonReferenceSupportEnabled()) {
             for (int i = 0; i < params.length; i++) {
-                RedissonReference reference = redisson != null
-                        ? RedissonObjectFactory.toReference(redisson, params[i])
-                        : RedissonObjectFactory.toReference(redissonReactive, params[i]);
+                RedissonReference reference = RedissonObjectFactory.toReference(connectionManager.getCfg(), params[i]);
                 if (reference != null) {
                     params[i] = reference;
                 }
@@ -138,7 +141,7 @@ public class CommandBatchService extends CommandReactiveService {
         return executeAsyncVoid(false, 0, 0, 0);
     }
     
-    private RFuture<Void> executeAsyncVoid(boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
+    protected RFuture<Void> executeAsyncVoid(boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
@@ -191,7 +194,7 @@ public class CommandBatchService extends CommandReactiveService {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
-
+        
         if (commands.isEmpty()) {
             return connectionManager.newSucceededFuture(null);
         }
@@ -239,10 +242,12 @@ public class CommandBatchService extends CommandReactiveService {
     private void execute(final Entry entry, final NodeSource source, final RPromise<Void> mainPromise, final AtomicInteger slots, 
             final int attempt, final boolean noResult, final long responseTimeout, final int retryAttempts, final long retryInterval) {
         if (mainPromise.isCancelled()) {
+            free(entry);
             return;
         }
 
         if (!connectionManager.getShutdownLatch().acquire()) {
+            free(entry);
             mainPromise.tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             return;
         }
@@ -257,10 +262,30 @@ public class CommandBatchService extends CommandReactiveService {
         } else {
             connectionFuture = connectionManager.connectionWriteOp(source, null);
         }
+        
+        final int attempts;
+        if (retryAttempts > 0) {
+            attempts = retryAttempts;
+        } else {
+            attempts = connectionManager.getConfig().getRetryAttempts();
+        }
+
+        final FutureListener<Void> mainPromiseListener = new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (future.isCancelled() && connectionFuture.cancel(false)) {
+                    log.debug("Connection obtaining canceled for batch");
+                    details.getTimeout().cancel();
+                    if (attemptPromise.cancel(false)) {
+                        free(entry);
+                    }
+                }
+            }
+        };
 
         final TimerTask retryTimerTask = new TimerTask() {
             @Override
-            public void run(Timeout timeout) throws Exception {
+            public void run(Timeout t) throws Exception {
                 if (attemptPromise.isDone()) {
                     return;
                 }
@@ -269,22 +294,35 @@ public class CommandBatchService extends CommandReactiveService {
                     connectionManager.getShutdownLatch().release();
                 } else {
                     if (connectionFuture.isSuccess()) {
-                        ChannelFuture writeFuture = details.getWriteFuture();
-                        if (writeFuture != null && !writeFuture.cancel(false) && writeFuture.isSuccess()) {
+                        if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
+                            if (details.getAttempt() == attempts) {
+                                if (details.getWriteFuture().cancel(false)) {
+                                    if (details.getException() == null) {
+                                        details.setException(new RedisTimeoutException("Unable to send batch after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                                    }
+                                    attemptPromise.tryFailure(details.getException());
+                                }
+                                return;
+                            }
+                            details.incAttempt();
+                            Timeout timeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                            details.setTimeout(timeout);
+                            return;
+                        }
+                        
+                        if (details.getWriteFuture().isDone() && details.getWriteFuture().isSuccess()) {
                             return;
                         }
                     }
                 }
 
                 if (mainPromise.isCancelled()) {
-                    attemptPromise.cancel(false);
+                    if (attemptPromise.cancel(false)) {
+                        free(entry);
+                    }
                     return;
                 }
 
-                int attempts = connectionManager.getConfig().getRetryAttempts();
-                if (retryAttempts > 0) {
-                    attempts = retryAttempts;
-                }
                 if (attempt == attempts) {
                     if (details.getException() == null) {
                         details.setException(new RedisTimeoutException("Batch command execution timeout"));
@@ -297,6 +335,7 @@ public class CommandBatchService extends CommandReactiveService {
                 }
 
                 int count = attempt + 1;
+                mainPromise.removeListener(mainPromiseListener);
                 execute(entry, source, mainPromise, slots, count, noResult, responseTimeout, retryAttempts, retryInterval);
             }
         };
@@ -308,11 +347,12 @@ public class CommandBatchService extends CommandReactiveService {
         
         Timeout timeout = connectionManager.newTimeout(retryTimerTask, interval, TimeUnit.MILLISECONDS);
         details.setTimeout(timeout);
+        mainPromise.addListener(mainPromiseListener);
 
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                checkConnectionFuture(entry, source, mainPromise, attemptPromise, details, connectionFuture, noResult, responseTimeout);
+                checkConnectionFuture(entry, source, mainPromise, attemptPromise, details, connectionFuture, noResult, responseTimeout, attempts);
             }
         });
 
@@ -324,6 +364,8 @@ public class CommandBatchService extends CommandReactiveService {
                     return;
                 }
 
+                mainPromise.removeListener(mainPromiseListener);
+                
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
                     entry.clearErrors();
@@ -354,7 +396,8 @@ public class CommandBatchService extends CommandReactiveService {
                     return;
                 }
 
-
+                free(entry);
+                
                 if (future.isSuccess()) {
                     if (slots.decrementAndGet() == 0) {
                         mainPromise.trySuccess(future.getNow());
@@ -366,37 +409,48 @@ public class CommandBatchService extends CommandReactiveService {
         });
     }
 
-    private void checkWriteFuture(final RPromise<Void> attemptPromise, AsyncDetails details,
-            final RedisConnection connection, ChannelFuture future, boolean noResult, long responseTimeout) {
-        if (attemptPromise.isDone() || future.isCancelled()) {
+    protected void free(final Entry entry) {
+        for (BatchCommandData<?, ?> command : entry.getCommands()) {
+            free(command.getParams());
+        }
+    }
+
+    private void checkWriteFuture(Entry entry, final RPromise<Void> attemptPromise, AsyncDetails details,
+            final RedisConnection connection, ChannelFuture future, boolean noResult, long responseTimeout, int attempts) {
+        if (future.isCancelled() || attemptPromise.isDone()) {
             return;
         }
-
+        
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException("Can't write command batch to channel: " + future.channel(), future.cause()));
-        } else {
-            details.getTimeout().cancel();
-            TimerTask timerTask = new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    attemptPromise.tryFailure(
-                            new RedisTimeoutException("Redis server response timeout during command batch execution. Channel: " + connection.getChannel()));
-                }
-            };
-            
-            long timeout = connectionManager.getConfig().getTimeout();
-            if (responseTimeout > 0) {
-                timeout = responseTimeout;
+            if (details.getAttempt() == attempts) {
+                attemptPromise.tryFailure(details.getException());
             }
-            Timeout timeoutTask = connectionManager.newTimeout(timerTask, timeout, TimeUnit.MILLISECONDS);
-            details.setTimeout(timeoutTask);
+            return;
         }
+        
+        details.getTimeout().cancel();
+        
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                attemptPromise.tryFailure(
+                        new RedisTimeoutException("Redis server response timeout during command batch execution. Channel: " + connection.getChannel()));
+            }
+        };
+        
+        long timeout = connectionManager.getConfig().getTimeout();
+        if (responseTimeout > 0) {
+            timeout = responseTimeout;
+        }
+        Timeout timeoutTask = connectionManager.newTimeout(timerTask, timeout, TimeUnit.MILLISECONDS);
+        details.setTimeout(timeoutTask);
     }
 
     private void checkConnectionFuture(final Entry entry, final NodeSource source,
             final RPromise<Void> mainPromise, final RPromise<Void> attemptPromise, final AsyncDetails details,
-            RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout) {
-        if (attemptPromise.isDone() || mainPromise.isCancelled() || connFuture.isCancelled()) {
+            RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout, final int attempts) {
+        if (connFuture.isCancelled()) {
             return;
         }
 
@@ -406,6 +460,11 @@ public class CommandBatchService extends CommandReactiveService {
             return;
         }
 
+        if (attemptPromise.isDone() || mainPromise.isDone()) {
+            releaseConnection(source, connFuture, details.isReadOnlyMode(), attemptPromise, details);
+            return;
+        }
+        
         final RedisConnection connection = connFuture.getNow();
 
         List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
@@ -427,7 +486,7 @@ public class CommandBatchService extends CommandReactiveService {
         details.getWriteFuture().addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
-                checkWriteFuture(attemptPromise, details, connection, future, noResult, responseTimeout);
+                checkWriteFuture(entry, attemptPromise, details, connection, future, noResult, responseTimeout, attempts);
             }
         });
 

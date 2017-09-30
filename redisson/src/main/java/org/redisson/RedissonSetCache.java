@@ -42,6 +42,8 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
  * {@link RSetCache#add(Object, long, TimeUnit)} method.
@@ -121,15 +123,27 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), o);
     }
 
-    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
-        RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(name, client, startPos);
+    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+        RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(name, client, startPos, pattern);
         return get(f);
     }
 
-    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos) {
+    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos, String pattern) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(startPos);
+        params.add(System.currentTimeMillis());
+        if (pattern != null) {
+            params.add(pattern);
+        }
+        
         return commandExecutor.evalReadAsync(client, name, new ScanCodec(codec), RedisCommands.EVAL_ZSCAN,
                   "local result = {}; "
-                + "local res = redis.call('zscan', KEYS[1], ARGV[1]); "
+                + "local res; "
+                + "if (#ARGV == 3) then "
+                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'match', ARGV[3]); "
+                + "else "
+                  + " res = redis.call('zscan', KEYS[1], ARGV[1]); "
+                + "end;"
                 + "for i, value in ipairs(res[2]) do "
                     + "if i % 2 == 0 then "
                         + "local expireDate = value; "
@@ -138,16 +152,16 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                         + "end; "
                     + "end;"
                 + "end;"
-                + "return {res[1], result};", Arrays.<Object>asList(name), startPos, System.currentTimeMillis());
+                + "return {res[1], result};", Arrays.<Object>asList(name), params.toArray());
     }
 
     @Override
-    public Iterator<V> iterator() {
+    public Iterator<V> iterator(final String pattern) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos);
+                return scanIterator(getName(), client, nextIterPos, pattern);
             }
 
             @Override
@@ -156,6 +170,11 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             }
             
         };
+    }
+    
+    @Override
+    public Iterator<V> iterator() {
+        return iterator(null);
     }
 
     @Override
@@ -203,7 +222,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
             throw new NullPointerException("TimeUnit param can't be null");
         }
 
-        byte[] objectState = encode(value);
+        ByteBuf objectState = encode(value);
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
         return commandExecutor.evalWriteAsync(getName(value), codec, RedisCommands.EVAL_BOOLEAN,
@@ -276,7 +295,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<Object>(c.size()*2 + 1);
         params.add(getName());
         for (V value : c) {
-            byte[] objectState = encode(value);
+            ByteBuf objectState = encode(value);
             params.add(score);
             params.add(objectState);
         }

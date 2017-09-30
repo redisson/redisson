@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.regex.Pattern;
 
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.QueueCommandHolder;
@@ -27,10 +28,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.PlatformDependent;
@@ -41,7 +42,7 @@ import io.netty.util.internal.PlatformDependent;
  * @author Nikita Koksharov
  *
  */
-public class CommandsQueue extends ChannelOutboundHandlerAdapter {
+public class CommandsQueue extends ChannelDuplexHandler {
 
     private static final Logger log = LoggerFactory.getLogger(CommandsQueue.class);
 
@@ -52,10 +53,12 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
+    private volatile boolean isInactive;
+    
     private final ChannelFutureListener listener = new ChannelFutureListener() {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
-            if (!future.isSuccess()) {
+            if (!future.isSuccess() && !isInactive) {
                 sendNextCommand(future.channel());
             }
         }
@@ -67,6 +70,22 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
         sendData(channel);
     }
 
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        isInactive = true;
+        while (true) {
+            QueueCommandHolder command = queue.poll();
+            if (command == null) {
+                break;
+            }
+            
+            command.getChannelPromise().tryFailure(
+                    new WriteRedisConnectionException("Can't write command: " + command.getCommand() + " to channel: " + ctx.channel()));
+        }
+        
+        super.channelInactive(ctx);
+    }
+    
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
         if (msg instanceof QueueCommand) {
@@ -91,7 +110,7 @@ public class CommandsQueue extends ChannelOutboundHandlerAdapter {
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ch.pipeline().get(CommandDecoder.class).addPubSubCommand(channel.toString(), cd);
+                        ch.pipeline().get(CommandPubSubDecoder.class).addPubSubCommand(channel.toString(), cd);
                     }
                 }
             } else {

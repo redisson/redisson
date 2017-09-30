@@ -14,6 +14,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.After;
@@ -31,7 +32,6 @@ import org.redisson.api.NodesGroup;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -181,7 +181,7 @@ public class RedissonTest {
         private String field;
     }
 
-    @Test(expected = RedisException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testSer() {
         Config config = new Config();
         config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
@@ -290,8 +290,50 @@ public class RedissonTest {
         Assert.assertEquals(0, pp.stop());
 
         await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
-        await().until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
+        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
     }
+    
+    @Test
+    public void testReconnection() throws IOException, InterruptedException, TimeoutException {
+        RedisProcess runner = new RedisRunner()
+                .appendonly(true)
+                .randomDir()
+                .randomPort()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+
+        RedissonClient r = Redisson.create(config);
+        
+        r.getBucket("myBucket").set(1);
+        assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
+        
+        Assert.assertEquals(0, runner.stop());
+        
+        AtomicBoolean hasError = new AtomicBoolean();
+        try {
+            r.getBucket("myBucket").get();
+        } catch (Exception e) {
+            // skip error
+            hasError.set(true);
+        }
+
+        assertThat(hasError.get()).isTrue();
+        
+        RedisProcess pp = new RedisRunner()
+                .appendonly(true)
+                .port(runner.getRedisServerPort())
+                .dir(runner.getDefaultDir())
+                .run();
+
+        assertThat(r.getBucket("myBucket").get()).isEqualTo(1);
+
+        r.shutdown();
+
+        Assert.assertEquals(0, pp.stop());
+    }
+
 
     @Test
     public void testShutdown() {
@@ -493,7 +535,7 @@ public class RedissonTest {
     @Test(expected = RedisConnectionException.class)
     public void testSentinelConnectionFail() throws InterruptedException {
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111");
+        config.useSentinelServers().addSentinelAddress("redis://127.99.0.1:1111").setMasterName("test");
         Redisson.create(config);
 
         Thread.sleep(1500);

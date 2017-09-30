@@ -7,7 +7,7 @@ import org.redisson.config.Config;
 
 public class CommandHandlersTest extends BaseTest {
 
-    @Test(expected = RedisException.class)
+    @Test(expected = RuntimeException.class)
     public void testEncoder() throws InterruptedException {
         Config config = createConfig();
         config.setCodec(new ErrorsCodec());
@@ -17,7 +17,7 @@ public class CommandHandlersTest extends BaseTest {
         redisson.getBucket("1234").set("1234");
     }
     
-    @Test(expected = RedisException.class)
+    @Test(expected = RuntimeException.class)
     public void testDecoder() {
         redisson.getBucket("1234").set("1234");
         

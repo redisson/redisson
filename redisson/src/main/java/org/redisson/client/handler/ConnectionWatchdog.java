@@ -16,7 +16,6 @@
 package org.redisson.client.handler;
 
 import java.util.Map.Entry;
-import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
@@ -24,7 +23,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.QueueCommandHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +39,11 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -66,7 +69,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         if (connection != null) {
-            connection.onDisconnect();
+            connection.fireDisconnected();
             if (!connection.isClosed()) {
                 if (connection.isFastReconnect()) {
                     tryReconnect(connection, 1);
@@ -84,12 +87,16 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
         
-        timer.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
-            }
-        }, timeout, TimeUnit.MILLISECONDS);
+        try {
+            timer.newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
+                }
+            }, timeout, TimeUnit.MILLISECONDS);
+        } catch (IllegalStateException e) {
+            // skip
+        }
     }
 
     private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
@@ -116,11 +123,8 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                             @Override
                             public void operationComplete(Future<RedisConnection> future) throws Exception {
                                 if (future.isSuccess()) {
-                                    if (connection.isFastReconnect()) {
-                                        connection.clearFastReconnect();
-                                    }
-                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     refresh(connection, channel);
+                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                 } else {
                                     log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
                                 }
@@ -152,8 +156,13 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private void refresh(RedisConnection connection, Channel channel) {
         CommandData<?, ?> currentCommand = connection.getCurrentCommand();
+        connection.fireConnected();
         connection.updateChannel(channel);
         
+        if (connection.isFastReconnect()) {
+            connection.clearFastReconnect();
+        }
+
         reattachBlockingQueue(connection, currentCommand);            
         reattachPubSub(connection);
     }

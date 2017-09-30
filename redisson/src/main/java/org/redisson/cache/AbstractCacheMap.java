@@ -93,7 +93,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         if (entry == null) {
             return false;
         }
-        if (entry.isExpired()) {
+        if (isValueExpired(entry)) {
             if (map.remove(key, entry)) {
                 onValueRemove(entry);
                 return false;
@@ -101,6 +101,18 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             return containsKey(key);
         }
         return true;
+    }
+
+    private boolean isValueExpired(CachedValue<K, V> entry) {
+        if (entry.isExpired()) {
+            return true;
+        }
+        if (entry.getValue() instanceof ExpirableValue) {
+            if (((ExpirableValue) entry.getValue()).isExpired()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /*
@@ -116,7 +128,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         for (Map.Entry<K, CachedValue<K, V>> entry : map.entrySet()) {
             CachedValue<K, V> cachedValue = entry.getValue();
             if (cachedValue.getValue().equals(value)) {
-                if (cachedValue.isExpired()) {
+                if (isValueExpired(cachedValue)) {
                     if (map.remove(cachedValue.getKey(), cachedValue)) {
                         onValueRemove(cachedValue);
                     }
@@ -143,7 +155,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         if (entry == null) {
             return null;
         }
-        if (entry.isExpired()) {
+        if (isValueExpired(entry)) {
             if (map.remove(key, entry)) {
                 onValueRemove(entry);
                 return null;
@@ -179,7 +191,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         CachedValue<K, V> prevCachedValue = map.put(key, entry);
         if (prevCachedValue != null) {
             onValueRemove(prevCachedValue);
-            if (!prevCachedValue.isExpired()) {
+            if (!isValueExpired(prevCachedValue)) {
                 return (V) prevCachedValue.getValue();
             }
         }
@@ -197,7 +209,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         boolean removed = false;
         // TODO optimize
         for (CachedValue<K, V> value : map.values()) {
-            if (value.isExpired()) {
+            if (isValueExpired(value)) {
                 if (map.remove(value.getKey(), value)) {
                     onValueRemove(value);                    
                     removed = true;
@@ -235,7 +247,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
         CachedValue<K, V> entry = map.remove(key);
         if (entry != null) {
             onValueRemove(entry);
-            if (!entry.isExpired()) {
+            if (!isValueExpired(entry)) {
                 return (V) entry.getValue();
             }
         }
@@ -307,7 +319,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             mapEntry = null;
             while (keyIterator.hasNext()) {
                 Map.Entry<K, CachedValue<K, V>> entry = keyIterator.next();
-                if (entry.getValue().isExpired()) {
+                if (isValueExpired(entry.getValue())) {
                     continue; 
                 }
                 mapEntry = entry;

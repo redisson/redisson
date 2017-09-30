@@ -15,41 +15,61 @@
  */
 package org.redisson.misc;
 
+import java.nio.ByteBuffer;
+
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.util.CharsetUtil;
 import net.openhft.hashing.LongHashFunction;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class Hash {
 
     private Hash() {
     }
 
-    public static byte[] hash(byte[] objectState) {
-        long h1 = LongHashFunction.farmUo().hashBytes(objectState);
-        long h2 = LongHashFunction.xx().hashBytes(objectState);
+   
+    public static byte[] hash(ByteBuf objectState) {
+        ByteBuffer b = objectState.internalNioBuffer(objectState.readerIndex(), objectState.readableBytes());
+        long h1 = LongHashFunction.farmUo().hashBytes(b);
+        long h2 = LongHashFunction.xx().hashBytes(b);
 
-        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
         try {
-            return buf.array();
+            buf.writeLong(h1).writeLong(h2);
+            byte[] dst = new byte[buf.readableBytes()];
+            buf.readBytes(dst);
+            return dst;
         } finally {
             buf.release();
         }
     }
 
-    
-    public static String hashToBase64(byte[] objectState) {
-        long h1 = LongHashFunction.farmUo().hashBytes(objectState);
-        long h2 = LongHashFunction.xx().hashBytes(objectState);
 
-        ByteBuf buf = Unpooled.buffer((2 * Long.SIZE) / Byte.SIZE).writeLong(h1).writeLong(h2);
+    public static String hashToBase64(ByteBuf objectState) {
+        ByteBuffer bf = objectState.internalNioBuffer(objectState.readerIndex(), objectState.readableBytes());
+        long h1 = LongHashFunction.farmUo().hashBytes(bf);
+        long h2 = LongHashFunction.xx().hashBytes(bf);
 
-        ByteBuf b = Base64.encode(buf);
-        String s = b.toString(CharsetUtil.UTF_8);
-        b.release();
-        buf.release();
-        return s.substring(0, s.length() - 2);
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
+        try {
+            buf.writeLong(h1).writeLong(h2);
+            ByteBuf b = Base64.encode(buf);
+            try {
+                String s = b.toString(CharsetUtil.UTF_8);
+                return s.substring(0, s.length() - 2);
+            } finally {
+                b.release();
+            }
+        } finally {
+            buf.release();
+        }
     }
     
 }

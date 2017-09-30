@@ -18,8 +18,7 @@ package org.redisson.cache;
 /**
  * Created by jribble on 2/20/17.
  */
-public interface CachedValue<K, V> {
-    boolean isExpired();
+public interface CachedValue<K, V> extends ExpirableValue {
 
     K getKey();
 

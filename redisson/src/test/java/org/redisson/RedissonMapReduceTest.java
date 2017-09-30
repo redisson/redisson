@@ -243,6 +243,21 @@ public class RedissonMapReduceTest extends BaseTest {
     }
 
     @Test
+    public void testCollatorTimeout() {
+        RMap<String, String> map = getMap();
+        map.put("1", "Alice was beginning to get very tired");
+        
+        RMapReduce<String, String, String, Integer> mapReduce = map.<String, Integer>mapReduce()
+                                                        .mapper(new WordMapperInject())
+                                                        .reducer(new WordReducerInject())
+                                                        .timeout(10, TimeUnit.SECONDS);
+        
+        Integer res = mapReduce.execute(new WordCollatorInject());
+        assertThat(res).isEqualTo(7);
+
+    }
+    
+    @Test
     public void testInjector() {
         RMap<String, String> map = getMap();
 

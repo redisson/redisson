@@ -21,17 +21,15 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.xerial.snappy.Snappy;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.codec.compression.Snappy;
 
 /**
  * Snappy compression codec.
  * Uses inner <code>Codec</code> to convert object to binary stream.
  * <code>FstCodec</code> used by default.
- *
- * https://github.com/xerial/snappy-java
  *
  * @see org.redisson.codec.FstCodec
  *
@@ -39,6 +37,18 @@ import io.netty.buffer.Unpooled;
  *
  */
 public class SnappyCodec implements Codec {
+
+    private static final ThreadLocal<Snappy> snappyDecoder = new ThreadLocal<Snappy>() {
+        protected Snappy initialValue() {
+            return new Snappy();
+        };
+    };
+    
+    private static final ThreadLocal<Snappy> snappyEncoder = new ThreadLocal<Snappy>() {
+        protected Snappy initialValue() {
+            return new Snappy();
+        };
+    };
 
     private final Codec innerCodec;
 
@@ -50,17 +60,21 @@ public class SnappyCodec implements Codec {
         this.innerCodec = innerCodec;
     }
 
+    public SnappyCodec(ClassLoader classLoader) {
+        this(new FstCodec(classLoader));
+    }
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
+        
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            byte[] bytes = new byte[buf.readableBytes()];
-            buf.readBytes(bytes);
-            bytes = Snappy.uncompress(bytes);
-            ByteBuf bf = Unpooled.wrappedBuffer(bytes);
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
-                return innerCodec.getValueDecoder().decode(bf, state);
+                snappyDecoder.get().decode(buf, out);
+                return innerCodec.getValueDecoder().decode(out, state);
             } finally {
-                bf.release();
+                snappyDecoder.get().reset();
+                out.release();
             }
         }
     };
@@ -68,8 +82,16 @@ public class SnappyCodec implements Codec {
     private final Encoder encoder = new Encoder() {
 
         @Override
-        public byte[] encode(Object in) throws IOException {
-            return Snappy.compress(innerCodec.getValueEncoder().encode(in));
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf buf = innerCodec.getValueEncoder().encode(in);
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(buf.readableBytes() + 128);
+            try {
+                snappyEncoder.get().encode(buf, out, buf.readableBytes());
+                return out;
+            } finally {
+                buf.release();
+                snappyEncoder.get().reset();
+            }
         }
     };
 

@@ -66,7 +66,7 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
     }
 
     @Override
-    public Publisher<Long> offerLast(V e) {
+    public Publisher<Integer> offerLast(V e) {
         return offer(e);
     }
 

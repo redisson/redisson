@@ -22,6 +22,19 @@ import org.redisson.client.codec.StringCodec;
 public class RedissonListTest extends BaseTest {
 
     @Test
+    public void testGet() {
+        RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+        list.add(6);
+        
+        assertThat(list.get(1, 2, 3)).containsSequence(2, 3, 4);
+    }
+    
+    @Test
     public void testSortOrder() {
         RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
         list.add(1);
@@ -1067,7 +1080,7 @@ public class RedissonListTest extends BaseTest {
         Assert.assertTrue(list.contains("1"));
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+//    @Test(expected = IndexOutOfBoundsException.class)
     public void testGetFail() {
         List<String> list = redisson.getList("list");
 

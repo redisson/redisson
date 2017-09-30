@@ -37,6 +37,6 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
      *
      */
     @Override
-    Publisher<Long> size();
+    Publisher<Integer> size();
 
 }

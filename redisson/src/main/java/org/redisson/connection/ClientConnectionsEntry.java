@@ -32,6 +32,11 @@ import org.slf4j.LoggerFactory;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class ClientConnectionsEntry {
 
     final Logger log = LoggerFactory.getLogger(getClass());
@@ -49,17 +54,17 @@ public class ClientConnectionsEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    private final NodeType nodeType;
+    private NodeType nodeType;
     private ConnectionManager connectionManager;
 
     private final AtomicInteger failedAttempts = new AtomicInteger();
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
-            ConnectionManager connectionManager, NodeType serverMode) {
+            ConnectionManager connectionManager, NodeType nodeType) {
         this.client = client;
         this.freeConnectionsCounter = new AsyncSemaphore(poolMaxSize);
         this.connectionManager = connectionManager;
-        this.nodeType = serverMode;
+        this.nodeType = nodeType;
         this.freeSubscribeConnectionsCounter = new AsyncSemaphore(subscribePoolMaxSize);
 
         if (subscribePoolMaxSize > 0) {
@@ -67,7 +72,10 @@ public class ClientConnectionsEntry {
         }
         connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
     }
-
+    
+    public void setNodeType(NodeType nodeType) {
+        this.nodeType = nodeType;
+    }
     public NodeType getNodeType() {
         return nodeType;
     }
@@ -103,6 +111,11 @@ public class ClientConnectionsEntry {
     public void setFreezed(boolean freezed) {
         this.freezed = freezed;
     }
+    
+    public void reset() {
+        freeConnectionsCounter.removeListeners();
+        freeSubscribeConnectionsCounter.removeListeners();
+    }
 
     public int getFreeAmount() {
         return freeConnectionsCounter.getCounter();
@@ -137,14 +150,34 @@ public class ClientConnectionsEntry {
                 if (!future.isSuccess()) {
                     return;
                 }
+                
                 RedisConnection conn = future.getNow();
+                onConnect(conn);
                 log.debug("new connection created: {}", conn);
-
-                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
             }
-
         });
         return future;
+    }
+    
+    private void onConnect(final RedisConnection conn) {
+        conn.setConnectedListener(new Runnable() {
+            @Override
+            public void run() {
+                if (!connectionManager.isShuttingDown()) {
+                    connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
+                }
+            }
+        });
+        conn.setDisconnectedListener(new Runnable() {
+            @Override
+            public void run() {
+                if (!connectionManager.isShuttingDown()) {
+                    connectionManager.getConnectionEventsHub().fireDisconnect(conn.getRedisClient().getAddr());
+                }
+            }
+        });
+        
+        connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -161,9 +194,8 @@ public class ClientConnectionsEntry {
                 }
                 
                 RedisPubSubConnection conn = future.getNow();
+                onConnect(conn);
                 log.debug("new pubsub connection created: {}", conn);
-
-                connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
 
                 allSubscribeConnections.add(conn);
             }

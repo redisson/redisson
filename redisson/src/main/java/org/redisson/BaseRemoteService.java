@@ -23,6 +23,7 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
@@ -33,9 +34,10 @@ import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceAck;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
@@ -47,6 +49,7 @@ import org.redisson.remote.RemoteServiceTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -64,21 +67,21 @@ public abstract class BaseRemoteService {
     protected final Codec codec;
     protected final RedissonClient redisson;
     protected final String name;
-    protected final CommandExecutor commandExecutor;
+    protected final CommandAsyncExecutor commandExecutor;
 
-    public BaseRemoteService(RedissonClient redisson, CommandExecutor commandExecutor) {
+    public BaseRemoteService(RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this(redisson, "redisson_rs", commandExecutor);
     }
 
-    public BaseRemoteService(RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public BaseRemoteService(RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
         this(null, redisson, name, commandExecutor);
     }
 
-    public BaseRemoteService(Codec codec, RedissonClient redisson, CommandExecutor commandExecutor) {
+    public BaseRemoteService(Codec codec, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
         this(codec, redisson, "redisson_rs", commandExecutor);
     }
 
-    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
         this.codec = codec;
         this.redisson = redisson;
         this.name = name;
@@ -108,7 +111,7 @@ public abstract class BaseRemoteService {
         return redisson.getConfig().getCodec();
     }
 
-    protected byte[] encode(Object obj) {
+    protected ByteBuf encode(Object obj) {
         try {
             return getCodec().getValueEncoder().encode(obj);
         } catch (IOException e) {
@@ -189,7 +192,7 @@ public abstract class BaseRemoteService {
                 final RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args,
                         optionsCopy, System.currentTimeMillis());
 
-                final RemotePromise<Object> result = new RemotePromise<Object>(commandExecutor.getConnectionManager().newPromise()) {
+                final RemotePromise<Object> result = new RemotePromise<Object>() {
 
                     @Override
                     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -223,7 +226,7 @@ public abstract class BaseRemoteService {
                             return cancel(syncInterface, requestId, request, mayInterruptIfRunning);
                         }
 
-                        boolean removed = remove(requestQueue, request);
+                        boolean removed = commandExecutor.get(removeAsync(requestQueue, request));
                         if (removed) {
                             super.cancel(mayInterruptIfRunning);
                             return true;
@@ -245,7 +248,11 @@ public abstract class BaseRemoteService {
                         String canceRequestName = getCancelRequestQueueName(remoteInterface, requestId);
                         cancelExecution(optionsCopy, responseName, request, mayInterruptIfRunning, canceRequestName, this);
 
-                        awaitUninterruptibly(60, TimeUnit.SECONDS);
+                        try {
+                            awaitUninterruptibly(60, TimeUnit.SECONDS);
+                        } catch (CancellationException e) {
+                            // skip
+                        }
                         return isCancelled();
                     }
                 };
@@ -469,7 +476,7 @@ public abstract class BaseRemoteService {
     private RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
             final RBlockingQueue<RemoteServiceAck> responseQueue, String ackName)
             throws InterruptedException {
-        final RPromise<RemoteServiceAck> promise = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<RemoteServiceAck> promise = new RedissonPromise<RemoteServiceAck>();
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
                         + "redis.call('pexpire', KEYS[1], ARGV[1]);"
@@ -521,8 +528,8 @@ public abstract class BaseRemoteService {
         return future;
     }
 
-    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return requestQueue.remove(request);
+    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return requestQueue.removeAsync(request);
     }
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy, String responseName,

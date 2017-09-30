@@ -18,6 +18,10 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.redisson.api.map.MapLoader;
+import org.redisson.api.map.MapWriter;
+
 import java.util.Set;
 
 /**
@@ -31,6 +35,25 @@ import java.util.Set;
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
     /**
+     * Loads all map entries to this Redis map.
+     * 
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     * @return void
+     */
+    RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism);
+    
+    /**
+     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * 
+     * @param keys - map keys
+     * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
+     * @param parallelism - parallelism level, used to increase speed of process execution
+     * @return void
+     */
+    RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
+    
+    /**
      * Returns size of value mapped by key in bytes
      * 
      * @param key - map key
@@ -38,8 +61,29 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Integer> valueSizeAsync(K key);
     
+    /**
+     * Gets a map slice contained the mappings with defined <code>keys</code>
+     * by one operation.
+     * <p>
+     * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined 
+     * then value/values will be loaded in read-through mode. 
+     * <p>
+     * The returned map is <b>NOT</b> backed by the original map.
+     *
+     * @param keys - map keys
+     * @return Map slice
+     */
     RFuture<Map<K, V>> getAllAsync(Set<K> keys);
 
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     *
+     * @param map mappings to be stored in this map
+     * @return void
+     */
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
     RFuture<V> addAndGetAsync(K key, Number value);
@@ -51,10 +95,12 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Integer> sizeAsync();
 
     /**
-     * Removes <code>keys</code> from map by one operation in async manner
-     *
-     * Works faster than <code>RMap.removeAsync</code> but doesn't return
-     * the value associated with <code>key</code>
+     * Removes <code>keys</code> from map by one operation in async manner.
+     * <p>
+     * Works faster than <code>{@link RMap#removeAsync(Object, Object)}</code> but doesn't return
+     * the value associated with <code>key</code>.
+     * <p>
+     * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
      *
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
@@ -64,17 +110,33 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * in async manner.
-     *
-     * Works faster than <code>RMap.putAsync</code> but not returning
+     * <p>
+     * Works faster than <code>{@link RMap#putAsync(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
      * @param key - map key
      * @param value - map value
-     * @return <code>true</code> if key is a new key in the hash and value was set.
+     * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
     RFuture<Boolean> fastPutAsync(K key, V value);
 
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * only if there is no any association with specified<code>key</code>.
+     * <p>
+     * Works faster than <code>{@link RMap#putIfAbsentAsync(Object, Object)}</code> but not returning
+     * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key is a new one in the hash and value was set.
+     *         <code>false</code> if key already exists in the hash and change hasn't been made.
+     */
     RFuture<Boolean> fastPutIfAbsentAsync(K key, V value);
 
     /**
@@ -105,18 +167,89 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Map<K, V>> readAllMapAsync();
 
+    /**
+     * Returns the value to which the specified key is mapped,
+     * or {@code null} if this map contains no mapping for the key.
+     * <p>
+     * If map doesn't contain value for specified key and {@link MapLoader} is defined 
+     * then value will be loaded in read-through mode. 
+     *
+     * @param key the key whose associated value is to be returned
+     * @return the value to which the specified key is mapped, or
+     *         {@code null} if this map contains no mapping for the key
+     */
     RFuture<V> getAsync(K key);
 
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in async manner.
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return previous associated value
+     */
     RFuture<V> putAsync(K key, V value);
 
+    /**
+     * Removes <code>key</code> from map and returns associated value in async manner.
+     * <p>
+     * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
+     *
+     * @param key - map key
+     * @return deleted value or <code>null</code> if there wasn't any association
+     */
     RFuture<V> removeAsync(K key);
 
+    /**
+     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * If there wasn't any association before then method returns <code>null</code>.
+     * <p>
+     * If {@link MapWriter} is defined then new <code>value</code>is written in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return previous associated value 
+     *         or <code>null</code> if there wasn't any association and change hasn't been made
+     */
     RFuture<V> replaceAsync(K key, V value);
 
+    /**
+     * Replaces previous <code>oldValue</code> with a <code>newValue</code> associated with the <code>key</code>.
+     * If previous value doesn't exist or equal to <code>oldValue</code> then method returns <code>false</code>.
+     * <p>
+     * If {@link MapWriter} is defined then <code>newValue</code>is written in write-through mode.
+     *
+     * @param key - map key
+     * @param oldValue - map old value
+     * @param newValue - map new value
+     * @return <code>true</code> if value has been replaced otherwise <code>false</code>.
+     */
     RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue);
 
+    /**
+     * Removes <code>key</code> from map only if it associated with <code>value</code>.
+     * <p>
+     * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if map entry has been replaced otherwise <code>false</code>.
+     */
     RFuture<Boolean> removeAsync(Object key, Object value);
 
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * only if there is no any association with specified<code>key</code>.
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>null</code> if key is a new one in the hash and value was set.
+     *         Previous value if key already exists in the hash and change hasn't been made.
+     */
     RFuture<V> putIfAbsentAsync(K key, V value);
 
 }

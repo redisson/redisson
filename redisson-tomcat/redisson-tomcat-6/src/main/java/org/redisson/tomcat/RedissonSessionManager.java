@@ -17,6 +17,7 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -40,13 +41,24 @@ import org.redisson.config.Config;
  */
 public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
+    public enum ReadMode {REDIS, MEMORY}
+    
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
 
     protected LifecycleSupport lifecycle = new LifecycleSupport(this);
     
     private RedissonClient redisson;
     private String configPath;
+    private ReadMode readMode = ReadMode.MEMORY;
     
+    public String getReadMode() {
+        return readMode.toString();
+    }
+
+    public void setReadMode(String readMode) {
+        this.readMode = ReadMode.valueOf(readMode);
+    }
+
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
     }
@@ -114,9 +126,18 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public Session findSession(String id) throws IOException {
         Session result = super.findSession(id);
         if (result == null && id != null) {
+            Map<String, Object> attrs = getMap(id).readAllMap();
+            if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
+                log.info("Session " + id + " can't be found");
+                return null;
+            }
+            
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
-            session.load();
+            session.load(attrs);
+            
+            session.access();
+            session.endAccess();
             return session;
         }
         
@@ -125,7 +146,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this);
+        return new RedissonSession(this, readMode);
     }
     
     @Override

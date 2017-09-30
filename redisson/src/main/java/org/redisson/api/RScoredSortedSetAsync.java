@@ -64,6 +64,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Boolean> addAsync(double score, V object);
 
     /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return rank
+     */
+    RFuture<Integer> addAndGetRankAsync(double score, V object);
+
+    /**
+     * Adds element to this set, overrides previous score if it has been already added.
+     * Finally return the reverse rank of the item
+     * @param score - object score
+     * @param object - object itself
+     * @return reverse rank
+     */
+    RFuture<Integer> addAndGetRevRankAsync(double score, V object);
+
+    /**
      * Adds element to this set only if has not been added before.
      * <p>
      * Works only with <b>Redis 3.0.2 and higher.</b>
@@ -88,6 +106,24 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     RFuture<Double> addScoreAsync(V object, Number value);
 
+    /**
+     * Adds score to element and returns its reverse rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return reverse rank
+     */
+    RFuture<Integer> addScoreAndGetRevRankAsync(V object, Number value);
+    
+    /**
+     * Adds score to element and returns its rank
+     * 
+     * @param object - object itself
+     * @param value - object score
+     * @return rank
+     */
+    RFuture<Integer> addScoreAndGetRankAsync(V object, Number value);
+    
     RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
     
     RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex);
@@ -136,6 +172,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    
     RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**

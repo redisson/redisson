@@ -20,12 +20,19 @@ import java.util.BitSet;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonBitSet;
 import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.BitSetCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
+import reactor.fn.Supplier;
 import reactor.rx.Streams;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonBitSetReactive extends RedissonExpirableReactive implements RBitSetReactive {
 
     private final RedissonBitSet instance;
@@ -35,16 +42,31 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
         this.instance = new RedissonBitSet(connectionManager, name);
     }
 
-    public Publisher<Boolean> get(long bitIndex) {
-        return reactive(instance.getAsync(bitIndex));
+    public Publisher<Boolean> get(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.getAsync(bitIndex);
+            }
+        });
     }
 
-    public Publisher<Void> set(long bitIndex, boolean value) {
-        return reactive(instance.setAsync(bitIndex, value));
+    public Publisher<Void> set(final long bitIndex, final boolean value) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(bitIndex, value);
+            }
+        });
     }
 
     public Publisher<byte[]> toByteArray() {
-        return reactive(instance.toByteArrayAsync());
+        return reactive(new Supplier<RFuture<byte[]>>() {
+            @Override
+            public RFuture<byte[]> get() {
+                return instance.toByteArrayAsync();
+            }
+        });
     }
 
     public Publisher<BitSet> asBitSet() {
@@ -53,72 +75,142 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Long> length() {
-        return reactive(instance.lengthAsync());
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.lengthAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> set(long fromIndex, long toIndex, boolean value) {
-        return reactive(instance.setAsync(fromIndex, toIndex, value));
+    public Publisher<Void> set(final long fromIndex, final long toIndex, final boolean value) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(fromIndex, toIndex, value);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> clear(long fromIndex, long toIndex) {
-        return reactive(instance.clearAsync(fromIndex, toIndex));
+    public Publisher<Void> clear(final long fromIndex, final long toIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.clearAsync(fromIndex, toIndex);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> set(BitSet bs) {
-        return reactive(instance.setAsync(bs));
+    public Publisher<Void> set(final BitSet bs) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(bs);
+            }
+        });
     }
 
     @Override
     public Publisher<Void> not() {
-        return reactive(instance.notAsync());
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.notAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> set(long fromIndex, long toIndex) {
-        return reactive(instance.setAsync(fromIndex, toIndex));
+    public Publisher<Void> set(final long fromIndex, final long toIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(fromIndex, toIndex);
+            }
+        });
     }
 
     @Override
     public Publisher<Integer> size() {
-        return reactive(instance.sizeAsync());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> set(long bitIndex) {
-        return reactive(instance.setAsync(bitIndex));
+    public Publisher<Void> set(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.setAsync(bitIndex);
+            }
+        });
     }
 
     @Override
     public Publisher<Long> cardinality() {
-        return reactive(instance.cardinalityAsync());
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.cardinalityAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> clear(long bitIndex) {
-        return reactive(instance.clearAsync(bitIndex));
+    public Publisher<Void> clear(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.clearAsync(bitIndex);
+            }
+        });
     }
 
     @Override
     public Publisher<Void> clear() {
-        return reactive(instance.clearAsync());
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.clearAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> or(String... bitSetNames) {
-        return reactive(instance.orAsync(bitSetNames));
+    public Publisher<Void> or(final String... bitSetNames) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.orAsync(bitSetNames);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> and(String... bitSetNames) {
-        return reactive(instance.andAsync(bitSetNames));
+    public Publisher<Void> and(final String... bitSetNames) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.andAsync(bitSetNames);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> xor(String... bitSetNames) {
-        return reactive(instance.xorAsync(bitSetNames));
+    public Publisher<Void> xor(final String... bitSetNames) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.xorAsync(bitSetNames);
+            }
+        });
     }
 
     @Override

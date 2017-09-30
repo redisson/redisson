@@ -19,11 +19,11 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RMap;
+import org.redisson.tomcat.RedissonSessionManager.ReadMode;
 
 /**
  * Redisson Session object for Apache Tomcat
@@ -36,10 +36,12 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
+    private final RedissonSessionManager.ReadMode readMode;
     
-    public RedissonSession(RedissonSessionManager manager) {
+    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode) {
         super(manager);
         this.redissonManager = manager;
+        this.readMode = readMode;
         try {
             Field attr = StandardSession.class.getDeclaredField("attributes");
             attrs = (Map<String, Object>) attr.get(this);
@@ -51,9 +53,23 @@ public class RedissonSession extends StandardSession {
     private static final long serialVersionUID = -2518607181636076487L;
 
     @Override
+    public Object getAttribute(String name) {
+        if (readMode == ReadMode.REDIS) {
+            return map.get(name);
+        }
+
+        return super.getAttribute(name);
+    }
+    
+    @Override
     public void setId(String id, boolean notify) {
         super.setId(id, notify);
         map = redissonManager.getMap(id);
+    }
+    
+    public void delete() {
+        map.delete();
+        map = null;
     }
     
     @Override
@@ -101,6 +117,10 @@ public class RedissonSession extends StandardSession {
         super.setValid(isValid);
         
         if (map != null) {
+            if (!isValid && !map.isExists()) {
+                return;
+            }
+
             map.fastPut("session:isValid", isValid);
         }
     }
@@ -162,24 +182,30 @@ public class RedissonSession extends StandardSession {
         }
     }
     
-    public void load() {
-        Set<Entry<String, Object>> entrySet = map.readAllEntrySet();
-        for (Entry<String, Object> entry : entrySet) {
-            if ("session:creationTime".equals(entry.getKey())) {
-                creationTime = (Long) entry.getValue();
-            } else if ("session:lastAccessedTime".equals(entry.getKey())) {
-                lastAccessedTime = (Long) entry.getValue();
-            } else if ("session:thisAccessedTime".equals(entry.getKey())) {
-                thisAccessedTime = (Long) entry.getValue();
-            } else if ("session:maxInactiveInterval".equals(entry.getKey())) {
-                maxInactiveInterval = (Integer) entry.getValue();
-            } else if ("session:isValid".equals(entry.getKey())) {
-                isValid = (Boolean) entry.getValue();
-            } else if ("session:isNew".equals(entry.getKey())) {
-                isNew = (Boolean) entry.getValue();
-            } else {
-                setAttribute(entry.getKey(), entry.getValue(), false);
-            }
+    public void load(Map<String, Object> attrs) {
+        Long creationTime = (Long) attrs.remove("session:creationTime");
+        if (creationTime != null) {
+            this.creationTime = creationTime;
+        }
+        Long lastAccessedTime = (Long) attrs.remove("session:lastAccessedTime");
+        if (lastAccessedTime != null) {
+            this.lastAccessedTime = lastAccessedTime;
+        }
+        Long thisAccessedTime = (Long) attrs.remove("session:thisAccessedTime");
+        if (thisAccessedTime != null) {
+            this.thisAccessedTime = thisAccessedTime;
+        }
+        Boolean isValid = (Boolean) attrs.remove("session:isValid");
+        if (isValid != null) {
+            this.isValid = isValid;
+        }
+        Boolean isNew = (Boolean) attrs.remove("session:isNew");
+        if (isNew != null) {
+            this.isNew = isNew;
+        }
+
+        for (Entry<String, Object> entry : attrs.entrySet()) {
+            setAttribute(entry.getKey(), entry.getValue(), false);
         }
     }
     

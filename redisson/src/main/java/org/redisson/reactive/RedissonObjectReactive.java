@@ -15,13 +15,19 @@
  */
 package org.redisson.reactive;
 
+import java.io.IOException;
+
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonReference;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObjectReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.misc.RedissonObjectFactory;
 
+import io.netty.buffer.ByteBuf;
+import reactor.fn.Supplier;
 import reactor.rx.Stream;
 import reactor.rx.Streams;
 
@@ -43,8 +49,8 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this.commandExecutor = commandExecutor;
     }
 
-    public <R> Publisher<R> reactive(RFuture<R> future) {
-        return commandExecutor.reactive(future);
+    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
+        return commandExecutor.reactive(supplier);
     }
 
     public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name) {
@@ -63,6 +69,51 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     @Override
     public Codec getCodec() {
         return codec;
+    }
+    
+    protected ByteBuf encode(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+    
+    protected ByteBuf encodeMapKey(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getMapKeyEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    protected ByteBuf encodeMapValue(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
+        try {
+            return codec.getMapValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
     
     @Override

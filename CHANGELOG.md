@@ -2,7 +2,115 @@ Redisson Releases History
 ================================
 ### Please Note: trunk is current development branch.
 
-Try __ULTRA-FAST__ [Redisson PRO](https://redisson.pro) edition.  
+Try __[Redisson PRO](https://redisson.pro)__ version.
+
+### 28-Sep-2017 - versions 2.10.4 and 3.5.4 released
+Feature - added `maxSize` setting for `SpringCacheManager`  
+Feature - allow `LiveObjectService` to work with classes that inherit from REntities (thanks to @sdjacobs)  
+Improvement - `RMapCache` entires eviction process optimized  
+Improvement - handling of slave down process  
+Fixed - operation on slave coldn't be executed after its restart (thanks to @xavierfacq) 
+Fixed - `ArrayIndexOutOfBoundsException` in RedissonSessionRepository  
+Fixed - storing Live Objects in Redisson's collection objects (thanks to Rui Gu)  
+Fixed - cancel write operation for commands belong to disconnected connection  
+Fixed - possible race-condition during cancellation of write operation to Redis connection  
+Fixed - accessor methods in Live Objects break if they start with 'is' (thanks to @sdjacobs)  
+Fixed - MapReduce `Collator` couldn't be executed if timeout was defined  
+Fixed - RedissonKeys.delete throws `NullPointerException` in some cases  
+Fixed - `CancellationException` handling during RemotePromise cancellation  
+Fixed - `RedisNodeNotFoundException` should be supplied to Failed Promise  
+
+### 13-Sep-2017 - versions 2.10.3 and 3.5.3 released
+Fixed - ByteBufs are not released properly in SnappyCodec and LZ4Codec (regression since 2.10.2 and 3.5.2)
+
+### 12-Sep-2017 - versions 2.10.2 and 3.5.2 released
+Feature - added `addScoreAndGetRank` and `addScoreAndGetRevRank` methods to `RScoredSortedSet` object  
+Feature - added `addAndGetRank` and `addAndGetRevRank` methods to `RScoredSortedSet` object (thanks to @zuanoc)  
+Feature - added support for bounded `RMapCache` object using `trySetMaxSize` `setMaxSize` methods (thanks to @johnou)  
+Feature - added search by pattern using `iterator` method of `RSet` objects  
+Feature - added search by pattern using `keySet`, `values` and `entrySet` methods of `RMap` objects  
+Feature - `addScoreAndGetRank` and `addScoreAndGetRevRank` methods were added to `RScoredSortedSet` object  
+Improvement - memory allocation optimization during encoding process  
+Fixed - fixed NPE in LoadBalancerManager (regression since 2.10.1 and 3.5.1)  
+Fixed - `RAtomicDouble.decrementAndGet`  
+Fixed - connection could be in closed state during reconnection process for blocking queue  
+
+
+### 29-Aug-2017 - versions 2.10.1 and 3.5.1 released
+
+Feature - DNS monitoring support for Sentinel, Master/Slave and Replicated mode  
+Feature - `org.redisson.codec.CompositeCodec` added  
+Feature - added `readMode` property for Tomcat RedissonSessionManager  
+Fixed - `RMapCache.putAll` couldn't handle map with entries amount larger than 5000  
+Fixed - master entry should be shutdown in slaveConnectionPool during master change process  
+Fixed - Redisson's Tomcat Session attributes should be read first to avoid invalidated session exception  
+
+### 28-Jul-2017 - versions 2.10.0 and 3.5.0 released
+
+Feature - __Local Cache support for Hibernate Cache__ Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1431-hibernate-cache-local-cache) for more details  
+Feature - __Local Cache support for Spring Cache__ Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache) for more details  
+Feature - __`RedissonLocalCachedMapCache` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#713-map-local-cache-for-expiring-entries) for more details  
+Feature - __`BlockingFairDeque` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections#714-blocking-fair-deque) for more details  
+Feature - __`RLockReactive` object added__  
+Feature - __`RReadWriteLockReactive` object added__  
+Feature - __`RSemaphoreReactive` object added__  
+Feature - `unlink`, `flushdbParallel`, `flushallParallel` methods added  
+Fixed - ContextClassLoader should be used by Redisson Codec for Tomcat session's object serialization  
+Fixed - Spring Cache `NullValue` does not implement Serializable  
+Fixed - `RLocalCachedMap` doesn't work with non-json and non-binary codecs  
+Fixed - Tomcat RedissonSessionManager doesn't remove session on invalidation/expiration  
+Fixed - `RedissonBatch` shouldn't require `reactor.fn.Supplier` dependency  
+Fixed - Spring Session 1.3.x compatibility (thanks to Vcgoyo)  
+Fixed - priority queues should acquire lock before polling the element  
+
+### 12-Jul-2017 - versions 2.9.4 and 3.4.4 released
+
+Feature - [Config.performanceMode](https://github.com/redisson/redisson/wiki/2.-Configuration/_edit#performancemode) setting added  
+Feature - JsonJacksonMapCodec codec added  
+Feature - [Amazon Ion](https://amzn.github.io/ion-docs/) codec added  
+Feature - [read-through, write-through and write-behind](https://github.com/redisson/redisson/wiki/7.-Distributed-collections/#714-map-persistence) support for RMap objects  
+Feature - `RExecutorService` should return RExecutorFuture object with taskId  
+Feature - added `RList.get` method to load elements in a batch  
+Feature - ability to submit few tasks atomically (in batch) through `RExecutorService` interface  
+Feature - [Config.keepPubSubOrder](https://github.com/redisson/redisson/wiki/2.-Configuration#keeppubsuborder) setting added  
+Improvement - make `RMapReactive` and `RMapCacheReactive` interfaces match with `RMap` and `RMapCache`  
+Improvement - `RLexSortedSet` should extend `RSortedSet`  
+Fixed - connection listener is not invoked in some cases  
+Fixed - `RMapCache` `remove`, `put`, `putIfAbsent` and `replace` methods aren't respect entry expiration  
+Fixed - `SCAN` command should be used in `RKeys.deleteByPattern` method  
+Fixed - `RBinaryStream` doesn't work in Redis cluster environment  
+Fixed - `SELECT` command shouldn't be executed on Sentinel servers  
+Fixed - Stackoverflow error arise during decoding of large amount of PubSub messages  
+Fixed - `LocalCachedMapInvalidate` object can't be serialized by Kryo codec  
+Fixed - `XMLGregorianCalendar` type handling in JSON codec  
+Fixed - Reactive Stream methods shouldn't be executed immediately after `Publisher` object creation  
+
+### 10-Jun-2017 - versions 2.9.3 and 3.4.3 released
+
+Since this version, if you use programmatic config definition you should define full url with schema.
+
+```java
+config.setAddress("redis://127.0.0.1:6739");
+// or for SSL support
+config.setAddress("rediss://127.0.0.1:6739");
+```
+
+Feature - __SSL support__  
+Feature - __[RedisLabs](http://redislabs.com) hosting support__  
+Feature - `RBlockingQueue.takeLastAndOfferFirstTo` method added  
+Feature - `RScoredSortedSet.firstScore, lastScore` methods added  
+Feature - `RedissonCacheManager.setAllowNullValues` method added  
+Feature - `RedissonSpringCacheManager.setCacheNames` method added  
+Feature - Map Entry listeners support added for `RMapCache` object  
+Feature - `Config.lockWatchdogTimeout` parameter added  
+Improvement - NPE checking for key and value added for RedissonMapCache  
+Improvement - `RKeys.deleteByPatternAsync` uses scan command  
+Fixed - `RBoundedBlockingQueue.pollAsync` blocks if timeout is less than 1 second  
+Fixed - unlocking of nested `RReadWriteLock.readLock` deletes current acquired `RReadWriteLock.writeLock`  
+Fixed - wrong null values checking in RDelayedQueue methods  
+Fixed - probability of infinite scan for all iterators  
+Fixed - `Node.InfoSection` should be public  
+Fixed - JSR107 cache implementation should throw `javax.cache.CacheException` in case of any error  
 
 ### 10-May-2017 - versions 2.9.2 and 3.4.2 released
 

@@ -18,9 +18,7 @@ package org.redisson;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +36,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
@@ -48,6 +47,7 @@ import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ImmediateEventExecutor;
 
 /**
  * 
@@ -202,16 +202,8 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public RFuture<Long> deleteByPatternAsync(String pattern) {
-        if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, "local keys = redis.call('keys', ARGV[1]) "
-                              + "local n = 0 "
-                              + "for i=1, #keys,5000 do "
-                                  + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
-                              + "end "
-                          + "return n;",Collections.emptyList(), pattern);
-        }
-
+    public RFuture<Long> deleteByPatternAsync(final String pattern) {
+        final int batchSize = 100;
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
@@ -230,16 +222,38 @@ public class RedissonKeys implements RKeys {
             }
         };
 
-        for (MasterSlaveEntry entry : entries) {
-            Iterator<String> keysIterator = createKeysIterator(entry, pattern, 10);
-            Collection<String> keys = new HashSet<String>();
-            while (keysIterator.hasNext()) {
-                String key = keysIterator.next();
-                keys.add(key);
-            }
-            RFuture<Long> deleteFuture = deleteAsync(keys.toArray(new String[keys.size()]));
-            deleteFuture.addListener(listener);
-	}
+        for (final MasterSlaveEntry entry : entries) {
+            commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    long count = 0;
+                    try {
+                        Iterator<String> keysIterator = createKeysIterator(entry, pattern, batchSize);
+                        List<String> keys = new ArrayList<String>();
+                        while (keysIterator.hasNext()) {
+                            String key = keysIterator.next();
+                            keys.add(key);
+                            
+                            if (keys.size() % batchSize == 0) {
+                                count += delete(keys.toArray(new String[keys.size()]));
+                                keys.clear();
+                            }
+                        }
+                        
+                        if (!keys.isEmpty()) {
+                            count += delete(keys.toArray(new String[keys.size()]));
+                            keys.clear();
+                        }
+                        
+                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newSucceededFuture(count);
+                        future.addListener(listener);
+                    } catch (Exception e) {
+                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newFailedFuture(e);
+                        future.addListener(listener);
+                    }
+                }
+            });
+        }
 
         return result;
     }
@@ -265,9 +279,23 @@ public class RedissonKeys implements RKeys {
     }
     
     @Override
+    public long unlink(String ... keys) {
+        return commandExecutor.get(deleteAsync(keys));
+    }
+
+    @Override
+    public RFuture<Long> unlinkAsync(String ... keys) {
+        return executeAsync(RedisCommands.UNLINK, keys);
+    }
+
+    @Override
     public RFuture<Long> deleteAsync(String ... keys) {
+        return executeAsync(RedisCommands.DEL, keys);
+    }
+    
+    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, String ... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            return commandExecutor.writeAsync(null, RedisCommands.DEL, keys);
+            return commandExecutor.writeAsync(null, command, keys);
         }
 
         Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
@@ -293,7 +321,9 @@ public class RedissonKeys implements RKeys {
                 if (future.isSuccess()) {
                     List<Long> result = (List<Long>) future.get();
                     for (Long res : result) {
-                        count.addAndGet(res);
+                        if (res != null) {
+                            count.addAndGet(res);
+                        }
                     }
                 } else {
                     failed.set(future.cause());
@@ -307,7 +337,7 @@ public class RedissonKeys implements RKeys {
             // executes in batch due to CROSSLOT error
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             for (String key : entry.getValue()) {
-                executorService.writeAsync(entry.getKey(), null, RedisCommands.DEL, key);
+                executorService.writeAsync(entry.getKey(), null, command, key);
             }
 
             RFuture<List<?>> future = executorService.executeAsync();
@@ -338,6 +368,27 @@ public class RedissonKeys implements RKeys {
         });
     }
 
+    @Override
+    public void flushdbParallel() {
+        commandExecutor.get(flushdbParallelAsync());
+    }
+
+    @Override
+    public RFuture<Void> flushdbParallelAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHDB_ASYNC);
+    }
+
+    @Override
+    public void flushallParallel() {
+        commandExecutor.get(flushallParallelAsync());
+    }
+
+    @Override
+    public RFuture<Void> flushallParallelAsync() {
+        return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL_ASYNC);
+    }
+
+    
     @Override
     public void flushdb() {
         commandExecutor.get(flushdbAsync());

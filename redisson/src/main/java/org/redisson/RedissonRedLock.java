@@ -16,12 +16,8 @@
 package org.redisson;
 
 import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RLock;
-
-import io.netty.util.concurrent.Future;
 
 /**
  * RedLock locking algorithm implementation for multiple locks. 
@@ -58,14 +54,4 @@ public class RedissonRedLock extends RedissonMultiLock {
         unlockInner(locks);
     }
 
-    @Override
-    protected boolean isLockFailed(Future<Boolean> future) {
-        return false;
-    }
-    
-    @Override
-    protected boolean isAllLocksAcquired(AtomicReference<RLock> lockedLockHolder, AtomicReference<Throwable> failed, Queue<RLock> lockedLocks) {
-        return (lockedLockHolder.get() == null && failed.get() == null) || lockedLocks.size() >= minLocksAmount(locks);
-    }
-    
 }

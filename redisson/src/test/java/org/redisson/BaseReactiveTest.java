@@ -46,7 +46,7 @@ public abstract class BaseReactiveTest {
             if (redisson == null) {
                 redisson = defaultRedisson;
             }
-            redisson.getKeys().flushall();
+            sync(redisson.getKeys().flushall());
         }
     }
 

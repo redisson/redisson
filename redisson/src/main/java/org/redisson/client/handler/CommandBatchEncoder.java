@@ -19,8 +19,9 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.MessageToByteEncoder;
 
 /**
@@ -32,6 +33,17 @@ import io.netty.handler.codec.MessageToByteEncoder;
 public class CommandBatchEncoder extends MessageToByteEncoder<CommandsData> {
 
     public static final CommandBatchEncoder INSTANCE = new CommandBatchEncoder();
+
+    @Override
+    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+        if (acceptOutboundMessage(msg)) {
+            if (!promise.setUncancellable()) {
+                return;
+            }
+        }
+
+        super.write(ctx, msg, promise);
+    }
     
     @Override
     protected void encode(ChannelHandlerContext ctx, CommandsData msg, ByteBuf out) throws Exception {

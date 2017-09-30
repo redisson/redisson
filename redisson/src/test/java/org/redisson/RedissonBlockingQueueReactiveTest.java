@@ -141,7 +141,7 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testBlockingQueue() {
+    public void testBlockingQueue() throws InterruptedException {
 
         RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("test_:blocking:queue:");
 
@@ -152,9 +152,13 @@ public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
             executor.submit(() -> {
-                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
+                sync(redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet()));
             });
         }
+        
+        executor.shutdown();
+        executor.awaitTermination(10, TimeUnit.SECONDS);
+        
         int count = 0;
         while (count < total) {
             int item = sync(queue.take());

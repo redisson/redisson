@@ -28,6 +28,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
+import io.netty.buffer.ByteBuf;
+
 /**
  * @author Nikita Koksharov
  *
@@ -52,7 +54,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
 
         String setName = getValuesName(keyHash);
@@ -81,7 +83,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf valueState = encodeMapValue(value);
 
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local keys = redis.call('hgetall', KEYS[1]); " +
@@ -106,9 +108,9 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
-        byte[] valueState = encodeMapValue(value);
+        ByteBuf valueState = encodeMapValue(value);
 
         String setName = getValuesName(keyHash);
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -128,8 +130,8 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RSet<V> get(K key) {
-        byte[] keyState = encodeMapKey(key);
-        String keyHash = hash(keyState);
+        ByteBuf keyState = encodeMapKey(key);
+        String keyHash = hashAndRelease(keyState);
         String setName = getValuesName(keyHash);
 
         return new RedissonSetMultimapValues<V>(codec, commandExecutor, setName, getTimeoutSetName(), key);
@@ -137,7 +139,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
         String setName = getValuesName(keyHash);
         
@@ -156,7 +158,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
-        byte[] keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
 
         String setName = getValuesName(keyHash);

@@ -84,6 +84,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             Role role = Role.valueOf(connection.sync(RedisCommands.INFO_REPLICATION).get(ROLE_KEY));
             if (Role.master.equals(role)) {
                 if (currentMaster.get() != null) {
+                    stopThreads();
                     throw new RedisException("Multiple masters detected");
                 }
                 currentMaster.set(addr);
@@ -96,10 +97,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (currentMaster.get() == null) {
+            stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
 
-        init(this.config);
+        initSingleEntry();
 
         scheduleMasterChangeCheck(cfg);
     }
@@ -190,7 +192,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                         if (master.equals(addr)) {
                                             log.debug("Current master {} unchanged", master);
                                         } else if (currentMaster.compareAndSet(master, addr)) {
-                                            log.info("Master has changed from {} to {}", master, addr);
                                             changeMaster(singleSlotRange.getStartSlot(), addr);
                                         }
                                     }

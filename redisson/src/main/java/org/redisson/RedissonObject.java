@@ -24,6 +24,9 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonObjectFactory;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Base Redisson object
@@ -135,6 +138,16 @@ public abstract class RedissonObject implements RObject {
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_BOOL, getName());
     }
+    
+    @Override
+    public boolean unlink() {
+        return get(unlinkAsync());
+    }
+
+    @Override
+    public RFuture<Boolean> unlinkAsync() {
+        return commandExecutor.writeAsync(getName(), RedisCommands.UNLINK_BOOL, getName());
+    }
 
     @Override
     public boolean touch() {
@@ -161,7 +174,14 @@ public abstract class RedissonObject implements RObject {
         return codec;
     }
     
-    protected byte[] encode(Object value) {
+    protected ByteBuf encode(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
         try {
             return codec.getValueEncoder().encode(value);
         } catch (IOException e) {
@@ -169,7 +189,14 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    protected byte[] encodeMapKey(Object value) {
+    protected ByteBuf encodeMapKey(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
         try {
             return codec.getMapKeyEncoder().encode(value);
         } catch (IOException e) {
@@ -177,7 +204,14 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    protected byte[] encodeMapValue(Object value) {
+    protected ByteBuf encodeMapValue(Object value) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
         try {
             return codec.getMapValueEncoder().encode(value);
         } catch (IOException e) {

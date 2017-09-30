@@ -24,6 +24,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.client.codec.Codec;
 
+import io.netty.buffer.ByteBuf;
 import net.openhft.hashing.LongHashFunction;
 
 /**
@@ -55,8 +56,9 @@ public class Collector<K, V> implements RCollector<K, V> {
     @Override
     public void emit(K key, V value) {
         try {
-            byte[] encodedKey = codec.getValueEncoder().encode(key);
-            long hash = LongHashFunction.xx().hashBytes(encodedKey);
+            ByteBuf encodedKey = codec.getValueEncoder().encode(key);
+            long hash = LongHashFunction.xx().hashBytes(encodedKey.internalNioBuffer(encodedKey.readerIndex(), encodedKey.readableBytes()));
+            encodedKey.release();
             int part = (int) Math.abs(hash % parts);
             String partName = name + ":" + part;
             

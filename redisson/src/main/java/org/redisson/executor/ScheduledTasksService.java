@@ -27,10 +27,9 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.remote.RemoteServiceCancelRequest;
-import org.redisson.remote.RemoteServiceCancelResponse;
 import org.redisson.remote.RemoteServiceRequest;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 
@@ -39,23 +38,18 @@ import io.netty.util.TimerTask;
  * @author Nikita Koksharov
  *
  */
-public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
+public class ScheduledTasksService extends TasksService {
 
     private String requestId;
-    private String schedulerTasksName;
     private String schedulerQueueName;
     private String schedulerChannelName;
     
-    public ScheduledExecutorRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
+    public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
         super(codec, redisson, name, commandExecutor);
     }
     
     public void setRequestId(String requestId) {
         this.requestId = requestId;
-    }
-    
-    public void setSchedulerTasksName(String schedulerTasksName) {
-        this.schedulerTasksName = schedulerTasksName;
     }
     
     public void setSchedulerChannelName(String schedulerChannelName) {
@@ -69,7 +63,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
     @Override
     protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
         Long startTime = (Long)request.getArgs()[3];
-        byte[] encodedRequest = encode(request);
+        ByteBuf encodedRequest = encode(request);
         
         if (requestId != null) {
             return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -87,7 +81,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
                         + "return 1;"
                     + "end;"
                     + "return 0;", 
-                    Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, schedulerTasksName),
+                    Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
                     startTime, request.getRequestId(), encodedRequest);
         }
         
@@ -106,7 +100,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
                     + "return 1;"
                 + "end;"
                 + "return 0;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, schedulerTasksName),
+                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
                 startTime, request.getRequestId(), encodedRequest);
     }
     
@@ -126,7 +120,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
             commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
-                    ScheduledExecutorRemoteService.super.awaitResultAsync(optionsCopy, result, request, responseName);
+                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseName);
                 }
             }, delay, TimeUnit.MILLISECONDS);
         } else {
@@ -135,8 +129,8 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
     }
 
     @Override
-    protected boolean remove(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return commandExecutor.evalWrite(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('zrem', KEYS[2], ARGV[1]) > 0 then "
                       + "redis.call('hdel', KEYS[6], ARGV[1]); "
@@ -151,7 +145,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
                   + "end;"
                   + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
                    // remove from executor queue
-                  + "if task ~= nil and redis.call('lrem', KEYS[1], 1, task) > 0 then "
+                  + "if task ~= false and redis.call('lrem', KEYS[1], 1, task) > 0 then "
                       + "redis.call('hdel', KEYS[6], ARGV[1]); "
                       + "if redis.call('decr', KEYS[3]) == 0 then "
                          + "redis.call('del', KEYS[3]);"
@@ -165,7 +159,7 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
                    // delete scheduled task
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
                   + "return 0;",
-              Arrays.<Object>asList(requestQueue.getName(), schedulerQueueName, tasksCounterName, statusName, terminationTopicName, schedulerTasksName), 
+              Arrays.<Object>asList(requestQueue.getName(), schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
               request.getRequestId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
     
@@ -175,41 +169,6 @@ public class ScheduledExecutorRemoteService extends ExecutorRemoteService {
             return super.generateRequestId();
         }
         return requestId;
-    }
-
-    public boolean cancelExecution(String requestId) {
-        Class<?> syncInterface = RemoteExecutorService.class;
-        String requestQueueName = getRequestQueueName(syncInterface);
-        String cancelRequestName = getCancelRequestQueueName(syncInterface, requestId);
-
-        if (!redisson.getMap(schedulerTasksName, LongCodec.INSTANCE).containsKey(requestId)) {
-            return false;
-        }
-        
-        RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
-
-        RemoteServiceRequest request = new RemoteServiceRequest(requestId);
-        if (remove(requestQueue, request)) {
-            return true;
-        }
-        
-        RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = redisson.getBlockingQueue(cancelRequestName, getCodec());
-        cancelRequestQueue.putAsync(new RemoteServiceCancelRequest(true, requestId + ":cancel-response"));
-        cancelRequestQueue.expireAsync(60, TimeUnit.SECONDS);
-        
-        String responseQueueName = getResponseQueueName(syncInterface, requestId + ":cancel-response");
-        RBlockingQueue<RemoteServiceCancelResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, getCodec());
-        try {
-            RemoteServiceCancelResponse response = responseQueue.poll(60, TimeUnit.SECONDS);
-            if (response == null) {
-                return false;
-            }
-            return response.isCanceled();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
-    }
-    
+    }    
 
 }

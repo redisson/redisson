@@ -37,6 +37,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -47,6 +48,11 @@ import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -303,10 +309,29 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public RFuture<V> getAsync(int index) {
         return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
     }
+    
+    public List<V> get(int ...indexes) {
+        return get(getAsync(indexes));
+    }
+    
+    public RFuture<List<V>> getAsync(int ...indexes) {
+        List<Integer> params = new ArrayList<Integer>();
+        for (Integer index : indexes) {
+            params.add(index);
+        }
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
+                "local result = {}; " + 
+                "for i = 1, #ARGV, 1 do "
+                    + "local value = redis.call('lindex', KEYS[1], ARGV[i]);"
+                    + "table.insert(result, value);" + 
+                "end; " +
+                "return result;",
+                Collections.<Object>singletonList(getName()), params.toArray());
+    }
+
 
     @Override
     public V get(int index) {
-        checkIndex(index);
         return getValue(index);
     }
 
@@ -314,29 +339,43 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return get(getAsync(index));
     }
 
-    private void checkIndex(int index) {
-        int size = size();
-        if (!isInRange(index, size))
-            throw new IndexOutOfBoundsException("index: " + index + " but current size: "+ size);
-    }
-
-    private boolean isInRange(int index, int size) {
-        return index >= 0 && index < size;
-    }
-
     @Override
     public V set(int index, V element) {
-        checkIndex(index);
-        return get(setAsync(index, element));
+        try {
+            return get(setAsync(index, element));
+        } catch (RedisException e) {
+            if (e.getCause() instanceof IndexOutOfBoundsException) {
+                throw (IndexOutOfBoundsException)e.getCause();
+            }
+            throw e;
+        }
     }
 
     @Override
     public RFuture<V> setAsync(int index, V element) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", 5),
+        final RPromise<V> result = new RedissonPromise<V>();
+        RFuture<V> future = commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", 5),
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
                 Collections.<Object>singletonList(getName()), index, element);
+        future.addListener(new FutureListener<V>() {
+
+            @Override
+            public void operationComplete(Future<V> future) throws Exception {
+                if (!future.isSuccess()) {
+                    if (future.cause().getMessage().contains("ERR index out of range")) {
+                        result.tryFailure(new IndexOutOfBoundsException("index out of range"));
+                        return;
+                    }
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                result.trySuccess(future.getNow());
+            }
+        });
+        return result;
     }
 
     @Override
@@ -623,12 +662,12 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<Integer> addAfterAsync(V elementToFind, V element) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "AFTER", elementToFind, element);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "AFTER", encode(elementToFind), encode(element));
     }
 
     @Override
     public RFuture<Integer> addBeforeAsync(V elementToFind, V element) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "BEFORE", elementToFind, element);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LINSERT_INT, getName(), "BEFORE", encode(elementToFind), encode(element));
     }
 
     @Override

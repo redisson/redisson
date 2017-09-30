@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +42,8 @@ import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Set based Multimap Cache values holder
@@ -169,7 +170,15 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          Arrays.<Object>asList(timeoutSetName, getName()), System.currentTimeMillis(), key, o);
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos, String pattern) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(System.currentTimeMillis());
+        params.add(startPos);
+        params.add(key);
+        if (pattern != null) {
+            params.add(pattern);
+        }
+        
         RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new ScanCodec(codec), EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
@@ -180,18 +189,25 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                   + "return {0, {}};"
               + "end;"
 
-              + "return redis.call('sscan', KEYS[2], ARGV[2]);", 
-              Arrays.<Object>asList(timeoutSetName, getName()), System.currentTimeMillis(), startPos, key);
+              + "local res; "
+              + "if (#ARGV == 4) then "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'match', ARGV[4]); "
+              + "else "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2]); "
+              + "end;"
+
+              + "return res;", 
+              Arrays.<Object>asList(timeoutSetName, getName()), 
+              params.toArray());
       return get(f);
     }
 
-    @Override
-    public Iterator<V> iterator() {
+    public Iterator<V> iterator(final String pattern) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(client, nextIterPos);
+                return scanIterator(client, nextIterPos, pattern);
             }
 
             @Override
@@ -200,6 +216,11 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
             }
             
         };
+    }
+    
+    @Override
+    public Iterator<V> iterator() {
+        return iterator(null);
     }
 
     @Override
@@ -312,14 +333,10 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        ByteBuf keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
         
         return commandExecutor.evalReadAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                 "local expireDate = 92233720368547758; " +
@@ -366,14 +383,10 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     @Override
     public RFuture<Boolean> retainAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        ByteBuf keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
 
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                     "local expireDate = 92233720368547758; " +
@@ -410,14 +423,10 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 2);
-        try {
-            byte[] keyState = codec.getMapKeyEncoder().encode(key);
-            args.add(System.currentTimeMillis());
-            args.add(keyState);
-            args.addAll(c);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        ByteBuf keyState = encodeMapKey(key);
+        args.add(System.currentTimeMillis());
+        args.add(keyState);
+        args.addAll(c);
         
         return commandExecutor.evalWriteAsync(getName(), codec, EVAL_CONTAINS_ALL_WITH_VALUES,
                         "local expireDate = 92233720368547758; " +

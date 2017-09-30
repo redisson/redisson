@@ -82,6 +82,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         }
         
         if (futures.isEmpty()) {
+            ctx.fireChannelActive();
             connectionPromise.trySuccess(connection);
             return;
         }
@@ -97,7 +98,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                         return;
                     }
                     if (commandsCounter.decrementAndGet() == 0) {
-                        BaseConnectionHandler.super.channelActive(ctx);
+                        ctx.fireChannelActive();
                         connectionPromise.trySuccess(connection);
                     }
                 }

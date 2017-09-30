@@ -31,6 +31,7 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.codec.StringCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.expression.Expression;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
@@ -247,6 +248,10 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionCreatedEvent(this, session));
             }
         } else if (deletedTopic.getPatternNames().contains(pattern)) {
+            if (!body.contains(":")) {
+                return;
+            }
+            
             String id = body.split(":")[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
@@ -256,6 +261,10 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionDeletedEvent(this, id));
             }
         } else if (expiredTopic.getPatternNames().contains(pattern)) {
+            if (!body.contains(":")) {
+                return;
+            }
+
             String id = body.split(":")[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
@@ -267,7 +276,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         }
     }
     
-    private void publishEvent(Object event) {
+    private void publishEvent(ApplicationEvent event) {
         try {
             eventPublisher.publishEvent(event);
         } catch (Exception e) {

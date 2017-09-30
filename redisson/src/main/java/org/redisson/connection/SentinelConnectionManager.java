@@ -39,16 +39,15 @@ import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -67,10 +66,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
         super(config);
+        
+        if (cfg.getMasterName() == null) {
+            throw new IllegalArgumentException("masterName parameter is not defined!");
+        }
 
         this.config = create(cfg);
         initTimer(this.config);
-
+        
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
             try {
@@ -119,10 +122,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         if (currentMaster.get() == null) {
+            stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
-        init(this.config);
-
+        
+        initSingleEntry();
+        
         List<RFuture<RedisPubSubConnection>> connectionFutures = new ArrayList<RFuture<RedisPubSubConnection>>(cfg.getSentinelAddresses().size());
         for (URI addr : cfg.getSentinelAddresses()) {
             RFuture<RedisPubSubConnection> future = registerSentinel(cfg, addr, this.config);
@@ -166,7 +171,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             @Override
             public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.warn("Can't connect to sentinel: {}:{}", addr.getHost(), addr.getPort());
+                    log.warn("Can't connect to sentinel: {}", addr);
                     return;
                 }
 
@@ -215,8 +220,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String ip = parts[2];
             String port = parts[3];
 
-            String addr = createAddress(ip, port);
-            URI uri = URIBuilder.create(addr);
+            URI uri = convert(ip, port);
             registerSentinel(cfg, uri, c);
         }
     }
@@ -236,7 +240,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             
             // to avoid addition twice
-            if (slaves.putIfAbsent(slaveAddr, true) == null) {
+            if (slaves.putIfAbsent(slaveAddr, true) == null && !config.checkSkipSlavesInit()) {
                 final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
                 future.addListener(new FutureListener<Void>() {
@@ -248,11 +252,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             return;
                         }
 
-                        if (entry.slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+                        URI uri = convert(ip, port);
+                        if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
                             String slaveAddr = ip + ":" + port;
                             log.info("slave: {} added", slaveAddr);
                         }
                     }
+
                 });
             } else {
                 slaveUp(ip, port);
@@ -262,6 +268,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
+    protected URI convert(String ip, String port) {
+        String addr = createAddress(ip, port);
+        URI uri = URIBuilder.create(addr);
+        return uri;
+    }
+    
     private void onNodeDown(URI sentinelAddr, String msg) {
         String[] parts = msg.split(" ");
 
@@ -300,11 +312,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveDown(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.checkSkipSlavesInit()) {
             log.warn("slave: {}:{} has down", ip, port);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-            if (entry.slaveDown(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+            URI uri = convert(ip, port);
+            if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
                 log.warn("slave: {}:{} has down", ip, port);
             }
         }
@@ -356,13 +369,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void slaveUp(String ip, String port) {
-        if (config.getReadMode() == ReadMode.MASTER) {
+        if (config.checkSkipSlavesInit()) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
             return;
         }
 
-        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(ip, Integer.valueOf(port), FreezeReason.MANAGER)) {
+        URI uri = convert(ip, port);
+        if (getEntry(singleSlotRange.getStartSlot()).slaveUp(uri, FreezeReason.MANAGER)) {
             String slaveAddr = ip + ":" + port;
             log.info("slave: {} has up", slaveAddr);
         }
@@ -381,7 +395,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
                     changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
-                    log.info("master {} changed to {}", current, newMaster);
                 }
             }
         } else {

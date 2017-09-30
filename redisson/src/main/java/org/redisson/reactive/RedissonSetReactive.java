@@ -24,6 +24,7 @@ import java.util.Set;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
+import org.redisson.api.RFuture;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
@@ -31,6 +32,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
+
+import reactor.fn.Supplier;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -54,18 +57,23 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Long> addAll(Publisher<? extends V> c) {
+    public Publisher<Integer> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>(this).addAll(c);
     }
 
     @Override
-    public Publisher<Long> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD, getName());
+    public Publisher<Integer> size() {
+        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD_INT, getName());
     }
 
     @Override
-    public Publisher<Boolean> contains(Object o) {
-        return reactive(instance.containsAsync(o));
+    public Publisher<Boolean> contains(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAsync(o);
+            }
+        });
     }
 
     private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
@@ -73,37 +81,62 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Long> add(V e) {
+    public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, getName(), e);
     }
 
     @Override
     public Publisher<V> removeRandom() {
-        return reactive(instance.removeRandomAsync());
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.removeRandomAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<V> random() {
-        return reactive(instance.randomAsync());
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.randomAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> remove(Object o) {
-        return reactive(instance.removeAsync(o));
+    public Publisher<Boolean> remove(final Object o) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAsync(o);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> move(String destination, V member) {
-        return reactive(instance.moveAsync(destination, member));
+    public Publisher<Boolean> move(final String destination, final V member) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.moveAsync(destination, member);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> containsAll(Collection<?> c) {
-        return reactive(instance.containsAllAsync(c));
+    public Publisher<Boolean> containsAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.containsAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> addAll(Collection<? extends V> c) {
+    public Publisher<Integer> addAll(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
         args.addAll(c);
@@ -111,18 +144,33 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Boolean> retainAll(Collection<?> c) {
-        return reactive(instance.retainAllAsync(c));
+    public Publisher<Boolean> retainAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.retainAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> removeAll(Collection<?> c) {
-        return reactive(instance.removeAllAsync(c));
+    public Publisher<Boolean> removeAll(final Collection<?> c) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.removeAllAsync(c);
+            }
+        });
     }
 
     @Override
-    public Publisher<Set<V>> readIntersection(String... names) {
-        return reactive(instance.readIntersectionAsync(names));
+    public Publisher<Set<V>> readIntersection(final String... names) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readIntersectionAsync(names);
+            }
+        });
     }
     
     @Override
@@ -150,8 +198,13 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Set<V>> readUnion(String... names) {
-        return reactive(instance.readUnionAsync(names));
+    public Publisher<Set<V>> readUnion(final String... names) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readUnionAsync(names);
+            }
+        });
     }
 
     @Override
