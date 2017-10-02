@@ -109,7 +109,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(o), codec, new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+        return commandExecutor.evalReadAsync(getName(o), codec, RedisCommands.EVAL_BOOLEAN,
                     "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); " + 
                      "if expireDateScore ~= false then " +
                          "if tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
@@ -120,7 +120,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                      "else " +
                          "return 0;" +
                      "end; ",
-               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), o);
+               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), encode(o));
     }
 
     public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
@@ -242,7 +242,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), o);
+        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), encode(o));
     }
 
     @Override
@@ -263,9 +263,9 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         
         List<Object> params = new ArrayList<Object>(c.size() + 1);
         params.add(System.currentTimeMillis());
-        params.addAll(c);
+        encode(params, c);
         
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                             "for j = 2, #ARGV, 1 do "
                             + "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[j]) "
                             + "if expireDateScore ~= false then "
@@ -338,7 +338,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         
         List<Object> params = new ArrayList<Object>(c.size()+1);
         params.add(getName());
-        params.addAll(c);
+        encode(params, c);
 
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, params.toArray());
     }

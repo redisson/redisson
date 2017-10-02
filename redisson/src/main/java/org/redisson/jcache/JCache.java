@@ -63,11 +63,7 @@ import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.EmptyConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.jcache.JMutableEntry.Action;
@@ -87,19 +83,6 @@ import io.netty.util.internal.ThreadLocalRandom;
  */
 public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
-    private static final RedisCommand<Object> EVAL_GET_REPLACE = new RedisCommand<Object>("EVAL", 9, ValueType.MAP, ValueType.MAP_VALUE);
-    private static final RedisCommand<Long> EVAL_REPLACE_OLD_NEW_VALUE = new RedisCommand<Long>("EVAL", new EmptyConvertor<Long>(), 10, Arrays.asList(ValueType.MAP_KEY, ValueType.MAP_VALUE, ValueType.MAP_VALUE));
-    private static final RedisCommand<Boolean> EVAL_REPLACE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 9, ValueType.MAP);
-    private static final RedisCommand<Object> EVAL_GET_REMOVE_VALUE = new RedisCommand<Object>("EVAL", 7, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<List<Object>> EVAL_GET_REMOVE_VALUE_LIST = new RedisCommand<List<Object>>("EVAL", new ObjectListReplayDecoder<Object>(), 10, ValueType.OBJECT, ValueType.MAP_VALUE);
-    private static final RedisCommand<Long> EVAL_REMOVE_VALUES = new RedisCommand<Long>("EVAL", 5, ValueType.MAP_KEY);
-    private static final RedisCommand<Boolean> EVAL_REMOVE_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanAmountReplayConvertor(), 7, ValueType.MAP_KEY);
-    private static final RedisCommand<Object> EVAL_GET_TTL = new RedisCommand<Object>("EVAL", 8, ValueType.MAP_KEY, ValueType.MAP_VALUE);
-    private static final RedisCommand<Boolean> EVAL_PUT = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 11, ValueType.MAP);
-    private static final RedisCommand<Boolean> EVAL_PUT_IF_ABSENT = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 7, ValueType.MAP);
-    private static final RedisCommand<Boolean> EVAL_REMOVE_KEY_VALUE = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 8, ValueType.MAP);
-    private static final RedisCommand<Boolean> EVAL_CONTAINS_KEY = new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 6, ValueType.MAP_KEY);
-    
     private final JCacheManager cacheManager;
     private final JCacheConfiguration<K, V> config;
     private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = 
@@ -212,7 +195,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     
     V getValueLocked(K key) {
         
-        V value = evalWrite(getName(), codec, EVAL_GET_TTL,
+        V value = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -229,7 +212,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return value; ",
               Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
-              0, System.currentTimeMillis(), key);
+              0, System.currentTimeMillis(), encodeMapKey(key));
         
         if (value != null) {
             List<Object> result = new ArrayList<Object>(3);
@@ -268,7 +251,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private V getValue(K key) {
         Long accessTimeout = getAccessTimeout();
         
-        V value = evalWrite(getName(), codec, EVAL_GET_TTL,
+        V value = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -295,7 +278,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
               + "return value; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
-             accessTimeout, System.currentTimeMillis(), key);
+             accessTimeout, System.currentTimeMillis(), encodeMapKey(key));
         return value;
     }
 
@@ -524,7 +507,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private boolean putIfAbsentValue(K key, Object value) {
         Long creationTimeout = getCreationTimeout();
         
-        return evalWrite(getName(), codec, EVAL_PUT_IF_ABSENT,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then "
                   + "return 0; "
               + "else "
@@ -544,7 +527,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                   + "end; "
               + "end; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getCreatedChannelName()), 
-             creationTimeout, key, value);
+             creationTimeout, encodeMapKey(key), encodeMapValue(value));
     }
     
     private boolean putIfAbsentValueLocked(K key, Object value) {
@@ -553,7 +536,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         
         Long creationTimeout = getCreationTimeout();
-        return evalWrite(getName(), codec, EVAL_PUT_IF_ABSENT,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                     "if ARGV[1] == '0' then "
                       + "return 0;"                      
                   + "elseif ARGV[1] ~= '-1' then "
@@ -569,7 +552,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                       + "return 1;"
                   + "end; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getCreatedChannelName()), 
-             creationTimeout, key, value);
+             creationTimeout, encodeMapKey(key), encodeMapValue(value));
     }
 
     
@@ -612,9 +595,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         List<Object> args = new ArrayList<Object>(keys.size() + 2);
         args.add(accessTimeout);
         args.add(System.currentTimeMillis());
-        args.addAll(keys);
+        encode(args, keys);
 
-        Map<K, V> res = evalWrite(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 2, true), 8, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+        Map<K, V> res = evalWrite(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 2, true), ValueType.MAP_VALUE),
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                       + "local accessTimeout = ARGV[1]; "
                       + "local currentTime = tonumber(ARGV[2]); "
@@ -679,7 +662,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             throw new NullPointerException();
         }
 
-        return evalWrite(getName(), codec, EVAL_CONTAINS_KEY,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
                     + "return 0;"
                 + "end;"
@@ -695,7 +678,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 + "end; "
                 + "return 1;",
              Arrays.<Object>asList(getName(), getTimeoutSetName()), 
-             System.currentTimeMillis(), key);
+             System.currentTimeMillis(), encodeMapKey(key));
     }
 
     @Override
@@ -838,10 +821,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
     
     private long removeValues(Object... keys) {
-        return evalWrite(getName(), codec, EVAL_REMOVE_VALUES,
+        List<Object> params = new ArrayList<Object>(keys.length);
+        encodeMapKeys(params, Arrays.asList(keys));
+        return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                   "redis.call('zrem', KEYS[2], unpack(ARGV)); "
                 + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), keys);
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), params);
     }
 
     private List<Object> getAndPutValueLocked(K key, V value) {
@@ -1309,7 +1294,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     private boolean removeValueLocked(K key, V value) {
         
-        Boolean result = evalWrite(getName(), codec, EVAL_REMOVE_KEY_VALUE,
+        Boolean result = evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return 0; "
@@ -1334,12 +1319,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return nil;",
               Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
-              0, System.currentTimeMillis(), key, value);
+              0, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
 
         if (result == null) {
             
             Long accessTimeout = getAccessTimeout();
-            return evalWrite(getName(), codec, EVAL_REMOVE_KEY_VALUE,
+            return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
               "if ARGV[1] == '0' then "
                 + "redis.call('hdel', KEYS[1], ARGV[3]); "
                 + "redis.call('zrem', KEYS[2], ARGV[3]); "
@@ -1351,7 +1336,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             + "end; "
             + "return 0; ",
            Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
-           accessTimeout, System.currentTimeMillis(), key, value);            
+           accessTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));            
         }
 
         return result;
@@ -1360,7 +1345,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private boolean removeValue(K key, V value) {
         Long accessTimeout = getAccessTimeout();
         
-        return evalWrite(getName(), codec, EVAL_REMOVE_KEY_VALUE,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return 0; "
@@ -1394,7 +1379,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return 0; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
-             accessTimeout, System.currentTimeMillis(), key, value);
+             accessTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
     
@@ -1456,7 +1441,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     private V getAndRemoveValue(K key) {
         double syncId = ThreadLocalRandom.current().nextDouble();
-        List<Object> result = evalWrite(getName(), codec, EVAL_GET_REMOVE_VALUE_LIST,
+        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
               + "if value == false then "
                   + "return {nil}; "
@@ -1546,7 +1531,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     private long replaceValueLocked(K key, V oldValue, V newValue) {
-        Long res = evalWrite(getName(), codec, EVAL_REPLACE_OLD_NEW_VALUE,
+        Long res = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]); "
               + "if value == false then "
                   + "return 0; "
@@ -1567,7 +1552,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return -1;",
               Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()), 
-              0, 0, System.currentTimeMillis(), key, oldValue, newValue);
+              0, 0, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
              
        if (res == 1) {
            Long updateTimeout = getUpdateTimeout();
@@ -1639,7 +1624,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, EVAL_REPLACE_OLD_NEW_VALUE,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]); "
               + "if value == false then "
                   + "return 0; "
@@ -1685,7 +1670,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return -1; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()), 
-             accessTimeout, updateTimeout, System.currentTimeMillis(), key, oldValue, newValue);
+             accessTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
         
     }
     
@@ -1801,7 +1786,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private boolean replaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, EVAL_REPLACE_VALUE,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return 0; "
@@ -1834,14 +1819,14 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return 1;",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()), 
-             updateTimeout, System.currentTimeMillis(), key, value);
+             updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
         
     }
     
     private V getAndReplaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, EVAL_GET_REPLACE,
+        return evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -1874,12 +1859,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               + "return value;",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()), 
-             updateTimeout, System.currentTimeMillis(), key, value);
+             updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
         
     }
     
     private V getAndReplaceValueLocked(K key, V value) {
-        V oldValue = evalWrite(getName(), codec, EVAL_GET_REPLACE,
+        V oldValue = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -1896,7 +1881,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "end; "
               
               + "return value;", Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getUpdatedChannelName()), 
-              0, System.currentTimeMillis(), key, value);
+              0, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
 
         if (oldValue != null) {
             Long updateTimeout = getUpdateTimeout();
@@ -2432,7 +2417,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 if (accessTimeout == 0) {
                     remove();
                 } else if (accessTimeout != -1) {
-                    write(getName(), RedisCommands.ZADD_BOOL, getTimeoutSetName(), accessTimeout, entry.getKey().getObj());
+                    write(getName(), RedisCommands.ZADD_BOOL, getTimeoutSetName(), accessTimeout, encodeMapKey(entry.getKey().getObj()));
                 }
                 return je;
             }

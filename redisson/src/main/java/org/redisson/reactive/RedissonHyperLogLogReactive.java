@@ -44,14 +44,14 @@ public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<Boolean> add(V obj) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), obj);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), encode(obj));
     }
 
     @Override
     public Publisher<Boolean> addAll(Collection<V> objects) {
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
-        args.addAll(objects);
+        encode(args, objects);
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
     }
 

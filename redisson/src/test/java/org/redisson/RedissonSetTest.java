@@ -648,7 +648,7 @@ public class RedissonSetTest extends BaseTest {
         Assert.assertFalse(list.removeAll(Collections.emptyList()));
         Assert.assertTrue(list.removeAll(Arrays.asList(3, 2, 10, 6)));
 
-        assertThat(list).containsExactly(1, 4, 5);
+        assertThat(list).containsExactlyInAnyOrder(1, 4, 5);
 
         Assert.assertTrue(list.removeAll(Arrays.asList(4)));
 

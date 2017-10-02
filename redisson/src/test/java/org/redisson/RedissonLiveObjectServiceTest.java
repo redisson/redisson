@@ -1338,7 +1338,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(se.getItem("2")).isEqualTo(2);
     }
 
-    @Test(expected = RedisException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testObjectShouldNotBeAttached() {
         Customer customer = new Customer("12");
         customer = redisson.getLiveObjectService().persist(customer);

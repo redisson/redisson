@@ -568,8 +568,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         for (Integer slot : removedSlots) {
-            MasterSlaveEntry entry = removeMaster(slot);
-            entry.removeSlotRange(slot);
+            MasterSlaveEntry entry = getEntry(slot);
+            removeMaster(slot);
             if (entry.getSlotRanges().isEmpty()) {
                 entry.shutdownMasterAsync();
                 log.info("{} master and slaves for it removed", entry.getClient().getAddr());
@@ -584,12 +584,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
         for (final Integer slot : addedSlots) {
             ClusterPartition partition = find(newPartitions, slot);
-            for (MasterSlaveEntry entry : getEntrySet()) {
-                if (entry.getClient().getAddr().equals(partition.getMasterAddr())) {
-                    addEntry(slot, entry);
-                    lastPartitions.put(slot, partition);
-                    break;
-                }
+            MasterSlaveEntry entry = getEntry(partition.getMasterAddr());
+            if (entry != null && entry.getClient().getAddr().equals(partition.getMasterAddr())) {
+                addEntry(slot, entry);
+                lastPartitions.put(slot, partition);
+                break;
             }
         }
     }
@@ -611,7 +610,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 MasterSlaveEntry entry = getEntry(currentPartition.getMasterAddr());
 
                 for (Integer slot : addedSlots) {
-                    entry.addSlotRange(slot);
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
                 }
@@ -623,7 +621,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 removedSlots.removeAll(newPartition.getSlots());
                 for (Integer removeSlot : removedSlots) {
                     if (lastPartitions.remove(removeSlot, currentPartition)) {
-                        entry.removeSlotRange(removeSlot);
                         removeMaster(removeSlot);
                     }
                 }

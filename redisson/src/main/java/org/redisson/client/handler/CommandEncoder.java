@@ -16,18 +16,15 @@
 package org.redisson.client.handler;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.DefaultParamsEncoder;
-import org.redisson.client.protocol.Encoder;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -48,8 +45,6 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
     public static final CommandEncoder INSTANCE = new CommandEncoder();
     
     private final Logger log = LoggerFactory.getLogger(getClass());
-
-    private final Encoder paramsEncoder = new DefaultParamsEncoder();
 
     private static final char ARGS_PREFIX = '*';
     private static final char BYTES_PREFIX = '$';
@@ -84,35 +79,17 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
             out.writeBytes(convert(len));
             out.writeBytes(CRLF);
             
-            writeArgument(out, msg.getCommand().getName().getBytes("UTF-8"));
+            writeArgument(out, msg.getCommand().getName().getBytes(CharsetUtil.UTF_8));
             if (msg.getCommand().getSubName() != null) {
-                writeArgument(out, msg.getCommand().getSubName().getBytes("UTF-8"));
+                writeArgument(out, msg.getCommand().getSubName().getBytes(CharsetUtil.UTF_8));
             }
-            int i = 1;
+
             for (Object param : msg.getParams()) {
-                Encoder encoder = paramsEncoder;
-                if (msg.getCommand().getInParamType().size() == 1) {
-                    if (msg.getCommand().getInParamIndex() == i
-                            && msg.getCommand().getInParamType().get(0) == ValueType.OBJECT) {
-                        encoder = msg.getCodec().getValueEncoder();
-                    } else if (msg.getCommand().getInParamIndex() <= i
-                            && msg.getCommand().getInParamType().get(0) != ValueType.OBJECT) {
-                        encoder = selectEncoder(msg, i - msg.getCommand().getInParamIndex());
-                    }
-                } else {
-                    if (msg.getCommand().getInParamIndex() <= i) {
-                        int paramNum = i - msg.getCommand().getInParamIndex();
-                        encoder = selectEncoder(msg, paramNum);
-                    }
-                }
-                
-                ByteBuf buf = encoder.encode(param);
+                ByteBuf buf = encode(param);
                 writeArgument(out, buf);
                 if (!(param instanceof ByteBuf)) {
                     buf.release();
                 }
-                
-                i++;
             }
             
             if (log.isTraceEnabled()) {
@@ -124,37 +101,23 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         }
     }
 
-    private Encoder selectEncoder(CommandData<?, ?> msg, int param) {
-        int typeIndex = 0;
-        List<ValueType> inParamType = msg.getCommand().getInParamType();
-        if (inParamType.size() > 1) {
-            typeIndex = param;
+    private ByteBuf encode(Object in) {
+        if (in instanceof byte[]) {
+            byte[] payload = (byte[])in;
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(payload.length);
+            out.writeBytes(payload);
+            return out;
         }
-        if (inParamType.get(typeIndex) == ValueType.MAP) {
-            if (param % 2 != 0) {
-                return msg.getCodec().getMapValueEncoder();
-            } else {
-                return msg.getCodec().getMapKeyEncoder();
-            }
+        if (in instanceof ByteBuf) {
+            return (ByteBuf) in;
         }
-        if (inParamType.get(typeIndex) == ValueType.MAP_KEY) {
-            return msg.getCodec().getMapKeyEncoder();
-        }
-        if (inParamType.get(typeIndex) == ValueType.MAP_VALUE) {
-            return msg.getCodec().getMapValueEncoder();
-        }
-        if (inParamType.get(typeIndex) == ValueType.OBJECTS) {
-            return msg.getCodec().getValueEncoder();
-        }
-        if (inParamType.get(typeIndex) == ValueType.OBJECT) {
-            return msg.getCodec().getValueEncoder();
-        }
-        if (inParamType.get(typeIndex) == ValueType.STRING) {
-            return StringCodec.INSTANCE.getValueEncoder();
-        }
-        throw new IllegalStateException();
-    }
 
+        String payload = in.toString();
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(ByteBufUtil.utf8MaxBytes(payload));
+        ByteBufUtil.writeUtf8(buf, payload);
+        return buf;
+    }
+    
     private void writeArgument(ByteBuf out, byte[] arg) {
         out.writeByte(BYTES_PREFIX);
         out.writeBytes(convert(arg.length));

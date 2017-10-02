@@ -19,7 +19,10 @@ Usage
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	         configPath="${catalina.base}/redisson.conf" />
    ```
-   `readMode` - read attributes mode. Two modes are available: `MEMORY` and `REDIS`. `MEMORY` - read attributes stored in local Tomcat Session. `REDIS` - read directly from Redis.  
+   `readMode` - read attributes mode. Two modes are available: `MEMORY` and `REDIS`.  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`MEMORY` - read attributes stored in local Tomcat Session.  
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`REDIS` - read directly from Redis.  
+   
    
    `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
@@ -27,22 +30,22 @@ Usage
 **2** Copy two jars into `TOMCAT_BASE/lib` directory:
   
 1. __For JDK 1.8+__  
-      [redisson-all-3.5.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.3&e=jar)
+      [redisson-all-3.5.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.4&e=jar)
   
       for Tomcat 6.x  
-      [redisson-tomcat-6-3.5.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=3.5.3&e=jar)  
+      [redisson-tomcat-6-3.5.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=3.5.4&e=jar)  
       for Tomcat 7.x  
-      [redisson-tomcat-7-3.5.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.5.3&e=jar)  
+      [redisson-tomcat-7-3.5.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.5.4&e=jar)  
       for Tomcat 8.x  
-      [redisson-tomcat-8-3.5.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.5.3&e=jar)
+      [redisson-tomcat-8-3.5.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.5.4&e=jar)
   
 2. __For JDK 1.6+__  
-      [redisson-all-2.10.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.3&e=jar)
+      [redisson-all-2.10.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.4&e=jar)
   
       for Tomcat 6.x  
-      [redisson-tomcat-6-2.10.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=2.10.3&e=jar)  
+      [redisson-tomcat-6-2.10.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=2.10.4&e=jar)  
       for Tomcat 7.x  
-      [redisson-tomcat-7-2.10.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=2.10.3&e=jar)  
+      [redisson-tomcat-7-2.10.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=2.10.4&e=jar)  
       for Tomcat 8.x  
-      [redisson-tomcat-8-2.10.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=2.10.3&e=jar)
+      [redisson-tomcat-8-2.10.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=2.10.4&e=jar)
 

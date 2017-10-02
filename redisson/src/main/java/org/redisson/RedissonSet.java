@@ -31,10 +31,7 @@ import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
@@ -88,7 +85,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(o), codec, RedisCommands.SISMEMBER, getName(o), o);
+        return commandExecutor.readAsync(getName(o), codec, RedisCommands.SISMEMBER, getName(o), encode(o));
     }
 
     @Override
@@ -153,7 +150,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(e), codec, RedisCommands.SADD_SINGLE, getName(e), e);
+        return commandExecutor.writeAsync(getName(e), codec, RedisCommands.SADD_SINGLE, getName(e), encode(e));
     }
 
     @Override
@@ -188,7 +185,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.SREM_SINGLE, getName(o), o);
+        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.SREM_SINGLE, getName(o), encode(o));
     }
 
     @Override
@@ -198,7 +195,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> moveAsync(String destination, V member) {
-        return commandExecutor.writeAsync(getName(member), codec, RedisCommands.SMOVE, getName(member), destination, member);
+        return commandExecutor.writeAsync(getName(member), codec, RedisCommands.SMOVE, getName(member), destination, encode(member));
     }
 
     @Override
@@ -217,12 +214,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
             return newSucceededFuture(true);
         }
         
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "redis.call('sadd', KEYS[2], unpack(ARGV)); "
                         + "local size = redis.call('sdiff', KEYS[2], KEYS[1]);"
                         + "redis.call('del', KEYS[2]); "
                         + "return #size == 0 and 1 or 0; ",
-                       Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
+                       Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), encode(c).toArray());
     }
 
     @Override
@@ -238,7 +235,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
-        args.addAll(c);
+        encode(args, c);
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SADD_BOOL, args.toArray());
     }
 
@@ -252,13 +249,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         if (c.isEmpty()) {
             return deleteAsync();
         }
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                "redis.call('sadd', KEYS[2], unpack(ARGV)); "
                 + "local prevSize = redis.call('scard', KEYS[1]); "
                 + "local size = redis.call('sinterstore', KEYS[1], KEYS[1], KEYS[2]);"
                 + "redis.call('del', KEYS[2]); "
                 + "return size ~= prevSize and 1 or 0; ",
-            Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), c.toArray());
+            Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), encode(c).toArray());
     }
 
     @Override
@@ -269,7 +266,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
-        args.addAll(c);
+        encode(args, c);
         
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SREM_SINGLE, args.toArray());
     }
