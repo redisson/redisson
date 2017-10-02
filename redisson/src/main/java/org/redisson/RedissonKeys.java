@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -207,7 +206,7 @@ public class RedissonKeys implements RKeys {
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
-        Set<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
+        Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
         final AtomicLong executed = new AtomicLong(entries.size());
         final FutureListener<Long> listener = new FutureListener<Long>() {
             @Override
@@ -301,14 +300,13 @@ public class RedissonKeys implements RKeys {
         Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
         for (String key : keys) {
             int slot = commandExecutor.getConnectionManager().calcSlot(key);
-            for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
-                List<String> list = range2key.get(entry);
-                if (list == null) {
-                    list = new ArrayList<String>();
-                    range2key.put(entry, list);
-                }
-                list.add(key);
+            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(slot);
+            List<String> list = range2key.get(entry);
+            if (list == null) {
+                list = new ArrayList<String>();
+                range2key.put(entry, list);
             }
+            list.add(key);
         }
 
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();

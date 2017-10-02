@@ -16,11 +16,13 @@
 package org.redisson.command;
 
 import java.net.InetSocketAddress;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,9 +73,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import java.util.AbstractMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 
 /**
  *
@@ -198,7 +197,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
         final RPromise<Collection<R>> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final List<R> results = new ArrayList<R>();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<R> listener = new FutureListener<R>() {
@@ -288,7 +287,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <T, R> RFuture<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object... params) {
         final RPromise<R> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<T> listener = new FutureListener<T>() {
             @Override
@@ -413,7 +412,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     public <T, R> RFuture<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object... params) {
         final RPromise<R> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(entries.size());
         FutureListener<T> listener = new FutureListener<T>() {
 
