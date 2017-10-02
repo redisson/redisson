@@ -43,13 +43,13 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(id, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
     }
 
     RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(id, codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, name, codec, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
     }
 
     @Override

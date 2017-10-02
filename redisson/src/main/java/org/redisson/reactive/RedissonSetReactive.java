@@ -82,7 +82,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> add(V e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, getName(), encode(e));
     }
 
     @Override
@@ -139,7 +139,7 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     public Publisher<Integer> addAll(Collection<? extends V> c) {
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
-        args.addAll(c);
+        encode(args, c);
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SADD, args.toArray());
     }
 

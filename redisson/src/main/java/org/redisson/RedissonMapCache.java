@@ -1234,9 +1234,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                     List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
                     args.add(System.currentTimeMillis());
-                    args.addAll(res.getIdleKeys());
+                    encodeMapKeys(args, res.getIdleKeys());
 
-                    commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), 7, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+                    commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), ValueType.MAP_VALUE),
                                     "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
                                   + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
                                   + "for i = #map, 1, -1 do "

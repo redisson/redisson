@@ -176,7 +176,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
         }
 
         String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES_6,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "local count = 0; " +
                         "for i = 1, #ARGV, 1 do "
                             + "if redis.call('lrem', KEYS[1], 0, ARGV[i]) == 1 then "
@@ -189,7 +189,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                             + "return 1;"
                         + "end;"
                        + "return 0 ",
-                       Arrays.<Object>asList(getName(), getSemaphoreName(), channelName), c.toArray());
+                       Arrays.<Object>asList(getName(), getSemaphoreName(), channelName), encode(c).toArray());
     }
     
     @Override
