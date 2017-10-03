@@ -885,7 +885,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return o;
         } else if (o instanceof Set) {
             Set set, r = (Set) o;
-            boolean isLinkedSet = o instanceof LinkedHashSet;
+            boolean useNewSet = o instanceof LinkedHashSet;
             try {
                 set = (Set) o.getClass().getConstructor().newInstance();
             } catch (Exception exception) {
@@ -900,7 +900,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 //Assuming the failure reason is systematic such as put method
                 //is not supported or implemented, and not an occasional issue 
                 //like only one element fails.
-                if (isLinkedSet) {
+                if (useNewSet) {
                     set.add(ref);
                 } else {
                     try {
@@ -910,7 +910,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         //r is not supporting add operation, like 
                         //LinkedHashMap$LinkedEntrySet and others.
                         //fall back to use a new set.
-                        isLinkedSet = true;
+                        useNewSet = true;
                         set.add(ref);
                     }
                 }
@@ -919,7 +919,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             if (!hasConversion) {
                 return o;
-            } else if (isLinkedSet) {
+            } else if (useNewSet) {
                 return (T) set;
             } else if (!set.isEmpty()) {
                 r.removeAll(set);
@@ -927,7 +927,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return o;
         } else if (o instanceof Map) {
             Map<Object, Object> map, r = (Map<Object, Object>) o;
-            boolean isLinkedMap = o instanceof LinkedHashMap;
+            boolean useNewMap = o instanceof LinkedHashMap;
             try {
                 map = (Map) o.getClass().getConstructor().newInstance();
             } catch (Exception e) {
@@ -942,7 +942,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 //Assuming the failure reason is systematic such as put method
                 //is not supported or implemented, and not an occasional issue 
                 //like only one element fails.
-                if (isLinkedMap) {
+                if (useNewMap) {
                     map.put(ref.getKey(), ref.getValue());
                 } else {
                     try {
@@ -953,7 +953,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     } catch (Exception ex) {
                         //r is not supporting put operation. fall back to use
                         //a new map.
-                        isLinkedMap = true;
+                        useNewMap = true;
                         map.put(ref.getKey(), ref.getValue());
                     }
                 }
@@ -962,7 +962,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
             if (!hasConversion) {
                 return o;
-            } else if (isLinkedMap) {
+            } else if (useNewMap) {
                 return (T) map;
             } else if (!map.isEmpty()) {
                 r.keySet().removeAll(map.keySet());
