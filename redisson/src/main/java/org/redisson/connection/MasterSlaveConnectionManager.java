@@ -24,9 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -130,7 +128,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected MasterSlaveServersConfig config;
 
-    private final Map<Integer, MasterSlaveEntry> entries = PlatformDependent.newConcurrentHashMap();
+    private final Map<Integer, MasterSlaveEntry> slot2entry = PlatformDependent.newConcurrentHashMap();
+    private final Map<InetSocketAddress, MasterSlaveEntry> addr2entry = PlatformDependent.newConcurrentHashMap();
 
     private final RPromise<Boolean> shutdownPromise;
 
@@ -234,8 +233,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return codec;
     }
 
-    public Set<MasterSlaveEntry> getEntrySet() {
-        return new HashSet<MasterSlaveEntry>(entries.values());
+    @Override
+    public Collection<MasterSlaveEntry> getEntrySet() {
+        return addr2entry.values();
     }
     
     protected void initTimer(MasterSlaveServersConfig config) {
@@ -672,29 +672,34 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress addr) {
-        // TODO optimize
-        for (Entry<Integer, MasterSlaveEntry> entry : entries.entrySet()) {
-            if (entry.getValue().getClient().getAddr().equals(addr)) {
-                return entry.getValue();
-            }
-        }
-        return null;
+        return addr2entry.get(addr);
     }
 
+    @Override
     public MasterSlaveEntry getEntry(int slot) {
-        return entries.get(slot);
+        return slot2entry.get(slot);
     }
     
-    protected void changeMaster(int slot, URI address) {
-        getEntry(slot).changeMaster(address);
+    protected final void changeMaster(int slot, URI address) {
+        MasterSlaveEntry entry = getEntry(slot);
+        addr2entry.remove(entry.getClient().getAddr());
+        entry.changeMaster(address);
+        addr2entry.put(entry.getClient().getAddr(), entry);
     }
 
-    protected void addEntry(Integer slot, MasterSlaveEntry entry) {
-        entries.put(slot, entry);
+    protected final void addEntry(Integer slot, MasterSlaveEntry entry) {
+        slot2entry.put(slot, entry);
+        entry.addSlotRange(slot);
+        addr2entry.put(entry.getClient().getAddr(), entry);
     }
 
     protected MasterSlaveEntry removeMaster(Integer slot) {
-        return entries.remove(slot);
+        MasterSlaveEntry entry = slot2entry.remove(slot);
+        entry.removeSlotRange(slot);
+        if (entry.getSlotRanges().isEmpty()) {
+            addr2entry.remove(entry.getClient().getAddr());
+        }
+        return entry;
     }
 
     @Override
@@ -812,7 +817,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
 
-        for (MasterSlaveEntry entry : entries.values()) {
+        for (MasterSlaveEntry entry : getEntrySet()) {
             entry.shutdown();
         }
 

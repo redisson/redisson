@@ -28,11 +28,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 
 import io.netty.util.internal.ThreadLocalRandom;
@@ -45,8 +41,6 @@ import io.netty.util.internal.ThreadLocalRandom;
  */
 public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelayedQueue<V> {
 
-    private static final RedisCommand<Void> EVAL_OFFER = new RedisCommand<Void>("EVAL", new VoidReplayConvertor(), 9);
-    
     private final QueueTransferService queueTransferService;
     
     protected RedissonDelayedQueue(QueueTransferService queueTransferService, Codec codec, final CommandAsyncExecutor commandExecutor, String name) {
@@ -108,7 +102,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         long timeout = System.currentTimeMillis() + delayInMs;
      
         long randomId = ThreadLocalRandom.current().nextLong();
-        return commandExecutor.evalWriteAsync(getName(), codec, EVAL_OFFER,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                 "local value = struct.pack('dLc0', tonumber(ARGV[2]), string.len(ARGV[3]), ARGV[3]);" 
               + "redis.call('zadd', KEYS[2], ARGV[1], value);"
               + "redis.call('rpush', KEYS[3], value);"
@@ -120,7 +114,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
               + "end;"
                  ,
               Arrays.<Object>asList(getName(), getTimeoutSetName(), getQueueName(), getChannelName()), 
-              timeout, randomId, e);
+              timeout, randomId, encode(e));
     }
 
     @Override
@@ -286,7 +280,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     protected RFuture<Boolean> removeAsync(Object o, int count) {
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local s = redis.call('llen', KEYS[1]);" +
                 "for i = 0, s-1, 1 do "
                     + "local v = redis.call('lindex', KEYS[1], i);"
@@ -298,7 +292,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "end; "
                + "end;" +
                "return 0;",
-        Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), o);
+        Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), encode(o));
     }
 
     @Override
@@ -307,7 +301,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
             return newSucceededFuture(true);
         }
 
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local s = redis.call('llen', KEYS[1]);" +
                 "for i = 0, s-1, 1 do "
                     + "local v = redis.call('lindex', KEYS[1], i);"
@@ -320,7 +314,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "end; "
                + "end;" +
                "return #ARGV == 0 and 1 or 0;",
-                Collections.<Object>singletonList(getQueueName()), c.toArray());
+                Collections.<Object>singletonList(getQueueName()), encode(c).toArray());
     }
 
     @Override
@@ -339,7 +333,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
             return newSucceededFuture(false);
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local result = 0;" + 
                 "local s = redis.call('llen', KEYS[1]);" + 
                 "local i = 0;" +
@@ -360,7 +354,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                     + "i = i + 1;"
                + "end; " 
                + "return result;",
-               Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), c.toArray());
+               Arrays.<Object>asList(getQueueName(), getTimeoutSetName()), encode(c).toArray());
     }
 
     @Override
@@ -379,7 +373,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
             return deleteAsync();
         }
 
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN_WITH_VALUES,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                      "local changed = 0; " +
                      "local items = redis.call('lrange', KEYS[1], 0, -1); "
                    + "local i = 1; "
@@ -399,7 +393,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                         + "i = i + 1; "
                    + "end; "
                    + "return changed; ",
-                Collections.<Object>singletonList(getQueueName()), c.toArray());
+                Collections.<Object>singletonList(getQueueName()), encode(c).toArray());
     }  
 
     @Override
@@ -458,7 +452,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 4),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "local s = redis.call('llen', KEYS[1]);" +
                         "for i = 0, s-1, 1 do "
                             + "local v = redis.call('lindex', KEYS[1], i);"
@@ -468,7 +462,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                             + "end; "
                        + "end;" +
                        "return 0;",
-                Collections.<Object>singletonList(getQueueName()), o);
+                Collections.<Object>singletonList(getQueueName()), encode(o));
     }
 
     @Override
