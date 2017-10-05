@@ -18,6 +18,9 @@ package org.redisson.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -31,10 +34,8 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 
-import reactor.fn.Supplier;
-import reactor.rx.Stream;
-import reactor.rx.Streams;
-import reactor.rx.subscription.ReactiveSubscription;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 /**
  * 
@@ -69,7 +70,7 @@ public class RedissonKeysReactive implements RKeysReactive {
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             publishers.add(createKeysIterator(entry, pattern));
         }
-        return Streams.merge(publishers);
+        return Flux.merge(publishers);
     }
 
     @Override
@@ -85,25 +86,23 @@ public class RedissonKeysReactive implements RKeysReactive {
     }
 
     private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern) {
-        return new Stream<String>() {
-
+        return Flux.create(new Consumer<FluxSink<String>>() {
+            
             @Override
-            public void subscribe(final Subscriber<? super String> t) {
-                t.onSubscribe(new ReactiveSubscription<String>(this, t) {
-
+            public void accept(FluxSink<String> emitter) {
+                emitter.onRequest(new LongConsumer() {
                     private List<String> firstValues;
                     private long nextIterPos;
-
+                    
                     private long currentIndex;
-
+                    
                     @Override
-                    protected void onRequest(final long n) {
-                        currentIndex = n;
-                        nextValues();
+                    public void accept(long value) {
+                        currentIndex = value;
+                        nextValues(emitter);
                     }
-
-                    protected void nextValues() {
-                        final ReactiveSubscription<String> m = this;
+                    
+                    protected void nextValues(FluxSink<String> emitter) {
                         scanIterator(entry, nextIterPos, pattern).subscribe(new Subscriber<ListScanResult<String>>() {
 
                             @Override
@@ -117,7 +116,7 @@ public class RedissonKeysReactive implements RKeysReactive {
                                 if (nextIterPos == 0 && firstValues == null) {
                                     firstValues = res.getValues();
                                 } else if (res.getValues().equals(firstValues)) {
-                                    m.onComplete();
+                                    emitter.complete();
                                     currentIndex = 0;
                                     return;
                                 }
@@ -127,22 +126,22 @@ public class RedissonKeysReactive implements RKeysReactive {
                                     nextIterPos = -1;
                                 }
                                 for (String val : res.getValues()) {
-                                    m.onNext(val);
+                                    emitter.next(val);
                                     currentIndex--;
                                     if (currentIndex == 0) {
-                                        m.onComplete();
+                                        emitter.complete();
                                         return;
                                     }
                                 }
                                 if (nextIterPos == -1) {
-                                    m.onComplete();
+                                    emitter.complete();
                                     currentIndex = 0;
                                 }
                             }
 
                             @Override
                             public void onError(Throwable error) {
-                                m.onError(error);
+                                emitter.error(error);
                             }
 
                             @Override
@@ -150,14 +149,16 @@ public class RedissonKeysReactive implements RKeysReactive {
                                 if (currentIndex == 0) {
                                     return;
                                 }
-                                nextValues();
+                                nextValues(emitter);
                             }
                         });
                     }
+
                 });
             }
+            
 
-        };
+        });
     }
 
     @Override

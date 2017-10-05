@@ -18,8 +18,10 @@ package org.redisson.command;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonReactiveClient;
@@ -28,10 +30,9 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.misc.RPromise;
-import org.redisson.reactive.NettyFuturePublisher;
 
-import reactor.fn.Supplier;
-import reactor.rx.action.support.DefaultSubscriber;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.MonoProcessor;
 
 /**
  * 
@@ -50,7 +51,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
 
     @Override
     public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
-        NettyFuturePublisher<R> publisher = new NettyFuturePublisher<R>(supplier);
+        Publisher<R> publisher = super.reactive(supplier);
         publishers.add(publisher);
         return publisher;
     }
@@ -75,12 +76,26 @@ public class CommandReactiveBatchService extends CommandReactiveService {
     
     private RFuture<Void> executeAsyncVoid(boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
         for (Publisher<?> publisher : publishers) {
-            publisher.subscribe(new DefaultSubscriber<Object>() {
-                @Override
-                public void onSubscribe(Subscription s) {
-                    s.request(1);
-                }
-            });
+            Flux.from(publisher).subscribe();
+//            publisher.subscribe(new Subscriber<Object>() {
+//
+//                @Override
+//                public void onSubscribe(Subscription s) {
+//                    s.request(1);
+//                }
+//
+//                @Override
+//                public void onError(Throwable t) {
+//                }
+//
+//                @Override
+//                public void onComplete() {
+//                }
+//
+//                @Override
+//                public void onNext(Object t) {
+//                }
+//            });
         }
         return batchService.executeAsyncVoid(noResult, responseTimeout, retryAttempts, retryInterval);
     }
@@ -99,12 +114,26 @@ public class CommandReactiveBatchService extends CommandReactiveService {
     
     public RFuture<List<?>> executeAsync(long responseTimeout, int retryAttempts, long retryInterval) {
         for (Publisher<?> publisher : publishers) {
-            publisher.subscribe(new DefaultSubscriber<Object>() {
-                @Override
-                public void onSubscribe(Subscription s) {
-                    s.request(1);
-                }
-            });
+            Flux.from(publisher).subscribe();
+//            publisher.subscribe(new Subscriber<Object>() {
+//
+//                @Override
+//                public void onSubscribe(Subscription s) {
+//                    s.request(1);
+//                }
+//
+//                @Override
+//                public void onError(Throwable t) {
+//                }
+//
+//                @Override
+//                public void onComplete() {
+//                }
+//
+//                @Override
+//                public void onNext(Object t) {
+//                }
+//            });
         }
 
         return batchService.executeAsync(responseTimeout, retryAttempts, retryInterval);

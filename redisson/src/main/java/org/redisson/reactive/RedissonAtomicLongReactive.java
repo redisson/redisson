@@ -15,6 +15,8 @@
  */
 package org.redisson.reactive;
 
+import java.util.function.Supplier;
+
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonAtomicLong;
 import org.redisson.api.RAtomicLongAsync;
@@ -22,8 +24,7 @@ import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.Supplier;
-import reactor.rx.Streams;
+import reactor.core.publisher.Mono;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
@@ -127,7 +128,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     }
 
     public String toString() {
-        return Long.toString(Streams.create(get()).next().poll());
+        return Long.toString(Mono.from(get()).block());
     }
 
 }

@@ -18,6 +18,9 @@ package org.redisson.reactive;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -26,8 +29,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
-import reactor.rx.Stream;
-import reactor.rx.subscription.ReactiveSubscription;
+import reactor.core.publisher.FluxSink;
 
 /**
  * 
@@ -35,32 +37,32 @@ import reactor.rx.subscription.ReactiveSubscription;
  *
  * @param <V> value type
  */
-public abstract class SetReactiveIterator<V> extends Stream<V> {
+public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
 
     @Override
-    public void subscribe(final Subscriber<? super V> t) {
-        t.onSubscribe(new ReactiveSubscription<V>(this, t) {
-
+    public void accept(FluxSink<V> emitter) {
+        emitter.onRequest(new LongConsumer() {
+            
             private List<ByteBuf> firstValues;
             private List<ByteBuf> lastValues;
             private long nextIterPos;
             private InetSocketAddress client;
-
+            private AtomicLong elementsRead = new AtomicLong();
+            
             private boolean finished;
-
+            private volatile boolean completed;
+            private AtomicLong readAmount = new AtomicLong();
+            
             @Override
-            protected void onRequest(long n) {
-                nextValues();
-            }
-
-            private void handle(List<ScanObjectEntry> vals) {
-                for (ScanObjectEntry val : vals) {
-                    onNext((V)val.getObj());
+            public void accept(long value) {
+                readAmount.addAndGet(value);
+                if (completed || elementsRead.get() == 0) {
+                    nextValues(emitter);
+                    completed = false;
                 }
             }
-
-            protected void nextValues() {
-                final ReactiveSubscription<V> m = this;
+            
+            protected void nextValues(FluxSink<V> emitter) {
                 scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<ScanObjectEntry>>() {
 
                     @Override
@@ -105,7 +107,7 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                                 if (firstValues.isEmpty()) {
                                     if (res.getPos() == 0) {
                                         finished = true;
-                                        m.onComplete();
+                                        emitter.complete();
                                         return;
                                     }
                                 }
@@ -119,36 +121,49 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                                 nextIterPos = 0;
                                 prevIterPos = -1;
                                 finished = true;
-                                m.onComplete();
+                                emitter.complete();
                                 return;
                             }
                         }
 
-                        handle(res.getValues());
+                        for (ScanObjectEntry val : res.getValues()) {
+                            emitter.next((V)val.getObj());
+                            elementsRead.incrementAndGet();
+                        }
 
                         nextIterPos = res.getPos();
                         
+                        if (elementsRead.get() >= readAmount.get()) {
+                            emitter.complete();
+                            elementsRead.set(0);
+                            completed = true;
+                            return;
+                        }
                         if (prevIterPos == nextIterPos) {
                             finished = true;
-                            m.onComplete();
+                            emitter.complete();
                         }
                     }
-
+                                
                     @Override
                     public void onError(Throwable error) {
-                        m.onError(error);
+                        emitter.error(error);
                     }
 
                     @Override
                     public void onComplete() {
-                        if (finished) {
+                        if (finished || completed) {
                             return;
                         }
-                        nextValues();
+                        nextValues(emitter);
                     }
                 });
             }
         });
+    }
+
+    protected boolean tryAgain() {
+        return false;
     }
     
     private void free(List<ByteBuf> list) {

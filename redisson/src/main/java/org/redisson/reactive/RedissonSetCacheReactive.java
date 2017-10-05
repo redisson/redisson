@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetCache;
@@ -34,7 +35,7 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
 import io.netty.buffer.ByteBuf;
-import reactor.fn.Supplier;
+import reactor.core.publisher.Flux;
 
 /**
  * <p>Set-based cache with ability to set TTL for each entry via
@@ -96,12 +97,12 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
 
     @Override
     public Publisher<V> iterator() {
-        return new SetReactiveIterator<V>() {
+        return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
             }
-        };
+        });
     }
 
     @Override

@@ -18,6 +18,7 @@ package org.redisson.command;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.SlotCallback;
@@ -26,9 +27,8 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.reactive.NettyFuturePublisher;
 
-import reactor.fn.Supplier;
+import reactor.core.publisher.Flux;
 
 /**
  *
@@ -51,8 +51,22 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         });
     }
 
+    @Override
     public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
-        return new NettyFuturePublisher<R>(supplier);
+        return Flux.create(emitter -> {
+            emitter.onRequest(n -> {
+                supplier.get().whenComplete((v, e) -> {
+                    if (e != null) {
+                        emitter.error(e);
+                        return;
+                    } 
+                    if (v != null) {
+                        emitter.next(v);
+                    }
+                    emitter.complete();
+                });
+            });
+        });
     }
 
     @Override

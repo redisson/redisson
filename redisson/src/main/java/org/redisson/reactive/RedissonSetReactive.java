@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
@@ -33,7 +34,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.Supplier;
+import reactor.core.publisher.Flux;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -209,12 +210,12 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<V> iterator() {
-        return new SetReactiveIterator<V>() {
+        return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
-        };
+        });
     }
 
 }

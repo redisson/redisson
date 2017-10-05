@@ -20,6 +20,9 @@ import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.LongConsumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -28,8 +31,8 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import io.netty.buffer.ByteBuf;
-import reactor.rx.Stream;
-import reactor.rx.subscription.ReactiveSubscription;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -39,104 +42,156 @@ import reactor.rx.subscription.ReactiveSubscription;
  * @param <V> value type
  * @param <M> entry type
  */
-public class RedissonMapReactiveIterator<K, V, M> {
+public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
 
     private final MapReactive<K, V> map;
 
     public RedissonMapReactiveIterator(MapReactive<K, V> map) {
         this.map = map;
     }
+    
+    @Override
+    public void accept(FluxSink<M> emitter) {
+        emitter.onRequest(new LongConsumer() {
 
-    public Publisher<M> stream() {
-        return new Stream<M>() {
-
+            private Map<ByteBuf, ByteBuf> firstValues;
+            private Map<ByteBuf, ByteBuf> lastValues;
+            private long nextIterPos;
+            private InetSocketAddress client;
+            private AtomicLong elementsRead = new AtomicLong();
+            
+            private boolean finished;
+            private volatile boolean completed;
+            private AtomicLong readAmount = new AtomicLong();
+            
             @Override
-            public void subscribe(final Subscriber<? super M> t) {
-                t.onSubscribe(new ReactiveSubscription<M>(this, t) {
-
-                    private Map<ByteBuf, ByteBuf> firstValues;
-                    private long iterPos = 0;
-                    private InetSocketAddress client;
-
-                    private long currentIndex;
+            public void accept(long value) {
+                readAmount.addAndGet(value);
+                if (completed || elementsRead.get() == 0) {
+                    nextValues(emitter);
+                    completed = false;
+                }
+            };
+            
+            protected void nextValues(FluxSink<M> emitter) {
+                map.scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
 
                     @Override
-                    protected void onRequest(final long n) {
-                        currentIndex = n;
-                        nextValues();
+                    public void onSubscribe(Subscription s) {
+                        s.request(Long.MAX_VALUE);
                     }
-
-                    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-                        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
-                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-                            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+                    
+                    private void free(Map<ByteBuf, ByteBuf> map) {
+                        if (map == null) {
+                            return;
                         }
-                        return result;
+                        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
+                            entry.getKey().release();
+                            entry.getValue().release();
+                        }
                     }
 
-                    protected void nextValues() {
-                        final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, iterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
+                    @Override
+                    public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
+                        if (finished) {
+                            free(firstValues);
+                            free(lastValues);
 
-                            @Override
-                            public void onSubscribe(Subscription s) {
-                                s.request(Long.MAX_VALUE);
+                            client = null;
+                            firstValues = null;
+                            lastValues = null;
+                            nextIterPos = 0;
+                            return;
+                        }
+
+                        long prevIterPos = nextIterPos;
+                        if (lastValues != null) {
+                            free(lastValues);
+                        }
+                        
+                        lastValues = convert(res.getMap());
+                        client = res.getRedisClient();
+                        
+                        if (nextIterPos == 0 && firstValues == null) {
+                            firstValues = lastValues;
+                            lastValues = null;
+                            if (firstValues.isEmpty()) {
+                                client = null;
+                                firstValues = null;
+                                nextIterPos = 0;
+                                prevIterPos = -1;
                             }
-                            
-                            private void free(Map<ByteBuf, ByteBuf> map) {
-                                if (map == null) {
-                                    return;
-                                }
-                                for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-                                    entry.getKey().release();
-                                    entry.getValue().release();
-                                }
-                            }
-
-                            @Override
-                            public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
-                                client = res.getRedisClient();
-                                if (iterPos == 0 && firstValues == null) {
-                                    firstValues = convert(res.getMap());
-                                } else if (convert(res.getMap()).equals(firstValues)) {
-                                    free(firstValues);
-                                    m.onComplete();
-                                    currentIndex = 0;
-                                    return;
-                                }
-
-                                iterPos = res.getPos();
-                                for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
-                                    M val = getValue(entry);
-                                    m.onNext(val);
-                                    currentIndex--;
-                                    if (currentIndex == 0) {
-                                        m.onComplete();
+                        } else { 
+                            if (firstValues.isEmpty()) {
+                                firstValues = lastValues;
+                                lastValues = null;
+                                if (firstValues.isEmpty()) {
+                                    if (res.getPos() == 0) {
+                                        finished = true;
+                                        emitter.complete();
                                         return;
                                     }
                                 }
-                            }
+                            } else if (lastValues.keySet().removeAll(firstValues.keySet())) {
+                                free(firstValues);
+                                free(lastValues);
 
-                            @Override
-                            public void onError(Throwable error) {
-                                m.onError(error);
+                                client = null;
+                                firstValues = null;
+                                lastValues = null;
+                                nextIterPos = 0;
+                                prevIterPos = -1;
+                                finished = true;
+                                emitter.complete();
+                                return;
                             }
+                        }
 
-                            @Override
-                            public void onComplete() {
-                                if (currentIndex == 0) {
-                                    return;
-                                }
-                                nextValues();
-                            }
-                        });
+                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
+                            M val = getValue(entry);
+                            emitter.next(val);
+                            elementsRead.incrementAndGet();
+                        }
+
+                        nextIterPos = res.getPos();
+                        
+                        if (elementsRead.get() >= readAmount.get()) {
+                            emitter.complete();
+                            elementsRead.set(0);
+                            completed = true;
+                            return;
+                        }
+                        if (prevIterPos == nextIterPos) {
+                            finished = true;
+                            emitter.complete();
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable error) {
+                        emitter.error(error);
+                    }
+
+                    @Override
+                    public void onComplete() {
+                        if (finished || completed) {
+                            return;
+                        }
+                        nextValues(emitter);
                     }
                 });
             }
 
-        };
+        });
     }
-
+    
+    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
+            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+        }
+        return result;
+    }
 
     M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
         return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
@@ -144,7 +199,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
             @Override
             public V setValue(V value) {
                 Publisher<V> publisher = map.put((K) entry.getKey().getObj(), value);
-                return ((Stream<V>)publisher).next().poll();
+                return Mono.from(publisher).block();
             }
 
         };

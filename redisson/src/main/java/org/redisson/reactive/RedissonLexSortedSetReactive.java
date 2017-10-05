@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonLexSortedSet;
@@ -28,7 +29,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.Supplier;
 
 /**
  * 

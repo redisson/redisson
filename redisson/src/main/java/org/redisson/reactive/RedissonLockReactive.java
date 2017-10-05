@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonLock;
@@ -25,8 +26,6 @@ import org.redisson.api.RLockAsync;
 import org.redisson.api.RLockReactive;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandReactiveExecutor;
-
-import reactor.fn.Supplier;
 
 /**
  * 

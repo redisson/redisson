@@ -25,8 +25,8 @@ import org.springframework.beans.factory.parsing.BeanComponentDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.ManagedList;
 import org.springframework.beans.factory.xml.ParserContext;
+import org.springframework.util.Assert;
 import org.w3c.dom.Element;
-import reactor.core.support.Assert;
 
 /**
  *

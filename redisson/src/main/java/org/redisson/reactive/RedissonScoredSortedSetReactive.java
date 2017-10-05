@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonScoredSortedSet;
@@ -33,7 +34,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.Supplier;
+import reactor.core.publisher.Flux;
 
 /**
  * 
@@ -181,12 +182,12 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
 
     @Override
     public Publisher<V> iterator() {
-        return new SetReactiveIterator<V>() {
+        return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
                 return RedissonScoredSortedSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
-        };
+        });
     }
 
     @Override

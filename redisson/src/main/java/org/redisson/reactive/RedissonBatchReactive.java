@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RAtomicLongReactive;
@@ -40,10 +41,9 @@ import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveBatchService;
+import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-
-import reactor.fn.Supplier;
 
 /**
  * 
@@ -54,10 +54,12 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandReactiveBatchService executorService;
+    private final CommandReactiveService commandExecutor;
 
-    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandReactiveBatchService(connectionManager);
+        this.commandExecutor = commandExecutor;
     }
 
     @Override
@@ -207,7 +209,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Publisher<List<?>> execute() {
-        return new NettyFuturePublisher<List<?>>(new Supplier<RFuture<List<?>>>() {
+        return commandExecutor.reactive(new Supplier<RFuture<List<?>>>() {
             @Override
             public RFuture<List<?>> get() {
                 return executorService.executeAsync();

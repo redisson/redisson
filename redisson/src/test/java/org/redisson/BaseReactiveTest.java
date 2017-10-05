@@ -13,8 +13,8 @@ import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.config.Config;
 
-import reactor.rx.Promise;
-import reactor.rx.Streams;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 public abstract class BaseReactiveTest {
 
@@ -59,34 +59,23 @@ public abstract class BaseReactiveTest {
     }
 
     public static <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
-        return Streams.create(list.iterator()).toList().poll();
+        return toIterable(list.iterator());
     }
 
     public static <V> Iterable<V> sync(RCollectionReactive<V> list) {
-        return Streams.create(list.iterator()).toList().poll();
+        return toIterable(list.iterator());
     }
 
     public static <V> Iterator<V> toIterator(Publisher<V> pub) {
-        return Streams.create(pub).toList().poll().iterator();
+        return Flux.from(pub).toIterable().iterator();
     }
 
     public static <V> Iterable<V> toIterable(Publisher<V> pub) {
-        return Streams.create(pub).toList().poll();
+        return Flux.from(pub).toIterable();
     }
 
     public static <V> V sync(Publisher<V> ob) {
-        Promise<V> promise;
-        if (Promise.class.isAssignableFrom(ob.getClass())) {
-            promise = (Promise<V>) ob;
-        } else {
-            promise = Streams.wrap(ob).next();
-        }
-
-        V val = promise.poll();
-        if (promise.isError()) {
-            throw new RuntimeException(promise.reason());
-        }
-        return val;
+        return Mono.from(ob).block();
     }
 
     public static RedissonReactiveClient createInstance() {

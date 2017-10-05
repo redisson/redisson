@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMapCache;
@@ -35,10 +38,8 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
-import reactor.rx.Streams;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -285,27 +286,27 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<Map.Entry<K, V>> entryIterator() {
-        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this).stream();
+        return Flux.create(new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this));
     }
 
     @Override
     public Publisher<V> valueIterator() {
-        return new RedissonMapReactiveIterator<K, V, V>(this) {
+        return Flux.create(new RedissonMapReactiveIterator<K, V, V>(this) {
             @Override
             V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (V) entry.getValue().getObj();
             }
-        }.stream();
+        });
     }
 
     @Override
     public Publisher<K> keyIterator() {
-        return new RedissonMapReactiveIterator<K, V, K>(this) {
+        return Flux.create(new RedissonMapReactiveIterator<K, V, K>(this) {
             @Override
             K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (K) entry.getKey().getObj();
             }
-        }.stream();
+        });
     }
 
     @Override
@@ -325,18 +326,18 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
         if (o instanceof Map) {
             final Map<?,?> m = (Map<?,?>) o;
-            if (m.size() != Streams.create(size()).next().poll()) {
+            if (m.size() != Mono.from(size()).block()) {
                 return false;
             }
 
-            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+            return Flux.from(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).block();
         } else if (o instanceof RMapReactive) {
             final RMapReactive<Object, Object> m = (RMapReactive<Object, Object>) o;
-            if (Streams.create(m.size()).next().poll() != Streams.create(size()).next().poll()) {
+            if (Mono.from(m.size()).block() != Mono.from(size()).block()) {
                 return false;
             }
 
-            return Streams.create(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).next().poll();
+            return Flux.from(entryIterator()).map(mapFunction(m)).reduce(true, booleanAnd()).block();
         }
 
         return true;
@@ -377,10 +378,10 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
                 Object key = e.getKey();
                 Object value = e.getValue();
                 if (value == null) {
-                    if (!(Streams.create(m.get(key)).next().poll() ==null && Streams.create(m.containsKey(key)).next().poll()))
+                    if (!(Mono.from(m.get(key)).block() == null && Mono.from(m.containsKey(key)).block()))
                         return false;
                 } else {
-                    if (!value.equals(Streams.create(m.get(key)).next().poll()))
+                    if (!value.equals(Mono.from(m.get(key)).block()))
                         return false;
                 }
                 return true;
@@ -390,7 +391,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     @Override
     public int hashCode() {
-        return Streams.create(entryIterator()).map(new Function<Map.Entry<K, V>, Integer>() {
+        return Flux.from(entryIterator()).map(new Function<Map.Entry<K, V>, Integer>() {
             @Override
             public Integer apply(Entry<K, V> t) {
                 return t.hashCode();
@@ -401,7 +402,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
             public Integer apply(Integer t, Integer u) {
                 return t + u;
             }
-        }).next().poll();
+        }).block();
     }
 
     @Override

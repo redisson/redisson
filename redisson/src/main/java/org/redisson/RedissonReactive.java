@@ -291,7 +291,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RBatchReactive createBatch() {
-        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, commandExecutor);
         if (config.isRedissonReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }

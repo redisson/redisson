@@ -23,6 +23,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.LongConsumer;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -35,12 +40,9 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.BiFunction;
-import reactor.fn.Function;
-import reactor.fn.Supplier;
-import reactor.rx.Stream;
-import reactor.rx.Streams;
-import reactor.rx.subscription.ReactiveSubscription;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Mono;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -89,17 +91,20 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     private Publisher<V> iterator(final int startIndex, final boolean forward) {
-        return new Stream<V>() {
+        return Flux.create(new Consumer<FluxSink<V>>() {
 
             @Override
-            public void subscribe(final Subscriber<? super V> t) {
-                t.onSubscribe(new ReactiveSubscription<V>(this, t) {
-
-                    private int currentIndex = startIndex;
-
+            public void accept(FluxSink<V> emitter) {
+                emitter.onRequest(new LongConsumer() {
+                    
+                    int currentIndex = startIndex;
+                    
                     @Override
-                    protected void onRequest(final long n) {
-                        final ReactiveSubscription<V> m = this;
+                    public void accept(long value) {
+                        onRequest(forward, emitter, value);
+                    }
+                    
+                    protected void onRequest(final boolean forward, FluxSink<V> emitter, long n) {
                         get(currentIndex).subscribe(new Subscriber<V>() {
                             V currValue;
 
@@ -111,7 +116,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
                             @Override
                             public void onNext(V value) {
                                 currValue = value;
-                                m.onNext(value);
+                                emitter.next(value);
                                 if (forward) {
                                     currentIndex++;
                                 } else {
@@ -121,26 +126,27 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
                             @Override
                             public void onError(Throwable error) {
-                                m.onError(error);
+                                emitter.error(error);
                             }
 
                             @Override
                             public void onComplete() {
                                 if (currValue == null) {
-                                    m.onComplete();
+                                    emitter.complete();
                                     return;
                                 }
                                 if (n-1 == 0) {
                                     return;
                                 }
-                                onRequest(n-1);
+                                onRequest(forward, emitter, n-1);
                             }
                         });
                     }
                 });
+                
             }
 
-        };
+        });
     }
 
     @Override
@@ -321,23 +327,23 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         if (!(o instanceof RedissonListReactive))
             return false;
 
-        Stream<Object> e1 = Streams.wrap((Publisher<Object>)iterator());
-        Stream<Object> e2 = Streams.wrap(((RedissonListReactive<Object>) o).iterator());
-        Long count = Streams.merge(e1, e2).groupBy(new Function<Object, Object>() {
+        Flux<Object> e1 = Flux.from((Publisher<Object>)iterator());
+        Flux<Object> e2 = Flux.from(((RedissonListReactive<Object>) o).iterator());
+        Long count = Flux.merge(e1, e2).groupBy(new Function<Object, Object>() {
             @Override
             public Object apply(Object t) {
                 return t;
             }
-        }).count().next().poll();
+        }).count().block();
 
-        boolean res = count.intValue() == Streams.wrap(size()).next().poll();
-        res &= count.intValue() == Streams.wrap(((RedissonListReactive<Object>) o).size()).next().poll();
+        boolean res = count.intValue() == Mono.from(size()).block();
+        res &= count.intValue() == Mono.from(((RedissonListReactive<Object>) o).size()).block();
         return res;
     }
 
     @Override
     public int hashCode() {
-        Integer hash = Streams.wrap(iterator()).map(new Function<V, Integer>() {
+        Integer hash = Flux.from(iterator()).map(new Function<V, Integer>() {
             @Override
             public Integer apply(V t) {
                 return t.hashCode();
@@ -348,7 +354,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
             public Integer apply(Integer t, Integer u) {
                 return 31*t + u;
             }
-        }).next().poll();
+        }).block();
 
         if (hash == null) {
             return 1;

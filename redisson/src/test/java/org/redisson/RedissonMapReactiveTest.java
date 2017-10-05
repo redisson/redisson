@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
@@ -120,6 +121,32 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
 
     }
 
+    @Test
+    public void testIteratorSequence() throws InterruptedException {
+        RMapReactive<Long, Long> map = redisson.getMap("map");
+        for (int i = 0; i < 1000; i++) {
+            sync(map.put(Long.valueOf(i), Long.valueOf(i)));
+        }
+
+        Map<Long, Long> setCopy = new HashMap<>();
+        for (int i = 0; i < 1000; i++) {
+            setCopy.put(Long.valueOf(i), Long.valueOf(i));
+        }
+
+        checkIterator(map, setCopy);
+    }
+
+    private <K, V> void checkIterator(RMapReactive<K, V> set, Map<K, V> setCopy) {
+        for (Iterator<Entry<K, V>> iterator = toIterator(set.entryIterator()); iterator.hasNext();) {
+            Entry<K, V> entry = iterator.next();
+            if (!setCopy.remove(entry.getKey(), entry.getValue())) {
+                Assert.fail();
+            }
+        }
+
+        Assert.assertEquals(0, setCopy.size());
+    }
+    
     @Test
     public void testAddAndGet() throws InterruptedException {
         RMapReactive<Integer, Integer> map = redisson.getMap("getAll");

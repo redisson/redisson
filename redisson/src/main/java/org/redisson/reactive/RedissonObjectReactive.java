@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonReference;
@@ -28,9 +29,7 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.buffer.ByteBuf;
-import reactor.fn.Supplier;
-import reactor.rx.Stream;
-import reactor.rx.Streams;
+import reactor.core.publisher.Mono;
 
 /**
  * Base Redisson object
@@ -58,8 +57,8 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected <V> Stream<V> newSucceeded(V result) {
-        return Streams.just(result);
+    protected <V> Mono<V> newSucceeded(V result) {
+        return Mono.just(result);
     }
 
     @Override

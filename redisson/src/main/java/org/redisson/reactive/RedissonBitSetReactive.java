@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import java.util.BitSet;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonBitSet;
@@ -25,8 +26,7 @@ import org.redisson.client.codec.BitSetCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-import reactor.fn.Supplier;
-import reactor.rx.Streams;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -215,7 +215,7 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
 
     @Override
     public String toString() {
-        return Streams.create(asBitSet()).next().poll().toString();
+        return Mono.from(asBitSet()).block().toString();
     }
 
 }

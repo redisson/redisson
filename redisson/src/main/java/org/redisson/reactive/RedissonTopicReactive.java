@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.PubSubMessageListener;
@@ -30,8 +31,6 @@ import org.redisson.api.listener.StatusListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
-
-import reactor.fn.Supplier;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.

@@ -15,15 +15,15 @@
  */
 package org.redisson.reactive;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
 import org.redisson.api.RCollectionReactive;
 
-import reactor.rx.Promise;
-import reactor.rx.Promises;
-import reactor.rx.action.support.DefaultSubscriber;
+import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -44,9 +44,8 @@ public class PublisherAdder<V> {
     }
 
     public Publisher<Integer> addAll(Publisher<? extends V> c) {
-        final Promise<Integer> promise = Promises.prepare();
-
-        c.subscribe(new DefaultSubscriber<V>() {
+        CompletableFuture<Integer> promise = new CompletableFuture<>();
+        c.subscribe(new BaseSubscriber<V>() {
 
             volatile boolean completed;
             AtomicLong values = new AtomicLong();
@@ -54,47 +53,47 @@ public class PublisherAdder<V> {
             Integer lastSize = 0;
 
             @Override
-            public void onSubscribe(Subscription s) {
+            protected void hookOnSubscribe(Subscription s) {
                 this.s = s;
                 s.request(1);
             }
 
             @Override
-            public void onNext(V o) {
+            protected void hookOnNext(V o) {
                 values.getAndIncrement();
-                destination.add(o).subscribe(new DefaultSubscriber<Integer>() {
+                destination.add(o).subscribe(new BaseSubscriber<Integer>() {
 
                     @Override
-                    public void onSubscribe(Subscription s) {
+                    protected void hookOnSubscribe(Subscription s) {
                         s.request(1);
                     }
 
                     @Override
-                    public void onError(Throwable t) {
-                        promise.onError(t);
+                    protected void hookOnError(Throwable t) {
+                        promise.completeExceptionally(t);
                     }
 
                     @Override
-                    public void onNext(Integer o) {
+                    protected void hookOnNext(Integer o) {
                         lastSize = sum(lastSize, o);
                         s.request(1);
                         if (values.decrementAndGet() == 0 && completed) {
-                            promise.onNext(lastSize);
+                            promise.complete(lastSize);
                         }
                     }
                 });
             }
 
             @Override
-            public void onComplete() {
+            protected void hookOnComplete() {
                 completed = true;
                 if (values.get() == 0) {
-                    promise.onNext(lastSize);
+                    promise.complete(lastSize);
                 }
             }
         });
 
-        return promise;
+        return Mono.fromCompletionStage(promise);
     }
 
 }

@@ -1,17 +1,18 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 
-import static org.assertj.core.api.Assertions.*;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RListReactive;
 import org.redisson.client.RedisException;
 
-import reactor.rx.Promise;
+import reactor.core.publisher.BaseSubscriber;
 
 public class RedissonListReactiveTest extends BaseReactiveTest {
 
@@ -73,25 +74,25 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testAddAllWithIndex() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new Promise<Integer>() {
+        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new BaseSubscriber<Integer>() {
 
             @Override
-            public void onNext(Integer element) {
-                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new Promise<Integer>() {
+            public void hookOnNext(Integer element) {
+                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new BaseSubscriber<Integer>() {
                     @Override
-                    public void onNext(Integer value) {
+                    public void hookOnNext(Integer value) {
                         latch.countDown();
                     }
 
                     @Override
-                    public void onError(Throwable error) {
+                    public void hookOnError(Throwable error) {
                         Assert.fail(error.getMessage());
                     }
                 });
             }
 
             @Override
-            public void onError(Throwable error) {
+            public void hookOnError(Throwable error) {
                 Assert.fail(error.getMessage());
             }
         });
@@ -105,24 +106,24 @@ public class RedissonListReactiveTest extends BaseReactiveTest {
     public void testAdd() throws InterruptedException {
         final RListReactive<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.add(1L).subscribe(new Promise<Integer>() {
+        list.add(1L).subscribe(new BaseSubscriber<Integer>() {
             @Override
-            public void onNext(Integer value) {
-                list.add(2L).subscribe(new Promise<Integer>() {
+            public void hookOnNext(Integer value) {
+                list.add(2L).subscribe(new BaseSubscriber<Integer>() {
                     @Override
-                    public void onNext(Integer value) {
+                    public void hookOnNext(Integer value) {
                         latch.countDown();
                     }
 
                     @Override
-                    public void onError(Throwable error) {
+                    public void hookOnError(Throwable error) {
                         Assert.fail(error.getMessage());
                     }
                 });
             }
 
             @Override
-            public void onError(Throwable error) {
+            public void hookOnError(Throwable error) {
                 Assert.fail(error.getMessage());
             }
         });
