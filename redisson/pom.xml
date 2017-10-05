@@ -138,7 +138,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,5.0)</version>
             <scope>test</scope>
         </dependency>
 
@@ -238,14 +238,14 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,5.0)</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,5.0)</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
