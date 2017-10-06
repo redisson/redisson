@@ -130,12 +130,12 @@ public class RedissonExecutorServiceTest extends BaseTest {
         RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));
         Thread.sleep(2000);
         cancel(future);
-        assertThat(redisson.<Integer>getBucket("executed1").get()).isBetween(1000, Integer.MAX_VALUE);
+        assertThat(redisson.<Long>getBucket("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
         
         RExecutorFuture<?> futureAsync = executor.submitAsync(new ScheduledLongRunnableTask("executed2"));
         Thread.sleep(2000);
         assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
-        assertThat(redisson.<Integer>getBucket("executed2").get()).isBetween(1000, Integer.MAX_VALUE);
+        assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
     }
     
     @Test

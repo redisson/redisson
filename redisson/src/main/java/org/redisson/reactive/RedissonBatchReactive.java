@@ -15,10 +15,11 @@
  */
 package org.redisson.reactive;
 
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
@@ -56,6 +57,14 @@ public class RedissonBatchReactive implements RBatchReactive {
     private final CommandReactiveBatchService executorService;
     private final CommandReactiveService commandExecutor;
 
+    private long timeout;
+    private int retryAttempts;
+    private long retryInterval;
+
+    private int syncSlaves;
+    private long syncTimeout;
+    private boolean skipResult;
+    
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandReactiveBatchService(connectionManager);
@@ -208,13 +217,44 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
-    public Publisher<List<?>> execute() {
-        return commandExecutor.reactive(new Supplier<RFuture<List<?>>>() {
+    public Publisher<BatchResult<?>> execute() {
+        return commandExecutor.reactive(new Supplier<RFuture<BatchResult<?>>>() {
             @Override
-            public RFuture<List<?>> get() {
-                return executorService.executeAsync();
+            public RFuture<BatchResult<?>> get() {
+                return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
             }
         });
+    }
+
+    @Override
+    public RBatchReactive syncSlaves(int slaves, long timeout, TimeUnit unit) {
+        this.syncSlaves = slaves;
+        this.syncTimeout = unit.toMillis(timeout);
+        return this;
+    }
+    
+    @Override
+    public RBatchReactive skipResult() {
+        this.skipResult = true;
+        return this;
+    }
+    
+    @Override
+    public RBatchReactive retryAttempts(int retryAttempts) {
+        this.retryAttempts = retryAttempts;
+        return this;
+    }
+    
+    @Override
+    public RBatchReactive retryInterval(long retryInterval, TimeUnit unit) {
+        this.retryInterval = unit.toMillis(retryInterval);
+        return this;
+    }
+    
+    @Override
+    public RBatchReactive timeout(long timeout, TimeUnit unit) {
+        this.timeout = unit.toMillis(timeout);
+        return this;
     }
 
     public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {

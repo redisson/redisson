@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.api.BatchResult;
 import org.redisson.api.RBatch;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RBlockingQueueAsync;
@@ -295,7 +296,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 timeout = request.getOptions().getExecutionTimeoutInMillis();
             }
             
-            RFuture<List<?>> clientsFuture = send(timeout, responseName,
+            RFuture<BatchResult<?>> clientsFuture = send(timeout, responseName,
                     responseHolder.get());
             clientsFuture.addListener(new FutureListener<List<?>>() {
                 @Override
@@ -324,7 +325,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         }
     }
 
-    private <T extends RRemoteServiceResponse> RFuture<List<?>> send(long timeout, String responseName, T response) {
+    private <T extends RRemoteServiceResponse> RFuture<BatchResult<?>> send(long timeout, String responseName, T response) {
         RBatch batch = redisson.createBatch();
         RBlockingQueueAsync<T> queue = batch.getBlockingQueue(responseName, getCodec());
         queue.putAsync(response);

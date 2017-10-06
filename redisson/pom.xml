@@ -34,33 +34,33 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-common</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-codec</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-buffer</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-transport</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-handler</artifactId>
-            <version>4.1.15.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
 
         <dependency>
@@ -138,7 +138,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,)</version>
             <scope>test</scope>
         </dependency>
 
@@ -238,14 +238,14 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,)</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>[3.1,4.3)</version>
+            <version>[3.1,)</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

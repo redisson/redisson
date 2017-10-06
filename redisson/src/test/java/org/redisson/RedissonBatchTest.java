@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,14 +15,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
+import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.api.BatchResult;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
+import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RScript;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.config.Config;
 
 public class RedissonBatchTest extends BaseTest {
 
@@ -41,6 +48,40 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> t = batch.execute();
         System.out.println(t);
+    }
+
+    @Test
+    public void testSyncSlaves() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        RBatch batch = redisson.createBatch();
+        for (int i = 0; i < 100; i++) {
+            RMapAsync<String, String> map = batch.getMap("test");
+            map.putAsync("" + i, "" + i);
+        }
+
+        batch.syncSlaves(1, 1, TimeUnit.SECONDS);
+        BatchResult<?> result = batch.execute();
+        assertThat(result.getSyncedSlaves()).isEqualTo(1);
+        
+        process.shutdown();
     }
     
     @Test
@@ -62,7 +103,8 @@ public class RedissonBatchTest extends BaseTest {
         batch.getBucket("A3").setAsync("001");
         batch.getKeys().deleteAsync("A1");
         batch.getKeys().deleteAsync("A2");
-        batch.executeSkipResult();
+        batch.skipResult();
+        batch.execute();
         
         assertThat(redisson.getBucket("A1").isExists()).isFalse();
         assertThat(redisson.getBucket("A3").isExists()).isTrue();
@@ -76,7 +118,7 @@ public class RedissonBatchTest extends BaseTest {
         batch.getBucket("A3").setAsync("001");
         batch.getKeys().deleteAsync("A1");
         batch.getKeys().deleteAsync("A2");
-        List result = batch.execute();
+        batch.execute();
     }
 
     @Test
@@ -99,8 +141,8 @@ public class RedissonBatchTest extends BaseTest {
         for (int i = 1; i < 540; i++) {
             listAsync.addAsync(i);
         }
-        List<?> res = b.execute();
-        Assert.assertEquals(539, res.size());
+        BatchResult<?> res = b.execute();
+        Assert.assertEquals(539, res.getResponses().size());
     }
 
     @Test
@@ -113,8 +155,8 @@ public class RedissonBatchTest extends BaseTest {
             batch.getAtomicLong("counter").incrementAndGetAsync();
             batch.getAtomicLong("counter").incrementAndGetAsync();
         }
-        List<?> res = batch.execute();
-        Assert.assertEquals(210*5, res.size());
+        BatchResult<?> res = batch.execute();
+        Assert.assertEquals(210*5, res.getResponses().size());
     }
 
     @Test(expected=RedisException.class)

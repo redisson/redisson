@@ -87,7 +87,7 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-transport-native-epoll</artifactId>
             <classifier>linux-x86_64</classifier>
-            <version>4.1.13.Final</version>
+            <version>4.1.16.Final</version>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
