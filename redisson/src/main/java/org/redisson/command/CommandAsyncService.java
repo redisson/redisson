@@ -872,7 +872,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private <T> T tryHandleReference(T o) {
+    protected <T> T tryHandleReference(T o) {
         boolean hasConversion = false;
         if (o instanceof List) {
             List<Object> r = (List<Object>) o;
