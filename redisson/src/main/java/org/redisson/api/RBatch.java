@@ -448,7 +448,7 @@ public interface RBatch {
     RBatch timeout(long timeout, TimeUnit unit);
 
     /**
-     * Defines time interval for another one attempt send Redis commands batch 
+     * Defines time interval for each attempt to send Redis commands batch 
      * if it hasn't been sent already.
      * <p>
      * <code>0</code> value means use <code>Config.setRetryInterval</code> value instead.
