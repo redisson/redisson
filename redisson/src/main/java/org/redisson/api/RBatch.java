@@ -421,7 +421,8 @@ public interface RBatch {
     RBatch skipResult();
     
     /**
-     * Synchronize write operations execution across defined amount of Redis slave nodes.
+     * Synchronize write operations execution across defined amount 
+     * of Redis slave nodes within defined timeout.
      * <p>
      * NOTE: Redis 3.0+ required
      * 
