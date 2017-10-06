@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -145,7 +144,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void scheduleMasterChangeCheck(final ReplicatedServersConfig cfg) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+        monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
                 final URI master = currentMaster.get();

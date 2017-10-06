@@ -56,7 +56,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.PlatformDependent;
 
@@ -298,7 +297,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void scheduleClusterChangeCheck(final ClusterServersConfig cfg, final Iterator<URI> iterator) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+        monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
                 AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();

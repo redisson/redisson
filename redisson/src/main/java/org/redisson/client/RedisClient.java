@@ -57,7 +57,7 @@ public class RedisClient {
     private final Bootstrap bootstrap;
     private final Bootstrap pubSubBootstrap;
     private final InetSocketAddress addr;
-    private final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE);
+    private final ChannelGroup channels;
 
     private ExecutorService executor;
     private final long commandTimeout;
@@ -81,6 +81,7 @@ public class RedisClient {
         
         bootstrap = createBootstrap(config, Type.PLAIN);
         pubSubBootstrap = createBootstrap(config, Type.PUBSUB);
+        channels = new DefaultChannelGroup(config.getGroup().next()); 
         
         this.commandTimeout = config.getCommandTimeout();
     }
@@ -171,6 +172,7 @@ public class RedisClient {
         
         bootstrap = createBootstrap(config, Type.PLAIN);
         pubSubBootstrap = createBootstrap(config, Type.PUBSUB);
+        channels = new DefaultChannelGroup(config.getGroup().next());
         
         this.commandTimeout = config.getCommandTimeout();
     }
