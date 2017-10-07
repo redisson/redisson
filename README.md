@@ -68,7 +68,8 @@ Used by
 [![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) &nbsp;&nbsp;&nbsp;
 [![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
 [![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
-[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)  
+[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)&nbsp;&nbsp;&nbsp;
+[![ContaAzul](https://redisson.org/assets/logos/client18.png "ContaAzul")](https://contaazul.com/)  
 [![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
 
 
