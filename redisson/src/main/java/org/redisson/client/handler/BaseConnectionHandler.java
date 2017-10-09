@@ -80,6 +80,10 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             RFuture<Object> future = connection.async(RedisCommands.READONLY);
             futures.add(future);
         }
+        if (config.isPingConnection()) {
+            RFuture<Object> future = connection.async(RedisCommands.PING);
+            futures.add(future);
+        }
         
         if (futures.isEmpty()) {
             ctx.fireChannelActive();
