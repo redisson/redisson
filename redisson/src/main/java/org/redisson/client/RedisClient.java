@@ -94,6 +94,8 @@ public class RedisClient {
 
         bootstrap.handler(new RedisChannelInitializer(bootstrap, config, this, channels, type));
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout());
+        bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
+        bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
         return bootstrap;
     }
     

@@ -49,6 +49,9 @@ public class RedisClientConfig {
     private String clientName;
     private boolean readOnly;
     private boolean keepPubSubOrder = true;
+    private boolean pingConnection;
+    private boolean keepAlive;
+    private boolean tcpNoDelay;
     
     private boolean sslEnableEndpointIdentification = true;
     private SslProvider sslProvider = SslProvider.JDK;
@@ -206,8 +209,33 @@ public class RedisClientConfig {
     public boolean isKeepPubSubOrder() {
         return keepPubSubOrder;
     }
-    public void setKeepPubSubOrder(boolean keepPubSubOrder) {
+    public RedisClientConfig setKeepPubSubOrder(boolean keepPubSubOrder) {
         this.keepPubSubOrder = keepPubSubOrder;
+        return this;
     }
 
+    public boolean isPingConnection() {
+        return pingConnection;
+    }    
+    public RedisClientConfig setPingConnection(boolean pingConnection) {
+        this.pingConnection = pingConnection;
+        return this;
+    }
+    
+    public boolean isKeepAlive() {
+        return keepAlive;
+    }
+    public RedisClientConfig setKeepAlive(boolean keepAlive) {
+        this.keepAlive = keepAlive;
+        return this;
+    }
+
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+    public RedisClientConfig setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
+        return this;
+    }
+    
 }
