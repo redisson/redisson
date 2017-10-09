@@ -30,7 +30,6 @@ import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -83,7 +82,7 @@ public class DNSMonitor {
     }
     
     private void monitorDnsChange() {
-        dnsMonitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+        dnsMonitorFuture = connectionManager.getGroup().schedule(new Runnable() {
             @Override
             public void run() {
                 // As InetAddress.getByName call is blocking. Method should be run in dedicated thread 
