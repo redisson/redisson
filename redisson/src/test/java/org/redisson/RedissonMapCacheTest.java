@@ -404,6 +404,23 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }    
 
     @Test
+    public void testGetAllBig() {
+        Map<Integer, String> joinMap = new HashMap<Integer, String>();
+        for (int i = 0; i < 10000; i++) {
+            joinMap.put(i, "" + i);
+        }
+        
+        RMap<Integer, String> map = redisson.getMapCache("simple");
+        map.putAll(joinMap);
+        
+        Map<Integer, String> s = map.getAll(joinMap.keySet());
+        assertThat(s).isEqualTo(joinMap);
+        
+        assertThat(map.size()).isEqualTo(joinMap.size());
+    }
+
+    
+    @Test
     public void testGetAll() throws InterruptedException {
         RMapCache<Integer, Integer> map = redisson.getMapCache("getAll");
         map.put(1, 100);
