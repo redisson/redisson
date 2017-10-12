@@ -816,6 +816,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             dnsMonitor.stop();
         }
 
+        timer.stop();
+        
         shutdownLatch.close();
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
@@ -836,7 +838,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
-        timer.stop();
     }
 
     @Override
