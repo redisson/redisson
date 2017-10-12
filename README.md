@@ -4,12 +4,10 @@ Redisson: Redis based In-Memory Data Grid for Java.
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 
-| Stable Release Version | JDK Version compatibility | Release Date |
-| ------------- | ------------- | ------------|
-| 3.5.4  | 1.8+ | 28.09.2017 |
-| 2.10.4 | 1.6, 1.7, 1.8 and Android | 28.09.2017 |
-
-__NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
+| Stable <br/> Release Version | JDK Version<br/> compatibility | Release Date | `CompletionStage` <br/> support |
+| ------------- | ------------- | ------------| -----------|
+| 3.5.4  | 1.8+ | 28.09.2017 | Yes |
+| 2.10.4 | 1.6, 1.7, 1.8 and Android | 28.09.2017 | No |
 
 
 Features
