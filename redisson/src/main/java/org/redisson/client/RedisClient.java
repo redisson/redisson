@@ -79,9 +79,9 @@ public class RedisClient {
         
         addr = new InetSocketAddress(config.getAddress().getHost(), config.getAddress().getPort());
         
+        channels = new DefaultChannelGroup(config.getGroup().next()); 
         bootstrap = createBootstrap(config, Type.PLAIN);
         pubSubBootstrap = createBootstrap(config, Type.PUBSUB);
-        channels = new DefaultChannelGroup(config.getGroup().next()); 
         
         this.commandTimeout = config.getCommandTimeout();
     }
@@ -172,9 +172,9 @@ public class RedisClient {
         
         addr = new InetSocketAddress(config.getAddress().getHost(), config.getAddress().getPort());
         
+        channels = new DefaultChannelGroup(config.getGroup().next());
         bootstrap = createBootstrap(config, Type.PLAIN);
         pubSubBootstrap = createBootstrap(config, Type.PUBSUB);
-        channels = new DefaultChannelGroup(config.getGroup().next());
         
         this.commandTimeout = config.getCommandTimeout();
     }
