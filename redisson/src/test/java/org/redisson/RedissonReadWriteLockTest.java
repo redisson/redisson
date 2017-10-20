@@ -12,13 +12,43 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 import com.jayway.awaitility.Awaitility;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1)
+                .addNode(master2)
+                .addNode(master3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        RReadWriteLock s = redisson.getReadWriteLock("1234");
+        s.writeLock().lock();
+        s.readLock().lock();
+        s.readLock().unlock();
+        s.writeLock().unlock();
+        
+        redisson.shutdown();
+        process.shutdown();
+    }
+    
     @Test
     public void testReadLockLeaseTimeoutDiffThreadsWRR() throws InterruptedException {
         RLock writeLock = redisson.getReadWriteLock("my_read_write_lock").writeLock();
