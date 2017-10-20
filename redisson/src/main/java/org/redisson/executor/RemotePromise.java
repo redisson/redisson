@@ -28,9 +28,11 @@ public class RemotePromise<T> extends RedissonPromise<T> {
     private String requestId;
     private RFuture<Boolean> addFuture;
     
-    public void setRequestId(String requestId) {
+    public RemotePromise(String requestId) {
+        super();
         this.requestId = requestId;
     }
+    
     public String getRequestId() {
         return requestId;
     }

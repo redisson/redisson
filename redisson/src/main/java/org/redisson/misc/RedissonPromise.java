@@ -62,10 +62,6 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
         return future;
     }
     
-    public Promise<T> getInnerPromise() {
-        return promise;
-    }
-
     @Override
     public boolean isSuccess() {
         return isDone() && !isCompletedExceptionally();

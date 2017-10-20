@@ -16,6 +16,7 @@
 package org.redisson.executor;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -23,6 +24,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
+import org.redisson.remote.ResponseEntry;
 
 /**
  * 
@@ -33,8 +35,8 @@ public class TasksBatchService extends TasksService {
 
     private CommandBatchService batchCommandService;
     
-    public TasksBatchService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
-        super(codec, redisson, name, commandExecutor);
+    public TasksBatchService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, redisson, name, commandExecutor, executorId, responses);
         batchCommandService = new CommandBatchService(commandExecutor.getConnectionManager());
     }
     

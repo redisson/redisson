@@ -39,7 +39,7 @@ public class RedissonExecutorBatchFuture extends RedissonPromise<Void> implement
         
         final AtomicInteger counter = new AtomicInteger(futures.size());
         for (RExecutorFuture<?> future : futures) {
-            future.<Object>addListener(new FutureListener<Object>() {
+            future.addListener(new FutureListener<Object>() {
                 @Override
                 public void operationComplete(Future<Object> future) throws Exception {
                     if (!future.isSuccess()) {

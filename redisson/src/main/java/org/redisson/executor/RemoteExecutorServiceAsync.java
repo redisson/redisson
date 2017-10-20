@@ -26,18 +26,18 @@ import org.redisson.api.annotation.RRemoteAsync;
 @RRemoteAsync(RemoteExecutorService.class)
 public interface RemoteExecutorServiceAsync {
 
-    <T> RFuture<T> executeCallable(String className, byte[] classBody, byte[] state);
+    <T> RFuture<T> executeCallable(String className, byte[] classBody, byte[] state, String requestId);
     
-    RFuture<Void> executeRunnable(String className, byte[] classBody, byte[] state);
+    RFuture<Void> executeRunnable(String className, byte[] classBody, byte[] state, String requestId);
     
-    <T> RFuture<T> scheduleCallable(String className, byte[] classBody, byte[] state, long startTime);
+    <T> RFuture<T> scheduleCallable(String className, byte[] classBody, byte[] state, long startTime, String requestId);
     
-    RFuture<Void> scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime);
+    RFuture<Void> scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime, String requestId);
     
-    RFuture<Void> scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period);
+    RFuture<Void> scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period, String executorId, String requestId);
     
-    RFuture<Void> scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay);
+    RFuture<Void> scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay, String executorId, String requestId);
     
-    RFuture<Void> schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression);
+    RFuture<Void> schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId);
     
 }

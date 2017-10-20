@@ -49,7 +49,7 @@ public class RedissonNode {
     private InetSocketAddress remoteAddress;
     private InetSocketAddress localAddress;
     
-    private RedissonNode(RedissonNodeConfig config, Redisson redisson) {
+    private RedissonNode(RedissonNodeConfig config, RedissonClient redisson) {
         this.config = new RedissonNodeConfig(config);
         this.id = generateId();
         this.redisson = redisson;
@@ -194,7 +194,7 @@ public class RedissonNode {
      * @param redisson instance
      * @return RedissonNode instance
      */
-    public static RedissonNode create(RedissonNodeConfig config, Redisson redisson) {
+    public static RedissonNode create(RedissonNodeConfig config, RedissonClient redisson) {
         return new RedissonNode(config, redisson);
     }
     

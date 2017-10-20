@@ -30,7 +30,8 @@ public class RemoteServiceRequest implements Serializable {
 
     private static final long serialVersionUID = -1711385312384040075L;
     
-    private String requestId;
+    private String id;
+    private String executorId;
     private String methodName;
     private List<String> signatures;
     private Object[] args;
@@ -41,13 +42,19 @@ public class RemoteServiceRequest implements Serializable {
     public RemoteServiceRequest() {
     }
     
-    public RemoteServiceRequest(String requestId) {
-        this.requestId = requestId;
+    public RemoteServiceRequest(String id) {
+        this.id = id;
     }
     
-    public RemoteServiceRequest(String requestId, String methodName, List<String> signatures, Object[] args, RemoteInvocationOptions options, long date) {
+    public RemoteServiceRequest(String executorId, String id) {
+        this.id = id;
+        this.executorId = executorId;
+    }
+    
+    public RemoteServiceRequest(String executorId, String id, String methodName, List<String> signatures, Object[] args, RemoteInvocationOptions options, long date) {
         super();
-        this.requestId = requestId;
+        this.id = id;
+        this.executorId = executorId;
         this.methodName = methodName;
         this.signatures = signatures;
         this.args = args;
@@ -59,8 +66,12 @@ public class RemoteServiceRequest implements Serializable {
         return date;
     }
     
-    public String getRequestId() {
-        return requestId;
+    public String getExecutorId() {
+        return executorId;
+    }
+    
+    public String getId() {
+        return id;
     }
 
     public Object[] getArgs() {
@@ -81,7 +92,7 @@ public class RemoteServiceRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "RemoteServiceRequest [requestId=" + requestId + ", methodName=" + methodName + ", signatures=["
+        return "RemoteServiceRequest [requestId=" + id + ", methodName=" + methodName + ", signatures=["
                 + Arrays.toString(signatures.toArray()) + "], args="
                 + Arrays.toString(args) + ", options=" + options + ", date=" + date + "]";
     }

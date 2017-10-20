@@ -566,7 +566,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams() + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts")));
+                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams()) + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     return;
@@ -712,7 +712,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         final Timeout scheduledFuture;
         if (popTimeout != 0) {
-            // to handle cases when connection has been lost
+            // handling cases when connection has been lost
             final Channel orignalChannel = connection.getChannel();
             scheduledFuture = connectionManager.newTimeout(new TimerTask() {
                 @Override

@@ -24,4 +24,6 @@ import java.io.Serializable;
  */
 public interface RRemoteServiceResponse extends Serializable {
 
+    String getId();
+    
 }
