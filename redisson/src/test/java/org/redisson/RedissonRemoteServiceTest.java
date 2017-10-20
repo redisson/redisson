@@ -144,8 +144,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         @Override
         public void cancelMethod() throws InterruptedException {
-            for (long i = 0; i < Long.MAX_VALUE; i++) {
-                iterations.incrementAndGet();
+            while (true) {
+                int i = iterations.incrementAndGet();
                 if (Thread.currentThread().isInterrupted()) {
                     System.out.println("interrupted! " + i);
                     return;
@@ -499,8 +499,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
                 assertThat(service.doSomethingWithPojo(new Pojo("test")).getStringField()).isEqualTo("test");
                 Assert.fail("FstCodec should not be able to serialize a not serializable class");
             } catch (Exception e) {
-                assertThat(e.getCause()).isInstanceOf(RuntimeException.class);
-                assertThat(e.getCause().getMessage()).contains("Pojo does not implement Serializable");
+                assertThat(e).isInstanceOf(RuntimeException.class);
+                assertThat(e.getMessage()).contains("Pojo does not implement Serializable");
             }
         } finally {
             client.shutdown();

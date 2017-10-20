@@ -27,4 +27,23 @@ public class RemoteServiceAck implements RRemoteServiceResponse, Serializable {
 
     private static final long serialVersionUID = -6332680404562746984L;
 
+    private String id;
+
+    public RemoteServiceAck() {
+    }
+
+    public RemoteServiceAck(String id) {
+        this.id = id;
+    }
+    
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return "RemoteServiceAck [id=" + id + "]";
+    }
+    
 }

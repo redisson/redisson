@@ -15,13 +15,29 @@
  */
 package org.redisson.remote;
 
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.redisson.misc.RPromise;
+
+import io.netty.util.internal.PlatformDependent;
+
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public interface RemoteParams {
+public class ResponseEntry {
 
-    void setRequestId(String id);
+    private final ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> responses = PlatformDependent.newConcurrentHashMap();
+    private final AtomicBoolean started = new AtomicBoolean(); 
+    
+    public ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> getResponses() {
+        return responses;
+    }
+    
+    public AtomicBoolean getStarted() {
+        return started;
+    }
     
 }

@@ -16,6 +16,7 @@
 package org.redisson.executor;
 
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonExecutorService;
@@ -28,10 +29,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.remote.RemoteServiceRequest;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
+import org.redisson.remote.ResponseEntry;
 
 /**
  * 
@@ -44,8 +42,8 @@ public class ScheduledTasksService extends TasksService {
     private String schedulerQueueName;
     private String schedulerChannelName;
     
-    public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor) {
-        super(codec, redisson, name, commandExecutor);
+    public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, redisson, name, commandExecutor, redissonId, responses);
     }
     
     public void setRequestId(String requestId) {
@@ -62,8 +60,19 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+        int requestIndex = 0;
+        if ("scheduleCallable".equals(request.getMethodName())
+                || "scheduleRunnable".equals(request.getMethodName())) {
+            requestIndex = 4;
+        }
+        if ("scheduleAtFixedRate".equals(request.getMethodName())
+                || "scheduleWithFixedDelay".equals(request.getMethodName())
+                    || "schedule".equals(request.getMethodName())) {
+            requestIndex = 6;
+        }
+
+        request.getArgs()[requestIndex] = request.getId();
         Long startTime = (Long)request.getArgs()[3];
-        ByteBuf encodedRequest = encode(request);
         
         if (requestId != null) {
             return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -82,7 +91,7 @@ public class ScheduledTasksService extends TasksService {
                     + "end;"
                     + "return 0;", 
                     Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
-                    startTime, request.getRequestId(), encodedRequest);
+                    startTime, request.getId(), encode(request));
         }
         
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -101,7 +110,7 @@ public class ScheduledTasksService extends TasksService {
                 + "end;"
                 + "return 0;", 
                 Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
-                startTime, request.getRequestId(), encodedRequest);
+                startTime, request.getId(), encode(request));
     }
     
     @Override
@@ -117,12 +126,12 @@ public class ScheduledTasksService extends TasksService {
         }
         long delay = startTime - System.currentTimeMillis();
         if (delay > 0) {
-            commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+            commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                 @Override
-                public void run(Timeout timeout) throws Exception {
+                public void run() {
                     ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseName);
                 }
-            }, delay, TimeUnit.MILLISECONDS);
+            }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
         } else {
             super.awaitResultAsync(optionsCopy, result, request, responseName);
         }
@@ -160,7 +169,7 @@ public class ScheduledTasksService extends TasksService {
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
                   + "return 0;",
               Arrays.<Object>asList(requestQueue.getName(), schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
-              request.getRequestId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+              request.getId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
     
     @Override
