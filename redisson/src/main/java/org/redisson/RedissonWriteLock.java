@@ -68,13 +68,15 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                               "end; " +
                               "if (mode == 'write') then " +
                                   "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
-                                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " + 
+                                      "local currentExpire = redis.call('pttl', KEYS[1]); " +
+                                      "redis.call('pexpire', KEYS[1], currentExpire + ARGV[1]); " +
                                       "return nil; " +
                                   "end; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
-                        Arrays.<Object>asList(getName()), internalLockLeaseTime, getLockName(threadId));
+                        Arrays.<Object>asList(getName()), 
+                        internalLockLeaseTime, getLockName(threadId));
     }
 
     @Override
@@ -108,7 +110,8 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                     "end; " +
                 "end; "
                 + "return nil;",
-        Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
+        Arrays.<Object>asList(getName(), getChannelName()), 
+        LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
     }
     
     @Override

@@ -19,9 +19,30 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
 import com.jayway.awaitility.Awaitility;
+import com.jayway.awaitility.Duration;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testWriteLockExpiration() throws InterruptedException {
+        RReadWriteLock rw1 = redisson.getReadWriteLock("test2s3");
+        
+        RLock l1 = rw1.writeLock();
+        assertThat(l1.tryLock(10000, 10000, TimeUnit.MILLISECONDS)).isTrue();
+        RLock l2 = rw1.writeLock();
+        assertThat(l2.tryLock(1000, 1000, TimeUnit.MILLISECONDS)).isTrue();
+
+        Awaitility.await().atMost(Duration.TEN_SECONDS).until(() -> {
+            RReadWriteLock rw2 = redisson.getReadWriteLock("test2s3");
+            try {
+                return !rw2.writeLock().tryLock(3000, 1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+    
     @Test
     public void testInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
