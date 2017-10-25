@@ -1,6 +1,6 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -63,7 +63,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue.offer(6, 3, TimeUnit.SECONDS)).isTrue();
         assertThat(System.currentTimeMillis() - start).isBetween(1000L, 2000L);
         
-        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        await().atMost(2, TimeUnit.SECONDS).until(() -> executed.get());
         
         assertThat(queue).containsExactly(2, 3, 4, 5, 6);
         
@@ -142,7 +142,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
         queue1.put(4);
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
         
         assertThat(queue1).containsExactly(2, 3, 4);
         
@@ -292,7 +292,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         t.join();
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
         
         redisson.shutdown();
         runner.stop();

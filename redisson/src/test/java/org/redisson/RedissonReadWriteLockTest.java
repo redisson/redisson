@@ -1,6 +1,5 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.SecureRandom;
@@ -10,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
@@ -18,8 +18,7 @@ import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import com.jayway.awaitility.Awaitility;
-import com.jayway.awaitility.Duration;
+import static org.awaitility.Awaitility.*;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
@@ -32,7 +31,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         RLock l2 = rw1.writeLock();
         assertThat(l2.tryLock(1000, 1000, TimeUnit.MILLISECONDS)).isTrue();
 
-        Awaitility.await().atMost(Duration.TEN_SECONDS).until(() -> {
+        await().atMost(Duration.TEN_SECONDS).until(() -> {
             RReadWriteLock rw2 = redisson.getReadWriteLock("test2s3");
             try {
                 return !rw2.writeLock().tryLock(3000, 1000, TimeUnit.MILLISECONDS);
@@ -370,7 +369,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         });
 
         RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
-        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
     }
 
     @Test

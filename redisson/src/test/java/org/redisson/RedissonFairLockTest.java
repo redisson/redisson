@@ -1,5 +1,6 @@
 package org.redisson;
 
+import static org.awaitility.Awaitility.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -7,13 +8,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import static com.jayway.awaitility.Awaitility.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
-
-import com.jayway.awaitility.Awaitility;
 
 public class RedissonFairLockTest extends BaseConcurrentTest {
 
@@ -144,7 +142,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getFairLock("lock");
         
-        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
     @Test
@@ -377,7 +375,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             t1.start();
         }
         
-        await().atMost(30, TimeUnit.SECONDS).until(() -> assertThat(lockedCounter.get()).isEqualTo(totalThreads));
+        await().atMost(30, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
     }
 
 
