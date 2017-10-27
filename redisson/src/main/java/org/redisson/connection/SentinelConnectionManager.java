@@ -411,11 +411,17 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void shutdown() {
-        super.shutdown();
-
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisClient sentinel : sentinels.values()) {
-            sentinel.shutdown();
+            RFuture<Void> future = sentinel.shutdownAsync();
+            futures.add(future);
         }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+        
+        super.shutdown();
     }
 }
 

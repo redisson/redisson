@@ -17,12 +17,15 @@ package org.redisson.client.handler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisLoadingException;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -59,8 +62,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     abstract C createConnection(ChannelHandlerContext ctx);
     
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
-        final AtomicInteger commandsCounter = new AtomicInteger();
+    public void channelActive(final ChannelHandlerContext ctx) {
         List<RFuture<Object>> futures = new ArrayList<RFuture<Object>>();
 
         RedisClientConfig config = redisClient.getConfig();
@@ -91,12 +93,24 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             return;
         }
         
-        commandsCounter.set(futures.size());
+        final AtomicBoolean retry = new AtomicBoolean();
+        final AtomicInteger commandsCounter = new AtomicInteger(futures.size());
         for (RFuture<Object> future : futures) {
             future.addListener(new FutureListener<Object>() {
                 @Override
                 public void operationComplete(Future<Object> future) throws Exception {
                     if (!future.isSuccess()) {
+                        if (future.cause() instanceof RedisLoadingException) {
+                            if (retry.compareAndSet(false, true)) {
+                                ctx.executor().schedule(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        channelActive(ctx);
+                                    }
+                                }, 1, TimeUnit.SECONDS);
+                            }
+                            return;
+                        }
                         connection.closeAsync();
                         connectionPromise.tryFailure(future.cause());
                         return;

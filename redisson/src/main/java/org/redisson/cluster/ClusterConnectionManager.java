@@ -146,6 +146,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable. Failed masters according to cluster status: " + failedMasters, lastException);
             }
         }
+        
+        if (!failedMasters.isEmpty()) {
+            throw new RedisConnectionException("Failed masters according to cluster status: " + failedMasters);
+        }
 
         scheduleClusterChangeCheck(cfg, null);
     }
@@ -723,11 +727,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown() {
         monitorFuture.cancel(true);
-        super.shutdown();
-
+        
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
-            connection.getRedisClient().shutdown();
+            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
+            futures.add(future);
         }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+        super.shutdown();
     }
 
     private HashSet<ClusterPartition> getLastPartitions() {

@@ -26,6 +26,7 @@ import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -43,8 +44,6 @@ import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
-import org.redisson.misc.URIBuilder;
 
 /**
  * Low-level Redis client
@@ -62,28 +61,42 @@ public class RedisClient {
     private ExecutorService executor;
     private final long commandTimeout;
     private Timer timer;
-    private boolean hasOwnGroup;
     private RedisClientConfig config;
 
+    private boolean hasOwnTimer;
+    private boolean hasOwnExecutor;
+    private boolean hasOwnGroup;
+
     public static RedisClient create(RedisClientConfig config) {
-        if (config.getTimer() == null) {
-            config.setTimer(new HashedWheelTimer());
-        }
         return new RedisClient(config);
     }
     
     private RedisClient(RedisClientConfig config) {
-        this.config = config;
-        this.executor = config.getExecutor();
-        this.timer = config.getTimer();
+        RedisClientConfig copy = new RedisClientConfig(config);
+        if (copy.getTimer() == null) {
+            copy.setTimer(new HashedWheelTimer());
+            hasOwnTimer = true;
+        }
+        if (copy.getGroup() == null) {
+            copy.setGroup(new NioEventLoopGroup());
+            hasOwnGroup = true;
+        }
+        if (copy.getExecutor() == null) {
+            copy.setExecutor(Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2));
+            hasOwnExecutor = true;
+        }
+
+        this.config = copy;
+        this.executor = copy.getExecutor();
+        this.timer = copy.getTimer();
         
-        addr = new InetSocketAddress(config.getAddress().getHost(), config.getAddress().getPort());
+        addr = new InetSocketAddress(copy.getAddress().getHost(), copy.getAddress().getPort());
         
-        channels = new DefaultChannelGroup(config.getGroup().next()); 
-        bootstrap = createBootstrap(config, Type.PLAIN);
-        pubSubBootstrap = createBootstrap(config, Type.PUBSUB);
+        channels = new DefaultChannelGroup(copy.getGroup().next()); 
+        bootstrap = createBootstrap(copy, Type.PLAIN);
+        pubSubBootstrap = createBootstrap(copy, Type.PUBSUB);
         
-        this.commandTimeout = config.getCommandTimeout();
+        this.commandTimeout = copy.getCommandTimeout();
     }
 
     private Bootstrap createBootstrap(RedisClientConfig config, Type type) {
@@ -293,27 +306,55 @@ public class RedisClient {
 
     public void shutdown() {
         shutdownAsync().syncUninterruptibly();
-        if (hasOwnGroup) {
-            timer.stop();
-            executor.shutdown();
-            try {
-                executor.awaitTermination(15, TimeUnit.SECONDS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-            bootstrap.config().group().shutdownGracefully();
-            
-        }
     }
 
-    public ChannelGroupFuture shutdownAsync() {
+    public RFuture<Void> shutdownAsync() {
         for (Channel channel : channels) {
             RedisConnection connection = RedisConnection.getFrom(channel);
             if (connection != null) {
                 connection.setClosed(true);
             }
         }
-        return channels.close();
+        ChannelGroupFuture channelsFuture = channels.close();
+        
+        final RPromise<Void> result = new RedissonPromise<Void>();
+        channelsFuture.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                Thread t = new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (hasOwnTimer) {
+                                timer.stop();
+                            }
+                            
+                            if (hasOwnExecutor) {
+                                executor.shutdown();
+                                executor.awaitTermination(15, TimeUnit.SECONDS);
+                            }
+                            
+                            if (hasOwnGroup) {
+                                bootstrap.config().group().shutdownGracefully();
+                            }
+                        } catch (Exception e) {
+                            result.tryFailure(e);
+                            return;
+                        }
+                        
+                        result.trySuccess(null);
+                    }
+                };
+                t.start();
+            }
+        });
+        
+        return result;
     }
 
     @Override
