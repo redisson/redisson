@@ -147,10 +147,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
         
-        if (!failedMasters.isEmpty()) {
-            throw new RedisConnectionException("Failed masters according to cluster status: " + failedMasters);
-        }
-
         scheduleClusterChangeCheck(cfg, null);
     }
     
