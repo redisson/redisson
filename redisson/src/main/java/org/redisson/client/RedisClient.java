@@ -317,7 +317,7 @@ public class RedisClient {
         }
         ChannelGroupFuture channelsFuture = channels.close();
         
-        RPromise<Void> result = new RedissonPromise<Void>();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         channelsFuture.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
