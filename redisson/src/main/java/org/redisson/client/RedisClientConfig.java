@@ -17,16 +17,14 @@ package org.redisson.client;
 
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import org.redisson.config.SslProvider;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.Timer;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -38,8 +36,8 @@ public class RedisClientConfig {
     private URI address;
     
     private Timer timer;
-    private ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2);
-    private EventLoopGroup group = new NioEventLoopGroup();
+    private ExecutorService executor;
+    private EventLoopGroup group;
     private Class<? extends SocketChannel> socketChannelClass = NioSocketChannel.class;
     private int connectTimeout = 10000;
     private int commandTimeout = 10000;
@@ -60,6 +58,33 @@ public class RedisClientConfig {
     private URI sslKeystore;
     private String sslKeystorePassword;
     
+    public RedisClientConfig() {
+    }
+    
+    RedisClientConfig(RedisClientConfig config) {
+        super();
+        this.address = config.address;
+        this.timer = config.timer;
+        this.executor = config.executor;
+        this.group = config.group;
+        this.socketChannelClass = config.socketChannelClass;
+        this.connectTimeout = config.connectTimeout;
+        this.commandTimeout = config.commandTimeout;
+        this.password = config.password;
+        this.database = config.database;
+        this.clientName = config.clientName;
+        this.readOnly = config.readOnly;
+        this.keepPubSubOrder = config.keepPubSubOrder;
+        this.pingConnection = config.pingConnection;
+        this.keepAlive = config.keepAlive;
+        this.tcpNoDelay = config.tcpNoDelay;
+        this.sslEnableEndpointIdentification = config.sslEnableEndpointIdentification;
+        this.sslProvider = config.sslProvider;
+        this.sslTruststore = config.sslTruststore;
+        this.sslTruststorePassword = config.sslTruststorePassword;
+        this.sslKeystore = config.sslKeystore;
+        this.sslKeystorePassword = config.sslKeystorePassword;
+    }
     
     public RedisClientConfig setAddress(String host, int port) {
         this.address = URIBuilder.create("redis://" + host + ":" + port);
