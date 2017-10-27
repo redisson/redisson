@@ -12,7 +12,7 @@ import org.junit.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
-import com.jayway.awaitility.Awaitility;
+import static org.awaitility.Awaitility.*;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
@@ -100,7 +100,7 @@ public class RedissonLockTest extends BaseConcurrentTest {
         t.join();
         r.shutdown();
         
-        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
     @Test

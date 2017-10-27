@@ -17,7 +17,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonRedLockTest {
@@ -316,7 +316,7 @@ public class RedissonRedLockTest {
         t.start();
         t.join();
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> assertThat(executed.get()).isTrue());
+        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
 
         lock.unlock();
 

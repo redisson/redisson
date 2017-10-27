@@ -126,8 +126,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     
     @Override
     public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
-        RFuture<V> res = takeLastAndOfferFirstToAsync(queueName);
-        return res.await().getNow();
+        return get(takeLastAndOfferFirstToAsync(queueName));
     }
     
     @Override
@@ -194,8 +193,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V takeFirst() throws InterruptedException {
-        RFuture<V> res = takeFirstAsync();
-        return res.await().getNow();
+        return get(takeFirstAsync());
     }
 
     @Override
@@ -210,8 +208,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V takeLast() throws InterruptedException {
-        RFuture<V> res = takeLastAsync();
-        return res.await().getNow();
+        return get(takeLastAsync());
     }
 
     @Override
@@ -221,8 +218,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
-        RFuture<V> res = pollFirstFromAnyAsync(timeout, unit, queueNames);
-        return res.await().getNow();
+        return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
@@ -232,8 +228,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
-        RFuture<V> res = pollLastFromAnyAsync(timeout, unit, queueNames);
-        return res.await().getNow();
+        return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
@@ -249,8 +244,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V pollFirst(long timeout, TimeUnit unit) throws InterruptedException {
-        RFuture<V> res = pollFirstAsync(timeout, unit);
-        return res.await().getNow();
+        return get(pollFirstAsync(timeout, unit));
     }
 
     @Override
@@ -260,8 +254,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public V pollLast(long timeout, TimeUnit unit) throws InterruptedException {
-        RFuture<V> res = pollLastAsync(timeout, unit);
-        return res.await().getNow();
+        return get(pollLastAsync(timeout, unit));
    }
 
 }

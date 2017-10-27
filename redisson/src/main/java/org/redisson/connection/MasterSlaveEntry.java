@@ -145,6 +145,17 @@ public class MasterSlaveEntry {
         
         entry.reset();
         
+        closeConnections(entry);
+        
+        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
+            reattachPubSub(connection, temporaryDown);
+        }
+        entry.getAllSubscribeConnections().clear();
+        
+        return true;
+    }
+
+    private void closeConnections(ClientConnectionsEntry entry) {
         // close all connections
         while (true) {
             final RedisConnection connection = entry.pollConnection();
@@ -168,13 +179,6 @@ public class MasterSlaveEntry {
             }
             connection.closeAsync();
         }
-        
-        for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            reattachPubSub(connection, temporaryDown);
-        }
-        entry.getAllSubscribeConnections().clear();
-        
-        return true;
     }
     
     private void reattachPubSub(RedisPubSubConnection redisPubSubConnection, boolean temporaryDown) {

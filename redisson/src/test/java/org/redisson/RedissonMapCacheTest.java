@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
@@ -36,8 +37,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.MsgPackJacksonCodec;
 
-import com.jayway.awaitility.Awaitility;
-import com.jayway.awaitility.Duration;
+import static org.awaitility.Awaitility.*;
 
 public class RedissonMapCacheTest extends BaseMapTest {
 
@@ -1034,7 +1034,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
         map.removeListener(createListener1);
     }
     
@@ -1090,7 +1090,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        Awaitility.await().atMost(Duration.ONE_MINUTE).untilTrue(ref);
+        await().atMost(Duration.ONE_MINUTE).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -1113,7 +1113,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -1148,7 +1148,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
         map.removeListener(createListener1);
     }
 

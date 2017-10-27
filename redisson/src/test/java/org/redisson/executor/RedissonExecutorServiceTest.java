@@ -14,6 +14,7 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -28,8 +29,7 @@ import org.redisson.api.RExecutorService;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
-import com.jayway.awaitility.Awaitility;
-import com.jayway.awaitility.Duration;
+import static org.awaitility.Awaitility.*;
 
 public class RedissonExecutorServiceTest extends BaseTest {
 
@@ -121,7 +121,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         e.execute(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
                     new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
         
-        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
+        await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
     }
     
     @Test
