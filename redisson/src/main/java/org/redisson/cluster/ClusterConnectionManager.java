@@ -146,6 +146,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable. Failed masters according to cluster status: " + failedMasters, lastException);
             }
         }
+        
+        if (!failedMasters.isEmpty()) {
+            throw new RedisConnectionException("Failed masters according to cluster status: " + failedMasters);
+        }
 
         scheduleClusterChangeCheck(cfg, null);
     }
