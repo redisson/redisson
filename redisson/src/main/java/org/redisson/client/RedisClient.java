@@ -20,7 +20,6 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
@@ -318,7 +317,6 @@ public class RedisClient {
         }
         ChannelGroupFuture channelsFuture = channels.close();
         
-        AtomicInteger counter = new AtomicInteger(2);
         RPromise<Void> result = new RedissonPromise<Void>();
         channelsFuture.addListener(new FutureListener<Void>() {
             @Override
@@ -328,40 +326,33 @@ public class RedisClient {
                     return;
                 }
                 
-                if (counter.decrementAndGet() == 0) {
-                    result.trySuccess(null);
-                }
+                Thread t = new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (hasOwnTimer) {
+                                timer.stop();
+                            }
+                            
+                            if (hasOwnExecutor) {
+                                executor.shutdown();
+                                executor.awaitTermination(15, TimeUnit.SECONDS);
+                            }
+                            
+                            if (hasOwnGroup) {
+                                bootstrap.config().group().shutdownGracefully();
+                            }
+                        } catch (Exception e) {
+                            result.tryFailure(e);
+                            return;
+                        }
+                        
+                        result.trySuccess(null);
+                    }
+                };
+                t.start();
             }
         });
-        
-        Thread t = new Thread() {
-            @Override
-            public void run() {
-                try {
-                    if (hasOwnTimer) {
-                        timer.stop();
-                    }
-                    
-                    if (hasOwnExecutor) {
-                        executor.shutdown();
-                        executor.awaitTermination(15, TimeUnit.SECONDS);
-                    }
-                    
-                    if (hasOwnGroup) {
-                        bootstrap.config().group().shutdownGracefully();
-                    }
-                } catch (Exception e) {
-                    result.tryFailure(e);
-                    return;
-                }
-                
-                if (counter.decrementAndGet() == 0) {
-                    result.trySuccess(null);
-                }
-            }
-        };
-        
-        t.start();
         
         return result;
     }

@@ -723,11 +723,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown() {
         monitorFuture.cancel(true);
-        super.shutdown();
-
+        
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
-            connection.getRedisClient().shutdown();
+            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
+            futures.add(future);
         }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+        super.shutdown();
     }
 
     private HashSet<ClusterPartition> getLastPartitions() {
