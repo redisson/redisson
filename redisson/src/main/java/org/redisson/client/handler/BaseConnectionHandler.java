@@ -17,6 +17,7 @@ package org.redisson.client.handler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -61,7 +62,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
     abstract C createConnection(ChannelHandlerContext ctx);
     
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) {
         List<RFuture<Object>> futures = new ArrayList<RFuture<Object>>();
 
         RedisClientConfig config = redisClient.getConfig();
@@ -101,7 +102,12 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
                     if (!future.isSuccess()) {
                         if (future.cause() instanceof RedisLoadingException) {
                             if (retry.compareAndSet(false, true)) {
-                                channelActive(ctx);
+                                ctx.executor().schedule(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        channelActive(ctx);
+                                    }
+                                }, 1, TimeUnit.SECONDS);
                             }
                             return;
                         }
