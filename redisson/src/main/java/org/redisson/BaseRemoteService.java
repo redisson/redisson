@@ -393,7 +393,7 @@ public abstract class BaseRemoteService {
             }
         }
         
-        final Map<String, RPromise<? extends RRemoteServiceResponse>> responses = entry.getResponses();
+        final ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> responses = entry.getResponses();
         
         commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
             @Override
