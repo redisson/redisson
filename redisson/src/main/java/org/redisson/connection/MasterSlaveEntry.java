@@ -133,6 +133,11 @@ public class MasterSlaveEntry {
         
         return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
     }
+    
+    private void slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        slaveBalancer.freeze(entry, freezeReason);
+        slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
+    }
 
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
@@ -350,7 +355,7 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && (!addr.getAddress().getHostAddress().equals(naddress.getAddress().getHostAddress()) || naddress.getPort() != addr.getPort())) {
-            slaveDown(address, FreezeReason.SYSTEM);
+            slaveDown(masterEntry, FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
         }
         return true;
