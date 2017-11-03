@@ -322,7 +322,7 @@ public class MasterSlaveEntry {
     }
     
     public RFuture<Void> addSlave(URI address) {
-        return addSlave(address, true, NodeType.SLAVE);
+        return addSlave(address, false, NodeType.SLAVE);
     }
     
     private RFuture<Void> addSlave(URI address, boolean freezed, NodeType nodeType) {
