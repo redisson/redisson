@@ -142,7 +142,7 @@ public class DNSMonitor {
                             if (!updatedSlave.getHostAddress().equals(slave.getHostAddress())) {
                                 log.info("Detected DNS change. {} has changed from {} to {}", entry.getKey().getHost(), slave.getHostAddress(), updatedSlave.getHostAddress());
                                 for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
-                                    URI uri = URIBuilder.create("redis://" + slave.getHostAddress() + ":" + entry.getKey().getPort());
+                                    URI uri = URIBuilder.create(slave.getHostAddress() + ":" + entry.getKey().getPort());
                                     if (masterSlaveEntry.slaveDown(uri, FreezeReason.MANAGER)) {
                                         masterSlaveEntry.slaveUp(entry.getKey(), FreezeReason.MANAGER);
                                     }
