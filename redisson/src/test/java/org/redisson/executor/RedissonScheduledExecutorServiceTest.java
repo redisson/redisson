@@ -98,6 +98,17 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     }
     
     @Test
+    public void testCronExpressionMultipleTasks() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        executor.schedule(new ScheduledRunnableTask("executed1"), CronSchedule.of("0/5 * * * * ?"));
+        executor.schedule(new ScheduledRunnableTask("executed2"), CronSchedule.of("0/1 * * * * ?"));
+        Thread.sleep(30000);
+        assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(6);
+        assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(30);
+    }
+
+    
+    @Test
     public void testCancel() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
         ScheduledFuture<?> future1 = executor.schedule(new ScheduledRunnableTask("executed1"), 1, TimeUnit.SECONDS);
