@@ -34,6 +34,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
+import org.redisson.api.RListMultimapReactive;
 import org.redisson.api.RListReactive;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
@@ -66,6 +67,7 @@ import org.redisson.reactive.RedissonDequeReactive;
 import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
+import org.redisson.reactive.RedissonListMultimapReactive;
 import org.redisson.reactive.RedissonListReactive;
 import org.redisson.reactive.RedissonLockReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
@@ -179,6 +181,16 @@ public class RedissonReactive implements RedissonReactiveClient {
         return new RedissonListReactive<V>(codec, commandExecutor, name);
     }
 
+    @Override
+    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
+        return new RedissonListMultimapReactive<K, V>(id, commandExecutor, name);
+    }
+    
+    @Override
+    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
+        return new RedissonListMultimapReactive<K, V>(id, codec, commandExecutor, name);
+    }
+    
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         return new RedissonMapReactive<K, V>(commandExecutor, name, null);
