@@ -34,7 +34,7 @@ import io.netty.util.CharsetUtil;
  */
 public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
-    private boolean ssl;
+    private final boolean ssl;
     
     public ClusterNodesDecoder(boolean ssl) {
         super();
