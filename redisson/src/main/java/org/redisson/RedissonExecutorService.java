@@ -142,7 +142,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             this.executorId = redissonId + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
-        requestQueueName = "{" + name + ":"+ RemoteExecutorService.class.getName() + "}";
+        remoteService = redisson.getRemoteService(name, codec);
+        requestQueueName = ((RedissonRemoteService)remoteService).getRequestQueueName(RemoteExecutorService.class);
         String objectName = requestQueueName;
         tasksCounterName = objectName + ":counter";
         tasksName = objectName + ":tasks";
@@ -157,7 +158,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         workersSemaphoreName = objectName + ":workers-semaphore";
         workersCounterName = objectName + ":workers-counter";
         
-        remoteService = redisson.getRemoteService(name, codec);
         workersTopic = redisson.getTopic(workersChannelName);
         
         TasksService executorRemoteService = new TasksService(codec, redisson, name, commandExecutor, executorId, responses);
