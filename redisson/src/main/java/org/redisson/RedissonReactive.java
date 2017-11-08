@@ -46,6 +46,7 @@ import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSemaphoreReactive;
 import org.redisson.api.RSetCacheReactive;
+import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -79,6 +80,7 @@ import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonScriptReactive;
 import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
+import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
 
@@ -189,6 +191,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
         return new RedissonListMultimapReactive<K, V>(id, codec, commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
+        return new RedissonSetMultimapReactive<K, V>(id, commandExecutor, name);
+    }
+    
+    @Override
+    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
+        return new RedissonSetMultimapReactive<K, V>(id, codec, commandExecutor, name);
     }
     
     @Override

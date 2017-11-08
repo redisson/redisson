@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
 import java.util.Set;
 
 import org.reactivestreams.Publisher;
@@ -43,7 +42,7 @@ public interface RMultimapReactive<K, V> {
      * @param key - map key
      * @return <code>true</code> if contains a key
      */
-    Publisher<Boolean> containsKeyAsync(Object key);
+    Publisher<Boolean> containsKey(Object key);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
@@ -52,7 +51,7 @@ public interface RMultimapReactive<K, V> {
      * @param value - map value
      * @return <code>true</code> if contains a value
      */
-    Publisher<Boolean> containsValueAsync(Object value);
+    Publisher<Boolean> containsValue(Object value);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
@@ -62,7 +61,7 @@ public interface RMultimapReactive<K, V> {
      * @param value - map value
      * @return <code>true</code> if contains an entry
      */
-    Publisher<Boolean> containsEntryAsync(Object key, Object value);
+    Publisher<Boolean> containsEntry(Object key, Object value);
 
     /**
      * Stores a key-value pair in this multimap.
@@ -78,7 +77,7 @@ public interface RMultimapReactive<K, V> {
      *     {@code false} if the multimap already contained the key-value pair and
      *     doesn't allow duplicates
      */
-    Publisher<Boolean> putAsync(K key, V value);
+    Publisher<Boolean> put(K key, V value);
 
     /**
      * Removes a single key-value pair with the key {@code key} and the value
@@ -90,7 +89,7 @@ public interface RMultimapReactive<K, V> {
      * @param value - map value
      * @return {@code true} if the multimap changed
      */
-    Publisher<Boolean> removeAsync(Object key, Object value);
+    Publisher<Boolean> remove(Object key, Object value);
 
     // Bulk Operations
 
@@ -109,45 +108,14 @@ public interface RMultimapReactive<K, V> {
      * @param values - map values
      * @return {@code true} if the multimap changed
      */
-    Publisher<Boolean> putAllAsync(K key, Iterable<? extends V> values);
+    Publisher<Boolean> putAll(K key, Iterable<? extends V> values);
 
-    /**
-     * Stores a collection of values with the same key, replacing any existing
-     * values for that key.
-     *
-     * <p>If {@code values} is empty, this is equivalent to
-     * {@link #removeAllAsync(Object)}.
-     *
-     * @param key - map key
-     * @param values - map values
-     * @return the collection of replaced values, or an empty collection if no
-     *     values were previously associated with the key. The collection
-     *     <i>may</i> be modifiable, but updating it will have no effect on the
-     *     multimap.
-     */
-    Publisher<Collection<V>> replaceValuesAsync(K key, Iterable<? extends V> values);
-
-    /**
-     * Removes all values associated with the key {@code key}.
-     *
-     * <p>Once this method returns, {@code key} will not be mapped to any values.
-     *
-     * @param key - map key
-     * @return the values that were removed (possibly empty). The returned
-     *     collection <i>may</i> be modifiable, but updating it will have no
-     *     effect on the multimap.
-     */
-    Publisher<Collection<V>> removeAllAsync(Object key);
-
-    Publisher<Collection<V>> getAllAsync(K key);
-    
-    
     /**
      * Returns the number of key-value pairs in this multimap.
      *
      * @return keys amount
      */
-    Publisher<Integer> keySizeAsync();
+    Publisher<Integer> keySize();
 
     /**
      * Removes <code>keys</code> from map by one operation
@@ -158,14 +126,14 @@ public interface RMultimapReactive<K, V> {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Publisher<Long> fastRemoveAsync(K ... keys);
+    Publisher<Long> fastRemove(K ... keys);
 
     /**
      * Read all keys at once
      *
      * @return keys
      */
-    Publisher<Set<K>> readAllKeySetAsync();
+    Publisher<Set<K>> readAllKeySet();
 
     
 }
