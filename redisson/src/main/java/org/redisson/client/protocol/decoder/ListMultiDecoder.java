@@ -15,12 +15,10 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -90,21 +88,18 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
         this.decoders = decoders;
     }
 
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        int index = getDecoder(state).getIndex();
-        return decoders[index].decode(buf, state);
-    }
-
     @Override
-    public boolean isApplicable(int paramNum, State state) {
+    public Decoder<Object> getDecoder(int paramNum, State state) {
         if (paramNum == 0) {
             NestedDecoderState s = getDecoder(state);
             s.incIndex();
             s.resetPartsIndex();
         }
-        return true;
-    }
 
+        int index = getDecoder(state).getIndex();
+        return decoders[index].getDecoder(paramNum, state);
+    }
+    
     @Override
     public Object decode(List<Object> parts, State state) {
         NestedDecoderState s = getDecoder(state);

@@ -17,10 +17,9 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -30,10 +29,13 @@ import io.netty.util.CharsetUtil;
 public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanResult<Object>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        return Long.valueOf(buf.toString(CharsetUtil.UTF_8));
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum == 0) {
+            return LongCodec.INSTANCE.getValueDecoder();
+        }
+        return null;
     }
-
+    
     @Override
     public ListScanResult<Object> decode(List<Object> parts, State state) {
         List<Object> values = (List<Object>)parts.get(1);
@@ -41,11 +43,6 @@ public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanRe
             values.remove(i);
         }
         return new ListScanResult<Object>((Long)parts.get(0), values);
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return paramNum == 0;
     }
 
 }

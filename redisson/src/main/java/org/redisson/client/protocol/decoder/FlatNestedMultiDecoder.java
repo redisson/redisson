@@ -15,11 +15,8 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
-
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -34,17 +31,13 @@ public class FlatNestedMultiDecoder<T> extends NestedMultiDecoder {
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        return firstDecoder.decode(buf, state);
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
+    public Decoder<Object> getDecoder(int paramNum, State state) {
         NestedDecoderState ds = getDecoder(state);
         if (paramNum == 0) {
             ds.resetDecoderIndex();
         }
-        return firstDecoder.isApplicable(paramNum, state);
+        
+        return firstDecoder.getDecoder(paramNum, state);
     }
-
+    
 }

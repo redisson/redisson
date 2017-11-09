@@ -15,13 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -31,15 +29,10 @@ import io.netty.buffer.ByteBuf;
 public class LongMultiDecoder implements MultiDecoder<Object> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        return LongCodec.INSTANCE.getValueDecoder().decode(buf, state);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return LongCodec.INSTANCE.getValueDecoder();
     }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
-    }
-
+    
     @Override
     public Object decode(List<Object> parts, State state) {
         return null;

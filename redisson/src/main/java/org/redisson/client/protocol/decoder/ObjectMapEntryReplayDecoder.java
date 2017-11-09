@@ -22,8 +22,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -33,8 +32,8 @@ import io.netty.buffer.ByteBuf;
 public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Object, Object>>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
     @Override
@@ -46,11 +45,6 @@ public class ObjectMapEntryReplayDecoder implements MultiDecoder<Set<Entry<Objec
            }
         }
         return result.entrySet();
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
     }
 
 }

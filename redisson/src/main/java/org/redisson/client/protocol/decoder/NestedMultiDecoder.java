@@ -15,12 +15,10 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -100,24 +98,9 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
         this.thirdDecoder = thirdDecoder;
         this.handleEmpty = handleEmpty;
     }
-
+    
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        NestedDecoderState ds = getDecoder(state);
-
-        MultiDecoder<?> decoder = null;
-        if (ds.getFlipDecoderIndex() == 2) {
-            decoder = firstDecoder;
-        }
-        if (ds.getFlipDecoderIndex() == 1) {
-            decoder = secondDecoder;
-        }
-
-        return decoder.decode(buf, state);
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
+    public Decoder<Object> getDecoder(int paramNum, State state) {
         NestedDecoderState ds = getDecoder(state);
         if (paramNum == 0) {
             ds.incFlipDecoderIndex();
@@ -137,7 +120,7 @@ public class NestedMultiDecoder<T> implements MultiDecoder<Object> {
             decoder = secondDecoder;
         }
         
-        return decoder.isApplicable(paramNum, state);
+        return decoder.getDecoder(paramNum, state);
     }
 
     protected final NestedDecoderState getDecoder(State state) {

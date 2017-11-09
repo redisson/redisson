@@ -92,7 +92,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         if (data == null) {
             while (in.writerIndex() > in.readerIndex()) {
-                decode(in, null, null, ctx.channel());
+            decode(in, null, null, ctx.channel());
             }
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
@@ -330,7 +330,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (parts.isEmpty()) {
                 return null;
             }
-        }
+                }
         return data.getCommand().getReplayMultiDecoder();
     }
 
@@ -342,8 +342,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
         if (parts != null) {
             MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
-            if (multiDecoder.isApplicable(parts.size(), state())) {
-                decoder = multiDecoder;
+            Decoder<Object> mDecoder = multiDecoder.getDecoder(parts.size(), state());
+            if (mDecoder != null) {
+                decoder = mDecoder;
             }
         }
         if (decoder == null) {

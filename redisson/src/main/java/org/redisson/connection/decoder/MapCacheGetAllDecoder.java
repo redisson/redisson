@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 import io.netty.buffer.ByteBuf;
@@ -48,15 +49,10 @@ public class MapCacheGetAllDecoder implements MultiDecoder<List<Object>> {
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        return LongCodec.INSTANCE.getValueDecoder().decode(buf, state);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
-    }
-
+    
     @Override
     public List<Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {

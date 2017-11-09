@@ -15,14 +15,11 @@
  */
 package org.redisson.client.protocol.pubsub;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-
-import io.netty.buffer.ByteBuf;
 
 public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
 
@@ -34,18 +31,13 @@ public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        return decoder.decode(buf, null);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return decoder;
     }
-
+    
     @Override
     public PubSubPatternMessage decode(List<Object> parts, State state) {
         return new PubSubPatternMessage(parts.get(1).toString(), parts.get(2).toString(), parts.get(3));
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return true;
     }
 
 }
