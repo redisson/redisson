@@ -31,7 +31,7 @@ public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
+        return ListMultiDecoder.RESET;
     }
     
     @Override

@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,10 @@ public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> 
             if (value == null || value == Collections.emptyMap()) {
                 continue;
             }
+            if (value instanceof List && ((List) value).isEmpty()) {
+                continue;
+            }
+            
             result.put(args.get(index), value);
         }
         return result;

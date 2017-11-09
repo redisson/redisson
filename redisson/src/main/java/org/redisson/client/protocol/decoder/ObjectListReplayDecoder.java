@@ -28,6 +28,17 @@ import org.redisson.client.protocol.Decoder;
  */
 public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
 
+    private final Decoder<Object> decoder;
+    
+    public ObjectListReplayDecoder() {
+        this(null);
+    }
+    
+    public ObjectListReplayDecoder(Decoder<Object> decoder) {
+        super();
+        this.decoder = decoder;
+    }
+
     @Override
     public List<T> decode(List<Object> parts, State state) {
         return (List<T>) parts;
@@ -35,6 +46,6 @@ public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
+        return decoder;
     }
 }

@@ -40,8 +40,8 @@ public class GeoPositionDecoder implements MultiDecoder<GeoPosition> {
             return null;
         }
 
-        Double longitude = Double.valueOf(parts.get(0).toString());
-        Double latitude = Double.valueOf(parts.get(1).toString());
+        Double longitude = (Double)parts.get(0);
+        Double latitude = (Double)parts.get(1);
         return new GeoPosition(longitude, latitude);
     }
 

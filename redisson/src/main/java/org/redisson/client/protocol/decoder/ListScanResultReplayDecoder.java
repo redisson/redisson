@@ -30,9 +30,6 @@ public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        if (paramNum == 0) {
-            return LongCodec.INSTANCE.getValueDecoder();
-        }
         return null;
     }
     
