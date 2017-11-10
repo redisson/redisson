@@ -15,11 +15,11 @@
  */
 package org.redisson.connection.balancer;
 
-import java.security.SecureRandom;
 import java.util.List;
-import java.util.Random;
 
 import org.redisson.connection.ClientConnectionsEntry;
+
+import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -28,10 +28,8 @@ import org.redisson.connection.ClientConnectionsEntry;
  */
 public class RandomLoadBalancer implements LoadBalancer {
 
-    private final Random random = new SecureRandom();
-
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
-        int ind = random.nextInt(clientsCopy.size());
+        int ind = ThreadLocalRandom.current().nextInt(clientsCopy.size());
         return clientsCopy.get(ind);
     }
 
