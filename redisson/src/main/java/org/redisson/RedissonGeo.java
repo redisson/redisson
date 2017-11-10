@@ -54,19 +54,15 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
  */
 public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V> {
 
-    MultiDecoder<Map<Object, Object>> postitionDecoder;
-    MultiDecoder<Map<Object, Object>> distanceDecoder;
+    private final MultiDecoder<Map<Object, Object>> postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoMapReplayDecoder());
+    private final MultiDecoder<Map<Object, Object>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new GeoMapReplayDecoder());
     
     public RedissonGeo(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name, redisson);
-        postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoMapReplayDecoder());
-        distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
     }
     
     public RedissonGeo(Codec codec, CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(codec, connectionManager, name, redisson);
-        postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoMapReplayDecoder());
-        distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder());
     }
 
     @Override
