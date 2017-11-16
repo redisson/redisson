@@ -33,6 +33,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.dataformat.avro.AvroMapper;
 import com.fasterxml.jackson.dataformat.avro.AvroSchema;
 
+import io.netty.buffer.ByteBuf;
+import net.bytebuddy.utility.RandomString;
+
 public class RedissonCodecTest extends BaseTest {
     private Codec smileCodec = new SmileJacksonCodec();
     private Codec codec = new SerializationCodec();
@@ -107,6 +110,15 @@ public class RedissonCodecTest extends BaseTest {
         test(redisson);
     }
 
+    @Test
+    public void testSnappyBig() throws IOException {
+        SnappyCodec sc = new SnappyCodec();
+        String randomData = RandomString.make(Short.MAX_VALUE*2 + 142);
+        ByteBuf g = sc.getValueEncoder().encode(randomData);
+        String decompressedData = (String) sc.getValueDecoder().decode(g, null);
+        assertThat(decompressedData).isEqualTo(randomData);
+    }
+    
     @Test
     public void testSnappy() {
         Config config = createConfig();
