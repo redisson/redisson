@@ -25,7 +25,6 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.compression.Snappy;
-import net.bytebuddy.utility.RandomString;
 
 /**
  * Snappy compression codec.
