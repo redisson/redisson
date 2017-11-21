@@ -30,35 +30,65 @@ import org.redisson.api.map.MapWriter;
  */
 public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     
-    public enum InvalidationPolicy {
+    /**
+     * Various strategies to avoid stale objects in cache.
+     * Handle cases when map instance has been disconnected for a while.
+     *
+     */
+    public enum ReconnectionStrategy {
         
         /**
-         * No invalidation on map changes
+         * No reconnect handling.
          */
-        NONE, 
-
-        /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
-         */
-        ON_CHANGE, 
+        NONE,
         
         /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
-         * <p>
-         * Clear cache if LocalCachedMap instance has been disconnected for a while.
-         * It's applied to avoid stale objects in cache.
+         * Clear local cache if map instance has been disconnected for a while.
          */
-        ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
-
+        CLEAR,
+        
         /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
-         * <p>
          * Store invalidated entry hash in invalidation log for 10 minutes.
          * Cache keys for stored invalidated entry hashes will be removed 
          * if LocalCachedMap instance has been disconnected less than 10 minutes 
          * or whole cache will be cleaned otherwise.
-         * It's applied to avoid stale objects in cache.
          */
+        LOAD
+        
+    }
+    
+    public enum SyncStrategy {
+        
+        /**
+         * No synchronizations on map changes.
+         */
+        NONE,
+        
+        /**
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         */
+        INVALIDATE,
+        
+        /**
+         * Update cache entry across all LocalCachedMap instances on map entry change.
+         */
+        UPDATE
+        
+    }
+    
+    /**
+     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
+     * 
+     */
+    @Deprecated
+    public enum InvalidationPolicy {
+        
+        NONE, 
+
+        ON_CHANGE, 
+        
+        ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
+
         ON_CHANGE_WITH_LOAD_ON_RECONNECT
     }
     
@@ -92,7 +122,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         WEAK
     };
     
-    private InvalidationPolicy invalidationPolicy;
+    private ReconnectionStrategy reconnectionStrategy;
+    private SyncStrategy syncStrategy;
     private EvictionPolicy evictionPolicy;
     private int cacheSize;
     private long timeToLiveInMillis;
@@ -102,7 +133,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     protected LocalCachedMapOptions(LocalCachedMapOptions<K, V> copy) {
-        this.invalidationPolicy = copy.invalidationPolicy;
+        this.reconnectionStrategy = copy.reconnectionStrategy;
+        this.syncStrategy = copy.syncStrategy;
         this.evictionPolicy = copy.evictionPolicy;
         this.cacheSize = copy.cacheSize;
         this.timeToLiveInMillis = copy.timeToLiveInMillis;
@@ -130,7 +162,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return new LocalCachedMapOptions<K, V>()
                     .cacheSize(0).timeToLive(0).maxIdle(0)
                     .evictionPolicy(EvictionPolicy.NONE)
-                    .invalidationPolicy(InvalidationPolicy.ON_CHANGE);
+                    .reconnectionStrategy(ReconnectionStrategy.NONE)
+                    .syncStrategy(SyncStrategy.INVALIDATE);
     }
     
     public EvictionPolicy getEvictionPolicy() {
@@ -160,34 +193,55 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
     
-    public InvalidationPolicy getInvalidationPolicy() {
-        return invalidationPolicy;
+    public ReconnectionStrategy getReconnectionStrategy() {
+        return reconnectionStrategy;
+    }
+    
+    public SyncStrategy getSyncStrategy() {
+        return syncStrategy;
+    }
+    
+    public LocalCachedMapOptions<K, V> reconnectionStrategy(ReconnectionStrategy reconnectionStrategy) {
+        if (reconnectionStrategy == null) {
+            throw new NullPointerException("reconnectionStrategy can't be null");
+        }
+
+        this.reconnectionStrategy = reconnectionStrategy;
+        return this;
     }
 
+    public LocalCachedMapOptions<K, V> syncStrategy(SyncStrategy syncStrategy) {
+        if (syncStrategy == null) {
+            throw new NullPointerException("syncStrategy can't be null");
+        }
+
+        this.syncStrategy = syncStrategy;
+        return this;
+    }
+    
     /**
-     * Sets entry invalidation policy. 
-     *
-     * @param invalidationPolicy
-     *         <p><code>NONE</code> - no invalidation applied.
-     *         <p><code>ON_CHANGE</code> - invalidation message which removes corresponding entry from cache
-     *                                     will be sent to all other RLocalCachedMap instances on each entry update/remove operation.
-     *         <p><code>ON_CHANGE_WITH_CLEAR_ON_RECONNECT</code> - includes <code>ON_CHANGE</code> policy 
-     *                                     and clears local cache of current instance in case of reconnection to Redis. 
+     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
      * 
-     * @return LocalCachedMapOptions instance
      */
+    @Deprecated
     public LocalCachedMapOptions<K, V> invalidationPolicy(InvalidationPolicy invalidationPolicy) {
-        this.invalidationPolicy = invalidationPolicy;
+        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE) {
+            this.syncStrategy = SyncStrategy.INVALIDATE;
+        }
+        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE_WITH_CLEAR_ON_RECONNECT) {
+            this.syncStrategy = SyncStrategy.INVALIDATE;
+            this.reconnectionStrategy = ReconnectionStrategy.CLEAR;
+        }
+        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE_WITH_LOAD_ON_RECONNECT) {
+            this.syncStrategy = SyncStrategy.INVALIDATE;
+            this.reconnectionStrategy = ReconnectionStrategy.LOAD;
+        }
         return this;
     }
 
     /**
-     * Sets entry invalidation behavior. 
+     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
      * 
-     * @param value - if <code>true</code> then invalidation message which removes corresponding entry from cache
-     *         will be sent to all other RLocalCachedMap instances on each entry update/remove operation.
-     *         if <code>false</code> then invalidation message won't be sent
-     * @return LocalCachedMapOptions instance
      */
     @Deprecated
     public LocalCachedMapOptions<K, V> invalidateEntryOnChange(boolean value) {
