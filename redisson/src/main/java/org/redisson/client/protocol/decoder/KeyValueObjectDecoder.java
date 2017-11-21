@@ -15,9 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -30,23 +32,26 @@ import io.netty.util.CharsetUtil;
 public class KeyValueObjectDecoder implements MultiDecoder<Object> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        String status = buf.toString(CharsetUtil.UTF_8);
-        buf.skipBytes(1);
-        return status;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum == 0) {
+            return new Decoder<Object>() {
+                @Override
+                public Object decode(ByteBuf buf, State state) throws IOException {
+                    String status = buf.toString(CharsetUtil.UTF_8);
+                    buf.skipBytes(1);
+                    return status;
+                }
+            };
+        }
+        return null;
     }
-
+    
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return null;
         }
         return new KeyValueMessage(parts.get(0), parts.get(1));
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return paramNum == 0;
     }
 
 }

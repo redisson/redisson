@@ -133,7 +133,7 @@ public class MasterSlaveEntry {
         
         return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
     }
-
+    
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
@@ -317,7 +317,7 @@ public class MasterSlaveEntry {
     }
     
     public RFuture<Void> addSlave(URI address) {
-        return addSlave(address, true, NodeType.SLAVE);
+        return addSlave(address, false, NodeType.SLAVE);
     }
     
     private RFuture<Void> addSlave(URI address, boolean freezed, NodeType nodeType) {
@@ -350,7 +350,7 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && (!addr.getAddress().getHostAddress().equals(naddress.getAddress().getHostAddress()) || naddress.getPort() != addr.getPort())) {
-            slaveDown(address, FreezeReason.SYSTEM);
+            slaveDown(masterEntry.getClient().getConfig().getAddress(), FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
         }
         return true;

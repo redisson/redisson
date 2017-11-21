@@ -107,7 +107,7 @@ public abstract class BaseRemoteService {
         return "{remote_response}:" + executorId;
     }
 
-    protected String getRequestQueueName(Class<?> remoteInterface) {
+    public String getRequestQueueName(Class<?> remoteInterface) {
         return "{" + name + ":" + remoteInterface.getName() + "}";
     }
 
@@ -278,11 +278,8 @@ public abstract class BaseRemoteService {
 
                                             RemoteServiceAck ack = future.getNow();
                                             if (ack == null) {
-                                                RPromise<RemoteServiceAck> ackFuture = new RedissonPromise<RemoteServiceAck>();
-                                                responses.get(executorId).getResponses().put(request.getId(), ackFuture);
-                                                
                                                 RFuture<RemoteServiceAck> ackFutureAttempt = 
-                                                                            tryPollAckAgainAsync(optionsCopy, ackFuture, ackName);
+                                                                            tryPollAckAgainAsync(optionsCopy, ackName, request.getId(), responseName);
                                                 ackFutureAttempt.addListener(new FutureListener<RemoteServiceAck>() {
 
                                                     @Override
@@ -428,16 +425,15 @@ public abstract class BaseRemoteService {
                 RPromise<RRemoteServiceResponse> promise = (RPromise<RRemoteServiceResponse>) entry.getResponses().remove(response.getId());
                 if (promise != null) {
                     promise.trySuccess(response);
-                    
+                }
+                
+                if (!entry.getResponses().isEmpty()) {
+                    responseQueue.takeAsync().addListener(this);
+                } else {
+                    entry.getStarted().set(false);
                     if (!entry.getResponses().isEmpty()) {
-                        responseQueue.takeAsync().addListener(this);
-                    } else {
-                        entry.getStarted().set(false);
-                        if (!entry.getResponses().isEmpty()) {
-                            pollTasks(entry, responseName);
-                        }
+                        pollTasks(entry, responseName);
                     }
-                    
                 }
             }
         });
@@ -532,8 +528,8 @@ public abstract class BaseRemoteService {
         return null;
     }
 
-    private RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
-            final RPromise<RemoteServiceAck> pollFuture, String ackName)
+    private RFuture<RemoteServiceAck> tryPollAckAgainAsync(final RemoteInvocationOptions optionsCopy,
+            String ackName, final String requestId, final String responseName)
             throws InterruptedException {
         final RPromise<RemoteServiceAck> promise = new RedissonPromise<RemoteServiceAck>();
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -553,7 +549,8 @@ public abstract class BaseRemoteService {
                 }
 
                 if (future.getNow()) {
-                    pollFuture.addListener(new FutureListener<RemoteServiceAck>() {
+                    RPromise<RemoteServiceAck> ackFuture = poll(optionsCopy.getAckTimeoutInMillis(), requestId, responseName);
+                    ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
                         @Override
                         public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                             if (!future.isSuccess()) {

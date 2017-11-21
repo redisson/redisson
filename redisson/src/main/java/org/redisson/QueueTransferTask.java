@@ -39,8 +39,29 @@ public abstract class QueueTransferTask {
     
     private static final Logger log = LoggerFactory.getLogger(QueueTransferTask.class);
 
+    public static class TimeoutTask {
+        
+        private final long startTime;
+        private final Timeout task;
+        
+        public TimeoutTask(long startTime, Timeout task) {
+            super();
+            this.startTime = startTime;
+            this.task = task;
+        }
+        
+        public long getStartTime() {
+            return startTime;
+        }
+        
+        public Timeout getTask() {
+            return task;
+        }
+        
+    }
+    
     private int usage = 1;
-    private final AtomicReference<Timeout> timeoutReference = new AtomicReference<Timeout>();
+    private final AtomicReference<TimeoutTask> lastTimeout = new AtomicReference<TimeoutTask>();
     private final ConnectionManager connectionManager;
     
     public QueueTransferTask(ConnectionManager connectionManager) {
@@ -84,14 +105,13 @@ public abstract class QueueTransferTask {
     }
 
     private void scheduleTask(final Long startTime) {
-        if (startTime == null) {
+        TimeoutTask oldTimeout = lastTimeout.get();
+        if (startTime == null || (oldTimeout != null && oldTimeout.getStartTime() < startTime)) {
             return;
         }
         
-        Timeout oldTimeout = timeoutReference.get();
         if (oldTimeout != null) {
-            oldTimeout.cancel();
-            timeoutReference.compareAndSet(oldTimeout, null);
+            oldTimeout.getTask().cancel();
         }
         
         long delay = startTime - System.currentTimeMillis();
@@ -100,9 +120,16 @@ public abstract class QueueTransferTask {
                 @Override
                 public void run(Timeout timeout) throws Exception {
                     pushTask();
+                    
+                    TimeoutTask currentTimeout = lastTimeout.get();
+                    if (currentTimeout.getTask() == timeout) {
+                        lastTimeout.compareAndSet(currentTimeout, null);
+                    }
                 }
             }, delay, TimeUnit.MILLISECONDS);
-            timeoutReference.set(timeout);
+            if (!lastTimeout.compareAndSet(oldTimeout, new TimeoutTask(startTime, timeout))) {
+                timeout.cancel();
+            }
         } else {
             pushTask();
         }
@@ -114,10 +141,6 @@ public abstract class QueueTransferTask {
     
     private void pushTask() {
         RFuture<Long> startTimeFuture = pushTaskAsync();
-        addListener(startTimeFuture);
-    }
-
-    private void addListener(RFuture<Long> startTimeFuture) {
         startTimeFuture.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Long> future) throws Exception {
@@ -137,5 +160,4 @@ public abstract class QueueTransferTask {
         });
     }
 
-    
 }

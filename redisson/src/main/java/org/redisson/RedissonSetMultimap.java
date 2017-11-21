@@ -50,11 +50,11 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
     private static final RedisStrictCommand<Boolean> SCARD_VALUE = new RedisStrictCommand<Boolean>("SCARD", new BooleanAmountReplayConvertor());
     private static final RedisCommand<Boolean> SISMEMBER_VALUE = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor());
 
-    RedissonSetMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonSetMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
         super(id, connectionManager, name);
     }
 
-    RedissonSetMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonSetMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(id, codec, connectionManager, name);
     }
 

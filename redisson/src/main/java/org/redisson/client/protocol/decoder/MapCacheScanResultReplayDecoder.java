@@ -15,13 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -29,11 +27,6 @@ import io.netty.buffer.ByteBuf;
  *
  */
 public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheScanResult<Object, Object>> {
-
-    @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public MapCacheScanResult<Object, Object> decode(List<Object> parts, State state) {
@@ -44,8 +37,8 @@ public class MapCacheScanResultReplayDecoder implements MultiDecoder<MapCacheSca
     }
 
     @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
 }

@@ -33,15 +33,15 @@ import org.redisson.client.codec.GeoEntryCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScoredCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.FlatNestedMultiDecoder;
+import org.redisson.client.protocol.decoder.CodecDecoder;
 import org.redisson.client.protocol.decoder.GeoDistanceDecoder;
 import org.redisson.client.protocol.decoder.GeoMapReplayDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionMapDecoder;
+import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.decoder.NestedMultiDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 
@@ -54,19 +54,15 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
  */
 public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V> {
 
-    MultiDecoder<Map<Object, Object>> postitionDecoder;
-    MultiDecoder<Map<Object, Object>> distanceDecoder;
+    private final MultiDecoder<Map<Object, Object>> postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoMapReplayDecoder());
+    private final MultiDecoder<Map<Object, Object>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new GeoMapReplayDecoder());
     
     public RedissonGeo(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name, redisson);
-        postitionDecoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
-        distanceDecoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
     }
     
     public RedissonGeo(Codec codec, CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(codec, connectionManager, name, redisson);
-        postitionDecoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
-        distanceDecoder = new FlatNestedMultiDecoder(new GeoDistanceDecoder(codec), new GeoMapReplayDecoder(), true);
     }
 
     @Override
@@ -139,7 +135,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(encode(member));
         }
         
-        MultiDecoder<Map<Object, Object>> decoder = new NestedMultiDecoder(new GeoPositionDecoder(), new GeoPositionMapDecoder((List<Object>)Arrays.asList(members)), true);
+        MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder(new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoPositionMapDecoder((List<Object>)Arrays.asList(members)));
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
         return commandExecutor.readAsync(getName(), new ScoredCodec(codec), command, params.toArray());
     }

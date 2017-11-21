@@ -26,10 +26,10 @@ import org.redisson.client.protocol.Decoder;
  *
  * @param <T> type
  */
-public interface MultiDecoder<T> extends Decoder<Object> {
+public interface MultiDecoder<T> {
 
-    boolean isApplicable(int paramNum, State state);
-
+    Decoder<Object> getDecoder(int paramNum, State state);
+    
     T decode(List<Object> parts, State state);
 
 }

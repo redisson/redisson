@@ -39,6 +39,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.cluster.ClusterPartition.Type;
 import org.redisson.config.ClusterServersConfig;
@@ -76,6 +77,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private volatile URI lastClusterNode;
     
+    private RedisStrictCommand<List<ClusterNodeInfo>> clusterNodesCommand;
+    
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
 
@@ -88,7 +91,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
-                List<ClusterNodeInfo> nodes = connection.sync(RedisCommands.CLUSTER_NODES);
+                
+                clusterNodesCommand = RedisCommands.CLUSTER_NODES;
+                if ("rediss".equals(addr.getScheme())) {
+                    clusterNodesCommand = RedisCommands.CLUSTER_NODES_SSL;
+                }
+                
+                List<ClusterNodeInfo> nodes = connection.sync(clusterNodesCommand);
                 
                 StringBuilder nodesValue = new StringBuilder();
                 for (ClusterNodeInfo clusterNodeInfo : nodes) {
@@ -355,7 +364,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator, final URI uri) {
-        RFuture<List<ClusterNodeInfo>> future = connection.async(RedisCommands.CLUSTER_NODES);
+        RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
         future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
             public void operationComplete(Future<List<ClusterNodeInfo>> future) throws Exception {

@@ -18,8 +18,7 @@ package org.redisson.client.protocol.decoder;
 import java.util.List;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -29,18 +28,13 @@ import io.netty.buffer.ByteBuf;
 public class ListIteratorReplayDecoder implements MultiDecoder<ListIteratorResult<Object>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public ListIteratorResult<Object> decode(List<Object> parts, State state) {
         return new ListIteratorResult<Object>(parts.get(0), Long.valueOf(parts.get(1).toString()));
     }
 
     @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
 }

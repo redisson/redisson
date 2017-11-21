@@ -16,20 +16,26 @@
 package org.redisson.connection;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.client.RedisConnectionException;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.resolver.AddressResolver;
+import io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -42,6 +48,8 @@ public class DNSMonitor {
     
     private static final Logger log = LoggerFactory.getLogger(DNSMonitor.class);
 
+    private DnsAddressResolverGroup resolverGroup = new DnsAddressResolverGroup(NioDatagramChannel.class, DefaultDnsServerAddressStreamProvider.INSTANCE);
+    
     private ScheduledFuture<?> dnsMonitorFuture;
     
     private ConnectionManager connectionManager;
@@ -52,19 +60,16 @@ public class DNSMonitor {
     private long dnsMonitoringInterval;
 
     public DNSMonitor(ConnectionManager connectionManager, Set<URI> masterHosts, Set<URI> slaveHosts, long dnsMonitoringInterval) {
+        AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         for (URI host : masterHosts) {
-            try {
-                masters.put(host, InetAddress.getByName(host.getHost()));
-            } catch (UnknownHostException e) {
-                throw new RedisConnectionException("Unknown host: " + host.getHost(), e);
-            }
+            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(host.getHost(), 0));
+            resolveFuture.syncUninterruptibly();
+            masters.put(host, resolveFuture.getNow().getAddress());
         }
         for (URI host : slaveHosts) {
-            try {
-                slaves.put(host, InetAddress.getByName(host.getHost()));
-            } catch (UnknownHostException e) {
-                throw new RedisConnectionException("Unknown host: " + host.getHost(), e);
-            }
+            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(host.getHost(), 0));
+            resolveFuture.syncUninterruptibly();
+            slaves.put(host, resolveFuture.getNow().getAddress());
         }
         this.connectionManager = connectionManager;
         this.dnsMonitoringInterval = dnsMonitoringInterval;
@@ -85,50 +90,69 @@ public class DNSMonitor {
         dnsMonitorFuture = connectionManager.getGroup().schedule(new Runnable() {
             @Override
             public void run() {
-                // As InetAddress.getByName call is blocking. Method should be run in dedicated thread 
-                connectionManager.getExecutor().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            for (Entry<URI, InetAddress> entry : masters.entrySet()) {
-                                InetAddress master = entry.getValue();
-                                InetAddress now = InetAddress.getByName(entry.getKey().getHost());
-                                if (!now.getHostAddress().equals(master.getHostAddress())) {
-                                    log.info("Detected DNS change. {} has changed from {} to {}", entry.getKey().getHost(), master.getHostAddress(), now.getHostAddress());
-                                    for (MasterSlaveEntry entrySet : connectionManager.getEntrySet()) {
-                                        if (entrySet.getClient().getAddr().getHostName().equals(entry.getKey().getHost())
-                                                && entrySet.getClient().getAddr().getPort() == entry.getKey().getPort()) {
-                                            entrySet.changeMaster(entry.getKey());
-                                        }
-                                    }
-                                    masters.put(entry.getKey(), now);
-                                    log.info("Master {} has been changed", entry.getKey().getHost());
-                                }
+                final AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
+                final AtomicInteger counter = new AtomicInteger(masters.size() + slaves.size());
+                for (final Entry<URI, InetAddress> entry : masters.entrySet()) {
+                    Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), 0));
+                    resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
+                        @Override
+                        public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                            if (counter.decrementAndGet() == 0) {
+                                monitorDnsChange();
+                            }
+
+                            if (!future.isSuccess()) {
+                                log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                                return;
                             }
                             
-                            for (Entry<URI, InetAddress> entry : slaves.entrySet()) {
-                                InetAddress slave = entry.getValue();
-                                InetAddress updatedSlave = InetAddress.getByName(entry.getKey().getHost());
-                                if (!updatedSlave.getHostAddress().equals(slave.getHostAddress())) {
-                                    log.info("Detected DNS change. {} has changed from {} to {}", entry.getKey().getHost(), slave.getHostAddress(), updatedSlave.getHostAddress());
-                                    for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
-                                        URI uri = URIBuilder.create("redis://" + slave.getHostAddress() + ":" + entry.getKey().getPort());
-                                        if (masterSlaveEntry.slaveDown(uri, FreezeReason.MANAGER)) {
-                                            masterSlaveEntry.slaveUp(entry.getKey(), FreezeReason.MANAGER);
-                                        }
+                            InetAddress master = entry.getValue();
+                            InetAddress now = future.get().getAddress();
+                            if (!now.getHostAddress().equals(master.getHostAddress())) {
+                                log.info("Detected DNS change. {} has changed from {} to {}", entry.getKey().getHost(), master.getHostAddress(), now.getHostAddress());
+                                for (MasterSlaveEntry entrySet : connectionManager.getEntrySet()) {
+                                    if (entrySet.getClient().getAddr().getHostName().equals(entry.getKey().getHost())
+                                            && entrySet.getClient().getAddr().getPort() == entry.getKey().getPort()) {
+                                        entrySet.changeMaster(entry.getKey());
                                     }
-                                    slaves.put(entry.getKey(), updatedSlave);
-                                    log.info("Slave {} has been changed", entry.getKey().getHost());
                                 }
+                                masters.put(entry.getKey(), now);
+                                log.info("Master {} has been changed", entry.getKey().getHost());
                             }
-                            
-                        } catch (Exception e) {
-                            log.error(e.getMessage(), e);
-                        } finally {
-                            monitorDnsChange();
                         }
-                    }
-                });
+                    });
+                }
+                
+                for (final Entry<URI, InetAddress> entry : slaves.entrySet()) {
+                    Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), 0));
+                    resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
+                        @Override
+                        public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                            if (counter.decrementAndGet() == 0) {
+                                monitorDnsChange();
+                            }
+
+                            if (!future.isSuccess()) {
+                                log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                                return;
+                            }
+                            
+                            InetAddress slave = entry.getValue();
+                            InetAddress updatedSlave = future.get().getAddress();
+                            if (!updatedSlave.getHostAddress().equals(slave.getHostAddress())) {
+                                log.info("Detected DNS change. {} has changed from {} to {}", entry.getKey().getHost(), slave.getHostAddress(), updatedSlave.getHostAddress());
+                                for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
+                                    URI uri = URIBuilder.create(slave.getHostAddress() + ":" + entry.getKey().getPort());
+                                    if (masterSlaveEntry.slaveDown(uri, FreezeReason.MANAGER)) {
+                                        masterSlaveEntry.slaveUp(entry.getKey(), FreezeReason.MANAGER);
+                                    }
+                                }
+                                slaves.put(entry.getKey(), updatedSlave);
+                                log.info("Slave {} has been changed", entry.getKey().getHost());
+                            }
+                        }
+                    });
+                }
             }
 
         }, dnsMonitoringInterval, TimeUnit.MILLISECONDS);

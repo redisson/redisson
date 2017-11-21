@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 import io.netty.buffer.ByteBuf;
 
@@ -30,6 +31,13 @@ import io.netty.buffer.ByteBuf;
  */
 public class ListMultiDecoder<T> implements MultiDecoder<Object> {
 
+    public static final Decoder<Object> RESET = new Decoder<Object>() {
+        @Override
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            return null;
+        }
+    };
+    
     private final MultiDecoder<?>[] decoders;
     
     public static class NestedDecoderState implements DecoderState {
@@ -45,6 +53,10 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
             this.index = index;
         }
 
+        public void resetIndex() {
+            index = 0;
+        }
+        
         public void resetPartsIndex() {
             partsIndex = -1;
         }
@@ -90,26 +102,35 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
         this.decoders = decoders;
     }
 
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        int index = getDecoder(state).getIndex();
-        return decoders[index].decode(buf, state);
-    }
-
     @Override
-    public boolean isApplicable(int paramNum, State state) {
+    public Decoder<Object> getDecoder(int paramNum, State state) {
         if (paramNum == 0) {
             NestedDecoderState s = getDecoder(state);
             s.incIndex();
             s.resetPartsIndex();
         }
-        return true;
-    }
 
+        int index = getDecoder(state).getIndex();
+        Decoder<Object> decoder = decoders[index].getDecoder(paramNum, state);
+        if (decoder == RESET) {
+            NestedDecoderState s = getDecoder(state);
+            s.resetIndex();
+            int ind = s.getIndex();
+            return decoders[ind].getDecoder(paramNum, state);
+        }
+        return decoder;
+    }
+    
     @Override
     public Object decode(List<Object> parts, State state) {
         NestedDecoderState s = getDecoder(state);
         int index = s.getIndex();
         index += s.incPartsIndex();
+        
+        if (index == -1) {
+            return decoders[decoders.length-1].decode(parts, state);
+        }
+        
         Object res = decoders[index].decode(parts, state);
         if (res == null) {
             index = s.incIndex() + s.getPartsIndex();
