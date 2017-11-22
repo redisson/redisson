@@ -16,6 +16,7 @@
 package org.redisson.remote;
 
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.misc.RPromise;
@@ -30,7 +31,13 @@ import io.netty.util.internal.PlatformDependent;
 public class ResponseEntry {
 
     private final ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> responses = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<String, ScheduledFuture<?>> timeouts = PlatformDependent.newConcurrentHashMap();
     private final AtomicBoolean started = new AtomicBoolean(); 
+    
+    
+    public ConcurrentMap<String, ScheduledFuture<?>> getTimeouts() {
+        return timeouts;
+    }
     
     public ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> getResponses() {
         return responses;
