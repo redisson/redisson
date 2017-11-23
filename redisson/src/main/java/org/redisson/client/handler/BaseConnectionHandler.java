@@ -82,7 +82,7 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
             RFuture<Object> future = connection.async(RedisCommands.READONLY);
             futures.add(future);
         }
-        if (config.isPingConnection()) {
+        if (config.getPingConnectionInterval() > 0) {
             RFuture<Object> future = connection.async(RedisCommands.PING);
             futures.add(future);
         }
