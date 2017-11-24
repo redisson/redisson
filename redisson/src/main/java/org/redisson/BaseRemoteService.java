@@ -49,6 +49,7 @@ import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RemoteServiceResponse;
 import org.redisson.remote.RemoteServiceTimeoutException;
 import org.redisson.remote.ResponseEntry;
+import org.redisson.remote.ResponseEntry.Key;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -381,6 +382,7 @@ public abstract class BaseRemoteService {
     private <T extends RRemoteServiceResponse> RPromise<T> poll(final long timeout,
             final String requestId, final String responseName) {
         final RPromise<T> responseFuture = new RedissonPromise<T>();
+        final Key key = new Key(requestId);
 
         ResponseEntry entry;
         synchronized (responses) {
@@ -393,8 +395,8 @@ public abstract class BaseRemoteService {
                 }
             }
             
-            final ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> entryResponses = entry.getResponses();
-            entryResponses.put(requestId, responseFuture);
+            final ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> entryResponses = entry.getResponses();
+            entryResponses.put(key, responseFuture);
         }
 
         ScheduledFuture<?> future = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
@@ -406,11 +408,10 @@ public abstract class BaseRemoteService {
                         return;
                     }
                     
-                    ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> entryResponses = entry.getResponses();
                     RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
                     if (responseFuture.tryFailure(ex)) {
-                        entry.getTimeouts().remove(requestId);
-                        entryResponses.remove(requestId, responseFuture);
+                        entry.getTimeouts().remove(key);
+                        entry.getResponses().remove(key, responseFuture);
                         if (entry.getResponses().isEmpty()) {
                             responses.remove(responseName, entry);
                         }
@@ -418,7 +419,7 @@ public abstract class BaseRemoteService {
                 }
             }
         }, timeout, TimeUnit.MILLISECONDS);
-        entry.getTimeouts().put(requestId, future);
+        entry.getTimeouts().put(key, future);
         
         pollTasks(entry, responseName);
         return responseFuture;
@@ -448,9 +449,10 @@ public abstract class BaseRemoteService {
                         return;
                     }
                     
-                    ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> entryResponses = entry.getResponses();
-                    promise = (RPromise<RRemoteServiceResponse>) entryResponses.remove(response.getId());
-                    java.util.concurrent.ScheduledFuture<?> timeoutFuture = entry.getTimeouts().remove(response.getId());
+                    Key key = new Key(response.getId());
+                    ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> entryResponses = entry.getResponses();
+                    promise = (RPromise<RRemoteServiceResponse>) entryResponses.remove(key);
+                    java.util.concurrent.ScheduledFuture<?> timeoutFuture = entry.getTimeouts().remove(key);
                     timeoutFuture.cancel(false);
                     
                     if (entryResponses.isEmpty()) {
