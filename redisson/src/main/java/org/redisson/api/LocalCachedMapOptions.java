@@ -219,12 +219,15 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
     
-    /**
+    /*
      * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
      * 
      */
     @Deprecated
     public LocalCachedMapOptions<K, V> invalidationPolicy(InvalidationPolicy invalidationPolicy) {
+        if (invalidationPolicy == InvalidationPolicy.NONE) {
+            this.syncStrategy = SyncStrategy.NONE;
+        }
         if (invalidationPolicy == InvalidationPolicy.ON_CHANGE) {
             this.syncStrategy = SyncStrategy.INVALIDATE;
         }
@@ -239,7 +242,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
 
-    /**
+    /*
      * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
      * 
      */
