@@ -115,7 +115,7 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request, final String responseName) {
+            final RemoteServiceRequest request) {
         if (!optionsCopy.isResultExpected()) {
             return;
         }
@@ -129,11 +129,11 @@ public class ScheduledTasksService extends TasksService {
             commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseName);
+                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request);
                 }
             }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
         } else {
-            super.awaitResultAsync(optionsCopy, result, request, responseName);
+            super.awaitResultAsync(optionsCopy, result, request);
         }
     }
 

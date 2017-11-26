@@ -140,7 +140,6 @@ public class TasksService extends BaseRemoteService {
 
     public RFuture<Boolean> cancelExecutionAsync(final String requestId) {
         final Class<?> syncInterface = RemoteExecutorService.class;
-        String requestQueueName = getRequestQueueName(syncInterface);
 
         if (!redisson.getMap(tasksName, LongCodec.INSTANCE).containsKey(requestId)) {
             return RedissonPromise.newSucceededFuture(false);
@@ -148,6 +147,7 @@ public class TasksService extends BaseRemoteService {
 
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         
+        String requestQueueName = getRequestQueueName(syncInterface);
         RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, codec);
 
         RemoteServiceRequest request = new RemoteServiceRequest(requestId);
@@ -163,13 +163,10 @@ public class TasksService extends BaseRemoteService {
                 if (future.getNow()) {
                     result.trySuccess(true);
                 } else {
-                    String cancelRequestMapName = getCancelRequestMapName(syncInterface);
-                    
                     RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, codec);
                     canceledRequests.putAsync(requestId, new RemoteServiceCancelRequest(true, true));
                     canceledRequests.expireAsync(60, TimeUnit.SECONDS);
                     
-                    String cancelResponseMapName = getCancelResponseMapName(syncInterface);
                     final RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<RemoteServiceCancelResponse>();
                     scheduleCheck(cancelResponseMapName, requestId, response);
                     response.addListener(new FutureListener<RemoteServiceCancelResponse>() {

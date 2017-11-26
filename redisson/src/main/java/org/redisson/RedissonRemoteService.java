@@ -68,7 +68,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     public RedissonRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, redisson, name, commandExecutor, executorId, responses);
     }
-    
+        
     @Override
     public <T> void register(Class<T> remoteInterface, T object) {
         register(remoteInterface, object, 1);
@@ -166,11 +166,11 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     return;
                 }
 
-                final String responseName = getResponseQueueName(remoteInterface, request.getExecutorId());
+                final String responseName = getResponseQueueName(request.getExecutorId());
 
                 // send the ack only if expected
                 if (request.getOptions().isAckExpected()) {
-                    String ackName = getAckName(remoteInterface, request.getId());
+                    String ackName = getAckName(request.getId());
                             RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
                                     LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                                         "if redis.call('setnx', KEYS[1], 1) == 1 then " 
@@ -215,13 +215,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     private <T> void executeMethod(final Class<T> remoteInterface, final RBlockingQueue<RemoteServiceRequest> requestQueue,
             final ExecutorService executor, final RemoteServiceRequest request) {
         final RemoteServiceMethod method = beans.get(new RemoteServiceKey(remoteInterface, request.getMethodName(), request.getSignatures()));
-        final String responseName = getResponseQueueName(remoteInterface, request.getExecutorId());
+        final String responseName = getResponseQueueName(request.getExecutorId());
         
 
         final AtomicReference<RRemoteServiceResponse> responseHolder = new AtomicReference<RRemoteServiceResponse>();
         
         final RPromise<RemoteServiceCancelRequest> cancelRequestFuture = new RedissonPromise<RemoteServiceCancelRequest>();
-        scheduleCheck(getCancelRequestMapName(remoteInterface), request.getId(), cancelRequestFuture);
+        scheduleCheck(cancelRequestMapName, request.getId(), cancelRequestFuture);
         
         final java.util.concurrent.Future<?> submitFuture = executor.submit(new Runnable() {
             @Override
@@ -247,8 +247,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     
                     // could be removed not from future object
                     if (future.getNow().isSendResponse()) {
-                        String cancelResponseName = getCancelResponseMapName(remoteInterface);
-                        RMap<String, RemoteServiceCancelResponse> map = redisson.getMap(cancelResponseName, codec);
+                        RMap<String, RemoteServiceCancelResponse> map = redisson.getMap(cancelResponseMapName, codec);
                         map.putAsync(request.getId(), response);
                         map.expireAsync(60, TimeUnit.SECONDS);
                     }
