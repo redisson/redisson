@@ -34,7 +34,6 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.decoder.NestedMultiDecoder;
 import org.redisson.client.protocol.decoder.SlotsDecoder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
@@ -78,8 +77,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 } else {
                     CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
                     if (cmd.getCommand().getReplayMultiDecoder() != null 
-                            && (NestedMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
-                                    || SlotsDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
+                            && (SlotsDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
                                     || ListMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass()))) {
                         makeCheckpoint = false;
                     }
@@ -92,7 +90,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         if (data == null) {
             while (in.writerIndex() > in.readerIndex()) {
-                decode(in, null, null, ctx.channel());
+            decode(in, null, null, ctx.channel());
             }
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
@@ -330,7 +328,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (parts.isEmpty()) {
                 return null;
             }
-        }
+                }
         return data.getCommand().getReplayMultiDecoder();
     }
 
@@ -342,8 +340,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
         if (parts != null) {
             MultiDecoder<Object> multiDecoder = data.getCommand().getReplayMultiDecoder();
-            if (multiDecoder.isApplicable(parts.size(), state())) {
-                decoder = multiDecoder;
+            Decoder<Object> mDecoder = multiDecoder.getDecoder(parts.size(), state());
+            if (mDecoder != null) {
+                decoder = mDecoder;
             }
         }
         if (decoder == null) {

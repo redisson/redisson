@@ -70,7 +70,12 @@ public class SnappyCodec implements Codec {
         public Object decode(ByteBuf buf, State state) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
-                snappyDecoder.get().decode(buf, out);
+                while (buf.isReadable()) {
+                    int chunkSize = buf.readInt();
+                    ByteBuf chunk = buf.readSlice(chunkSize);
+                    snappyDecoder.get().decode(chunk, out);
+                    snappyDecoder.get().reset();
+                }
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
                 snappyDecoder.get().reset();
@@ -84,9 +89,19 @@ public class SnappyCodec implements Codec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf buf = innerCodec.getValueEncoder().encode(in);
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(buf.readableBytes() + 128);
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
-                snappyEncoder.get().encode(buf, out, buf.readableBytes());
+                int chunksAmount = (int)Math.ceil(buf.readableBytes() / (double)Short.MAX_VALUE);
+                for (int i = 1; i <= chunksAmount; i++) {
+                    int chunkSize = Math.min(Short.MAX_VALUE, buf.readableBytes());
+
+                    ByteBuf chunk = buf.readSlice(chunkSize);
+                    int lenIndex = out.writerIndex();
+                    out.writeInt(0);
+                    snappyEncoder.get().encode(chunk, out, chunk.readableBytes());
+                    int compressedDataLength = out.writerIndex() - 4 - lenIndex;
+                    out.setInt(lenIndex, compressedDataLength);
+                }
                 return out;
             } finally {
                 buf.release();
@@ -124,5 +139,5 @@ public class SnappyCodec implements Codec {
     public Encoder getValueEncoder() {
         return encoder;
     }
-
+    
 }

@@ -15,15 +15,13 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -42,13 +40,13 @@ public class ObjectMapDecoder implements MultiDecoder<Map<Object, Object>> {
     private int pos;
     
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
+    public Decoder<Object> getDecoder(int paramNum, State state) {
         if (pos++ % 2 == 0) {
-            return codec.getMapKeyDecoder().decode(buf, state);
+            return codec.getMapKeyDecoder();
         }
-        return codec.getMapValueDecoder().decode(buf, state);
+        return codec.getMapValueDecoder();
     }
-
+    
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
@@ -58,11 +56,6 @@ public class ObjectMapDecoder implements MultiDecoder<Map<Object, Object>> {
            }
         }
         return result;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return true;
     }
 
 }

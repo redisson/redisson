@@ -144,6 +144,12 @@ public class RedissonSessionManager extends ManagerBase {
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
+        redisson = buildClient();
+
+        setState(LifecycleState.STARTING);
+    }
+
+    protected RedissonClient buildClient() throws LifecycleException {
         Config config = null;
         try {
             config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
@@ -163,12 +169,10 @@ public class RedissonSessionManager extends ManagerBase {
                             .newInstance(Thread.currentThread().getContextClassLoader());
             config.setCodec(codec);
             
-            redisson = Redisson.create(config);
+            return Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
         }
-        
-        setState(LifecycleState.STARTING);
     }
 
     @Override

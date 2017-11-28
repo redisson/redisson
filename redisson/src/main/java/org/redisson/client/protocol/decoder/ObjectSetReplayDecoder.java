@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -32,18 +31,13 @@ import io.netty.buffer.ByteBuf;
 public class ObjectSetReplayDecoder<T> implements MultiDecoder<Set<T>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Set<T> decode(List<Object> parts, State state) {
         return new LinkedHashSet(parts);
     }
 
     @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
 }

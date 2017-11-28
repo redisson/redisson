@@ -15,15 +15,13 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.ScoredEntry;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 /**
  * 
@@ -34,10 +32,13 @@ import io.netty.util.CharsetUtil;
 public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<ScoredEntry<T>>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        return new BigDecimal(buf.toString(CharsetUtil.UTF_8));
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum % 2 != 0) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
+        }
+        return null;
     }
-
+    
     @Override
     public List<ScoredEntry<T>> decode(List<Object> parts, State state) {
         List<ScoredEntry<T>> result = new ArrayList<ScoredEntry<T>>();
@@ -45,11 +46,6 @@ public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<Scored
             result.add(new ScoredEntry<T>(((Number)parts.get(i+1)).doubleValue(), (T)parts.get(i)));
         }
         return result;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return paramNum % 2 != 0;
     }
 
 }

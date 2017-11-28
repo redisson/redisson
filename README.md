@@ -4,12 +4,10 @@ Redisson: Redis based In-Memory Data Grid for Java.
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 
-| Stable Release Version | JDK Version compatibility | Release Date |
-| ------------- | ------------- | ------------|
-| 3.5.4  | 1.8+ | 28.09.2017 |
-| 2.10.4 | 1.6, 1.7, 1.8 and Android | 28.09.2017 |
-
-__NOTE__: Both version lines have same features except `CompletionStage` interface added in 3.x.x
+| Stable <br/> Release Version | JDK Version<br/> compatibility | Release Date | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
+| ------------- | ------------- | ------------| -----------| -----------|
+| 3.5.5  | 1.8+ | 31.10.2017 | Yes | 3.1.x |
+| 2.10.5 | 1.6, 1.7, 1.8 and Android | 31.10.2017 | No | 2.0.8 |
 
 
 Features
@@ -66,16 +64,20 @@ Used by
 [![Crimson Hexagon](https://redisson.org/assets/logos/client7.png "Crimson Hexagon")](https://www.crimsonhexagon.com/) &nbsp;&nbsp;&nbsp;
 [![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/) &nbsp;&nbsp;&nbsp;
 [![OptionsHouse](https://redisson.org/assets/logos/client9.png "OptionsHouse")](https://www.optionshouse.com/) &nbsp;&nbsp;&nbsp;
-[![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)
+[![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)  
 [![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
-[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)  
+[![PANDORA](https://redisson.org/assets/logos/client15.png "PANDORA")](http://www.pandora.com/)&nbsp;&nbsp;&nbsp;
+[![ContaAzul](https://redisson.org/assets/logos/client18.png "ContaAzul")](https://contaazul.com/)&nbsp;&nbsp;&nbsp;
+[![NAB](https://redisson.org/assets/logos/client11.png "NAB")](https://www.nab.com.au/)  
+[![Alibaba](https://redisson.org/assets/logos/client19.png "Alibaba")](http://www.alibaba-inc.com)&nbsp;&nbsp;&nbsp;
 [![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
 
 
 Success stories
 ================================
 
-[Moving from Hazelcast to Redis](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
+[Moving from Hazelcast to Redis  /  Datorama](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
+[Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
 
 Quick start
 ===============================
@@ -85,23 +87,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.5.4</version>
+       <version>3.5.5</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.10.4</version>
+       <version>2.10.5</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.5.4'  
+    compile 'org.redisson:redisson:3.5.5'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.10.4'
+    compile 'org.redisson:redisson:2.10.5'
 
 #### Java
 
@@ -126,11 +128,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.5.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.5.4&e=jar),
-[Redisson node 3.5.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.4&e=jar)  
+[Redisson 3.5.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.5.5&e=jar),
+[Redisson node 3.5.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.5.5&e=jar)  
 
-[Redisson 2.10.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.10.4&e=jar),
-[Redisson node 2.10.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.4&e=jar)  
+[Redisson 2.10.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.10.5&e=jar),
+[Redisson node 2.10.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.10.5&e=jar)  
 
 ### Supported by
 

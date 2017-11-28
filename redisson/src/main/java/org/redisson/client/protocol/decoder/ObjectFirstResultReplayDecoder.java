@@ -18,8 +18,7 @@ package org.redisson.client.protocol.decoder;
 import java.util.List;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -30,18 +29,13 @@ import io.netty.buffer.ByteBuf;
 public class ObjectFirstResultReplayDecoder<T> implements MultiDecoder<T> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public T decode(List<Object> parts, State state) {
         return (T) parts.get(0);
     }
 
     @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
 }

@@ -39,6 +39,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.cluster.ClusterPartition.Type;
 import org.redisson.config.ClusterServersConfig;
@@ -56,7 +57,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.PlatformDependent;
 
@@ -77,6 +77,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private volatile URI lastClusterNode;
     
+    private RedisStrictCommand<List<ClusterNodeInfo>> clusterNodesCommand;
+    
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
         super(config);
 
@@ -89,7 +91,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
-                List<ClusterNodeInfo> nodes = connection.sync(RedisCommands.CLUSTER_NODES);
+                
+                clusterNodesCommand = RedisCommands.CLUSTER_NODES;
+                if ("rediss".equals(addr.getScheme())) {
+                    clusterNodesCommand = RedisCommands.CLUSTER_NODES_SSL;
+                }
+                
+                List<ClusterNodeInfo> nodes = connection.sync(clusterNodesCommand);
                 
                 StringBuilder nodesValue = new StringBuilder();
                 for (ClusterNodeInfo clusterNodeInfo : nodes) {
@@ -147,7 +155,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 throw new RedisConnectionException("Not all slots are covered! Only " + lastPartitions.size() + " slots are avaliable. Failed masters according to cluster status: " + failedMasters, lastException);
             }
         }
-
+        
         scheduleClusterChangeCheck(cfg, null);
     }
     
@@ -298,7 +306,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void scheduleClusterChangeCheck(final ClusterServersConfig cfg, final Iterator<URI> iterator) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+        monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
                 AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
@@ -356,7 +364,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator, final URI uri) {
-        RFuture<List<ClusterNodeInfo>> future = connection.async(RedisCommands.CLUSTER_NODES);
+        RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
         future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
             public void operationComplete(Future<List<ClusterNodeInfo>> future) throws Exception {
@@ -724,11 +732,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown() {
         monitorFuture.cancel(true);
-        super.shutdown();
-
+        
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
-            connection.getRedisClient().shutdown();
+            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
+            futures.add(future);
         }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+        super.shutdown();
     }
 
     private HashSet<ClusterPartition> getLastPartitions() {

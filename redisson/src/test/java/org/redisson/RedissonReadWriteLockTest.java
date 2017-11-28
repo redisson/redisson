@@ -1,6 +1,5 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.security.SecureRandom;
@@ -10,15 +9,66 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.api.RLock;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
-import com.jayway.awaitility.Awaitility;
+import static org.awaitility.Awaitility.*;
 
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testWriteLockExpiration() throws InterruptedException {
+        RReadWriteLock rw1 = redisson.getReadWriteLock("test2s3");
+        
+        RLock l1 = rw1.writeLock();
+        assertThat(l1.tryLock(10000, 10000, TimeUnit.MILLISECONDS)).isTrue();
+        RLock l2 = rw1.writeLock();
+        assertThat(l2.tryLock(1000, 1000, TimeUnit.MILLISECONDS)).isTrue();
+
+        await().atMost(Duration.TEN_SECONDS).until(() -> {
+            RReadWriteLock rw2 = redisson.getReadWriteLock("test2s3");
+            try {
+                return !rw2.writeLock().tryLock(3000, 1000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                return false;
+            }
+        });
+    }
+    
+    @Test
+    public void testInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1)
+                .addNode(master2)
+                .addNode(master3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        RReadWriteLock s = redisson.getReadWriteLock("1234");
+        s.writeLock().lock();
+        s.readLock().lock();
+        s.readLock().unlock();
+        s.writeLock().unlock();
+        
+        redisson.shutdown();
+        process.shutdown();
+    }
+    
     @Test
     public void testReadLockLeaseTimeoutDiffThreadsWRR() throws InterruptedException {
         RLock writeLock = redisson.getReadWriteLock("my_read_write_lock").writeLock();
@@ -319,7 +369,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         });
 
         RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
-        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
     }
 
     @Test

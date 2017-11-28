@@ -79,6 +79,7 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.pubsub.SemaphorePubSub;
+import org.redisson.remote.ResponseEntry;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -107,6 +108,7 @@ public class Redisson implements RedissonClient {
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected final UUID id = UUID.randomUUID();
+    protected final ConcurrentMap<String, ResponseEntry> responses = PlatformDependent.newConcurrentHashMap();
 
     protected Redisson(Config config) {
         this.config = config;
@@ -373,7 +375,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService);
+        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
     }
     
     @Override
@@ -384,27 +386,33 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
-        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService);
+        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
     }
     
     @Override
     public RRemoteService getRemoteService() {
-        return new RedissonRemoteService(this, connectionManager.getCommandExecutor());
+        return getRemoteService("redisson_rs", connectionManager.getCodec());
     }
 
     @Override
     public RRemoteService getRemoteService(String name) {
-        return new RedissonRemoteService(this, name, connectionManager.getCommandExecutor());
+        return getRemoteService(name, connectionManager.getCodec());
     }
     
     @Override
     public RRemoteService getRemoteService(Codec codec) {
-        return new RedissonRemoteService(codec, this, connectionManager.getCommandExecutor());
+        return getRemoteService("redisson_rs", codec);
     }
     
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor());
+        String executorId;
+        if (codec == connectionManager.getCodec()) {
+            executorId = id.toString();
+        } else {
+            executorId = id + ":" + name;
+        }
+        return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor(), executorId, responses);
     }
 
     @Override

@@ -31,7 +31,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
-import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
@@ -256,8 +255,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
 
     @Override
     public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
-        RFuture<V> res = takeLastAndOfferFirstToAsync(queueName);
-        return res.await().getNow();
+        return get(takeLastAndOfferFirstToAsync(queueName));
     }
     
     @Override

@@ -105,6 +105,12 @@ class BaseConfig<T extends BaseConfig<T>> {
     
     private String sslKeystorePassword;
 
+    private int pingConnectionInterval;
+
+    private boolean keepAlive;
+    
+    private boolean tcpNoDelay;
+
     
     BaseConfig() {
     }
@@ -127,6 +133,9 @@ class BaseConfig<T extends BaseConfig<T>> {
         setSslTruststorePassword(config.getSslTruststorePassword());
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
+        setPingConnectionInterval(config.getPingConnectionInterval());
+        setKeepAlive(config.isKeepAlive());
+        setTcpNoDelay(config.isTcpNoDelay());
     }
 
     /**
@@ -332,7 +341,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Enables SSL endpoint identification.
      * <p>
-     * Default is true
+     * Default is <code>true</code>
      * 
      * @param sslEnableEndpointIdentification - boolean value
      * @return config
@@ -416,6 +425,58 @@ class BaseConfig<T extends BaseConfig<T>> {
      */
     public T setSslKeystorePassword(String sslKeystorePassword) {
         this.sslKeystorePassword = sslKeystorePassword;
+        return (T) this;
+    }
+
+    public int getPingConnectionInterval() {
+        return pingConnectionInterval;
+    }
+
+    /**
+     * Defines PING command sending interval per connection to Redis.
+     * <code>0</code> means disable.
+     * <p>
+     * Default is <code>0</code>
+     * 
+     * @param pingConnectionInterval - time in milliseconds
+     * @return config
+     */
+    public T setPingConnectionInterval(int pingConnectionInterval) {
+        this.pingConnectionInterval = pingConnectionInterval;
+        return (T) this;
+    }
+
+    public boolean isKeepAlive() {
+        return keepAlive;
+    }
+
+    /**
+     * Enables TCP keepAlive for connection
+     * <p>
+     * Default is <code>false</code>
+     * 
+     * @param keepAlive - boolean value
+     * @return config
+     */
+    public T setKeepAlive(boolean keepAlive) {
+        this.keepAlive = keepAlive;
+        return (T) this;
+    }
+
+    public boolean isTcpNoDelay() {
+        return tcpNoDelay;
+    }
+
+    /**
+     * Enables TCP noDelay for connection
+     * <p>
+     * Default is <code>false</code>
+     * 
+     * @param tcpNoDelay - boolean value
+     * @return config
+     */
+    public T setTcpNoDelay(boolean tcpNoDelay) {
+        this.tcpNoDelay = tcpNoDelay;
         return (T) this;
     }
 

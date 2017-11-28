@@ -4,6 +4,25 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 31-Oct-2017 - versions 2.10.5 and 3.5.5 released
+`ProjectReactor` dependency for `3.5.5` version was updated to `3.1.1` version  
+
+Feature - Added pingConnection, keepAlive, tcpNoDelay settings  
+Feature - Slaves synchronization support for `RBatch`/`RBatchReactive` objects  
+Improvement - Data encoding should be executed on client thread only  
+Improvement - Handling Redis redirect optimization  
+Improvement - Better collection handling for RedissonReference (thanks to Rui Gu)  
+Fixed - `RedisLoadingException` handling during re-connection process  
+Fixed - `RedisClient` can't be shutdown properly  
+Fixed - timeout drift for `RFairLock`  
+Fixed - expiration handling of reentrant write lock  
+Fixed - `RReadWriteLock` doesn't work in cluster  
+Fixed - Blocking queues are't rethrow exceptions  
+Fixed - out of connections problem on high load during `RemoteExecutorService`/`ExecutorService` usage  
+Fixed - NPE during `RemoteService` object usage  
+Fixed - Getting memory leak warnings when gracefully shutting down tomcat  
+Fixed - `RMapCache.getAll` doesn't support large keySet  
+
 ### 28-Sep-2017 - versions 2.10.4 and 3.5.4 released
 Feature - added `maxSize` setting for `SpringCacheManager`  
 Feature - allow `LiveObjectService` to work with classes that inherit from REntities (thanks to @sdjacobs)  

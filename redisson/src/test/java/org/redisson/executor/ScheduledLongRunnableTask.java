@@ -19,7 +19,7 @@ public class ScheduledLongRunnableTask implements Runnable {
 
     @Override
     public void run() {
-        for (int i = 0; i < Long.MAX_VALUE; i++) {
+        for (long i = 0; i < Long.MAX_VALUE; i++) {
             if (Thread.currentThread().isInterrupted()) {
                 System.out.println("interrupted " + i);
                 redisson.getBucket(objectName).set(i);

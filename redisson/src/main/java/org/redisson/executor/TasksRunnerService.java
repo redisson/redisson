@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
@@ -30,11 +31,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Injector;
-import org.redisson.remote.RemoteParams;
+import org.redisson.remote.ResponseEntry;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 
 /**
  * Executor service runs Callable and Runnable tasks.
@@ -42,11 +42,10 @@ import io.netty.buffer.Unpooled;
  * @author Nikita Koksharov
  *
  */
-public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
+public class TasksRunnerService implements RemoteExecutorService {
 
     private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
     
-    private final ThreadLocal<String> requestId = new ThreadLocal<String>();
     private final Codec codec;
     private final String name;
     private final CommandExecutor commandExecutor;
@@ -59,11 +58,13 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     private String tasksName; 
     private String schedulerQueueName;
     private String schedulerChannelName;
+    private ConcurrentMap<String, ResponseEntry> responses;
     
-    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name) {
+    public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.redisson = redisson;
+        this.responses = responses;
         
         try {
             this.codec = codec.getClass().getConstructor(ClassLoader.class).newInstance(classLoader);
@@ -97,9 +98,9 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     }
 
     @Override
-    public void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period) {
+    public void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period, String executorId, String requestId) {
         long newStartTime = System.currentTimeMillis() + period;
-        RFuture<Void> future = asyncScheduledServiceAtFixed().scheduleAtFixedRate(className, classBody, state, newStartTime, period);
+        RFuture<Void> future = asyncScheduledServiceAtFixed(executorId, requestId).scheduleAtFixedRate(className, classBody, state, newStartTime, period, executorId, requestId);
         try {
             executeRunnable(className, classBody, state, null);
         } catch (RuntimeException e) {
@@ -110,9 +111,9 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     }
     
     @Override
-    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression) {
+    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId) {
         Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
-        RFuture<Void> future = asyncScheduledServiceAtFixed().schedule(className, classBody, state, nextStartDate.getTime(), cronExpression);
+        RFuture<Void> future = asyncScheduledServiceAtFixed(executorId, requestId).schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, executorId, requestId);
         try {
             executeRunnable(className, classBody, state, null);
         } catch (RuntimeException e) {
@@ -128,42 +129,38 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
      * 
      * @return
      */
-    private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed() {
-        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor);
+    private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor, executorId, responses);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
-        scheduledRemoteService.setRequestId(requestId.get());
+        scheduledRemoteService.setRequestId(requestId);
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;
     }
     
     @Override
-    public void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay) {
+    public void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay, String executorId, String requestId) {
         executeRunnable(className, classBody, state, null);
         long newStartTime = System.currentTimeMillis() + delay;
-        asyncScheduledServiceAtFixed().scheduleWithFixedDelay(className, classBody, state, newStartTime, delay);
+        asyncScheduledServiceAtFixed(executorId, requestId).scheduleWithFixedDelay(className, classBody, state, newStartTime, delay, executorId, requestId);
     }
     
     @Override
-    public Object scheduleCallable(String className, byte[] classBody, byte[] state, long startTime) {
-        return executeCallable(className, classBody, state, requestId.get());
+    public Object scheduleCallable(String className, byte[] classBody, byte[] state, long startTime, String requestId) {
+        return executeCallable(className, classBody, state, requestId);
     }
     
     @Override
-    public void scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime) {
-        executeRunnable(className, classBody, state, requestId.get());
+    public void scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime, String requestId) {
+        executeRunnable(className, classBody, state, requestId);
     }
     
     @Override
-    public Object executeCallable(String className, byte[] classBody, byte[] state) {
-        return executeCallable(className, classBody, state, requestId.get());
-    }
-    
-    private Object executeCallable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
+    public Object executeCallable(String className, byte[] classBody, byte[] state, String requestId) {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
         try {
             buf.writeBytes(state);
@@ -183,11 +180,12 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
             throw new IllegalArgumentException(e);
         } finally {
             buf.release();
-            finish(scheduledRequestId);
+            finish(requestId);
         }
     }
 
 
+    @SuppressWarnings("unchecked")
     private <T> T decode(ByteBuf buf) throws IOException {
         T task = (T) codec.getValueDecoder().decode(buf, null);
         Injector.inject(task, redisson);
@@ -195,11 +193,7 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
     }
 
     @Override
-    public void executeRunnable(String className, byte[] classBody, byte[] state) {
-        executeRunnable(className, classBody, state, requestId.get());
-    }
-    
-    private void executeRunnable(String className, byte[] classBody, byte[] state, String scheduledRequestId) {
+    public void executeRunnable(String className, byte[] classBody, byte[] state, String requestId) {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
         try {
             buf.writeBytes(state);
@@ -218,7 +212,7 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
             throw new IllegalArgumentException(e);
         } finally {
             buf.release();
-            finish(scheduledRequestId);
+            finish(requestId);
         }
     }
 
@@ -260,11 +254,6 @@ public class TasksRunnerService implements RemoteExecutorService, RemoteParams {
               + "end;",  
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
-    }
-
-    @Override
-    public void setRequestId(String id) {
-        requestId.set(id);
     }
 
 }

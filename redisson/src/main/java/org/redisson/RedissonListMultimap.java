@@ -47,11 +47,11 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     private static final RedisStrictCommand<Boolean> LLEN_VALUE = new RedisStrictCommand<Boolean>("LLEN", new BooleanAmountReplayConvertor());
 
-    RedissonListMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonListMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
         super(id, connectionManager, name);
     }
 
-    RedissonListMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonListMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(id, codec, connectionManager, name);
     }
 

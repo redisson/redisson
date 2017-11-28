@@ -228,10 +228,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores'); " +
             "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
             "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
-            "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); " +
             "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));" +
-            "for i = #map, 1, -1 do " +
-            "    local value = map[i]; " +
+            "local map = {}; " +
+            "for i = 1, #ARGV, 1 do " +
+            "    local value = redis.call('hget', KEYS[1], ARGV[i]); " + 
+            "    map[i] = false;" +
             "    if value ~= false then " +
             "        local key = ARGV[i]; " +
             "        local t, val = struct.unpack('dLc0', value); " +

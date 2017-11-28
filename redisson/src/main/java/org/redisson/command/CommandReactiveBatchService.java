@@ -15,12 +15,12 @@
  */
 package org.redisson.command;
 
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
@@ -61,43 +61,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt);
     }
 
-    public List<?> execute() {
-        return get(executeAsync(0, 0, 0));
-    }
-    
-    public List<?> execute(long responseTimeout, int retryAttempts, long retryInterval) {
-        return get(executeAsync(responseTimeout, retryAttempts, retryInterval));
-    }
-
-    public RFuture<Void> executeAsyncVoid() {
-        return executeAsyncVoid(false, 0, 0, 0);
-    }
-    
-    private RFuture<Void> executeAsyncVoid(boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
-        for (Publisher<?> publisher : publishers) {
-            publisher.subscribe(new DefaultSubscriber<Object>() {
-                @Override
-                public void onSubscribe(Subscription s) {
-                    s.request(1);
-                }
-            });
-        }
-        return batchService.executeAsyncVoid(noResult, responseTimeout, retryAttempts, retryInterval);
-    }
-    
-    public void executeSkipResult(long timeout, int retryAttempts, long retryInterval) {
-        get(executeSkipResultAsync(timeout, retryAttempts, retryInterval));
-    }
-    
-    public RFuture<Void> executeSkipResultAsync(long timeout, int retryAttempts, long retryInterval) {
-        return executeAsyncVoid(true, timeout, retryAttempts, retryInterval);
-    }
-    
-    public RFuture<List<?>> executeAsync() {
-        return executeAsync(0, 0, 0);
-    }
-    
-    public RFuture<List<?>> executeAsync(long responseTimeout, int retryAttempts, long retryInterval) {
+    public RFuture<BatchResult<?>> executeAsync(int syncSlaves, long syncTimeout, boolean skipResult, long responseTimeout, int retryAttempts, long retryInterval) {
         for (Publisher<?> publisher : publishers) {
             publisher.subscribe(new DefaultSubscriber<Object>() {
                 @Override
@@ -107,7 +71,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
             });
         }
 
-        return batchService.executeAsync(responseTimeout, retryAttempts, retryInterval);
+        return batchService.executeAsync(syncSlaves, syncTimeout, skipResult, responseTimeout, retryAttempts, retryInterval);
     }
 
     @Override

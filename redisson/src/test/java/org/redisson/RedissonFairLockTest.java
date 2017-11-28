@@ -1,22 +1,122 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
-import static com.jayway.awaitility.Awaitility.*;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
-
-import com.jayway.awaitility.Awaitility;
+import org.redisson.api.RScript;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RedissonFairLockTest extends BaseConcurrentTest {
 
+    private final Logger log = LoggerFactory.getLogger(RedissonFairLockTest.class);
+    
+    @Test
+    public void testTimeoutDrift() throws Exception {
+        int leaseTimeSeconds = 30;
+        RLock lock = redisson.getFairLock("test-fair-lock");
+        AtomicBoolean lastThreadTryingToLock = new AtomicBoolean(false);
+
+
+        //create a scenario where the same 3 threads keep on trying to get a lock
+        //to exacerbate the problem, use a very short wait time and a long lease time
+        //this will end up setting the queue timeout score to a value far away in the future
+        ExecutorService executor = Executors.newFixedThreadPool(3);
+        for (int i = 0; i < 100; i++) {
+            executor.submit(() -> {
+                try {
+                    if (lock.tryLock(500, leaseTimeSeconds * 1000, TimeUnit.MILLISECONDS)) {
+                        log.info("Lock taken by thread " + Thread.currentThread().getId());
+                        Thread.sleep(30000);
+                        try {
+                            //this could fail before use sleep for the same value as the lock expiry, that's fine
+                            //for the purpose of this test
+                            lock.unlock();
+                            log.info("Lock released by thread " + Thread.currentThread().getId());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                } catch (InterruptedException ex) {
+                    log.warn("Interrupted");
+                } catch (Exception ex) {
+                    log.error(ex.getMessage(), ex);
+                }
+            });
+            //for the first 3 threads, add a 50ms delay. This is to recreate the worst case scenario, where all threads
+            //attempting to lock do so in a staggered pattern. This delay will be carried over by the thread pool.
+            if (i < 3) {
+                Thread.sleep(50);
+            }
+        }
+        //we now launch one more thread and kill it before it manages to fail and clean up
+        //that thread will end up with a timeout that will prevent any others from taking the lock for a long time
+        executor.submit(() -> {
+            log.info("Final thread trying to take the lock with thread id: " + Thread.currentThread().getId());
+            try {
+                lastThreadTryingToLock.set(true);
+                if (lock.tryLock(30000, 30000, TimeUnit.MILLISECONDS)) {
+                    log.info("Lock taken by final thread " + Thread.currentThread().getId());
+                    Thread.sleep(1000);
+                    lock.unlock();
+                    log.info("Lock released by final thread " + Thread.currentThread().getId());
+                }
+            } catch (InterruptedException ex) {
+                log.warn("Interrupted");
+            } catch (Exception ex) {
+                log.error(ex.getMessage(), ex);
+            }
+        });
+        //now we wait for all others threads to stop trying, and only the last thread is running
+        while (!lastThreadTryingToLock.get()) {
+            Thread.sleep(100);
+        }
+        //try to kill that last thread, and don't let it clean up after itself
+        executor.shutdownNow();
+        //force the lock to unlock just in case
+        try {
+            lock.forceUnlock();
+        } catch (Exception ignored) {
+        }
+        if (lock.isLocked()) {
+            Assert.fail("Lock should have been unlocked by now");
+        }
+        //check the timeout scores - they should all be within a reasonable amount of time from now
+        List<Long> queue = redisson.getScript().eval(RScript.Mode.READ_ONLY,
+                "local result = {}; " +
+                        "local timeouts = redis.call('zrange', KEYS[1], 0, 99, 'WITHSCORES'); " +
+                        "for i=1,#timeouts,2 do " +
+                        "table.insert(result, timeouts[i+1]); " +
+                        "end; " +
+                        "return result; ",
+                RScript.ReturnType.MULTI,
+                Collections.singletonList("redisson_lock_timeout:{test-fair-lock}"));
+
+        int i = 0;
+        for (Long timeout : queue) {
+            long epiry = ((timeout - new Date().getTime()) / 1000);
+            log.info("Item " + (i++) + " expires in " + epiry + " seconds");
+            //the Redisson library uses this 5000ms delay in the code
+            if (epiry > leaseTimeSeconds + 5) {
+                Assert.fail("It would take more than " + leaseTimeSeconds + "s to get the lock!");
+            }
+        }
+    }
+    
     @Test
     public void testTryLockNonDelayed() throws InterruptedException {
         String LOCK_NAME = "SOME_LOCK";
@@ -144,7 +244,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getFairLock("lock");
         
-        Awaitility.await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
     @Test
@@ -377,7 +477,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             t1.start();
         }
         
-        await().atMost(30, TimeUnit.SECONDS).until(() -> assertThat(lockedCounter.get()).isEqualTo(totalThreads));
+        await().atMost(30, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
     }
 
 

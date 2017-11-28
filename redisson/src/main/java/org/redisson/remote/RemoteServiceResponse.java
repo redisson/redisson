@@ -28,16 +28,23 @@ public class RemoteServiceResponse implements RRemoteServiceResponse, Serializab
     
     private Object result;
     private Throwable error;
+    private String id;
     
     public RemoteServiceResponse() {
     }
     
-    public RemoteServiceResponse(Object result) {
+    public RemoteServiceResponse(String id, Object result) {
         this.result = result;
+        this.id = id;
     }
 
-    public RemoteServiceResponse(Throwable error) {
+    public RemoteServiceResponse(String id, Throwable error) {
         this.error = error;
+        this.id = id;
+    }
+    
+    public String getId() {
+        return id;
     }
 
     public Throwable getError() {

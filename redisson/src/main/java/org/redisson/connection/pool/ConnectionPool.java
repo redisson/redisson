@@ -29,6 +29,7 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
@@ -169,8 +170,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
     public RFuture<T> get(RedisCommand<?> command) {
         for (int j = entries.size() - 1; j >= 0; j--) {
             final ClientConnectionsEntry entry = getEntry();
-            if (!entry.isFreezed() 
-                    && tryAcquireConnection(entry)) {
+            if ((!entry.isFreezed() || 
+                    (entry.getFreezeReason() == FreezeReason.SYSTEM && config.getReadMode() == ReadMode.MASTER_SLAVE)) && 
+        		    tryAcquireConnection(entry)) {
                 return acquireConnection(command, entry);
             }
         }

@@ -26,18 +26,24 @@ public class RemoteServiceCancelResponse implements RRemoteServiceResponse, Seri
 
     private static final long serialVersionUID = -4356901222132702182L;
 
-    private boolean canceled = true;
+    private String id;
+    private boolean canceled;
 
     public RemoteServiceCancelResponse() {
     }
     
-    public RemoteServiceCancelResponse(boolean canceled) {
-        super();
+    public RemoteServiceCancelResponse(String id, boolean canceled) {
         this.canceled = canceled;
+        this.id = id;
     }
     
     public boolean isCanceled() {
         return canceled;
+    }
+
+    @Override
+    public String getId() {
+        return id;
     }
     
 }

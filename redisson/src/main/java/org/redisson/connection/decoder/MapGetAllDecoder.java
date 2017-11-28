@@ -15,16 +15,14 @@
  */
 package org.redisson.connection.decoder;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * 
@@ -48,13 +46,8 @@ public class MapGetAllDecoder implements MultiDecoder<Map<Object, Object>> {
     }
 
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
     @Override

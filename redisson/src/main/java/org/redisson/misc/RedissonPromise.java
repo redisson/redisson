@@ -50,11 +50,6 @@ public class RedissonPromise<T> implements RPromise<T> {
         return future;
     }
 
-    
-    public Promise<T> getInnerPromise() {
-        return promise;
-    }
-
     @Override
     public boolean isSuccess() {
         return promise.isSuccess();

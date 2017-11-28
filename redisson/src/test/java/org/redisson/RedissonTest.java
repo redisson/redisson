@@ -1,6 +1,6 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.redisson.BaseTest.createInstance;
 
@@ -289,8 +289,8 @@ public class RedissonTest {
 
         Assert.assertEquals(0, pp.stop());
 
-        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(connectCounter.get()).isEqualTo(1));
-        await().atMost(2, TimeUnit.SECONDS).until(() -> assertThat(disconnectCounter.get()).isEqualTo(1));
+        await().atMost(2, TimeUnit.SECONDS).until(() -> connectCounter.get() == 1);
+        await().atMost(2, TimeUnit.SECONDS).until(() -> disconnectCounter.get() == 1);
     }
     
     @Test

@@ -1,6 +1,6 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.util.ArrayList;

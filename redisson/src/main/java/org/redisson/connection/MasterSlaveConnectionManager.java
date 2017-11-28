@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.redisson.Version;
 import org.redisson.api.NodeType;
@@ -128,7 +129,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected MasterSlaveServersConfig config;
 
-    private final Map<Integer, MasterSlaveEntry> slot2entry = PlatformDependent.newConcurrentHashMap();
+    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<MasterSlaveEntry>(MAX_SLOT);
     private final Map<InetSocketAddress, MasterSlaveEntry> addr2entry = PlatformDependent.newConcurrentHashMap();
 
     private final RPromise<Boolean> shutdownPromise;
@@ -377,7 +378,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
               .setClientName(config.getClientName())
-              .setKeepPubSubOrder(cfg.isKeepPubSubOrder());
+              .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
+              .setPingConnectionInterval(config.getPingConnectionInterval())
+              .setKeepAlive(config.isKeepAlive())
+              .setTcpNoDelay(config.isTcpNoDelay());
         
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());
@@ -688,13 +692,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected final void addEntry(Integer slot, MasterSlaveEntry entry) {
-        slot2entry.put(slot, entry);
+        slot2entry.set(slot, entry);
         entry.addSlotRange(slot);
         addr2entry.put(entry.getClient().getAddr(), entry);
     }
 
     protected MasterSlaveEntry removeMaster(Integer slot) {
-        MasterSlaveEntry entry = slot2entry.remove(slot);
+        MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
         entry.removeSlotRange(slot);
         if (entry.getSlotRanges().isEmpty()) {
             addr2entry.remove(entry.getClient().getAddr());
@@ -813,6 +817,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             dnsMonitor.stop();
         }
 
+        timer.stop();
+        
         shutdownLatch.close();
         shutdownPromise.trySuccess(true);
         shutdownLatch.awaitUninterruptibly();
@@ -833,7 +839,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
-        timer.stop();
     }
 
     @Override

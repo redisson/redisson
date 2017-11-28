@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.RedisException;
@@ -387,7 +386,7 @@ public interface RBatch {
      * @throws RedisException in case of any error
      *
      */
-    List<?> execute() throws RedisException;
+    BatchResult<?> execute() throws RedisException;
 
     /**
      * Executes all operations accumulated during async methods invocations asynchronously.
@@ -397,36 +396,42 @@ public interface RBatch {
      *
      * @return List with result object for each command
      */
-    RFuture<List<?>> executeAsync();
+    RFuture<BatchResult<?>> executeAsync();
 
-    /**
-     * Executes all operations accumulated during async methods invocations. 
-     * Command replies are skipped such approach saves response bandwidth.
-     * <p>
-     * If cluster configuration used then operations are grouped by slot ids
-     * and may be executed on different servers. Thus command execution order could be changed.
-     * <p>
-     * NOTE: Redis 3.2+ required
-     *
-     * @throws RedisException in case of any error
-     *
+    /*
+     * Use {@link #skipResult()}
      */
+    @Deprecated
     void executeSkipResult();
 
+    /*
+     * Use {@link #skipResult()}
+     */
+    @Deprecated
+    RFuture<Void> executeSkipResultAsync();
+    
     /**
-     * Executes all operations accumulated during async methods invocations asynchronously, 
-     * Command replies are skipped such approach saves response bandwidth.
-     * <p>
-     * If cluster configuration used then operations are grouped by slot ids
-     * and may be executed on different servers. Thus command execution order could be changed
+     * Inform Redis not to send reply for this batch.
+     * Such approach saves response bandwidth.
      * <p>
      * NOTE: Redis 3.2+ required
      * 
-     * @return void
-     * @throws RedisException in case of any error
-     *
+     * @return self instance
      */
-    RFuture<Void> executeSkipResultAsync();
+    RBatch skipResult();
+    
+    /**
+     * Synchronize write operations execution across defined amount 
+     * of Redis slave nodes within defined timeout.
+     * <p>
+     * NOTE: Redis 3.0+ required
+     * 
+     * @param slaves amount to sync
+     * @param timeout for sync operation
+     * @param unit value
+     * @return self instance
+     */
+    RBatch syncSlaves(int slaves, long timeout, TimeUnit unit);
     
     /**
      * Defines timeout for Redis response. 
@@ -443,7 +448,7 @@ public interface RBatch {
     RBatch timeout(long timeout, TimeUnit unit);
 
     /**
-     * Defines time interval for another one attempt send Redis commands batch 
+     * Defines time interval for each attempt to send Redis commands batch 
      * if it hasn't been sent already.
      * <p>
      * <code>0</code> value means use <code>Config.setRetryInterval</code> value instead.
