@@ -16,7 +16,7 @@ public class RedissonSessionManagerTest {
     @Test
     public void testSwitchServer() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
         // start the server at http://localhost:8080/myapp
-        TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
 
         Executor executor = Executor.newInstance();
@@ -29,7 +29,7 @@ public class RedissonSessionManagerTest {
         Executor.closeIdleConnections();
         server.stop();
 
-        server = new TomcatServer("myapp", 8080, "/src/test/");
+        server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
         
         executor = Executor.newInstance();
@@ -47,7 +47,7 @@ public class RedissonSessionManagerTest {
     @Test
     public void testWriteReadRemove() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
         // start the server at http://localhost:8080/myapp
-        TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
 
         Executor executor = Executor.newInstance();
@@ -63,7 +63,7 @@ public class RedissonSessionManagerTest {
     @Test
     public void testRecreate() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
         // start the server at http://localhost:8080/myapp
-        TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
 
         Executor executor = Executor.newInstance();
@@ -79,7 +79,7 @@ public class RedissonSessionManagerTest {
     @Test
     public void testUpdate() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
         // start the server at http://localhost:8080/myapp
-        TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
 
         Executor executor = Executor.newInstance();
@@ -97,7 +97,7 @@ public class RedissonSessionManagerTest {
     @Test
     public void testInvalidate() throws LifecycleException, InterruptedException, ClientProtocolException, IOException {
         // start the server at http://localhost:8080/myapp
-        TomcatServer server = new TomcatServer("myapp", 8080, "/src/test/");
+        TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
 
         Executor executor = Executor.newInstance();
