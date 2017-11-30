@@ -28,6 +28,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.ResponseEntry;
 
@@ -115,7 +116,7 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request) {
+            final RemoteServiceRequest request, final RFuture<RRemoteServiceResponse> responseFuture) {
         if (!optionsCopy.isResultExpected()) {
             return;
         }
@@ -129,11 +130,11 @@ public class ScheduledTasksService extends TasksService {
             commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request);
+                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseFuture);
                 }
             }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
         } else {
-            super.awaitResultAsync(optionsCopy, result, request);
+            super.awaitResultAsync(optionsCopy, result, request, responseFuture);
         }
     }
 

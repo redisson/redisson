@@ -15,7 +15,9 @@
  */
 package org.redisson.remote;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,7 +26,6 @@ import org.redisson.misc.RPromise;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -76,15 +77,31 @@ public class ResponseEntry {
         
     }
     
-    private final ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> responses = PlatformDependent.newConcurrentHashMap();
-    private final ConcurrentMap<Key, ScheduledFuture<?>> timeouts = PlatformDependent.newConcurrentHashMap();
-    private final AtomicBoolean started = new AtomicBoolean(); 
-    
-    public ConcurrentMap<Key, ScheduledFuture<?>> getTimeouts() {
-        return timeouts;
+    public static class Result {
+        
+        private final RPromise<? extends RRemoteServiceResponse> promise;
+        private final ScheduledFuture<?> scheduledFuture;
+        
+        public Result(RPromise<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> scheduledFuture) {
+            super();
+            this.promise = promise;
+            this.scheduledFuture = scheduledFuture;
+        }
+        
+        public <T extends RRemoteServiceResponse> RPromise<T> getPromise() {
+            return (RPromise<T>) promise;
+        }
+        
+        public ScheduledFuture<?> getScheduledFuture() {
+            return scheduledFuture;
+        }
+        
     }
     
-    public ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> getResponses() {
+    private final Map<Key, List<Result>> responses = new HashMap<Key, List<Result>>();
+    private final AtomicBoolean started = new AtomicBoolean(); 
+    
+    public Map<Key, List<Result>> getResponses() {
         return responses;
     }
     
