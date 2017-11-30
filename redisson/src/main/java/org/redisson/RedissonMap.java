@@ -1185,7 +1185,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             public void run() {
                 final V value = options.getLoader().load(key);
                 if (value == null) {
-                    result.trySuccess(value);
+                    unlock(result, lock, threadId, value);
                     return;
                 }
                     

@@ -20,6 +20,19 @@ public abstract class BaseMapTest extends BaseTest {
     protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
 
     @Test
+    public void testMapLoaderGetMulipleNulls() {
+        Map<String, String> cache = new HashMap<String, String>();
+        cache.put("1", "11");
+        cache.put("2", "22");
+        cache.put("3", "33");
+        
+        RMap<String, String> map = getLoaderTestMap("test", cache);
+        assertThat(map.get("0")).isNull();
+        assertThat(map.get("1")).isEqualTo("11");
+        assertThat(map.get("0")).isNull(); // This line will never return anything and the test will hang
+    }
+    
+    @Test
     public void testWriterAddAndGet() {
         Map<String, Integer> store = new HashMap<>();
         RMap<String, Integer> map = getWriterTestMap("test", store);
