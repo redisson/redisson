@@ -17,6 +17,7 @@ package org.redisson.executor;
 
 import org.redisson.api.RFuture;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.remote.RequestId;
 
 /**
  * 
@@ -25,15 +26,21 @@ import org.redisson.misc.RedissonPromise;
  */
 public class RemotePromise<T> extends RedissonPromise<T> {
 
-    private String requestId;
+    private final Object param;
+    private final RequestId requestId;
     private RFuture<Boolean> addFuture;
     
-    public RemotePromise(String requestId) {
+    public RemotePromise(RequestId requestId, Object param) {
         super();
         this.requestId = requestId;
+        this.param = param;
     }
     
-    public String getRequestId() {
+    public <P> P getParam() {
+        return (P) param;
+    }
+    
+    public RequestId getRequestId() {
         return requestId;
     }
     

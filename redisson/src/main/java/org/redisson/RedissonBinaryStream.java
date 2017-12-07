@@ -66,10 +66,18 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
     }
     
-    class RedissonInputStream extends InputStream {
+    public class RedissonInputStream extends InputStream {
 
         private int index;
         private int mark;
+        
+        public void seek(long pos) {
+            if (pos >= 0 && pos < size()) {
+                index = (int) pos;
+            } else {
+                throw new IllegalStateException("size is " + size() + " but pos is " + pos);
+            }
+        }
         
         @Override
         public long skip(long n) throws IOException {

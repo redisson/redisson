@@ -57,17 +57,22 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
     
     private final RedisClientConfig config;
     private final RedisClient redisClient;
-    private final ChannelGroup channels;
-    private final Bootstrap bootstrap;
     private final Type type;
+    private final ConnectionWatchdog connectionWatchdog;
+    private final PingConnectionHandler pingConnectionHandler;
     
     public RedisChannelInitializer(Bootstrap bootstrap, RedisClientConfig config, RedisClient redisClient, ChannelGroup channels, Type type) {
         super();
-        this.bootstrap = bootstrap;
         this.config = config;
         this.redisClient = redisClient;
-        this.channels = channels;
         this.type = type;
+        
+        if (config.getPingConnectionInterval() > 0) {
+            pingConnectionHandler = new PingConnectionHandler(config);
+        } else {
+            pingConnectionHandler = null;
+        }
+        connectionWatchdog = new ConnectionWatchdog(bootstrap, channels, config.getTimer());
     }
     
     @Override
@@ -81,10 +86,14 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
         
         ch.pipeline().addLast(
-            new ConnectionWatchdog(bootstrap, channels, config.getTimer()),
+            connectionWatchdog,
             CommandEncoder.INSTANCE,
             CommandBatchEncoder.INSTANCE,
             new CommandsQueue());
+        
+        if (pingConnectionHandler != null) {
+            ch.pipeline().addLast(pingConnectionHandler);
+        }
         
         if (type == Type.PLAIN) {
             ch.pipeline().addLast(new CommandDecoder());

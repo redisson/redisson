@@ -2179,6 +2179,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
         JMutableEntry<K, V> entry = new JMutableEntry<K, V>(this, key, null, config.isReadThrough());
 
+        RLock lock = getLockedLock(key);
         try {
             T result = entryProcessor.process(entry, arguments);
             if (entry.getAction() == Action.CREATED
@@ -2193,6 +2194,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             throw e;
         } catch (Exception e) {
             throw new EntryProcessorException(e);
+        } finally {
+            lock.unlock();
         }
     }
 

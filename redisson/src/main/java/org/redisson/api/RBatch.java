@@ -398,13 +398,13 @@ public interface RBatch {
      */
     RFuture<BatchResult<?>> executeAsync();
 
-    /**
+    /*
      * Use {@link #skipResult()}
      */
     @Deprecated
     void executeSkipResult();
 
-    /**
+    /*
      * Use {@link #skipResult()}
      */
     @Deprecated

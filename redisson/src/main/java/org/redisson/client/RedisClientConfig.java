@@ -47,7 +47,7 @@ public class RedisClientConfig {
     private String clientName;
     private boolean readOnly;
     private boolean keepPubSubOrder = true;
-    private boolean pingConnection;
+    private int pingConnectionInterval;
     private boolean keepAlive;
     private boolean tcpNoDelay;
     
@@ -75,7 +75,7 @@ public class RedisClientConfig {
         this.clientName = config.clientName;
         this.readOnly = config.readOnly;
         this.keepPubSubOrder = config.keepPubSubOrder;
-        this.pingConnection = config.pingConnection;
+        this.pingConnectionInterval = config.pingConnectionInterval;
         this.keepAlive = config.keepAlive;
         this.tcpNoDelay = config.tcpNoDelay;
         this.sslEnableEndpointIdentification = config.sslEnableEndpointIdentification;
@@ -239,11 +239,11 @@ public class RedisClientConfig {
         return this;
     }
 
-    public boolean isPingConnection() {
-        return pingConnection;
+    public int getPingConnectionInterval() {
+        return pingConnectionInterval;
     }    
-    public RedisClientConfig setPingConnection(boolean pingConnection) {
-        this.pingConnection = pingConnection;
+    public RedisClientConfig setPingConnectionInterval(int pingConnectionInterval) {
+        this.pingConnectionInterval = pingConnectionInterval;
         return this;
     }
     

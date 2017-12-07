@@ -15,12 +15,13 @@
  */
 package org.redisson.remote;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.misc.RPromise;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -29,10 +30,31 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class ResponseEntry {
 
-    private final ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> responses = PlatformDependent.newConcurrentHashMap();
+    public static class Result {
+        
+        private final RPromise<? extends RRemoteServiceResponse> promise;
+        private final ScheduledFuture<?> scheduledFuture;
+        
+        public Result(RPromise<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> scheduledFuture) {
+            super();
+            this.promise = promise;
+            this.scheduledFuture = scheduledFuture;
+        }
+        
+        public <T extends RRemoteServiceResponse> RPromise<T> getPromise() {
+            return (RPromise<T>) promise;
+        }
+        
+        public ScheduledFuture<?> getScheduledFuture() {
+            return scheduledFuture;
+        }
+        
+    }
+    
+    private final Map<RequestId, List<Result>> responses = new HashMap<RequestId, List<Result>>();
     private final AtomicBoolean started = new AtomicBoolean(); 
     
-    public ConcurrentMap<String, RPromise<? extends RRemoteServiceResponse>> getResponses() {
+    public Map<RequestId, List<Result>> getResponses() {
         return responses;
     }
     

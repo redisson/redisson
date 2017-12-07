@@ -69,6 +69,7 @@ import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -221,8 +222,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                         "local expiredTaskIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
                       + "if #expiredTaskIds > 0 then "
                           + "redis.call('zrem', KEYS[2], unpack(expiredTaskIds));"
-                          + "local expiredTasks = redis.call('hmget', KEYS[3], unpack(expiredTaskIds));"
-                          + "redis.call('rpush', KEYS[1], unpack(expiredTasks));"
+                          + "redis.call('rpush', KEYS[1], unpack(expiredTaskIds));"
                       + "end; "
                         // get startTime from scheduler queue head task
                       + "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); "
@@ -230,7 +230,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                          + "return v[2]; "
                       + "end "
                       + "return nil;",
-                      Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksName), 
+                      Arrays.<Object>asList(requestQueueName, schedulerQueueName), 
                       System.currentTimeMillis(), 100);
             }
         };
@@ -769,7 +769,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public boolean cancelTask(String taskId) {
-        RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(taskId);
+        RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
         return commandExecutor.get(scheduledFuture);
     }
 

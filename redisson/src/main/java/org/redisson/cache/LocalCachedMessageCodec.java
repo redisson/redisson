@@ -16,6 +16,8 @@
 package org.redisson.cache;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
@@ -52,6 +54,24 @@ public class LocalCachedMessageCodec implements Codec {
                 }
                 return new LocalCachedMapInvalidate(excludedId, hashes);
             }
+            
+            if (type == 0x2) {
+                List<LocalCachedMapUpdate.Entry> entries = new ArrayList<LocalCachedMapUpdate.Entry>();
+                while (true) {
+                    int keyLen = buf.readInt();
+                    byte[] key = new byte[keyLen];
+                    buf.readBytes(key);
+                    int valueLen = buf.readInt();
+                    byte[] value = new byte[valueLen];
+                    buf.readBytes(value);
+                    entries.add(new LocalCachedMapUpdate.Entry(key, value));
+                    
+                    if (!buf.isReadable()) {
+                        break;
+                    }
+                }
+                return new LocalCachedMapUpdate(entries);
+            }
 
             throw new IllegalArgumentException("Can't parse packet");
         }
@@ -74,6 +94,20 @@ public class LocalCachedMessageCodec implements Codec {
                 result.writeInt(li.getKeyHashes().length);
                 for (int i = 0; i < li.getKeyHashes().length; i++) {
                     result.writeBytes(li.getKeyHashes()[i]);
+                }
+                return result;
+            }
+            
+            if (in instanceof LocalCachedMapUpdate) {
+                LocalCachedMapUpdate li = (LocalCachedMapUpdate) in;
+                ByteBuf result = ByteBufAllocator.DEFAULT.buffer(256);
+                result.writeByte(0x2);
+
+                for (LocalCachedMapUpdate.Entry e : li.getEntries()) {
+                    result.writeInt(e.getKey().length);
+                    result.writeBytes(e.getKey());
+                    result.writeInt(e.getValue().length);
+                    result.writeBytes(e.getValue());
                 }
                 return result;
             }

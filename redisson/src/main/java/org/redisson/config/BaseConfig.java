@@ -105,7 +105,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     
     private String sslKeystorePassword;
 
-    private boolean pingConnection;
+    private int pingConnectionInterval;
 
     private boolean keepAlive;
     
@@ -133,7 +133,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         setSslTruststorePassword(config.getSslTruststorePassword());
         setSslKeystore(config.getSslKeystore());
         setSslKeystorePassword(config.getSslKeystorePassword());
-        setPingConnection(config.isPingConnection());
+        setPingConnectionInterval(config.getPingConnectionInterval());
         setKeepAlive(config.isKeepAlive());
         setTcpNoDelay(config.isTcpNoDelay());
     }
@@ -428,20 +428,21 @@ class BaseConfig<T extends BaseConfig<T>> {
         return (T) this;
     }
 
-    public boolean isPingConnection() {
-        return pingConnection;
+    public int getPingConnectionInterval() {
+        return pingConnectionInterval;
     }
 
     /**
-     * Enables PING command sending during connection initialization
+     * Defines PING command sending interval per connection to Redis.
+     * <code>0</code> means disable.
      * <p>
-     * Default is <code>false</code>
+     * Default is <code>0</code>
      * 
-     * @param pingConnection - boolean value
+     * @param pingConnectionInterval - time in milliseconds
      * @return config
      */
-    public T setPingConnection(boolean pingConnection) {
-        this.pingConnection = pingConnection;
+    public T setPingConnectionInterval(int pingConnectionInterval) {
+        this.pingConnectionInterval = pingConnectionInterval;
         return (T) this;
     }
 
