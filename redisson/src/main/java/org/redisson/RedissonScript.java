@@ -15,7 +15,10 @@
  */
 package org.redisson;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -25,6 +28,9 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.RedissonObjectFactory;
+
+import io.netty.buffer.ByteBuf;
 
 public class RedissonScript implements RScript {
 
@@ -105,9 +111,9 @@ public class RedissonScript implements RScript {
     @Override
     public <R> RFuture<R> evalAsync(String key, Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values) {
         if (mode == Mode.READ_ONLY) {
-            return commandExecutor.evalReadAsync(key, codec, returnType.getCommand(), luaScript, keys, values);
+            return commandExecutor.evalReadAsync(key, codec, returnType.getCommand(), luaScript, keys, encode(Arrays.asList(values), codec).toArray());
         }
-        return commandExecutor.evalWriteAsync(key, codec, returnType.getCommand(), luaScript, keys, values);
+        return commandExecutor.evalWriteAsync(key, codec, returnType.getCommand(), luaScript, keys, encode(Arrays.asList(values), codec).toArray());
     }
 
     @Override
@@ -156,9 +162,9 @@ public class RedissonScript implements RScript {
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
         RedisCommand command = new RedisCommand(returnType.getCommand(), "EVALSHA");
         if (mode == Mode.READ_ONLY) {
-            return commandExecutor.evalReadAsync(key, codec, command, shaDigest, keys, values);
+            return commandExecutor.evalReadAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
         }
-        return commandExecutor.evalWriteAsync(key, codec, command, shaDigest, keys, values);
+        return commandExecutor.evalWriteAsync(key, codec, command, shaDigest, keys, encode(Arrays.asList(values), codec).toArray());
     }
 
     @Override
@@ -250,6 +256,29 @@ public class RedissonScript implements RScript {
     @Override
     public <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType) {
         return evalAsync(null, mode, codec, luaScript, returnType, Collections.emptyList());
+    }
+
+    private List<Object> encode(Collection<?> values, Codec codec) {
+        List<Object> result = new ArrayList<Object>(values.size());
+        for (Object object : values) {
+            result.add(encode(object, codec));
+        }
+        return result;
+    }
+    
+    private ByteBuf encode(Object value, Codec codec) {
+        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+        
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
 }
