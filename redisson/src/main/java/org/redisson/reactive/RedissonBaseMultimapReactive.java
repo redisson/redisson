@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
@@ -28,7 +29,6 @@ import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
-import reactor.fn.Supplier;
 
 /**
  * 
