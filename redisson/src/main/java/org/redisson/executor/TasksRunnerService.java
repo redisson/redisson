@@ -31,6 +31,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Injector;
+import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
 import io.netty.buffer.ByteBuf;
@@ -137,7 +138,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
-        scheduledRemoteService.setRequestId(requestId);
+        scheduledRemoteService.setRequestId(new RequestId(requestId));
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;
     }

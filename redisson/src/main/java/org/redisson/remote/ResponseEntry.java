@@ -23,10 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.misc.RPromise;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -34,49 +30,6 @@ import io.netty.buffer.Unpooled;
  */
 public class ResponseEntry {
 
-    public static class Key {
-        
-        private final long id0;
-        private final long id1;
-        
-        public Key(String id) {
-            byte[] buf = ByteBufUtil.decodeHexDump(id);
-            ByteBuf b = Unpooled.wrappedBuffer(buf);
-            try {
-                id0 = b.readLong();
-                id1 = b.readLong();
-            } finally {
-                b.release();
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (int) (id0 ^ (id0 >>> 32));
-            result = prime * result + (int) (id1 ^ (id1 >>> 32));
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Key other = (Key) obj;
-            if (id0 != other.id0)
-                return false;
-            if (id1 != other.id1)
-                return false;
-            return true;
-        }
-        
-    }
-    
     public static class Result {
         
         private final RPromise<? extends RRemoteServiceResponse> promise;
@@ -98,10 +51,10 @@ public class ResponseEntry {
         
     }
     
-    private final Map<Key, List<Result>> responses = new HashMap<Key, List<Result>>();
+    private final Map<RequestId, List<Result>> responses = new HashMap<RequestId, List<Result>>();
     private final AtomicBoolean started = new AtomicBoolean(); 
     
-    public Map<Key, List<Result>> getResponses() {
+    public Map<RequestId, List<Result>> getResponses() {
         return responses;
     }
     

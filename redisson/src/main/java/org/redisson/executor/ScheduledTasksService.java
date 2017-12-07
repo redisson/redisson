@@ -20,7 +20,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonExecutorService;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
@@ -30,6 +29,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceRequest;
+import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
 /**
@@ -39,7 +39,7 @@ import org.redisson.remote.ResponseEntry;
  */
 public class ScheduledTasksService extends TasksService {
 
-    private String requestId;
+    private RequestId requestId;
     private String schedulerQueueName;
     private String schedulerChannelName;
     
@@ -47,7 +47,7 @@ public class ScheduledTasksService extends TasksService {
         super(codec, redisson, name, commandExecutor, redissonId, responses);
     }
     
-    public void setRequestId(String requestId) {
+    public void setRequestId(RequestId requestId) {
         this.requestId = requestId;
     }
     
@@ -60,7 +60,7 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         int requestIndex = 0;
         if ("scheduleCallable".equals(request.getMethodName())
                 || "scheduleRunnable".equals(request.getMethodName())) {
@@ -115,31 +115,37 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request, final RFuture<RRemoteServiceResponse> responseFuture) {
-        if (!optionsCopy.isResultExpected()) {
-            return;
-        }
-        
+    protected Object getParam(RemoteServiceRequest request) {
         Long startTime = 0L;
         if (request != null && request.getArgs() != null && request.getArgs().length > 3) {
             startTime = (Long)request.getArgs()[3];
         }
+        return startTime;
+    }
+    
+    @Override
+    protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
+            final RFuture<RRemoteServiceResponse> responseFuture) {
+        if (!optionsCopy.isResultExpected()) {
+            return;
+        }
+        
+        long startTime = result.getParam();
         long delay = startTime - System.currentTimeMillis();
         if (delay > 0) {
             commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
-                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request, responseFuture);
+                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, responseFuture);
                 }
             }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
         } else {
-            super.awaitResultAsync(optionsCopy, result, request, responseFuture);
+            super.awaitResultAsync(optionsCopy, result, responseFuture);
         }
     }
 
     @Override
-    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
                     "if redis.call('zrem', KEYS[2], ARGV[1]) > 0 then "
@@ -155,7 +161,7 @@ public class ScheduledTasksService extends TasksService {
                   + "end;"
                   + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
                    // remove from executor queue
-                  + "if task ~= false and redis.call('lrem', KEYS[1], 1, task) > 0 then "
+                  + "if task ~= false and redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                       + "redis.call('hdel', KEYS[6], ARGV[1]); "
                       + "if redis.call('decr', KEYS[3]) == 0 then "
                          + "redis.call('del', KEYS[3]);"
@@ -169,12 +175,12 @@ public class ScheduledTasksService extends TasksService {
                    // delete scheduled task
                   + "redis.call('hdel', KEYS[6], ARGV[1]); "
                   + "return 0;",
-              Arrays.<Object>asList(requestQueue.getName(), schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
-              request.getId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+              Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
+              taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
     
     @Override
-    protected String generateRequestId() {
+    protected RequestId generateRequestId() {
         if (requestId == null) {
             return super.generateRequestId();
         }
