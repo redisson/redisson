@@ -15,8 +15,10 @@
  */
 package org.redisson.executor;
 
-import org.redisson.api.RFuture;
-import org.redisson.misc.RedissonPromise;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
+
+import org.redisson.api.RExecutorFuture;
 import org.redisson.remote.RequestId;
 
 /**
@@ -24,29 +26,17 @@ import org.redisson.remote.RequestId;
  * @author Nikita Koksharov
  *
  */
-public class RemotePromise<T> extends RedissonPromise<T> {
+public class RedissonExecutorFutureReference extends WeakReference<RExecutorFuture<?>> {
 
-    private final RequestId requestId;
-    private RFuture<Boolean> addFuture;
+    private RequestId requestId;
     
-    public RemotePromise(RequestId requestId) {
-        super();
+    public RedissonExecutorFutureReference(RequestId requestId, RExecutorFuture<?> referent, ReferenceQueue<? super RExecutorFuture<?>> q) {
+        super(referent, q);
         this.requestId = requestId;
     }
     
     public RequestId getRequestId() {
         return requestId;
-    }
-    
-    public void setAddFuture(RFuture<Boolean> addFuture) {
-        this.addFuture = addFuture;
-    }
-    public RFuture<Boolean> getAddFuture() {
-        return addFuture;
-    }
-    
-    public void doCancel() {
-        super.cancel(true);
     }
 
 }

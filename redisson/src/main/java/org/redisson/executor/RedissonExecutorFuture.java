@@ -30,6 +30,10 @@ public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RE
 
     private final RequestId taskId;
     
+    public RedissonExecutorFuture(RemotePromise<V> promise) {
+        this(promise, promise.getRequestId());
+    }
+    
     public RedissonExecutorFuture(RPromise<V> promise, RequestId taskId) {
         super(promise);
         this.taskId = taskId;
