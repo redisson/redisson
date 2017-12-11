@@ -102,7 +102,7 @@ public abstract class BaseRemoteService {
         this.responseQueueName = getResponseQueueName(executorId);
     }
 
-    protected String getResponseQueueName(String executorId) {
+    public String getResponseQueueName(String executorId) {
         return "{remote_response}:" + executorId;
     }
     
@@ -215,7 +215,7 @@ public abstract class BaseRemoteService {
                 
                 final Long ackTimeout = request.getOptions().getAckTimeoutInMillis();
                 
-                final RemotePromise<Object> result = new RemotePromise<Object>(requestId, getParam(request)) {
+                final RemotePromise<Object> result = new RemotePromise<Object>(requestId) {
 
                     @Override
                     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -366,10 +366,6 @@ public abstract class BaseRemoteService {
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] { remoteInterface }, handler);
     }
 
-    protected Object getParam(RemoteServiceRequest request) {
-        return null;
-    }
-
     private void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
             final String ackName, final RFuture<RRemoteServiceResponse> responseFuture) {
         RFuture<Boolean> deleteFuture = redisson.getBucket(ackName).deleteAsync();
@@ -447,6 +443,10 @@ public abstract class BaseRemoteService {
                         synchronized (responses) {
                             ResponseEntry entry = responses.get(responseQueueName);
                             List<Result> list = entry.getResponses().get(requestId);
+                            if (list == null) {
+                                return;
+                            }
+                            
                             for (Iterator<Result> iterator = list.iterator(); iterator.hasNext();) {
                                 Result result = iterator.next();
                                 if (result.getPromise() == responseFuture) {
@@ -592,7 +592,7 @@ public abstract class BaseRemoteService {
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args, optionsCopy,
                         System.currentTimeMillis());
                 
-                RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId, null);
+                RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
                 addAsync(requestQueueName, request, addPromise);
                 addPromise.getAddFuture().sync();
                 

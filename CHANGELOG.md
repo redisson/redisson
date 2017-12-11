@@ -4,6 +4,28 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 08-Dec-2017 - versions 2.10.6 and 3.5.6 released
+
+Feature - `RSetMultimapReactive` object added  
+Feature - `RListMultimapReactive` object added  
+Feature - `ReconnectionStrategy` and `SyncStrategy` added to `LocalCachedMapOptions`  
+Feature - `pingConnectionInterval` setting added  
+Improvement - added sync on key for `JCache.invoke` method  
+Fixed - arguments encoding for `RScript`  
+Fixed - `MapLoader` hangs if loaded value is null  
+Fixed - OutOfMemory during `RExecutorService` usage  
+Fixed - NPE in `RedissonSession.save` method  
+Fixed - NPE during `RExecutorService` usage  
+Fixed - `SnappyCodec` can't handle data more than 32Kb  
+Fixed - failed to continue poll remote responses if current waiting for response has been canceled  
+Fixed - SSL support for cluster mode  
+Fixed - task with longer start time shouldn't overlap current task with shorter start time  
+Fixed - DNS monitor caches host name binding  
+Fixed - ReadMode.MASTER_SLAVE should be taken in account  
+Fixed - slave nodes should be added without freeze state  
+Fixed - master node should be disabled if any slave up  
+Fixed - handling connection to Redis nodes returned to online state  
+
 ### 31-Oct-2017 - versions 2.10.5 and 3.5.5 released
 `ProjectReactor` dependency for `3.5.5` version was updated to `3.1.1` version  
 

@@ -301,13 +301,14 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         // send the response only if expected or task was canceled
         if (request.getOptions().isResultExpected()
                 || responseHolder.get() instanceof RemoteServiceCancelResponse) {
-//            long timeout = 60 * 1000;
-//            if (request.getOptions().getExecutionTimeoutInMillis() != null) {
-//                timeout = request.getOptions().getExecutionTimeoutInMillis();
-//            }
+            long timeout = 60 * 1000;
+            if (request.getOptions().getExecutionTimeoutInMillis() != null) {
+                timeout = request.getOptions().getExecutionTimeoutInMillis();
+            }
 
             RBlockingQueueAsync<RRemoteServiceResponse> queue = redisson.getBlockingQueue(responseName, codec);
             RFuture<Void> clientsFuture = queue.putAsync(responseHolder.get());
+            queue.expireAsync(timeout, TimeUnit.MILLISECONDS);
 
             clientsFuture.addListener(new FutureListener<Void>() {
                 @Override

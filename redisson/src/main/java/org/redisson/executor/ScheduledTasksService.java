@@ -17,17 +17,14 @@ package org.redisson.executor;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
@@ -114,36 +111,6 @@ public class ScheduledTasksService extends TasksService {
                 startTime, request.getId(), encode(request));
     }
     
-    @Override
-    protected Object getParam(RemoteServiceRequest request) {
-        Long startTime = 0L;
-        if (request != null && request.getArgs() != null && request.getArgs().length > 3) {
-            startTime = (Long)request.getArgs()[3];
-        }
-        return startTime;
-    }
-    
-    @Override
-    protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RFuture<RRemoteServiceResponse> responseFuture) {
-        if (!optionsCopy.isResultExpected()) {
-            return;
-        }
-        
-        long startTime = result.getParam();
-        long delay = startTime - System.currentTimeMillis();
-        if (delay > 0) {
-            commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                @Override
-                public void run() {
-                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, responseFuture);
-                }
-            }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
-        } else {
-            super.awaitResultAsync(optionsCopy, result, responseFuture);
-        }
-    }
-
     @Override
     protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
