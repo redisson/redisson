@@ -30,6 +30,8 @@ import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.epoll.EpollDatagramChannel;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.dns.DefaultDnsServerAddressStreamProvider;
@@ -48,7 +50,7 @@ public class DNSMonitor {
     
     private static final Logger log = LoggerFactory.getLogger(DNSMonitor.class);
 
-    private DnsAddressResolverGroup resolverGroup = new DnsAddressResolverGroup(NioDatagramChannel.class, DefaultDnsServerAddressStreamProvider.INSTANCE);
+    private final DnsAddressResolverGroup resolverGroup;
     
     private ScheduledFuture<?> dnsMonitorFuture;
     
@@ -60,6 +62,15 @@ public class DNSMonitor {
     private long dnsMonitoringInterval;
 
     public DNSMonitor(ConnectionManager connectionManager, Set<URI> masterHosts, Set<URI> slaveHosts, long dnsMonitoringInterval) {
+        Class<? extends DatagramChannel> channelClass;
+        if (connectionManager.getCfg().isUseLinuxNativeEpoll()) {
+            channelClass = EpollDatagramChannel.class;
+        } else {
+            channelClass = NioDatagramChannel.class;
+        }
+        
+        resolverGroup = new DnsAddressResolverGroup(channelClass, DefaultDnsServerAddressStreamProvider.INSTANCE);
+        
         AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         for (URI host : masterHosts) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(host.getHost(), 0));
