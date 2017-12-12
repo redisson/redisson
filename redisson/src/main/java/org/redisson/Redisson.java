@@ -76,7 +76,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.remote.ResponseEntry;
@@ -103,7 +102,6 @@ public class Redisson implements RedissonClient {
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
     protected final ReferenceCodecProvider codecProvider;
-    protected final ResolverProvider resolverProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -117,7 +115,6 @@ public class Redisson implements RedissonClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
         codecProvider = configCopy.getReferenceCodecProvider();
-        resolverProvider = configCopy.getResolverProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {
@@ -574,7 +571,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider);
     }
     
     @Override
@@ -598,11 +595,6 @@ public class Redisson implements RedissonClient {
         return codecProvider;
     }
     
-    @Override
-    public ResolverProvider getResolverProvider() {
-        return resolverProvider;
-    }
-
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);

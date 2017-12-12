@@ -37,7 +37,6 @@ import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -272,7 +271,6 @@ public class ConfigSupport {
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
-        mapper.addMixIn(ResolverProvider.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);

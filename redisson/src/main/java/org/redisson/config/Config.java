@@ -23,13 +23,11 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ReplicatedConnectionManager;
-import org.redisson.liveobject.provider.DefaultResolverProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 import io.netty.channel.EventLoopGroup;
 
@@ -72,11 +70,6 @@ public class Config {
      */
     private ReferenceCodecProvider referenceCodecProvider = new DefaultReferenceCodecProvider();
     
-    /**
-     * For resolver registry and look up. DefaultResolverProvider used by default
-     */
-    private ResolverProvider resolverProvider = new DefaultResolverProvider();
-    
     private ExecutorService executor;
     
     /**
@@ -111,7 +104,6 @@ public class Config {
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
         setReferenceCodecProvider(oldConf.getReferenceCodecProvider());
-        setResolverProvider(oldConf.getResolverProvider());
         setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
@@ -177,26 +169,6 @@ public class Config {
         return referenceCodecProvider;
     }
     
-    /**
-     * For resolver registry and look up. DefaultResolverProvider used by default.
-     * 
-     * @param resolverProvider object
-     * @return this
-     */
-    public Config setResolverProvider(ResolverProvider resolverProvider) {
-        this.resolverProvider = resolverProvider;
-        return this;
-    }
-
-    /**
-     * Returns the ResolverProvider instance
-     * 
-     * @return resolverProvider
-     */
-    public ResolverProvider getResolverProvider() {
-        return resolverProvider;
-    }
-
     /**
      * Config option indicate whether Redisson Reference feature is enabled.
      * <p>
