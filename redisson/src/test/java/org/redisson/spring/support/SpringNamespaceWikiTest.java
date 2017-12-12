@@ -17,7 +17,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.SingleServerConfig;
 import org.redisson.liveobject.provider.ResolverProvider;
 
@@ -116,8 +116,8 @@ public class SpringNamespaceWikiTest {
             assertEquals(2, config.getNettyThreads());
             assertSame(context.getBean("myCodec", Codec.class), config.getCodec());
             assertEquals(false, config.isUseLinuxNativeEpoll());
-            assertEquals(false, config.isRedissonReferenceEnabled());
-            assertSame(context.getBean("myCodecProvider", CodecProvider.class), config.getCodecProvider());
+            assertEquals(false, config.isReferenceEnabled());
+            assertSame(context.getBean("myCodecProvider", ReferenceCodecProvider.class), config.getReferenceCodecProvider());
             assertSame(context.getBean("myResolverProvider", ResolverProvider.class), config.getResolverProvider());
             assertSame(context.getBean("myExecutor", Executor.class), config.getExecutor());
             assertSame(context.getBean("myEventLoopGroup", EventLoopGroup.class), config.getEventLoopGroup());

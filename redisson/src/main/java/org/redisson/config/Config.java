@@ -23,8 +23,8 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
-import org.redisson.codec.DefaultCodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ReplicatedConnectionManager;
@@ -70,7 +70,7 @@ public class Config {
     /**
      * For codec registry and look up. DefaultCodecProvider used by default
      */
-    private CodecProvider codecProvider = new DefaultCodecProvider();
+    private ReferenceCodecProvider referenceCodecProvider = new DefaultReferenceCodecProvider();
     
     /**
      * For resolver registry and look up. DefaultResolverProvider used by default
@@ -83,7 +83,7 @@ public class Config {
      * Config option for enabling Redisson Reference feature.
      * Default value is TRUE
      */
-    private boolean redissonReferenceEnabled = true;
+    private boolean referenceEnabled = true;
     
     private boolean useLinuxNativeEpoll;
 
@@ -110,9 +110,9 @@ public class Config {
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
-        setCodecProvider(oldConf.getCodecProvider());
+        setReferenceCodecProvider(oldConf.getReferenceCodecProvider());
         setResolverProvider(oldConf.getResolverProvider());
-        setRedissonReferenceEnabled(oldConf.redissonReferenceEnabled);
+        setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -156,14 +156,15 @@ public class Config {
     }
     
     /**
-     * For codec registry and look up. DefaultCodecProvider used by default.
+     * Reference objects codec provider used for codec registry and look up. 
+     * <code>org.redisson.codec.DefaultReferenceCodecProvider</code> used by default.
      * 
      * @param codecProvider object 
      * @return config
-     * @see org.redisson.codec.CodecProvider
+     * @see org.redisson.codec.ReferenceCodecProvider
      */
-    public Config setCodecProvider(CodecProvider codecProvider) {
-        this.codecProvider = codecProvider;
+    public Config setReferenceCodecProvider(ReferenceCodecProvider codecProvider) {
+        this.referenceCodecProvider = codecProvider;
         return this;
     }
 
@@ -172,8 +173,8 @@ public class Config {
      * 
      * @return CodecProvider
      */
-    public CodecProvider getCodecProvider() {
-        return codecProvider;
+    public ReferenceCodecProvider getReferenceCodecProvider() {
+        return referenceCodecProvider;
     }
     
     /**
@@ -203,8 +204,8 @@ public class Config {
      * 
      * @return <code>true</code> if Redisson Reference feature enabled
      */
-    public boolean isRedissonReferenceEnabled() {
-        return redissonReferenceEnabled;
+    public boolean isReferenceEnabled() {
+        return referenceEnabled;
     }
 
     /**
@@ -214,8 +215,8 @@ public class Config {
      * 
      * @param redissonReferenceEnabled flag
      */
-    public void setRedissonReferenceEnabled(boolean redissonReferenceEnabled) {
-        this.redissonReferenceEnabled = redissonReferenceEnabled;
+    public void setReferenceEnabled(boolean redissonReferenceEnabled) {
+        this.referenceEnabled = redissonReferenceEnabled;
     }
     
     /**

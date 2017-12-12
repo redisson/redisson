@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.liveobject.provider.ResolverProvider;
 
@@ -902,7 +902,7 @@ public interface RedissonClient {
      * 
      * @return CodecProvider object
      */
-    public CodecProvider getCodecProvider();
+    public ReferenceCodecProvider getCodecProvider();
     
     /**
      * Returns the ResolverProvider instance

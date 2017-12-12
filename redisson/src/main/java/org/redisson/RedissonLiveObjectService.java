@@ -53,7 +53,7 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
@@ -83,11 +83,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
+    private final ReferenceCodecProvider codecProvider;
     private final ResolverProvider resolverProvider;
     private final RedissonObjectBuilder objectBuilder;
 
-    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, ReferenceCodecProvider codecProvider, ResolverProvider resolverProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.codecProvider = codecProvider;

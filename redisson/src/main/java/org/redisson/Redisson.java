@@ -70,7 +70,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
@@ -102,7 +102,7 @@ public class Redisson implements RedissonClient {
     protected final ConnectionManager connectionManager;
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
-    protected final CodecProvider codecProvider;
+    protected final ReferenceCodecProvider codecProvider;
     protected final ResolverProvider resolverProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
@@ -116,7 +116,7 @@ public class Redisson implements RedissonClient {
         
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
-        codecProvider = configCopy.getCodecProvider();
+        codecProvider = configCopy.getReferenceCodecProvider();
         resolverProvider = configCopy.getResolverProvider();
     }
     
@@ -154,7 +154,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonClient create(Config config) {
         Redisson redisson = new Redisson(config);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             redisson.enableRedissonReferenceSupport();
         }
         return redisson;
@@ -182,7 +182,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonReactiveClient createReactive(Config config) {
         RedissonReactive react = new RedissonReactive(config);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             react.enableRedissonReferenceSupport();
         }
         return react;
@@ -566,7 +566,7 @@ public class Redisson implements RedissonClient {
     @Override
     public RBatch createBatch() {
         RedissonBatch batch = new RedissonBatch(id, evictionScheduler, connectionManager);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
         return batch;
@@ -594,7 +594,7 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public CodecProvider getCodecProvider() {
+    public ReferenceCodecProvider getCodecProvider() {
         return codecProvider;
     }
     

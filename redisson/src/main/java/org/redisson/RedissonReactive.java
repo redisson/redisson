@@ -52,7 +52,7 @@ import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
@@ -97,7 +97,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveService commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-    protected final CodecProvider codecProvider;
+    protected final ReferenceCodecProvider codecProvider;
     
     protected final UUID id = UUID.randomUUID();
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
@@ -109,7 +109,7 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
-        codecProvider = config.getCodecProvider();
+        codecProvider = config.getReferenceCodecProvider();
     }
 
     @Override
@@ -316,7 +316,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RBatchReactive createBatch() {
         RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
         return batch;
@@ -333,7 +333,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public CodecProvider getCodecProvider() {
+    public ReferenceCodecProvider getCodecProvider() {
         return codecProvider;
     }
     
