@@ -54,16 +54,21 @@ import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
+import org.redisson.misc.URIBuilder;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -117,9 +122,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected Codec codec;
 
-    protected EventLoopGroup group;
+    protected final EventLoopGroup group;
 
-    protected Class<? extends SocketChannel> socketChannelClass;
+    protected final Class<? extends SocketChannel> socketChannelClass;
 
     protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = PlatformDependent.newConcurrentHashMap();
     
@@ -130,7 +135,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected MasterSlaveServersConfig config;
 
     private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<MasterSlaveEntry>(MAX_SLOT);
-    private final Map<InetSocketAddress, MasterSlaveEntry> addr2entry = PlatformDependent.newConcurrentHashMap();
+    private final Map<RedisClient, MasterSlaveEntry> client2entry = PlatformDependent.newConcurrentHashMap();
 
     private final RPromise<Boolean> shutdownPromise;
 
@@ -151,6 +156,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final CommandSyncService commandExecutor;
     
     private final Config cfg;
+
+    private final DnsAddressResolverGroup resolverGroup;
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -176,6 +183,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = EpollSocketChannel.class;
+            this.resolverGroup = new DnsAddressResolverGroup(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -184,14 +192,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = NioSocketChannel.class;
-//            if (cfg.getEventLoopGroup() == null) {
-//                this.group = new OioEventLoopGroup(cfg.getThreads());
-//            } else {
-//                this.group = cfg.getEventLoopGroup();
-//            }
-//
-//            this.socketChannelClass = OioSocketChannel.class;
+            this.resolverGroup = new DnsAddressResolverGroup(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         }
+        
         if (cfg.getExecutor() == null) {
             int threads = Runtime.getRuntime().availableProcessors() * 2;
             if (cfg.getThreads() != 0) {
@@ -236,7 +239,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
-        return addr2entry.values();
+        return client2entry.values();
     }
     
     protected void initTimer(MasterSlaveServersConfig config) {
@@ -273,19 +276,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
                 entry = new SingleEntry(slots, this, config);
-                RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
-                f.syncUninterruptibly();
             } else {
                 entry = createMasterSlaveEntry(config, slots);
             }
+            RFuture<RedisClient> f = entry.setupMasterEntry(config.getMasterAddress());
+            f.syncUninterruptibly();
             
             for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
                 addEntry(slot, entry);
             }
             
+            InetSocketAddress masterHost = f.getNow().resolveAddr().syncUninterruptibly().getNow();
             if (config.getDnsMonitoringInterval() != -1) {
-                dnsMonitor = new DNSMonitor(this, Collections.singleton(config.getMasterAddress()), 
-                        config.getSlaveAddresses(), config.getDnsMonitoringInterval());
+                dnsMonitor = new DNSMonitor(this, masterHost, 
+                        config.getSlaveAddresses(), config.getDnsMonitoringInterval(), resolverGroup);
                 dnsMonitor.start();
             }
         } catch (RuntimeException e) {
@@ -301,8 +305,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
-        f.syncUninterruptibly();
         return entry;
     }
 
@@ -367,6 +369,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         redisConfig.setAddress(address)
               .setTimer(timer)
               .setExecutor(executor)
+              .setResolverGroup(resolverGroup)
               .setGroup(group)
               .setSocketChannelClass(socketChannelClass)
               .setConnectTimeout(timeout)
@@ -674,11 +677,32 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return newSucceededFuture(entryCodec);
     }
 
-    @Override
-    public MasterSlaveEntry getEntry(InetSocketAddress addr) {
-        return addr2entry.get(addr);
+    public MasterSlaveEntry getEntry(URI addr) {
+        for (MasterSlaveEntry entry : client2entry.values()) {
+            if (URIBuilder.compare(entry.getClient().getAddr(), addr)) {
+                return entry;
+            }
+            if (entry.hasSlave(addr)) {
+                return entry;
+            }
+        }
+        return null;
     }
-
+    
+    public MasterSlaveEntry getEntry(RedisClient redisClient) {
+        MasterSlaveEntry entry = client2entry.get(redisClient);
+        if (entry != null) {
+            return entry;
+        }
+        
+        for (MasterSlaveEntry mentry : client2entry.values()) {
+            if (mentry.hasSlave(redisClient)) {
+                return mentry;
+            }
+        }
+        return null;
+    }
+    
     @Override
     public MasterSlaveEntry getEntry(int slot) {
         return slot2entry.get(slot);
@@ -686,22 +710,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected final void changeMaster(int slot, URI address) {
         MasterSlaveEntry entry = getEntry(slot);
-        addr2entry.remove(entry.getClient().getAddr());
+        client2entry.remove(entry.getClient());
         entry.changeMaster(address);
-        addr2entry.put(entry.getClient().getAddr(), entry);
+        client2entry.put(entry.getClient(), entry);
     }
 
     protected final void addEntry(Integer slot, MasterSlaveEntry entry) {
         slot2entry.set(slot, entry);
         entry.addSlotRange(slot);
-        addr2entry.put(entry.getClient().getAddr(), entry);
+        client2entry.put(entry.getClient(), entry);
     }
 
-    protected MasterSlaveEntry removeMaster(Integer slot) {
+    protected final MasterSlaveEntry removeEntry(Integer slot) {
         MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
         entry.removeSlotRange(slot);
         if (entry.getSlotRanges().isEmpty()) {
-            addr2entry.remove(entry.getClient().getAddr());
+            client2entry.remove(entry.getClient());
         }
         return entry;
     }
@@ -733,6 +757,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null && source.getSlot() != null) {
             entry = getEntry(source.getSlot());
+        }
+        if (source.getRedisClient() != null) {
+            entry = getEntry(source.getRedisClient());
         }
         if (source.getAddr() != null) {
             entry = getEntry(source.getAddr());
@@ -835,6 +862,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 Thread.currentThread().interrupt();
             }
         }
+        
+        resolverGroup.close();
         
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();

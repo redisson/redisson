@@ -26,6 +26,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -176,7 +177,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         });
     }
 
-    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos) {
         return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.ZSCAN, getName(), startPos);
     }
 
@@ -184,7 +185,7 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     public Publisher<V> iterator() {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos) {
                 return RedissonScoredSortedSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
         });

@@ -29,7 +29,7 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -52,7 +52,7 @@ import net.bytebuddy.implementation.bind.annotation.This;
 public class AccessorInterceptor {
 
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
+    private final ReferenceCodecProvider codecProvider;
     private final RedissonObjectBuilder objectBuilder;
 
     public AccessorInterceptor(RedissonClient redisson, RedissonObjectBuilder objectBuilder) {

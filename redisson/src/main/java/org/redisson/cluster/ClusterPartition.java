@@ -15,7 +15,6 @@
  */
 package org.redisson.cluster;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
@@ -104,10 +103,6 @@ public class ClusterPartition {
     }
     public Set<Integer> getSlots() {
         return slots;
-    }
-
-    public InetSocketAddress getMasterAddr() {
-        return new InetSocketAddress(masterAddress.getHost(), masterAddress.getPort());
     }
 
     public URI getMasterAddress() {

@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -53,7 +54,7 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
@@ -65,9 +66,9 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.Resolver;
 
+import io.netty.util.internal.PlatformDependent;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
@@ -81,17 +82,16 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
+    private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
-    private final ResolverProvider resolverProvider;
+    private final ReferenceCodecProvider codecProvider;
     private final RedissonObjectBuilder objectBuilder;
 
-    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, ReferenceCodecProvider codecProvider) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.codecProvider = codecProvider;
-        this.resolverProvider = resolverProvider;
         this.objectBuilder = new RedissonObjectBuilder(redisson, codecProvider);
     }
 
@@ -114,10 +114,20 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
-        Resolver resolver = resolverProvider.getResolver(entityClass,
-                annotation.generator(), annotation);
+        Resolver resolver = getResolver(entityClass, annotation.generator(), annotation);
         Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
         return id;
+    }
+    
+    private Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
+        if (!providerCache.containsKey(resolverClass)) {
+            try {
+                providerCache.putIfAbsent(resolverClass, resolverClass.newInstance());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return providerCache.get(resolverClass);
     }
 
     @Override

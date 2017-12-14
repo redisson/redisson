@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,6 +30,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RObject;
 import org.redisson.api.RType;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -107,7 +107,7 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null);
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
+    private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
@@ -120,7 +120,7 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<String>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 

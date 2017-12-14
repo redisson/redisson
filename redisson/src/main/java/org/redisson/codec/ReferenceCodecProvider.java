@@ -24,7 +24,7 @@ import org.redisson.api.annotation.RObjectField;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public interface CodecProvider {
+public interface ReferenceCodecProvider {
 
     /**
      * Get codec instance by its class.

@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +37,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisAskException;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
@@ -180,17 +180,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> readAsync(InetSocketAddress client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readAsync(RedisClient client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(entry, client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
+    
+    @Override
+    public <T, R> RFuture<R> readAsync(RedisClient client, String name, Codec codec, RedisCommand<T> command, Object... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
+        int slot = connectionManager.calcSlot(name);
+        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
 
     @Override
-    public <T, R> RFuture<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
-        int slot = connectionManager.calcSlot(key);
-        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        async(true, new NodeSource(client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
@@ -344,23 +351,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    public <T, R> RFuture<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object... params) {
-        RPromise<R> mainPromise = connectionManager.newPromise();
-        async(true, new NodeSource(slot), codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
     @Override
     public <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
         async(false, new NodeSource(entry), codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
-    @Override
-    public <T, R> RFuture<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object... params) {
-        RPromise<R> mainPromise = connectionManager.newPromise();
-        async(false, new NodeSource(slot), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
@@ -381,13 +375,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalAsync(new NodeSource(slot), true, codec, evalCommandType, script, keys, params);
-    }
-
-    @Override
-    public <T, R> RFuture<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        int slot = connectionManager.calcSlot(key);
+    public <T, R> RFuture<R> evalReadAsync(RedisClient client, String name, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        int slot = connectionManager.calcSlot(name);
         return evalAsync(new NodeSource(slot, client), true, codec, evalCommandType, script, keys, params);
     }
 
@@ -399,10 +388,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     public <T, R> RFuture<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         return evalAsync(new NodeSource(entry), false, codec, evalCommandType, script, keys, params);
-    }
-
-    public <T, R> RFuture<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalAsync(new NodeSource(slot), false, codec, evalCommandType, script, keys, params);
     }
 
     @Override
@@ -805,7 +790,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (future.cause() instanceof RedisMovedException) {
             RedisMovedException ex = (RedisMovedException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), details.getCodec(),
+            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED), details.getCodec(),
                     details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
             AsyncDetails.release(details);
             return;
@@ -813,7 +798,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (future.cause() instanceof RedisAskException) {
             RedisAskException ex = (RedisAskException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), details.getCodec(),
+            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK), details.getCodec(),
                     details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
             AsyncDetails.release(details);
             return;
@@ -844,11 +829,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (future.isSuccess()) {
             R res = future.getNow();
             if (res instanceof RedisClientResult) {
-                InetSocketAddress addr = source.getAddr();
-                if (addr == null) {
-                    addr = details.getConnectionFuture().getNow().getRedisClient().getAddr();
-                }
-                ((RedisClientResult) res).setRedisClient(addr);
+                ((RedisClientResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
             }
 
             if (isRedissonReferenceSupportEnabled()) {

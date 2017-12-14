@@ -27,7 +27,7 @@ import org.redisson.liveobject.misc.ClassUtils;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class DefaultCodecProvider implements CodecProvider {
+public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
 
     public transient final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 

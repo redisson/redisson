@@ -15,7 +15,6 @@
  */
 package org.redisson.jcache;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -58,6 +57,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -2082,7 +2082,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
     }
     
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos) {
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos) {
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
             = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
         try {

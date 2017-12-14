@@ -53,7 +53,7 @@ public class ConnectionEventsHub {
     }
 
     public void fireDisconnect(InetSocketAddress addr) {
-        if (maps.get(addr) == Status.DISCONNECTED) {
+        if (addr == null || maps.get(addr) == Status.DISCONNECTED) {
             return;
         }
 

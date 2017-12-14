@@ -25,6 +25,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -46,7 +47,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
             private List<ByteBuf> firstValues;
             private List<ByteBuf> lastValues;
             private long nextIterPos;
-            private InetSocketAddress client;
+            private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
             
             private boolean finished;
@@ -183,6 +184,6 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
         return result;
     }
 
-    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos);
+    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos);
 
 }

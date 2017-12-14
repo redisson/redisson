@@ -29,7 +29,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -50,14 +50,14 @@ public class LiveObjectInterceptor {
     }
 
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
+    private final ReferenceCodecProvider codecProvider;
     private final Class<?> originalClass;
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
-    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(RedissonClient redisson, ReferenceCodecProvider codecProvider, Class<?> entityClass, String idFieldName) {
         this.redisson = redisson;
         this.codecProvider = codecProvider;
         this.originalClass = entityClass;

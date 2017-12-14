@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,6 +27,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -165,7 +165,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos, String pattern) {
+    private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, long startPos, String pattern) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -201,7 +201,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern);
             }
 

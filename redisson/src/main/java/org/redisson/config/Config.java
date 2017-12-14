@@ -23,13 +23,11 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
-import org.redisson.codec.DefaultCodecProvider;
+import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ReplicatedConnectionManager;
-import org.redisson.liveobject.provider.DefaultResolverProvider;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 import io.netty.channel.EventLoopGroup;
 
@@ -70,12 +68,7 @@ public class Config {
     /**
      * For codec registry and look up. DefaultCodecProvider used by default
      */
-    private CodecProvider codecProvider = new DefaultCodecProvider();
-    
-    /**
-     * For resolver registry and look up. DefaultResolverProvider used by default
-     */
-    private ResolverProvider resolverProvider = new DefaultResolverProvider();
+    private ReferenceCodecProvider referenceCodecProvider = new DefaultReferenceCodecProvider();
     
     private ExecutorService executor;
     
@@ -83,7 +76,7 @@ public class Config {
      * Config option for enabling Redisson Reference feature.
      * Default value is TRUE
      */
-    private boolean redissonReferenceEnabled = true;
+    private boolean referenceEnabled = true;
     
     private boolean useLinuxNativeEpoll;
 
@@ -110,9 +103,8 @@ public class Config {
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
-        setCodecProvider(oldConf.getCodecProvider());
-        setResolverProvider(oldConf.getResolverProvider());
-        setRedissonReferenceEnabled(oldConf.redissonReferenceEnabled);
+        setReferenceCodecProvider(oldConf.getReferenceCodecProvider());
+        setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -156,14 +148,15 @@ public class Config {
     }
     
     /**
-     * For codec registry and look up. DefaultCodecProvider used by default.
+     * Reference objects codec provider used for codec registry and look up. 
+     * <code>org.redisson.codec.DefaultReferenceCodecProvider</code> used by default.
      * 
      * @param codecProvider object 
      * @return config
-     * @see org.redisson.codec.CodecProvider
+     * @see org.redisson.codec.ReferenceCodecProvider
      */
-    public Config setCodecProvider(CodecProvider codecProvider) {
-        this.codecProvider = codecProvider;
+    public Config setReferenceCodecProvider(ReferenceCodecProvider codecProvider) {
+        this.referenceCodecProvider = codecProvider;
         return this;
     }
 
@@ -172,30 +165,10 @@ public class Config {
      * 
      * @return CodecProvider
      */
-    public CodecProvider getCodecProvider() {
-        return codecProvider;
+    public ReferenceCodecProvider getReferenceCodecProvider() {
+        return referenceCodecProvider;
     }
     
-    /**
-     * For resolver registry and look up. DefaultResolverProvider used by default.
-     * 
-     * @param resolverProvider object
-     * @return this
-     */
-    public Config setResolverProvider(ResolverProvider resolverProvider) {
-        this.resolverProvider = resolverProvider;
-        return this;
-    }
-
-    /**
-     * Returns the ResolverProvider instance
-     * 
-     * @return resolverProvider
-     */
-    public ResolverProvider getResolverProvider() {
-        return resolverProvider;
-    }
-
     /**
      * Config option indicate whether Redisson Reference feature is enabled.
      * <p>
@@ -203,8 +176,8 @@ public class Config {
      * 
      * @return <code>true</code> if Redisson Reference feature enabled
      */
-    public boolean isRedissonReferenceEnabled() {
-        return redissonReferenceEnabled;
+    public boolean isReferenceEnabled() {
+        return referenceEnabled;
     }
 
     /**
@@ -214,8 +187,8 @@ public class Config {
      * 
      * @param redissonReferenceEnabled flag
      */
-    public void setRedissonReferenceEnabled(boolean redissonReferenceEnabled) {
-        this.redissonReferenceEnabled = redissonReferenceEnabled;
+    public void setReferenceEnabled(boolean redissonReferenceEnabled) {
+        this.referenceEnabled = redissonReferenceEnabled;
     }
     
     /**

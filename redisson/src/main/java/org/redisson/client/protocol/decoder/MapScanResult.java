@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import org.redisson.RedisClientResult;
+import org.redisson.client.RedisClient;
 
 /**
  * 
@@ -31,7 +32,7 @@ public class MapScanResult<K, V> implements RedisClientResult {
 
     private final Long pos;
     private final Map<K, V> values;
-    private InetSocketAddress client;
+    private RedisClient client;
 
     public MapScanResult(Long pos, Map<K, V> values) {
         super();
@@ -48,11 +49,11 @@ public class MapScanResult<K, V> implements RedisClientResult {
     }
 
     @Override
-    public void setRedisClient(InetSocketAddress client) {
+    public void setRedisClient(RedisClient client) {
         this.client = client;
     }
 
-    public InetSocketAddress getRedisClient() {
+    public RedisClient getRedisClient() {
         return client;
     }
 

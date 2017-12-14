@@ -15,8 +15,8 @@
  */
 package org.redisson.client;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
+
 import org.redisson.misc.URIBuilder;
 
 /**
@@ -42,10 +42,6 @@ public class RedisRedirectException extends RedisException {
 
     public URI getUrl() {
         return url;
-    }
-
-    public InetSocketAddress getAddr() {
-        return new InetSocketAddress(url.getHost(), url.getPort());
     }
 
 }

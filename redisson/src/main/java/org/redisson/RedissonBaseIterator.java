@@ -15,12 +15,12 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -38,7 +38,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
     private List<ByteBuf> lastValues;
     private Iterator<ScanObjectEntry> lastIter;
     protected long nextIterPos;
-    protected InetSocketAddress client;
+    protected RedisClient client;
 
     private boolean finished;
     private boolean currentElementRemoved;
@@ -145,7 +145,7 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
         return false;
     }
 
-    abstract ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos);
+    abstract ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos);
 
     @Override
     public V next() {
