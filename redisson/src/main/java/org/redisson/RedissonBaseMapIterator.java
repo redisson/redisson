@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -23,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -42,7 +42,7 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
     private Map<ByteBuf, ByteBuf> lastValues;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> lastIter;
     protected long nextIterPos;
-    protected InetSocketAddress client;
+    protected RedisClient client;
 
     private boolean finished;
     private boolean currentElementRemoved;

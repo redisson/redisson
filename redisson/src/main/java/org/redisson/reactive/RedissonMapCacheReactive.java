@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -29,6 +28,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -164,7 +164,7 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(final InetSocketAddress client, final long startPos) {
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(final RedisClient client, final long startPos) {
         return reactive(new Supplier<RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>>>() {
             @Override
             public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> get() {

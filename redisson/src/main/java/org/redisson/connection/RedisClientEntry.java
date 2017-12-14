@@ -59,7 +59,7 @@ public class RedisClientEntry implements ClusterNode {
     }
 
     public RFuture<Boolean> pingAsync() {
-        return commandExecutor.readAsync(client.getAddr(), (String)null, null, RedisCommands.PING_BOOL);
+        return commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
     }
     
     @Override
@@ -94,7 +94,7 @@ public class RedisClientEntry implements ClusterNode {
 
     @Override
     public RFuture<Long> timeAsync() {
-        return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.TIME);
+        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.TIME);
     }
     
     @Override
@@ -104,7 +104,7 @@ public class RedisClientEntry implements ClusterNode {
     
     @Override
     public RFuture<Map<String, String>> clusterInfoAsync() {
-        return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
+        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.CLUSTER_INFO);
     }
     
     @Override
@@ -120,29 +120,29 @@ public class RedisClientEntry implements ClusterNode {
     @Override
     public RFuture<Map<String, String>> infoAsync(InfoSection section) {
         if (section == InfoSection.ALL) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_ALL);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_ALL);
         } else if (section == InfoSection.DEFAULT) {
-                return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_DEFAULT);
+                return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_DEFAULT);
         } else if (section == InfoSection.SERVER) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
         } else if (section == InfoSection.CLIENTS) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_CLIENTS);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_CLIENTS);
         } else if (section == InfoSection.MEMORY) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_MEMORY);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_MEMORY);
         } else if (section == InfoSection.PERSISTENCE) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_PERSISTENCE);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_PERSISTENCE);
         } else if (section == InfoSection.STATS) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_STATS);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_STATS);
         } else if (section == InfoSection.REPLICATION) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_REPLICATION);
         } else if (section == InfoSection.CPU) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_CPU);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_CPU);
         } else if (section == InfoSection.COMMANDSTATS) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_COMMANDSTATS);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_COMMANDSTATS);
         } else if (section == InfoSection.CLUSTER) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_CLUSTER);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_CLUSTER);
         } else if (section == InfoSection.KEYSPACE) {
-            return commandExecutor.readAsync(client.getAddr(), (String)null, StringCodec.INSTANCE, RedisCommands.INFO_KEYSPACE);
+            return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.INFO_KEYSPACE);
         }
         throw new IllegalStateException();
     }

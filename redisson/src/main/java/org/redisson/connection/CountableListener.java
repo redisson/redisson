@@ -17,9 +17,7 @@ package org.redisson.connection;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.api.RFuture;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -29,35 +27,31 @@ import io.netty.util.concurrent.FutureListener;
  * @author Nikita Koksharov
  *
  */
-public class CountListener implements FutureListener<Void> {
+public class CountableListener<T> implements FutureListener<Object> {
     
-    private final RPromise<Void> res;
+    protected final AtomicInteger counter = new AtomicInteger();
+    protected final RPromise<T> result;
+    protected final T value;
     
-    private final AtomicInteger counter;
-    
-    public static RPromise<Void> create(RFuture<Void>... futures) {
-        RPromise<Void> result = new RedissonPromise<Void>();
-        FutureListener<Void> listener = new CountListener(result, futures.length);
-        for (RFuture<Void> future : futures) {
-            future.addListener(listener);
-        }
-        return result;
-    }
-    
-    public CountListener(RPromise<Void> res, int amount) {
+    public CountableListener(RPromise<T> result, T value) {
         super();
-        this.res = res;
-        this.counter = new AtomicInteger(amount);
+        this.result = result;
+        this.value = value;
     }
-
+    
+    public void incCounter() {
+        counter.incrementAndGet();
+    }
+    
     @Override
-    public void operationComplete(Future<Void> future) throws Exception {
+    public void operationComplete(Future<Object> future) throws Exception {
         if (!future.isSuccess()) {
-            res.tryFailure(future.cause());
+            result.tryFailure(future.cause());
             return;
         }
+        
         if (counter.decrementAndGet() == 0) {
-            res.trySuccess(null);
+            result.trySuccess(value);
         }
     }
 

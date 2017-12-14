@@ -15,6 +15,7 @@
  */
 package org.redisson.client;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
 
@@ -24,6 +25,7 @@ import org.redisson.misc.URIBuilder;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.util.Timer;
 
 /**
@@ -34,10 +36,12 @@ import io.netty.util.Timer;
 public class RedisClientConfig {
 
     private URI address;
+    private InetAddress addr;
     
     private Timer timer;
     private ExecutorService executor;
     private EventLoopGroup group;
+    private DnsAddressResolverGroup resolverGroup;
     private Class<? extends SocketChannel> socketChannelClass = NioSocketChannel.class;
     private int connectTimeout = 10000;
     private int commandTimeout = 10000;
@@ -84,6 +88,7 @@ public class RedisClientConfig {
         this.sslTruststorePassword = config.sslTruststorePassword;
         this.sslKeystore = config.sslKeystore;
         this.sslKeystorePassword = config.sslKeystorePassword;
+        this.resolverGroup = config.resolverGroup;
     }
     
     public RedisClientConfig setAddress(String host, int port) {
@@ -94,6 +99,11 @@ public class RedisClientConfig {
         this.address = URIBuilder.create(address);
         return this;
     }
+    public RedisClientConfig setAddress(InetAddress addr, URI address) {
+        this.addr = addr;
+        this.address = address;
+        return this;
+    }
     public RedisClientConfig setAddress(URI address) {
         this.address = address;
         return this;
@@ -101,7 +111,9 @@ public class RedisClientConfig {
     public URI getAddress() {
         return address;
     }
-    
+    public InetAddress getAddr() {
+        return addr;
+    }
     
     public Timer getTimer() {
         return timer;
@@ -262,5 +274,15 @@ public class RedisClientConfig {
         this.tcpNoDelay = tcpNoDelay;
         return this;
     }
+
+    public DnsAddressResolverGroup getResolverGroup() {
+        return resolverGroup;
+    }
+    public RedisClientConfig setResolverGroup(DnsAddressResolverGroup resolverGroup) {
+        this.resolverGroup = resolverGroup;
+        return this;
+    }
+    
+    
     
 }

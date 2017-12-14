@@ -15,12 +15,17 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
+import org.redisson.client.RedisClient;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RedisClientResult {
 
-    void setRedisClient(InetSocketAddress addr);
+    void setRedisClient(RedisClient addr);
 
-    InetSocketAddress getRedisClient();
+    RedisClient getRedisClient();
 
 }

@@ -31,6 +31,7 @@ import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -84,7 +85,7 @@ public class RedissonTest {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
             int i;
             @Override
-            ListScanResult iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult iterator(RedisClient client, long nextIterPos) {
                 i++;
                 if (i == 1) {
                     return new ListScanResult(13L, Collections.emptyList());
@@ -110,7 +111,7 @@ public class RedissonTest {
         RedissonBaseIterator<Integer> iter = new RedissonBaseIterator<Integer>() {
             int i;
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 i++;
                 if (i == 1) {
                     return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(Unpooled.wrappedBuffer(new byte[] {1}), 1)));

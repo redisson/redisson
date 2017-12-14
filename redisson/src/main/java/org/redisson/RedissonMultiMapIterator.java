@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
@@ -40,7 +41,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
     private Iterator<V> valuesIter;
     protected long valuesIterPos = 0;
 
-    protected InetSocketAddress client;
+    protected RedisClient client;
 
     private boolean finished;
     private boolean removeExecuted;

@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,6 +23,7 @@ import java.util.Map.Entry;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -56,7 +56,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
                     private Map<ByteBuf, ByteBuf> firstValues;
                     private long iterPos = 0;
-                    private InetSocketAddress client;
+                    private RedisClient client;
 
                     private long currentIndex;
 

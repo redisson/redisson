@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.net.InetSocketAddress;
 
 import org.reactivestreams.Publisher;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -30,7 +31,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
  */
 interface MapReactive<K, V> {
 
-    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos);
+    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos);
     
     Publisher<V> put(K key, V value);
     

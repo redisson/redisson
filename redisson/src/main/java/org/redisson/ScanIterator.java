@@ -15,8 +15,7 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
-
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -27,7 +26,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
  */
 public interface ScanIterator {
 
-    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern);
+    ListScanResult<ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern);
 
     boolean remove(Object value);
     

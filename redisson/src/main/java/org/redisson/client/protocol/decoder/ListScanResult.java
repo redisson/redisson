@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.redisson.RedisClientResult;
+import org.redisson.client.RedisClient;
 
 /**
  * 
@@ -30,7 +31,7 @@ public class ListScanResult<V> implements RedisClientResult {
 
     private final Long pos;
     private final List<V> values;
-    private InetSocketAddress addr;
+    private RedisClient client;
 
     public ListScanResult(Long pos, List<V> values) {
         this.pos = pos;
@@ -46,12 +47,12 @@ public class ListScanResult<V> implements RedisClientResult {
     }
 
     @Override
-    public void setRedisClient(InetSocketAddress addr) {
-        this.addr = addr;
+    public void setRedisClient(RedisClient client) {
+        this.client = client;
     }
 
-    public InetSocketAddress getRedisClient() {
-        return addr;
+    public RedisClient getRedisClient() {
+        return client;
     }
 
 }

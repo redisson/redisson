@@ -102,8 +102,8 @@ public interface ConnectionManager {
 
     RedisClient createClient(NodeType type, URI address);
 
-    MasterSlaveEntry getEntry(InetSocketAddress addr);
-
+    MasterSlaveEntry getEntry(RedisClient redisClient);
+    
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
     RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?>... listeners);

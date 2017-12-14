@@ -22,6 +22,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
@@ -44,7 +45,7 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
             private List<ByteBuf> firstValues;
             private List<ByteBuf> lastValues;
             private long nextIterPos;
-            private InetSocketAddress client;
+            private RedisClient client;
 
             private boolean finished;
 
@@ -168,6 +169,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
         return result;
     }
 
-    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos);
+    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos);
 
 }

@@ -15,7 +15,6 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -154,8 +153,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();
         }
-        RFuture<Void> f = entry.setupMasterEntry(config.getMasterAddress());
-        f.syncUninterruptibly();
         return entry;
     }
 
@@ -355,9 +352,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 String ip = parts[2];
                 String port = parts[3];
 
+                URI uri = convert(ip, port);
                 MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
                 if (entry.isFreezed()
-                        && entry.getClient().getAddr().equals(new InetSocketAddress(ip, Integer.valueOf(port)))) {
+                        && URIBuilder.compare(entry.getClient().getAddr(), uri)) {
                     entry.unfreeze();
                     String masterAddr = ip + ":" + port;
                     log.info("master: {} has up", masterAddr);
