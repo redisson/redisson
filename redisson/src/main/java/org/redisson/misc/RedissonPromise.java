@@ -19,12 +19,15 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.lang.reflect.Field;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.RFuture;
 
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
@@ -44,6 +47,17 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
     private final int FAILED = 2;
     private final int CANCELED = 3;    
     
+    private static final Field listenersField;
+    
+    static {
+        try {
+            listenersField = DefaultPromise.class.getDeclaredField("listeners");
+            listenersField.setAccessible(true);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     private final Promise<T> promise = ImmediateEventExecutor.INSTANCE.newPromise();
     private final AtomicInteger status = new AtomicInteger();
     
@@ -225,6 +239,15 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
             return super.cancel(mayInterruptIfRunning);
         }
         return false;
+    }
+    
+    @Override
+    public boolean hasListeners() {
+        try {
+            return listenersField.get(promise) != null || getNumberOfDependents() > 0;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
     }
     
 }

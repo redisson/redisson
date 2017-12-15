@@ -157,6 +157,11 @@ public class PromiseDelegator<T> implements RPromise<T> {
         return promise.thenAcceptAsync(action);
     }
 
+    @Override
+    public boolean hasListeners() {
+        return promise.hasListeners();
+    }
+    
     public CompletionStage<Void> thenAcceptAsync(Consumer<? super T> action, Executor executor) {
         return promise.thenAcceptAsync(action, executor);
     }

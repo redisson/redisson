@@ -18,7 +18,6 @@ package org.redisson.misc;
 import org.redisson.api.RFuture;
 
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.Promise;
 
 /**
  * 
@@ -82,4 +81,6 @@ public interface RPromise<T> extends RFuture<T> {
     @Override
     RPromise<T> syncUninterruptibly();
 
+    boolean hasListeners();
+    
 }

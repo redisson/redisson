@@ -170,9 +170,21 @@ public class RedissonRedLockTest {
         RLock lock2 = client1.getLock("lock2");
         RLock lock3 = client2.getLock("lock3");
         
+        testLock(lock1, lock2, lock3, lock1);
+        testLock(lock1, lock2, lock3, lock2);
+        testLock(lock1, lock2, lock3, lock3);
+        
+        client1.shutdown();
+        client2.shutdown();
+        
+        assertThat(redis1.stop()).isEqualTo(0);
+        assertThat(redis2.stop()).isEqualTo(0);
+    }
+
+    protected void testLock(RLock lock1, RLock lock2, RLock lock3, RLock lockFirst) throws InterruptedException {
         Thread t1 = new Thread() {
             public void run() {
-                lock3.lock();
+                lockFirst.lock();
             };
         };
         t1.start();
@@ -193,17 +205,11 @@ public class RedissonRedLockTest {
         t.start();
         t.join(1000);
 
-        lock3.delete();
+        lockFirst.delete();
         
         RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
         lock.lock();
         lock.unlock();
-        
-        client1.shutdown();
-        client2.shutdown();
-        
-        assertThat(redis1.stop()).isEqualTo(0);
-        assertThat(redis2.stop()).isEqualTo(0);
     }
 
     
