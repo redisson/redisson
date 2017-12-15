@@ -723,9 +723,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 break;
             }
             references.remove(r);
-            cancelResponseHandling(r.getRequestId());
+            
+            if (!r.getPromise().hasListeners()) {
+                cancelResponseHandling(r.getRequestId());
+            }
         }
-        RedissonExecutorFutureReference reference = new RedissonExecutorFutureReference(requestId, future, referenceDueue);
+        
+        RPromise<?> promise = ((PromiseDelegator<?>) future).getInnerPromise();
+        RedissonExecutorFutureReference reference = new RedissonExecutorFutureReference(requestId, future, referenceDueue, promise);
         references.add(reference);
     }
     

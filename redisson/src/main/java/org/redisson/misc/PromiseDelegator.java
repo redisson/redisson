@@ -148,6 +148,11 @@ public class PromiseDelegator<T> implements RPromise<T> {
     public boolean cancel(boolean mayInterruptIfRunning) {
         return promise.cancel(mayInterruptIfRunning);
     }
+
+    @Override
+    public boolean hasListeners() {
+        return promise.hasListeners();
+    }
     
     
 }

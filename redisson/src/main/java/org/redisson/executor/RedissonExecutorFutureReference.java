@@ -19,6 +19,7 @@ import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
 import org.redisson.api.RExecutorFuture;
+import org.redisson.misc.RPromise;
 import org.redisson.remote.RequestId;
 
 /**
@@ -28,11 +29,17 @@ import org.redisson.remote.RequestId;
  */
 public class RedissonExecutorFutureReference extends WeakReference<RExecutorFuture<?>> {
 
-    private RequestId requestId;
+    private final RPromise<?> promise;
+    private final RequestId requestId;
     
-    public RedissonExecutorFutureReference(RequestId requestId, RExecutorFuture<?> referent, ReferenceQueue<? super RExecutorFuture<?>> q) {
+    public RedissonExecutorFutureReference(RequestId requestId, RExecutorFuture<?> referent, ReferenceQueue<? super RExecutorFuture<?>> q, RPromise<?> promise) {
         super(referent, q);
         this.requestId = requestId;
+        this.promise = promise;
+    }
+    
+    public RPromise<?> getPromise() {
+        return promise;
     }
     
     public RequestId getRequestId() {
