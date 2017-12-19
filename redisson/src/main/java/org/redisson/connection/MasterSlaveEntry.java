@@ -75,7 +75,7 @@ public class MasterSlaveEntry {
     final MasterPubSubConnectionPool pubSubConnectionPool;
 
     final AtomicBoolean active = new AtomicBoolean(true);
-
+    
     public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         for (ClusterSlotRange clusterSlotRange : slotRanges) {
             for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
@@ -89,7 +89,7 @@ public class MasterSlaveEntry {
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
     }
-    
+
     public MasterSlaveServersConfig getConfig() {
         return config;
     }
@@ -110,31 +110,40 @@ public class MasterSlaveEntry {
     }
 
     public RPromise<RedisClient> setupMasterEntry(URI address) {
+        final RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
+
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
-        masterEntry = new ClientConnectionsEntry(
-                client, 
-                config.getMasterConnectionMinimumIdleSize(), 
-                config.getMasterConnectionPoolSize(),
-                config.getSubscriptionConnectionMinimumIdleSize(),
-                config.getSubscriptionConnectionPoolSize(), 
-                connectionManager, 
-                NodeType.MASTER);
-        
-        RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
-        CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client);
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
-        listener.incCounter();
-        addrFuture.addListener(listener);
-        
-        RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-        listener.incCounter();
-        writeFuture.addListener(listener);
-        
-        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-            listener.incCounter();
-            pubSubFuture.addListener(listener);
-        }
+        addrFuture.addListener(new FutureListener<InetSocketAddress>() {
+
+            @Override
+            public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                masterEntry = new ClientConnectionsEntry(
+                        client, 
+                        config.getMasterConnectionMinimumIdleSize(), 
+                        config.getMasterConnectionPoolSize(),
+                        config.getSubscriptionConnectionMinimumIdleSize(),
+                        config.getSubscriptionConnectionPoolSize(), 
+                        connectionManager, 
+                        NodeType.MASTER);
+                
+                CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client);
+                RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+                listener.incCounter();
+                writeFuture.addListener(listener);
+                
+                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+                    RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+                    listener.incCounter();
+                    pubSubFuture.addListener(listener);
+                }
+            }
+        });
         
         return result;
     }
@@ -185,7 +194,7 @@ public class MasterSlaveEntry {
             if (connection == null) {
                 break;
             }
-            
+           
             connection.closeAsync().addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(ChannelFuture future) throws Exception {
@@ -224,7 +233,6 @@ public class MasterSlaveEntry {
             return;
         }
         
-        System.out.println("channelName " + channelName + " resubscribed!");
         subscribeCodec.addListener(new FutureListener<Codec>() {
             @Override
             public void operationComplete(Future<Codec> future) throws Exception {
@@ -335,7 +343,7 @@ public class MasterSlaveEntry {
     public boolean hasSlave(RedisClient redisClient) {
         return slaveBalancer.contains(redisClient);
     }
-    
+
     public boolean hasSlave(URI addr) {
         return slaveBalancer.contains(addr);
     }
@@ -344,19 +352,8 @@ public class MasterSlaveEntry {
         return addSlave(address, false, NodeType.SLAVE);
     }
     
-    private RFuture<Void> addSlave(URI address, boolean freezed, NodeType nodeType) {
+    private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
-        final ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
-                this.config.getSlaveConnectionMinimumIdleSize(),
-                this.config.getSlaveConnectionPoolSize(),
-                this.config.getSubscriptionConnectionMinimumIdleSize(),
-                this.config.getSubscriptionConnectionPoolSize(), connectionManager, nodeType);
-        if (freezed) {
-            synchronized (entry) {
-                entry.setFreezed(freezed);
-                entry.setFreezeReason(FreezeReason.SYSTEM);
-            }
-        }
         
         final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
@@ -367,7 +364,18 @@ public class MasterSlaveEntry {
                     result.tryFailure(future.cause());
                     return;
                 }
-                
+
+                ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
+                        config.getSlaveConnectionMinimumIdleSize(),
+                        config.getSlaveConnectionPoolSize(),
+                        config.getSubscriptionConnectionMinimumIdleSize(),
+                        config.getSubscriptionConnectionPoolSize(), connectionManager, nodeType);
+                if (freezed) {
+                    synchronized (entry) {
+                        entry.setFreezed(freezed);
+                        entry.setFreezeReason(FreezeReason.SYSTEM);
+                    }
+                }
                 RFuture<Void> addFuture = slaveBalancer.add(entry);
                 addFuture.addListener(new TransferListener<Void>(result));
             }
