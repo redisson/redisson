@@ -112,7 +112,7 @@ public class MasterSlaveEntry {
     public RPromise<RedisClient> setupMasterEntry(URI address) {
         final RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
 
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
+        final RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         addrFuture.addListener(new FutureListener<InetSocketAddress>() {
 
@@ -353,7 +353,7 @@ public class MasterSlaveEntry {
     }
     
     private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
+        final RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
         
         final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
