@@ -108,11 +108,20 @@ public class MasterSlaveEntry {
         }
         return result;
     }
+    
+    public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, URI uri) {
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri);
+        return setupMasterEntry(client);
+    }
+    
 
-    public RPromise<RedisClient> setupMasterEntry(URI address) {
+    public RFuture<RedisClient> setupMasterEntry(URI address) {
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
+        return setupMasterEntry(client);
+    }
+
+    private RFuture<RedisClient> setupMasterEntry(final RedisClient client) {
         final RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
-
-        final RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         addrFuture.addListener(new FutureListener<InetSocketAddress>() {
 
@@ -148,7 +157,16 @@ public class MasterSlaveEntry {
         return result;
     }
 
-    public boolean slaveDown(URI address, FreezeReason freezeReason) {
+    public boolean slaveDown(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        ClientConnectionsEntry e = slaveBalancer.freeze(entry, freezeReason);
+        if (e == null) {
+            return false;
+        }
+        
+        return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
+    }
+    
+    public boolean slaveDown(InetSocketAddress address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
             return false;
@@ -157,8 +175,8 @@ public class MasterSlaveEntry {
         return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
     }
     
-    public boolean slaveDown(RedisClient redisClient, FreezeReason freezeReason) {
-        ClientConnectionsEntry entry = slaveBalancer.freeze(redisClient, freezeReason);
+    public boolean slaveDown(URI address, FreezeReason freezeReason) {
+        ClientConnectionsEntry entry = slaveBalancer.freeze(address, freezeReason);
         if (entry == null) {
             return false;
         }
@@ -169,9 +187,8 @@ public class MasterSlaveEntry {
     private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
-            URI addr = masterEntry.getClient().getConfig().getAddress();
-            if (slaveUp(addr, FreezeReason.SYSTEM)) {
-                log.info("master {} used as slave", addr);
+            if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
+                log.info("master {} used as slave", masterEntry.getClient().getAddr());
             }
         }
         
@@ -344,6 +361,10 @@ public class MasterSlaveEntry {
         return slaveBalancer.contains(redisClient);
     }
 
+    public boolean hasSlave(InetSocketAddress addr) {
+        return slaveBalancer.contains(addr);
+    }
+    
     public boolean hasSlave(URI addr) {
         return slaveBalancer.contains(addr);
     }
@@ -352,9 +373,11 @@ public class MasterSlaveEntry {
         return addSlave(address, false, NodeType.SLAVE);
     }
     
-    private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
-        final RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
-        
+    public RFuture<Void> addSlave(InetSocketAddress address, URI uri) {
+        return addSlave(address, uri, false, NodeType.SLAVE);
+    }
+    
+    private RFuture<Void> addSlave(final RedisClient client, final boolean freezed, final NodeType nodeType) {
         final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         addrFuture.addListener(new FutureListener<InetSocketAddress>() {
@@ -364,7 +387,7 @@ public class MasterSlaveEntry {
                     result.tryFailure(future.cause());
                     return;
                 }
-
+                
                 ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                         config.getSlaveConnectionMinimumIdleSize(),
                         config.getSlaveConnectionPoolSize(),
@@ -382,11 +405,36 @@ public class MasterSlaveEntry {
         });
         return result;
     }
+    
+    private RFuture<Void> addSlave(InetSocketAddress address, URI uri, final boolean freezed, final NodeType nodeType) {
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri);
+        return addSlave(client, freezed, nodeType);
+    }
+    
+    private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
+        return addSlave(client, freezed, nodeType);
+    }
 
     public RedisClient getClient() {
         return masterEntry.getClient();
     }
 
+    public boolean slaveUp(ClientConnectionsEntry entry, FreezeReason freezeReason) {
+        if (!slaveBalancer.unfreeze(entry, freezeReason)) {
+            return false;
+        }
+
+        InetSocketAddress addr = masterEntry.getClient().getAddr();
+        // exclude master from slaves
+        if (!config.checkSkipSlavesInit()
+                && !addr.equals(entry.getClient().getAddr())) {
+            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            log.info("master {} excluded from slaves", addr);
+        }
+        return true;
+    }
+    
     public boolean slaveUp(URI address, FreezeReason freezeReason) {
         if (!slaveBalancer.unfreeze(address, freezeReason)) {
             return false;
@@ -396,7 +444,7 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !URIBuilder.compare(addr, address)) {
-            slaveDown(masterEntry.getClient().getConfig().getAddress(), FreezeReason.SYSTEM);
+            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
         }
         return true;
@@ -409,9 +457,21 @@ public class MasterSlaveEntry {
      * 
      * @param address of Redis
      */
-    public void changeMaster(final URI address) {
+    public void changeMaster(URI address) {
         final ClientConnectionsEntry oldMaster = masterEntry;
         RFuture<RedisClient> future = setupMasterEntry(address);
+        changeMaster(address, oldMaster, future);
+    }
+    
+    public void changeMaster(InetSocketAddress address, URI uri) {
+        final ClientConnectionsEntry oldMaster = masterEntry;
+        RFuture<RedisClient> future = setupMasterEntry(address, uri);
+        changeMaster(uri, oldMaster, future);
+    }
+
+
+    private void changeMaster(final URI address, final ClientConnectionsEntry oldMaster,
+            RFuture<RedisClient> future) {
         future.addListener(new FutureListener<RedisClient>() {
             @Override
             public void operationComplete(Future<RedisClient> future) throws Exception {
@@ -434,7 +494,7 @@ public class MasterSlaveEntry {
                 // more than one slave available, so master can be removed from slaves
                 if (!config.checkSkipSlavesInit()
                         && slaveBalancer.getAvailableClients() > 1) {
-                    slaveDown(newMasterClient, FreezeReason.SYSTEM);
+                    slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
                 }
                 connectionManager.shutdownAsync(oldMaster.getClient());
                 log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());

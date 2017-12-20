@@ -15,7 +15,7 @@
  */
 package org.redisson.client;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.concurrent.ExecutorService;
 
@@ -36,7 +36,7 @@ import io.netty.util.Timer;
 public class RedisClientConfig {
 
     private URI address;
-    private InetAddress addr;
+    private InetSocketAddress addr;
     
     private Timer timer;
     private ExecutorService executor;
@@ -99,7 +99,7 @@ public class RedisClientConfig {
         this.address = URIBuilder.create(address);
         return this;
     }
-    public RedisClientConfig setAddress(InetAddress addr, URI address) {
+    public RedisClientConfig setAddress(InetSocketAddress addr, URI address) {
         this.addr = addr;
         this.address = address;
         return this;
@@ -111,7 +111,7 @@ public class RedisClientConfig {
     public URI getAddress() {
         return address;
     }
-    public InetAddress getAddr() {
+    public InetSocketAddress getAddr() {
         return addr;
     }
     

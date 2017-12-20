@@ -286,9 +286,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 addEntry(slot, entry);
             }
             
-            InetSocketAddress masterHost = f.getNow().resolveAddr().syncUninterruptibly().getNow();
             if (config.getDnsMonitoringInterval() != -1) {
-                dnsMonitor = new DNSMonitor(this, masterHost, 
+                dnsMonitor = new DNSMonitor(this, f.getNow(), 
                         config.getSlaveAddresses(), config.getDnsMonitoringInterval(), resolverGroup);
                 dnsMonitor.start();
             }
@@ -349,6 +348,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
+    
+    @Override
+    public RedisClient createClient(NodeType type, InetSocketAddress address, URI uri) {
+        RedisClient client = createClient(type, address, uri, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
+        clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
+        return client;
+    }
 
     @Override
     public void shutdownAsync(RedisClient client) {
@@ -363,6 +369,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout);
         return RedisClient.create(redisConfig);
     }
+    
+    private RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, int timeout, int commandTimeout) {
+        RedisClientConfig redisConfig = createRedisConfig(type, null, timeout, commandTimeout);
+        redisConfig.setAddress(address, uri);
+        return RedisClient.create(redisConfig);
+    }
+
 
     protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout) {
         RedisClientConfig redisConfig = new RedisClientConfig();
@@ -677,7 +690,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return newSucceededFuture(entryCodec);
     }
 
-    public MasterSlaveEntry getEntry(URI addr) {
+    public MasterSlaveEntry getEntry(InetSocketAddress address) {
+        for (MasterSlaveEntry entry : client2entry.values()) {
+            InetSocketAddress addr = entry.getClient().getAddr();
+            if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
+                return entry;
+            }
+        }
+        return null;
+    }
+    
+    private MasterSlaveEntry getEntry(URI addr) {
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (URIBuilder.compare(entry.getClient().getAddr(), addr)) {
                 return entry;
@@ -732,28 +755,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
-        MasterSlaveEntry entry = source.getEntry();
+        MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            entry = getEntry(source);
-        }
-        if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
             return RedissonPromise.newFailedFuture(ex);
         }
         return entry.connectionWriteOp(command);
     }
 
     private MasterSlaveEntry getEntry(NodeSource source) {
-        // slots handling during migration state
         if (source.getRedirect() != null) {
             return getEntry(source.getAddr());
         }
-        
-        return getEntry(source.getSlot());
-    }
 
-    @Override
-    public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = source.getEntry();
         if (entry == null && source.getSlot() != null) {
             entry = getEntry(source.getSlot());
@@ -761,30 +775,21 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (source.getRedisClient() != null) {
             entry = getEntry(source.getRedisClient());
         }
-        if (source.getAddr() != null) {
-            entry = getEntry(source.getAddr());
-            if (entry == null) {
-                for (MasterSlaveEntry e : getEntrySet()) {
-                    if (e.hasSlave(source.getAddr())) {
-                        entry = e;
-                        break;
-                    }
-                }
-            }
-            
-            if (entry == null) {
-                RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
-                return RedissonPromise.newFailedFuture(ex);
-            }
-            
-            return entry.connectionReadOp(command, source.getAddr());
-        }
-        
+        return entry;
+    }
+    
+    @Override
+    public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
+        MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
             return RedissonPromise.newFailedFuture(ex);
         }
 
+        if (source.getRedirect() != null) {
+            return entry.connectionReadOp(command, source.getAddr());
+        }
+        
         return entry.connectionReadOp(command);
     }
 
@@ -800,7 +805,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
         MasterSlaveEntry entry = getEntry(slot);
         if (entry == null) {
-            log.error("Node for slot: " + slot + " hasn't been discovered yet");
+            log.error("Node for slot: " + slot + " can't be found");
         } else {
             entry.returnPubSubConnection(pubSubEntry);
         }
@@ -808,12 +813,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void releaseWrite(NodeSource source, RedisConnection connection) {
-        MasterSlaveEntry entry = source.getEntry();
+        MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            entry = getEntry(source);
-        }
-        if (entry == null) {
-            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            log.error("Node: " + source + " can't be found");
         } else {
             entry.releaseWrite(connection);
         }
@@ -821,12 +823,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void releaseRead(NodeSource source, RedisConnection connection) {
-        MasterSlaveEntry entry = source.getEntry();
+        MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            entry = getEntry(source);
-        }
-        if (entry == null) {
-            log.error("Node: " + source.getAddr() + " for slot: " + source.getSlot() + " hasn't been discovered yet");
+            log.error("Node: " + source + " can't be found");
         } else {
             entry.releaseRead(connection);
         }

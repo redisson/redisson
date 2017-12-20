@@ -325,7 +325,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {
         if (entry.getNodeType() == NodeType.SLAVE) {
-            masterSlaveEntry.slaveDown(entry.getClient().getConfig().getAddress(), FreezeReason.RECONNECT);
+            masterSlaveEntry.slaveDown(entry, FreezeReason.RECONNECT);
             log.error("slave " + entry.getClient().getAddr() + " disconnected due to failedAttempts=" + config.getFailedAttempts() + " limit reached", cause);
             scheduleCheck(entry);
         } else {
@@ -392,7 +392,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                             public void operationComplete(Future<Void> future)
                                                 throws Exception {
                                                 if (entry.getNodeType() == NodeType.SLAVE) {
-                                                    masterSlaveEntry.slaveUp(entry.getClient().getConfig().getAddress(), FreezeReason.RECONNECT);
+                                                    masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT);
                                                     log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
                                                 } else {
                                                     synchronized (entry) {
