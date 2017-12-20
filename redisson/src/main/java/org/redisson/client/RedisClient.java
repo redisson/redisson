@@ -57,10 +57,10 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedisClient {
 
-    private final AtomicReference<RFuture<InetSocketAddress>> resolveFuture = new AtomicReference<RFuture<InetSocketAddress>>();
+    private final AtomicReference<RFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<RFuture<InetSocketAddress>>();
     private final Bootstrap bootstrap;
     private final Bootstrap pubSubBootstrap;
-    private final URI addr;
+    private final URI uri;
     private InetSocketAddress resolvedAddr;
     private final ChannelGroup channels;
 
@@ -105,7 +105,12 @@ public class RedisClient {
         this.executor = copy.getExecutor();
         this.timer = copy.getTimer();
         
-        addr = copy.getAddress();
+        uri = copy.getAddress();
+        resolvedAddr = copy.getAddr();
+        
+        if (resolvedAddr != null) {
+            resolvedAddrFuture.set(RedissonPromise.newSucceededFuture(resolvedAddr));
+        }
         
         channels = new DefaultChannelGroup(copy.getGroup().next()); 
         bootstrap = createBootstrap(copy, Type.PLAIN);
@@ -147,18 +152,22 @@ public class RedisClient {
         try {
             return connectAsync().syncUninterruptibly().getNow();
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to: " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + uri, e);
         }
     }
     
     public RFuture<InetSocketAddress> resolveAddr() {
+        if (resolvedAddrFuture.get() != null) {
+            return resolvedAddrFuture.get();
+        }
+        
         final RPromise<InetSocketAddress> promise = new RedissonPromise<InetSocketAddress>();
-        if (!resolveFuture.compareAndSet(null, promise)) {
-            return resolveFuture.get();
+        if (!resolvedAddrFuture.compareAndSet(null, promise)) {
+            return resolvedAddrFuture.get();
         }
         
         AddressResolver<InetSocketAddress> resolver = (AddressResolver<InetSocketAddress>) bootstrap.config().resolver().getResolver(bootstrap.config().group().next());
-        Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(addr.getHost(), addr.getPort()));
+        Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
         resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
             @Override
             public void operationComplete(Future<InetSocketAddress> future) throws Exception {
@@ -229,7 +238,7 @@ public class RedisClient {
         try {
             return connectPubSubAsync().syncUninterruptibly().getNow();
         } catch (Exception e) {
-            throw new RedisConnectionException("Unable to connect to: " + addr, e);
+            throw new RedisConnectionException("Unable to connect to: " + uri, e);
         }
     }
 
@@ -342,7 +351,7 @@ public class RedisClient {
 
     @Override
     public String toString() {
-        return "[addr=" + addr + "]";
+        return "[addr=" + uri + "]";
     }
 
 }

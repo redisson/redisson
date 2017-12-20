@@ -88,6 +88,8 @@ public interface ConnectionManager {
     
     MasterSlaveEntry getEntry(int slot);
     
+    MasterSlaveEntry getEntry(InetSocketAddress address);
+    
     <R> RPromise<R> newPromise();
 
     void releaseRead(NodeSource source, RedisConnection connection);
@@ -100,6 +102,8 @@ public interface ConnectionManager {
 
     RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout);
 
+    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri);
+    
     RedisClient createClient(NodeType type, URI address);
 
     MasterSlaveEntry getEntry(RedisClient redisClient);

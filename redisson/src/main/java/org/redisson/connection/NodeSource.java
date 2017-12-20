@@ -80,7 +80,10 @@ public class NodeSource {
 
     @Override
     public String toString() {
-        return "NodeSource [slot=" + slot + ", addr=" + addr + ", redirect=" + redirect + "]";
+        return "NodeSource [slot=" + slot + ", addr=" + addr + ", redisClient=" + redisClient + ", redirect=" + redirect
+                + ", entry=" + entry + "]";
     }
+
+    
 
 }

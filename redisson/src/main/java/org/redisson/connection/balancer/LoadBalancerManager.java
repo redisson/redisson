@@ -121,6 +121,20 @@ public class LoadBalancerManager {
             throw new IllegalStateException("Can't find " + address + " in slaves!");
         }
 
+        return unfreeze(entry, freezeReason);
+    }
+    
+    public boolean unfreeze(InetSocketAddress address, FreezeReason freezeReason) {
+        ClientConnectionsEntry entry = getEntry(address);
+        if (entry == null) {
+            throw new IllegalStateException("Can't find " + address + " in slaves!");
+        }
+
+        return unfreeze(entry, freezeReason);
+    }
+
+    
+    public boolean unfreeze(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         synchronized (entry) {
             if (!entry.isFreezed()) {
                 return false;
@@ -136,11 +150,17 @@ public class LoadBalancerManager {
         }
         return false;
     }
-    
+
     public ClientConnectionsEntry freeze(URI address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
     }
+    
+    public ClientConnectionsEntry freeze(InetSocketAddress address, FreezeReason freezeReason) {
+        ClientConnectionsEntry connectionEntry = getEntry(address);
+        return freeze(connectionEntry, freezeReason);
+    }
+
     
     public ClientConnectionsEntry freeze(RedisClient redisClient, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(redisClient);
@@ -172,6 +192,10 @@ public class LoadBalancerManager {
         return pubSubConnectionPool.get();
     }
 
+    public boolean contains(InetSocketAddress addr) {
+        return getEntry(addr) != null;
+    }
+    
     public boolean contains(URI addr) {
         return getEntry(addr) != null;
     }
@@ -189,6 +213,17 @@ public class LoadBalancerManager {
         }
         return null;
     }
+    
+    protected ClientConnectionsEntry getEntry(InetSocketAddress address) {
+        for (ClientConnectionsEntry entry : client2Entry.values()) {
+            InetSocketAddress addr = entry.getClient().getAddr();
+            if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     
     protected ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return client2Entry.get(redisClient);
