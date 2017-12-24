@@ -15,13 +15,13 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
@@ -76,11 +76,11 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <T, R> Publisher<R> readReactive(final InetSocketAddress client, final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
+    public <T, R> Publisher<R> readReactive(final RedisClient client, final String name, final Codec codec, final RedisCommand<T> command, final Object ... params) {
         return reactive(new Supplier<RFuture<R>>() {
             @Override
             public RFuture<R> get() {
-                return readAsync(client, key, codec, command, params);
+                return readAsync(client, name, codec, command, params);
             };
         });
     }
@@ -135,18 +135,6 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
             };
         });
     }
-
-    @Override
-    public <T, R> Publisher<R> evalReadReactive(final InetSocketAddress client, final String key, final Codec codec, final RedisCommand<T> evalCommandType,
-            final String script, final List<Object> keys, final Object ... params) {
-        return reactive(new Supplier<RFuture<R>>() {
-            @Override
-            public RFuture<R> get() {
-                return evalReadAsync(client, key, codec, evalCommandType, script, keys, params);
-            };
-        });
-    }
-
 
     @Override
     public <T, R> Publisher<R> evalWriteReactive(final String key, final Codec codec, final RedisCommand<T> evalCommandType,

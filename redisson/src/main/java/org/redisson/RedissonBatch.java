@@ -15,10 +15,10 @@
  */
 package org.redisson;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicDoubleAsync;
 import org.redisson.api.RAtomicLongAsync;
 import org.redisson.api.RBatch;
@@ -63,6 +63,10 @@ public class RedissonBatch implements RBatch {
     private long timeout;
     private int retryAttempts;
     private long retryInterval;
+
+    private int syncSlaves;
+    private long syncTimeout;
+    private boolean skipResult;
 
     protected RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
@@ -231,6 +235,19 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
+    public RBatch syncSlaves(int slaves, long timeout, TimeUnit unit) {
+        this.syncSlaves = slaves;
+        this.syncTimeout = unit.toMillis(timeout);
+        return this;
+    }
+    
+    @Override
+    public RBatch skipResult() {
+        this.skipResult = true;
+        return this;
+    }
+    
+    @Override
     public RBatch retryAttempts(int retryAttempts) {
         this.retryAttempts = retryAttempts;
         return this;
@@ -249,25 +266,25 @@ public class RedissonBatch implements RBatch {
     }
     
     @Override
-    public List<?> execute() {
-        return executorService.execute(timeout, retryAttempts, retryInterval);
+    public BatchResult<?> execute() {
+        return executorService.execute(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
     }
 
     @Override
     public void executeSkipResult() {
-        executorService.executeSkipResult(timeout, retryAttempts, retryInterval);
+        executorService.execute(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
     }
     
     @Override
     public RFuture<Void> executeSkipResultAsync() {
-        return executorService.executeSkipResultAsync(timeout, retryAttempts, retryInterval);
+        return executorService.executeAsync(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
     }
     
     @Override
-    public RFuture<List<?>> executeAsync() {
-        return executorService.executeAsync(timeout, retryAttempts, retryInterval);
+    public RFuture<BatchResult<?>> executeAsync() {
+        return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
     }
-
+    
     @Override
     public <K, V> RMultimapAsync<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimap<K, V>(id, executorService, name);

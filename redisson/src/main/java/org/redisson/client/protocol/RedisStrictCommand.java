@@ -18,22 +18,20 @@ package org.redisson.client.protocol;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> command type
+ */
 public class RedisStrictCommand<T> extends RedisCommand<T> {
-
-    public RedisStrictCommand(String name, int objectParamIndex, ValueType inParamType) {
-        super(name, (Decoder<T>)null, objectParamIndex, inParamType);
-    }
-
-    public RedisStrictCommand(String name, int encodeParamIndex) {
-        super(name, null, null, null, encodeParamIndex);
-    }
 
     public RedisStrictCommand(String name, MultiDecoder<T> replayMultiDecoder) {
         super(name, replayMultiDecoder);
     }
 
     public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder) {
-        super(name, subName, replayMultiDecoder, -1);
+        super(name, subName, replayMultiDecoder);
     }
 
     public RedisStrictCommand(String name) {
@@ -41,11 +39,7 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
     }
 
     public RedisStrictCommand(String name, Convertor<T> convertor) {
-        super(name, convertor, -1);
-    }
-
-    public RedisStrictCommand(String name, Convertor<T> convertor, int encodeParamIndex) {
-        super(name, convertor, encodeParamIndex);
+        super(name, convertor);
     }
 
     public RedisStrictCommand(String name, String subName) {
@@ -57,12 +51,12 @@ public class RedisStrictCommand<T> extends RedisCommand<T> {
     }
 
     public RedisStrictCommand(String name, String subName, MultiDecoder<T> replayMultiDecoder, Convertor convertor) {
-        super(name, subName, replayMultiDecoder, -1);
+        super(name, subName, replayMultiDecoder);
         this.convertor = convertor;
     }
 
     public RedisStrictCommand(String name, String subName, Decoder<T> reponseDecoder) {
-        super(name, subName, null, reponseDecoder, -1);
+        super(name, subName, null, reponseDecoder);
     }
 
     public RedisStrictCommand(String name, Decoder<T> reponseDecoder) {

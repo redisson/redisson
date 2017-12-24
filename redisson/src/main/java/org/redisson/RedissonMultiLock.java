@@ -75,18 +75,19 @@ public class RedissonMultiLock implements Lock {
     }
 
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
+        long baseWaitTime = locks.size() * 1500;
         long waitTime = -1;
         if (leaseTime == -1) {
-            waitTime = 5;
-            unit = TimeUnit.SECONDS;
+            waitTime = baseWaitTime;
+            unit = TimeUnit.MILLISECONDS;
         } else {
             waitTime = unit.toMillis(leaseTime);
             if (waitTime <= 2000) {
                 waitTime = 2000;
-            } else if (waitTime <= 5000) {
+            } else if (waitTime <= baseWaitTime) {
                 waitTime = ThreadLocalRandom.current().nextLong(waitTime/2, waitTime);
             } else {
-                waitTime = ThreadLocalRandom.current().nextLong(5000, waitTime);
+                waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
             }
             waitTime = unit.convert(waitTime, TimeUnit.MILLISECONDS);
         }
@@ -131,7 +132,7 @@ public class RedissonMultiLock implements Lock {
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long newLeaseTime = -1;
         if (leaseTime != -1) {
-            newLeaseTime = waitTime*2;
+            newLeaseTime = unit.toMillis(waitTime)*2;
         }
         
         long time = System.currentTimeMillis();
@@ -139,6 +140,8 @@ public class RedissonMultiLock implements Lock {
         if (waitTime != -1) {
             remainTime = unit.toMillis(waitTime);
         }
+        long lockWaitTime = calcLockWaitTime(remainTime);
+        
         int failedLocksLimit = failedLocksLimit();
         List<RLock> lockedLocks = new ArrayList<RLock>(locks.size());
         for (ListIterator<RLock> iterator = locks.listIterator(); iterator.hasNext();) {
@@ -148,8 +151,8 @@ public class RedissonMultiLock implements Lock {
                 if (waitTime == -1 && leaseTime == -1) {
                     lockAcquired = lock.tryLock();
                 } else {
-                    long awaitTime = unit.convert(remainTime, TimeUnit.MILLISECONDS);
-                    lockAcquired = lock.tryLock(awaitTime, newLeaseTime, unit);
+                    long awaitTime = Math.min(lockWaitTime, remainTime);
+                    lockAcquired = lock.tryLock(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS);
                 }
             } catch (Exception e) {
                 lockAcquired = false;
@@ -203,6 +206,9 @@ public class RedissonMultiLock implements Lock {
         return true;
     }
 
+    protected long calcLockWaitTime(long remainTime) {
+        return remainTime;
+    }
 
     @Override
     public void unlock() {

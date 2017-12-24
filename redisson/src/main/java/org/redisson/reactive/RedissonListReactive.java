@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import static org.redisson.client.protocol.RedisCommands.LINDEX;
-import static org.redisson.client.protocol.RedisCommands.LLEN;
 import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
 import static org.redisson.client.protocol.RedisCommands.RPUSH;
 
@@ -32,10 +31,7 @@ import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -149,7 +145,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<Integer> add(V e) {
-        return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), e);
+        return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), encode(e));
     }
 
     @Override
@@ -163,7 +159,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
     }
 
     protected Publisher<Boolean> remove(Object o, int count) {
-        return commandExecutor.writeReactive(getName(), codec, LREM_SINGLE, getName(), count, o);
+        return commandExecutor.writeReactive(getName(), codec, LREM_SINGLE, getName(), count, encode(o));
     }
 
     @Override
@@ -196,7 +192,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
         List<Object> args = new ArrayList<Object>(c.size() + 1);
         args.add(getName());
-        args.addAll(c);
+        encode(args, c);
         return commandExecutor.writeReactive(getName(), codec, RPUSH, args.toArray());
     }
 
@@ -211,7 +207,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         }
 
         if (index == 0) { // prepend elements to list
-            List<Object> elements = new ArrayList<Object>(coll);
+            List<Object> elements = new ArrayList<Object>();
+            encode(elements, coll);
             Collections.reverse(elements);
             elements.add(0, getName());
 
@@ -220,8 +217,8 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
         List<Object> args = new ArrayList<Object>(coll.size() + 1);
         args.add(index);
-        args.addAll(coll);
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Integer>("EVAL", new IntegerReplayConvertor(), 5, ValueType.OBJECTS),
+        encode(args, coll);
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_INTEGER,
                 "local ind = table.remove(ARGV, 1); " + // index is the first parameter
                         "local size = redis.call('llen', KEYS[1]); " +
                         "assert(tonumber(ind) <= size, 'index: ' .. ind .. ' but current size: ' .. size); " +
@@ -260,16 +257,16 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
     @Override
     public Publisher<V> set(long index, V element) {
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", 5),
+        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
-                Collections.<Object>singletonList(getName()), index, element);
+                Collections.<Object>singletonList(getName()), index, encode(element));
     }
 
     @Override
     public Publisher<Void> fastSet(long index, V element) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LSET, getName(), index, element);
+        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LSET, getName(), index, encode(element));
     }
 
     @Override

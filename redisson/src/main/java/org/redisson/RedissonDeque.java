@@ -23,9 +23,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 
@@ -38,7 +36,6 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
-    private static final RedisCommand<Void> RPUSH_VOID = new RedisCommand<Void>("RPUSH", new VoidReplayConvertor(), 2, ValueType.OBJECTS);
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
@@ -57,7 +54,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Void> addFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_VOID, getName(), encode(e));
     }
 
     @Override
@@ -67,7 +64,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Void> addLastAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RPUSH_VOID, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.RPUSH_VOID, getName(), encode(e));
     }
 
 
@@ -128,7 +125,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
 
     @Override
     public RFuture<Boolean> offerFirstAsync(V e) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), e);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), encode(e));
     }
 
     @Override

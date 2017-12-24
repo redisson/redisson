@@ -16,12 +16,13 @@
 package org.redisson.executor;
 
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.BaseRemoteService;
 import org.redisson.RedissonExecutorService;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -32,6 +33,8 @@ import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RemoteServiceCancelRequest;
 import org.redisson.remote.RemoteServiceCancelResponse;
 import org.redisson.remote.RemoteServiceRequest;
+import org.redisson.remote.RequestId;
+import org.redisson.remote.ResponseEntry;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -48,8 +51,8 @@ public class TasksService extends BaseRemoteService {
     protected String statusName;
     protected String tasksName;
     
-    public TasksService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
-        super(codec, redisson, name, commandExecutor);
+    public TasksService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, redisson, name, commandExecutor, executorId, responses);
     }
     
     public void setTerminationTopicName(String terminationTopicName) {
@@ -69,10 +72,10 @@ public class TasksService extends BaseRemoteService {
     }
 
     @Override
-    protected final RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue,
+    protected final RFuture<Boolean> addAsync(String requestQueueName,
             RemoteServiceRequest request, RemotePromise<Object> result) {
         final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
-        RFuture<Boolean> future = addAsync(requestQueue, request);
+        RFuture<Boolean> future = addAsync(requestQueueName, request);
         result.setAddFuture(future);
         
         future.addListener(new FutureListener<Boolean>() {
@@ -82,7 +85,7 @@ public class TasksService extends BaseRemoteService {
                     promise.tryFailure(future.cause());
                     return;
                 }
-
+                
                 if (!future.getNow()) {
                     promise.cancel(true);
                     return;
@@ -99,24 +102,26 @@ public class TasksService extends BaseRemoteService {
         return commandExecutor;
     }
     
-    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
+        request.getArgs()[3] = request.getId();
+        
         return getAddCommandExecutor().evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('exists', KEYS[2]) == 0 then "
-                    + "redis.call('rpush', KEYS[3], ARGV[2]); "
                     + "redis.call('hset', KEYS[4], ARGV[1], ARGV[2]);"
+                    + "redis.call('rpush', KEYS[3], ARGV[1]); "
                     + "redis.call('incr', KEYS[1]);"
                     + "return 1;"
                 + "end;"
                 + "return 0;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, requestQueue.getName(), tasksName),
-                request.getRequestId(), encode(request));
+                Arrays.<Object>asList(tasksCounterName, statusName, requestQueueName, tasksName),
+                request.getId(), encode(request));
     }
     
     @Override
-    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "local task = redis.call('hget', KEYS[5], ARGV[1]); " + 
-                    "if task ~= false and redis.call('lrem', KEYS[1], 1, task) > 0 then "
+                    "if task ~= false and redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                       + "redis.call('hdel', KEYS[5], ARGV[1]); "
                       + "if redis.call('decr', KEYS[2]) == 0 then "
                           + "redis.call('del', KEYS[2]);"
@@ -127,15 +132,13 @@ public class TasksService extends BaseRemoteService {
                       + "end;"
                       + "return 1;"
                   + "end;"
-                  + "redis.call('hdel', KEYS[5], ARGV[1]); "
                   + "return 0;",
-              Arrays.<Object>asList(requestQueue.getName(), tasksCounterName, statusName, terminationTopicName, tasksName), 
-              request.getRequestId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+              Arrays.<Object>asList(requestQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
+              taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
-    public RFuture<Boolean> cancelExecutionAsync(final String requestId) {
+    public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {
         final Class<?> syncInterface = RemoteExecutorService.class;
-        String requestQueueName = getRequestQueueName(syncInterface);
 
         if (!redisson.getMap(tasksName, LongCodec.INSTANCE).containsKey(requestId)) {
             return RedissonPromise.newSucceededFuture(false);
@@ -143,10 +146,8 @@ public class TasksService extends BaseRemoteService {
 
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         
-        RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName, getCodec());
-
-        RemoteServiceRequest request = new RemoteServiceRequest(requestId);
-        RFuture<Boolean> removeFuture = removeAsync(requestQueue, request);
+        String requestQueueName = getRequestQueueName(syncInterface);
+        RFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
         removeFuture.addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -158,15 +159,12 @@ public class TasksService extends BaseRemoteService {
                 if (future.getNow()) {
                     result.trySuccess(true);
                 } else {
-                    String cancelRequestName = getCancelRequestQueueName(syncInterface, requestId);
+                    RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, codec);
+                    canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
+                    canceledRequests.expireAsync(60, TimeUnit.SECONDS);
                     
-                    RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = redisson.getBlockingQueue(cancelRequestName, getCodec());
-                    cancelRequestQueue.putAsync(new RemoteServiceCancelRequest(true, requestId + ":cancel-response"));
-                    cancelRequestQueue.expireAsync(60, TimeUnit.SECONDS);
-                    
-                    String responseQueueName = getResponseQueueName(syncInterface, requestId + ":cancel-response");
-                    RBlockingQueue<RemoteServiceCancelResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, getCodec());
-                    final RFuture<RemoteServiceCancelResponse> response = responseQueue.pollAsync(60, TimeUnit.SECONDS);
+                    final RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<RemoteServiceCancelResponse>();
+                    scheduleCheck(cancelResponseMapName, requestId, response);
                     response.addListener(new FutureListener<RemoteServiceCancelResponse>() {
                         @Override
                         public void operationComplete(Future<RemoteServiceCancelResponse> future) throws Exception {

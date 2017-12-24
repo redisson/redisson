@@ -176,11 +176,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (data == null && parts != null) {
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
                 String channelName = (String) parts.get(1);
-                return entries.get(channelName).getDecoder();
+                return entries.get(channelName).getDecoder().getDecoder(parts.size(), state());
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
                 String patternName = (String) parts.get(1);
-                return entries.get(patternName).getDecoder();
+                return entries.get(patternName).getDecoder().getDecoder(parts.size(), state());
             }
         }
         return super.selectDecoder(data, parts);

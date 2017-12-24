@@ -43,7 +43,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.misc.RedissonObjectFactory;
@@ -74,9 +74,9 @@ public class RedissonObjectBuilder {
     }
 
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
+    private final ReferenceCodecProvider codecProvider;
     
-    public RedissonObjectBuilder(RedissonClient redisson, CodecProvider codecProvider) {
+    public RedissonObjectBuilder(RedissonClient redisson, ReferenceCodecProvider codecProvider) {
         super();
         this.redisson = redisson;
         this.codecProvider = codecProvider;

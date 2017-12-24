@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -23,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,6 +30,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RObject;
 import org.redisson.api.RType;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
@@ -108,7 +107,7 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null);
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
+    private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
@@ -121,7 +120,7 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<String>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 
@@ -207,7 +206,7 @@ public class RedissonKeys implements RKeys {
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
-        Set<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
+        Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
         final AtomicLong executed = new AtomicLong(entries.size());
         final FutureListener<Long> listener = new FutureListener<Long>() {
             @Override
@@ -301,14 +300,13 @@ public class RedissonKeys implements RKeys {
         Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
         for (String key : keys) {
             int slot = commandExecutor.getConnectionManager().calcSlot(key);
-            for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
-                List<String> list = range2key.get(entry);
-                if (list == null) {
-                    list = new ArrayList<String>();
-                    range2key.put(entry, list);
-                }
-                list.add(key);
+            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(slot);
+            List<String> list = range2key.get(entry);
+            if (list == null) {
+                list = new ArrayList<String>();
+                range2key.put(entry, list);
             }
+            list.add(key);
         }
 
         final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();

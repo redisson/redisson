@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RScheduledFuture;
 import org.redisson.misc.PromiseDelegator;
+import org.redisson.remote.RequestId;
 
 /**
  * 
@@ -30,7 +31,7 @@ import org.redisson.misc.PromiseDelegator;
 public class RedissonScheduledFuture<V> extends PromiseDelegator<V> implements RScheduledFuture<V> {
 
     private final long scheduledExecutionTime;
-    private final String taskId;
+    private final RequestId taskId;
 
     public RedissonScheduledFuture(RemotePromise<V> promise, long scheduledExecutionTime) {
         super(promise);
@@ -62,7 +63,7 @@ public class RedissonScheduledFuture<V> extends PromiseDelegator<V> implements R
     
     @Override
     public String getTaskId() {
-        return taskId;
+        return taskId.toString();
     }
 
 }

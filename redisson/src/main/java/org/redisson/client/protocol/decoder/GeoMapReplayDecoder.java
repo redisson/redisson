@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -31,10 +30,10 @@ import io.netty.buffer.ByteBuf;
 public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return ListMultiDecoder.RESET;
     }
-
+    
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
@@ -43,11 +42,6 @@ public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
             result.put(vals.get(0), vals.get(1));
         }
         return result;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
     }
 
 }

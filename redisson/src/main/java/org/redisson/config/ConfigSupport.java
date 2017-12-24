@@ -29,7 +29,7 @@ import java.util.List;
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -37,7 +37,6 @@ import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -271,8 +270,7 @@ public class ConfigSupport {
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
-        mapper.addMixIn(CodecProvider.class, ClassMixIn.class);
-        mapper.addMixIn(ResolverProvider.class, ClassMixIn.class);
+        mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);

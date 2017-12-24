@@ -20,8 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -29,11 +28,6 @@ import io.netty.buffer.ByteBuf;
  *
  */
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
-
-    @Override
-    public Object decode(ByteBuf buf, State state) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
@@ -47,8 +41,8 @@ public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>>
     }
 
     @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
 
 }

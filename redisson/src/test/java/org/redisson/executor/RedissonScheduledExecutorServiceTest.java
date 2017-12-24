@@ -3,14 +3,17 @@ package org.redisson.executor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
 
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -66,12 +69,44 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testLoad() {
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", Runtime.getRuntime().availableProcessors()*2));
+        RedissonNode node = RedissonNode.create(nodeConfig);
+        node.start();
+
+        List<RScheduledFuture<?>> futures = new ArrayList<>();
+        for(int i = 0; i<10000; i++){
+            RScheduledFuture<?> future = redisson.getExecutorService("test2").scheduleAsync(new RunnableTask(), 5, TimeUnit.SECONDS);
+            futures.add(future);
+        }
+        
+        for (RScheduledFuture<?> future : futures) {
+            assertThat(future.awaitUninterruptibly(5000)).isTrue();
+        }
+        
+        node.shutdown();
+    }
+    
+    @Test
     public void testCronExpression() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
         executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0/2 * * * * ?”"));
-        Thread.sleep(4000);
+        Thread.sleep(4200);
         assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
     }
+    
+    @Test
+    public void testCronExpressionMultipleTasks() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        executor.schedule(new ScheduledRunnableTask("executed1"), CronSchedule.of("0/5 * * * * ?"));
+        executor.schedule(new ScheduledRunnableTask("executed2"), CronSchedule.of("0/1 * * * * ?"));
+        Thread.sleep(30000);
+        assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(6);
+        assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(30);
+    }
+
     
     @Test
     public void testCancel() throws InterruptedException, ExecutionException {
@@ -98,12 +133,12 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         ScheduledFuture<?> future = executor.schedule(new ScheduledLongRunnableTask("executed1"), 1, TimeUnit.SECONDS);
         Thread.sleep(2000);
         cancel(future);
-        assertThat(redisson.<Integer>getBucket("executed1").get()).isBetween(1000, Integer.MAX_VALUE);
+        assertThat(redisson.<Long>getBucket("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
         
         RScheduledFuture<?> futureAsync = executor.scheduleAsync(new ScheduledLongRunnableTask("executed2"), 1, TimeUnit.SECONDS);
         Thread.sleep(2000);
         assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
-        assertThat(redisson.<Integer>getBucket("executed2").get()).isBetween(1000, Integer.MAX_VALUE);
+        assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
     }
     
     @Test
@@ -134,7 +169,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
         
         cancel(future1);
-        assertThat(redisson.<Integer>getBucket("executed1").get()).isBetween(1000, Integer.MAX_VALUE);
+        assertThat(redisson.<Long>getBucket("executed1").get()).isBetween(1000L, Long.MAX_VALUE);
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
@@ -142,13 +177,12 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
 
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
         assertThat(future1.cancel(true)).isTrue();
-        boolean canceled = false;
         try {
             future1.get();
+            Assert.fail("CancellationException should be arise");
         } catch (CancellationException e) {
-            canceled = true;
+            // skip
         }
-        assertThat(canceled).isTrue();
     }
 
 
@@ -194,7 +228,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         future1.get();
         future2.get();
         future3.get();
-        assertThat(System.currentTimeMillis() - startTime).isBetween(5000L, 5200L);
+        assertThat(System.currentTimeMillis() - startTime).isBetween(4900L, 5300L);
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed3").get()).isEqualTo(1);

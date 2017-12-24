@@ -1,7 +1,7 @@
 package org.redisson;
 
-import static com.jayway.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -33,9 +34,6 @@ import org.redisson.api.listener.StatusListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
-
-import com.jayway.awaitility.Awaitility;
-import com.jayway.awaitility.Duration;
 
 public class RedissonTopicTest {
 
@@ -157,7 +155,7 @@ public class RedissonTopicTest {
         });
         topic1.publish(123L);
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
 
         redisson1.shutdown();
     }
@@ -178,7 +176,7 @@ public class RedissonTopicTest {
             });
             stringTopic.publish("testmsg");
             
-            Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+            await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
             
             stringTopic.removeListener(listenerId);
         }
@@ -213,8 +211,8 @@ public class RedissonTopicTest {
         });
         longTopic.publish(1L);
         
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(longMessageReceived);
+        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ONE_SECOND).untilTrue(longMessageReceived);
     }
     
     @Test

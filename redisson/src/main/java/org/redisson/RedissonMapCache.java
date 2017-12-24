@@ -37,6 +37,7 @@ import org.redisson.api.map.event.EntryExpiredListener;
 import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.api.map.event.MapEntryListener;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -228,10 +229,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores'); " +
             "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
             "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; " +
-            "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); " +
             "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size'));" +
-            "for i = #map, 1, -1 do " +
-            "    local value = map[i]; " +
+            "local map = {}; " +
+            "for i = 1, #ARGV, 1 do " +
+            "    local value = redis.call('hget', KEYS[1], ARGV[i]); " + 
+            "    map[i] = false;" +
             "    if value ~= false then " +
             "        local key = ARGV[i]; " +
             "        local t, val = struct.unpack('dLc0', value); " +
@@ -1168,11 +1170,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
         return get(scanIteratorAsync(name, client, startPos, pattern));
     }
 
-    public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorAsync(final String name, InetSocketAddress client, long startPos, String pattern) {
+    public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorAsync(final String name, RedisClient client, long startPos, String pattern) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -1234,9 +1236,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                     List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
                     args.add(System.currentTimeMillis());
-                    args.addAll(res.getIdleKeys());
+                    encodeMapKeys(args, res.getIdleKeys());
 
-                    commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), 7, ValueType.MAP_KEY, ValueType.MAP_VALUE),
+                    commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), ValueType.MAP_VALUE),
                                     "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
                                   + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
                                   + "for i = #map, 1, -1 do "

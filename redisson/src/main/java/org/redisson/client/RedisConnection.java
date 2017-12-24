@@ -247,9 +247,10 @@ public class RedisConnection implements RedisCommands {
     }
     
     public RFuture<Void> forceFastReconnectAsync() {
-        fastReconnect = new RedissonPromise<Void>();
+        RedissonPromise<Void> promise = new RedissonPromise<Void>();
+        fastReconnect = promise;
         channel.close();
-        return fastReconnect;
+        return promise;
     }
 
     /**

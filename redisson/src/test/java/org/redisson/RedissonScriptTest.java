@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -26,6 +27,16 @@ public class RedissonScriptTest extends BaseTest {
         RScript script = redisson.getScript();
         RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
         assertThat(res.awaitUninterruptibly().getNow()).containsExactly(1L, 2L, 3L, "foo");
+    }
+    
+    @Test
+    public void testScriptEncoding() {
+        RScript script = redisson.getScript();
+        String value = "test";
+        script.eval(RScript.Mode.READ_WRITE, "redis.call('set', KEYS[1], ARGV[1])", RScript.ReturnType.VALUE, Arrays.asList("foo"), value);
+
+        String val = script.eval(RScript.Mode.READ_WRITE, "return redis.call('get', KEYS[1])", RScript.ReturnType.VALUE, Arrays.asList("foo"));
+        Assert.assertEquals(value, val);
     }
 
     @Test

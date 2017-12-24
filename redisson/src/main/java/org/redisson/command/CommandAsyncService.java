@@ -15,12 +15,13 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisAskException;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
@@ -71,9 +73,6 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import java.util.AbstractMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 
 /**
  *
@@ -181,24 +180,31 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> readAsync(InetSocketAddress client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readAsync(RedisClient client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
         async(true, new NodeSource(entry, client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
+    
+    @Override
+    public <T, R> RFuture<R> readAsync(RedisClient client, String name, Codec codec, RedisCommand<T> command, Object... params) {
+        RPromise<R> mainPromise = connectionManager.newPromise();
+        int slot = connectionManager.calcSlot(name);
+        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        return mainPromise;
+    }
 
     @Override
-    public <T, R> RFuture<R> readAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
-        int slot = connectionManager.calcSlot(key);
-        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0);
+        async(true, new NodeSource(client), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
     @Override
     public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
         final RPromise<Collection<R>> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final List<R> results = new ArrayList<R>();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<R> listener = new FutureListener<R>() {
@@ -288,7 +294,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <T, R> RFuture<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object... params) {
         final RPromise<R> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<T> listener = new FutureListener<T>() {
             @Override
@@ -345,23 +351,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    public <T, R> RFuture<R> readAsync(Integer slot, Codec codec, RedisCommand<T> command, Object... params) {
-        RPromise<R> mainPromise = connectionManager.newPromise();
-        async(true, new NodeSource(slot), codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
     @Override
     public <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = connectionManager.newPromise();
         async(false, new NodeSource(entry), codec, command, params, mainPromise, 0);
-        return mainPromise;
-    }
-
-    @Override
-    public <T, R> RFuture<R> writeAsync(Integer slot, Codec codec, RedisCommand<T> command, Object... params) {
-        RPromise<R> mainPromise = connectionManager.newPromise();
-        async(false, new NodeSource(slot), codec, command, params, mainPromise, 0);
         return mainPromise;
     }
 
@@ -382,13 +375,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> evalReadAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalAsync(new NodeSource(slot), true, codec, evalCommandType, script, keys, params);
-    }
-
-    @Override
-    public <T, R> RFuture<R> evalReadAsync(InetSocketAddress client, String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        int slot = connectionManager.calcSlot(key);
+    public <T, R> RFuture<R> evalReadAsync(RedisClient client, String name, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        int slot = connectionManager.calcSlot(name);
         return evalAsync(new NodeSource(slot, client), true, codec, evalCommandType, script, keys, params);
     }
 
@@ -402,10 +390,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return evalAsync(new NodeSource(entry), false, codec, evalCommandType, script, keys, params);
     }
 
-    public <T, R> RFuture<R> evalWriteAsync(Integer slot, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
-        return evalAsync(new NodeSource(slot), false, codec, evalCommandType, script, keys, params);
-    }
-
     @Override
     public <T, R> RFuture<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object... params) {
         return evalAllAsync(false, command, callback, script, keys, params);
@@ -413,7 +397,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     public <T, R> RFuture<R> evalAllAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, String script, List<Object> keys, Object... params) {
         final RPromise<R> mainPromise = connectionManager.newPromise();
-        final Set<MasterSlaveEntry> entries = connectionManager.getEntrySet();
+        final Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(entries.size());
         FutureListener<T> listener = new FutureListener<T>() {
 
@@ -537,7 +521,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (details.getConnectionFuture().isSuccess()) {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
                             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
-                                if (details.getWriteFuture().cancel(false)) {
+                                if (details.getWriteFuture() != null && details.getWriteFuture().cancel(false)) {
                                     if (details.getException() == null) {
                                         details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams()) + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
@@ -567,7 +551,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams() + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts")));
+                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams()) + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     return;
@@ -713,7 +697,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         final Timeout scheduledFuture;
         if (popTimeout != 0) {
-            // to handle cases when connection has been lost
+            // handling cases when connection has been lost
             final Channel orignalChannel = connection.getChannel();
             scheduledFuture = connectionManager.newTimeout(new TimerTask() {
                 @Override
@@ -806,7 +790,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (future.cause() instanceof RedisMovedException) {
             RedisMovedException ex = (RedisMovedException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED), details.getCodec(),
+            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED), details.getCodec(),
                     details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
             AsyncDetails.release(details);
             return;
@@ -814,7 +798,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (future.cause() instanceof RedisAskException) {
             RedisAskException ex = (RedisAskException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK), details.getCodec(),
+            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK), details.getCodec(),
                     details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt());
             AsyncDetails.release(details);
             return;
@@ -845,11 +829,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (future.isSuccess()) {
             R res = future.getNow();
             if (res instanceof RedisClientResult) {
-                InetSocketAddress addr = source.getAddr();
-                if (addr == null) {
-                    addr = details.getConnectionFuture().getNow().getRedisClient().getAddr();
-                }
-                ((RedisClientResult) res).setRedisClient(addr);
+                ((RedisClientResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
             }
 
             if (isRedissonReferenceSupportEnabled()) {
@@ -865,109 +845,149 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
-        if (res instanceof List) {
-            List<Object> r = (List<Object>) res;
-            for (int i = 0; i < r.size(); i++) {
-                if (r.get(i) instanceof RedissonReference) {
-                    r.set(i, fromReference(r.get(i)));
-                } else if (r.get(i) instanceof ScoredEntry && ((ScoredEntry) r.get(i)).getValue() instanceof RedissonReference) {
-                    ScoredEntry<?> se = ((ScoredEntry<?>) r.get(i));
-                    se = new ScoredEntry(se.getScore(), fromReference(se.getValue()));
-                    r.set(i, se);
-                }
-            }
+        try {
+            mainPromise.trySuccess(tryHandleReference(res));
+        } catch (Exception e) {
+            //fall back and let other part of the code handle the type conversion.
             mainPromise.trySuccess(res);
-        } else if (res instanceof Set) {
-            Set r = (Set) res;
-            LinkedHashSet converted = new LinkedHashSet();
-            for (Object o : r) {
-                if (o instanceof RedissonReference) {
-                    converted.add(fromReference(o));
-                } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
-                    ScoredEntry<?> se = ((ScoredEntry<?>) o);
-                    se = new ScoredEntry(se.getScore(), fromReference(se.getValue()));
-                    converted.add(se);
-                } else if (o instanceof Map.Entry) {
-                    Map.Entry old = (Map.Entry) o;
-                    Object key = old.getKey();
-                    if (key instanceof RedissonReference) {
-                        key = fromReference(key);
-                    }
-                    Object value = old.getValue();
-                    if (value instanceof RedissonReference) {
-                        value = fromReference(value);
-                    }
-                    converted.add(new AbstractMap.SimpleEntry(key, value));
-                } else {
-                    converted.add(o);
-                }
-            }
-            mainPromise.trySuccess((R) converted);
-        } else if (res instanceof Map) {
-            Map<Object, Object> map = (Map<Object, Object>) res;
-            LinkedHashMap<Object, Object> converted = new LinkedHashMap<Object, Object>();
-            for (Map.Entry<Object, Object> e : map.entrySet()) {
-                Object value = e.getValue();
-                if (e.getValue() instanceof RedissonReference) {
-                    value = fromReference(e.getValue());
-                }
-                Object key = e.getKey();
-                if (e.getKey() instanceof RedissonReference) {
-                    key = fromReference(e.getKey());
-                }
-                converted.put(key, value);
-            }
-            mainPromise.trySuccess((R) converted);
-        } else if (res instanceof ListScanResult) {
-            List<ScanObjectEntry> r = ((ListScanResult) res).getValues();
+        }
+    }
+
+    protected <T> T tryHandleReference(T o) {
+        boolean hasConversion = false;
+        if (o instanceof List) {
+            List<Object> r = (List<Object>) o;
             for (int i = 0; i < r.size(); i++) {
-                Object obj = r.get(i);
-                if (!(obj instanceof ScanObjectEntry)) {
-                    break;
-                }
-                ScanObjectEntry e = r.get(i);
-                if (e.getObj() instanceof RedissonReference) {
-                    r.set(i, new ScanObjectEntry(e.getBuf(), fromReference(e.getObj())));
-                } else if (e.getObj() instanceof ScoredEntry && ((ScoredEntry<?>) e.getObj()).getValue() instanceof RedissonReference) {
-                    ScoredEntry<?> se = ((ScoredEntry<?>) e.getObj());
-                    se = new ScoredEntry(se.getScore(), fromReference(se.getValue()));
-                    r.set(i, new ScanObjectEntry(e.getBuf(), se));
+                Object ref = tryHandleReference0(r.get(i));
+                if (ref != r.get(i)) {
+                    r.set(i, ref);
                 }
             }
-            mainPromise.trySuccess(res);
-        } else if (res instanceof MapScanResult) {
-            MapScanResult scanResult = (MapScanResult) res;
-            Map<ScanObjectEntry, ScanObjectEntry> map = ((MapScanResult) res).getMap();
-            LinkedHashMap<ScanObjectEntry, ScanObjectEntry> converted = new LinkedHashMap<ScanObjectEntry, ScanObjectEntry>();
-            boolean hasConversion = false;
-            for (Map.Entry<ScanObjectEntry, ScanObjectEntry> e : map.entrySet()) {
-                ScanObjectEntry value = e.getValue();
-                if (e.getValue().getObj() instanceof RedissonReference) {
-                    value = new ScanObjectEntry(e.getValue().getBuf(), fromReference(e.getValue().getObj()));
-                    hasConversion = true;
-                }
-                ScanObjectEntry key = e.getKey();
-                if (e.getKey().getObj() instanceof RedissonReference) {
-                    key = new ScanObjectEntry(e.getKey().getBuf(), fromReference(e.getKey().getObj()));
-                    hasConversion = true;
-                }
-                converted.put(key, value);
-            }
-            if (hasConversion) {
-                MapScanResult<ScanObjectEntry, ScanObjectEntry> newScanResult = new MapScanResult<ScanObjectEntry, ScanObjectEntry>(scanResult.getPos(), converted);
-                newScanResult.setRedisClient(scanResult.getRedisClient());
-                mainPromise.trySuccess((R) newScanResult);
-            } else {
-                mainPromise.trySuccess((R) res);
-            }
-        } else if (res instanceof RedissonReference) {
+            return o;
+        } else if (o instanceof Set) {
+            Set set, r = (Set) o;
+            boolean useNewSet = o instanceof LinkedHashSet;
             try {
-                mainPromise.trySuccess(this.<R>fromReference(res));
+                set = (Set) o.getClass().getConstructor().newInstance();
             } catch (Exception exception) {
-                mainPromise.trySuccess(res);//fallback
+                set = new LinkedHashSet();
+            }
+            for (Object i : r) {
+                Object ref = tryHandleReference0(i);
+                //Not testing for ref changes because r.add(ref) below needs to
+                //fail on the first iteration to be able to perform fall back 
+                //if failure happens.
+                //
+                //Assuming the failure reason is systematic such as put method
+                //is not supported or implemented, and not an occasional issue 
+                //like only one element fails.
+                if (useNewSet) {
+                    set.add(ref);
+                } else {
+                    try {
+                        r.add(ref);
+                        set.add(i);
+                    } catch (Exception e) {
+                        //r is not supporting add operation, like 
+                        //LinkedHashMap$LinkedEntrySet and others.
+                        //fall back to use a new set.
+                        useNewSet = true;
+                        set.add(ref);
+                    }
+                }
+                hasConversion |= ref != i;
+            }
+
+            if (!hasConversion) {
+                return o;
+            } else if (useNewSet) {
+                return (T) set;
+            } else if (!set.isEmpty()) {
+                r.removeAll(set);
+            }
+            return o;
+        } else if (o instanceof Map) {
+            Map<Object, Object> map, r = (Map<Object, Object>) o;
+            boolean useNewMap = o instanceof LinkedHashMap;
+            try {
+                map = (Map) o.getClass().getConstructor().newInstance();
+            } catch (Exception e) {
+                map = new LinkedHashMap();
+            }
+            for (Map.Entry<Object, Object> e : r.entrySet()) {
+                Map.Entry<Object, Object> ref = tryHandleReference0(e);
+                //Not testing for ref changes because r.put(ref.getKey(), ref.getValue())
+                //below needs to fail on the first iteration to be able to
+                //perform fall back if failure happens.
+                //
+                //Assuming the failure reason is systematic such as put method
+                //is not supported or implemented, and not an occasional issue 
+                //like only one element fails.
+                if (useNewMap) {
+                    map.put(ref.getKey(), ref.getValue());
+                } else {
+                    try {
+                        r.put(ref.getKey(), ref.getValue());
+                        if (e.getKey() != ref.getKey()) {
+                            map.put(e.getKey(), e.getValue());
+                        }
+                    } catch (Exception ex) {
+                        //r is not supporting put operation. fall back to use
+                        //a new map.
+                        useNewMap = true;
+                        map.put(ref.getKey(), ref.getValue());
+                    }
+                }
+                hasConversion |= ref != e;
+            }
+
+            if (!hasConversion) {
+                return o;
+            } else if (useNewMap) {
+                return (T) map;
+            } else if (!map.isEmpty()) {
+                r.keySet().removeAll(map.keySet());
+            }
+            return o;
+        } else if (o instanceof ListScanResult) {
+            tryHandleReference(((ListScanResult) o).getValues());
+            return o;
+        } else if (o instanceof MapScanResult) {
+            MapScanResult scanResult = (MapScanResult) o;
+            Map oldMap = ((MapScanResult) o).getMap();
+            Map map = tryHandleReference(oldMap);
+            if (map != oldMap) {
+                MapScanResult<ScanObjectEntry, ScanObjectEntry> newScanResult
+                        = new MapScanResult<ScanObjectEntry, ScanObjectEntry>(scanResult.getPos(), map);
+                newScanResult.setRedisClient(scanResult.getRedisClient());
+                return (T) newScanResult;
+            } else {
+                return o;
             }
         } else {
-            mainPromise.trySuccess(res);
+            return tryHandleReference0(o);
+        }
+    }
+
+    private <T> T tryHandleReference0(T o) {
+        if (o instanceof RedissonReference) {
+            return fromReference(o);
+        } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
+            ScoredEntry<?> se = ((ScoredEntry<?>) o);
+            return (T) new ScoredEntry(se.getScore(), fromReference(se.getValue()));
+        } else if (o instanceof ScanObjectEntry) {
+            ScanObjectEntry keyScan = (ScanObjectEntry) o;
+            Object obj = tryHandleReference0(keyScan.getObj());
+            return obj != keyScan.getObj() ? (T) new ScanObjectEntry(keyScan.getBuf(), obj) : o;
+        } else if (o instanceof Map.Entry) {
+            Map.Entry old = (Map.Entry) o;
+            Object key = tryHandleReference0(old.getKey());
+            Object value = tryHandleReference0(old.getValue());
+            return value != old.getValue() || key != old.getKey()
+                    ? (T) new AbstractMap.SimpleEntry(key, value)
+                    : o;
+        } else {
+            return o;
         }
     }
 

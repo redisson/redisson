@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
+import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
@@ -47,6 +48,7 @@ import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -129,114 +131,114 @@ public class CommandBatchService extends CommandAsyncService {
         entry.getCommands().add(commandData);
     }
 
-    public List<?> execute() {
-        return get(executeAsync(0, 0, 0));
+    public BatchResult<?> execute() {
+        RFuture<BatchResult<?>> f = executeAsync(0, 0, false, 0, 0, 0);
+        return get(f);
     }
     
-    public List<?> execute(long responseTimeout, int retryAttempts, long retryInterval) {
-        return get(executeAsync(responseTimeout, retryAttempts, retryInterval));
+    public BatchResult<?> execute(int syncSlaves, long syncTimeout, boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
+        RFuture<BatchResult<?>> f = executeAsync(syncSlaves, syncTimeout, noResult, responseTimeout, retryAttempts, retryInterval);
+        return get(f);
     }
 
     public RFuture<Void> executeAsyncVoid() {
-        return executeAsyncVoid(false, 0, 0, 0);
+        final RedissonPromise<Void> promise = new RedissonPromise<Void>();
+        RFuture<BatchResult<?>> res = executeAsync(0, 0, false, 0, 0, 0);
+        res.addListener(new FutureListener<BatchResult<?>>() {
+            @Override
+            public void operationComplete(Future<BatchResult<?>> future) throws Exception {
+                if (future.isSuccess()) {
+                    promise.trySuccess(null);
+                } else {
+                    promise.tryFailure(future.cause());
+                }
+            }
+        });
+        return promise;
     }
     
-    protected RFuture<Void> executeAsyncVoid(boolean noResult, long responseTimeout, int retryAttempts, long retryInterval) {
+    public RFuture<List<?>> executeAsync() {
+        return executeAsync(0, 0, false, 0, 0, 0);
+    }
+    
+    public <R> RFuture<R> executeAsync(int syncSlaves, long syncTimeout, boolean skipResult, long responseTimeout, int retryAttempts, long retryInterval) {
         if (executed) {
             throw new IllegalStateException("Batch already executed!");
         }
-
+        
         if (commands.isEmpty()) {
-            return connectionManager.newSucceededFuture(null);
+            return RedissonPromise.newSucceededFuture(null);
         }
+        executed = true;
 
-        if (noResult) {
+        if (skipResult) {
             for (Entry entry : commands.values()) {
-                RPromise<Object> s = connectionManager.newPromise();
-                BatchCommandData<?, ?> offCommand = new BatchCommandData(s, null, RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
+                BatchCommandData<?, ?> offCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "OFF" }, index.incrementAndGet());
                 entry.getCommands().addFirst(offCommand);
-                RPromise<Object> s1 = connectionManager.newPromise();
-                BatchCommandData<?, ?> onCommand = new BatchCommandData(s1, null, RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
+                BatchCommandData<?, ?> onCommand = new BatchCommandData(RedisCommands.CLIENT_REPLY, new Object[] { "ON" }, index.incrementAndGet());
                 entry.getCommands().add(onCommand);
             }
         }
         
-        executed = true;
-
-        RPromise<Void> voidPromise = connectionManager.newPromise();
-        voidPromise.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                commands = null;
+        if (syncSlaves > 0) {
+            for (Entry entry : commands.values()) {
+                BatchCommandData<?, ?> waitCommand = new BatchCommandData(RedisCommands.WAIT, new Object[] { syncSlaves, syncTimeout }, index.incrementAndGet());
+                entry.getCommands().add(waitCommand);
             }
-        });
-
-        AtomicInteger slots = new AtomicInteger(commands.size());
-        for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0, true, responseTimeout, retryAttempts, retryInterval);
-        }
-        return voidPromise;
-    }
-    
-    public void executeSkipResult(long timeout, int retryAttempts, long retryInterval) {
-        get(executeSkipResultAsync(timeout, retryAttempts, retryInterval));
-    }
-    
-    public RFuture<Void> executeSkipResultAsync(long timeout, int retryAttempts, long retryInterval) {
-        return executeAsyncVoid(true, timeout, retryAttempts, retryInterval);
-    }
-    
-    public RFuture<List<?>> executeAsync() {
-        return executeAsync(0, 0, 0);
-    }
-    
-    public RFuture<List<?>> executeAsync(long responseTimeout, int retryAttempts, long retryInterval) {
-        if (executed) {
-            throw new IllegalStateException("Batch already executed!");
         }
         
-        if (commands.isEmpty()) {
-            return connectionManager.newSucceededFuture(null);
-        }
-        executed = true;
-
-        RPromise<Void> voidPromise = connectionManager.newPromise();
-        final RPromise<List<?>> promise = connectionManager.newPromise();
-        voidPromise.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
+        RPromise<R> resultPromise;
+        RPromise<Void> voidPromise = new RedissonPromise<Void>();
+        if (skipResult) {
+            voidPromise.addListener(new FutureListener<Void>() {
+                @Override
+                public void operationComplete(Future<Void> future) throws Exception {
                     commands = null;
-                    return;
                 }
-
-                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
-                for (Entry e : commands.values()) {
-                    entries.addAll(e.getCommands());
-                }
-                Collections.sort(entries);
-                List<Object> result = new ArrayList<Object>(entries.size());
-                for (BatchCommandData<?, ?> commandEntry : entries) {
-                    Object entryResult = commandEntry.getPromise().getNow();
-                    if (isRedissonReferenceSupportEnabled() && entryResult instanceof RedissonReference) {
-                        result.add(redisson != null
-                                ? RedissonObjectFactory.<Object>fromReference(redisson, (RedissonReference) entryResult)
-                                : RedissonObjectFactory.<Object>fromReference(redissonReactive, (RedissonReference) entryResult));
-                    } else {
-                        result.add(entryResult);
+            });
+            resultPromise = (RPromise<R>) voidPromise;
+        } else {
+            final RPromise<Object> promise = new RedissonPromise<Object>();
+            voidPromise.addListener(new FutureListener<Void>() {
+                @Override
+                public void operationComplete(Future<Void> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        promise.tryFailure(future.cause());
+                        commands = null;
+                        return;
                     }
+                    
+                    List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
+                    for (Entry e : commands.values()) {
+                        entries.addAll(e.getCommands());
+                    }
+                    Collections.sort(entries);
+                    List<Object> responses = new ArrayList<Object>(entries.size());
+                    int syncedSlaves = 0;
+                    for (BatchCommandData<?, ?> commandEntry : entries) {
+                        if (!isWaitCommand(commandEntry)) {
+                            Object entryResult = commandEntry.getPromise().getNow();
+                            entryResult = tryHandleReference(entryResult);
+                            responses.add(entryResult);
+                        } else {
+                            syncedSlaves = (Integer) commandEntry.getPromise().getNow();
+                        }
+                    }
+                    
+                    BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
+                    promise.trySuccess(result);
+                    
+                    commands = null;
                 }
-                promise.trySuccess(result);
-                commands = null;
-            }
-        });
+            });
+            resultPromise = (RPromise<R>) promise;
+        }
 
         AtomicInteger slots = new AtomicInteger(commands.size());
         for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0, false, responseTimeout, retryAttempts, retryInterval);
+            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0, skipResult, responseTimeout, retryAttempts, retryInterval);
         }
-        return promise;
+        return resultPromise;
     }
 
     private void execute(final Entry entry, final NodeSource source, final RPromise<Void> mainPromise, final AtomicInteger slots, 
@@ -252,7 +254,7 @@ public class CommandBatchService extends CommandAsyncService {
             return;
         }
 
-        final RPromise<Void> attemptPromise = connectionManager.newPromise();
+        final RPromise<Void> attemptPromise = new RedissonPromise<Void>();
 
         final AsyncDetails details = new AsyncDetails();
 
@@ -369,14 +371,14 @@ public class CommandBatchService extends CommandAsyncService {
                 if (future.cause() instanceof RedisMovedException) {
                     RedisMovedException ex = (RedisMovedException)future.cause();
                     entry.clearErrors();
-                    NodeSource nodeSource = new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.MOVED);
+                    NodeSource nodeSource = new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED);
                     execute(entry, nodeSource, mainPromise, slots, attempt, noResult, responseTimeout, retryAttempts, retryInterval);
                     return;
                 }
                 if (future.cause() instanceof RedisAskException) {
                     RedisAskException ex = (RedisAskException)future.cause();
                     entry.clearErrors();
-                    NodeSource nodeSource = new NodeSource(ex.getSlot(), ex.getAddr(), Redirect.ASK);
+                    NodeSource nodeSource = new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK);
                     execute(entry, nodeSource, mainPromise, slots, attempt, noResult, responseTimeout, retryAttempts, retryInterval);
                     return;
                 }
@@ -469,11 +471,11 @@ public class CommandBatchService extends CommandAsyncService {
 
         List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(entry.getCommands().size() + 1);
         if (source.getRedirect() == Redirect.ASK) {
-            RPromise<Void> promise = connectionManager.newPromise();
+            RPromise<Void> promise = new RedissonPromise<Void>();
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
         } 
         for (BatchCommandData<?, ?> c : entry.getCommands()) {
-            if (c.getPromise().isSuccess()) {
+            if (c.getPromise().isSuccess() && !isWaitCommand(c)) {
                 // skip successful commands
                 continue;
             }
@@ -491,6 +493,10 @@ public class CommandBatchService extends CommandAsyncService {
         });
 
         releaseConnection(source, connFuture, entry.isReadOnlyMode(), attemptPromise, details);
+    }
+
+    protected boolean isWaitCommand(BatchCommandData<?, ?> c) {
+        return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
     }
 
 }

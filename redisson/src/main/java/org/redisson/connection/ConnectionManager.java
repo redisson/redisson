@@ -18,7 +18,6 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -85,9 +84,11 @@ public interface ConnectionManager {
 
     Codec getCodec();
 
-    Set<MasterSlaveEntry> getEntrySet();
+    Collection<MasterSlaveEntry> getEntrySet();
     
     MasterSlaveEntry getEntry(int slot);
+    
+    MasterSlaveEntry getEntry(InetSocketAddress address);
     
     <R> RPromise<R> newPromise();
 
@@ -101,10 +102,12 @@ public interface ConnectionManager {
 
     RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout);
 
+    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri);
+    
     RedisClient createClient(NodeType type, URI address);
 
-    MasterSlaveEntry getEntry(InetSocketAddress addr);
-
+    MasterSlaveEntry getEntry(RedisClient redisClient);
+    
     PubSubConnectionEntry getPubSubEntry(String channelName);
 
     RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?>... listeners);

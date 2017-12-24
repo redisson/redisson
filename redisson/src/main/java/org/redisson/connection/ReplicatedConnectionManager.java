@@ -16,7 +16,9 @@
 package org.redisson.connection;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -39,7 +41,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -145,7 +146,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private void scheduleMasterChangeCheck(final ReplicatedServersConfig cfg) {
-        monitorFuture = GlobalEventExecutor.INSTANCE.schedule(new Runnable() {
+        monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
                 final URI master = currentMaster.get();
@@ -212,11 +213,17 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     @Override
     public void shutdown() {
         monitorFuture.cancel(true);
-        super.shutdown();
-
+        
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
-            connection.getRedisClient().shutdown();
+            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
+            futures.add(future);
         }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+        super.shutdown();
     }
 }
 

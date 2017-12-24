@@ -15,6 +15,7 @@
  */
 package org.redisson.misc;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
@@ -35,6 +36,15 @@ public class URIBuilder {
         //Assuming this is an IPv6 format, other situations will be handled by
         //Netty at a later stage.
         return URI.create(uri.replace(s, "[" + s + "]"));
+    }
+    
+    public static boolean compare(InetSocketAddress entryAddr, URI addr) {
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
+                || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
+                    && entryAddr.getPort() == addr.getPort()) {
+            return true;
+        }
+        return false;
     }
     
 }

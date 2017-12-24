@@ -4,6 +4,63 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 08-Dec-2017 - versions 2.10.6 and 3.5.6 released
+
+Feature - `RSetMultimapReactive` object added  
+Feature - `RListMultimapReactive` object added  
+Feature - `ReconnectionStrategy` and `SyncStrategy` added to `LocalCachedMapOptions`  
+Feature - `pingConnectionInterval` setting added  
+Improvement - added sync on key for `JCache.invoke` method  
+Fixed - arguments encoding for `RScript`  
+Fixed - `MapLoader` hangs if loaded value is null  
+Fixed - OutOfMemory during `RExecutorService` usage  
+Fixed - NPE in `RedissonSession.save` method  
+Fixed - NPE during `RExecutorService` usage  
+Fixed - `SnappyCodec` can't handle data more than 32Kb  
+Fixed - failed to continue poll remote responses if current waiting for response has been canceled  
+Fixed - SSL support for cluster mode  
+Fixed - task with longer start time shouldn't overlap current task with shorter start time  
+Fixed - DNS monitor caches host name binding  
+Fixed - ReadMode.MASTER_SLAVE should be taken in account  
+Fixed - slave nodes should be added without freeze state  
+Fixed - master node should be disabled if any slave up  
+Fixed - handling connection to Redis nodes returned to online state  
+
+### 31-Oct-2017 - versions 2.10.5 and 3.5.5 released
+`ProjectReactor` dependency for `3.5.5` version was updated to `3.1.1` version  
+
+Feature - Added pingConnection, keepAlive, tcpNoDelay settings  
+Feature - Slaves synchronization support for `RBatch`/`RBatchReactive` objects  
+Improvement - Data encoding should be executed on client thread only  
+Improvement - Handling Redis redirect optimization  
+Improvement - Better collection handling for RedissonReference (thanks to Rui Gu)  
+Fixed - `RedisLoadingException` handling during re-connection process  
+Fixed - `RedisClient` can't be shutdown properly  
+Fixed - timeout drift for `RFairLock`  
+Fixed - expiration handling of reentrant write lock  
+Fixed - `RReadWriteLock` doesn't work in cluster  
+Fixed - Blocking queues are't rethrow exceptions  
+Fixed - out of connections problem on high load during `RemoteExecutorService`/`ExecutorService` usage  
+Fixed - NPE during `RemoteService` object usage  
+Fixed - Getting memory leak warnings when gracefully shutting down tomcat  
+Fixed - `RMapCache.getAll` doesn't support large keySet  
+
+### 28-Sep-2017 - versions 2.10.4 and 3.5.4 released
+Feature - added `maxSize` setting for `SpringCacheManager`  
+Feature - allow `LiveObjectService` to work with classes that inherit from REntities (thanks to @sdjacobs)  
+Improvement - `RMapCache` entires eviction process optimized  
+Improvement - handling of slave down process  
+Fixed - operation on slave coldn't be executed after its restart (thanks to @xavierfacq) 
+Fixed - `ArrayIndexOutOfBoundsException` in RedissonSessionRepository  
+Fixed - storing Live Objects in Redisson's collection objects (thanks to Rui Gu)  
+Fixed - cancel write operation for commands belong to disconnected connection  
+Fixed - possible race-condition during cancellation of write operation to Redis connection  
+Fixed - accessor methods in Live Objects break if they start with 'is' (thanks to @sdjacobs)  
+Fixed - MapReduce `Collator` couldn't be executed if timeout was defined  
+Fixed - RedissonKeys.delete throws `NullPointerException` in some cases  
+Fixed - `CancellationException` handling during RemotePromise cancellation  
+Fixed - `RedisNodeNotFoundException` should be supplied to Failed Promise  
+
 ### 13-Sep-2017 - versions 2.10.3 and 3.5.3 released
 Fixed - ByteBufs are not released properly in SnappyCodec and LZ4Codec (regression since 2.10.2 and 3.5.2)
 

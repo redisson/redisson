@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
@@ -36,7 +36,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, InetSocketAddress addr) {
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, URI addr) {
         return super.connectionWriteOp(command);
     }
 

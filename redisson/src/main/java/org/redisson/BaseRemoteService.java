@@ -22,15 +22,21 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
+import org.redisson.api.RList;
+import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RRemoteAsync;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -46,13 +52,19 @@ import org.redisson.remote.RemoteServiceCancelResponse;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RemoteServiceResponse;
 import org.redisson.remote.RemoteServiceTimeoutException;
+import org.redisson.remote.RequestId;
+import org.redisson.remote.ResponseEntry;
+import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -64,56 +76,57 @@ public abstract class BaseRemoteService {
 
     private static final Logger log = LoggerFactory.getLogger(BaseRemoteService.class);
 
+    private final Map<Class<?>, String> requestQueueNameCache = PlatformDependent.newConcurrentHashMap();
+    private final Map<Method, List<String>> methodSignaturesCache = PlatformDependent.newConcurrentHashMap();
+
     protected final Codec codec;
     protected final RedissonClient redisson;
     protected final String name;
     protected final CommandAsyncExecutor commandExecutor;
+    protected final String executorId;
 
-    public BaseRemoteService(RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
-        this(redisson, "redisson_rs", commandExecutor);
-    }
+    protected final String cancelRequestMapName;
+    protected final String cancelResponseMapName;
+    protected final String responseQueueName;
+    private final ConcurrentMap<String, ResponseEntry> responses;
 
-    public BaseRemoteService(RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
-        this(null, redisson, name, commandExecutor);
-    }
-
-    public BaseRemoteService(Codec codec, RedissonClient redisson, CommandAsyncExecutor commandExecutor) {
-        this(codec, redisson, "redisson_rs", commandExecutor);
-    }
-
-    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor) {
+    public BaseRemoteService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         this.codec = codec;
         this.redisson = redisson;
         this.name = name;
         this.commandExecutor = commandExecutor;
+        this.executorId = executorId;
+        this.responses = responses;
+        this.cancelRequestMapName = "{" + name + ":remote" + "}:cancel-request";
+        this.cancelResponseMapName = "{" + name + ":remote" + "}:cancel-response";
+        this.responseQueueName = getResponseQueueName(executorId);
     }
 
-    protected String getCancelRequestQueueName(Class<?> remoteInterface, String requestId) {
-        return "{" + name + ":" + remoteInterface.getName() + "}:" + requestId + ":cancel";
+    public String getResponseQueueName(String executorId) {
+        return "{remote_response}:" + executorId;
+    }
+    
+    protected String getAckName(RequestId requestId) {
+        return "{" + name + ":remote" + "}:" + requestId + ":ack";
+    }
+    
+    protected String getAckName(String requestId) {
+        return "{" + name + ":remote" + "}:" + requestId + ":ack";
     }
 
-    protected String getAckName(Class<?> remoteInterface, String requestId) {
-        return "{" + name + ":" + remoteInterface.getName() + "}:" + requestId + ":ack";
-    }
 
-    protected String getResponseQueueName(Class<?> remoteInterface, String requestId) {
-        return "{" + name + ":" + remoteInterface.getName() + "}:" + requestId;
-    }
-
-    protected String getRequestQueueName(Class<?> remoteInterface) {
-        return "{" + name + ":" + remoteInterface.getName() + "}";
-    }
-
-    protected Codec getCodec() {
-        if (codec != null) {
-            return codec;
+    public String getRequestQueueName(Class<?> remoteInterface) {
+        String str = requestQueueNameCache.get(remoteInterface);
+        if (str == null) {
+            str = "{" + name + ":" + remoteInterface.getName() + "}";
+            requestQueueNameCache.put(remoteInterface, str);
         }
-        return redisson.getConfig().getCodec();
+        return str;
     }
 
     protected ByteBuf encode(Object obj) {
         try {
-            return getCodec().getValueEncoder().encode(obj);
+            return codec.getValueEncoder().encode(obj);
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
@@ -163,17 +176,17 @@ public abstract class BaseRemoteService {
             final Class<?> syncInterface) {
         // local copy of the options, to prevent mutation
         final RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
-        final String toString = getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-"
-                + generateRequestId();
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                final RequestId requestId = generateRequestId();
+
                 if (method.getName().equals("toString")) {
-                    return toString;
+                    return getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId;
                 } else if (method.getName().equals("equals")) {
                     return proxy == args[0];
                 } else if (method.getName().equals("hashCode")) {
-                    return toString.hashCode();
+                    return (getClass().getSimpleName() + "-" + remoteInterface.getSimpleName() + "-proxy-" + requestId).hashCode();
                 }
 
                 if (!optionsCopy.isResultExpected() && !(method.getReturnType().equals(Void.class)
@@ -181,18 +194,11 @@ public abstract class BaseRemoteService {
                     throw new IllegalArgumentException("The noResult option only supports void return value");
                 }
 
-                final String requestId = generateRequestId();
-
                 final String requestQueueName = getRequestQueueName(syncInterface);
-                final String responseName = getResponseQueueName(syncInterface, requestId);
-                final String ackName = getAckName(syncInterface, requestId);
 
-                final RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName,
-                        getCodec());
-                final RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args,
-                        optionsCopy, System.currentTimeMillis());
-
-                final RemotePromise<Object> result = new RemotePromise<Object>() {
+                final Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
+                
+                final RemotePromise<Object> result = new RemotePromise<Object>(requestId) {
 
                     @Override
                     public boolean cancel(boolean mayInterruptIfRunning) {
@@ -204,39 +210,43 @@ public abstract class BaseRemoteService {
                             return false;
                         }
                         
+                        
                         if (optionsCopy.isAckExpected()) {
-                            RFuture<Boolean> future = commandExecutor.evalWriteAsync(responseName, LongCodec.INSTANCE,
+                            String ackName = getAckName(requestId);
+                            RFuture<Boolean> future = commandExecutor.evalWriteAsync(responseQueueName, LongCodec.INSTANCE,
                                     RedisCommands.EVAL_BOOLEAN,
                                     "if redis.call('setnx', KEYS[1], 1) == 1 then "
-                                        + "redis.call('pexpire', KEYS[1], ARGV[2]);"
-                                        + "redis.call('lrem', KEYS[3], 1, ARGV[1]);"
-                                        + "redis.call('pexpire', KEYS[2], ARGV[2]);" 
+                                        + "redis.call('pexpire', KEYS[1], ARGV[1]);"
+//                                        + "redis.call('lrem', KEYS[3], 1, ARGV[1]);"
+//                                        + "redis.call('pexpire', KEYS[2], ARGV[2]);" 
                                         + "return 1;" 
                                     + "end;"
                                     + "return 0;",
-                                    Arrays.<Object> asList(ackName, responseName, requestQueueName), 
-                                    encode(request), request.getOptions().getAckTimeoutInMillis());
-
+                                    Arrays.<Object> asList(ackName),
+//                                    Arrays.<Object> asList(ackName, responseQueueName, requestQueueName), 
+                                    ackTimeout);
+                            
                             boolean ackNotSent = commandExecutor.get(future);
                             if (ackNotSent) {
+                                RList<Object> list = redisson.getList(requestQueueName, LongCodec.INSTANCE);
+                                list.remove(requestId.toString());
                                 super.cancel(mayInterruptIfRunning);
                                 return true;
                             }
 
-                            return cancel(syncInterface, requestId, request, mayInterruptIfRunning);
+                            return doCancel(mayInterruptIfRunning);
                         }
 
-                        boolean removed = commandExecutor.get(removeAsync(requestQueue, request));
+                        boolean removed = commandExecutor.get(removeAsync(requestQueueName, requestId));
                         if (removed) {
                             super.cancel(mayInterruptIfRunning);
                             return true;
                         }
 
-                        return cancel(syncInterface, requestId, request, mayInterruptIfRunning);
+                        return doCancel(mayInterruptIfRunning);
                     }
 
-                    private boolean cancel(Class<?> remoteInterface, String requestId, RemoteServiceRequest request,
-                            boolean mayInterruptIfRunning) {
+                    private boolean doCancel(boolean mayInterruptIfRunning) {
                         if (isCancelled()) {
                             return true;
                         }
@@ -245,8 +255,7 @@ public abstract class BaseRemoteService {
                             return false;
                         }
 
-                        String canceRequestName = getCancelRequestQueueName(remoteInterface, requestId);
-                        cancelExecution(optionsCopy, responseName, request, mayInterruptIfRunning, canceRequestName, this);
+                        cancelExecution(optionsCopy, mayInterruptIfRunning, this);
 
                         try {
                             awaitUninterruptibly(60, TimeUnit.SECONDS);
@@ -257,66 +266,101 @@ public abstract class BaseRemoteService {
                     }
                 };
 
-                result.setRequestId(requestId);
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args,
+                        optionsCopy, System.currentTimeMillis());
+
+                final RFuture<RemoteServiceAck> ackFuture;
+                if (optionsCopy.isAckExpected()) {
+                    ackFuture = poll(optionsCopy.getAckTimeoutInMillis(), requestId, false);
+                } else {
+                    ackFuture = null;
+                }
                 
-                RFuture<Boolean> addFuture = addAsync(requestQueue, request, result);
+                final RPromise<RRemoteServiceResponse> responseFuture;
+                if (optionsCopy.isResultExpected()) {
+                    responseFuture = poll(optionsCopy.getExecutionTimeoutInMillis(), requestId, false);
+                } else {
+                    responseFuture = null;
+                }
+
+                RFuture<Boolean> addFuture = addAsync(requestQueueName, request, result);
                 addFuture.addListener(new FutureListener<Boolean>() {
 
                     @Override
                     public void operationComplete(Future<Boolean> future) throws Exception {
                         if (!future.isSuccess()) {
+                            if (responseFuture != null) {
+                                responseFuture.cancel(false);
+                            }
+                            if (ackFuture != null) {
+                                ackFuture.cancel(false);
+                            }
                             result.tryFailure(future.cause());
                             return;
                         }
-
-                        if (optionsCopy.isAckExpected()) {
-                            final RBlockingQueue<RemoteServiceAck> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
-                            RFuture<RemoteServiceAck> ackFuture = responseQueue.pollAsync(optionsCopy.getAckTimeoutInMillis(), TimeUnit.MILLISECONDS);
-                            ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
-                                @Override
-                                public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
-                                    if (!future.isSuccess()) {
-                                        result.tryFailure(future.cause());
-                                        return;
-                                    }
-
-                                    RemoteServiceAck ack = future.getNow();
-                                    if (ack == null) {
-                                        RFuture<RemoteServiceAck> ackFutureAttempt = 
-                                                                    tryPollAckAgainAsync(optionsCopy, responseQueue, ackName);
-                                        ackFutureAttempt.addListener(new FutureListener<RemoteServiceAck>() {
-
-                                            @Override
-                                            public void operationComplete(Future<RemoteServiceAck> future)
-                                                    throws Exception {
-                                                if (!future.isSuccess()) {
-                                                    result.tryFailure(future.cause());
-                                                    return;
-                                                }
-
-                                                if (future.getNow() == null) {
-                                                    Exception ex = new RemoteServiceAckTimeoutException(
-                                                            "No ACK response after "
-                                                                    + optionsCopy.getAckTimeoutInMillis()
-                                                                    + "ms for request: " + request);
-                                                    result.tryFailure(ex);
-                                                    return;
-                                                }
-
-                                                awaitResultAsync(optionsCopy, result, request, responseName, ackName);
-                                            }
-                                        });
-                                    } else {
-                                        awaitResultAsync(optionsCopy, result, request, responseName);
-                                    }
-                                }
-
-                            });
-                        } else {
-                            awaitResultAsync(optionsCopy, result, request, responseName);
+                        
+                        if (!future.get()) {
+                            result.tryFailure(new RedisException("Task hasn't been added"));
+                            if (responseFuture != null) {
+                                responseFuture.cancel(false);
+                            }
+                            if (ackFuture != null) {
+                                ackFuture.cancel(false);
+                            }
+                            return;
                         }
-                    }
-                });
+
+                                if (optionsCopy.isAckExpected()) {
+                                    ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
+                                        @Override
+                                        public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
+                                            if (!future.isSuccess()) {
+                                                if (responseFuture != null) {
+                                                    responseFuture.cancel(false);
+                                                }
+
+                                                result.tryFailure(future.cause());
+                                                return;
+                                            }
+
+                                            RemoteServiceAck ack = future.getNow();
+                                            if (ack == null) {
+                                                final String ackName = getAckName(requestId);
+                                                RFuture<RemoteServiceAck> ackFutureAttempt = 
+                                                                            tryPollAckAgainAsync(optionsCopy, ackName, requestId);
+                                                ackFutureAttempt.addListener(new FutureListener<RemoteServiceAck>() {
+
+                                                    @Override
+                                                    public void operationComplete(Future<RemoteServiceAck> future)
+                                                            throws Exception {
+                                                        if (!future.isSuccess()) {
+                                                            result.tryFailure(future.cause());
+                                                            return;
+                                                        }
+
+                                                        if (future.getNow() == null) {
+                                                            Exception ex = new RemoteServiceAckTimeoutException(
+                                                                    "No ACK response after "
+                                                                            + optionsCopy.getAckTimeoutInMillis()
+                                                                            + "ms for request: " + requestId);
+                                                            result.tryFailure(ex);
+                                                            return;
+                                                        }
+
+                                                        awaitResultAsync(optionsCopy, result, ackName, responseFuture);
+                                                    }
+                                                });
+                                            } else {
+                                                awaitResultAsync(optionsCopy, result, responseFuture);
+                                            }
+                                        }
+
+                                    });
+                                } else {
+                                    awaitResultAsync(optionsCopy, result, responseFuture);
+                                }
+                            }
+                        });
 
                 return result;
             }
@@ -326,7 +370,7 @@ public abstract class BaseRemoteService {
     }
 
     private void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request, final String responseName, final String ackName) {
+            final String ackName, final RFuture<RRemoteServiceResponse> responseFuture) {
         RFuture<Boolean> deleteFuture = redisson.getBucket(ackName).deleteAsync();
         deleteFuture.addListener(new FutureListener<Boolean>() {
             @Override
@@ -336,21 +380,18 @@ public abstract class BaseRemoteService {
                     return;
                 }
 
-                awaitResultAsync(optionsCopy, result, request, responseName);
+                awaitResultAsync(optionsCopy, result, responseFuture);
             }
         });
     }
-
+    
     protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request, final String responseName) {
+            RFuture<RRemoteServiceResponse> responseFuture) {
         // poll for the response only if expected
         if (!optionsCopy.isResultExpected()) {
             return;
         }
         
-        RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseName, getCodec());
-        RFuture<RRemoteServiceResponse> responseFuture = responseQueue
-                .pollAsync(optionsCopy.getExecutionTimeoutInMillis(), TimeUnit.MILLISECONDS);
         responseFuture.addListener(new FutureListener<RRemoteServiceResponse>() {
             
             @Override
@@ -362,7 +403,7 @@ public abstract class BaseRemoteService {
                 
                 if (future.getNow() == null) {
                     RemoteServiceTimeoutException e = new RemoteServiceTimeoutException("No response after "
-                            + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);
+                            + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + result.getRequestId());
                     result.tryFailure(e);
                     return;
                 }
@@ -379,6 +420,151 @@ public abstract class BaseRemoteService {
                 }
                 
                 result.trySuccess(response.getResult());
+            }
+        });
+    }
+
+    private <T extends RRemoteServiceResponse> RPromise<T> poll(final long timeout,
+            final RequestId requestId, boolean insertFirst) {
+        final RPromise<T> responseFuture = new RedissonPromise<T>();
+
+        ResponseEntry entry;
+        synchronized (responses) {
+            entry = responses.get(responseQueueName);
+            if (entry == null) {
+                entry = new ResponseEntry();
+                ResponseEntry oldEntry = responses.putIfAbsent(responseQueueName, entry);
+                if (oldEntry != null) {
+                    entry = oldEntry;
+                }
+            }
+            
+            responseFuture.addListener(new FutureListener<T>() {
+                @Override
+                public void operationComplete(Future<T> future) throws Exception {
+                    if (future.isCancelled()) {
+                        synchronized (responses) {
+                            ResponseEntry entry = responses.get(responseQueueName);
+                            List<Result> list = entry.getResponses().get(requestId);
+                            if (list == null) {
+                                return;
+                            }
+                            
+                            for (Iterator<Result> iterator = list.iterator(); iterator.hasNext();) {
+                                Result result = iterator.next();
+                                if (result.getPromise() == responseFuture) {
+                                    result.getScheduledFuture().cancel(true);
+                                    iterator.remove();
+                                }
+                            }
+                            if (list.isEmpty()) {
+                                entry.getResponses().remove(requestId);
+                            }
+
+                            if (entry.getResponses().isEmpty()) {
+                                responses.remove(responseQueueName, entry);
+                            }
+                        }
+                    }
+                    
+                }
+            });
+            
+            ScheduledFuture<?> future = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (responses) {
+                        ResponseEntry entry = responses.get(responseQueueName);
+                        if (entry == null) {
+                            return;
+                        }
+                        
+                        RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after " + timeout + "ms");
+                        if (responseFuture.tryFailure(ex)) {
+                            List<Result> list = entry.getResponses().get(requestId);
+                            list.remove(0);
+                            if (list.isEmpty()) {
+                                entry.getResponses().remove(requestId);
+                            }
+                            if (entry.getResponses().isEmpty()) {
+                                responses.remove(responseQueueName, entry);
+                            }
+                        }
+                    }
+                }
+            }, timeout, TimeUnit.MILLISECONDS);
+
+            final Map<RequestId, List<Result>> entryResponses = entry.getResponses();
+            List<Result> list = entryResponses.get(requestId);
+            if (list == null) {
+                list = new ArrayList<Result>(3);
+                entryResponses.put(requestId, list);
+            }
+            
+            Result res = new Result(responseFuture, future);
+            if (insertFirst) {
+                list.add(0, res);
+            } else {
+                list.add(res);
+            }
+        }
+
+        
+        pollTasks(entry);
+        return responseFuture;
+    }
+
+    private void pollTasks(final ResponseEntry entry) {
+        if (!entry.getStarted().compareAndSet(false, true)) {
+            return;
+        }
+        
+        RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
+        RFuture<RRemoteServiceResponse> future = responseQueue.takeAsync();
+        future.addListener(new FutureListener<RRemoteServiceResponse>() {
+            
+            @Override
+            public void operationComplete(Future<RRemoteServiceResponse> future) throws Exception {
+                if (!future.isSuccess()) {
+                    log.error("Can't get response from " + responseQueueName, future.cause());
+                    return;
+                }
+                
+                RRemoteServiceResponse response = future.getNow();
+                RPromise<RRemoteServiceResponse> promise;
+                synchronized (responses) {
+                    ResponseEntry entry = responses.get(responseQueueName);
+                    if (entry == null) {
+                        return;
+                    }
+                    
+                    RequestId key = new RequestId(response.getId());
+                    List<Result> list = entry.getResponses().get(key);
+                    if (list == null) {
+                        RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
+                        responseQueue.takeAsync().addListener(this);
+                        return;
+                    }
+                    
+                    Result res = list.remove(0);
+                    if (list.isEmpty()) {
+                        entry.getResponses().remove(key);
+                    }
+
+                    promise = res.getPromise();
+                    res.getScheduledFuture().cancel(true);
+                    
+                    if (entry.getResponses().isEmpty()) {
+                        responses.remove(responseQueueName, entry);
+                    } else {
+                        RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
+                        responseQueue.takeAsync().addListener(this);
+                    }
+                }
+
+                if (promise != null) {
+                    promise.trySuccess(response);
+                }
             }
         });
     }
@@ -403,24 +589,22 @@ public abstract class BaseRemoteService {
                         && !(method.getReturnType().equals(Void.class) || method.getReturnType().equals(Void.TYPE)))
                     throw new IllegalArgumentException("The noResult option only supports void return value");
 
-                String requestId = generateRequestId();
+                RequestId requestId = generateRequestId();
 
                 String requestQueueName = getRequestQueueName(remoteInterface);
-                RBlockingQueue<RemoteServiceRequest> requestQueue = redisson.getBlockingQueue(requestQueueName,
-                        getCodec());
-                RemoteServiceRequest request = new RemoteServiceRequest(requestId, method.getName(), getMethodSignatures(method), args, optionsCopy,
+                RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args, optionsCopy,
                         System.currentTimeMillis());
-                requestQueue.add(request);
-
+                addAsync(requestQueueName, request, addPromise).sync();
+                
                 RBlockingQueue<RRemoteServiceResponse> responseQueue = null;
                 if (optionsCopy.isAckExpected() || optionsCopy.isResultExpected()) {
-                    String responseName = getResponseQueueName(remoteInterface, requestId);
-                    responseQueue = redisson.getBlockingQueue(responseName, getCodec());
+                    responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
                 }
 
                 // poll for the ack only if expected
                 if (optionsCopy.isAckExpected()) {
-                    String ackName = getAckName(remoteInterface, requestId);
+                    String ackName = getAckName(requestId);
                     RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(optionsCopy.getAckTimeoutInMillis(),
                             TimeUnit.MILLISECONDS);
                     if (ack == null) {
@@ -438,7 +622,7 @@ public abstract class BaseRemoteService {
                     RemoteServiceResponse response = (RemoteServiceResponse) responseQueue
                             .poll(optionsCopy.getExecutionTimeoutInMillis(), TimeUnit.MILLISECONDS);
                     if (response == null) {
-                        throw new RemoteServiceTimeoutException("No response1 after "
+                        throw new RemoteServiceTimeoutException("No response after "
                                 + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);
                     }
                     if (response.getError() != null) {
@@ -473,9 +657,8 @@ public abstract class BaseRemoteService {
         return null;
     }
 
-    private RFuture<RemoteServiceAck> tryPollAckAgainAsync(RemoteInvocationOptions optionsCopy,
-            final RBlockingQueue<RemoteServiceAck> responseQueue, String ackName)
-            throws InterruptedException {
+    private RFuture<RemoteServiceAck> tryPollAckAgainAsync(final RemoteInvocationOptions optionsCopy,
+            String ackName, final RequestId requestId) {
         final RPromise<RemoteServiceAck> promise = new RedissonPromise<RemoteServiceAck>();
         RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                     "if redis.call('setnx', KEYS[1], 1) == 1 then " 
@@ -494,8 +677,8 @@ public abstract class BaseRemoteService {
                 }
 
                 if (future.getNow()) {
-                    RFuture<RemoteServiceAck> pollFuture = responseQueue.pollAsync();
-                    pollFuture.addListener(new FutureListener<RemoteServiceAck>() {
+                    RPromise<RemoteServiceAck> ackFuture = poll(commandExecutor.getConnectionManager().getConfig().getTimeout(), requestId, true);
+                    ackFuture.addListener(new FutureListener<RemoteServiceAck>() {
                         @Override
                         public void operationComplete(Future<RemoteServiceAck> future) throws Exception {
                             if (!future.isSuccess()) {
@@ -514,43 +697,79 @@ public abstract class BaseRemoteService {
         return promise;
     }
 
-    protected String generateRequestId() {
+    protected <T> void scheduleCheck(final String mapName, final RequestId requestId, final RPromise<T> cancelRequest) {
+        commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+            @Override
+            public void run(Timeout timeout) throws Exception {
+                if (cancelRequest.isDone()) {
+                    return;
+                }
+
+                RMap<String, T> canceledRequests = redisson.getMap(mapName, codec);
+                RFuture<T> future = canceledRequests.getAsync(requestId.toString());
+                future.addListener(new FutureListener<T>() {
+                    @Override
+                    public void operationComplete(Future<T> future) throws Exception {
+                        if (cancelRequest.isDone()) {
+                            return;
+                        }
+                        if (!future.isSuccess()) {
+                            scheduleCheck(mapName, requestId, cancelRequest);
+                            return;
+                        }
+                        
+                        T request = future.getNow();
+                        if (request == null) {
+                            scheduleCheck(mapName, requestId, cancelRequest);
+                        } else {
+                            cancelRequest.trySuccess(request);
+                        }
+                    }
+                });
+            }
+        }, 3000, TimeUnit.MILLISECONDS);
+    }
+
+    protected RequestId generateRequestId() {
         byte[] id = new byte[16];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
         ThreadLocalRandom.current().nextBytes(id);
-        return ByteBufUtil.hexDump(id);
+        return new RequestId(id);
     }
 
-    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request,
-            RemotePromise<Object> result) {
-        RFuture<Boolean> future = requestQueue.addAsync(request);
-        result.setAddFuture(future);
-        return future;
-    }
+    protected abstract RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request,
+            RemotePromise<Object> result);
 
-    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return requestQueue.removeAsync(request);
-    }
+    protected abstract RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId);
 
-    private void cancelExecution(RemoteInvocationOptions optionsCopy, String responseName,
-            RemoteServiceRequest request, boolean mayInterruptIfRunning, String canceRequestName, RemotePromise<Object> remotePromise) {
-        RBlockingQueue<RemoteServiceCancelRequest> cancelRequestQueue = redisson.getBlockingQueue(canceRequestName, getCodec());
-        cancelRequestQueue.putAsync(new RemoteServiceCancelRequest(mayInterruptIfRunning));
-        cancelRequestQueue.expireAsync(60, TimeUnit.SECONDS);
+    private void cancelExecution(RemoteInvocationOptions optionsCopy,
+            boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise) {
+        RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, codec);
+        canceledRequests.putAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
+        canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         
         // subscribe for async result if it's not expected before
         if (!optionsCopy.isResultExpected()) {
             RemoteInvocationOptions options = new RemoteInvocationOptions(optionsCopy);
             options.expectResultWithin(60, TimeUnit.SECONDS);
-            awaitResultAsync(options, remotePromise, request, responseName);
+            RFuture<RRemoteServiceResponse> responseFuture = poll(options.getExecutionTimeoutInMillis(), remotePromise.getRequestId(), false);
+            awaitResultAsync(options, remotePromise, responseFuture);
         }
     }
 
     protected List<String> getMethodSignatures(Method method) {
-        List<String> list = new ArrayList();
-        for (Class<?> t : method.getParameterTypes()) {
-            list.add(t.getName());
+        List<String> result = methodSignaturesCache.get(method);
+        if (result == null) {
+            result = new ArrayList<String>(method.getParameterTypes().length);
+            for (Class<?> t : method.getParameterTypes()) {
+                result.add(t.getName());
+            }
+            List<String> oldList = methodSignaturesCache.putIfAbsent(method, result);
+            if (oldList != null) {
+                result = oldList;
+            }
         }
-        return list;
+        
+        return result;
     }
 }

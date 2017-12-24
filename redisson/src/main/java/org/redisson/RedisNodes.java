@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,10 +33,10 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.RedisClientEntry;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -56,10 +55,9 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public N getNode(String address) {
         Collection<N> clients = (Collection<N>) connectionManager.getClients();
-        URI uri = URIBuilder.create(address);
-        InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
+        URI addr = URIBuilder.create(address);
         for (N node : clients) {
-            if (node.getAddr().equals(addr)) {
+            if (URIBuilder.compare(node.getAddr(), addr)) {
                 return node;
             }
         }

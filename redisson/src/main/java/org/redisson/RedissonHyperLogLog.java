@@ -69,14 +69,14 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
 
     @Override
     public RFuture<Boolean> addAsync(V obj) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), obj);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), encode(obj));
     }
 
     @Override
     public RFuture<Boolean> addAllAsync(Collection<V> objects) {
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
-        args.addAll(objects);
+        encode(args, objects);
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
     }
 

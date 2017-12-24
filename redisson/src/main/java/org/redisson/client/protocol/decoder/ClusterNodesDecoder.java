@@ -34,6 +34,13 @@ import io.netty.util.CharsetUtil;
  */
 public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
+    private final boolean ssl;
+    
+    public ClusterNodesDecoder(boolean ssl) {
+        super();
+        this.ssl = ssl;
+    }
+
     @Override
     public List<ClusterNodeInfo> decode(ByteBuf buf, State state) throws IOException {
         String response = buf.toString(CharsetUtil.UTF_8);
@@ -46,7 +53,11 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
-            String addr = "redis://" + params[1].split("@")[0];
+            String protocol = "redis://";
+            if (ssl) {
+                protocol = "rediss://";
+            }
+            String addr = protocol + params[1].split("@")[0];
             node.setAddress(addr);
 
             String flags = params[2];

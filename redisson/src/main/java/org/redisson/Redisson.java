@@ -70,15 +70,15 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.pubsub.SemaphorePubSub;
+import org.redisson.remote.ResponseEntry;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -101,12 +101,12 @@ public class Redisson implements RedissonClient {
     protected final ConnectionManager connectionManager;
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
-    protected final CodecProvider codecProvider;
-    protected final ResolverProvider resolverProvider;
+    protected final ReferenceCodecProvider codecProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected final UUID id = UUID.randomUUID();
+    protected final ConcurrentMap<String, ResponseEntry> responses = PlatformDependent.newConcurrentHashMap();
 
     protected Redisson(Config config) {
         this.config = config;
@@ -114,8 +114,7 @@ public class Redisson implements RedissonClient {
         
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
-        codecProvider = configCopy.getCodecProvider();
-        resolverProvider = configCopy.getResolverProvider();
+        codecProvider = configCopy.getReferenceCodecProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {
@@ -152,7 +151,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonClient create(Config config) {
         Redisson redisson = new Redisson(config);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             redisson.enableRedissonReferenceSupport();
         }
         return redisson;
@@ -180,7 +179,7 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonReactiveClient createReactive(Config config) {
         RedissonReactive react = new RedissonReactive(config);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             react.enableRedissonReferenceSupport();
         }
         return react;
@@ -373,7 +372,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService);
+        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
     }
     
     @Override
@@ -384,27 +383,33 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
-        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService);
+        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
     }
     
     @Override
     public RRemoteService getRemoteService() {
-        return new RedissonRemoteService(this, connectionManager.getCommandExecutor());
+        return getRemoteService("redisson_rs", connectionManager.getCodec());
     }
 
     @Override
     public RRemoteService getRemoteService(String name) {
-        return new RedissonRemoteService(this, name, connectionManager.getCommandExecutor());
+        return getRemoteService(name, connectionManager.getCodec());
     }
     
     @Override
     public RRemoteService getRemoteService(Codec codec) {
-        return new RedissonRemoteService(codec, this, connectionManager.getCommandExecutor());
+        return getRemoteService("redisson_rs", codec);
     }
     
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor());
+        String executorId;
+        if (codec == connectionManager.getCodec()) {
+            executorId = id.toString();
+        } else {
+            executorId = id + ":" + name;
+        }
+        return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor(), executorId, responses);
     }
 
     @Override
@@ -558,7 +563,7 @@ public class Redisson implements RedissonClient {
     @Override
     public RBatch createBatch() {
         RedissonBatch batch = new RedissonBatch(id, evictionScheduler, connectionManager);
-        if (config.isRedissonReferenceEnabled()) {
+        if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
         return batch;
@@ -566,7 +571,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider, resolverProvider);
+        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider);
     }
     
     @Override
@@ -586,15 +591,10 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public CodecProvider getCodecProvider() {
+    public ReferenceCodecProvider getCodecProvider() {
         return codecProvider;
     }
     
-    @Override
-    public ResolverProvider getResolverProvider() {
-        return resolverProvider;
-    }
-
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);

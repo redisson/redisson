@@ -33,6 +33,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.MapScanCodec;
@@ -298,7 +299,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
+    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(RedisClient client, long startPos) {
         RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new MapScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
         return get(f);
     }

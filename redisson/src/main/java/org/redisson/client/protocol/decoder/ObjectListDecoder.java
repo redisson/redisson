@@ -15,13 +15,11 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -37,20 +35,15 @@ public class ObjectListDecoder<T> implements MultiDecoder<List<T>> {
         super();
         this.codec = codec;
     }
-
+    
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        return codec.getMapKeyDecoder().decode(buf, state);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return codec.getMapKeyDecoder();
     }
 
     @Override
     public List<T> decode(List<Object> parts, State state) {
         return (List<T>) parts;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
     }
 
 }

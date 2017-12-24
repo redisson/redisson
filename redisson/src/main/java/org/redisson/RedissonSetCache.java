@@ -29,6 +29,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -109,7 +110,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(o), codec, new RedisStrictCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5),
+        return commandExecutor.evalReadAsync(getName(o), codec, RedisCommands.EVAL_BOOLEAN,
                     "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); " + 
                      "if expireDateScore ~= false then " +
                          "if tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
@@ -120,15 +121,16 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                      "else " +
                          "return 0;" +
                      "end; ",
-               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), o);
+               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), encode(o));
     }
 
-    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
+    @Override
+    public ListScanResult<ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
         RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(name, client, startPos, pattern);
         return get(f);
     }
 
-    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos, String pattern) {
+    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern) {
         List<Object> params = new ArrayList<Object>();
         params.add(startPos);
         params.add(System.currentTimeMillis());
@@ -160,7 +162,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(getName(), client, nextIterPos, pattern);
             }
 
@@ -242,7 +244,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), o);
+        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), encode(o));
     }
 
     @Override
@@ -263,9 +265,9 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         
         List<Object> params = new ArrayList<Object>(c.size() + 1);
         params.add(System.currentTimeMillis());
-        params.addAll(c);
+        encode(params, c);
         
-        return commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Boolean>("EVAL", new BooleanReplayConvertor(), 5, ValueType.OBJECTS),
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                             "for j = 2, #ARGV, 1 do "
                             + "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[j]) "
                             + "if expireDateScore ~= false then "
@@ -338,7 +340,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         
         List<Object> params = new ArrayList<Object>(c.size()+1);
         params.add(getName());
-        params.addAll(c);
+        encode(params, c);
 
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZREM, params.toArray());
     }

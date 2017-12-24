@@ -15,7 +15,6 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,8 +22,7 @@ import java.util.Map;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -33,27 +31,19 @@ import io.netty.buffer.ByteBuf;
  */
 public class GeoDistanceMapDecoder implements MultiDecoder<Map<Object, Object>> {
 
-    private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>();
-    
     private final Codec codec;
     
     public GeoDistanceMapDecoder(Codec codec) {
         super();
         this.codec = codec;
     }
-
+    
     @Override
-    public Object decode(ByteBuf buf, State state) throws IOException {
-        if (pos.get() % 2 == 0) {
-            return codec.getValueDecoder().decode(buf, state);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum % 2 == 0) {
+            return codec.getValueDecoder();
         }
-        return DoubleCodec.INSTANCE.getValueDecoder().decode(buf, state);
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        pos.set(paramNum);
-        return true;
+        return DoubleCodec.INSTANCE.getValueDecoder();
     }
 
     @Override

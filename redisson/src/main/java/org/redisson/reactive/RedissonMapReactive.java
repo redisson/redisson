@@ -27,6 +27,7 @@ import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -284,7 +285,7 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         });
     }
 
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
+    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos) {
         return commandExecutor.readReactive(client, getName(), new MapScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
     }
 

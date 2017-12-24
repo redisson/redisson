@@ -15,15 +15,14 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.redisson.client.handler.State;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
@@ -39,15 +38,10 @@ public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> 
     }
 
     @Override
-    public Double decode(ByteBuf buf, State state) throws IOException {
-        throw new UnsupportedOperationException();
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
     }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return false;
-    }
-
+    
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
@@ -59,6 +53,10 @@ public class GeoPositionMapDecoder implements MultiDecoder<Map<Object, Object>> 
             if (value == null || value == Collections.emptyMap()) {
                 continue;
             }
+            if (value instanceof List && ((List) value).isEmpty()) {
+                continue;
+            }
+            
             result.put(args.get(index), value);
         }
         return result;

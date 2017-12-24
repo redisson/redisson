@@ -15,6 +15,7 @@
  */
 package org.redisson.client.handler;
 
+import java.net.SocketAddress;
 import java.util.Map.Entry;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,6 +33,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -44,6 +46,7 @@ import io.netty.util.concurrent.FutureListener;
  * @author Nikita Koksharov
  *
  */
+@Sharable
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -107,7 +110,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
         try {
-            bootstrap.connect().addListener(new ChannelFutureListener() {
+            bootstrap.connect(connection.getRedisClient().getAddr()).addListener(new ChannelFutureListener() {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {

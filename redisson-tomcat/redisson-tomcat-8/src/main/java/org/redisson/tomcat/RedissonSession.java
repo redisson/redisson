@@ -118,6 +118,10 @@ public class RedissonSession extends StandardSession {
         super.setValid(isValid);
         
         if (map != null) {
+            if (!isValid && !map.isExists()) {
+                return;
+            }
+            
             map.fastPut("session:isValid", isValid);
         }
     }
@@ -168,8 +172,10 @@ public class RedissonSession extends StandardSession {
         newMap.put("session:isValid", isValid);
         newMap.put("session:isNew", isNew);
         
-        for (Entry<String, Object> entry : attrs.entrySet()) {
-            newMap.put(entry.getKey(), entry.getValue());
+        if (attrs != null) {
+            for (Entry<String, Object> entry : attrs.entrySet()) {
+                newMap.put(entry.getKey(), entry.getValue());
+            }
         }
         
         map.putAll(newMap);

@@ -16,6 +16,7 @@
 package org.redisson.reactive;
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonReference;
@@ -69,6 +70,12 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     @Override
     public Codec getCodec() {
         return codec;
+    }
+    
+    protected void encode(Collection<Object> params, Collection<?> values) {
+        for (Object object : values) {
+            params.add(encode(object));
+        }
     }
     
     protected ByteBuf encode(Object value) {

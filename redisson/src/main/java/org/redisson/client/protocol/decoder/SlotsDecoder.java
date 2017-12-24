@@ -22,11 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.cluster.ClusterSlotRange;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 /**
  * 
@@ -36,10 +35,10 @@ import io.netty.util.CharsetUtil;
 public class SlotsDecoder implements MultiDecoder<Object> {
 
     @Override
-    public Object decode(ByteBuf buf, State state) {
-        return buf.toString(CharsetUtil.UTF_8);
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return StringCodec.INSTANCE.getValueDecoder();
     }
-
+    
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.size() > 2 && parts.get(0) instanceof List) {
@@ -60,11 +59,6 @@ public class SlotsDecoder implements MultiDecoder<Object> {
             return result;
         }
         return parts;
-    }
-
-    @Override
-    public boolean isApplicable(int paramNum, State state) {
-        return true;
     }
 
 }

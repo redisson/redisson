@@ -40,6 +40,7 @@ import org.redisson.pubsub.LockPubSub;
  */
 public class RedissonFairLock extends RedissonLock implements RLock {
 
+    private final long threadWaitTime = 5000;
     private final CommandExecutor commandExecutor;
 
     protected RedissonFairLock(CommandExecutor commandExecutor, String name, UUID id) {
@@ -75,15 +76,22 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     @Override
     protected RFuture<Void> acquireFailedAsync(long threadId) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                    "local firstThreadId = redis.call('lindex', KEYS[1], 0); " + 
+                    "if firstThreadId == ARGV[1] then " + 
+                        "local keys = redis.call('zrange', KEYS[2], 0, -1); " + 
+                        "for i = 1, #keys, 1 do " + 
+                            "redis.call('zincrby', KEYS[2], -tonumber(ARGV[2]), keys[i]);" + 
+                        "end;" + 
+                    "end;" +
                     "redis.call('zrem', KEYS[2], ARGV[1]); " +
                     "redis.call('lrem', KEYS[1], 0, ARGV[1]); ",
-                    Arrays.<Object>asList(getThreadsQueueName(), getTimeoutSetName()), getLockName(threadId));
+                    Arrays.<Object>asList(getThreadsQueueName(), getTimeoutSetName()), 
+                    getLockName(threadId), threadWaitTime);
     }
     
     @Override
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
-        long threadWaitTime = 5000;
 
         long currentTime = System.currentTimeMillis();
         if (command == RedisCommands.EVAL_NULL_BOOLEAN) {

@@ -16,6 +16,9 @@
 package org.redisson;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -172,6 +175,32 @@ public abstract class RedissonObject implements RObject {
     @Override
     public Codec getCodec() {
         return codec;
+    }
+    
+    protected List<ByteBuf> encode(Collection<?> values) {
+        List<ByteBuf> result = new ArrayList<ByteBuf>(values.size());
+        for (Object object : values) {
+            result.add(encode(object));
+        }
+        return result;
+    }
+    
+    protected void encode(Collection<Object> params, Collection<?> values) {
+        for (Object object : values) {
+            params.add(encode(object));
+        }
+    }
+    
+    protected void encodeMapKeys(Collection<Object> params, Collection<?> values) {
+        for (Object object : values) {
+            params.add(encodeMapKey(object));
+        }
+    }
+
+    protected void encodeMapValues(Collection<Object> params, Collection<?> values) {
+        for (Object object : values) {
+            params.add(encodeMapValue(object));
+        }
     }
     
     protected ByteBuf encode(Object value) {

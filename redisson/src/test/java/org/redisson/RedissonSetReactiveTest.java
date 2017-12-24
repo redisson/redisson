@@ -153,7 +153,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         }
 
         Assert.assertTrue(sync(set.retainAll(Arrays.asList(1, 2))));
-        assertThat(sync(set)).containsExactly(1, 2);
+        assertThat(sync(set)).containsExactlyInAnyOrder(1, 2);
         Assert.assertEquals(2, sync(set.size()).intValue());
     }
 

@@ -32,8 +32,6 @@ public interface CommandSyncExecutor {
 
     <V> V get(RFuture<V> future);
 
-    <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
-
     <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> R write(String key, RedisCommand<T> command, Object ... params);
@@ -45,10 +43,6 @@ public interface CommandSyncExecutor {
     <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
     <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
-    <T, R> R read(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> R read(InetSocketAddress client, String key, RedisCommand<T> command, Object ... params);
 
     <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
