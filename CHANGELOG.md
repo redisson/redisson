@@ -6,7 +6,8 @@ Try __[Redisson PRO](https://redisson.pro)__ version.
 
 ### 25-Dec-2017 - versions 2.10.7 and 3.5.7 released
 
-Improvement - Memory consumption optimization. `RExecutorFuture` and `RScheduledFuture` shouldn't be tracked if they weren't stored 
+Feature - __`RClusteredBitSet` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects/#641-bitset-data-partitioning) for more details  
+Improvement - Memory consumption optimization. `RExecutorFuture` and `RScheduledFuture` shouldn't be tracked if they weren't stored  
 Improvement - Config settings `codecProvider` and `redissonReferenceEnabled` renamed to `referenceCodecProvider` and `referenceEnabled`  
 Fixed - `RedissonRedLock` couldn't be locked in some cases  
 Fixed - `RRemoteService` can't ack when running redis in cluster mode  
