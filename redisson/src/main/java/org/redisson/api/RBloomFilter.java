@@ -53,6 +53,6 @@ public interface RBloomFilter<T> extends RExpirable {
      *
      * @return probabilistic number of elements
      */
-    int count();
+    long count();
 
 }

@@ -196,7 +196,7 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         RPromise<R> resultPromise;
-        RPromise<Void> voidPromise = new RedissonPromise<Void>();
+        final RPromise<Void> voidPromise = new RedissonPromise<Void>();
         if (skipResult) {
             voidPromise.addListener(new FutureListener<Void>() {
                 @Override
@@ -245,7 +245,7 @@ public class CommandBatchService extends CommandAsyncService {
             resultPromise = (RPromise<R>) promise;
         }
 
-        AtomicInteger slots = new AtomicInteger(commands.size());
+        final AtomicInteger slots = new AtomicInteger(commands.size());
         
         for (java.util.Map.Entry<RFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
             slots.incrementAndGet();
