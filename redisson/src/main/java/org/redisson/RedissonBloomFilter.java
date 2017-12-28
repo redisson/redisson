@@ -50,8 +50,6 @@ import net.openhft.hashing.LongHashFunction;
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
-    private static final long MAX_SIZE = Integer.MAX_VALUE*2L;
-
     private volatile long size;
     private volatile int hashIterations;
 
@@ -191,7 +189,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
-    public int count() {
+    public long count() {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         RFuture<Map<String, String>> configFuture = executorService.readAsync(getConfigName(), StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
@@ -201,7 +199,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
         readConfig(configFuture.getNow());
 
-        return (int) (-size / ((double) hashIterations) * Math.log(1 - cardinalityFuture.getNow() / ((double) size)));
+        return Math.round(-size / ((double) hashIterations) * Math.log(1 - cardinalityFuture.getNow() / ((double) size)));
     }
 
     @Override
@@ -226,6 +224,10 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         hashIterations = Integer.valueOf(config.get("hashIterations"));
     }
 
+    protected long getMaxSize() {
+        return Integer.MAX_VALUE*2L;
+    }
+    
     @Override
     public boolean tryInit(long expectedInsertions, double falseProbability) {
         if (falseProbability > 1) {
@@ -239,8 +241,8 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         if (size == 0) {
             throw new IllegalArgumentException("Bloom filter calculated size is " + size);
         }
-        if (size > MAX_SIZE) {
-            throw new IllegalArgumentException("Bloom filter size can't be greater than " + MAX_SIZE + ". But calculated size is " + size);
+        if (size > getMaxSize()) {
+            throw new IllegalArgumentException("Bloom filter size can't be greater than " + getMaxSize() + ". But calculated size is " + size);
         }
         hashIterations = optimalNumOfHashFunctions(expectedInsertions, size);
 
