@@ -15,15 +15,14 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class BitsSizeReplayConvertor extends SingleConvertor<Integer> {
+public class BitsSizeReplayConvertor extends SingleConvertor<Long> {
 
     @Override
-    public Integer convert(Object obj) {
+    public Long convert(Object obj) {
         if (obj == null) {
             return null;
         }
-        int val = ((Long) obj).intValue();
-        return val * 8;
+        return ((Long) obj) * 8;
     }
 
 }

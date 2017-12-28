@@ -37,7 +37,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     void set(long fromIndex, long toIndex);
 
-    int size();
+    long size();
 
     boolean get(long bitIndex);
 
@@ -49,7 +49,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     long cardinality();
 
-    void clear(long bitIndex);
+    boolean clear(long bitIndex);
 
     void clear();
 

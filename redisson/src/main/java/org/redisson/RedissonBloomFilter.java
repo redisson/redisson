@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
@@ -104,8 +105,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
-                executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), indexes[i], 1);
+                bs.setAsync(indexes[i]);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute();
@@ -154,8 +156,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
-                executorService.readAsync(getName(), codec, RedisCommands.GETBIT, getName(), indexes[i]);
+                bs.getAsync(indexes[i]);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute();
@@ -175,6 +178,10 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
     }
 
+    protected RBitSetAsync createBitSet(CommandBatchService executorService) {
+        return new RedissonBitSet(executorService, getName());
+    }
+
     private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
         executorService.evalReadAsync(getConfigName(), codec, RedisCommands.EVAL_VOID,
                 "local size = redis.call('hget', KEYS[1], 'size');" +
@@ -188,7 +195,8 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         RFuture<Map<String, String>> configFuture = executorService.readAsync(getConfigName(), StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
-        RFuture<Long> cardinalityFuture = executorService.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
+        RBitSetAsync bs = createBitSet(executorService);
+        RFuture<Long> cardinalityFuture = bs.cardinalityAsync();
         executorService.execute();
 
         readConfig(configFuture.getNow());
@@ -260,7 +268,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     private String getConfigName() {
-        return "{" + getName() + "}" + "__config";
+        return suffixName(getName(), "config");
     }
 
     @Override

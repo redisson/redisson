@@ -51,10 +51,10 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
         });
     }
 
-    public Publisher<Void> set(final long bitIndex, final boolean value) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> set(final long bitIndex, final boolean value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.setAsync(bitIndex, value);
             }
         });
@@ -134,20 +134,20 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Integer> size() {
-        return reactive(new Supplier<RFuture<Integer>>() {
+    public Publisher<Long> size() {
+        return reactive(new Supplier<RFuture<Long>>() {
             @Override
-            public RFuture<Integer> get() {
+            public RFuture<Long> get() {
                 return instance.sizeAsync();
             }
         });
     }
 
     @Override
-    public Publisher<Void> set(final long bitIndex) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> set(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.setAsync(bitIndex);
             }
         });
@@ -164,10 +164,10 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> clear(final long bitIndex) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> clear(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.clearAsync(bitIndex);
             }
         });

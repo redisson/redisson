@@ -39,17 +39,17 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     RFuture<Void> setAsync(long fromIndex, long toIndex);
 
-    RFuture<Integer> sizeAsync();
+    RFuture<Long> sizeAsync();
 
     RFuture<Boolean> getAsync(long bitIndex);
 
-    RFuture<Void> setAsync(long bitIndex);
+    RFuture<Boolean> setAsync(long bitIndex);
 
-    RFuture<Void> setAsync(long bitIndex, boolean value);
+    RFuture<Boolean> setAsync(long bitIndex, boolean value);
 
     RFuture<Long> cardinalityAsync();
 
-    RFuture<Void> clearAsync(long bitIndex);
+    RFuture<Boolean> clearAsync(long bitIndex);
 
     RFuture<Void> clearAsync();
 

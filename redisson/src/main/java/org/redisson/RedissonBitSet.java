@@ -24,6 +24,7 @@ import java.util.List;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -80,8 +81,12 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public RFuture<Void> setAsync(long bitIndex, boolean value) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), bitIndex, value ? 1 : 0);
+    public RFuture<Boolean> setAsync(long bitIndex, boolean value) {
+        RedisCommand<Boolean> command = RedisCommands.SETBIT_TRUE;
+        if (!value) {
+            command = RedisCommands.SETBIT_FALSE;
+        }
+        return commandExecutor.writeAsync(getName(), codec, command, getName(), bitIndex, value ? 1 : 0);
     }
 
     @Override
@@ -100,7 +105,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public int size() {
+    public long size() {
         return get(sizeAsync());
     }
 
@@ -110,8 +115,8 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public void clear(long bitIndex) {
-        get(clearAsync(bitIndex));
+    public boolean clear(long bitIndex) {
+        return get(clearAsync(bitIndex));
     }
 
     @Override
@@ -232,12 +237,12 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public RFuture<Integer> sizeAsync() {
+    public RFuture<Long> sizeAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.BITS_SIZE, getName());
     }
 
     @Override
-    public RFuture<Void> setAsync(long bitIndex) {
+    public RFuture<Boolean> setAsync(long bitIndex) {
         return setAsync(bitIndex, true);
     }
 
@@ -247,7 +252,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public RFuture<Void> clearAsync(long bitIndex) {
+    public RFuture<Boolean> clearAsync(long bitIndex) {
         return setAsync(bitIndex, false);
     }
 
