@@ -1,0 +1,194 @@
+/**
+ * Copyright 2016 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.tomcat;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.catalina.LifecycleException;
+import org.apache.catalina.LifecycleState;
+import org.apache.catalina.Session;
+import org.apache.catalina.session.ManagerBase;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
+import org.redisson.Redisson;
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
+
+/**
+ * Redisson Session Manager for Apache Tomcat
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class RedissonSessionManager extends ManagerBase {
+
+    public enum ReadMode {REDIS, MEMORY}
+    
+    private final Log log = LogFactory.getLog(RedissonSessionManager.class);
+    
+    private RedissonClient redisson;
+    private String configPath;
+    
+    private ReadMode readMode = ReadMode.MEMORY;
+    
+    public String getReadMode() {
+        return readMode.toString();
+    }
+
+    public void setReadMode(String readMode) {
+        this.readMode = ReadMode.valueOf(readMode);
+    }
+    
+    public void setConfigPath(String configPath) {
+        this.configPath = configPath;
+    }
+    
+    public String getConfigPath() {
+        return configPath;
+    }
+    
+    @Override
+    public String getName() {
+        return RedissonSessionManager.class.getSimpleName();
+    }
+    
+    @Override
+    public void load() throws ClassNotFoundException, IOException {
+    }
+
+    @Override
+    public void unload() throws IOException {
+    }
+
+    @Override
+    public Session createSession(String sessionId) {
+        RedissonSession session = (RedissonSession) createEmptySession();
+        
+        session.setNew(true);
+        session.setValid(true);
+        session.setCreationTime(System.currentTimeMillis());
+        session.setMaxInactiveInterval(getContext().getSessionTimeout() * 60);
+
+        if (sessionId == null) {
+            sessionId = generateSessionId();
+        }
+        
+        session.setId(sessionId);
+        session.save();
+        
+        return session;
+    }
+
+    public RMap<String, Object> getMap(String sessionId) {
+        return redisson.getMap("redisson_tomcat_session:" + sessionId);
+    }
+    
+    @Override
+    public Session findSession(String id) throws IOException {
+        Session result = super.findSession(id);
+        if (result == null && id != null) {
+            Map<String, Object> attrs = getMap(id).readAllMap();
+            
+            if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
+                log.info("Session " + id + " can't be found");
+                return null;
+            }
+            
+            RedissonSession session = (RedissonSession) createEmptySession();
+            session.setId(id);
+            session.load(attrs);
+            
+            session.access();
+            session.endAccess();
+            return session;
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public Session createEmptySession() {
+        return new RedissonSession(this, readMode);
+    }
+    
+    @Override
+    public void remove(Session session, boolean update) {
+        super.remove(session, update);
+        
+        if (session.getIdInternal() != null) {
+            ((RedissonSession)session).delete();
+        }
+    }
+    
+    public RedissonClient getRedisson() {
+        return redisson;
+    }
+    
+    @Override
+    protected void startInternal() throws LifecycleException {
+        super.startInternal();
+        redisson = buildClient();
+
+        setState(LifecycleState.STARTING);
+    }
+
+    protected RedissonClient buildClient() throws LifecycleException {
+        Config config = null;
+        try {
+            config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+        } catch (IOException e) {
+            // trying next format
+            try {
+                config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
+            } catch (IOException e1) {
+                log.error("Can't parse json config " + configPath, e);
+                throw new LifecycleException("Can't parse yaml config " + configPath, e1);
+            }
+        }
+        
+        try {
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
+            
+            return Redisson.create(config);
+        } catch (Exception e) {
+            throw new LifecycleException(e);
+        }
+    }
+
+    @Override
+    protected void stopInternal() throws LifecycleException {
+        super.stopInternal();
+        
+        setState(LifecycleState.STOPPING);
+        
+        try {
+            if (redisson != null) {
+                redisson.shutdown();
+            }
+        } catch (Exception e) {
+            throw new LifecycleException(e);
+        }
+        
+    }
+    
+}
