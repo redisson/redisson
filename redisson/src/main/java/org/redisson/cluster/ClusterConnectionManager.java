@@ -375,6 +375,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     
                     checkClusterState(cfg, nodesIterator, lastException);
                 }
+            }
 
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
