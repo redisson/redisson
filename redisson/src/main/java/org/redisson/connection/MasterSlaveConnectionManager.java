@@ -157,7 +157,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final Config cfg;
 
-    private final DnsAddressResolverGroup resolverGroup;
+    protected final DnsAddressResolverGroup resolverGroup;
     
     {
         for (int i = 0; i < locks.length; i++) {
