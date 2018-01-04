@@ -286,13 +286,41 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return mapWriterFuture(future, listener);
     }
 
-    protected <M> RFuture<M> mapWriterFuture(RFuture<M> future, MapWriterTask<M> listener) {
+    protected <M> RFuture<M> mapWriterFuture(RFuture<M> future, final MapWriterTask<M> listener) {
         if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
             future.addListener(new MapWriteBehindListener<M>(commandExecutor, listener, writeBehindCurrentThreads, writeBehindTasks, options.getWriteBehindThreads()));
             return future;
         }        
 
-        return new MapWriterPromise<M>(future, commandExecutor, listener);
+        final RPromise<M> promise = new RedissonPromise<M>();
+        future.addListener(new FutureListener<M>() {
+            @Override
+            public void operationComplete(final Future<M> future) throws Exception {
+                if (!future.isSuccess()) {
+                    promise.tryFailure(future.cause());
+                    return;
+                }
+
+                if (listener.condition(future)) {
+                    commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                listener.execute();
+                            } catch (Exception e) {
+                                promise.tryFailure(e);
+                                return;
+                            }
+                            promise.trySuccess(future.getNow());
+                        }
+                    });
+                } else {
+                    promise.trySuccess(future.getNow());
+                }
+            }
+        });
+
+        return promise;
     }
 
     protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
