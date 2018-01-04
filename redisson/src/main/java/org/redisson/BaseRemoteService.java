@@ -77,7 +77,7 @@ public abstract class BaseRemoteService {
     private static final Logger log = LoggerFactory.getLogger(BaseRemoteService.class);
 
     private final Map<Class<?>, String> requestQueueNameCache = PlatformDependent.newConcurrentHashMap();
-    private final Map<Method, List<String>> methodSignaturesCache = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<Method, List<String>> methodSignaturesCache = PlatformDependent.newConcurrentHashMap();
 
     protected final Codec codec;
     protected final RedissonClient redisson;
