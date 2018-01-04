@@ -31,6 +31,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -101,7 +102,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         long delayInMs = timeUnit.toMillis(delay);
         long timeout = System.currentTimeMillis() + delayInMs;
      
-        long randomId = ThreadLocalRandom.current().nextLong();
+        long randomId = PlatformDependent.threadLocalRandom().nextLong();
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                 "local value = struct.pack('dLc0', tonumber(ARGV[2]), string.len(ARGV[3]), ARGV[3]);" 
               + "redis.call('zadd', KEYS[2], ARGV[1], value);"
