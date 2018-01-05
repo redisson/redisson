@@ -78,7 +78,7 @@ public class Config {
      */
     private boolean referenceEnabled = true;
     
-    private boolean useLinuxNativeEpoll;
+    private TransportMode transportMode = TransportMode.NIO;
 
     private EventLoopGroup eventLoopGroup;
 
@@ -106,6 +106,8 @@ public class Config {
         setReferenceCodecProvider(oldConf.getReferenceCodecProvider());
         setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
+        setTransportMode(oldConf.getTransportMode());
+        
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
@@ -455,23 +457,36 @@ public class Config {
             throw new IllegalStateException("Replication servers config already used!");
         }
     }
-    
 
     /**
-     * Activates an unix socket if servers binded to loopback interface.
-     * Also used for epoll transport activation.
-     * <b>netty-transport-native-epoll</b> library should be in classpath
+     * Transport mode
+     * <p>
+     * Default is {@link TransportMode#NIO}
      *
-     * @param useLinuxNativeEpoll flag
+     * @param transportMode param
      * @return config
      */
+    public Config setTransportMode(TransportMode transportMode) {
+        this.transportMode = transportMode;
+        return this;
+    }
+    public TransportMode getTransportMode() {
+        return transportMode;
+    }
+    
+    /**
+     * Use {@link #setTransportMode(TransportMode)}
+     */
+    @Deprecated
     public Config setUseLinuxNativeEpoll(boolean useLinuxNativeEpoll) {
-        this.useLinuxNativeEpoll = useLinuxNativeEpoll;
+        if (useLinuxNativeEpoll) {
+            setTransportMode(TransportMode.EPOLL);
+        }
         return this;
     }
 
     public boolean isUseLinuxNativeEpoll() {
-        return useLinuxNativeEpoll;
+        return getTransportMode() == TransportMode.EPOLL;
     }
 
     /**
@@ -515,12 +530,13 @@ public class Config {
 
     /**
      * Use external EventLoopGroup. EventLoopGroup processes all
-     * Netty connection tied with Redis servers. Each EventLoopGroup creates
+     * Netty connection tied to Redis servers. Each EventLoopGroup creates
      * own threads and each Redisson client creates own EventLoopGroup by default.
      * So if there are multiple Redisson instances in same JVM
      * it would be useful to share one EventLoopGroup among them.
      * <p>
-     * Only {@link io.netty.channel.epoll.EpollEventLoopGroup} or
+     * Only {@link io.netty.channel.epoll.EpollEventLoopGroup}, 
+     * {@link io.netty.channel.kqueue.KQueueEventLoopGroup}
      * {@link io.netty.channel.nio.NioEventLoopGroup} can be used.
      * <p>
      * The caller is responsible for closing the EventLoopGroup.
