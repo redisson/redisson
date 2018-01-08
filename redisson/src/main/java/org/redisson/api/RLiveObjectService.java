@@ -162,7 +162,7 @@ public interface RLiveObjectService {
     <T> boolean isLiveObject(T instance);
     
     /**
-     * Returns true if the RLiveObject already exists in redis. Also true if
+     * Returns true if the RLiveObject already exists in redis. It will return false if
      * the passed object is not a RLiveObject.
      * 
      * @param <T> type of instance
