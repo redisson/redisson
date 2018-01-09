@@ -38,6 +38,7 @@ import org.redisson.api.RBuckets;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RDelayedQueue;
 import org.redisson.api.RDeque;
+import org.redisson.api.RDoubleAdder;
 import org.redisson.api.RGeo;
 import org.redisson.api.RHyperLogLog;
 import org.redisson.api.RKeys;
@@ -525,6 +526,11 @@ public class Redisson implements RedissonClient {
     @Override
     public RLongAdder getLongAdder(String name) {
         return new RedissonLongAdder(connectionManager.getCommandExecutor(), name, this);
+    }
+    
+    @Override
+    public RDoubleAdder getDoubleAdder(String name) {
+        return new RedissonDoubleAdder(connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override

@@ -15,48 +15,48 @@
  */
 package org.redisson;
 
-import org.redisson.api.RAtomicLong;
+import java.util.concurrent.atomic.DoubleAdder;
+
+import org.redisson.api.RAtomicDouble;
+import org.redisson.api.RDoubleAdder;
 import org.redisson.api.RFuture;
-import org.redisson.api.RLongAdder;
 import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.LongAdder;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RedissonLongAdder extends RedissonExpirable implements RLongAdder {
+public class RedissonDoubleAdder extends RedissonExpirable implements RDoubleAdder {
 
-    private final RAtomicLong atomicLong;
-    private final LongAdder counter = new LongAdder();
-    private final RedissonBaseAdder<Long> adder;
+    private final DoubleAdder counter = new DoubleAdder();
+    private final RedissonBaseAdder<Double> adder;
     
-    public RedissonLongAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
+    public RedissonDoubleAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name);
         
-        atomicLong = redisson.getAtomicLong(getName());
-        adder = new RedissonBaseAdder<Long>(connectionManager, name, redisson) {
+        final RAtomicDouble atomicDouble = redisson.getAtomicDouble(getName());
+        adder = new RedissonBaseAdder<Double>(connectionManager, name, redisson) {
             @Override
             protected void doReset() {
                 counter.reset();
             }
 
             @Override
-            protected RFuture<Long> addAndGetAsync() {
-                return atomicLong.getAndAddAsync(counter.sum());
+            protected RFuture<Double> addAndGetAsync() {
+                return atomicDouble.getAndAddAsync(counter.sum());
             }
 
             @Override
-            protected RFuture<Long> getAsync() {
-                return atomicLong.getAsync();
+            protected RFuture<Double> getAsync() {
+                return atomicDouble.getAsync();
             }
         };
     }
 
     @Override
-    public void add(long x) {
+    public void add(double x) {
         counter.add(x);
     }
 
@@ -71,7 +71,7 @@ public class RedissonLongAdder extends RedissonExpirable implements RLongAdder {
     }
     
     @Override
-    public long sum() {
+    public double sum() {
         return adder.sum();
     }
     
@@ -81,7 +81,7 @@ public class RedissonLongAdder extends RedissonExpirable implements RLongAdder {
     }
     
     @Override
-    public RFuture<Long> sumAsync() {
+    public RFuture<Double> sumAsync() {
         return adder.sumAsync();
     }
 
