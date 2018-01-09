@@ -351,6 +351,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         c.setReadMode(cfg.getReadMode());
         c.setSubscriptionMode(cfg.getSubscriptionMode());
+        c.setDnsMonitoringInterval(cfg.getDnsMonitoringInterval());
 
         return c;
     }
