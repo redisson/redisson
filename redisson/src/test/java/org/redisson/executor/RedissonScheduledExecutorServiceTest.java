@@ -173,6 +173,17 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
+        redisson.getAtomicLong("counter").delete();
+        
+        RScheduledFuture<?> future2 = executor.scheduleWithFixedDelay(new ScheduledLongRepeatableTask("counter", "executed2"), 1, 2, TimeUnit.SECONDS);
+        Thread.sleep(6000);
+        assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
+        
+        executor.cancelTask(future2.getTaskId());
+        assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
+
+        Thread.sleep(3000);
+        assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
     }
 
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
