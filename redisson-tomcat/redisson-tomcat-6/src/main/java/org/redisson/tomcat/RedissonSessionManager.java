@@ -17,7 +17,10 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Map;
+
+import javax.servlet.http.HttpSession;
 
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
@@ -32,6 +35,7 @@ import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
+import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 
 /**
  * Redisson Session Manager for Apache Tomcat
@@ -42,6 +46,7 @@ import org.redisson.config.Config;
 public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     public enum ReadMode {REDIS, MEMORY}
+    public enum UpdateMode {NONE, AFTER_REQUEST}
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
 
@@ -50,7 +55,16 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     private RedissonClient redisson;
     private String configPath;
     private ReadMode readMode = ReadMode.MEMORY;
+    private UpdateMode updateMode = UpdateMode.NONE;
     
+    public String getUpdateMode() {
+        return updateMode.toString();
+    }
+
+    public void setUpdateMode(String updateMode) {
+        this.updateMode = UpdateMode.valueOf(updateMode);
+    }
+
     public String getReadMode() {
         return readMode.toString();
     }
@@ -164,6 +178,10 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public void start() throws LifecycleException {
         redisson = buildClient();
         
+        if (updateMode == UpdateMode.AFTER_REQUEST) {
+            getEngine().getPipeline().addValve(new UpdateValve(this));
+        }
+        
         lifecycle.fireLifecycleEvent(START_EVENT, null);
     }
     
@@ -201,4 +219,19 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         lifecycle.fireLifecycleEvent(STOP_EVENT, null);
     }
     
+    public void store(HttpSession session) {
+        if (session == null) {
+            return;
+        }
+        
+        if (updateMode == UpdateMode.AFTER_REQUEST) {
+            Enumeration<String> names = session.getAttributeNames();
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                Object value = session.getAttribute(name);
+                session.setAttribute(name, value);
+            }
+        }
+    }
+
 }
