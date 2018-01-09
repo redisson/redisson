@@ -48,6 +48,7 @@ import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RLock;
+import org.redisson.api.RLongAdder;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RPatternTopic;
@@ -520,6 +521,11 @@ public class Redisson implements RedissonClient {
     public RAtomicLong getAtomicLong(String name) {
         return new RedissonAtomicLong(connectionManager.getCommandExecutor(), name);
     }
+    
+    @Override
+    public RLongAdder getLongAdder(String name) {
+        return new RedissonLongAdder(connectionManager.getCommandExecutor(), name, this);
+    }
 
     @Override
     public RAtomicDouble getAtomicDouble(String name) {
@@ -541,10 +547,10 @@ public class Redisson implements RedissonClient {
         return new RedissonSemaphore(connectionManager.getCommandExecutor(), name, semaphorePubSub);
     }
     
+    @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(String name) {
         return new RedissonPermitExpirableSemaphore(connectionManager.getCommandExecutor(), name, semaphorePubSub);
     }
-
 
     @Override
     public <V> RBloomFilter<V> getBloomFilter(String name) {
