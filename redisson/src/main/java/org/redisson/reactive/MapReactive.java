@@ -15,8 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
-
 import org.reactivestreams.Publisher;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
