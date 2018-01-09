@@ -17,9 +17,12 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Enumeration;
 import java.util.Map;
 
 import org.apache.catalina.Context;
+import javax.servlet.http.HttpSession;
+
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.Session;
@@ -41,13 +44,24 @@ import org.redisson.config.Config;
 public class RedissonSessionManager extends ManagerBase {
 
     public enum ReadMode {REDIS, MEMORY}
+    public enum UpdateMode {DEFAULT, AFTER_REQUEST}
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
     private RedissonClient redisson;
     private String configPath;
-    private ReadMode readMode = ReadMode.MEMORY;
     
+    private ReadMode readMode = ReadMode.MEMORY;
+    private UpdateMode updateMode = UpdateMode.DEFAULT;
+    
+    public String getUpdateMode() {
+        return updateMode.toString();
+    }
+
+    public void setUpdateMode(String updateMode) {
+        this.updateMode = UpdateMode.valueOf(updateMode);
+    }
+
     public String getReadMode() {
         return readMode.toString();
     }
@@ -55,7 +69,7 @@ public class RedissonSessionManager extends ManagerBase {
     public void setReadMode(String readMode) {
         this.readMode = ReadMode.valueOf(readMode);
     }
-
+    
     public void setConfigPath(String configPath) {
         this.configPath = configPath;
     }
@@ -146,9 +160,13 @@ public class RedissonSessionManager extends ManagerBase {
         
         redisson = buildClient();
         
+        if (updateMode == UpdateMode.AFTER_REQUEST) {
+            getEngine().getPipeline().addValve(new UpdateValve(this));
+        }
+
         setState(LifecycleState.STARTING);
     }
-    
+
     protected RedissonClient buildClient() throws LifecycleException {
         Config config = null;
         try {
@@ -165,10 +183,10 @@ public class RedissonSessionManager extends ManagerBase {
         
         try {
             try {
-                Config c = new Config(config);
-                Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
-                                .newInstance(Thread.currentThread().getContextClassLoader());
-                config.setCodec(codec);
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
             } catch (Exception e) {
                 throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
             }
@@ -193,6 +211,21 @@ public class RedissonSessionManager extends ManagerBase {
             throw new LifecycleException(e);
         }
         
+    }
+
+    public void store(HttpSession session) {
+        if (session == null) {
+            return;
+        }
+        
+        if (updateMode == UpdateMode.AFTER_REQUEST) {
+            Enumeration<String> names = session.getAttributeNames();
+            while (names.hasMoreElements()) {
+                String name = names.nextElement();
+                Object value = session.getAttribute(name);
+                session.setAttribute(name, value);
+            }
+        }
     }
     
 }

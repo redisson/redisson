@@ -753,6 +753,22 @@ public interface RedissonClient {
     RAtomicDouble getAtomicDouble(String name);
 
     /**
+     * Returns LongAdder instances by name.
+     * 
+     * @param name - name of object
+     * @return LongAdder object
+     */
+    RLongAdder getLongAdder(String name);
+
+    /**
+     * Returns DoubleAdder instances by name.
+     * 
+     * @param name - name of object
+     * @return LongAdder object
+     */
+    RDoubleAdder getDoubleAdder(String name);
+    
+    /**
      * Returns countDownLatch instance by name.
      *
      * @param name - name of object

@@ -13,38 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.codec;
+package org.redisson.tomcat;
 
-import org.redisson.client.protocol.Encoder;
+import java.io.IOException;
+
+import javax.servlet.ServletException;
+
+import org.apache.catalina.connector.Request;
+import org.apache.catalina.connector.Response;
+import org.apache.catalina.valves.ValveBase;
 
 /**
+ * Redisson Valve object for Apache Tomcat
  * 
  * @author Nikita Koksharov
  *
  */
-public class GeoEntryCodec extends StringCodec {
+public class UpdateValve extends ValveBase {
 
-    private final ThreadLocal<Integer> pos = new ThreadLocal<Integer>() {
-        protected Integer initialValue() {
-            return 0;
-        };
-    };
+    private final RedissonSessionManager manager;
     
-    private final Codec delegate;
-
-    public GeoEntryCodec(Codec delegate) {
+    public UpdateValve(RedissonSessionManager manager) {
         super();
-        this.delegate = delegate;
+        this.manager = manager;
     }
 
     @Override
-    public Encoder getValueEncoder() {
-        Integer p = pos.get() + 1;
-        pos.set(p);
-        if (p % 3 == 0) {
-            return delegate.getValueEncoder();
+    public void invoke(Request request, Response response) throws IOException, ServletException {
+        try {
+            getNext().invoke(request, response);
+        } finally {
+            manager.store(request.getSession(false));
         }
-        return super.getValueEncoder();
     }
 
 }

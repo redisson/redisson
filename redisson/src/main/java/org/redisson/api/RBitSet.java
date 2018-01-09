@@ -75,7 +75,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     /**
      * Returns <code>true</code> if bit set to one and <code>false</code> overwise.
      * 
-     * @param bitIndex
+     * @param bitIndex - index of bit
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
     boolean get(long bitIndex);
@@ -83,7 +83,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     /**
      * Set bit to one at specified bitIndex
      * 
-     * @param bitIndex
+     * @param bitIndex - index of bit
      * 
      */
     void set(long bitIndex);
@@ -91,7 +91,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     /**
      * Set bit to <code>value</code> at specified <code>bitIndex</code>
      * 
-     * @param bitIndex
+     * @param bitIndex - index of bit
      * @param value true = 1, false = 0
      * 
     */
@@ -109,6 +109,7 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
     /**
      * Set bit to zero at specified <code>bitIndex</code>
      * 
+     * @param bitIndex - index of bit
      * @return <code>true</code> - if previous value was true, 
      * <code>false</code> - if previous value was false
      */
