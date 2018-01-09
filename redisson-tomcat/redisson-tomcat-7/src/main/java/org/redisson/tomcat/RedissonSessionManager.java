@@ -44,7 +44,7 @@ import org.redisson.config.Config;
 public class RedissonSessionManager extends ManagerBase {
 
     public enum ReadMode {REDIS, MEMORY}
-    public enum UpdateMode {NONE, AFTER_REQUEST}
+    public enum UpdateMode {DEFAULT, AFTER_REQUEST}
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
     
@@ -52,7 +52,7 @@ public class RedissonSessionManager extends ManagerBase {
     private String configPath;
     
     private ReadMode readMode = ReadMode.MEMORY;
-    private UpdateMode updateMode = UpdateMode.NONE;
+    private UpdateMode updateMode = UpdateMode.DEFAULT;
     
     public String getUpdateMode() {
         return updateMode.toString();

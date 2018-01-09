@@ -22,8 +22,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpSession;
 
-import org.apache.juli.logging.Log;
-import org.apache.juli.logging.LogFactory;
 import org.apache.catalina.Context;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
@@ -31,11 +29,12 @@ import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.Session;
 import org.apache.catalina.session.ManagerBase;
 import org.apache.catalina.util.LifecycleSupport;
+import org.apache.juli.logging.Log;
+import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
-import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 
 /**
  * Redisson Session Manager for Apache Tomcat
@@ -46,7 +45,7 @@ import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     public enum ReadMode {REDIS, MEMORY}
-    public enum UpdateMode {NONE, AFTER_REQUEST}
+    public enum UpdateMode {DEFAULT, AFTER_REQUEST}
     
     private final Log log = LogFactory.getLog(RedissonSessionManager.class);
 
@@ -55,7 +54,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     private RedissonClient redisson;
     private String configPath;
     private ReadMode readMode = ReadMode.MEMORY;
-    private UpdateMode updateMode = UpdateMode.NONE;
+    private UpdateMode updateMode = UpdateMode.DEFAULT;
     
     public String getUpdateMode() {
         return updateMode.toString();
