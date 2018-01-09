@@ -13,26 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.reactive;
-
-import java.net.InetSocketAddress;
-
-import org.reactivestreams.Publisher;
-import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
+package org.redisson.config;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
  */
-interface MapReactive<K, V> {
+public enum TransportMode {
 
-    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos);
-    
-    Publisher<V> put(K key, V value);
-    
+    /**
+     * Use NIO transport.
+     */
+    NIO,
+
+    /**
+     * Use EPOLL transport. Activates an unix socket if servers binded to loopback interface.
+     * Requires <b>netty-transport-native-epoll</b> lib in classpath.
+     */
+    EPOLL,
+
+    /**
+     * Use KQUEUE transport. Requires <b>netty-transport-native-kqueue</b> lib in classpath.
+     */
+    KQUEUE,
+
 }

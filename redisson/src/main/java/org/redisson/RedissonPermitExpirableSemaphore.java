@@ -33,6 +33,7 @@ import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
 
 /**
@@ -398,7 +399,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     protected String generateId() {
         byte[] id = new byte[16];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        ThreadLocalRandom.current().nextBytes(id);
+        PlatformDependent.threadLocalRandom().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
     

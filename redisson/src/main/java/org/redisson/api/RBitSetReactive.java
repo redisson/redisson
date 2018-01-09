@@ -42,17 +42,17 @@ public interface RBitSetReactive extends RExpirableReactive {
 
     Publisher<Void> set(long fromIndex, long toIndex);
 
-    Publisher<Integer> size();
+    Publisher<Long> size();
 
     Publisher<Boolean> get(long bitIndex);
 
-    Publisher<Void> set(long bitIndex);
+    Publisher<Boolean> set(long bitIndex);
 
-    Publisher<Void> set(long bitIndex, boolean value);
+    Publisher<Boolean> set(long bitIndex, boolean value);
 
     Publisher<Long> cardinality();
 
-    Publisher<Void> clear(long bitIndex);
+    Publisher<Boolean> clear(long bitIndex);
 
     Publisher<Void> clear();
 

@@ -50,6 +50,7 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.TransportMode;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -63,6 +64,9 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
+import io.netty.channel.kqueue.KQueueSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -157,7 +161,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final Config cfg;
 
-    private final DnsAddressResolverGroup resolverGroup;
+    protected final DnsAddressResolverGroup resolverGroup;
     
     {
         for (int i = 0; i < locks.length; i++) {
@@ -175,7 +179,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public MasterSlaveConnectionManager(Config cfg) {
         Version.logVersion();
 
-        if (cfg.isUseLinuxNativeEpoll()) {
+        if (cfg.getTransportMode() == TransportMode.EPOLL) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new EpollEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
             } else {
@@ -184,6 +188,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
             this.socketChannelClass = EpollSocketChannel.class;
             this.resolverGroup = new DnsAddressResolverGroup(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+        } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
+            if (cfg.getEventLoopGroup() == null) {
+                this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
+            } else {
+                this.group = cfg.getEventLoopGroup();
+            }
+
+            this.socketChannelClass = KQueueSocketChannel.class;
+            this.resolverGroup = new DnsAddressResolverGroup(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));

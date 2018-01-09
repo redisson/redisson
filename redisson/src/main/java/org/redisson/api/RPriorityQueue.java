@@ -31,6 +31,8 @@ public interface RPriorityQueue<V> extends Queue<V>, RObject {
     
     List<V> readAll();
     
+    V pollLastAndOfferFirstTo(String dequeName);
+    
     /**
      * Sets new comparator only if current set is empty
      *

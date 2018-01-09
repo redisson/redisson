@@ -1,14 +1,11 @@
 package org.redisson;
 
-import static org.awaitility.Awaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.NoSuchElementException;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -26,8 +23,21 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-public class RedissonBlockingQueueTest extends BaseTest {
+public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
+    @Override
+    <T> RBlockingQueue<T> getQueue() {
+        return redisson.getBlockingQueue("queue");
+    }
+    
+    <T> RBlockingQueue<T> getQueue(String name) {
+        return redisson.getBlockingQueue(name);
+    }
+    
+    <T> RBlockingQueue<T> getQueue(RedissonClient redisson) {
+        return redisson.getBlockingQueue("queue");
+    }
+    
     @Test
     public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
         RedisProcess runner = new RedisRunner()
@@ -39,7 +49,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
-        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollTimeout");
+        final RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.pollAsync(5, TimeUnit.SECONDS);
         
         Assert.assertFalse(f.await(1, TimeUnit.SECONDS));
@@ -54,7 +64,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
     
     @Test(timeout = 3000)
     public void testShortPoll() throws InterruptedException {
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue = getQueue();
         queue.poll(500, TimeUnit.MILLISECONDS);
         queue.poll(10, TimeUnit.MICROSECONDS);
     }
@@ -78,7 +88,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Thread t = new Thread() {
             public void run() {
                 try {
-                    RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+                    RBlockingQueue<Integer> queue1 = getQueue(redisson);
                     long start = System.currentTimeMillis();
                     Integer res = queue1.poll(10, TimeUnit.SECONDS);
                     assertThat(System.currentTimeMillis() - start).isGreaterThan(2000);
@@ -104,12 +114,12 @@ public class RedissonBlockingQueueTest extends BaseTest {
         
         Thread.sleep(1000);
 
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = getQueue(redisson);
         queue1.put(123);
         
         t.join();
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
+        await().atMost(7, TimeUnit.SECONDS).until(() -> executed.get());
         
         redisson.shutdown();
         runner.stop();
@@ -127,7 +137,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.pollAsync(10, TimeUnit.SECONDS);
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
@@ -154,7 +164,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     
     @Test
-    public void testTakeReattach() throws InterruptedException, IOException, ExecutionException, TimeoutException {
+    public void testTakeReattach() throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
                 .randomDir()
@@ -164,7 +174,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         Config config = new Config();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeReattach");
+        RBlockingQueue<Integer> queue1 = getQueue(redisson);
         RFuture<Integer> f = queue1.takeAsync();
         f.await(1, TimeUnit.SECONDS);
         runner.stop();
@@ -178,7 +188,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         
         // check connection rotation
         for (int i = 0; i < 10; i++) {
-            queue1.put(i);
+            queue1.put(i + 10000);
         }
         assertThat(queue1.size()).isEqualTo(10);
         
@@ -195,7 +205,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("testTakeAsyncCancel");
+        RBlockingQueue<Integer> queue1 = getQueue(redisson);
         for (int i = 0; i < 10; i++) {
             RFuture<Integer> f = queue1.takeAsync();
             f.cancel(true);
@@ -213,7 +223,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        RBlockingQueue<Integer> queue1 = getQueue(redisson);
         for (int i = 0; i < 10; i++) {
             RFuture<Integer> f = queue1.pollAsync(1, TimeUnit.SECONDS);
             f.cancel(true);
@@ -225,7 +235,6 @@ public class RedissonBlockingQueueTest extends BaseTest {
         redisson.shutdown();
     }
 
-    
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
@@ -250,9 +259,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testTake() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:take");
+        RBlockingQueue<Integer> queue1 = getQueue();
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue:take");
+            RBlockingQueue<Integer> queue = getQueue();
             try {
                 queue.put(3);
             } catch (InterruptedException e) {
@@ -270,7 +279,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testPoll() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueue<Integer> queue1 = getQueue();
         queue1.put(1);
         Assert.assertEquals((Integer)1, queue1.poll(2, TimeUnit.SECONDS));
 
@@ -280,7 +289,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
     }
     @Test
     public void testAwait() throws InterruptedException {
-        RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueue<Integer> queue1 = getQueue();
         queue1.put(1);
 
         Assert.assertEquals((Integer)1, queue1.poll(10, TimeUnit.SECONDS));
@@ -332,80 +341,9 @@ public class RedissonBlockingQueueTest extends BaseTest {
         assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
 
-
-    @Test
-    public void testAddOfferOrigin() {
-        Queue<Integer> queue = new LinkedList<Integer>();
-        queue.add(1);
-        queue.offer(2);
-        queue.add(3);
-        queue.offer(4);
-
-        assertThat(queue).containsExactly(1, 2, 3, 4);
-        Assert.assertEquals((Integer) 1, queue.poll());
-        assertThat(queue).containsExactly(2, 3, 4);
-        Assert.assertEquals((Integer) 2, queue.element());
-    }
-
-    @Test
-    public void testAddOffer() {
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("blocking:queue");
-        queue.add(1);
-        queue.offer(2);
-        queue.add(3);
-        queue.offer(4);
-
-        assertThat(queue).containsExactly(1, 2, 3, 4);
-        Assert.assertEquals((Integer) 1, queue.poll());
-        assertThat(queue).containsExactly(2, 3, 4);
-        Assert.assertEquals((Integer) 2, queue.element());
-    }
-
-    @Test
-    public void testRemoveOrigin() {
-        Queue<Integer> queue = new LinkedList<Integer>();
-        queue.add(1);
-        queue.add(2);
-        queue.add(3);
-        queue.add(4);
-
-        queue.remove();
-        queue.remove();
-
-        assertThat(queue).containsExactly(3, 4);
-        queue.remove();
-        queue.remove();
-
-        Assert.assertTrue(queue.isEmpty());
-    }
-
-    @Test
-    public void testRemove() {
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("blocking:queue");
-        queue.add(1);
-        queue.add(2);
-        queue.add(3);
-        queue.add(4);
-
-        queue.remove();
-        queue.remove();
-
-        assertThat(queue).containsExactly(3, 4);
-        queue.remove();
-        queue.remove();
-
-        Assert.assertTrue(queue.isEmpty());
-    }
-
-    @Test(expected = NoSuchElementException.class)
-    public void testRemoveEmpty() {
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("blocking:queue");
-        queue.remove();
-    }
-
     @Test
     public void testDrainTo() {
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("queue");
+        RBlockingQueue<Integer> queue = getQueue();
         for (int i = 0 ; i < 100; i++) {
             queue.offer(i);
         }
@@ -424,7 +362,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
     @Test
     public void testBlockingQueue() {
 
-        RBlockingQueue<Integer> queue = redisson.getBlockingQueue("test_:blocking:queue:");
+        RBlockingQueue<Integer> queue = getQueue();
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
@@ -433,7 +371,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         for (int i = 0; i < total; i++) {
             // runnable won't be executed in any particular order, and hence, int value as well.
             executor.submit(() -> {
-                redisson.getQueue("test_:blocking:queue:").add(counter.incrementAndGet());
+                getQueue().add(counter.incrementAndGet());
             });
         }
         int count = 0;
@@ -454,7 +392,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testDrainToCollection() throws Exception {
-        RBlockingQueue<Object> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueue<Object> queue1 = getQueue();
         queue1.put(1);
         queue1.put(2L);
         queue1.put("e");
@@ -467,7 +405,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
 
     @Test
     public void testDrainToCollectionLimited() throws Exception {
-        RBlockingQueue<Object> queue1 = redisson.getBlockingQueue("queue1");
+        RBlockingQueue<Object> queue1 = getQueue();
         queue1.put(1);
         queue1.put(2L);
         queue1.put("e");
@@ -499,7 +437,7 @@ public class RedissonBlockingQueueTest extends BaseTest {
         try {
             for (int i = 0; i < 10; i++) {
                 System.out.println("Iteration: " + i);
-                RBlockingQueue<String> q = redisson.<String>getBlockingQueue(String.valueOf(i));
+                RBlockingQueue<String> q = getQueue(String.valueOf(i));
                 q.add(value);
                 System.out.println("Message added to [" + i + "]");
                 q.expire(1, TimeUnit.MINUTES);

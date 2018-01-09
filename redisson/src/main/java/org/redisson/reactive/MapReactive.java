@@ -13,12 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client;
+package org.redisson.reactive;
 
-import org.redisson.misc.RPromise;
+import org.reactivestreams.Publisher;
+import org.redisson.client.RedisClient;
+import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
-public interface ReconnectListener {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
+interface MapReactive<K, V> {
 
-    void onReconnect(RedisConnection redisConnection, RPromise<RedisConnection> connectionFuture) throws RedisException;
-
+    Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos);
+    
+    Publisher<V> put(K key, V value);
+    
 }

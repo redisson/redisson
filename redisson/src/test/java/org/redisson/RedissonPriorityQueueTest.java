@@ -15,6 +15,23 @@ import org.redisson.api.RPriorityQueue;
 public class RedissonPriorityQueueTest extends BaseTest {
 
     @Test
+    public void testPollLastAndOfferFirstTo() {
+        RPriorityQueue<Integer> queue1 = redisson.getPriorityQueue("deque1");
+        queue1.add(2);
+        queue1.add(1);
+        queue1.add(3);
+
+        RPriorityQueue<Integer> queue2 = redisson.getPriorityQueue("deque2");
+        queue2.add(5);
+        queue2.add(4);
+        queue2.add(6);
+        
+        queue1.pollLastAndOfferFirstTo(queue2.getName());
+        assertThat(queue2).containsExactly(3, 4, 5, 6);
+    }
+
+    
+    @Test
     public void testReadAll() {
         RPriorityQueue<Integer> set = redisson.getPriorityQueue("simple");
         set.add(2);

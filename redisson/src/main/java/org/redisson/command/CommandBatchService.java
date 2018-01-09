@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -94,6 +96,8 @@ public class CommandBatchService extends CommandAsyncService {
     private final AtomicInteger index = new AtomicInteger();
 
     private ConcurrentMap<MasterSlaveEntry, Entry> commands = PlatformDependent.newConcurrentHashMap();
+    
+    private Map<RFuture<?>, List<CommandBatchService>> nestedServices = PlatformDependent.newConcurrentHashMap();
 
     private volatile boolean executed;
 
@@ -101,6 +105,10 @@ public class CommandBatchService extends CommandAsyncService {
         super(connectionManager);
     }
 
+    public void add(RFuture<?> future, List<CommandBatchService> services) {
+        nestedServices.put(future, services);
+    }
+    
     @Override
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt) {
@@ -188,12 +196,13 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         RPromise<R> resultPromise;
-        RPromise<Void> voidPromise = new RedissonPromise<Void>();
+        final RPromise<Void> voidPromise = new RedissonPromise<Void>();
         if (skipResult) {
             voidPromise.addListener(new FutureListener<Void>() {
                 @Override
                 public void operationComplete(Future<Void> future) throws Exception {
                     commands = null;
+                    nestedServices.clear();
                 }
             });
             resultPromise = (RPromise<R>) voidPromise;
@@ -205,6 +214,7 @@ public class CommandBatchService extends CommandAsyncService {
                     if (!future.isSuccess()) {
                         promise.tryFailure(future.cause());
                         commands = null;
+                        nestedServices.clear();
                         return;
                     }
                     
@@ -229,12 +239,28 @@ public class CommandBatchService extends CommandAsyncService {
                     promise.trySuccess(result);
                     
                     commands = null;
+                    nestedServices.clear();
                 }
             });
             resultPromise = (RPromise<R>) promise;
         }
 
-        AtomicInteger slots = new AtomicInteger(commands.size());
+        final AtomicInteger slots = new AtomicInteger(commands.size());
+        
+        for (java.util.Map.Entry<RFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
+            slots.incrementAndGet();
+            for (CommandBatchService service : entry.getValue()) {
+                service.executeAsync();
+            }
+            
+            entry.getKey().addListener(new FutureListener<Object>() {
+                @Override
+                public void operationComplete(Future<Object> future) throws Exception {
+                    handle(voidPromise, slots, future);
+                }
+            });
+        }
+        
         for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
             execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0, skipResult, responseTimeout, retryAttempts, retryInterval);
         }
@@ -400,13 +426,7 @@ public class CommandBatchService extends CommandAsyncService {
 
                 free(entry);
                 
-                if (future.isSuccess()) {
-                    if (slots.decrementAndGet() == 0) {
-                        mainPromise.trySuccess(future.getNow());
-                    }
-                } else {
-                    mainPromise.tryFailure(future.cause());
-                }
+                handle(mainPromise, slots, future);
             }
         });
     }
@@ -497,6 +517,16 @@ public class CommandBatchService extends CommandAsyncService {
 
     protected boolean isWaitCommand(BatchCommandData<?, ?> c) {
         return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
+    }
+
+    protected void handle(final RPromise<Void> mainPromise, final AtomicInteger slots, Future<?> future) {
+        if (future.isSuccess()) {
+            if (slots.decrementAndGet() == 0) {
+                mainPromise.trySuccess(null);
+            }
+        } else {
+            mainPromise.tryFailure(future.cause());
+        }
     }
 
 }

@@ -15,11 +15,23 @@
  */
 package org.redisson.client.protocol.convertor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class BitSetReplayConvertor extends SingleConvertor<Boolean> {
+
+    private final int expectedValue;
+    
+    public BitSetReplayConvertor(int expectedValue) {
+        super();
+        this.expectedValue = expectedValue;
+    }
 
     @Override
     public Boolean convert(Object obj) {
-        return Long.valueOf(0).equals(obj);
+        return expectedValue == (Long)obj;
     }
 
 

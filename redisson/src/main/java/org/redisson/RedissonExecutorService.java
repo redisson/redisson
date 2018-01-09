@@ -192,7 +192,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     protected String generateRequestId() {
         byte[] id = new byte[16];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        ThreadLocalRandom.current().nextBytes(id);
+        PlatformDependent.threadLocalRandom().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
     
