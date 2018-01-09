@@ -32,6 +32,7 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Returns zero if there are no any set bit.
      * 
      * @return "logical size" = index of highest set bit plus one
+     * @return void
      */
     RFuture<Long> lengthAsync();
 
@@ -41,6 +42,7 @@ public interface RBitSetAsync extends RExpirableAsync {
      * @param fromIndex inclusive
      * @param toIndex exclusive
      * @param value true = 1, false = 0
+     * @return void
      * 
      */
     RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value);
@@ -50,6 +52,7 @@ public interface RBitSetAsync extends RExpirableAsync {
      * 
      * @param fromIndex inclusive
      * @param toIndex exclusive
+     * @return void
      * 
      */
     RFuture<Void> clearAsync(long fromIndex, long toIndex);
@@ -63,6 +66,7 @@ public interface RBitSetAsync extends RExpirableAsync {
      * 
      * @param fromIndex inclusive
      * @param toIndex exclusive
+     * @return void
      * 
      */
     RFuture<Void> setAsync(long fromIndex, long toIndex);
@@ -77,7 +81,7 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Returns <code>true</code> if bit set to one and <code>false</code> overwise.
      * 
-     * @param bitIndex
+     * @param bitIndex - index of bit
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
     RFuture<Boolean> getAsync(long bitIndex);
@@ -85,16 +89,17 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Set bit to one at specified bitIndex
      * 
-     * @param bitIndex
-     * 
+     * @param bitIndex - index of bit
+     * @return void
      */
     RFuture<Boolean> setAsync(long bitIndex);
 
     /**
      * Set bit to <code>value</code> at specified <code>bitIndex</code>
      * 
-     * @param bitIndex
+     * @param bitIndex - index of bit
      * @param value true = 1, false = 0
+     * @return previous value
      * 
     */
     RFuture<Boolean> setAsync(long bitIndex, boolean value);
@@ -108,7 +113,8 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     /**
      * Set bit to zero at specified <code>bitIndex</code>
-     * 
+     *
+     * @param bitIndex - index of bit
      * @return <code>true</code> - if previous value was true, 
      * <code>false</code> - if previous value was false
      */
@@ -116,6 +122,8 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     /**
      * Set all bits to zero
+     * 
+     * @return void
      */
     RFuture<Void> clearAsync();
 
