@@ -20,6 +20,7 @@ import java.util.NoSuchElementException;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RPriorityDeque;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
@@ -38,22 +39,30 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonPriorityDeque(CommandExecutor commandExecutor, String name, Redisson redisson) {
+    protected RedissonPriorityDeque(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
     }
 
-    public RedissonPriorityDeque(Codec codec, CommandExecutor commandExecutor, String name, Redisson redisson) {
+    public RedissonPriorityDeque(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
     }
 
+    public RFuture<Void> addFirstAsync(V e) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+
+    public RFuture<Void> addLastAsync(V e) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+    
     @Override
     public void addFirst(V e) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use add or put method");
     }
 
     @Override
     public void addLast(V e) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use add or put method");
     }
 
     @Override
@@ -108,14 +117,22 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public boolean offerFirst(V e) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use add or put method");
     }
 
+    public RFuture<Boolean> offerFirstAsync(V e) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+    
     @Override
     public boolean offerLast(V e) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use add or put method");
     }
 
+    public RFuture<Boolean> offerLastAsync(V e) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+    
 //    @Override
     public RFuture<V> peekFirstAsync() {
         return getAsync(0);
@@ -128,12 +145,20 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public V peekLast() {
-        return get(getLastAsync());
+        return get(peekLastAsync());
+    }
+    
+    public RFuture<V> peekLastAsync() {
+        return getLastAsync();
     }
 
     @Override
     public V pollFirst() {
-        return poll();
+        return get(pollFirstAsync());
+    }
+    
+    public RFuture<V> pollFirstAsync() {
+        return pollAsync();
     }
 
     public RFuture<V> pollLastAsync() {
@@ -157,9 +182,13 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
 
     @Override
     public void push(V e) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("use add or put method");
     }
 
+    public RFuture<Void> pushAsync(V e) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+    
 //    @Override
     public RFuture<Boolean> removeFirstOccurrenceAsync(Object o) {
         return removeAsync(o, 1);
