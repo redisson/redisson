@@ -35,7 +35,7 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDouble {
 
-    protected RedissonAtomicDouble(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonAtomicDouble(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 

@@ -470,6 +470,14 @@ public interface RedissonReactiveClient {
     RAtomicLongReactive getAtomicLong(String name);
 
     /**
+     * Returns "atomic double" instance by name.
+     *
+     * @param name of the "atomic double"
+     * @return AtomicLong object
+     */
+    RAtomicDoubleReactive getAtomicDouble(String name);
+
+    /**
      * Returns bitSet instance by name.
      *
      * @param name - name of object

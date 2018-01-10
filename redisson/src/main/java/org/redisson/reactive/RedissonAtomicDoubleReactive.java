@@ -16,9 +16,9 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
-import org.redisson.RedissonAtomicLong;
-import org.redisson.api.RAtomicLongAsync;
-import org.redisson.api.RAtomicLongReactive;
+import org.redisson.RedissonAtomicDouble;
+import org.redisson.api.RAtomicDoubleAsync;
+import org.redisson.api.RAtomicDoubleReactive;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandReactiveExecutor;
 
@@ -30,27 +30,27 @@ import reactor.fn.Supplier;
  * @author Nikita Koksharov
  *
  */
-public class RedissonAtomicLongReactive extends RedissonExpirableReactive implements RAtomicLongReactive {
+public class RedissonAtomicDoubleReactive extends RedissonExpirableReactive implements RAtomicDoubleReactive {
 
-    private final RAtomicLongAsync instance;
+    private final RAtomicDoubleAsync instance;
     
-    public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonAtomicDoubleReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        instance = new RedissonAtomicLong(commandExecutor, name);
+        instance = new RedissonAtomicDouble(commandExecutor, name);
     }
 
     @Override
-    public Publisher<Long> addAndGet(final long delta) {
-        return reactive(new Supplier<RFuture<Long>>() {
+    public Publisher<Double> addAndGet(final double delta) {
+        return reactive(new Supplier<RFuture<Double>>() {
             @Override
-            public RFuture<Long> get() {
+            public RFuture<Double> get() {
                 return instance.addAndGetAsync(delta);
             }
         });
     }
 
     @Override
-    public Publisher<Boolean> compareAndSet(final long expect, final long update) {
+    public Publisher<Boolean> compareAndSet(final double expect, final double update) {
         return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
             public RFuture<Boolean> get() {
@@ -60,25 +60,25 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     }
 
     @Override
-    public Publisher<Long> decrementAndGet() {
-        return reactive(new Supplier<RFuture<Long>>() {
+    public Publisher<Double> decrementAndGet() {
+        return reactive(new Supplier<RFuture<Double>>() {
             @Override
-            public RFuture<Long> get() {
+            public RFuture<Double> get() {
                 return instance.decrementAndGetAsync();
             }
         });
     }
 
     @Override
-    public Publisher<Long> get() {
+    public Publisher<Double> get() {
         return addAndGet(0);
     }
 
     @Override
-    public Publisher<Long> getAndAdd(final long delta) {
-        return reactive(new Supplier<RFuture<Long>>() {
+    public Publisher<Double> getAndAdd(final double delta) {
+        return reactive(new Supplier<RFuture<Double>>() {
             @Override
-            public RFuture<Long> get() {
+            public RFuture<Double> get() {
                 return instance.getAndAddAsync(delta);
             }
         });
@@ -86,37 +86,37 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
 
 
     @Override
-    public Publisher<Long> getAndSet(final long newValue) {
-        return reactive(new Supplier<RFuture<Long>>() {
+    public Publisher<Double> getAndSet(final double newValue) {
+        return reactive(new Supplier<RFuture<Double>>() {
             @Override
-            public RFuture<Long> get() {
+            public RFuture<Double> get() {
                 return instance.getAndSetAsync(newValue);
             }
         });
     }
 
     @Override
-    public Publisher<Long> incrementAndGet() {
-        return reactive(new Supplier<RFuture<Long>>() {
+    public Publisher<Double> incrementAndGet() {
+        return reactive(new Supplier<RFuture<Double>>() {
             @Override
-            public RFuture<Long> get() {
+            public RFuture<Double> get() {
                 return instance.incrementAndGetAsync();
             }
         });
     }
 
     @Override
-    public Publisher<Long> getAndIncrement() {
+    public Publisher<Double> getAndIncrement() {
         return getAndAdd(1);
     }
 
     @Override
-    public Publisher<Long> getAndDecrement() {
+    public Publisher<Double> getAndDecrement() {
         return getAndAdd(-1);
     }
 
     @Override
-    public Publisher<Void> set(final long newValue) {
+    public Publisher<Void> set(final double newValue) {
         return reactive(new Supplier<RFuture<Void>>() {
             @Override
             public RFuture<Void> get() {

@@ -22,26 +22,26 @@ import org.reactivestreams.Publisher;
  * @author Nikita Koksharov
  *
  */
-public interface RAtomicLongReactive extends RExpirableReactive {
+public interface RAtomicDoubleReactive extends RExpirableReactive {
 
-    Publisher<Boolean> compareAndSet(long expect, long update);
+    Publisher<Boolean> compareAndSet(double expect, double update);
 
-    Publisher<Long> addAndGet(long delta);
+    Publisher<Double> addAndGet(double delta);
 
-    Publisher<Long> decrementAndGet();
+    Publisher<Double> decrementAndGet();
 
-    Publisher<Long> get();
+    Publisher<Double> get();
 
-    Publisher<Long> getAndAdd(long delta);
+    Publisher<Double> getAndAdd(double delta);
 
-    Publisher<Long> getAndSet(long newValue);
+    Publisher<Double> getAndSet(double newValue);
 
-    Publisher<Long> incrementAndGet();
+    Publisher<Double> incrementAndGet();
 
-    Publisher<Long> getAndIncrement();
+    Publisher<Double> getAndIncrement();
 
-    Publisher<Long> getAndDecrement();
+    Publisher<Double> getAndDecrement();
 
-    Publisher<Void> set(long newValue);
+    Publisher<Void> set(double newValue);
 
 }
