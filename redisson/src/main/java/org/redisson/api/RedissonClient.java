@@ -18,7 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 
 /**
@@ -956,13 +955,6 @@ public interface RedissonClient {
      */
     Config getConfig();
 
-    /**
-     * Returns the CodecProvider instance
-     * 
-     * @return CodecProvider object
-     */
-    public ReferenceCodecProvider getCodecProvider();
-    
     /**
      * Get Redis nodes group for server operations
      *

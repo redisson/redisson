@@ -74,7 +74,6 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
@@ -105,7 +104,6 @@ public class Redisson implements RedissonClient {
     protected final ConnectionManager connectionManager;
     
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
-    protected final ReferenceCodecProvider codecProvider;
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -118,7 +116,6 @@ public class Redisson implements RedissonClient {
         
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
-        codecProvider = configCopy.getReferenceCodecProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {
@@ -585,7 +582,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, codecProvider);
+        return new RedissonLiveObjectService(this, liveObjectClassCache);
     }
     
     @Override
@@ -604,11 +601,6 @@ public class Redisson implements RedissonClient {
         return config;
     }
 
-    @Override
-    public ReferenceCodecProvider getCodecProvider() {
-        return codecProvider;
-    }
-    
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);

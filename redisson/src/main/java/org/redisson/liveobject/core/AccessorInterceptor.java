@@ -29,7 +29,6 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -52,12 +51,10 @@ import net.bytebuddy.implementation.bind.annotation.This;
 public class AccessorInterceptor {
 
     private final RedissonClient redisson;
-    private final ReferenceCodecProvider codecProvider;
     private final RedissonObjectBuilder objectBuilder;
 
     public AccessorInterceptor(RedissonClient redisson, RedissonObjectBuilder objectBuilder) {
         this.redisson = redisson;
-        this.codecProvider = redisson.getCodecProvider();
         this.objectBuilder = objectBuilder;
     }
 
@@ -104,7 +101,7 @@ public class AccessorInterceptor {
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(codecProvider.getCodec(anno, (Class) rEntity));
+                        .newInstance(redisson.getConfig().getReferenceCodecProvider().getCodec(anno, (Class) rEntity));
                 liveMap.fastPut(fieldName, new RedissonReference(rEntity,
                         ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
                                 liveObject.getLiveObjectId())));
