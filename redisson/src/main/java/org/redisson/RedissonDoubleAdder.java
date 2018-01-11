@@ -28,38 +28,37 @@ import org.redisson.command.CommandAsyncExecutor;
  * @author Nikita Koksharov
  *
  */
-public class RedissonDoubleAdder extends RedissonExpirable implements RDoubleAdder {
+public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RDoubleAdder {
 
     private final DoubleAdder counter = new DoubleAdder();
-    private final RedissonBaseAdder<Double> adder;
+    private final RAtomicDouble atomicDouble;
     
     public RedissonDoubleAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
-        super(connectionManager, name);
+        super(connectionManager, name, redisson);
         
-        final RAtomicDouble atomicDouble = redisson.getAtomicDouble(getName());
-        adder = new RedissonBaseAdder<Double>(connectionManager, name, redisson) {
-            @Override
-            protected void doReset() {
-                counter.reset();
-            }
+        atomicDouble = redisson.getAtomicDouble(getName());
+    }
 
-            @Override
-            protected RFuture<Double> addAndGetAsync() {
-                return atomicDouble.getAndAddAsync(counter.sum());
-            }
-
-            @Override
-            protected RFuture<Double> getAsync() {
-                return atomicDouble.getAsync();
-            }
-        };
+    @Override
+    protected void doReset() {
+        counter.reset();
+    }
+    
+    @Override
+    protected RFuture<Double> addAndGetAsync() {
+        return atomicDouble.getAndAddAsync(counter.sum());
+    }
+    
+    @Override
+    protected RFuture<Double> getAsync() {
+        return atomicDouble.getAsync();
     }
 
     @Override
     public void add(double x) {
         counter.add(x);
     }
-
+    
     @Override
     public void increment() {
         add(1L);
@@ -72,27 +71,7 @@ public class RedissonDoubleAdder extends RedissonExpirable implements RDoubleAdd
     
     @Override
     public double sum() {
-        return adder.sum();
-    }
-    
-    @Override
-    public void reset() {
-        adder.reset();
-    }
-    
-    @Override
-    public RFuture<Double> sumAsync() {
-        return adder.sumAsync();
-    }
-
-    @Override
-    public RFuture<Void> resetAsync() {
-        return adder.resetAsync();
-    }
-
-    @Override
-    public void destroy() {
-        adder.destroy();
+        return get(sumAsync());
     }
 
 }

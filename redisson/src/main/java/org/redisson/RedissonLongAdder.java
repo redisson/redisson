@@ -27,32 +27,30 @@ import org.redisson.misc.LongAdder;
  * @author Nikita Koksharov
  *
  */
-public class RedissonLongAdder extends RedissonExpirable implements RLongAdder {
+public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongAdder {
 
     private final RAtomicLong atomicLong;
     private final LongAdder counter = new LongAdder();
-    private final RedissonBaseAdder<Long> adder;
     
     public RedissonLongAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
-        super(connectionManager, name);
+        super(connectionManager, name, redisson);
         
         atomicLong = redisson.getAtomicLong(getName());
-        adder = new RedissonBaseAdder<Long>(connectionManager, name, redisson) {
-            @Override
-            protected void doReset() {
-                counter.reset();
-            }
+    }
 
-            @Override
-            protected RFuture<Long> addAndGetAsync() {
-                return atomicLong.getAndAddAsync(counter.sum());
-            }
-
-            @Override
-            protected RFuture<Long> getAsync() {
-                return atomicLong.getAsync();
-            }
-        };
+    @Override
+    protected void doReset() {
+        counter.reset();
+    }
+    
+    @Override
+    protected RFuture<Long> addAndGetAsync() {
+        return atomicLong.getAndAddAsync(counter.sum());
+    }
+    
+    @Override
+    protected RFuture<Long> getAsync() {
+        return atomicLong.getAsync();
     }
 
     @Override
@@ -69,30 +67,10 @@ public class RedissonLongAdder extends RedissonExpirable implements RLongAdder {
     public void decrement() {
         add(-1L);
     }
-    
+
     @Override
     public long sum() {
-        return adder.sum();
+        return get(sumAsync());
     }
     
-    @Override
-    public void reset() {
-        adder.reset();
-    }
-    
-    @Override
-    public RFuture<Long> sumAsync() {
-        return adder.sumAsync();
-    }
-
-    @Override
-    public RFuture<Void> resetAsync() {
-        return adder.resetAsync();
-    }
-
-    @Override
-    public void destroy() {
-        adder.destroy();
-    }
-
 }

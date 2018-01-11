@@ -54,7 +54,6 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
@@ -85,14 +84,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
-    private final ReferenceCodecProvider codecProvider;
     private final RedissonObjectBuilder objectBuilder;
 
-    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, ReferenceCodecProvider codecProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache) {
         this.redisson = redisson;
         this.classCache = classCache;
-        this.codecProvider = codecProvider;
-        this.objectBuilder = new RedissonObjectBuilder(redisson, codecProvider);
+        this.objectBuilder = new RedissonObjectBuilder(redisson);
     }
 
     //TODO: Add ttl renewal functionality
@@ -642,7 +639,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .withBinders(FieldProxy.Binder
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class))
-                        .to(new LiveObjectInterceptor(redisson, codecProvider, entityClass,
+                        .to(new LiveObjectInterceptor(redisson, entityClass,
                                 getRIdFieldName(entityClass))))
 //                .intercept(MethodDelegation.to(
 //                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,

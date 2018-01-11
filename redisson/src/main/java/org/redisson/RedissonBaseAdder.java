@@ -102,10 +102,6 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
 
     protected abstract void doReset();
 
-    public T sum() {
-        return get(sumAsync());
-    }
-    
     public void reset() {
         get(resetAsync());
     }

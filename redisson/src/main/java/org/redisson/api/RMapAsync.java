@@ -35,7 +35,7 @@ import java.util.Set;
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
     /**
-     * Loads all map entries to this Redis map.
+     * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.
      * 
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
      * @param parallelism - parallelism level, used to increase speed of process execution
@@ -44,7 +44,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism);
     
     /**
-     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
      * 
      * @param keys - map keys
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.

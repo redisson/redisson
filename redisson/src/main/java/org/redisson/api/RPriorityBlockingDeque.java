@@ -15,33 +15,12 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
-
 /**
- * 
- * @author Nikita Koksharov
+ * RPriorityBlockingDeque backed by Redis
  *
+ * @author Nikita Koksharov
+ * @param <V> the type of elements held in this collection
  */
-public interface RAtomicLongReactive extends RExpirableReactive {
-
-    Publisher<Boolean> compareAndSet(long expect, long update);
-
-    Publisher<Long> addAndGet(long delta);
-
-    Publisher<Long> decrementAndGet();
-
-    Publisher<Long> get();
-
-    Publisher<Long> getAndAdd(long delta);
-
-    Publisher<Long> getAndSet(long newValue);
-
-    Publisher<Long> incrementAndGet();
-
-    Publisher<Long> getAndIncrement();
-
-    Publisher<Long> getAndDecrement();
-
-    Publisher<Void> set(long newValue);
+public interface RPriorityBlockingDeque<V> extends RBlockingDeque<V>, RPriorityDeque<V> {
 
 }

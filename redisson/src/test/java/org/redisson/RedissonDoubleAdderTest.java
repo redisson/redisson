@@ -3,7 +3,6 @@ package org.redisson;
 import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.redisson.api.RDoubleAdder;
-import org.redisson.api.RLongAdder;
 
 public class RedissonDoubleAdderTest extends BaseTest {
 

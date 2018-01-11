@@ -64,6 +64,10 @@ abstract class EvictionTask implements Runnable {
                 }
 
                 Integer size = future.getNow();
+                if (size == -1) {
+                    schedule();
+                    return;
+                }
 
                 if (sizeHistory.size() == 2) {
                     if (sizeHistory.peekFirst() > sizeHistory.peekLast()

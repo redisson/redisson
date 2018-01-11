@@ -1,6 +1,7 @@
 package org.redisson.executor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -16,65 +17,36 @@ import java.util.concurrent.TimeoutException;
 
 import org.awaitility.Duration;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.BaseTest;
 import org.redisson.RedissonNode;
-import org.redisson.RedissonRuntimeEnvironment;
 import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RExecutorService;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
-import static org.awaitility.Awaitility.*;
-
 public class RedissonExecutorServiceTest extends BaseTest {
 
     private static RedissonNode node;
     
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        BaseTest.beforeClass();
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            Config config = createConfig();
-            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-            node = RedissonNode.create(nodeConfig);
-            node.start();
-        }
-    }
-    
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        BaseTest.afterClass();
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            node.shutdown();
-        }
-    }
-
     @Before
     @Override
     public void before() throws IOException, InterruptedException {
         super.before();
-        if (RedissonRuntimeEnvironment.isTravis) {
-            Config config = createConfig();
-            RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
-            nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
-            node = RedissonNode.create(nodeConfig);
-            node.start();
-        }
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test", 1));
+        node = RedissonNode.create(nodeConfig);
+        node.start();
     }
 
     @After
     @Override
     public void after() throws InterruptedException {
         super.after();
-        if (RedissonRuntimeEnvironment.isTravis) {
-            node.shutdown();
-        }
+        node.shutdown();
     }
 
     private void cancel(RExecutorFuture<?> future) throws InterruptedException, ExecutionException {

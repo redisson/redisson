@@ -18,7 +18,6 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 
 /**
@@ -612,7 +611,7 @@ public interface RedissonClient {
     <V> RPriorityQueue<V> getPriorityQueue(String name, Codec codec);
 
     /**
-     * Returns priority unbounded blocking queue instance by name.
+     * Returns unbounded priority blocking queue instance by name.
      * It uses comparator to sort objects.
      *
      * @param <V> type of value
@@ -622,7 +621,7 @@ public interface RedissonClient {
     <V> RPriorityBlockingQueue<V> getPriorityBlockingQueue(String name);
     
     /**
-     * Returns priority unbounded blocking queue instance by name
+     * Returns unbounded priority blocking queue instance by name
      * using provided codec for queue objects.
      * It uses comparator to sort objects.
      *
@@ -633,6 +632,27 @@ public interface RedissonClient {
      */
     <V> RPriorityBlockingQueue<V> getPriorityBlockingQueue(String name, Codec codec);
 
+    /**
+     * Returns unbounded priority blocking deque instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityBlockingDeque<V> getPriorityBlockingDeque(String name);
+    
+    /**
+     * Returns unbounded priority blocking deque instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityBlockingDeque<V> getPriorityBlockingDeque(String name, Codec codec);
     
     /**
      * Returns priority unbounded deque instance by name.
@@ -935,13 +955,6 @@ public interface RedissonClient {
      */
     Config getConfig();
 
-    /**
-     * Returns the CodecProvider instance
-     * 
-     * @return CodecProvider object
-     */
-    public ReferenceCodecProvider getCodecProvider();
-    
     /**
      * Get Redis nodes group for server operations
      *
