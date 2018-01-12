@@ -560,7 +560,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private String getLockName(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         try {
-            return "{" + getName() + "}:" + Hash.hashToBase64(keyState) + ":key";
+            return "{" + getName() + "}:" + Hash.hash128toBase64(keyState) + ":key";
         } finally {
             keyState.release();
         }

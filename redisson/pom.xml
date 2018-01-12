@@ -233,11 +233,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>zero-allocation-hashing</artifactId>
-            <version>0.8</version>
-        </dependency>
-        <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
             <version>1.6.14</version>

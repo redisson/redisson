@@ -348,7 +348,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     private CacheKey toCacheKey(ByteBuf encodedKey) {
-        return new CacheKey(Hash.hash(encodedKey));
+        return new CacheKey(Hash.hash128toArray(encodedKey));
     }
     
     @Override
