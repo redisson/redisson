@@ -96,7 +96,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      *
      * <p>Acquires a permits, if all are available and returns immediately,
      * with the value {@code true},
-     * reducing the number of available permits by given number of permitss.
+     * reducing the number of available permits by given number of permits.
      *
      * <p>If no permits are available then this method will return
      * immediately with the value {@code false}.

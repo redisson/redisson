@@ -83,19 +83,19 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     private String getLockName(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         try {
-            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
+            return suffixName(getName(), Hash.hash128toBase64(keyState) + ":key");
         } finally {
             keyState.release();
         }
     }
     
     protected String hash(ByteBuf objectState) {
-        return Hash.hashToBase64(objectState);
+        return Hash.hash128toBase64(objectState);
     }
 
     protected String hashAndRelease(ByteBuf objectState) {
         try {
-            return Hash.hashToBase64(objectState);
+            return Hash.hash128toBase64(objectState);
         } finally {
             objectState.release();
         }

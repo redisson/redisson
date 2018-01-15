@@ -1165,25 +1165,25 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
     public void testIdle() throws InterruptedException {
-        testExpiration(map -> {
+        testIdleExpiration(map -> {
             map.put("12", 1, 0, null, 1, TimeUnit.SECONDS);
             map.put("14", 2, 0, null, 2, TimeUnit.SECONDS);
             map.put("15", 3, 0, null, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testIdleExpiration(map -> {
             map.fastPut("12", 1, 0, null, 1, TimeUnit.SECONDS);
             map.fastPut("14", 2, 0, null, 2, TimeUnit.SECONDS);
             map.fastPut("15", 3, 0, null, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testIdleExpiration(map -> {
             map.putIfAbsent("12", 1, 0, null, 1, TimeUnit.SECONDS);
             map.putIfAbsent("14", 2, 0, null, 2, TimeUnit.SECONDS);
             map.putIfAbsent("15", 3, 0, null, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testIdleExpiration(map -> {
             map.fastPutIfAbsent("12", 1, 0, null, 1, TimeUnit.SECONDS);
             map.fastPutIfAbsent("14", 2, 0, null, 2, TimeUnit.SECONDS);
             map.fastPutIfAbsent("15", 3, 0, null, 3, TimeUnit.SECONDS);
@@ -1192,32 +1192,32 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     @Test
     public void testTTL() throws InterruptedException {
-        testExpiration(map -> {
+        testTTLExpiration(map -> {
             map.put("12", 1, 1, TimeUnit.SECONDS);
             map.put("14", 2, 2, TimeUnit.SECONDS);
             map.put("15", 3, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testTTLExpiration(map -> {
             map.fastPut("12", 1, 1, TimeUnit.SECONDS);
             map.fastPut("14", 2, 2, TimeUnit.SECONDS);
             map.fastPut("15", 3, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testTTLExpiration(map -> {
             map.putIfAbsent("12", 1, 1, TimeUnit.SECONDS);
             map.putIfAbsent("14", 2, 2, TimeUnit.SECONDS);
             map.putIfAbsent("15", 3, 3, TimeUnit.SECONDS);
         });
 
-        testExpiration(map -> {
+        testTTLExpiration(map -> {
             map.fastPutIfAbsent("12", 1, 1, TimeUnit.SECONDS);
             map.fastPutIfAbsent("14", 2, 2, TimeUnit.SECONDS);
             map.fastPutIfAbsent("15", 3, 3, TimeUnit.SECONDS);
         });
     }
 
-    protected void testExpiration(Consumer<RMapCache<String, Integer>> callback) throws InterruptedException {
+    protected void testIdleExpiration(Consumer<RMapCache<String, Integer>> callback) throws InterruptedException {
         RMapCache<String, Integer> map = redisson.getMapCache("simple");
 
         callback.accept(map);
@@ -1228,8 +1228,49 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.get("14")).isEqualTo(2);
         assertThat(map.get("15")).isEqualTo(3);
         
+        Thread.sleep(2000);
+        
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isNull();
+        assertThat(map.get("15")).isEqualTo(3);
+        
+        Thread.sleep(3000);
+
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isNull();
+        assertThat(map.get("15")).isNull();
+
+        
         map.clear();
     }
+    
+    protected void testTTLExpiration(Consumer<RMapCache<String, Integer>> callback) throws InterruptedException {
+        RMapCache<String, Integer> map = redisson.getMapCache("simple");
+
+        callback.accept(map);
+
+        Thread.sleep(1000);
+        
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isEqualTo(2);
+        assertThat(map.get("15")).isEqualTo(3);
+        
+        Thread.sleep(1000);
+        
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isNull();
+        assertThat(map.get("15")).isEqualTo(3);
+        
+        Thread.sleep(1000);
+
+        assertThat(map.get("12")).isNull();
+        assertThat(map.get("14")).isNull();
+        assertThat(map.get("15")).isNull();
+
+        
+        map.clear();
+    }
+
     
     
     @Test

@@ -35,12 +35,12 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
-import net.openhft.hashing.LongHashFunction;
 
 /**
- * Bloom filter based on 64-bit hash derived from 128-bit hash (xxHash 64-bit + FarmHash 64-bit).
+ * Bloom filter based on Highway 128-bit hash.
  *
  * Code parts from Guava BloomFilter
  *
@@ -79,9 +79,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     private long[] hash(Object object) {
         ByteBuf state = encode(object);
         try {
-            long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-            long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-            return new long[] {hash1, hash2};
+            return Hash.hash128(state);
         } finally {
             state.release();
         }

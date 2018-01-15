@@ -152,12 +152,12 @@ abstract class RedissonBaseMultimapReactive<K, V> extends RedissonExpirableReact
     }
 
     protected String hash(ByteBuf objectState) {
-        return Hash.hashToBase64(objectState);
+        return Hash.hash128toBase64(objectState);
     }
     
     protected String hashAndRelease(ByteBuf objectState) {
         try {
-            return Hash.hashToBase64(objectState);
+            return Hash.hash128toBase64(objectState);
         } finally {
             objectState.release();
         }

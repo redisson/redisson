@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Bloom filter based on 64-bit hash derived from 128-bit hash (xxHash + FarmHash).
+ * Bloom filter based on Highway 128-bit hash.
  *
  * @author Nikita Koksharov
  *
