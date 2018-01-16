@@ -122,6 +122,63 @@ public class RedissonBatchTest extends BaseTest {
     }
 
     @Test
+    public void testAtomic() {
+        RBatch batch = redisson.createBatch();
+        batch.atomic();
+        RFuture<Long> f1 = batch.getAtomicLong("A1").addAndGetAsync(1);
+        RFuture<Long> f2 = batch.getAtomicLong("A2").addAndGetAsync(2);
+        RFuture<Long> f3 = batch.getAtomicLong("A3").addAndGetAsync(3);
+        RFuture<Long> d1 = batch.getKeys().deleteAsync("A1", "A2");
+        BatchResult<?> f = batch.execute();
+        
+        List<Object> list = (List<Object>) f.getResponses();
+        assertThat(list).containsExactly(1L, 2L, 3L, 2L);
+        assertThat(f1.getNow()).isEqualTo(1);
+        assertThat(f2.getNow()).isEqualTo(2);
+        assertThat(f3.getNow()).isEqualTo(3);
+        assertThat(d1.getNow()).isEqualTo(2);
+    }
+    
+    @Test
+    public void testAtomicSyncSlaves() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        RBatch batch = redisson.createBatch();
+        for (int i = 0; i < 10; i++) {
+            batch.getAtomicLong("{test}" + i).addAndGetAsync(i);
+        }
+
+        batch.atomic();
+        batch.syncSlaves(1, 1, TimeUnit.SECONDS);
+        BatchResult<?> result = batch.execute();
+        assertThat(result.getSyncedSlaves()).isEqualTo(1);
+        int i = 0;
+        for (Object res : result.getResponses()) {
+            assertThat((Long)res).isEqualTo(i++);
+        }
+        
+        process.shutdown();
+    }
+
+    
+    @Test
     public void testDifferentCodecs() {
         RBatch b = redisson.createBatch();
         b.getMap("test1").putAsync("1", "2");

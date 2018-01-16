@@ -61,7 +61,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt);
     }
 
-    public RFuture<BatchResult<?>> executeAsync(int syncSlaves, long syncTimeout, boolean skipResult, long responseTimeout, int retryAttempts, long retryInterval) {
+    public RFuture<BatchResult<?>> executeAsync(int syncSlaves, long syncTimeout, boolean skipResult, long responseTimeout, int retryAttempts, long retryInterval, boolean atomic) {
         for (Publisher<?> publisher : publishers) {
             publisher.subscribe(new DefaultSubscriber<Object>() {
                 @Override
@@ -71,7 +71,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
             });
         }
 
-        return batchService.executeAsync(syncSlaves, syncTimeout, skipResult, responseTimeout, retryAttempts, retryInterval);
+        return batchService.executeAsync(syncSlaves, syncTimeout, skipResult, responseTimeout, retryAttempts, retryInterval, atomic);
     }
 
     @Override
