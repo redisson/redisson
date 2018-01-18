@@ -34,6 +34,8 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<Long> sizeAsync();
     
     RFuture<V> getAsync();
+    
+    RFuture<V> getAndDeleteAsync();
 
     RFuture<Boolean> trySetAsync(V value);
 
