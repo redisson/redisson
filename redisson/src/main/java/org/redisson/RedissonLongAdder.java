@@ -49,8 +49,8 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
     }
     
     @Override
-    protected RFuture<Long> getAsync() {
-        return atomicLong.getAsync();
+    protected RFuture<Long> getAndDeleteAsync() {
+        return atomicLong.getAndDeleteAsync();
     }
 
     @Override

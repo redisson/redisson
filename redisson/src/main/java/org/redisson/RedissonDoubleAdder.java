@@ -50,8 +50,8 @@ public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RD
     }
     
     @Override
-    protected RFuture<Double> getAsync() {
-        return atomicDouble.getAsync();
+    protected RFuture<Double> getAndDeleteAsync() {
+        return atomicDouble.getAndDeleteAsync();
     }
 
     @Override
