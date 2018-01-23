@@ -1,10 +1,20 @@
 package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,10 +28,38 @@ import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 
-import static org.awaitility.Awaitility.*;
-
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
+    @Test
+    public void testName() throws InterruptedException, ExecutionException, TimeoutException {
+        ExecutorService service = Executors.newFixedThreadPool(10);
+        RReadWriteLock rwlock = redisson.getReadWriteLock("{test}:abc:key");
+        RLock rlock = rwlock.readLock();
+
+        List<Callable<Void>> callables = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+          callables.add(() -> {
+            for (int j = 0; j < 10; j++) {
+              rlock.lock();
+              try {
+              } finally {
+                rlock.unlock();
+              }
+            }
+            return null;
+          });
+        }
+
+        List<Future<Void>> futures = service.invokeAll(callables);
+        for (Future<Void> future : futures) {
+            assertThatCode(future::get).doesNotThrowAnyException();
+        }
+
+        service.shutdown();
+        assertThat(service.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+    }
+
+    
     @Test
     public void testWriteLockExpiration() throws InterruptedException {
         RReadWriteLock rw1 = redisson.getReadWriteLock("test2s3");
