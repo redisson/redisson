@@ -126,24 +126,18 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         return redisson.getLocalCachedMap("test", options);        
     }
         
-//    @Test
-    public void testBigData() throws InterruptedException {
+    @Test
+    public void testBigPutAll() throws InterruptedException {
         RLocalCachedMap<Object, Object> m = redisson.getLocalCachedMap("testValuesWithNearCache2",
-                LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU));
+                LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.LFU).syncStrategy(SyncStrategy.INVALIDATE));
         
-        for (int i = 0; i < 100; i++) {
-            for (int k = 0; k < 1000; k++) {
-                Map<Object, Object> map = new HashMap<>();
-                map.put("" + k * i, "" + k * i);
-                m.putAll(map);
-            }
-            System.out.println(i);
+        Map<Object, Object> map = new HashMap<>();
+        for (int k = 0; k < 10000; k++) {
+            map.put("" + k, "" + k);
         }
+        m.putAll(map);
         
-        System.out.println("done");
-        
-        Thread.sleep(1000000);
-        
+        assertThat(m.size()).isEqualTo(10000);
     }
     
     

@@ -5,16 +5,51 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLexSortedSet;
 import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.StringCodec;
 
 public class RedissonScriptTest extends BaseTest {
 
+    @Test
+    public void testMulti() throws InterruptedException, ExecutionException {
+        RLexSortedSet idx2 = redisson.getLexSortedSet("ABCD17436");
+        
+        Long l = new Long("1506524856000");
+        for (int i = 0; i < 100; i++) {
+            String s = "DENY" + "\t" + "TESTREDISSON" + "\t"
+                    + Long.valueOf(l) + "\t" + "helloworld_hongqin";
+            idx2.add(s);
+            l = l + 1;
+        }
+
+        StringCodec codec = new StringCodec();
+        String max = "'[DENY" + "\t" + "TESTREDISSON" + "\t" + "1506524856099'";
+        String min = "'[DENY" + "\t" + "TESTREDISSON" + "\t" + "1506524856000'";
+         String luaScript1= "local d = {}; d[1] = redis.call('zrevrangebylex','ABCD17436'," +max+","+min+",'LIMIT',0,5); ";
+         luaScript1=  luaScript1 + " d[2] = redis.call('zrevrangebylex','ABCD17436'," +max+","+min+",'LIMIT',0,15); ";
+         luaScript1=  luaScript1 + " d[3] = redis.call('zrevrangebylex','ABCD17436'," +max+","+min+",'LIMIT',0,25); ";
+         luaScript1 = luaScript1 + " return d;";
+     
+        Future<Object> r1 = redisson.getScript().evalAsync(RScript.Mode.READ_ONLY, codec,
+                luaScript1,
+                RScript.ReturnType.MULTI, Collections.emptyList());            
+        List<List<Object>> obj1 = (List<List<Object>>) r1.get();
+        
+        assertThat(obj1).hasSize(3);
+        assertThat(obj1.get(0)).hasSize(5);
+        assertThat(obj1.get(1)).hasSize(15);
+        assertThat(obj1.get(2)).hasSize(25);
+    }
+    
     @Test
     public void testEval() {
         RScript script = redisson.getScript();

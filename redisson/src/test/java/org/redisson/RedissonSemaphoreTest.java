@@ -255,43 +255,4 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         assertThat(lockedCounter.get()).isEqualTo(iterations);
     }
 
-    @Test
-    public void testConcurrency_MultiInstance_10_permits() throws InterruptedException {
-        Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
-        int iterations = 100;
-        final AtomicInteger lockedCounter = new AtomicInteger();
-
-        RSemaphore s = redisson.getSemaphore("test");
-        s.trySetPermits(10);
-
-        final AtomicInteger checkPermits = new AtomicInteger(s.availablePermits());
-        final CyclicBarrier barrier = new CyclicBarrier(s.availablePermits());
-        testMultiInstanceConcurrencySequentiallyLaunched(iterations, r -> {
-            RSemaphore s1 = r.getSemaphore("test");
-            try {
-                s1.acquire();
-                barrier.await();
-                if (checkPermits.decrementAndGet() > 0) {
-                    assertThat(s1.availablePermits()).isEqualTo(0);
-                    assertThat(s1.tryAcquire()).isFalse();
-                } else {
-                    Thread.sleep(50);
-                }
-            }catch (InterruptedException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }catch (BrokenBarrierException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-            int value = lockedCounter.get();
-            lockedCounter.set(value + 1);
-            s1.release();
-        });
-
-        System.out.println(lockedCounter.get());
-        
-        assertThat(lockedCounter.get()).isLessThan(iterations);
-    }
-
 }

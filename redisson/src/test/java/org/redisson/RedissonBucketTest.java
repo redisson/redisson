@@ -13,6 +13,15 @@ import org.redisson.api.RBucket;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testGetAndDelete() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(10);
+        assertThat(al.getAndDelete()).isEqualTo(10);
+        assertThat(al.isExists()).isFalse();
+        assertThat(al.getAndDelete()).isNull();
+    }
+    
+    @Test
     public void testSize() {
         RBucket<String> bucket = redisson.getBucket("testCompareAndSet");
         assertThat(bucket.size()).isZero();

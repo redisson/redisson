@@ -10,6 +10,23 @@ import org.redisson.api.RAtomicDouble;
 public class RedissonAtomicDoubleTest extends BaseTest {
 
     @Test
+    public void testGetZero() {
+        RAtomicDouble ad2 = redisson.getAtomicDouble("test");
+        assertThat(ad2.get()).isZero();
+    }
+    
+    @Test
+    public void testGetAndDelete() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        al.set(10.34);
+        assertThat(al.getAndDelete()).isEqualTo(10.34);
+        assertThat(al.isExists()).isFalse();
+
+        RAtomicDouble ad2 = redisson.getAtomicDouble("test2");
+        assertThat(ad2.getAndDelete()).isZero();
+    }
+    
+    @Test
     public void testCompareAndSet() {
         RAtomicDouble al = redisson.getAtomicDouble("test");
         assertThat(al.compareAndSet(-1, 2.5)).isFalse();

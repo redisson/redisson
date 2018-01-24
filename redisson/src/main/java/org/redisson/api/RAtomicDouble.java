@@ -62,6 +62,13 @@ public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
      * @return the current value
      */
     double get();
+    
+    /**
+     * Gets and deletes object
+     * 
+     * @return the current value
+     */
+    double getAndDelete();
 
     /**
      * Atomically adds the given value to the current value.

@@ -23,11 +23,9 @@ import org.redisson.client.codec.Codec;
 /**
  * Interface for using pipeline feature.
  * <p>
- * All method invocations on objects
- * from this interface are batched to separate queue and could be executed later
+ * All method invocations on objects got through this interface 
+ * are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
- * <p>
- * Please be aware, atomicity <b>is not</b> guaranteed.
  *
  *
  * @author Nikita Koksharov
@@ -411,8 +409,18 @@ public interface RBatch {
     RFuture<Void> executeSkipResultAsync();
     
     /**
+     * Atomically executes all batched commands as a single command.
+     * <p>
+     * Please note, that in cluster mode all objects should be on the same cluster slot.
+     * https://github.com/antirez/redis/issues/3682 
+     * 
+     * @return
+     */
+    RBatch atomic();
+    
+    /**
      * Inform Redis not to send reply for this batch.
-     * Such approach saves response bandwidth.
+     * Such approach saves network traffic.
      * <p>
      * NOTE: Redis 3.2+ required
      * 

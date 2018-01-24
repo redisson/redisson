@@ -64,6 +64,13 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
     long get();
 
     /**
+     * Gets and deletes object
+     * 
+     * @return the current value
+     */
+    long getAndDelete();
+    
+    /**
      * Atomically adds the given value to the current value.
      *
      * @param delta the value to add

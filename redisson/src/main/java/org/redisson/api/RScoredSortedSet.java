@@ -79,6 +79,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Integer revRank(V o);
 
+    /**
+     * Returns score of element or <code>null</code> if it doesn't exist.
+     * 
+     * @param o - element
+     * @return score
+     */
     Double getScore(V o);
 
     /**

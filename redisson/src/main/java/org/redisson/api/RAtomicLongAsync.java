@@ -15,6 +15,11 @@
  */
 package org.redisson.api;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RAtomicLongAsync extends RExpirableAsync {
 
     RFuture<Boolean> compareAndSetAsync(long expect, long update);
@@ -24,6 +29,13 @@ public interface RAtomicLongAsync extends RExpirableAsync {
     RFuture<Long> decrementAndGetAsync();
 
     RFuture<Long> getAsync();
+    
+    /**
+     * Gets and deletes object
+     * 
+     * @return the current value
+     */
+    RFuture<Long> getAndDeleteAsync();
 
     RFuture<Long> getAndAddAsync(long delta);
 

@@ -103,6 +103,20 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
     
     @Override
+    public V getAndDelete() {
+        return get(getAndDeleteAsync());
+    }
+    
+    @Override
+    public RFuture<V> getAndDeleteAsync() {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+                   "local currValue = redis.call('get', KEYS[1]); "
+                 + "redis.call('del', KEYS[1]); "
+                 + "return currValue; ",
+                Collections.<Object>singletonList(getName()));
+    }
+    
+    @Override
     public long size() {
         return get(sizeAsync());
     }

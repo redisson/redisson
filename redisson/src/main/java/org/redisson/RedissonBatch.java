@@ -67,6 +67,7 @@ public class RedissonBatch implements RBatch {
     private int syncSlaves;
     private long syncTimeout;
     private boolean skipResult;
+    private boolean atomic;
 
     protected RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
@@ -242,6 +243,12 @@ public class RedissonBatch implements RBatch {
     }
     
     @Override
+    public RBatch atomic() {
+        this.atomic = true;
+        return this;
+    }
+    
+    @Override
     public RBatch skipResult() {
         this.skipResult = true;
         return this;
@@ -267,22 +274,22 @@ public class RedissonBatch implements RBatch {
     
     @Override
     public BatchResult<?> execute() {
-        return executorService.execute(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
+        return executorService.execute(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
     }
 
     @Override
     public void executeSkipResult() {
-        executorService.execute(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
+        executorService.execute(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval, atomic);
     }
     
     @Override
     public RFuture<Void> executeSkipResultAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
+        return executorService.executeAsync(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval, atomic);
     }
     
     @Override
     public RFuture<BatchResult<?>> executeAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
+        return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
     }
     
     @Override

@@ -30,6 +30,7 @@ import org.redisson.api.RGeo;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.CodecDecoder;
@@ -91,7 +92,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(entry.getLatitude());
             params.add(encode(entry.getMember()));
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD_ENTRIES, params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEOADD_ENTRIES, params.toArray());
     }
 
     @Override
@@ -101,7 +102,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
     
     @Override
     public RFuture<Double> distAsync(V firstMember, V secondMember, GeoUnit geoUnit) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GEODIST, getName(), encode(firstMember), encode(secondMember), geoUnit);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEODIST, getName(), encode(firstMember), encode(secondMember), geoUnit);
     }
     
     @Override
@@ -117,7 +118,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(encode(member));
         }
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOHASH", new MapGetAllDecoder((List<Object>)Arrays.asList(members), 0));
-        return commandExecutor.readAsync(getName(), codec, command, params.toArray());
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
     }
     
     @Override
@@ -135,7 +136,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
         
         MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder(new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoPositionMapDecoder((List<Object>)Arrays.asList(members)));
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
-        return commandExecutor.readAsync(getName(), codec, command, params.toArray());
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
     }
     
     @Override

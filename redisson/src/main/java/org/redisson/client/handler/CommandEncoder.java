@@ -96,7 +96,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
                 log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
             }
         } catch (Exception e) {
-            msg.getPromise().tryFailure(e);
+            msg.tryFailure(e);
             throw e;
         }
     }

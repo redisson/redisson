@@ -13,40 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
-
-import java.util.concurrent.TimeUnit;
+package org.redisson.client.protocol.convertor;
 
 /**
- * Any object holder. Max size of object is 512MB
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> - the type of object
  */
-public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
+public class DoubleNullSafeReplayConvertor extends DoubleReplayConvertor {
 
-    /**
-     * Returns size of object in bytes
-     * 
-     * @return object size
-     */
-    long size();
+    @Override
+    public Double convert(Object obj) {
+        Double r = super.convert(obj);
+        if (r == null) {
+            return 0.0;
+        }
+        return r;
+    }
     
-    V get();
-
-    V getAndDelete();
-    
-    boolean trySet(V value);
-
-    boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
-
-    boolean compareAndSet(V expect, V update);
-
-    V getAndSet(V newValue);
-
-    void set(V value);
-
-    void set(V value, long timeToLive, TimeUnit timeUnit);
-
 }

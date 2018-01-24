@@ -64,6 +64,7 @@ public class RedissonBatchReactive implements RBatchReactive {
     private int syncSlaves;
     private long syncTimeout;
     private boolean skipResult;
+    private boolean atomic;
     
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor) {
         this.evictionScheduler = evictionScheduler;
@@ -221,11 +222,16 @@ public class RedissonBatchReactive implements RBatchReactive {
         return commandExecutor.reactive(new Supplier<RFuture<BatchResult<?>>>() {
             @Override
             public RFuture<BatchResult<?>> get() {
-                return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
+                return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
             }
         });
     }
 
+    public RBatchReactive atomic() {
+        this.atomic = true;
+        return this;
+    }
+    
     @Override
     public RBatchReactive syncSlaves(int slaves, long timeout, TimeUnit unit) {
         this.syncSlaves = slaves;
