@@ -186,6 +186,8 @@ public class RedissonSessionManagerTest {
         write(executor, "test", "1234");
         Cookie cookie = cookieStore.getCookies().get(0);
         
+        Thread.sleep(50);
+        
         Assert.assertEquals(1, listener.getSessionCreatedEvents());
         Assert.assertEquals(0, listener.getSessionDeletedEvents());
         
