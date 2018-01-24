@@ -16,6 +16,7 @@
 package org.redisson.spring.cache;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -170,7 +171,19 @@ public class RedissonCache implements Cache {
                             Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
                             RuntimeException exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex.getCause());
                             throw exception;                
-                        } catch (Exception e) {
+                        } catch (ClassNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        } catch (NoSuchMethodException e) {
+                            throw new IllegalStateException(e);
+                        } catch (SecurityException e) {
+                            throw new IllegalStateException(e);
+                        } catch (InstantiationException e) {
+                            throw new IllegalStateException(e);
+                        } catch (IllegalAccessException e) {
+                            throw new IllegalStateException(e);
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalStateException(e);
+                        } catch (InvocationTargetException e) {
                             throw new IllegalStateException(e);
                         }
                     }
