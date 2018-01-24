@@ -165,27 +165,16 @@ public class RedissonCache implements Cache {
                 if (value == null) {
                     try {
                         value = toStoreValue(valueLoader.call());
-                    } catch (Exception ex) {
+                    } catch (Throwable ex) {
+                        RuntimeException exception;
                         try {
                             Class<?> c = Class.forName("org.springframework.cache.Cache$ValueRetrievalException");
                             Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
-                            RuntimeException exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex.getCause());
-                            throw exception;                
-                        } catch (ClassNotFoundException e) {
-                            throw new IllegalStateException(e);
-                        } catch (NoSuchMethodException e) {
-                            throw new IllegalStateException(e);
-                        } catch (SecurityException e) {
-                            throw new IllegalStateException(e);
-                        } catch (InstantiationException e) {
-                            throw new IllegalStateException(e);
-                        } catch (IllegalAccessException e) {
-                            throw new IllegalStateException(e);
-                        } catch (IllegalArgumentException e) {
-                            throw new IllegalStateException(e);
-                        } catch (InvocationTargetException e) {
+                            exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex);
+                        } catch (Exception e) {
                             throw new IllegalStateException(e);
                         }
+                        throw exception;
                     }
                     put(key, value);
                 }
