@@ -294,7 +294,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return allAsync(true, command, callback, params);
     }
 
-    private <T, R> RFuture<R> allAsync(boolean readOnlyMode, RedisCommand<T> command, final SlotCallback<T, R> callback, Object... params) {
+    private <T, R> RFuture<R> allAsync(boolean readOnlyMode, final RedisCommand<T> command, final SlotCallback<T, R> callback, Object... params) {
         final RPromise<R> mainPromise = new RedissonPromise<R>();
         final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
@@ -788,7 +788,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void checkAttemptFuture(final NodeSource source, final AsyncDetails<V, R> details,
-            Future<R> future, boolean ignoreRedirect) {
+            Future<R> future, final boolean ignoreRedirect) {
         details.getTimeout().cancel();
         if (future.isCancelled()) {
             return;
