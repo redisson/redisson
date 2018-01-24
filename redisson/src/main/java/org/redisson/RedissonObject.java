@@ -57,14 +57,14 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
-    protected String prefixName(String prefix, String name) {
+    protected static String prefixName(String prefix, String name) {
         if (name.contains("{")) {
             return prefix + ":" + name;
         }
         return prefix + ":{" + name + "}";
     }
     
-    protected String suffixName(String name, String suffix) {
+    protected static String suffixName(String name, String suffix) {
         if (name.contains("{")) {
             return name + ":" + suffix;
         }
