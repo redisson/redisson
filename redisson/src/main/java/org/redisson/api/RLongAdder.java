@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Distributed implementation of {@link java.util.concurrent.atomic.LongAdder}
  * <p>
@@ -62,9 +64,32 @@ public interface RLongAdder extends RExpirable, RDestroyable {
     RFuture<Long> sumAsync();
 
     /**
+     * Accumulates sum across all RLongAdder instances 
+     * within defined <code>timeout</code>.
+     * 
+     * @param timeout for accumulation
+     * @param timeUnit for timeout
+     * 
+     * @return accumulated sum
+     */
+    RFuture<Long> sumAsync(long timeout, TimeUnit timeUnit);
+    
+    /**
      * Resets value across all RLongAdder instances
      * 
      * @return void
      */
     RFuture<Void> resetAsync();
+    
+    /**
+     * Resets value across all RLongAdder instances 
+     * within defined <code>timeout</code>.
+     * 
+     * @param timeout for reset
+     * @param timeUnit for timeout
+     * 
+     * @return void
+     */
+    RFuture<Void> resetAsync(long timeout, TimeUnit timeUnit);
+
 }
