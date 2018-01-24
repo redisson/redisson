@@ -15,12 +15,13 @@
  */
 package org.redisson;
 
+import java.util.concurrent.atomic.LongAdder;
+
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLongAdder;
 import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.LongAdder;
 
 /**
  * 
