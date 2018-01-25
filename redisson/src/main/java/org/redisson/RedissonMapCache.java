@@ -1694,16 +1694,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             params.toArray());
     }
 
+    private Boolean isWindows;
+    
     @Override
     public int addListener(final MapEntryListener listener) {
         if (listener == null) {
             throw new NullPointerException();
         }
         
-        RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
-        serverFuture.syncUninterruptibly();
-        String os = serverFuture.getNow().get("os");
-        boolean isWindows = os.contains("Windows");
+        if (isWindows == null) {
+            RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+            serverFuture.syncUninterruptibly();
+            String os = serverFuture.getNow().get("os");
+            isWindows = os.contains("Windows");
+        }
 
         if (listener instanceof EntryRemovedListener) {
             RTopic<List<Object>> topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, isWindows));
