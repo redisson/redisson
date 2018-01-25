@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1700,9 +1699,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         if (listener == null) {
             throw new NullPointerException();
         }
+        
+        RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+        serverFuture.syncUninterruptibly();
+        String os = serverFuture.getNow().get("os");
+        boolean isWindows = os.contains("Windows");
 
         if (listener instanceof EntryRemovedListener) {
-            RTopic<List<Object>> topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec));
+            RTopic<List<Object>> topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(String channel, List<Object> msg) {
@@ -1713,7 +1717,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryCreatedListener) {
-            RTopic<List<Object>> topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec));
+            RTopic<List<Object>> topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(String channel, List<Object> msg) {
@@ -1724,7 +1728,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryUpdatedListener) {
-            RTopic<List<Object>> topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec));
+            RTopic<List<Object>> topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(String channel, List<Object> msg) {
@@ -1735,7 +1739,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryExpiredListener) {
-            RTopic<List<Object>> topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec));
+            RTopic<List<Object>> topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(String channel, List<Object> msg) {
@@ -1750,16 +1754,16 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public void removeListener(int listenerId) {
-        RTopic<List<Object>> removedTopic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec));
+        RTopic<List<Object>> removedTopic = redisson.getTopic(getRemovedChannelName());
         removedTopic.removeListener(listenerId);
 
-        RTopic<List<Object>> createdTopic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec));
+        RTopic<List<Object>> createdTopic = redisson.getTopic(getCreatedChannelName());
         createdTopic.removeListener(listenerId);
 
-        RTopic<List<Object>> updatedTopic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec));
+        RTopic<List<Object>> updatedTopic = redisson.getTopic(getUpdatedChannelName());
         updatedTopic.removeListener(listenerId);
 
-        RTopic<List<Object>> expiredTopic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec));
+        RTopic<List<Object>> expiredTopic = redisson.getTopic(getExpiredChannelName());
         expiredTopic.removeListener(listenerId);
     }
 
