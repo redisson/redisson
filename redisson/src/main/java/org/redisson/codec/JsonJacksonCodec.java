@@ -103,9 +103,9 @@ public class JsonJacksonCodec implements Codec {
     }
 
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
-        this.mapObjectMapper = mapObjectMapper;
-        init(mapObjectMapper);
-        initTypeInclusion(mapObjectMapper);
+        this.mapObjectMapper = mapObjectMapper.copy();
+        init(this.mapObjectMapper);
+        initTypeInclusion(this.mapObjectMapper);
     }
 
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
