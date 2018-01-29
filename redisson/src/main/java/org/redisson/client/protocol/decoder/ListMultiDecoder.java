@@ -111,6 +111,10 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
         }
 
         int index = getDecoder(state).getIndex();
+        if (index == -1) {
+            getDecoder(state).resetIndex();
+            index = 0;
+        }
         Decoder<Object> decoder = decoders[index].getDecoder(paramNum, state);
         if (decoder == RESET) {
             NestedDecoderState s = getDecoder(state);
