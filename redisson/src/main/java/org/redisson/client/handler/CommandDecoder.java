@@ -147,16 +147,20 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
         if (state().getLevels().size() == 1) {
             StateLevel firstLevel = state().getLevels().get(0);
-            if (firstLevel.getParts().isEmpty()) {
+            if (firstLevel.getParts().isEmpty() && firstLevel.getLastList() == null) {
                 state().resetLevel();
                 decode(in, cmd, null, ctx.channel());
             } else {
                 if (firstLevel.getLastList() != null) {
-                    decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), firstLevel.getLastListSize(), firstLevel.getLastList());
+                    if (firstLevel.getLastList().isEmpty()) {
+                        decode(in, cmd, firstLevel.getParts(), ctx.channel());
+                    } else {
+                        decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), firstLevel.getLastListSize(), firstLevel.getLastList());
+                    }
                     firstLevel.setLastList(null);
                     firstLevel.setLastListSize(0);
                     
-                    if (in.isReadable()) {
+                    while (in.isReadable() && firstLevel.getParts().size() < firstLevel.getSize()) {
                         decode(in, cmd, firstLevel.getParts(), ctx.channel());
                     }
                     decodeList(in, cmd, null, ctx.channel(), 0, firstLevel.getParts());
