@@ -4,6 +4,34 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 29-Jan-2018 - versions 2.11.0 and 3.6.0 released
+
+Feature - __`atomic` setting added to RBatch object__  Please read [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
+Feature - __`updateMode` setting added to Tomcat Redis Session Manager__  Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#145-tomcat-redis-session-manager) for more details  
+Feature - __`RateLimiter` object added__  Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#612-ratelimiter) for more details  
+Feature - __`RClusteredBloomFilter` object added__  Please read [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects#681-bloom-filter-data-partitioning) for more details  
+Feature - __`KQueue` support added__  Please read [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#eventloopgroup) for more details  
+Feature - __`Tomcat 9` support added__  Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#145-tomcat-redis-session-manager) for more details  
+Feature - __`RPriorityBlockingQueue` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#718-priority-blocking-queue) for more details  
+Feature - __`RPriorityBlockingDeque` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#719-priority-blocking-deque) for more details  
+Feature - __`RLongAdder` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#610-longadder) for more details  
+Feature - __`DoubleAdder` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#611-doubleadder) for more details  
+Feature - `RBucket.getAndDelete`, `RAtomicLong.getAndDelete` and `RAtomicDouble.getAndDelete` methods added  
+Feature - __`RAtomicDoubleReactive` object added__  
+Feature - `RPriorityQueue.pollLastAndOfferFirstTo` method added  
+Improvement - support single config endpoint node for cluster mode  
+Improvement - hash functions replaced with https://github.com/google/highwayhash  
+Fixed - JDK 1.6+ compatibility for RemoteService  
+Fixed - `setDnsMonitoringInterval(-1)` doesn't disable DNS monitoring  
+Fixed - `RLocalCachedMap.putAll` gets stuck if map passed as parameter contains > 10000 elements  
+Fixed - `RLocalCachedMap.put` value encoding  
+Fixed - `RKeys.countExists` and `RKeys.touch` return wrong result in cluster mode  
+Fixed - Wrong parsing of RScript.ReturnType.MULTI result  
+Fixed - RedissonReadLock by name with colon couldn't be unlocked properly  
+Fixed - `rg.springframework.cache.Cache$ValueRetrievalException`shouldn't be wrapped by IllegalStateException  
+Fixed - `RMapCache` listeners are not working on cross-platform environment  
+Fixed - JsonJacksonCoded shouldn't override provided objectMapper settings (thanks to @gzeskas)  
+
 ### 25-Dec-2017 - versions 2.10.7 and 3.5.7 released
 
 Feature - __`RClusteredBitSet` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects/#641-bitset-data-partitioning) for more details  
