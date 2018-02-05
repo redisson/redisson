@@ -56,7 +56,7 @@ public class FieldAccessorInterceptor {
                 }
             }
         }
-        throw new NoSuchMethodException(method.getName() + " called with wrong signature");
+        throw new NoSuchMethodException(method.getName() + " has wrong signature");
 
     }
 }
