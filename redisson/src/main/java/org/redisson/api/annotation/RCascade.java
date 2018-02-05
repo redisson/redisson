@@ -23,6 +23,7 @@ import java.lang.annotation.Target;
 import org.redisson.api.RCascadeType;
 
 /**
+ * Specifies that the defined cascade types are applied to the object/objects contained in Live Object field.
  * 
  * @author Nikita Koksharov
  *
@@ -31,6 +32,9 @@ import org.redisson.api.RCascadeType;
 @Target({ElementType.FIELD})
 public @interface RCascade {
 
+    /**
+     * List of applied cascade types.
+     */
     RCascadeType[] value();
     
 }

@@ -25,6 +25,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.JsonJacksonCodec;
 
 /**
+ * By default <code>namingScheme</code> and/or <code>codec</code> parameters specified in {@link REntity}
+ * are applied for each Live Object field. 
+ * 
+ * This annotation allows to specify custom <code>namingScheme</code> and/or <code>codec</code> parameters 
+ * for any Live Object field except that marked with {@link RId}.
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
@@ -32,8 +37,16 @@ import org.redisson.codec.JsonJacksonCodec;
 @Target({ElementType.FIELD})
 public @interface RObjectField{
 
+    /**
+     * (Optional) Live Object naming scheme. Defines how to assign key names for each instance of this class. 
+     * Used to create a reference to an existing Live Object and materialising a new one in redis. 
+     * Defaults to {@link DefaultNamingScheme} implementation.
+     */
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
+    /**
+     * (Optional) Live Object state codec. Defaults to {@link JsonJacksonCodec}.
+     */
     Class<? extends Codec> codec() default JsonJacksonCodec.class;
     
 }

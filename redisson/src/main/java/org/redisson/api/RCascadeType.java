@@ -16,16 +16,36 @@
 package org.redisson.api;
 
 /**
+ * Live Object cascade type.
  * 
  * @author Nikita Koksharov
  *
  */
 public enum RCascadeType {
 
+    /**
+     * Includes all cascade types.
+     */
     ALL,
+    
+    /**
+     * Cascade persist operation during {@link RLiveObjectService#persist} method invocation. 
+     */
     PERSIST,
+    
+    /**
+     * Cascade detach operation during {@link RLiveObjectService#detach} method invocation. 
+     */
     DETACH,
+    
+    /**
+     * Cascade merge operation during {@link RLiveObjectService#merge} method invocation. 
+     */
     MERGE,
+    
+    /**
+     * Cascade delete operation during {@link RLiveObjectService#delete} method invocation. 
+     */
     DELETE
     
     

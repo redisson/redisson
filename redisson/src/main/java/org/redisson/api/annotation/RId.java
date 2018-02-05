@@ -20,10 +20,14 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.RIdResolver;
 import org.redisson.liveobject.resolver.RequiredIdResolver;
+import org.redisson.liveobject.resolver.UUIDGenerator;
 
 /**
+ * Specifies that the field is a Live Object's id field.
+ * Only single field could be specified per class. 
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
@@ -31,6 +35,12 @@ import org.redisson.liveobject.resolver.RequiredIdResolver;
 @Target({ElementType.FIELD})
 public @interface RId {
     
+    /**
+     * (Optional) Live Object id generator. By default id is required to be fill during object creation.
+     * 
+     * @see UUIDGenerator
+     * @see LongGenerator
+     */
     Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
     
 }
