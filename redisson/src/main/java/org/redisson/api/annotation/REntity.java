@@ -44,17 +44,23 @@ public @interface REntity {
      * (Optional) Live Object naming scheme. Defines how to assign key names for each instance of this class. 
      * Used to create a reference to an existing Live Object and materialising a new one in redis. 
      * Defaults to {@link DefaultNamingScheme} implementation.
+     * 
+     * @return value
      */
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
     /**
      * (Optional) Live Object state codec. Defaults to {@link JsonJacksonCodec}.
+     * 
+     * @return value
      */
     Class<? extends Codec> codec() default JsonJacksonCodec.class;
 
     /**
      * (Optional) Live Object field transformation. 
      * Defaults to {@link TransformationMode#ANNOTATION_BASED}
+     * 
+     * @return value
      */
     TransformationMode fieldTransformation() default TransformationMode.ANNOTATION_BASED;
     

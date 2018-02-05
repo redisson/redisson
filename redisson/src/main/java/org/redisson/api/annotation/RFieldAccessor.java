@@ -25,11 +25,11 @@ import java.lang.annotation.Target;
  * Example:
  * <pre>
  *       &#064;RFieldAccessor
- *       public <T> void set(String field, T value) {
+ *       public void set(String field, T value) {
  *       }
  *       
  *       &#064;RFieldAccessor
- *       public <T> T get(String field) {
+ *       public Object get(String field) {
  *           return null;
  *       }
  * </pre>

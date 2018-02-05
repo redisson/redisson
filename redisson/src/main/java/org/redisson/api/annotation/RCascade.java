@@ -34,6 +34,8 @@ public @interface RCascade {
 
     /**
      * List of applied cascade types.
+     * 
+     * @return value
      */
     RCascadeType[] value();
     
