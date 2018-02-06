@@ -30,6 +30,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -164,6 +165,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             } else if (!value.equals(other.value))
                 return false;
             return true;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(getValue());
         }
 
         @Override

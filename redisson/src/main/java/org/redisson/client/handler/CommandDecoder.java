@@ -259,12 +259,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
                 if (error.startsWith("MOVED")) {
                     String[] errorParts = error.split(" ");
-                    int slot = Integer.valueOf(errorParts[1]);
+                    int slot = Integer.parseInt(errorParts[1]);
                     String addr = errorParts[2];
                     data.tryFailure(new RedisMovedException(slot, addr));
                 } else if (error.startsWith("ASK")) {
                     String[] errorParts = error.split(" ");
-                    int slot = Integer.valueOf(errorParts[1]);
+                    int slot = Integer.parseInt(errorParts[1]);
                     String addr = errorParts[2];
                     data.tryFailure(new RedisAskException(slot, addr));
                 } else if (error.startsWith("TRYAGAIN")) {
@@ -283,7 +283,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     if (data != null) {
                         data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                     } else {
-                        log.error("Error: {} channel: {} data: {}", error, channel, LogHelper.toString(data));
+                        log.error("Error: {} channel: {} data: null", error, channel);
                     }
                 }
             } finally {

@@ -124,7 +124,7 @@ public class JCacheStatisticsMXBean implements CacheStatisticsMXBean {
             return 0;
         }
         long timeInMicrosec = TimeUnit.NANOSECONDS.toMicros(timeInNanos);
-        return timeInMicrosec / value;
+        return (float) timeInMicrosec / value;
     }
     
     public void addGetTime(long value) {

@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;

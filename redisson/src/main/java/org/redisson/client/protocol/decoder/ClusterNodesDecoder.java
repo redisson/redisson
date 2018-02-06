@@ -80,9 +80,9 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
 
                     String[] parts = slots.split("-");
                     if(parts.length == 1) {
-                        node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[0])));
+                        node.addSlotRange(new ClusterSlotRange(Integer.parseInt(parts[0]), Integer.parseInt(parts[0])));
                     } else if(parts.length == 2) {
-                        node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[1])));
+                        node.addSlotRange(new ClusterSlotRange(Integer.parseInt(parts[0]), Integer.parseInt(parts[1])));
                     }
                 }
             }

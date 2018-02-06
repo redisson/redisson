@@ -218,8 +218,8 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 || config.get("size") == null) {
             throw new IllegalStateException("Bloom filter is not initialized!");
         }
-        size = Long.valueOf(config.get("size"));
-        hashIterations = Integer.valueOf(config.get("hashIterations"));
+        size = Long.parseLong(config.get("size"));
+        hashIterations = Integer.parseInt(config.get("hashIterations"));
     }
 
     protected long getMaxSize() {

@@ -101,7 +101,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     if (!permitId.startsWith(":")) {
                         return permitId;
                     } else {
-                        nearestTimeout = Long.valueOf(permitId.substring(1)) - System.currentTimeMillis();
+                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
                     }
                 } else {
                     nearestTimeout = null;
@@ -195,7 +195,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                         }
                         return;
                     } else {
-                        nearestTimeout = Long.valueOf(permitId.substring(1)) - System.currentTimeMillis();
+                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
                     }
                 } else {
                     nearestTimeout = null;
@@ -311,7 +311,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                         }
                         return;
                     } else {
-                        nearestTimeout = Long.valueOf(permitId.substring(1)) - System.currentTimeMillis();
+                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
                     }
                 } else {
                     nearestTimeout = null;
@@ -480,7 +480,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     if (!permitId.startsWith(":")) {
                         return permitId;
                     } else {
-                        nearestTimeout = Long.valueOf(permitId.substring(1)) - System.currentTimeMillis();
+                        nearestTimeout = Long.parseLong(permitId.substring(1)) - System.currentTimeMillis();
                     }
                 } else {
                     nearestTimeout = null;

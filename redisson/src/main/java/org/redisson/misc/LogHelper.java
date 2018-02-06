@@ -25,8 +25,8 @@ import org.redisson.client.protocol.CommandData;
  */
 public class LogHelper {
 
-    private static final int MAX_COLLECTION_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxCollectionLogSize", "10"));
-    private static final int MAX_STRING_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxStringLogSize", "100"));
+    private static final int MAX_COLLECTION_LOG_SIZE = Integer.parseInt(System.getProperty("redisson.maxCollectionLogSize", "10"));
+    private static final int MAX_STRING_LOG_SIZE = Integer.parseInt(System.getProperty("redisson.maxStringLogSize", "100"));
 
     private LogHelper() {
     }

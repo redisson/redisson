@@ -118,7 +118,6 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
             return false;
         }
 
-        time = System.currentTimeMillis();
         boolean res = true;
         for (Entry<RedisConnection, RFuture<String>> entry : result.entrySet()) {
             RFuture<String> f = entry.getValue();

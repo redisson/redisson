@@ -29,7 +29,7 @@ public class ListIteratorReplayDecoder implements MultiDecoder<ListIteratorResul
 
     @Override
     public ListIteratorResult<Object> decode(List<Object> parts, State state) {
-        return new ListIteratorResult<Object>(parts.get(0), Long.valueOf(parts.get(1).toString()));
+        return new ListIteratorResult<Object>(parts.get(0), Long.parseLong(parts.get(1).toString()));
     }
 
     @Override
