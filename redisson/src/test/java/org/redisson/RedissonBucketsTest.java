@@ -1,12 +1,9 @@
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import static org.assertj.core.api.Assertions.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,26 +25,6 @@ public class RedissonBucketsTest extends BaseTest {
 
         Assert.assertEquals(expected, result);
     }
-    
-    @Test
-    public void testFind() {
-        Collection<String> names = Arrays.asList("test:testGetPattern:one", "test:testGetPattern:two");
-        Collection<String> vals = Arrays.asList("one-val", "two-val");
-        
-        redisson.getBucket("test:testGetPattern:one").set("one-val");
-        redisson.getBucket("test:testGetPattern:two").set("two-val");
-        
-        List<RBucket<String>> buckets = redisson.getBuckets().find("test:testGetPattern:*");
-        Assert.assertEquals(2, buckets.size());
-        Assert.assertTrue(names.contains(buckets.get(0).getName()));
-        Assert.assertTrue(names.contains(buckets.get(1).getName()));
-        Assert.assertTrue(vals.contains(buckets.get(0).get()));
-        Assert.assertTrue(vals.contains(buckets.get(1).get()));
-        for (RBucket<String> bucket : buckets) {
-            bucket.delete();
-        }
-    }
-
     
     @Test
     public void testSet() {

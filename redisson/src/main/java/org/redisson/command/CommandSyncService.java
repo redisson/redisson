@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.redisson.api.RFuture;
@@ -68,18 +67,6 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
     @Override
     public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
         RFuture<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        return get(res);
-    }
-
-    @Override
-    public <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params) {
-        RFuture<R> res = writeAsync(key, codec, command, params);
-        return get(res);
-    }
-
-    @Override
-    public <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
-        RFuture<R> res = writeAsync(key, command, params);
         return get(res);
     }
 

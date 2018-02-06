@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.redisson.api.RFuture;
@@ -31,10 +30,6 @@ import org.redisson.connection.ConnectionManager;
 public interface CommandSyncExecutor {
 
     <V> V get(RFuture<V> future);
-
-    <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> R write(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> R read(String key, RedisCommand<T> command, Object ... params);
 
