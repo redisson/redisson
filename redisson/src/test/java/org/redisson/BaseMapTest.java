@@ -813,6 +813,33 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
+    public void testGetAllOrderPartially() {
+        RMap<Integer, Integer> map = getMap("getAll");
+        map.put(1, 100);
+        map.put(2, 200);
+        map.put(3, 300);
+        map.put(4, 400);
+        RMap<Integer, Integer> map2 = getMap("getAll");
+        map2.put(5, 500);
+        map2.put(6, 600);
+        map2.put(7, 700);
+        map2.put(8, 800);
+
+        Map<Integer, Integer> filtered = map.getAll(new HashSet<Integer>(Arrays.asList(2, 3, 5, 1, 7, 8)));
+
+        Map<Integer, Integer> expectedMap = new LinkedHashMap<Integer, Integer>();
+        expectedMap.put(1, 100);
+        expectedMap.put(2, 200);
+        expectedMap.put(3, 300);
+        expectedMap.put(5, 500);
+        expectedMap.put(7, 700);
+        expectedMap.put(8, 800);
+        
+        assertThat(filtered.entrySet()).containsExactlyElementsOf(expectedMap.entrySet());
+    }
+
+    
+    @Test
     public void testAddAndGet() throws InterruptedException {
         RMap<Integer, Integer> map = getMap("getAll");
         map.put(1, 100);
