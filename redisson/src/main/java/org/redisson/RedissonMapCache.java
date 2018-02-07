@@ -151,8 +151,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "        local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); " +
                 "        if expireIdle ~= false then " +
                 "            if tonumber(expireIdle) > tonumber(ARGV[1]) then " +
-                "                local value = struct.pack('dLc0', t, string.len(val), val); " +
-                "                redis.call('hset', KEYS[1], ARGV[2], value); " +
                 "                redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[2]); " +
                 "            end ;" +
                 "            expireDate = math.min(expireDate, tonumber(expireIdle)) " +
@@ -194,8 +192,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "                local expireIdle = redis.call('zscore', KEYS[3], key); " +
                 "                if expireIdle ~= false then " +
                 "                    if tonumber(expireIdle) > tonumber(ARGV[1]) then " +
-                "                        local value = struct.pack('dLc0', t, string.len(val), val); " +
-                "                        redis.call('hset', KEYS[1], key, value); " +
                 "                        redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); " +
                 "                    end; " +
                 "                    expireDate = math.min(expireDate, tonumber(expireIdle)) " +
@@ -250,8 +246,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "            local expireIdle = redis.call('zscore', KEYS[3], key); " +
             "            if expireIdle ~= false then " +
             "                if tonumber(expireIdle) > currentTime then " +
-            "                    local value = struct.pack('dLc0', t, string.len(val), val); " +
-            "                    redis.call('hset', KEYS[1], key, value); " +
             "                    redis.call('zadd', KEYS[3], t + currentTime, key); " +
             "                else " +
             "                    map[i] = false; " +
@@ -472,8 +466,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
                             + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                    + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                    + "redis.call('hset', KEYS[1], ARGV[2], value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[2]); "
                                 + "end; "
                                 + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
@@ -646,8 +638,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
                                 + "if expireIdle ~= false then "
                                     + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                        + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                        + "redis.call('hset', KEYS[1], ARGV[2], value); "
                                         + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[2]); "
                                     + "end; "
                                     + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
@@ -665,7 +655,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
                             + "redis.call('publish', KEYS[4], msg); "
                         + "end; "
-                        + "local newValuePack = struct.pack('dLc0', t + tonumber(ARGV[1]), string.len(newValue), newValue); "
+                        + "local newValuePack = struct.pack('dLc0', t, string.len(newValue), newValue); "
                         + "redis.call('hset', KEYS[1], ARGV[2], newValuePack); "
 
                         // last access time
@@ -1250,8 +1240,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                               + "local expireIdle = redis.call('zscore', KEYS[2], key); "
                                               + "if expireIdle ~= false then "
                                                   + "if tonumber(expireIdle) > currentTime then "
-                                                      + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                                      + "redis.call('hset', KEYS[1], key, value); "
                                                       + "redis.call('zadd', KEYS[2], t + currentTime, key); "
                                                   + "end; "
                                               + "end; "
@@ -1386,8 +1374,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
                             + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                    + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                    + "redis.call('hset', KEYS[1], ARGV[2], value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), ARGV[2]); "
                                 + "end; "
                                 + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
@@ -1850,8 +1836,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "local expireIdle = redis.call('zscore', KEYS[3], key); "
                                 + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                    + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                    + "redis.call('hset', KEYS[1], key, value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
                                     + "if maxSize ~= nil and maxSize ~= 0 then "
                                     + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
@@ -1893,8 +1877,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                     + "local expireIdle = redis.call('zscore', KEYS[3], key); "
                                     + "if expireIdle ~= false then "
                                         + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                            + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                            + "redis.call('hset', KEYS[1], key, value); "
                                             + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
                                             + "if maxSize ~= nil and maxSize ~= 0 then "
                                             + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
@@ -1939,8 +1921,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "local expireIdle = redis.call('zscore', KEYS[3], key); "
                             + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
-                                    + "local value = struct.pack('dLc0', t, string.len(val), val); "
-                                    + "redis.call('hset', KEYS[1], key, value); "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
                                     + "if maxSize ~= nil and maxSize ~= 0 then "
                                     + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
