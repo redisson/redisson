@@ -18,9 +18,7 @@ package org.redisson;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.AbstractCollection;
 import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +27,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -681,266 +678,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public Set<K> keySet(String pattern) {
-        return new KeySet(pattern);
-    }
-
-    @Override
-    public Collection<V> values(String keyPattern) {
-        return new Values(keyPattern);
-    }
-
-    @Override
-    public Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern) {
-        return new EntrySet(keyPattern);
-    }
-
-    private Iterator<Map.Entry<K,V>> cacheEntrySetIterator() {
-        final Iterator<Map.Entry<CacheKey, CacheValue>> iter = cache.entrySet().iterator();
-        
-        return new Iterator<Map.Entry<K,V>>() {
-
-            @Override
-            public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            @Override
-            public java.util.Map.Entry<K, V> next() {
-                Map.Entry<CacheKey, CacheValue> entry = iter.next();
-                return new AbstractMap.SimpleEntry(entry.getValue().getKey(), entry.getValue().getValue());
-            }
-            
-            @Override
-            public void remove() {
-                iter.remove();
-            }
-            
-        };
-    }
-    
-    private Iterator<K> cacheKeySetIterator() {
-        final Iterator<CacheValue> iter = cache.values().iterator();
-        
-        return new Iterator<K>() {
-
-            @Override
-            public boolean hasNext() {
-                return iter.hasNext();
-            }
-
-            @Override
-            public K next() {
-                CacheValue value = iter.next();
-                return (K) value.getKey();
-            }
-            
-            @Override
-            public void remove() {
-                iter.remove();
-            }
-            
-        };
-    }
-
-    
-    final class KeySet extends AbstractSet<K> {
-
-        private final String pattern;
-        
-        public KeySet(String pattern) {
-            this.pattern = pattern;
-        }
-
-        @Override
-        public Iterator<K> iterator() {
-            return new CompositeIterable<K>(cacheKeySetIterator(), RedissonLocalCachedMap.super.keySet(pattern).iterator()) {
-
-                @Override
-                boolean isCacheContains(Object object) {
-                    CacheKey cacheKey = toCacheKey(object);
-                    return cache.containsKey(cacheKey);
-                }
-                
-            };
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            return RedissonLocalCachedMap.this.containsKey(o);
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            return RedissonLocalCachedMap.this.remove(o) != null;
-        }
-
-        @Override
-        public int size() {
-            return RedissonLocalCachedMap.this.size();
-        }
-
-        @Override
-        public void clear() {
-            RedissonLocalCachedMap.this.clear();
-        }
-
-    }
-
-    final class Values extends AbstractCollection<V> {
-
-        private final String keyPattern;
-        
-        public Values(String keyPattern) {
-            this.keyPattern = keyPattern;
-        }
-
-        @Override
-        public Iterator<V> iterator() {
-            final Iterator<Map.Entry<K, V>> iter = RedissonLocalCachedMap.this.entrySet(keyPattern).iterator();
-            return new Iterator<V>() {
-
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public V next() {
-                    return iter.next().getValue();
-                }
-                
-                @Override
-                public void remove() {
-                    iter.remove();
-                }
-            };
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            return RedissonLocalCachedMap.this.containsValue(o);
-        }
-
-        @Override
-        public int size() {
-            return RedissonLocalCachedMap.this.size();
-        }
-
-        @Override
-        public void clear() {
-            RedissonLocalCachedMap.this.clear();
-        }
-
-    }
-
-    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
-
-        private final String keyPattern;
-        
-        public EntrySet(String keyPattern) {
-            this.keyPattern = keyPattern;
-        }
-
-        public final Iterator<Map.Entry<K,V>> iterator() {
-            return new CompositeIterable<Map.Entry<K,V>>(cacheEntrySetIterator(), RedissonLocalCachedMap.super.entrySet(keyPattern).iterator()) {
-
-                @Override
-                boolean isCacheContains(Map.Entry<K,V> entry) {
-                    CacheKey cacheKey = toCacheKey(entry.getKey());
-                    return cache.containsKey(cacheKey);
-                }
-                
-            };
-        }
-
-        public final boolean contains(Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-            Object key = e.getKey();
-            V value = get(key);
-            return value != null && value.equals(e);
-        }
-
-        public final boolean remove(Object o) {
-            if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-                Object key = e.getKey();
-                Object value = e.getValue();
-                return RedissonLocalCachedMap.super.remove(key, value);
-            }
-            return false;
-        }
-
-        public final int size() {
-            return RedissonLocalCachedMap.this.size();
-        }
-
-        public final void clear() {
-            RedissonLocalCachedMap.this.clear();
-        }
-
-    }
-
-    abstract class CompositeIterable<T> implements Iterator<T> {
-
-        private T currentObject;
-        private Iterator<T> cacheIterator;
-        private Iterator<T> mapIterator;
-
-        public CompositeIterable(Iterator<T> cacheIterator, Iterator<T> mapIterator) {
-            this.cacheIterator = cacheIterator;
-            this.mapIterator = mapIterator;
-        }
-
-        @Override
-        public boolean hasNext() {
-            if (!cacheIterator.hasNext()) {
-                while (true) {
-                    if (mapIterator.hasNext()) {
-                        currentObject = mapIterator.next();
-                        if (!isCacheContains(currentObject)) {
-                            return true;
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                return false;
-            }
-            return true;
-        }
-
-        abstract boolean isCacheContains(T object);
-
-        @Override
-        public T next() {
-            if (currentObject != null) {
-                T val = currentObject;
-                currentObject = null;
-                return val;
-            }
-            if (!hasNext()) {
-                throw new NoSuchElementException();
-            }
-            return cacheIterator.next();
-        }
-
-        @Override
-        public void remove() {
-            if (currentObject != null) {
-                mapIterator.remove();
-                currentObject = null;
-                return;
-            }
-
-            cacheIterator.remove();
-        }
-
-    }
-    
-    @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         final Map<K, V> result = new HashMap<K, V>();
         Set<K> mapKeys = new HashSet<K>(keys);
@@ -1339,8 +1076,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<Boolean> replaceAsync(final K key, V oldValue, final V newValue) {
-        final ByteBuf keyState = encodeMapKey(key);
-        final CacheKey cacheKey = toCacheKey(keyState);
+        final CacheKey cacheKey = toCacheKey(key);
         
         RFuture<Boolean> future = super.replaceAsync(key, oldValue, newValue);
         future.addListener(new FutureListener<Boolean>() {
@@ -1386,8 +1122,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
-        final ByteBuf keyState = encodeMapKey(key);
-        final CacheKey cacheKey = toCacheKey(keyState);
+        final CacheKey cacheKey = toCacheKey(key);
         RFuture<Boolean> future = super.removeAsync(key, value);
 
         future.addListener(new FutureListener<Boolean>() {
