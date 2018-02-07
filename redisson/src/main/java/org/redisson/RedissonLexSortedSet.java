@@ -150,6 +150,82 @@ public class RedissonLexSortedSet extends RedissonScoredSortedSet<String> implem
     }
     
     @Override
+    public Collection<String> rangeTailReversed(String fromElement, boolean fromInclusive) {
+        return get(rangeTailReversedAsync(fromElement, fromInclusive));
+    }
+
+    @Override
+    public Collection<String> rangeHeadReversed(String toElement, boolean toInclusive) {
+        return get(rangeHeadReversedAsync(toElement, toInclusive));
+    }
+
+    @Override
+    public Collection<String> rangeReversed(String fromElement, boolean fromInclusive, String toElement,
+            boolean toInclusive) {
+        return get(rangeReversedAsync(fromElement, fromInclusive, toElement, toInclusive));
+    }
+
+    @Override
+    public Collection<String> rangeTailReversed(String fromElement, boolean fromInclusive, int offset, int count) {
+        return get(rangeTailReversedAsync(fromElement, fromInclusive, offset, count));
+    }
+
+    @Override
+    public Collection<String> rangeHeadReversed(String toElement, boolean toInclusive, int offset, int count) {
+        return get(rangeHeadReversedAsync(toElement, toInclusive, offset, count));
+    }
+
+    @Override
+    public Collection<String> rangeReversed(String fromElement, boolean fromInclusive, String toElement,
+            boolean toInclusive, int offset, int count) {
+        return get(rangeReversedAsync(fromElement, fromInclusive, toElement, toInclusive, offset, count));
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeTailReversedAsync(String fromElement, boolean fromInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), "+", fromValue);
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeHeadReversedAsync(String toElement, boolean toInclusive) {
+        String toValue = value(toElement, toInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), toValue, "-");
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeReversedAsync(String fromElement, boolean fromInclusive, String toElement,
+            boolean toInclusive) {
+        String fromValue = value(fromElement, fromInclusive);
+        String toValue = value(toElement, toInclusive);
+        
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), toValue, fromValue);
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeTailReversedAsync(String fromElement, boolean fromInclusive, int offset,
+            int count) {
+        String fromValue = value(fromElement, fromInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), "+", fromValue, "LIMIT", offset, count);
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeHeadReversedAsync(String toElement, boolean toInclusive, int offset,
+            int count) {
+        String toValue = value(toElement, toInclusive);
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), toValue, "-", "LIMIT", offset, count);
+    }
+
+    @Override
+    public RFuture<Collection<String>> rangeReversedAsync(String fromElement, boolean fromInclusive, String toElement,
+            boolean toInclusive, int offset, int count) {
+        String fromValue = value(fromElement, fromInclusive);
+        String toValue = value(toElement, toInclusive);
+        
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZREVRANGEBYLEX, getName(), toValue, fromValue, "LIMIT", offset, count);
+    }
+
+    @Override
     public int countTail(String fromElement, boolean fromInclusive) {
         return get(countTailAsync(fromElement, fromInclusive));
     }

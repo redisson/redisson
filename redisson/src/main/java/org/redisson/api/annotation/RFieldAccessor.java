@@ -21,6 +21,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Specifies that the method is a field accessor for Live Object.
+ * Example:
+ * <pre>
+ *       &#064;RFieldAccessor
+ *       public void set(String field, T value) {
+ *       }
+ *       
+ *       &#064;RFieldAccessor
+ *       public Object get(String field) {
+ *           return null;
+ *       }
+ * </pre>
+ * 
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */

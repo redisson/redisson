@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,14 +22,8 @@ import java.util.Map;
  * @author Nikita Koksharov
  *
  */
-public interface RBuckets extends RBucketsAsync {
+public interface RBucketsAsync {
 
-    /*
-     * Use RKeys.findKeysByPattern method instead
-     */
-    @Deprecated
-    <V> List<RBucket<V>> find(String pattern);
-    
     /**
      * Returns Redis object mapped by key. Result Map is not contains
      * key-value entry for null values.
@@ -39,7 +32,7 @@ public interface RBuckets extends RBucketsAsync {
      * @param keys - keys
      * @return Map with name of bucket as key and bucket as value
      */
-    <V> Map<String, V> get(String ... keys);
+    <V> RFuture<Map<String, V>> getAsync(String ... keys);
 
     /**
      * Try to save objects mapped by Redis key.
@@ -49,13 +42,13 @@ public interface RBuckets extends RBucketsAsync {
      * @param buckets - map of buckets
      * @return <code>true</code> if object has been set overwise <code>false</code>
      */
-    boolean trySet(Map<String, ?> buckets);
+    RFuture<Boolean> trySetAsync(Map<String, ?> buckets);
 
     /**
      * Saves objects mapped by Redis key.
      *
      * @param buckets - map of buckets
      */
-    void set(Map<String, ?> buckets);
+    RFuture<Void> setAsync(Map<String, ?> buckets);
     
 }

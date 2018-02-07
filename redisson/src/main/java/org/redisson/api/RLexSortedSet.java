@@ -59,6 +59,18 @@ public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, R
 
     Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
+    Collection<String> rangeTailReversed(String fromElement, boolean fromInclusive);
+
+    Collection<String> rangeHeadReversed(String toElement, boolean toInclusive);
+
+    Collection<String> rangeReversed(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    Collection<String> rangeTailReversed(String fromElement, boolean fromInclusive, int offset, int count);
+
+    Collection<String> rangeHeadReversed(String toElement, boolean toInclusive, int offset, int count);
+
+    Collection<String> rangeReversed(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    
     int count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     Integer rank(String o);

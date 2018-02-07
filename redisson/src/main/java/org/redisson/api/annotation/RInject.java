@@ -21,6 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * Specifies that the field value is filled up with RedissonClient instance. 
  * 
  * @author Nikita Koksharov
  *
