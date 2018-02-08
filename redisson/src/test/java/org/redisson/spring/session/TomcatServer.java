@@ -9,7 +9,8 @@ import javax.servlet.ServletException;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.core.StandardContext;
 import org.apache.catalina.startup.Tomcat;
-import org.apache.naming.resources.VirtualDirContext;
+import org.apache.catalina.webresources.DirResourceSet;
+import org.apache.catalina.webresources.StandardRoot;
 
 public class TomcatServer {
     
@@ -32,8 +33,11 @@ public class TomcatServer {
         ctx.setDelegate(true);
         
         File additionWebInfClasses = new File("target/test-classes");
-        VirtualDirContext resources = new VirtualDirContext();
-        resources.setExtraResourcePaths("/WEB-INF/classes=" + additionWebInfClasses);
+        StandardRoot resources = new StandardRoot();
+        DirResourceSet webResourceSet = new DirResourceSet();
+        webResourceSet.setBase(additionWebInfClasses.toString());
+        webResourceSet.setWebAppMount("/WEB-INF/classes");
+        resources.addPostResources(webResourceSet);
         ctx.setResources(resources);
     }
 
