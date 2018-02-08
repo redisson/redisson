@@ -107,13 +107,13 @@ public interface ConnectionManager {
     
     RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners);
 
-    Codec unsubscribe(String channelName, AsyncSemaphore lock);
+    void unsubscribe(String channelName, AsyncSemaphore lock);
     
     RFuture<Codec> unsubscribe(String channelName, boolean temporaryDown);
 
     RFuture<Codec> punsubscribe(String channelName, boolean temporaryDown);
 
-    Codec punsubscribe(String channelName, AsyncSemaphore lock);
+    void punsubscribe(String channelName, AsyncSemaphore lock);
     
     void shutdown();
 
