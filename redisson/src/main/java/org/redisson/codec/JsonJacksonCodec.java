@@ -17,6 +17,7 @@ package org.redisson.codec;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
@@ -72,7 +73,7 @@ public class JsonJacksonCodec implements Codec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapObjectMapper.writeValue(os, in);
+                mapObjectMapper.writeValue((OutputStream)os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();
