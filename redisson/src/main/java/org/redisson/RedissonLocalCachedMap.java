@@ -358,7 +358,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (!cache.containsKey(cacheKey)) {
             return super.containsKeyAsync(key);
         }
-        return newSucceededFuture(true);
+        return RedissonPromise.newSucceededFuture(true);
     }
 
     @Override
@@ -369,7 +369,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (!cache.containsValue(cacheValue)) {
             return super.containsValueAsync(value);
         }
-        return newSucceededFuture(true);
+        return RedissonPromise.newSucceededFuture(true);
     }
     
     @Override
@@ -379,7 +379,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         final CacheKey cacheKey = toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
         if (cacheValue != null && cacheValue.getValue() != null) {
-            return newSucceededFuture((V)cacheValue.getValue());
+            return RedissonPromise.newSucceededFuture((V)cacheValue.getValue());
         }
 
         RFuture<V> future = super.getAsync((K)key);
@@ -681,7 +681,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Map<K, V>> getAllAsync(Set<K> keys) {
         if (keys.isEmpty()) {
-            return newSucceededFuture(Collections.<K, V>emptyMap());
+            return RedissonPromise.newSucceededFuture(Collections.<K, V>emptyMap());
         }
 
         final Map<K, V> result = new HashMap<K, V>();

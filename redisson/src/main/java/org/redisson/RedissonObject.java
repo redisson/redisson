@@ -26,7 +26,6 @@ import org.redisson.api.RObject;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.buffer.ByteBuf;
@@ -73,14 +72,6 @@ public abstract class RedissonObject implements RObject {
 
     protected <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
-    }
-
-    protected <V> RPromise<V> newPromise() {
-        return commandExecutor.getConnectionManager().newPromise();
-    }
-
-    protected <V> RFuture<V> newSucceededFuture(V result) {
-        return commandExecutor.getConnectionManager().newSucceededFuture(result);
     }
 
     @Override

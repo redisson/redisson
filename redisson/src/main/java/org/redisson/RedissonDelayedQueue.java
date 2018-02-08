@@ -30,6 +30,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.ThreadLocalRandom;
@@ -299,7 +300,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(true);
+            return RedissonPromise.newSucceededFuture(true);
         }
 
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -331,7 +332,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,

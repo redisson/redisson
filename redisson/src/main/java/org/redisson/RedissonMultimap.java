@@ -45,6 +45,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -204,7 +205,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
-            return newSucceededFuture(0L);
+            return RedissonPromise.newSucceededFuture(0L);
         }
 
         List<Object> mapKeys = new ArrayList<Object>(keys.length);

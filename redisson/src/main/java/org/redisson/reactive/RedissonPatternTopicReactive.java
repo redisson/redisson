@@ -30,6 +30,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.util.concurrent.Future;
@@ -64,7 +65,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
-                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                RPromise<Integer> promise = new RedissonPromise<Integer>();
                 addListener(new PubSubPatternStatusListener(listener, name), promise);
                 return promise;
             }
@@ -76,7 +77,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
-                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                RPromise<Integer> promise = new RedissonPromise<Integer>();
                 PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
                 addListener(pubSubListener, promise);
                 return promise;

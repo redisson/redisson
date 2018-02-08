@@ -40,6 +40,7 @@ import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,7 +161,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
         RedisClient oldClient = sentinels.putIfAbsent(addr.getHost() + ":" + addr.getPort(), client);
         if (oldClient != null) {
-            return newSucceededFuture(null);
+            return RedissonPromise.newSucceededFuture(null);
         }
 
         RFuture<RedisPubSubConnection> pubsubFuture = client.connectPubSubAsync();

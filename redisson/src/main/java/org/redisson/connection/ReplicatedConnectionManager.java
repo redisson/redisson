@@ -36,6 +36,7 @@ import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,11 +118,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URI addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
-            return newSucceededFuture(connection);
+            return RedissonPromise.newSucceededFuture(connection);
         }
 
         RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
-        final RPromise<RedisConnection> result = newPromise();
+        final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
         RFuture<RedisConnection> future = client.connectAsync();
         future.addListener(new FutureListener<RedisConnection>() {
             @Override

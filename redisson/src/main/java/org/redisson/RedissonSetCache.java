@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,16 +31,13 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.ScanCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -260,7 +256,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(true);
+            return RedissonPromise.newSucceededFuture(true);
         }
         
         List<Object> params = new ArrayList<Object>(c.size() + 1);
@@ -290,7 +286,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         long score = 92233720368547758L - System.currentTimeMillis();
@@ -335,7 +331,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
         
         List<Object> params = new ArrayList<Object>(c.size()+1);

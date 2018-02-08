@@ -69,7 +69,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        final RPromise<Boolean> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Boolean> future = offerAsync(e);
         future.addListener(new FutureListener<Boolean>() {
 
@@ -171,7 +171,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         String channelName = RedissonSemaphore.getChannelName(getSemaphoreName());
@@ -394,7 +394,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     @Override
     public RFuture<Boolean> addAllAsync(final Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), semaphorePubSub);

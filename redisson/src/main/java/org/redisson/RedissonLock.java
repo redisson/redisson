@@ -32,6 +32,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.LockPubSub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -264,7 +265,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
     
     protected RFuture<Void> acquireFailedAsync(long threadId) {
-        return newSucceededFuture(null);
+        return RedissonPromise.newSucceededFuture(null);
     }
 
     @Override
@@ -467,7 +468,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     
     @Override
     public RFuture<Void> unlockAsync(final long threadId) {
-        final RPromise<Void> result = newPromise();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Boolean> future = unlockInnerAsync(threadId);
 
         future.addListener(new FutureListener<Boolean>() {
@@ -513,7 +514,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     
     @Override
     public RFuture<Void> lockAsync(final long leaseTime, final TimeUnit unit, final long currentThreadId) {
-        final RPromise<Void> result = newPromise();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.addListener(new FutureListener<Long>() {
             @Override
@@ -636,7 +637,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     @Override
     public RFuture<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit,
             final long currentThreadId) {
-        final RPromise<Boolean> result = newPromise();
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
 
         final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         final long currentTime = System.currentTimeMillis();
