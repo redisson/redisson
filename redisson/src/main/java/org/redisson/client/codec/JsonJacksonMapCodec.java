@@ -17,6 +17,7 @@ package org.redisson.client.codec;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -52,7 +53,7 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapper.writeValue(os, in);
+                mapper.writeValue((OutputStream)os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();

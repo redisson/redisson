@@ -43,13 +43,13 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     RedissonListMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(id, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
     RedissonListMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(id, codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
     public RFuture<Boolean> containsKeyAsync(Object key) {
@@ -76,7 +76,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
     
     String getTimeoutSetName() {
-        return "redisson_list_multimap_ttl{" + getName() + "}";
+        return suffixName(getName(), "redisson_list_multimap_ttl");
     }
 
 
@@ -93,7 +93,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                           + "expireDate = tonumber(expireDateScore) "
                       + "end; "
                       + "if expireDate > tonumber(ARGV[2]) then " +
-                            "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                            "local name = ARGV[3] .. v; " +
                       
                             "local items = redis.call('lrange', name, 0, -1) " +
                             "for i=1,#items do " +
@@ -106,7 +106,8 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), valueState, System.currentTimeMillis());
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), 
+                valueState, System.currentTimeMillis(), prefix);
     }
 
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
@@ -130,7 +131,8 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                   "end; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState, valueState);
+                Arrays.<Object>asList(valuesName, getTimeoutSetName()), 
+                System.currentTimeMillis(), keyState, valueState);
     }
 
     @Override

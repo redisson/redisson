@@ -83,6 +83,9 @@ public class AccessorInterceptor {
                 }
             }
             
+            if (result != null && fieldType.isEnum()) {
+                return Enum.valueOf((Class)fieldType, (String)result);
+            }
             if (result instanceof RedissonReference) {
                 return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result);
             }

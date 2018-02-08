@@ -161,7 +161,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testPut() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("{multi.map}.some.key");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
         map.put(new SimpleKey("0"), new SimpleValue("2"));
         map.put(new SimpleKey("0"), new SimpleValue("3"));
@@ -219,7 +219,7 @@ public class RedissonListMultimapTest extends BaseTest {
 
     @Test
     public void testContainsValue() {
-        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("{1}test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
 
         assertThat(map.containsValue(new SimpleValue("1"))).isTrue();

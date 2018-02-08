@@ -203,6 +203,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                         }
                         
                         final RemoteServiceRequest request = future.getNow();
+                        if (request == null) {
+                            log.debug("Task can't be found for request: {}", requestId);
+                            // re-subscribe after a skipped ackTimeout
+                            subscribe(remoteInterface, requestQueue, executor);
+                            return;
+                        }
+                        
                         long elapsedTime = System.currentTimeMillis() - request.getDate();
                         // check the ack only if expected
                         if (request.getOptions().isAckExpected() && elapsedTime > request

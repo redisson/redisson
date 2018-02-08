@@ -587,14 +587,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
     }
 
-    public Codec unsubscribe(final String channelName, final AsyncSemaphore lock) {
+    public void unsubscribe(final String channelName, final AsyncSemaphore lock) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             lock.release();
-            return null;
+            return;
         }
         
-        Codec entryCodec = entry.getConnection().getChannels().get(channelName);
         entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
             
             @Override
@@ -612,8 +611,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             
         });
-        
-        return entryCodec;
     }
     
     @Override
@@ -645,14 +642,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return RedissonPromise.newSucceededFuture(entryCodec);
     }
     
-    public Codec punsubscribe(final String channelName, final AsyncSemaphore lock) {
+    public void punsubscribe(final String channelName, final AsyncSemaphore lock) {
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
         if (entry == null) {
             lock.release();
-            return null;
+            return;
         }
         
-        Codec entryCodec = entry.getConnection().getPatternChannels().get(channelName);
         entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
             
             @Override
@@ -670,8 +666,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             
         });
-        
-        return entryCodec;
     }
 
     

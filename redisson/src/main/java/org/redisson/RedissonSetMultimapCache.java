@@ -43,13 +43,13 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(id, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
     RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(id, codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
     @Override
@@ -73,11 +73,12 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
                     + "return redis.call('scard', ARGV[3]) > 0 and 1 or 0;" +
                 "end;" +
                 "return 0; ",
-               Arrays.<Object>asList(getName(), getTimeoutSetName()), System.currentTimeMillis(), keyState, setName);
+               Arrays.<Object>asList(getName(), getTimeoutSetName()), 
+               System.currentTimeMillis(), keyState, setName);
     }
     
     String getTimeoutSetName() {
-        return "redisson_set_multimap_ttl{" + getName() + "}";
+        return suffixName(getName(), "redisson_set_multimap_ttl");
     }
 
 
@@ -95,7 +96,7 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
                           + "expireDate = tonumber(expireDateScore) "
                       + "end; "
                       + "if expireDate > tonumber(ARGV[2]) then " +
-                          "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                          "local name = ARGV[3] .. v; " +
                           "if redis.call('sismember', name, ARGV[1]) == 1 then "
                           + "return 1; " +
                           "end;" +
@@ -103,7 +104,8 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), valueState, System.currentTimeMillis());
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), 
+                valueState, System.currentTimeMillis(), prefix);
     }
 
     @Override
