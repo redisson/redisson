@@ -26,6 +26,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.RedissonLiveObjectServiceTest.TestEnum.MyEnum;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RCascadeType;
@@ -43,7 +44,6 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.client.RedisException;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
@@ -54,6 +54,39 @@ import org.redisson.liveobject.resolver.UUIDGenerator;
  */
 public class RedissonLiveObjectServiceTest extends BaseTest {
 
+    @REntity
+    public static class TestEnum implements Serializable {
+        
+        public enum MyEnum {A, B}
+        
+        @RId
+        private String id;
+        private MyEnum myEnum1;
+        private MyEnum myEnum2;
+        
+        public String getId() {
+            return id;
+        }
+        public void setId(String id) {
+            this.id = id;
+        }
+        
+        public MyEnum getMyEnum1() {
+            return myEnum1;
+        }
+        public void setMyEnum1(MyEnum myEnum1) {
+            this.myEnum1 = myEnum1;
+        }
+        
+        public MyEnum getMyEnum2() {
+            return myEnum2;
+        }
+        public void setMyEnum2(MyEnum myEnum2) {
+            this.myEnum2 = myEnum2;
+        }
+
+    }
+    
     @REntity
     public static class TestREntity implements Comparable<TestREntity>, Serializable {
 
@@ -1502,6 +1535,25 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
+    @Test
+    public void testEnum() {
+        RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+        liveObjectService.registerClass(TestEnum.class);
+
+        String id = "1";
+        TestEnum entry = new TestEnum();
+        entry.setId(id);
+        entry.setMyEnum1(MyEnum.A);
+        entry = liveObjectService.persist(entry);
+
+        TestEnum liveEntry = liveObjectService.get(TestEnum.class, id);
+        assertThat(liveEntry.getMyEnum1()).isEqualTo(MyEnum.A);
+        assertThat(liveEntry.getMyEnum2()).isNull();
+        
+        entry.setMyEnum2(MyEnum.B);
+        assertThat(liveEntry.getMyEnum2()).isEqualTo(MyEnum.B);
+    }
+    
     @Test
     public void testInheritedREntity() {
         Dog d = new Dog("Fido");
