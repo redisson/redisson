@@ -220,7 +220,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
-        this.shutdownPromise = newPromise();
+        this.shutdownPromise = new RedissonPromise<Boolean>();
         this.commandExecutor = new CommandSyncService(this);
     }
 
@@ -434,7 +434,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final RPromise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
@@ -446,14 +446,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = newPromise();
+        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
         subscribe(codec, channelName, promise, PubSubType.PSUBSCRIBE, semaphore, listeners);
         return promise;
     }
 
     public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
-        final RPromise<PubSubConnectionEntry> result = newPromise();
+        final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
@@ -465,7 +465,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = newPromise();
+        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
         subscribe(codec, channelName, promise, PubSubType.SUBSCRIBE, semaphore, listeners);
         return promise;
     }
@@ -626,7 +626,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
         if (temporaryDown) {
-            final RPromise<Codec> result = newPromise();
+            final RPromise<Codec> result = new RedissonPromise<Codec>();
             entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
                 
                 @Override
@@ -642,7 +642,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return result;
         }
         entry.unsubscribe(channelName, null);
-        return newSucceededFuture(entryCodec);
+        return RedissonPromise.newSucceededFuture(entryCodec);
     }
     
     public Codec punsubscribe(final String channelName, final AsyncSemaphore lock) {
@@ -685,7 +685,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
         if (temporaryDown) {
-            final RPromise<Codec> result = newPromise();
+            final RPromise<Codec> result = new RedissonPromise<Codec>();
             entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
                 
                 @Override
@@ -701,7 +701,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return result;
         }
         entry.punsubscribe(channelName, null);
-        return newSucceededFuture(entryCodec);
+        return RedissonPromise.newSucceededFuture(entryCodec);
     }
 
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
@@ -896,21 +896,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public Collection<RedisClientEntry> getClients() {
         return Collections.unmodifiableCollection(clientEntries.values());
-    }
-
-    @Override
-    public <R> RPromise<R> newPromise() {
-        return new RedissonPromise<R>();
-    }
-
-    @Override
-    public <R> RFuture<R> newSucceededFuture(R value) {
-        return RedissonPromise.newSucceededFuture(value);
-    }
-
-    @Override
-    public <R> RFuture<R> newFailedFuture(Throwable cause) {
-        return RedissonPromise.newFailedFuture(cause);
     }
 
     @Override

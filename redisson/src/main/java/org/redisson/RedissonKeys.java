@@ -43,6 +43,7 @@ import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -203,7 +204,7 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Long> deleteByPatternAsync(final String pattern) {
         final int batchSize = 100;
-        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = new RedissonPromise<Long>();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
@@ -309,7 +310,7 @@ public class RedissonKeys implements RKeys {
             list.add(key);
         }
 
-        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = new RedissonPromise<Long>();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         final AtomicLong executed = new AtomicLong(range2key.size());

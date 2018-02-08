@@ -195,7 +195,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private RFuture<RedisConnection> connect(ClusterServersConfig cfg, final URI addr) {
         RedisConnection connection = nodeConnections.get(addr);
         if (connection != null) {
-            return newSucceededFuture(connection);
+            return RedissonPromise.newSucceededFuture(connection);
         }
 
         RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
@@ -233,7 +233,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 e = new RedisException("Failed to add master: " +
                         partition.getMasterAddress() + ". Reason - server has FAIL flag");
             }
-            return newFailedFuture(e);
+            return RedissonPromise.newFailedFuture(e);
         }
 
         final RPromise<Collection<RFuture<Void>>> result = new RedissonPromise<Collection<RFuture<Void>>>();
@@ -572,7 +572,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
         
         if (newMasters.isEmpty()) {
-            return newSucceededFuture(null);
+            return RedissonPromise.newSucceededFuture(null);
         }
         
         final RPromise<Void> result = new RedissonPromise<Void>();

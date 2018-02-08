@@ -29,6 +29,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
@@ -259,7 +260,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     @Override
     public RFuture<Void> setAsync(byte[] value) {
         if (value.length > 512*1024*1024) {
-            RPromise<Void> result = newPromise();
+            RPromise<Void> result = new RedissonPromise<Void>();
             int chunkSize = 10*1024*1024;
             write(value, result, chunkSize, 0);
             return result;

@@ -32,7 +32,6 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
-import org.redisson.misc.RPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 
 import io.netty.channel.EventLoopGroup;
@@ -58,8 +57,6 @@ public interface ConnectionManager {
 
     AsyncSemaphore getSemaphore(String channelName);
     
-    <R> RFuture<R> newSucceededFuture(R value);
-
     ConnectionEventsHub getConnectionEventsHub();
 
     boolean isShutdown();
@@ -71,8 +68,6 @@ public interface ConnectionManager {
     RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners);
     
     IdleConnectionWatcher getConnectionWatcher();
-
-    <R> RFuture<R> newFailedFuture(Throwable cause);
 
     Collection<RedisClientEntry> getClients();
 
@@ -90,8 +85,6 @@ public interface ConnectionManager {
     
     MasterSlaveEntry getEntry(InetSocketAddress address);
     
-    <R> RPromise<R> newPromise();
-
     void releaseRead(NodeSource source, RedisConnection connection);
 
     void releaseWrite(NodeSource source, RedisConnection connection);

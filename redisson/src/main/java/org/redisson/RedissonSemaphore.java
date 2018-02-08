@@ -29,6 +29,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.Timeout;
@@ -101,7 +102,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     
     @Override
     public RFuture<Void> acquireAsync(final int permits) {
-        final RPromise<Void> result = newPromise();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
         tryAcquireFuture.addListener(new FutureListener<Boolean>() {
             @Override
@@ -358,7 +359,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Boolean> tryAcquireAsync(final int permits, long waitTime, TimeUnit unit) {
-        final RPromise<Boolean> result = newPromise();
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         final long current = System.currentTimeMillis();
         RFuture<Boolean> tryAcquireFuture = tryAcquireAsync(permits);

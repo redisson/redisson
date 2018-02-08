@@ -35,6 +35,7 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +70,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public RFuture<Void> add(final ClientConnectionsEntry entry) {
-        final RPromise<Void> promise = connectionManager.newPromise();
+        final RPromise<Void> promise = new RedissonPromise<Void>();
         promise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
@@ -112,7 +113,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             
             @Override
             public void run() {
-                RPromise<T> promise = connectionManager.newPromise();
+                RPromise<T> promise = new RedissonPromise<T>();
                 createConnection(entry, promise);
                 promise.addListener(new FutureListener<T>() {
                     @Override
@@ -196,7 +197,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
-        return connectionManager.newFailedFuture(exception);
+        return RedissonPromise.newFailedFuture(exception);
     }
 
     public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
@@ -207,7 +208,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
         RedisConnectionException exception = new RedisConnectionException(
                 "Can't aquire connection to " + entry);
-        return connectionManager.newFailedFuture(exception);
+        return RedissonPromise.newFailedFuture(exception);
     }
 
     public static abstract class AcquireCallback<T> implements Runnable, FutureListener<T> {
@@ -215,7 +216,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
     
     private RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
-        final RPromise<T> result = connectionManager.newPromise();
+        final RPromise<T> result = new RedissonPromise<T>();
 
         AcquireCallback<T> callback = new AcquireCallback<T>() {
             @Override
@@ -386,7 +387,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
                                     if (future.isSuccess() && "PONG".equals(future.getNow())) {
                                         entry.resetFailedAttempts();
-                                        RPromise<Void> promise = connectionManager.newPromise();
+                                        RPromise<Void> promise = new RedissonPromise<Void>();
                                         promise.addListener(new FutureListener<Void>() {
                                             @Override
                                             public void operationComplete(Future<Void> future)

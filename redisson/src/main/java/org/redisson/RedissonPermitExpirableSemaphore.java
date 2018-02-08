@@ -26,6 +26,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.buffer.ByteBufUtil;
@@ -34,7 +35,6 @@ import io.netty.util.TimerTask;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -124,7 +124,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     private RFuture<String> acquireAsync(final int permits, final long ttl, final TimeUnit timeUnit) {
-        final RPromise<String> result = newPromise();
+        final RPromise<String> result = new RedissonPromise<String>();
         long timeoutDate = calcTimeout(ttl, timeUnit);
         RFuture<String> tryAcquireFuture = tryAcquireAsync(permits, timeoutDate);
         tryAcquireFuture.addListener(new FutureListener<String>() {
@@ -373,7 +373,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
     
     public RFuture<String> tryAcquireAsync() {
-        final RPromise<String> result = newPromise();
+        final RPromise<String> result = new RedissonPromise<String>();
         RFuture<String> res = tryAcquireAsync(1, nonExpirableTimeout);
         res.addListener(new FutureListener<String>() {
             @Override
@@ -513,7 +513,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     private RFuture<String> tryAcquireAsync(final int permits, long waitTime, final long ttl, final TimeUnit timeUnit) {
-        final RPromise<String> result = newPromise();
+        final RPromise<String> result = new RedissonPromise<String>();
         final AtomicLong time = new AtomicLong(timeUnit.toMillis(waitTime));
         final long current = System.currentTimeMillis();
         long timeoutDate = calcTimeout(ttl, timeUnit);
@@ -637,7 +637,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     
     @Override
     public RFuture<Void> releaseAsync(final String permitId) {
-        final RPromise<Void> result = newPromise();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         tryReleaseAsync(permitId).addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
