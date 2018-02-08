@@ -65,12 +65,13 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "local size = 0; " +
                 "for i, v in ipairs(keys) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                        "local name = ARGV[1] .. v; " +
                         "size = size + redis.call('scard', name); " +
                     "end;" +
                 "end; " +
                 "return size; ",
-                Arrays.<Object>asList(getName()));
+                Arrays.<Object>asList(getName()),
+                prefix);
     }
 
     @Override
@@ -90,14 +91,15 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "local keys = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(keys) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                        "local name = ARGV[2] .. v; " +
                         "if redis.call('sismember', name, ARGV[1]) == 1 then "
                             + "return 1; " +
                         "end;" +
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName()), valueState);
+                Arrays.<Object>asList(getName()), 
+                valueState, prefix);
     }
 
     @Override
