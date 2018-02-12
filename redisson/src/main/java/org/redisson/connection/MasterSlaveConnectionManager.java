@@ -447,7 +447,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return subscribe(PubSubType.SUBSCRIBE, codec, channelName, listeners);
     }
 
-    protected RFuture<PubSubConnectionEntry> subscribe(PubSubType type, final Codec codec, final String channelName,
+    private RFuture<PubSubConnectionEntry> subscribe(final PubSubType type, final Codec codec, final String channelName,
             final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
         final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();

@@ -268,9 +268,12 @@ public class MasterSlaveEntry {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future)
                     throws Exception {
-                if (future.isSuccess()) {
-                    log.debug("resubscribed listeners of '{}' channel to {}", channelName, future.getNow().getConnection().getRedisClient());
+                if (!future.isSuccess()) {
+                    subscribe(channelName, listeners, subscribeCodec);
+                    return;
                 }
+                
+                log.debug("resubscribed listeners of '{}' channel to '{}'", channelName, future.getNow().getConnection().getRedisClient());
             }
         });
     }
@@ -292,7 +295,7 @@ public class MasterSlaveEntry {
     
     private void psubscribe(final String channelName, final Collection<RedisPubSubListener<?>> listeners,
             final Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.psubscribe(channelName, subscribeCodec, null);
+        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[listeners.size()]));
         subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future)
@@ -302,11 +305,7 @@ public class MasterSlaveEntry {
                     return;
                 }
                 
-                PubSubConnectionEntry newEntry = future.getNow();
-                for (RedisPubSubListener<?> redisPubSubListener : listeners) {
-                    newEntry.addListener(channelName, redisPubSubListener);
-                }
-                log.debug("resubscribed listeners for '{}' channel-pattern", channelName);
+                log.debug("resubscribed listeners for '{}' channel-pattern to '{}'", channelName, future.getNow().getConnection().getRedisClient());
             }
         });
     }
