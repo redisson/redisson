@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -34,19 +35,30 @@ public class AsyncSemaphore {
         counter = permits;
     }
     
-    public void acquireUninterruptibly() {
+    public boolean tryAcquire(long timeoutMillis) {
         final CountDownLatch latch = new CountDownLatch(1);
-        acquire(new Runnable() {
+        final Runnable listener = new Runnable() {
             @Override
             public void run() {
                 latch.countDown();
             }
-        });
+        };
+        acquire(listener);
         
         try {
-            latch.await();
+            boolean res = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            if (!res) {
+                if (!remove(listener)) {
+                    release();
+                }
+            }
+            return res;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            if (!remove(listener)) {
+                release();
+            }
+            return false;
         }
     }
 

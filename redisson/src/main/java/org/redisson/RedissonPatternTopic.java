@@ -23,8 +23,10 @@ import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.pubsub.AsyncSemaphore;
 
@@ -68,10 +70,18 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         return System.identityHashCode(pubSubListener);
     }
 
+    protected void acquire(AsyncSemaphore semaphore) {
+        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        if (!semaphore.tryAcquire(timeout)) {
+            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
+        }
+    }
+    
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
 
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
@@ -90,7 +100,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     @Override
     public void removeAllListeners() {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
@@ -109,7 +119,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     @Override
     public void removeListener(PatternMessageListener<M> listener) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
