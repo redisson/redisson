@@ -27,8 +27,10 @@ import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -99,11 +101,19 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
             }
         });
     }
+    
+    protected void acquire(AsyncSemaphore semaphore) {
+        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        if (!semaphore.tryAcquire(timeout)) {
+            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
+        }
+    }
 
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
 
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {

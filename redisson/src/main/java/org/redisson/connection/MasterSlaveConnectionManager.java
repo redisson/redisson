@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,6 +40,7 @@ import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
@@ -54,7 +56,6 @@ import org.redisson.config.TransportMode;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
 import org.redisson.misc.URIBuilder;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
@@ -163,6 +164,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final DnsAddressResolverGroup resolverGroup;
     
+    private final Map<Object, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
+    
     {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
@@ -224,6 +227,63 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.commandExecutor = new CommandSyncService(this);
     }
 
+    protected void closeNodeConnections() {
+        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
+        for (RedisConnection connection : nodeConnections.values()) {
+            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
+            futures.add(future);
+        }
+        
+        for (RFuture<Void> future : futures) {
+            future.syncUninterruptibly();
+        }
+    }
+    
+    protected void closeNodeConnection(RedisConnection conn) {
+        if (nodeConnections.values().remove(conn)) {
+            conn.closeAsync();
+        }
+    }
+    
+    protected RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg, final URI addr, RedisClient client) {
+        final Object key;
+        if (client != null) {
+            key = client;
+        } else {
+            key = addr;
+        }
+        RedisConnection connection = nodeConnections.get(key);
+        if (connection != null) {
+            return RedissonPromise.newSucceededFuture(connection);
+        }
+
+        if (addr != null) {
+            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
+        }
+        final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
+        RFuture<RedisConnection> future = client.connectAsync();
+        future.addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+
+                RedisConnection connection = future.getNow();
+                if (connection.isActive()) {
+                    nodeConnections.put(key, connection);
+                    result.trySuccess(connection);
+                } else {
+                    connection.closeAsync();
+                    result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
+                }
+            }
+        });
+
+        return result;
+    }
+    
     public boolean isClusterMode() {
         return false;
     }
@@ -432,33 +492,35 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RFuture<PubSubConnectionEntry> psubscribe(final String channelName, final Codec codec, final RedisPubSubListener<?>... listeners) {
-        final AsyncSemaphore lock = getSemaphore(channelName);
-        final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
-        lock.acquire(new Runnable() {
-            @Override
-            public void run() {
-                RFuture<PubSubConnectionEntry> future = psubscribe(channelName, codec, lock, listeners);
-                future.addListener(new TransferListener<PubSubConnectionEntry>(result));
-            }
-        });
-        return result;
+    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?>... listeners) {
+        return subscribe(PubSubType.PSUBSCRIBE, codec, channelName, listeners);
     }
     
+    @Override
     public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
         RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
         subscribe(codec, channelName, promise, PubSubType.PSUBSCRIBE, semaphore, listeners);
         return promise;
     }
 
-    public RFuture<PubSubConnectionEntry> subscribe(final Codec codec, final String channelName, final RedisPubSubListener<?>... listeners) {
+    @Override
+    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?>... listeners) {
+        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, listeners);
+    }
+
+    private RFuture<PubSubConnectionEntry> subscribe(final PubSubType type, final Codec codec, final String channelName,
+            final RedisPubSubListener<?>... listeners) {
         final AsyncSemaphore lock = getSemaphore(channelName);
         final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
         lock.acquire(new Runnable() {
             @Override
             public void run() {
-                RFuture<PubSubConnectionEntry> future = subscribe(codec, channelName, lock, listeners);
-                future.addListener(new TransferListener<PubSubConnectionEntry>(result));
+                if (result.isDone()) {
+                    lock.release();
+                    return;
+                }
+                
+                subscribe(codec, channelName, result, type, lock, listeners);
             }
         });
         return result;
@@ -487,6 +549,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             @Override
             public void run() {
                 if (promise.isDone()) {
+                    lock.release();
+                    freePubSubLock.release();
                     return;
                 }
                 
@@ -536,8 +600,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         connEntry.getSubscribeFuture(channelName, type).addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
-                lock.release();
-                promise.trySuccess(connEntry);
+                if (!promise.trySuccess(connEntry)) {
+                    for (RedisPubSubListener<?> listener : listeners) {
+                        connEntry.removeListener(channelName, listener);
+                    }
+                    if (!connEntry.hasListeners(channelName)) {
+                        unsubscribe(channelName, lock);
+                    } else {
+                        lock.release();
+                    }
+                } else {
+                    lock.release();
+                }
             }
         });
     }

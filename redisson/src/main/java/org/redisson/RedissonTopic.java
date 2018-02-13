@@ -24,9 +24,11 @@ import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
@@ -126,7 +128,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     @Override
     public void removeAllListeners() {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
@@ -141,11 +143,19 @@ public class RedissonTopic<M> implements RTopic<M> {
             semaphore.release();
         }
     }
+
+    protected void acquire(AsyncSemaphore semaphore) {
+        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        if (!semaphore.tryAcquire(timeout)) {
+            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
+        }
+    }
     
     @Override
     public void removeListener(MessageListener<?> listener) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {
@@ -165,7 +175,7 @@ public class RedissonTopic<M> implements RTopic<M> {
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        acquire(semaphore);
         
         PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
         if (entry == null) {

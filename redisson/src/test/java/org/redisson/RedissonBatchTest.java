@@ -49,6 +49,22 @@ public class RedissonBatchTest extends BaseTest {
         List<?> t = batch.execute();
         System.out.println(t);
     }
+    
+    @Test
+    public void testBigRequestAtomic() {
+        RBatch batch = redisson.createBatch();
+        batch.atomic();
+        batch.timeout(15, TimeUnit.SECONDS);
+        batch.retryInterval(1, TimeUnit.SECONDS);
+        batch.retryAttempts(5);
+        for (int i = 0; i < 100; i++) {
+            batch.getBucket("" + i).setAsync(i);
+            batch.getBucket("" + i).getAsync();
+        }
+        
+        BatchResult<?> s = batch.execute();
+        assertThat(s.getResponses().size()).isEqualTo(200);
+    }
 
     @Test
     public void testSyncSlaves() throws FailedToStartRedisException, IOException, InterruptedException {

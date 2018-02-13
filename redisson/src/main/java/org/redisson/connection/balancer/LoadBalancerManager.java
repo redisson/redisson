@@ -87,12 +87,10 @@ public class LoadBalancerManager {
         RPromise<Void> result = new RedissonPromise<Void>();
         
         CountableListener<Void> listener = new CountableListener<Void>(result, null) {
-            public void operationComplete(io.netty.util.concurrent.Future<Object> future) throws Exception {
-                super.operationComplete(future);
-                if (this.result.isSuccess()) {
-                    client2Entry.put(entry.getClient(), entry);
-                }
-            };
+            @Override
+            protected void onSuccess(Void value) {
+                client2Entry.put(entry.getClient(), entry);
+            }
         };
 
         RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);

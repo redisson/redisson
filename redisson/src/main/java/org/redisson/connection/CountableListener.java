@@ -33,10 +33,18 @@ public class CountableListener<T> implements FutureListener<Object> {
     protected final RPromise<T> result;
     protected final T value;
     
+    public CountableListener() {
+        this(null, null);
+    }
+    
     public CountableListener(RPromise<T> result, T value) {
         super();
         this.result = result;
         this.value = value;
+    }
+    
+    public void setCounter(int newValue) {
+        counter.set(newValue);
     }
     
     public void incCounter() {
@@ -46,13 +54,21 @@ public class CountableListener<T> implements FutureListener<Object> {
     @Override
     public void operationComplete(Future<Object> future) throws Exception {
         if (!future.isSuccess()) {
-            result.tryFailure(future.cause());
+            if (result != null) {
+                result.tryFailure(future.cause());
+            }
             return;
         }
         
         if (counter.decrementAndGet() == 0) {
-            result.trySuccess(value);
+            onSuccess(value);
+            if (result != null) {
+                result.trySuccess(value);
+            }
         }
+    }
+
+    protected void onSuccess(T value) {
     }
 
 }
