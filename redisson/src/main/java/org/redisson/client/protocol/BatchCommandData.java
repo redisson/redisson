@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.client.RedisRedirectException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -35,7 +36,7 @@ public class BatchCommandData<T, R> extends CommandData<T, R> implements Compara
     private final AtomicReference<RedisRedirectException> redirectError = new AtomicReference<RedisRedirectException>();
     
     public BatchCommandData(RedisCommand<T> command, Object[] params, int index) {
-        this(new RedissonPromise<R>(), null, command, params, index);
+        this(new RedissonPromise<R>(), StringCodec.INSTANCE, command, params, index);
     }
     
     public BatchCommandData(RPromise<R> promise, Codec codec, RedisCommand<T> command, Object[] params, int index) {
