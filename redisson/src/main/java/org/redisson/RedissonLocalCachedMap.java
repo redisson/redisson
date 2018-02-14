@@ -949,6 +949,30 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
         }
     }
+    
+    @Override
+    public void clearLocalCache() {
+        get(clearLocalCacheAsync());
+    }
+    
+    @Override
+    public RFuture<Void> clearLocalCacheAsync() {
+        final RPromise<Void> result = new RedissonPromise<Void>();
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear());
+        future.addListener(new FutureListener<Long>() {
+            @Override
+            public void operationComplete(Future<Long> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+
+                result.trySuccess(null);
+            }
+        });
+        
+        return result;
+    }
 
     @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
