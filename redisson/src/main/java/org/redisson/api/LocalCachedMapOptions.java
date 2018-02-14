@@ -65,12 +65,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         NONE,
         
         /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change. Broadcasts map entry hash (16 bytes) to all instances.
          */
         INVALIDATE,
         
         /**
-         * Update cache entry across all LocalCachedMap instances on map entry change.
+         * Update cache entry across all LocalCachedMap instances on map entry change. Broadcasts full map entry state (Key and Value objects) to all instances.
          */
         UPDATE
         

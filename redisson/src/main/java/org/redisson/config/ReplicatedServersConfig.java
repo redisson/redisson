@@ -77,7 +77,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
         return scanInterval;
     }
     /**
-     * Elasticache node scan interval in milliseconds
+     * Replication group scan interval in milliseconds
      *
      * @param scanInterval in milliseconds
      * @return config
