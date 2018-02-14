@@ -70,8 +70,8 @@ Used by
 [![ContaAzul](https://redisson.org/assets/logos/client18.png "ContaAzul")](https://contaazul.com/)&nbsp;&nbsp;&nbsp;
 [![NAB](https://redisson.org/assets/logos/client11.png "NAB")](https://www.nab.com.au/)&nbsp;&nbsp;&nbsp;
 [![Alibaba](https://redisson.org/assets/logos/client19.png "Alibaba")](http://www.alibaba-inc.com)&nbsp;&nbsp;&nbsp;
-[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)&nbsp;&nbsp;&nbsp;
 [![Flipkart](https://redisson.org/assets/logos/client21.png "Flipkart")](https://www.flipkart.com/)&nbsp;&nbsp;&nbsp;
+[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)&nbsp;&nbsp;&nbsp;
 
 
 Success stories
