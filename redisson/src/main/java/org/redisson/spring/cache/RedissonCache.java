@@ -16,7 +16,6 @@
 package org.redisson.spring.cache;
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -47,10 +46,9 @@ public class RedissonCache implements Cache {
     private final AtomicLong misses = new AtomicLong();
 
     public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
+        this(mapCache, allowNullValues);
         this.mapCache = mapCache;
-        this.map = mapCache;
         this.config = config;
-        this.allowNullValues = allowNullValues;
     }
 
     public RedissonCache(RMap<Object, Object> map, boolean allowNullValues) {
@@ -98,11 +96,7 @@ public class RedissonCache implements Cache {
     @Override
     public void put(Object key, Object value) {
         if (!allowNullValues && value == null) {
-            if (mapCache != null) {
-                mapCache.remove(key);
-            } else {
-                map.remove(key);
-            }
+            map.remove(key);
             return;
         }
         
@@ -117,11 +111,7 @@ public class RedissonCache implements Cache {
     public ValueWrapper putIfAbsent(Object key, Object value) {
         Object prevValue;
         if (!allowNullValues && value == null) {
-            if (mapCache != null) {
-                prevValue = mapCache.get(key);
-            } else {
-                prevValue = map.get(key);
-            }
+            prevValue = map.get(key);
         } else {
             value = toStoreValue(value);
             if (mapCache != null) {
