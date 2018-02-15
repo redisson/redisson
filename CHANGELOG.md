@@ -6,6 +6,7 @@ Try __[Redisson PRO](https://redisson.pro)__ version.
 
 ### 15-Feb-2018 - versions 2.11.1 and 3.6.1 released
 
+Feature - `RedissonClusteredSpringLocalCachedCacheManager` added. Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache-and-data-partitioning) for more details 
 Feature - `rangeTailReversed`, `rangeHeadReversed` and `rangeReversed` methods added to `RLexSortedSet` object  
 Feature - `RBucketsAsync` interface added  
 Feature - `scanInterval` setting added for Sentinel mode  
