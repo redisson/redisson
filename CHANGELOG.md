@@ -4,6 +4,24 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 15-Feb-2018 - versions 2.11.1 and 3.6.1 released
+
+Feature - `RedissonClusteredSpringLocalCachedCacheManager` added. Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache-and-data-partitioning) for more details  
+Feature - `rangeTailReversed`, `rangeHeadReversed` and `rangeReversed` methods added to `RLexSortedSet` object  
+Feature - `RBucketsAsync` interface added  
+Feature - `scanInterval` setting added for Sentinel mode  
+Feature - `RLocalCachedMap.clearLocalCache` method added  
+Fixed - remove hset command invocation during entry loading  
+Fixed - buffer leak in `replace` and `remove` methods of `RLocalCachedMap` object  
+Fixed - `RRemoteService` object throws NPE  
+Fixed - Multimap cluster compatibility  
+Fixed - Enum support for Live Objects  
+Fixed - Jackson 2.9 compatibility  
+Fixed - `RTopic.removeAllListeners` got blocked on invocation  
+Fixed - possible pubsub listeners leak  
+Fixed - `RBatch` throws NPE with big pipeline in atomic mode  
+Fixed - Warning about `CommandDecoder.decode()` method  
+
 ### 29-Jan-2018 - versions 2.11.0 and 3.6.0 released
 
 Feature - __`atomic` setting added to RBatch object__  Please read [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
