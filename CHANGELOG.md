@@ -11,7 +11,7 @@ Feature - `rangeTailReversed`, `rangeHeadReversed` and `rangeReversed` methods a
 Feature - `RBucketsAsync` interface added  
 Feature - `scanInterval` setting added for Sentinel mode  
 Feature - `RLocalCachedMap.clearLocalCache` method added  
-Fixed - remove hset command invocation during entry loading  
+Fixed - remove `hset` command invocation during `RMapCache` entry loading  
 Fixed - buffer leak in `replace` and `remove` methods of `RLocalCachedMap` object  
 Fixed - `RRemoteService` object throws NPE  
 Fixed - Multimap cluster compatibility  
