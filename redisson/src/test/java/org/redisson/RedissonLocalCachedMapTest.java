@@ -291,6 +291,37 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     }
     
     @Test
+    public void testLocalCacheClear() throws InterruptedException {
+        LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5)
+                .syncStrategy(SyncStrategy.INVALIDATE);
+        
+        RLocalCachedMap<String, Integer> map1 = redisson.getLocalCachedMap("test", options);
+        Cache<CacheKey, CacheValue> cache1 = Deencapsulation.getField(map1, "cache");
+        
+        RLocalCachedMap<String, Integer> map2 = redisson.getLocalCachedMap("test", options);
+        Cache<CacheKey, CacheValue> cache2 = Deencapsulation.getField(map2, "cache");
+        
+        map1.put("1", 1);
+        map1.put("2", 2);
+        
+        assertThat(map2.get("1")).isEqualTo(1);
+        assertThat(map2.get("2")).isEqualTo(2);
+        
+        assertThat(cache1.size()).isEqualTo(2);
+        assertThat(cache2.size()).isEqualTo(2);
+
+        map1.clearLocalCache();
+        
+        Thread.sleep(50);
+
+        assertThat(cache1.size()).isZero();
+        assertThat(cache2.size()).isZero();
+    }
+
+    
+    @Test
     public void testNoInvalidationOnRemove() throws InterruptedException {
         LocalCachedMapOptions<String, Integer> options = LocalCachedMapOptions.<String, Integer>defaults()
                 .evictionPolicy(EvictionPolicy.LFU)
