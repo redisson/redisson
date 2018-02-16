@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RMap;
 import org.redisson.tomcat.RedissonSessionManager.ReadMode;
+import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 
 /**
  * Redisson Session object for Apache Tomcat
@@ -37,11 +38,13 @@ public class RedissonSession extends StandardSession {
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
     private final RedissonSessionManager.ReadMode readMode;
+    private final UpdateMode updateMode;
     
-    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode) {
+    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode, UpdateMode updateMode) {
         super(manager);
         this.redissonManager = manager;
         this.readMode = readMode;
+        this.updateMode = updateMode;
         
         try {
             Field attr = StandardSession.class.getDeclaredField("attributes");
@@ -149,7 +152,7 @@ public class RedissonSession extends StandardSession {
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
         
-        if (map != null && value != null) {
+        if (updateMode == UpdateMode.DEFAULT && map != null && value != null) {
             map.fastPut(name, value);
         }
     }
@@ -158,7 +161,7 @@ public class RedissonSession extends StandardSession {
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
         
-        if (map != null) {
+        if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
         }
     }
