@@ -598,10 +598,14 @@ public class Config {
         return keepPubSubOrder;
     }
 
+    /**
+     * Used to switch between {@link io.netty.resolver.dns.DnsAddressResolverGroup} implementations.
+     * Switch to round robin {@link io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup} when you need to optimize the url resolving.
+     * @param addressResolverGroupFactory
+     */
     public void setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {
         this.addressResolverGroupFactory = addressResolverGroupFactory;
     }
-
     public AddressResolverGroupFactory getAddressResolverGroupFactory() {
         return addressResolverGroupFactory;
     }

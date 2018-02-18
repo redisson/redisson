@@ -11,6 +11,17 @@ import io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup;
 public interface AddressResolverGroupFactory {
     DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType, DnsServerAddressStreamProvider nameServerProvider);
 
-    AddressResolverGroupFactory ROUND_ROBIN_DNS_ADDRESS_RESOLVER_GROUP = RoundRobinDnsAddressResolverGroup::new;
-    AddressResolverGroupFactory DNS_ADDRESS_RESOLVER_GROUP = DnsAddressResolverGroup::new;
+    AddressResolverGroupFactory ROUND_ROBIN_DNS_ADDRESS_RESOLVER_GROUP = new AddressResolverGroupFactory() {
+        @Override
+        public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType, DnsServerAddressStreamProvider nameServerProvider) {
+            return new RoundRobinDnsAddressResolverGroup(channelType, nameServerProvider);
+        }
+    };
+
+    AddressResolverGroupFactory DNS_ADDRESS_RESOLVER_GROUP = new AddressResolverGroupFactory() {
+        @Override
+        public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType, DnsServerAddressStreamProvider nameServerProvider) {
+            return new DnsAddressResolverGroup(channelType, nameServerProvider);
+        }
+    };
 }
