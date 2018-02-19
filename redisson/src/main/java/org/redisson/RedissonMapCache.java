@@ -970,6 +970,47 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
+    
+    @Override
+    public long remainTimeToLive(K key) {
+        return get(remainTimeToLiveAsync(key));
+    }
+    
+    @Override
+    public RFuture<Long> remainTimeToLiveAsync(K key) {
+        checkKey(key);
+
+        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_LONG,
+                        "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                        + "if value == false then "
+                            + "return -2; "
+                        + "end; "
+                        + "local t, val = struct.unpack('dLc0', value); "
+                        + "local expireDate = 92233720368547758; " +
+                        "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
+                        + "if expireDateScore ~= false then "
+                            + "expireDate = tonumber(expireDateScore) "
+                        + "end; "
+                        + "if t ~= 0 then "
+                            + "local expireIdle = redis.call('zscore', KEYS[3], ARGV[2]); "
+                            + "if expireIdle ~= false then "
+                                + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
+                            + "end; "
+                        + "end; "
+                            
+                        + "if expireDate == 92233720368547758 then "
+                            + "return -1; "
+                        + "end;"
+                        + "if expireDate > tonumber(ARGV[1]) then "
+                            + "return ARGV[1] - expireDate; "
+                        + "else "
+                            + "return -2; "
+                        + "end; "
+                        + "return val; ",
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key)),
+                System.currentTimeMillis(), encodeMapKey(key));
+
+    }
 
     String getTimeoutSetNameByKey(Object key) {
         return prefixName("redisson__timeout__set", getName(key));

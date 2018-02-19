@@ -260,5 +260,14 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
      * @param listenerId - listener id
      */
     void removeListener(int listenerId);
+
+    /**
+     * Remaining time to live of map entry associated with a <code>key</code>. 
+     *
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    long remainTimeToLive(K key);
     
 }
