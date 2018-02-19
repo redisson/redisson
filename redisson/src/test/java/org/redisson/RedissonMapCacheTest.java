@@ -58,6 +58,19 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
     
     @Test
+    public void testRemainTimeToLive() {
+        RMapCache<String, String> map = redisson.getMapCache("test");
+        map.put("1", "2", 2, TimeUnit.SECONDS);
+        assertThat(map.remainTimeToLive("1")).isLessThan(1900);
+        map.put("3", "4");
+        assertThat(map.remainTimeToLive("3")).isEqualTo(-1);
+        assertThat(map.remainTimeToLive("0")).isEqualTo(-2);
+
+        map.put("5", "6", 20, TimeUnit.SECONDS, 10, TimeUnit.SECONDS);
+        assertThat(map.remainTimeToLive("1")).isLessThan(9900);
+    }
+    
+    @Test
     public void testWriterPutIfAbsentTTL() {
         Map<String, String> store = new HashMap<>();
         RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);

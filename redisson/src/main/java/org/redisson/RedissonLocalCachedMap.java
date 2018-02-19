@@ -180,8 +180,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private RTopic<Object> invalidationTopic;
     private Cache<CacheKey, CacheValue> cache;
     private int invalidateEntryOnChange;
-    private int invalidationListenerId;
-    private int invalidationStatusListenerId;
+    private int syncListenerId;
+    private int reconnectionListenerId;
     private volatile long lastInvalidate;
     private SyncStrategy syncStrategy;
     private final Codec topicCodec = new LocalCachedMessageCodec();
@@ -218,7 +218,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         invalidationTopic = new RedissonTopic<Object>(topicCodec, commandExecutor, suffixName(name, "topic"));
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
-            invalidationStatusListenerId = invalidationTopic.addListener(new BaseStatusListener() {
+            reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
                 @Override
                 public void onSubscribe(String channel) {
                     if (options.getReconnectionStrategy() == ReconnectionStrategy.CLEAR) {
@@ -272,7 +272,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
         
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
-            invalidationListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
+            syncListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
                 @Override
                 public void onMessage(String channel, Object msg) {
                     if (msg instanceof LocalCachedMapClear) {
@@ -481,11 +481,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public void destroy() {
-        if (invalidationListenerId != 0) {
-            invalidationTopic.removeListener(invalidationListenerId);
+        if (syncListenerId != 0) {
+            invalidationTopic.removeListener(syncListenerId);
         }
-        if (invalidationStatusListenerId != 0) {
-            invalidationTopic.removeListener(invalidationStatusListenerId);
+        if (reconnectionListenerId != 0) {
+            invalidationTopic.removeListener(reconnectionListenerId);
         }
     }
 

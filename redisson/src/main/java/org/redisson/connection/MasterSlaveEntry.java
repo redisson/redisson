@@ -428,7 +428,7 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !addr.equals(entry.getClient().getAddr())) {
-            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveDown(addr, FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
         }
         return true;
@@ -443,11 +443,27 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !URIBuilder.compare(addr, address)) {
-            slaveDown(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM);
+            slaveDown(addr, FreezeReason.SYSTEM);
             log.info("master {} excluded from slaves", addr);
         }
         return true;
     }
+    
+    public boolean slaveUp(InetSocketAddress address, FreezeReason freezeReason) {
+        if (!slaveBalancer.unfreeze(address, freezeReason)) {
+            return false;
+        }
+
+        InetSocketAddress addr = masterEntry.getClient().getAddr();
+        // exclude master from slaves
+        if (!config.checkSkipSlavesInit()
+                && !addr.equals(address)) {
+            slaveDown(addr, FreezeReason.SYSTEM);
+            log.info("master {} excluded from slaves", addr);
+        }
+        return true;
+    }
+
 
     /**
      * Freeze slave with <code>redis(s)://host:port</code> from slaves list.

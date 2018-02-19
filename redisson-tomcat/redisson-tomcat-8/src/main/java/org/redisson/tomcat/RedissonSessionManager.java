@@ -17,7 +17,6 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Enumeration;
 import java.util.Map;
 
 import javax.servlet.http.HttpSession;
@@ -138,7 +137,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this, readMode);
+        return new RedissonSession(this, readMode, updateMode);
     }
     
     @Override
@@ -208,18 +207,14 @@ public class RedissonSessionManager extends ManagerBase {
         
     }
 
-    public void store(HttpSession session) {
+    public void store(HttpSession session) throws IOException {
         if (session == null) {
             return;
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            Enumeration<String> names = session.getAttributeNames();
-            while (names.hasMoreElements()) {
-                String name = names.nextElement();
-                Object value = session.getAttribute(name);
-                session.setAttribute(name, value);
-            }
+            RedissonSession sess = (RedissonSession) findSession(session.getId());
+            sess.save();            
         }
     }
     

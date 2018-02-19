@@ -220,4 +220,14 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      */
     @Override
     RFuture<Integer> sizeAsync();
+    
+    /**
+     * Remaining time to live of map entry associated with a <code>key</code>. 
+     *
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    RFuture<Long> remainTimeToLiveAsync(K key);
+    
 }
