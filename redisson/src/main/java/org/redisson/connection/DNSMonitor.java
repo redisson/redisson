@@ -136,7 +136,14 @@ public class DNSMonitor {
                                 log.info("Detected DNS change. Slave {} has changed ip from {} to {}", 
                                         entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
                                 for (final MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
-                                    if (masterSlaveEntry.hasSlave(currentSlaveAddr)) {
+                                    if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
+                                        continue;
+                                    }
+                                    
+                                    if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
+                                        masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
+                                        masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                                    } else {
                                         RFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
                                         addFuture.addListener(new FutureListener<Void>() {
                                             @Override
@@ -149,8 +156,8 @@ public class DNSMonitor {
                                                 masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                                             }
                                         });
-                                        break;
                                     }
+                                    break;
                                 }
                                 slaves.put(entry.getKey(), newSlaveAddr);
                             }
