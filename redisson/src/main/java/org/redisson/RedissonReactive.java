@@ -121,12 +121,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
-        return new RedissonReadWriteLockReactive(commandExecutor, name, id);
+        return new RedissonReadWriteLockReactive(commandExecutor, name);
     }
     
     @Override
     public RLockReactive getLock(String name) {
-        return new RedissonLockReactive(commandExecutor, name, id);
+        return new RedissonLockReactive(commandExecutor, name);
     }
 
     @Override

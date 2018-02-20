@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -117,6 +118,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
+    protected final UUID id = UUID.randomUUID();
+    
     public static final int MAX_SLOT = 16384;
 
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
@@ -282,6 +285,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
 
         return result;
+    }
+    
+    public UUID getId() {
+        return id;
     }
     
     public boolean isClusterMode() {

@@ -66,10 +66,10 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
+    public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.id = id;
+        this.id = commandExecutor.getConnectionManager().getId();
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
     }
 

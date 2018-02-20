@@ -635,8 +635,6 @@ public class RedissonTopicTest {
         await().atMost(10, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
         Assert.assertTrue(executed.get());
         
-        Thread.sleep(1000000);
-        
         redisson.shutdown();
         sentinel1.stop();
         sentinel2.stop();

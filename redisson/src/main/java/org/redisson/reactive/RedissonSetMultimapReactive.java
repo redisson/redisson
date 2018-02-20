@@ -42,11 +42,11 @@ import io.netty.buffer.ByteBuf;
 public class RedissonSetMultimapReactive<K, V> extends RedissonBaseMultimapReactive<K, V> implements RSetMultimapReactive<K, V> {
 
     public RedissonSetMultimapReactive(UUID id, CommandReactiveExecutor commandExecutor, String name) {
-        super(new RedissonSetMultimap<K, V>(id, commandExecutor, name), commandExecutor, name);
+        super(new RedissonSetMultimap<K, V>(commandExecutor, name), commandExecutor, name);
     }
 
     public RedissonSetMultimapReactive(UUID id, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(new RedissonSetMultimap<K, V>(id, codec, commandExecutor, name), codec, commandExecutor, name);
+        super(new RedissonSetMultimap<K, V>(codec, commandExecutor, name), codec, commandExecutor, name);
     }
 
     @Override

@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -47,12 +46,12 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
 
     private static final RedisStrictCommand<Boolean> LLEN_VALUE = new RedisStrictCommand<Boolean>("LLEN", new BooleanAmountReplayConvertor());
 
-    public RedissonListMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
-        super(id, connectionManager, name);
+    public RedissonListMultimap(CommandAsyncExecutor connectionManager, String name) {
+        super(connectionManager, name);
     }
 
-    public RedissonListMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(id, codec, connectionManager, name);
+    public RedissonListMultimap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
     }
 
     @Override

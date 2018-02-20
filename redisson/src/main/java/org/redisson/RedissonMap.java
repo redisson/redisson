@@ -107,13 +107,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return redisson.getLock(lockName);
+        return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockName(key);
-        return redisson.getReadWriteLock(lockName);
+        return new RedissonReadWriteLock(commandExecutor, lockName);
     }
     
     private String getLockName(Object key) {

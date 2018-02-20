@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -44,6 +45,8 @@ import io.netty.util.TimerTask;
  *
  */
 public interface ConnectionManager {
+    
+    UUID getId();
     
     CommandSyncService getCommandExecutor();
     

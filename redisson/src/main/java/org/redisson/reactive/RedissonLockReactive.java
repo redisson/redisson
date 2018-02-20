@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -37,13 +36,13 @@ public class RedissonLockReactive extends RedissonExpirableReactive implements R
 
     private final RLockAsync instance;
     
-    public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name, UUID id) {
+    public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name) {
         super(connectionManager, name);
-        instance = createLock(connectionManager, name, id);
+        instance = createLock(connectionManager, name);
     }
 
-    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name, UUID id) {
-        return new RedissonLock(commandExecutor, name, id);
+    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
+        return new RedissonLock(commandExecutor, name);
     }
     
     @Override

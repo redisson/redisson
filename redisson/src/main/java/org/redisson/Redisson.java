@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -107,7 +106,6 @@ public class Redisson implements RedissonClient {
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
-    protected final UUID id = UUID.randomUUID();
     protected final ConcurrentMap<String, ResponseEntry> responses = PlatformDependent.newConcurrentHashMap();
 
     protected Redisson(Config config) {
@@ -243,12 +241,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name) {
-        return new RedissonListMultimap<K, V>(id, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimap<K, V>(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RListMultimap<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimap<K, V>(id, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimap<K, V>(codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -273,32 +271,32 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimap<K, V>(id, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimap<K, V>(connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name) {
-        return new RedissonSetMultimapCache<K, V>(id, evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RSetMultimapCache<K, V> getSetMultimapCache(String name, Codec codec) {
-        return new RedissonSetMultimapCache<K, V>(id, evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name) {
-        return new RedissonListMultimapCache<K, V>(id, evictionScheduler, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public <K, V> RListMultimapCache<K, V> getListMultimapCache(String name, Codec codec) {
-        return new RedissonListMultimapCache<K, V>(id, evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public <K, V> RSetMultimap<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimap<K, V>(id, codec, connectionManager.getCommandExecutor(), name);
+        return new RedissonSetMultimap<K, V>(codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -343,17 +341,17 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLock getLock(String name) {
-        return new RedissonLock(connectionManager.getCommandExecutor(), name, id);
+        return new RedissonLock(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public RLock getFairLock(String name) {
-        return new RedissonFairLock(connectionManager.getCommandExecutor(), name, id);
+        return new RedissonFairLock(connectionManager.getCommandExecutor(), name);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(String name) {
-        return new RedissonReadWriteLock(connectionManager.getCommandExecutor(), name, id);
+        return new RedissonReadWriteLock(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -373,7 +371,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
+        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService, responses);
     }
     
     @Override
@@ -384,7 +382,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
-        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, id.toString());
+        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses);
     }
     
     @Override
@@ -406,9 +404,9 @@ public class Redisson implements RedissonClient {
     public RRemoteService getRemoteService(String name, Codec codec) {
         String executorId;
         if (codec == connectionManager.getCodec()) {
-            executorId = id.toString();
+            executorId = connectionManager.getId().toString();
         } else {
-            executorId = id + ":" + name;
+            executorId = connectionManager.getId() + ":" + name;
         }
         return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor(), executorId, responses);
     }
@@ -538,7 +536,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RCountDownLatch getCountDownLatch(String name) {
-        return new RedissonCountDownLatch(connectionManager.getCommandExecutor(), name, id);
+        return new RedissonCountDownLatch(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
@@ -573,7 +571,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBatch createBatch() {
-        RedissonBatch batch = new RedissonBatch(id, evictionScheduler, connectionManager);
+        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);
         if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }

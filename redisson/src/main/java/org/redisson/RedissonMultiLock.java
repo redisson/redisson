@@ -99,7 +99,7 @@ public class RedissonMultiLock implements Lock {
         return result;
     }
 
-    protected void tryLockAsync(long leaseTime, TimeUnit unit, long waitTime, RPromise<Void> result) {
+    protected void tryLockAsync(final long leaseTime, final TimeUnit unit, final long waitTime, final RPromise<Void> result) {
         tryLockAsync(waitTime, leaseTime, unit).addListener(new FutureListener<Boolean>() {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
@@ -174,7 +174,7 @@ public class RedissonMultiLock implements Lock {
             return RedissonPromise.newSucceededFuture(null);
         }
         
-        RPromise<Void> result = new RedissonPromise<Void>();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         final AtomicInteger counter = new AtomicInteger(locks.size());
         for (RLock lock : locks) {
             lock.unlockAsync(threadId).addListener(new FutureListener<Void>() {
@@ -286,15 +286,15 @@ public class RedissonMultiLock implements Lock {
         return true;
     }
 
-    private void tryAcquireLockAsync(ListIterator<RLock> iterator, List<RLock> acquiredLocks, RPromise<Boolean> result, 
-            long lockWaitTime, long waitTime, long leaseTime, long newLeaseTime, 
-            AtomicLong remainTime, AtomicLong time, AtomicInteger failedLocksLimit, TimeUnit unit, long threadId) {
+    private void tryAcquireLockAsync(final ListIterator<RLock> iterator, final List<RLock> acquiredLocks, final RPromise<Boolean> result, 
+            final long lockWaitTime, final long waitTime, final long leaseTime, final long newLeaseTime, 
+            final AtomicLong remainTime, final AtomicLong time, final AtomicInteger failedLocksLimit, final TimeUnit unit, final long threadId) {
         if (!iterator.hasNext()) {
             checkLeaseTimeAsync(acquiredLocks, result, leaseTime, unit);
             return;
         }
 
-        RLock lock = iterator.next();
+        final RLock lock = iterator.next();
         RPromise<Boolean> lockAcquired = new RedissonPromise<Boolean>();
         if (waitTime == -1 && leaseTime == -1) {
             lock.tryLockAsync(threadId)
@@ -385,7 +385,7 @@ public class RedissonMultiLock implements Lock {
         result.trySuccess(true);
     }
     
-    protected void checkRemainTimeAsync(ListIterator<RLock> iterator, List<RLock> acquiredLocks, RPromise<Boolean> result, 
+    protected void checkRemainTimeAsync(ListIterator<RLock> iterator, List<RLock> acquiredLocks, final RPromise<Boolean> result, 
             long lockWaitTime, long waitTime, long leaseTime, long newLeaseTime, 
             AtomicLong remainTime, AtomicLong time, AtomicInteger failedLocksLimit, TimeUnit unit, long threadId) {
         if (remainTime.get() != -1) {

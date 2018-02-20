@@ -19,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
-import org.redisson.transaction.RTransaction;
 
 /**
  * Main Redisson interface for access
@@ -910,8 +909,6 @@ public interface RedissonClient {
      */
     RBatch createBatch();
     
-    RTransaction createTransaction();
-
     /**
      * Returns interface with methods for Redis keys.
      * Each of Redis/Redisson object associated with own key

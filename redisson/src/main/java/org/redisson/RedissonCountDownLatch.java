@@ -44,9 +44,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final UUID id;
 
-    protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name, UUID id) {
+    protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.id = id;
+        this.id = commandExecutor.getConnectionManager().getId();
     }
 
     public void await() throws InterruptedException {

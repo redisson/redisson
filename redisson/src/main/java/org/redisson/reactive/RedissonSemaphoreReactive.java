@@ -45,8 +45,8 @@ public class RedissonSemaphoreReactive extends RedissonExpirableReactive impleme
         instance = new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
     }
 
-    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name, UUID id) {
-        return new RedissonLock(commandExecutor, name, id);
+    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
+        return new RedissonLock(commandExecutor, name);
     }
 
     @Override
