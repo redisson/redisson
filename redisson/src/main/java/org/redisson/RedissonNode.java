@@ -129,7 +129,7 @@ public class RedissonNode {
             redisson = Redisson.create(config);
         }
         
-        retrieveAdresses();
+        retrieveAddresses();
         
         if (config.getRedissonNodeInitializer() != null) {
             config.getRedissonNodeInitializer().onStartup(this);
@@ -154,7 +154,7 @@ public class RedissonNode {
         log.info("Redisson node started!");
     }
 
-    private void retrieveAdresses() {
+    private void retrieveAddresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
             RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);

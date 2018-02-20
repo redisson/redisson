@@ -69,7 +69,7 @@ public class RedissonBatch implements RBatch {
     private boolean skipResult;
     private boolean atomic;
 
-    protected RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    public RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
         this.executorService = new CommandBatchService(connectionManager);
         this.evictionScheduler = evictionScheduler;
         this.id = id;

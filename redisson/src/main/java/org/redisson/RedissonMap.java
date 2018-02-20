@@ -77,7 +77,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     final RedissonClient redisson;
     final MapOptions<K, V> options;
     
-    protected RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options) {
+    public RedissonMap(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(commandExecutor, name);
         this.redisson = redisson;
         this.options = options;
@@ -327,12 +327,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
         params.add(getName());
         for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {
-            if (t.getKey() == null) {
-                throw new NullPointerException("map key can't be null");
-            }
-            if (t.getValue() == null) {
-                throw new NullPointerException("map value can't be null");
-            }
+            checkKey(t.getKey());
+            checkValue(t.getValue());
 
             params.add(encodeMapKey(t.getKey()));
             params.add(encodeMapValue(t.getValue()));
