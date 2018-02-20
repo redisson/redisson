@@ -27,6 +27,7 @@ import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
 
 import io.netty.channel.EventLoopGroup;
@@ -86,6 +87,11 @@ public class Config {
     
     private boolean keepPubSubOrder = true;
     
+    /**
+     * AddressResolverGroupFactory switch between default and round robin
+     */
+    private AddressResolverGroupFactory addressResolverGroupFactory = AddressResolverGroupFactory.DNS_ADDRESS_RESOLVER_GROUP;
+
     public Config() {
     }
 
@@ -107,7 +113,8 @@ public class Config {
         setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
         setTransportMode(oldConf.getTransportMode());
-        
+        setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
+
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
         }
@@ -591,6 +598,17 @@ public class Config {
         return keepPubSubOrder;
     }
 
+    /**
+     * Used to switch between {@link io.netty.resolver.dns.DnsAddressResolverGroup} implementations.
+     * Switch to round robin {@link io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup} when you need to optimize the url resolving.
+     * @param addressResolverGroupFactory
+     */
+    public void setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {
+        this.addressResolverGroupFactory = addressResolverGroupFactory;
+    }
+    public AddressResolverGroupFactory getAddressResolverGroupFactory() {
+        return addressResolverGroupFactory;
+    }
 
     /**
      * Read config object stored in JSON format from <code>String</code>
