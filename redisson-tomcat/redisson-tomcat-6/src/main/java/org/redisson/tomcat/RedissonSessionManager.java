@@ -152,6 +152,9 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             session.endAccess();
             return session;
         }
+
+        result.access();
+        result.endAccess();
         
         return result;
     }

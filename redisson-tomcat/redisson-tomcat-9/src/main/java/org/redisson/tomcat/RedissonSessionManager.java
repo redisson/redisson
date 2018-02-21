@@ -132,6 +132,9 @@ public class RedissonSessionManager extends ManagerBase {
             return session;
         }
         
+        result.access();
+        result.endAccess();
+        
         return result;
     }
     

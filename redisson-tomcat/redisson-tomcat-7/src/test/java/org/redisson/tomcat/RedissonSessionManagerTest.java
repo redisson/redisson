@@ -18,6 +18,33 @@ import org.redisson.config.Config;
 public class RedissonSessionManagerTest {
 
     @Test
+    public void testExpiration() throws Exception {
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        server1.start();
+
+        Executor executor = Executor.newInstance();
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        executor.use(cookieStore);
+        
+        write(executor, "test", "1234");
+
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        server2.start();
+
+        Thread.sleep(30000);
+        
+        read(8081, executor, "test", "1234");
+
+        Thread.sleep(40000);
+        
+        read(executor, "test", "1234");
+        
+        Executor.closeIdleConnections();
+        server1.stop();
+        server2.stop();
+    }
+    
+    @Test
     public void testSwitchServer() throws Exception {
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
@@ -138,6 +165,12 @@ public class RedissonSessionManagerTest {
         Assert.assertEquals("OK", response);
     }
     
+    private void read(int port, Executor executor, String key, String value) throws IOException, ClientProtocolException {
+        String url = "http://localhost:" + port + "/myapp/read?key=" + key;
+        String response = executor.execute(Request.Get(url)).returnContent().asString();
+        Assert.assertEquals(value, response);
+    }
+
     private void read(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/read?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();

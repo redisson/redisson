@@ -192,6 +192,10 @@ public class RedissonSession extends StandardSession {
         if (lastAccessedTime != null) {
             this.lastAccessedTime = lastAccessedTime;
         }
+        Integer maxInactiveInterval = (Integer) attrs.remove("session:maxInactiveInterval");
+        if (maxInactiveInterval != null) {
+            this.maxInactiveInterval = maxInactiveInterval;
+        }
         Long thisAccessedTime = (Long) attrs.remove("session:thisAccessedTime");
         if (thisAccessedTime != null) {
             this.thisAccessedTime = thisAccessedTime;
