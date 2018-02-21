@@ -65,7 +65,7 @@ public class JsonJacksonCodec implements Codec {
         
     }
     
-    private final ObjectMapper mapObjectMapper;
+    protected final ObjectMapper mapObjectMapper;
 
     private final Encoder encoder = new Encoder() {
         @Override
