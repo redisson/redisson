@@ -7,6 +7,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -28,11 +29,45 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.client.codec.JsonJacksonMapCodec;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
+import reactor.io.codec.json.JacksonJsonCodec;
+
 public class JCacheTest extends BaseTest {
 
+    @Test
+    public void testJson() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        cfg.setCodec(new JsonJacksonMapCodec(String.class, LocalDateTime.class, objectMapper));
+        
+        Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        LocalDateTime t = LocalDateTime.now();
+        cache.put("1", t);
+        Assert.assertEquals(t, cache.get("1"));
+        
+        cache.close();
+        runner.stop();
+        
+    }
+    
     @Test
     public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
         RedisProcess runner = new RedisRunner()
