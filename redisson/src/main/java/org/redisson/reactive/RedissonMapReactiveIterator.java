@@ -26,8 +26,8 @@ import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.misc.HashValue;
 
-import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -54,7 +54,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
             public void subscribe(final Subscriber<? super M> t) {
                 t.onSubscribe(new ReactiveSubscription<M>(this, t) {
 
-                    private Map<ByteBuf, ByteBuf> firstValues;
+                    private Map<HashValue, HashValue> firstValues;
                     private long iterPos = 0;
                     private RedisClient client;
 
@@ -66,10 +66,10 @@ public class RedissonMapReactiveIterator<K, V, M> {
                         nextValues();
                     }
 
-                    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-                        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+                    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+                        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
                         for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-                            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+                            result.put(entry.getKey().getHash(), entry.getValue().getHash());
                         }
                         return result;
                     }
@@ -83,23 +83,12 @@ public class RedissonMapReactiveIterator<K, V, M> {
                                 s.request(Long.MAX_VALUE);
                             }
                             
-                            private void free(Map<ByteBuf, ByteBuf> map) {
-                                if (map == null) {
-                                    return;
-                                }
-                                for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-                                    entry.getKey().release();
-                                    entry.getValue().release();
-                                }
-                            }
-
                             @Override
                             public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
                                 client = res.getRedisClient();
                                 if (iterPos == 0 && firstValues == null) {
                                     firstValues = convert(res.getMap());
                                 } else if (convert(res.getMap()).equals(firstValues)) {
-                                    free(firstValues);
                                     m.onComplete();
                                     currentIndex = 0;
                                     return;

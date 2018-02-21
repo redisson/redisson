@@ -986,7 +986,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else if (o instanceof ScanObjectEntry) {
             ScanObjectEntry keyScan = (ScanObjectEntry) o;
             Object obj = tryHandleReference0(keyScan.getObj());
-            return obj != keyScan.getObj() ? (T) new ScanObjectEntry(keyScan.getBuf(), obj) : o;
+            return obj != keyScan.getObj() ? (T) new ScanObjectEntry(keyScan.getHash(), obj) : o;
         } else if (o instanceof Map.Entry) {
             Map.Entry old = (Map.Entry) o;
             Object key = tryHandleReference0(old.getKey());

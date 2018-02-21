@@ -21,9 +21,10 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.misc.Hash;
+import org.redisson.misc.HashValue;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 /**
  * 
@@ -43,9 +44,11 @@ public class ScanCodec implements Codec {
         return new Decoder<Object>() {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
-                ByteBuf b = Unpooled.copiedBuffer(buf);
+                buf.markReaderIndex();
+                long[] hash = Hash.hash128(buf);
+                buf.resetReaderIndex();
                 Object val = delegate.getValueDecoder().decode(buf, state);
-                return new ScanObjectEntry(b, val);
+                return new ScanObjectEntry(new HashValue(hash), val);
             }
         };
     }

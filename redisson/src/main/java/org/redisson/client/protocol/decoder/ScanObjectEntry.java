@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import io.netty.buffer.ByteBuf;
+import org.redisson.misc.HashValue;
 
 /**
  * 
@@ -24,16 +24,16 @@ import io.netty.buffer.ByteBuf;
  */
 public class ScanObjectEntry {
 
-    private final ByteBuf buf;
+    private final HashValue hash;
     private final Object obj;
 
-    public ScanObjectEntry(ByteBuf buf, Object obj) {
-        this.buf = buf;
+    public ScanObjectEntry(HashValue hash, Object obj) {
+        this.hash = hash;
         this.obj = obj;
     }
 
-    public ByteBuf getBuf() {
-        return buf;
+    public HashValue getHash() {
+        return hash;
     }
 
     public Object getObj() {
