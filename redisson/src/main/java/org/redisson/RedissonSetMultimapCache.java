@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -40,14 +39,14 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
 
     private final RedissonMultimapCache<K> baseCache;
     
-    RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
-        super(id, connectionManager, name);
+    RedissonSetMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
+        super(connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
         baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
-    RedissonSetMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(id, codec, connectionManager, name);
+    RedissonSetMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
         evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
         baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }

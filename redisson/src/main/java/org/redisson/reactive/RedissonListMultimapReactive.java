@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,11 +41,11 @@ import io.netty.buffer.ByteBuf;
 public class RedissonListMultimapReactive<K, V> extends RedissonBaseMultimapReactive<K, V> implements RListMultimapReactive<K, V> {
 
     public RedissonListMultimapReactive(UUID id, CommandReactiveExecutor commandExecutor, String name) {
-        super(new RedissonListMultimap<K, V>(id, commandExecutor, name), commandExecutor, name);
+        super(new RedissonListMultimap<K, V>(commandExecutor, name), commandExecutor, name);
     }
 
     public RedissonListMultimapReactive(UUID id, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(new RedissonListMultimap<K, V>(id, codec, commandExecutor, name), codec, commandExecutor, name);
+        super(new RedissonListMultimap<K, V>(codec, commandExecutor, name), codec, commandExecutor, name);
     }
 
     @Override

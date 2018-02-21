@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,7 @@ import java.util.NoSuchElementException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.misc.HashValue;
 
 /**
  * 
@@ -34,8 +33,8 @@ import io.netty.buffer.ByteBuf;
  */
 abstract class RedissonBaseIterator<V> implements Iterator<V> {
 
-    private List<ByteBuf> firstValues;
-    private List<ByteBuf> lastValues;
+    private List<HashValue> firstValues;
+    private List<HashValue> lastValues;
     private Iterator<ScanObjectEntry> lastIter;
     protected long nextIterPos;
     protected RedisClient client;
@@ -48,9 +47,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
     public boolean hasNext() {
         if (lastIter == null || !lastIter.hasNext()) {
             if (finished) {
-                free(firstValues);
-                free(lastValues);
-
                 currentElementRemoved = false;
                 client = null;
                 firstValues = null;
@@ -64,9 +60,6 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
             }
             do {
                 ListScanResult<ScanObjectEntry> res = iterator(client, nextIterPos);
-                if (lastValues != null) {
-                    free(lastValues);
-                }
                 
                 lastValues = convert(res.getValues());
                 client = res.getRedisClient();
@@ -74,16 +67,16 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                 if (nextIterPos == 0 && firstValues == null) {
                     firstValues = lastValues;
                     lastValues = null;
-                    if (firstValues.isEmpty() && tryAgain()) {
+                    if (isEmpty(firstValues) && tryAgain()) {
                         client = null;
                         firstValues = null;
                         nextIterPos = 0;
                     }
                 } else {
-                    if (firstValues.isEmpty()) {
+                    if (isEmpty(firstValues)) {
                         firstValues = lastValues;
                         lastValues = null;
-                        if (firstValues.isEmpty()) {
+                        if (isEmpty(firstValues)) {
                             if (tryAgain()) {
                                 client = null;
                                 firstValues = null;
@@ -91,18 +84,12 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
                                 continue;
                             }
                             if (res.getPos() == 0) {
-                                free(firstValues);
-                                free(lastValues);
-                                
                                 finished = true;
                                 return false;
                             }
                         }
-                    } else if (lastValues.removeAll(firstValues)
-                            || (lastValues.isEmpty() && nextIterPos == 0)) {
-                        free(firstValues);
-                        free(lastValues);
-
+                    } else if (removeAll(lastValues, firstValues)
+                            || (isEmpty(lastValues) && nextIterPos == 0)) {
                         currentElementRemoved = false;
                         
                         client = null;
@@ -124,21 +111,20 @@ abstract class RedissonBaseIterator<V> implements Iterator<V> {
         return lastIter.hasNext();
     }
     
-    private List<ByteBuf> convert(List<ScanObjectEntry> list) {
-        List<ByteBuf> result = new ArrayList<ByteBuf>(list.size());
-        for (ScanObjectEntry entry : list) {
-            result.add(entry.getBuf());
-        }
-        return result;
+    protected boolean isEmpty(List<HashValue> values) {
+        return values.isEmpty();
     }
     
-    private void free(List<ByteBuf> list) {
-        if (list == null) {
-            return;
+    protected boolean removeAll(List<HashValue> lastValues, List<HashValue> firstValues) {
+        return lastValues.removeAll(firstValues);
+    }
+    
+    protected List<HashValue> convert(List<ScanObjectEntry> list) {
+        List<HashValue> result = new ArrayList<HashValue>(list.size());
+        for (ScanObjectEntry entry : list) {
+            result.add(entry.getHash());
         }
-        for (ByteBuf byteBuf : list) {
-            byteBuf.release();
-        }
+        return result;
     }
     
     protected boolean tryAgain() {

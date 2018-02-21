@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -28,12 +27,19 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.HashValue;
 
-import io.netty.buffer.ByteBuf;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> map type
+ */
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
-    private Map<ByteBuf, ByteBuf> firstKeys;
+    private Map<HashValue, HashValue> firstKeys;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> keysIter;
     protected long keysIterPos = 0;
 
@@ -76,15 +82,12 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
             if (keysIterPos == 0 && firstKeys == null) {
                 firstKeys = convert(res.getMap());
             } else {
-                Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
+                Map<HashValue, HashValue> newValues = convert(res.getMap());
                 if (newValues.equals(firstKeys)) {
                     finished = true;
-                    free(firstKeys);
-                    free(newValues);
                     firstKeys = null;
                     return false;
                 }
-                free(newValues);
             }
             keysIter = res.getMap().entrySet().iterator();
             keysIterPos = res.getPos();
@@ -107,17 +110,10 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     protected abstract Iterator<V> getIterator(String name);
 
-    private void free(Map<ByteBuf, ByteBuf> map) {
-        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-            entry.getKey().release();
-            entry.getValue().release();
-        }
-    }
-
-    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
         for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+            result.put(entry.getKey().getHash(), entry.getValue().getHash());
         }
         return result;
     }

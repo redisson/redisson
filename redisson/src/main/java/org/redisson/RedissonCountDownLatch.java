@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final UUID id;
 
-    protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name, UUID id) {
+    protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
-        this.id = id;
+        this.id = commandExecutor.getConnectionManager().getId();
     }
 
     public void await() throws InterruptedException {

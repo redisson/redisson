@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
@@ -117,6 +118,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
+    protected final UUID id = UUID.randomUUID();
+    
     public static final int MAX_SLOT = 16384;
 
     protected final ClusterSlotRange singleSlotRange = new ClusterSlotRange(0, MAX_SLOT-1);
@@ -190,7 +193,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = EpollSocketChannel.class;
-            this.resolverGroup = new DnsAddressResolverGroup(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -199,7 +202,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            this.resolverGroup = new DnsAddressResolverGroup(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -208,7 +211,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = NioSocketChannel.class;
-            this.resolverGroup = new DnsAddressResolverGroup(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
         }
         
         if (cfg.getExecutor() == null) {
@@ -282,6 +285,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         });
 
         return result;
+    }
+    
+    public UUID getId() {
+        return id;
     }
     
     public boolean isClusterMode() {

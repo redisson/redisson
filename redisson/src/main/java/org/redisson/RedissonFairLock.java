@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -45,8 +44,8 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     private final String threadsQueueName;
     private final String timeoutSetName;
 
-    protected RedissonFairLock(CommandExecutor commandExecutor, String name, UUID id) {
-        super(commandExecutor, name, id);
+    protected RedissonFairLock(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         threadsQueueName = prefixName("redisson_lock_queue", name);
         timeoutSetName = prefixName("redisson_lock_timeout", name);

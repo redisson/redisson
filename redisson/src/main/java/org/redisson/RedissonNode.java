@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,7 +129,7 @@ public class RedissonNode {
             redisson = Redisson.create(config);
         }
         
-        retrieveAdresses();
+        retrieveAddresses();
         
         if (config.getRedissonNodeInitializer() != null) {
             config.getRedissonNodeInitializer().onStartup(this);
@@ -154,7 +154,7 @@ public class RedissonNode {
         log.info("Redisson node started!");
     }
 
-    private void retrieveAdresses() {
+    private void retrieveAddresses() {
         ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
             RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -196,6 +196,10 @@ public class RedissonSession extends StandardSession {
         Long lastAccessedTime = (Long) attrs.remove("session:lastAccessedTime");
         if (lastAccessedTime != null) {
             this.lastAccessedTime = lastAccessedTime;
+        }
+        Integer maxInactiveInterval = (Integer) attrs.remove("session:maxInactiveInterval");
+        if (maxInactiveInterval != null) {
+            this.maxInactiveInterval = maxInactiveInterval;
         }
         Long thisAccessedTime = (Long) attrs.remove("session:thisAccessedTime");
         if (thisAccessedTime != null) {

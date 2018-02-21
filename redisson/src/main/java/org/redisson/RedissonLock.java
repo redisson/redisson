@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,10 +66,10 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
+    public RedissonLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.id = id;
+        this.id = commandExecutor.getConnectionManager().getId();
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
     }
 

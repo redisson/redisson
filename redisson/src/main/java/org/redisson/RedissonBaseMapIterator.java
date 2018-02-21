@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,7 @@ import java.util.NoSuchElementException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
-
-import io.netty.buffer.ByteBuf;
+import org.redisson.misc.HashValue;
 
 /**
  * 
@@ -38,8 +37,8 @@ import io.netty.buffer.ByteBuf;
  */
 public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
-    private Map<ByteBuf, ByteBuf> firstValues;
-    private Map<ByteBuf, ByteBuf> lastValues;
+    private Map<HashValue, HashValue> firstValues;
+    private Map<HashValue, HashValue> lastValues;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> lastIter;
     protected long nextIterPos;
     protected RedisClient client;
@@ -52,9 +51,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
     public boolean hasNext() {
         if (lastIter == null || !lastIter.hasNext()) {
             if (finished) {
-                free(firstValues);
-                free(lastValues);
-
                 currentElementRemoved = false;
                 client = null;
                 firstValues = null;
@@ -68,9 +64,6 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
             }
             do {
                 MapScanResult<ScanObjectEntry, ScanObjectEntry> res = iterator();
-                if (lastValues != null) {
-                    free(lastValues);
-                }
                 
                 lastValues = convert(res.getMap());
                 client = res.getRedisClient();
@@ -95,18 +88,12 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
                                 continue;
                             }
                             if (res.getPos() == 0) {
-                                free(firstValues);
-                                free(lastValues);
-                                
                                 finished = true;
                                 return false;
                             }
                         }
                     } else if (lastValues.keySet().removeAll(firstValues.keySet())
                             || (lastValues.isEmpty() && nextIterPos == 0)) {
-                        free(firstValues);
-                        free(lastValues);
-
                         currentElementRemoved = false;
 
                         client = null;
@@ -135,20 +122,10 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
 
     protected abstract MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator();
 
-    private void free(Map<ByteBuf, ByteBuf> map) {
-        if (map == null) {
-            return;
-        }
-        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-            entry.getKey().release();
-            entry.getValue().release();
-        }
-    }
-
-    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
         for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+            result.put(entry.getKey().getHash(), entry.getValue().getHash());
         }
         return result;
     }
@@ -185,7 +162,7 @@ public abstract class RedissonBaseMapIterator<K, V, M> implements Iterator<M> {
             throw new IllegalStateException();
         }
 
-        firstValues.remove(entry.getKey().getBuf());
+        firstValues.remove(entry.getKey().getHash());
         lastIter.remove();
         removeKey();
         currentElementRemoved = true;

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,8 +29,8 @@ import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.misc.HashValue;
 
-import io.netty.buffer.ByteBuf;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 
@@ -54,8 +54,8 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
     public void accept(FluxSink<M> emitter) {
         emitter.onRequest(new LongConsumer() {
 
-            private Map<ByteBuf, ByteBuf> firstValues;
-            private Map<ByteBuf, ByteBuf> lastValues;
+            private Map<HashValue, HashValue> firstValues;
+            private Map<HashValue, HashValue> lastValues;
             private long nextIterPos;
             private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
@@ -75,28 +75,22 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
             
             protected void nextValues(FluxSink<M> emitter) {
                 map.scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
+                    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+                        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
+                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
+                            result.put(entry.getKey().getHash(), entry.getValue().getHash());
+                        }
+                        return result;
+                    }
 
                     @Override
                     public void onSubscribe(Subscription s) {
                         s.request(Long.MAX_VALUE);
                     }
                     
-                    private void free(Map<ByteBuf, ByteBuf> map) {
-                        if (map == null) {
-                            return;
-                        }
-                        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-                            entry.getKey().release();
-                            entry.getValue().release();
-                        }
-                    }
-
                     @Override
                     public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
                         if (finished) {
-                            free(firstValues);
-                            free(lastValues);
-
                             client = null;
                             firstValues = null;
                             lastValues = null;
@@ -105,9 +99,6 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                         }
 
                         long prevIterPos = nextIterPos;
-                        if (lastValues != null) {
-                            free(lastValues);
-                        }
                         
                         lastValues = convert(res.getMap());
                         client = res.getRedisClient();
@@ -133,8 +124,6 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                                     }
                                 }
                             } else if (lastValues.keySet().removeAll(firstValues.keySet())) {
-                                free(firstValues);
-                                free(lastValues);
 
                                 client = null;
                                 firstValues = null;
@@ -185,10 +174,10 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
         });
     }
     
-    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
+    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
+        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
         for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
+            result.put(entry.getKey().getHash(), entry.getValue().getHash());
         }
         return result;
     }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -82,7 +82,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -135,7 +134,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<RExecutorFuture<?>>();
     private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(PlatformDependent.<RedissonExecutorFutureReference, Boolean>newConcurrentHashMap());
     
-    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, String redissonId) {
+    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -146,9 +145,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         this.responses = responses;
 
         if (codec == connectionManager.getCodec()) {
-            this.executorId = redissonId;
+            this.executorId = connectionManager.getId().toString();
         } else {
-            this.executorId = redissonId + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
+            this.executorId = connectionManager.getId().toString() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
         remoteService = redisson.getRemoteService(name, codec);

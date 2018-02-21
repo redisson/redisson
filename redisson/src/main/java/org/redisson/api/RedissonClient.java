@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -908,7 +908,7 @@ public interface RedissonClient {
      * @return Batch object
      */
     RBatch createBatch();
-
+    
     /**
      * Returns interface with methods for Redis keys.
      * Each of Redis/Redisson object associated with own key

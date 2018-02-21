@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,28 +59,28 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     private final UUID id;
     final String prefix;
     
-    RedissonMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
-        super(connectionManager, name);
-        this.id = id;
+    RedissonMultimap(CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(commandAsyncExecutor, name);
+        this.id = commandAsyncExecutor.getConnectionManager().getId();
         prefix = suffixName(getName(), "");
     }
 
-    RedissonMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
-        this.id = id;
+    RedissonMultimap(Codec codec, CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(codec, commandAsyncExecutor, name);
+        this.id = commandAsyncExecutor.getConnectionManager().getId();
         prefix = suffixName(getName(), "");
     }
 
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+        return new RedissonLock((CommandExecutor)commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
+        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName);
     }
     
     private String getLockName(Object key) {

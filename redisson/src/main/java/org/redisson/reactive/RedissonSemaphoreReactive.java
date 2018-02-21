@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,8 +44,8 @@ public class RedissonSemaphoreReactive extends RedissonExpirableReactive impleme
         instance = new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
     }
 
-    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name, UUID id) {
-        return new RedissonLock(commandExecutor, name, id);
+    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
+        return new RedissonLock(commandExecutor, name);
     }
 
     @Override

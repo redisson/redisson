@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -121,12 +121,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
-        return new RedissonReadWriteLockReactive(commandExecutor, name, id);
+        return new RedissonReadWriteLockReactive(commandExecutor, name);
     }
     
     @Override
     public RLockReactive getLock(String name) {
-        return new RedissonLockReactive(commandExecutor, name, id);
+        return new RedissonLockReactive(commandExecutor, name);
     }
 
     @Override

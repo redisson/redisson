@@ -39,6 +39,7 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
+import org.redisson.misc.HashValue;
 
 import io.netty.buffer.Unpooled;
 
@@ -114,7 +115,7 @@ public class RedissonTest {
             ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 i++;
                 if (i == 1) {
-                    return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(Unpooled.wrappedBuffer(new byte[] {1}), 1)));
+                    return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(new HashValue(new long[]{1L}) , 1)));
                 }
                 if (i == 2) {
                     return new ListScanResult(7L, Collections.emptyList());
