@@ -56,14 +56,14 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
-    protected static String prefixName(String prefix, String name) {
+    public static String prefixName(String prefix, String name) {
         if (name.contains("{")) {
             return prefix + ":" + name;
         }
         return prefix + ":{" + name + "}";
     }
     
-    protected static String suffixName(String name, String suffix) {
+    public static String suffixName(String name, String suffix) {
         if (name.contains("{")) {
             return name + ":" + suffix;
         }
@@ -194,7 +194,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    protected ByteBuf encode(Object value) {
+    public ByteBuf encode(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -209,7 +209,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    protected ByteBuf encodeMapKey(Object value) {
+    public ByteBuf encodeMapKey(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -224,7 +224,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    protected ByteBuf encodeMapValue(Object value) {
+    public ByteBuf encodeMapValue(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
