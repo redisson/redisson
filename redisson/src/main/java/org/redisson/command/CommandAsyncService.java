@@ -149,14 +149,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             boolean interrupted = false;
             while (!future.isDone()) {
                 try {
-                    MasterSlaveServersConfig config = connectionManager.getConfig();
-                    int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
-                    if (!l.await(timeout, TimeUnit.MILLISECONDS)) {
-                        ((RPromise<V>)future).tryFailure(new RedisTimeoutException("Command timeout: (" + timeout + " ms)"));
-                        break;
-                    }
+                    l.await();
                 } catch (InterruptedException e) {
                     interrupted = true;
+                    break;
                 }
             }
 
@@ -529,6 +525,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 if (details.getConnectionFuture().cancel(false)) {
+                    if (details.getException() == null) {
+                        details.setException(new RedisTimeoutException("Unable to get connection! "
+                                    + "Node source: " + source
+                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                    + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                    }
                     connectionManager.getShutdownLatch().release();
                 } else {
                     if (details.getConnectionFuture().isSuccess()) {
