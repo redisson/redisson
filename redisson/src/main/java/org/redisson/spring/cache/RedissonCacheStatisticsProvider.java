@@ -15,24 +15,20 @@
  */
 package org.redisson.spring.cache;
 
-import org.springframework.boot.actuate.cache.CacheStatistics;
-import org.springframework.boot.actuate.cache.CacheStatisticsProvider;
-import org.springframework.boot.actuate.cache.DefaultCacheStatistics;
-import org.springframework.cache.CacheManager;
-
 /**
  *
  * @author Craig Andrews
- *
+ * TODO needs reimplementation for spring boot 2 to {@code io.micrometer.core.instrument.binder.MeterBinder} from {@code io .micrometer:micrometer-core}
+ * TODO see https://docs.spring.io/spring-boot/docs/2.0.0.M6/reference/htmlsingle/#production-ready-metrics
  */
-public class RedissonCacheStatisticsProvider implements CacheStatisticsProvider<RedissonCache> {
+public class RedissonCacheStatisticsProvider /*implements CacheStatisticsProvider<RedissonCache>*/ {
 
-    @Override
-    public CacheStatistics getCacheStatistics(final CacheManager cacheManager, final RedissonCache cache) {
-        final DefaultCacheStatistics defaultCacheStatistics = new DefaultCacheStatistics();
-        defaultCacheStatistics.setSize((long) cache.getNativeCache().size());
-        defaultCacheStatistics.setGetCacheCounts(cache.getCacheHits(), cache.getCacheMisses());
-        return defaultCacheStatistics;
-    }
+//    @Override
+//    public CacheStatistics getCacheStatistics(final CacheManager cacheManager, final RedissonCache cache) {
+//        final DefaultCacheStatistics defaultCacheStatistics = new DefaultCacheStatistics();
+//        defaultCacheStatistics.setSize((long) cache.getNativeCache().size());
+//        defaultCacheStatistics.setGetCacheCounts(cache.getCacheHits(), cache.getCacheMisses());
+//        return defaultCacheStatistics;
+//    }
 
 }

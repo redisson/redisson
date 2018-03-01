@@ -15,30 +15,25 @@
  */
 package org.redisson.spring.cache;
 
-import org.springframework.boot.actuate.cache.CacheStatisticsProvider;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  *
  * @author Craig Andrews
  *
  * {@link EnableAutoConfiguration Auto-configuration} for {@link RedissonCacheStatisticsProvider}
- *
+ * TODO needs reimplementation for spring boot 2 to {@code io.micrometer.core.instrument.binder.MeterBinder} from {@code io .micrometer:micrometer-core}
+ * TODO see https://docs.spring.io/spring-boot/docs/2.0.0.M6/reference/htmlsingle/#production-ready-metrics
  */
-@Configuration
-@AutoConfigureAfter(CacheAutoConfiguration.class)
-@ConditionalOnBean(CacheManager.class)
-@ConditionalOnClass(CacheStatisticsProvider.class)
+//@Configuration
+//@AutoConfigureAfter(CacheAutoConfiguration.class)
+//@ConditionalOnBean(CacheManager.class)
+//@ConditionalOnClass(CacheStatisticsProvider.class)
 public class RedissonCacheStatisticsAutoConfiguration {
-    @Bean
-    public RedissonCacheStatisticsProvider redissonCacheStatisticsProvider(){
-        return new RedissonCacheStatisticsProvider();
-    }
+
+//    @Bean
+//    public RedissonCacheStatisticsProvider redissonCacheStatisticsProvider(){
+//        return new RedissonCacheStatisticsProvider();
+//    }
+    
 }

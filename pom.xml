@@ -18,7 +18,7 @@
 
     <properties>
         <maven.test.skip>true</maven.test.skip>
-        <source.version>1.6</source.version>
+        <source.version>1.8</source.version>
         <test.source.version>1.8</test.source.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
@@ -165,5 +165,19 @@
         </plugins>
       </pluginManagement>
   </build>
+
+    <repositories>
+        <repository>
+            <id>repository.spring.milestone</id>
+            <name>Spring Milestone Repository</name>
+            <url>http://repo.spring.io/milestone</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <name>Maven Repository Switchboard</name>
+            <layout>default</layout>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
+    </repositories>
 
 </project>
