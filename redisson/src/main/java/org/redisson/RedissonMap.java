@@ -237,7 +237,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return options == null || options.getLoader() == null;
     }
 
-    protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
+    public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         args.add(getName());
         encodeMapKeys(args, keys);
@@ -624,7 +624,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             Collections.<Object>singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
     }
 
-    protected RFuture<V> getOperationAsync(K key) {
+    public RFuture<V> getOperationAsync(K key) {
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), encodeMapKey(key));
     }
     
@@ -973,7 +973,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
+    public MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
         if (pattern == null) {
             RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
                                     = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);

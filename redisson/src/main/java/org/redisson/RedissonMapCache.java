@@ -210,7 +210,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
+    public RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         List<Object> args = new ArrayList<Object>(keys.size() + 1);
         List<Object> plainKeys = new ArrayList<Object>(keys.size());
         
@@ -448,7 +448,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    protected RFuture<V> getOperationAsync(K key) {
+    public RFuture<V> getOperationAsync(K key) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "if value == false then "
@@ -618,7 +618,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<V> addAndGetOperationAsync(K key, Number value) {
+    protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         ByteBuf keyState = encodeMapKey(key);
         return commandExecutor.evalWriteAsync(getName(key), StringCodec.INSTANCE,
                 new RedisCommand<Object>("EVAL", new NumberConvertor(value.getClass())),
@@ -1100,7 +1100,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
 
     @Override
-    public RFuture<V> removeOperationAsync(K key) {
+    protected RFuture<V> removeOperationAsync(K key) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
                         + "if value == false then "
@@ -1198,7 +1198,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
+    public MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
         return get(scanIteratorAsync(name, client, startPos, pattern));
     }
 
@@ -1635,7 +1635,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
+    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<Object>(map.size()*2 + 1);
         params.add(System.currentTimeMillis());
         for (java.util.Map.Entry<? extends K, ? extends V> t : map.entrySet()) {

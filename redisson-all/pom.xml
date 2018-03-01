@@ -167,7 +167,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-actuator</artifactId>
-            <version>[1.4,)</version>
+            <version>[1.4,2.0.0)</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -152,6 +152,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     l.await();
                 } catch (InterruptedException e) {
                     interrupted = true;
+                    break;
                 }
             }
 
@@ -524,6 +525,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
 
                 if (details.getConnectionFuture().cancel(false)) {
+                    if (details.getException() == null) {
+                        details.setException(new RedisTimeoutException("Unable to get connection! "
+                                    + "Node source: " + source
+                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                    + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                    }
                     connectionManager.getShutdownLatch().release();
                 } else {
                     if (details.getConnectionFuture().isSuccess()) {
@@ -531,7 +538,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                                 if (details.getWriteFuture() != null && details.getWriteFuture().cancel(false)) {
                                     if (details.getException() == null) {
-                                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams()) + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                                        details.setException(new RedisTimeoutException("Unable to send command! "
+                                                    + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow().getChannel() 
+                                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                                    + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
                                     details.getAttemptPromise().tryFailure(details.getException());
                                 }
@@ -559,7 +569,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to send command: " + command + " with params: " + LogHelper.toString(details.getParams()) + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                        details.setException(new RedisTimeoutException("Unable to send command! Node source: " + source 
+                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                    + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
                     return;
@@ -658,11 +670,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!future.isSuccess()) {
-            log.trace("Can't write {} to {}", details.getCommand(), connection);
             details.setException(new WriteRedisConnectionException(
-                    "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
+                    "Unable to send command! Node source: " + details.getSource() + ", connection: " + future.channel() + 
+                    ", command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()), future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
-                details.getAttemptPromise().tryFailure(details.getException());
+                if (!details.getAttemptPromise().tryFailure(details.getException())) {
+                    log.error(details.getException().getMessage());
+                }
             }
             return;
         }
