@@ -672,7 +672,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     "Unable to send command! Node source: " + details.getSource() + ", connection: " + future.channel() + 
                     ", command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()), future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
-                details.getAttemptPromise().tryFailure(details.getException());
+                if (!details.getAttemptPromise().tryFailure(details.getException())) {
+                    log.error(details.getException().getMessage());
+                }
             }
             return;
         }
