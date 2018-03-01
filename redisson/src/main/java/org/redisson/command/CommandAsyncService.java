@@ -668,9 +668,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         if (!future.isSuccess()) {
-            log.trace("Can't write {} to {}", details.getCommand(), connection);
             details.setException(new WriteRedisConnectionException(
-                    "Can't write command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()) + " to channel: " + future.channel(), future.cause()));
+                    "Unable to send command! Node source: " + details.getSource() + ", connection: " + future.channel() + 
+                    ", command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()), future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                 details.getAttemptPromise().tryFailure(details.getException());
             }
