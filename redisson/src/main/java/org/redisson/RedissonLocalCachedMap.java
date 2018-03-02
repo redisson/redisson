@@ -1190,7 +1190,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    protected ByteBuf encode(Object value) {
+    public ByteBuf encode(Object value) {
         try {
             return topicCodec.getValueEncoder().encode(value);
         } catch (IOException e) {
