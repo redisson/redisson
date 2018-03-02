@@ -52,6 +52,8 @@ public class RedissonSessionManager extends ManagerBase {
     
     private ReadMode readMode = ReadMode.MEMORY;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
+
+    private String keySpace = "";
     
     public String getUpdateMode() {
         return updateMode.toString();
@@ -75,6 +77,14 @@ public class RedissonSessionManager extends ManagerBase {
     
     public String getConfigPath() {
         return configPath;
+    }
+
+    public String getKeySpace() {
+        return this.keySpace;
+    }
+
+    public void setKeySpace(String keySpace) {
+        this.keySpace = keySpace;
     }
     
     @Override
@@ -110,7 +120,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
 
     public RMap<String, Object> getMap(String sessionId) {
-        return redisson.getMap("redisson_tomcat_session:" + sessionId);
+        return redisson.getMap(keySpace + "redisson_tomcat_session:" + sessionId);
     }
     
     @Override
