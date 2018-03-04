@@ -30,6 +30,7 @@ import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -267,13 +268,16 @@ public class ConfigSupport {
 
     private ObjectMapper createMapper(JsonFactory mapping, ClassLoader classLoader) {
         ObjectMapper mapper = new ObjectMapper(mapping);
+        
         mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
         mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
+        mapper.addMixIn(AddressResolverGroupFactory.class, ClassMixIn.class);
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
+        
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
         mapper.setFilterProvider(filterProvider);
