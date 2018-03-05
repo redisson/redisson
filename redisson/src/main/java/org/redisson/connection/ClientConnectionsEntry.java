@@ -54,7 +54,7 @@ public class ClientConnectionsEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    private NodeType nodeType;
+    private volatile NodeType nodeType;
     private ConnectionManager connectionManager;
 
     private final AtomicInteger failedAttempts = new AtomicInteger();

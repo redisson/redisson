@@ -229,8 +229,8 @@ public class RedisConnection implements RedisCommands {
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 
-    public void setClosed(boolean reconnect) {
-        this.closed = reconnect;
+    public void setClosed(boolean closed) {
+        this.closed = closed;
     }
 
     public boolean isClosed() {

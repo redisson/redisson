@@ -20,10 +20,17 @@ import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 
 /**
- * Created by hasaadon on 15/02/2018.
+ * 
+ * @author Nikita Koksharov
+ * @author hasaadon
+ *
  */
-public interface AddressResolverGroupFactory {
+public class DnsAddressResolverGroupFactory implements AddressResolverGroupFactory {
 
-    DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType, DnsServerAddressStreamProvider nameServerProvider);
+    @Override
+    public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType,
+            DnsServerAddressStreamProvider nameServerProvider) {
+        return new DnsAddressResolverGroup(channelType, nameServerProvider);
+    }
 
 }

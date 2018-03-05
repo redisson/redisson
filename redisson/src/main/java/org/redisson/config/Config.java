@@ -27,6 +27,7 @@ import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.DnsAddressResolverGroupFactory;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
 
@@ -90,7 +91,7 @@ public class Config {
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
-    private AddressResolverGroupFactory addressResolverGroupFactory = AddressResolverGroupFactory.DNS_ADDRESS_RESOLVER_GROUP;
+    private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
 
     public Config() {
     }
@@ -601,6 +602,7 @@ public class Config {
     /**
      * Used to switch between {@link io.netty.resolver.dns.DnsAddressResolverGroup} implementations.
      * Switch to round robin {@link io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup} when you need to optimize the url resolving.
+     * 
      * @param addressResolverGroupFactory
      */
     public void setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {

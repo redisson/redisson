@@ -78,11 +78,6 @@ public class LoadBalancerManager {
         }
     }
     
-    public void changeType(URI address, NodeType nodeType) {
-        ClientConnectionsEntry entry = getEntry(address);
-        changeType(nodeType, entry);
-    }
-    
     public RFuture<Void> add(final ClientConnectionsEntry entry) {
         RPromise<Void> result = new RedissonPromise<Void>();
         

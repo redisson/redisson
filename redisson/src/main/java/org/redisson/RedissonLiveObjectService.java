@@ -273,7 +273,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         
         RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
         if (annotation != null) {
-            throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object field");
+            throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object '" + clazz + "' and field '" + fieldName + "'");
         }
     }
 
