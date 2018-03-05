@@ -43,8 +43,10 @@ public class RedissonCache implements Cache {
     
     private final AtomicLong hits = new AtomicLong();
 
+    private final AtomicLong puts = new AtomicLong();
+    
     private final AtomicLong misses = new AtomicLong();
-
+    
     public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
         this(mapCache, allowNullValues);
         this.mapCache = mapCache;
@@ -106,6 +108,7 @@ public class RedissonCache implements Cache {
         } else {
             map.fastPut(key, value);
         }
+        addCachePut();
     }
 
     public ValueWrapper putIfAbsent(Object key, Object value) {
@@ -118,6 +121,9 @@ public class RedissonCache implements Cache {
                 prevValue = mapCache.putIfAbsent(key, value, config.getTTL(), TimeUnit.MILLISECONDS, config.getMaxIdleTime(), TimeUnit.MILLISECONDS);
             } else {
                 prevValue = map.putIfAbsent(key, value);
+            }
+            if (prevValue == null) {
+                addCachePut();
             }
         }
         
@@ -204,6 +210,14 @@ public class RedissonCache implements Cache {
      */
     long getCacheMisses(){
         return misses.get();
+    }
+    
+    long getCachePuts() {
+        return puts.get();
+    }
+    
+    private void addCachePut() {
+        puts.incrementAndGet();
     }
 
     private void addCacheHit(){
