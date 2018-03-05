@@ -831,8 +831,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 V value = future.getNow();
                 if (value != null) {
-                    ByteBuf keyState = encodeMapKey(key);
-                    CacheKey cacheKey = toCacheKey(keyState);
+                    CacheKey cacheKey = toCacheKey(key);
                     cache.put(cacheKey, new CacheValue(key, value));
                 }
             }
@@ -1190,7 +1189,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    protected ByteBuf encode(Object value) {
+    public ByteBuf encode(Object value) {
         try {
             return topicCodec.getValueEncoder().encode(value);
         } catch (IOException e) {
