@@ -52,6 +52,8 @@ public class RedissonSessionManager extends ManagerBase {
     
     private ReadMode readMode = ReadMode.MEMORY;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
+
+    private String keyPrefix = "";
     
     public String getUpdateMode() {
         return updateMode.toString();
@@ -76,7 +78,15 @@ public class RedissonSessionManager extends ManagerBase {
     public String getConfigPath() {
         return configPath;
     }
-    
+
+    public String getKeyPrefix() {
+        return keyPrefix;
+    }
+
+    public void setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
+    }
+
     @Override
     public String getName() {
         return RedissonSessionManager.class.getSimpleName();
@@ -110,7 +120,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
 
     public RMap<String, Object> getMap(String sessionId) {
-        return redisson.getMap("redisson_tomcat_session:" + sessionId);
+        return redisson.getMap(keyPrefix + "redisson_tomcat_session:" + sessionId);
     }
     
     @Override
