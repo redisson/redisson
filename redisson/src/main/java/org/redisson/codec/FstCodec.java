@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.nustaq.serialization.FSTConfiguration;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -39,7 +39,7 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
-public class FstCodec implements Codec {
+public class FstCodec extends BaseCodec {
 
     private final FSTConfiguration config;
 
@@ -95,26 +95,6 @@ public class FstCodec implements Codec {
     };
 
     @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
@@ -122,6 +102,15 @@ public class FstCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (config.getClassLoader() != null) {
+            return config.getClassLoader();
+        }
+
+        return super.getClassLoader();
     }
 
 }

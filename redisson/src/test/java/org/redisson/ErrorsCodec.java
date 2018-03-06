@@ -17,14 +17,14 @@ package org.redisson;
 
 import java.io.IOException;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
 
-public class ErrorsCodec implements Codec {
+public class ErrorsCodec extends BaseCodec {
 
     public static final ErrorsCodec INSTANCE = new ErrorsCodec();
 
@@ -53,26 +53,6 @@ public class ErrorsCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
     }
 
 }

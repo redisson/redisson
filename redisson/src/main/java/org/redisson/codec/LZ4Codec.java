@@ -18,6 +18,7 @@ package org.redisson.codec;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -41,7 +42,7 @@ import net.jpountz.lz4.LZ4SafeDecompressor;
  * @author Nikita Koksharov
  *
  */
-public class LZ4Codec implements Codec {
+public class LZ4Codec extends BaseCodec {
 
     private static final int DECOMPRESSION_HEADER_SIZE = Integer.SIZE / 8;
     private final LZ4Factory factory = LZ4Factory.fastestInstance();
@@ -107,26 +108,6 @@ public class LZ4Codec implements Codec {
             }
         }
     };
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
-    }
 
     @Override
     public Decoder<Object> getValueDecoder() {

@@ -102,4 +102,9 @@ public class MapScanCodec implements Codec {
         return delegate.getMapKeyEncoder();
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
+    }
+
 }

@@ -21,7 +21,7 @@ import java.io.OutputStream;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -32,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -55,7 +56,7 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
-public class JsonJacksonCodec implements Codec {
+public class JsonJacksonCodec extends BaseCodec {
 
     public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
@@ -155,35 +156,17 @@ public class JsonJacksonCodec implements Codec {
         objectMapper.registerModule(new DefenceModule());
         
         objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY).withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        objectMapper.setVisibility(objectMapper.getSerializationConfig()
+                                                    .getDefaultVisibilityChecker()
+                                                        .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                                                        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                                        .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                                        .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapper.enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.addMixIn(Throwable.class, ThrowableMixIn.class);
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return decoder;
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return encoder;
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return decoder;
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return encoder;
     }
 
     @Override
@@ -194,6 +177,15 @@ public class JsonJacksonCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (mapObjectMapper.getTypeFactory().getClassLoader() != null) {
+            return mapObjectMapper.getTypeFactory().getClassLoader();
+        }
+
+        return super.getClassLoader();
     }
 
     public ObjectMapper getObjectMapper() {

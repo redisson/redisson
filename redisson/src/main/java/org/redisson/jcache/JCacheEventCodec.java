@@ -106,5 +106,10 @@ public class JCacheEventCodec implements Codec {
     public Encoder getValueEncoder() {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
+    }
 
 }

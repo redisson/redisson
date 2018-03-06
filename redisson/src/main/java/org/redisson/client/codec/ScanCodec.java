@@ -78,4 +78,9 @@ public class ScanCodec implements Codec {
         return delegate.getMapKeyEncoder();
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return delegate.getClassLoader();
+    }
+
 }
