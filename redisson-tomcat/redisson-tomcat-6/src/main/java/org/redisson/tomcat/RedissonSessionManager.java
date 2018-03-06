@@ -54,7 +54,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     private String configPath;
     private ReadMode readMode = ReadMode.MEMORY;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
-    private String keySpace = "";
+    private String keyPrefix = "";
     
     public String getUpdateMode() {
         return updateMode.toString();
@@ -80,14 +80,14 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         return configPath;
     }
 
-    public String getKeySpace() {
-        return this.keySpace;
+    public String getKeyPrefix() {
+        return keyPrefix;
     }
 
-    public void setKeySpace(String keySpace) {
-        this.keySpace = keySpace;
+    public void setKeyPrefix(String keyPrefix) {
+        this.keyPrefix = keyPrefix;
     }
-    
+
     @Override
     public int getRejectedSessions() {
         return 0;
@@ -140,7 +140,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
 
     public RMap<String, Object> getMap(String sessionId) {
-        return redisson.getMap(keySpace + "redisson_tomcat_session:" + sessionId);
+        return redisson.getMap(keyPrefix + "redisson_tomcat_session:" + sessionId);
     }
     
     @Override
