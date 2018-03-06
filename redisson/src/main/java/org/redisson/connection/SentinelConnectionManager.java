@@ -269,11 +269,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         String masterHost = map.get("master-host");
                         String masterPort = map.get("master-port");
                         
-                        if (!isUseSameMaster(ip, port, masterHost, masterPort)) {
-                            continue;
-                        }
                         if (flags.contains("s_down") || flags.contains("disconnected")) {
                             slaveDown(ip, port);
+                            continue;
+                        }
+                        if (!isUseSameMaster(ip, port, masterHost, masterPort)) {
                             continue;
                         }
                         
