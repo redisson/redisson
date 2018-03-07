@@ -928,12 +928,12 @@ public interface RedissonClient {
     /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 
-     * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);
+     * This equates to invoke shutdown(0, 2, TimeUnit.SECONDS);
      */
     void shutdown();
     
     /**
-     * Shuts down Redisson instance <b>NOT</b> Redis server
+     * Shuts down Redisson instance but <b>NOT</b> Redis server
      * 
      * Shutdown ensures that no tasks are submitted for <i>'the quiet period'</i>
      * (usually a couple seconds) before it shuts itself down.  If a task is submitted during the quiet period,

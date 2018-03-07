@@ -923,7 +923,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdown(2, 15, TimeUnit.SECONDS);//default netty value
+        shutdown(0, 2, TimeUnit.SECONDS);//default netty value
     }
 
     @Override
