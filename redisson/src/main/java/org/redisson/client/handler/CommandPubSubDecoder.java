@@ -68,8 +68,9 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (result instanceof Message) {
             checkpoint();
 
+            final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
+            String channelName = ((Message) result).getChannel();
             if (result instanceof PubSubStatusMessage) {
-                String channelName = ((PubSubStatusMessage) result).getChannel();
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
                 PubSubKey key = new PubSubKey(channelName, operation);
                 CommandData<Object, Object> d = commands.get(key);
@@ -80,20 +81,24 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 
                 if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                     commands.remove(key);
-                    entries.remove(channelName);
+                    if (result instanceof PubSubPatternMessage) {
+                        channelName = ((PubSubPatternMessage)result).getPattern();
+                    }
+                    PubSubEntry entry = entries.remove(channelName);
+                    if (keepOrder) {
+                        enqueueMessage(result, pubSubConnection, entry);
+                    }
                 }
             }
             
-            final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
             
             if (keepOrder) {
-                String channelName = ((Message) result).getChannel();
                 if (result instanceof PubSubPatternMessage) {
                     channelName = ((PubSubPatternMessage)result).getPattern();
                 }
-                PubSubEntry item = entries.get(channelName);
-                if (item != null) {
-                    enqueueMessage(result, pubSubConnection, item);
+                PubSubEntry entry = entries.get(channelName);
+                if (entry != null) {
+                    enqueueMessage(result, pubSubConnection, entry);
                 }
             } else {
                 executor.execute(new Runnable() {

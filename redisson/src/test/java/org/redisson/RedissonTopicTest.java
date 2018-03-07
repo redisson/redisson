@@ -25,11 +25,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.RPatternTopic;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.StatusListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -166,19 +168,29 @@ public class RedissonTopicTest {
         
         RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         for (int i = 0; i < 3; i++) {
-            AtomicBoolean stringMessageReceived = new AtomicBoolean();
+            AtomicInteger stringMessageReceived = new AtomicInteger();
             int listenerId = stringTopic.addListener(new MessageListener<String>() {
                 @Override
                 public void onMessage(String channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");
-                    stringMessageReceived.set(true);
+                    stringMessageReceived.incrementAndGet();
                 }
             });
+            RPatternTopic<String> patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
+            int patternListenerId = patternTopic.addListener(new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(String pattern, String channel, String msg) {
+                    assertThat(msg).isEqualTo("testmsg");
+                    stringMessageReceived.incrementAndGet();
+                }
+            });
+
             stringTopic.publish("testmsg");
             
-            await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+            await().atMost(Duration.ONE_SECOND).until(() -> stringMessageReceived.get() == 2);
             
             stringTopic.removeListener(listenerId);
+            patternTopic.removeListener(patternListenerId);
         }
         
         redisson.shutdown();
@@ -632,7 +644,7 @@ public class RedissonTopicTest {
         
         redisson.getTopic("topic").publish(1);
         
-        await().atMost(10, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
         Assert.assertTrue(executed.get());
         
         redisson.shutdown();
