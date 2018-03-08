@@ -31,6 +31,7 @@ import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.codec.SnappyCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
 
@@ -67,7 +68,7 @@ public class JCacheTest extends BaseTest {
         runner.stop();
         
     }
-    
+
     @Test
     public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
         RedisProcess runner = new RedisRunner()
@@ -85,6 +86,16 @@ public class JCacheTest extends BaseTest {
         
         cache.put("1", "2");
         Assert.assertEquals("2", cache.get("1"));
+        
+        cache.put("key", "value");
+        String result = cache.getAndRemove("key");
+
+        Assert.assertEquals("value", result);
+        Assert.assertNull(cache.get("key"));
+
+        cache.put("key", "value");
+        cache.remove("key");
+        Assert.assertNull(cache.get("key"));
         
         cache.close();
         runner.stop();
