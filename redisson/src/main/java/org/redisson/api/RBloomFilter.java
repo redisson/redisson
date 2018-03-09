@@ -44,6 +44,11 @@ public interface RBloomFilter<T> extends RExpirable {
 
     double getFalseProbability();
 
+    /**
+     * Returns number of bits in Redis memory required by this instance
+     * 
+     * @return number of bits
+     */
     long getSize();
 
     int getHashIterations();

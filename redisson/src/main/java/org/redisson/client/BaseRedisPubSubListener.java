@@ -17,6 +17,11 @@ package org.redisson.client;
 
 import org.redisson.client.protocol.pubsub.PubSubType;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class BaseRedisPubSubListener implements RedisPubSubListener<Object> {
 
     @Override
