@@ -407,7 +407,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         });
 
         RReadWriteLock lock1 = redisson.getReadWriteLock("lock");
-        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout() + 1000, TimeUnit.MILLISECONDS).until(() -> !lock1.writeLock().isLocked());
     }
 
     @Test

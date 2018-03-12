@@ -28,9 +28,9 @@ import io.netty.util.concurrent.Promise;
  */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
-    Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-    String name;
-    PubSubType type;
+    private final Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+    private final String name;
+    private final PubSubType type;
 
     public SubscribeListener(String name, PubSubType type) {
         super();

@@ -438,7 +438,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RSetCache<String> cache = redisson.getSetCache("simple33", new MsgPackJacksonCodec());
+        RSetCache<String> cache = redisson.getSetCache("simple33");
         Assert.assertFalse(cache.contains("33"));
 
         Assert.assertTrue(cache.add("33", 5, TimeUnit.SECONDS));

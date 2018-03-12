@@ -280,7 +280,7 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testScheduler() throws InterruptedException {
-        RSetCacheReactive<String> cache = redisson.getSetCache("simple33", new MsgPackJacksonCodec());
+        RSetCacheReactive<String> cache = redisson.getSetCache("simple33");
         Assert.assertFalse(sync(cache.contains("33")));
 
         Assert.assertTrue(sync(cache.add("33", 5, TimeUnit.SECONDS)));
