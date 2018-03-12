@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.codec;
+package org.redisson.client.codec;
 
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
@@ -24,56 +23,31 @@ import org.redisson.client.protocol.Encoder;
  * @author Nikita Koksharov
  *
  */
-public class CompositeCodec implements Codec {
-
-    private final Codec mapKeyCodec;
-    private final Codec mapValueCodec;
-    private final Codec valueCodec;
-    
-    public CompositeCodec(Codec mapKeyCodec, Codec mapValueCodec) {
-        this(mapKeyCodec, mapValueCodec, null);
-    }
-    
-    public CompositeCodec(Codec mapKeyCodec, Codec mapValueCodec, Codec valueCodec) {
-        super();
-        this.mapKeyCodec = mapKeyCodec;
-        this.mapValueCodec = mapValueCodec;
-        this.valueCodec = valueCodec;
-    }
+public abstract class BaseCodec implements Codec {
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return mapValueCodec.getMapKeyDecoder();
+        return getValueDecoder();
     }
 
     @Override
     public Encoder getMapValueEncoder() {
-        return mapValueCodec.getMapValueEncoder();
+        return getValueEncoder();
     }
 
     @Override
     public Decoder<Object> getMapKeyDecoder() {
-        return mapKeyCodec.getMapKeyDecoder();
+        return getValueDecoder();
     }
 
     @Override
     public Encoder getMapKeyEncoder() {
-        return mapKeyCodec.getMapKeyEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getValueDecoder() {
-        return valueCodec.getValueDecoder();
-    }
-
-    @Override
-    public Encoder getValueEncoder() {
-        return valueCodec.getValueEncoder();
+        return getValueEncoder();
     }
 
     @Override
     public ClassLoader getClassLoader() {
         return getClass().getClassLoader();
     }
-
+    
 }

@@ -25,15 +25,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.RFuture;
+import org.redisson.api.RPatternTopic;
 import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.StatusListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonTopicTest {
 
@@ -166,19 +170,29 @@ public class RedissonTopicTest {
         
         RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         for (int i = 0; i < 3; i++) {
-            AtomicBoolean stringMessageReceived = new AtomicBoolean();
+            AtomicInteger stringMessageReceived = new AtomicInteger();
             int listenerId = stringTopic.addListener(new MessageListener<String>() {
                 @Override
                 public void onMessage(String channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");
-                    stringMessageReceived.set(true);
+                    stringMessageReceived.incrementAndGet();
                 }
             });
+            RPatternTopic<String> patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
+            int patternListenerId = patternTopic.addListener(new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(String pattern, String channel, String msg) {
+                    assertThat(msg).isEqualTo("testmsg");
+                    stringMessageReceived.incrementAndGet();
+                }
+            });
+
             stringTopic.publish("testmsg");
             
-            await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+            await().atMost(Duration.ONE_SECOND).until(() -> stringMessageReceived.get() == 2);
             
             stringTopic.removeListener(listenerId);
+            patternTopic.removeListener(patternListenerId);
         }
         
         redisson.shutdown();
@@ -514,6 +528,20 @@ public class RedissonTopicTest {
         runner.stop();
     }
     
+//    @Test
+    public void testReattachInSentinelLong() throws Exception {
+        for (int i = 0; i < 25; i++) {
+            testReattachInSentinel();
+        }
+    }
+    
+//    @Test
+    public void testReattachInClusterLong() throws Exception {
+        for (int i = 0; i < 25; i++) {
+            testReattachInCluster();
+        }
+    }
+    
     @Test
     public void testReattachInSentinel() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
@@ -557,7 +585,9 @@ public class RedissonTopicTest {
         Thread.sleep(5000); 
         
         Config config = new Config();
-        config.useSentinelServers().addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
+        config.useSentinelServers()
+            .setLoadBalancer(new RandomLoadBalancer())
+            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
         RedissonClient redisson = Redisson.create(config);
         
         final AtomicBoolean executed = new AtomicBoolean();
@@ -582,6 +612,8 @@ public class RedissonTopicTest {
             }
         });
         
+        sendCommands(redisson);
+        
         sentinel1.stop();
         sentinel2.stop();
         sentinel3.stop();
@@ -590,7 +622,7 @@ public class RedissonTopicTest {
         slave2.stop();
         
         Thread.sleep(TimeUnit.SECONDS.toMillis(20));
-
+        
         master = new RedisRunner()
                 .port(6390)
                 .nosave()
@@ -632,7 +664,7 @@ public class RedissonTopicTest {
         
         redisson.getTopic("topic").publish(1);
         
-        await().atMost(10, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
         Assert.assertTrue(executed.get());
         
         redisson.shutdown();
@@ -642,6 +674,28 @@ public class RedissonTopicTest {
         master.stop();
         slave1.stop();
         slave2.stop();
+    }
+
+    protected void sendCommands(RedissonClient redisson) {
+        Thread t = new Thread() {
+            public void run() {
+                List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
+                
+                for (int i = 0; i < 100; i++) {
+                    RFuture<?> f1 = redisson.getBucket("i" + i).getAsync();
+                    RFuture<?> f2 = redisson.getBucket("i" + i).setAsync("");
+                    RFuture<?> f3 = redisson.getTopic("topic").publishAsync("testmsg");
+                    futures.add(f1);
+                    futures.add(f2);
+                    futures.add(f3);
+                }
+                
+                for (RFuture<?> rFuture : futures) {
+                    rFuture.awaitUninterruptibly();
+                }
+            };
+        };
+        t.start();
     }
     
     @Test
@@ -662,6 +716,7 @@ public class RedissonTopicTest {
         
         Config config = new Config();
         config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
@@ -686,6 +741,8 @@ public class RedissonTopicTest {
                 executed.set(true);
             }
         });
+        
+        sendCommands(redisson);
         
         process.getNodes().stream().filter(x -> Arrays.asList(slave1.getPort(), slave2.getPort(), slave3.getPort()).contains(x.getRedisServerPort()))
                         .forEach(x -> {

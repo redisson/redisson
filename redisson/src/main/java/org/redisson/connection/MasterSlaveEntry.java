@@ -34,6 +34,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -234,18 +235,18 @@ public class MasterSlaveEntry {
         for (String channelName : redisPubSubConnection.getChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
             Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners, temporaryDown);
+            reattachPubSubListeners(channelName, listeners, PubSubType.UNSUBSCRIBE);
         }
 
         for (String channelName : redisPubSubConnection.getPatternChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
             Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPatternPubSubListeners(channelName, listeners, temporaryDown);
+            reattachPubSubListeners(channelName, listeners, PubSubType.PUNSUBSCRIBE);
         }
     }
 
-    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener<?>> listeners, boolean temporaryDown) {
-        RFuture<Codec> subscribeCodec = connectionManager.unsubscribe(channelName, temporaryDown);
+    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener<?>> listeners, final PubSubType topicType) {
+        RFuture<Codec> subscribeCodec = connectionManager.unsubscribe(channelName, topicType);
         if (listeners.isEmpty()) {
             return;
         }
@@ -253,8 +254,16 @@ public class MasterSlaveEntry {
         subscribeCodec.addListener(new FutureListener<Codec>() {
             @Override
             public void operationComplete(Future<Codec> future) throws Exception {
+                if (future.get() == null) {
+                    return;
+                }
+                
                 Codec subscribeCodec = future.get();
-                subscribe(channelName, listeners, subscribeCodec);
+                if (topicType == PubSubType.PUNSUBSCRIBE) {
+                    psubscribe(channelName, listeners, subscribeCodec);
+                } else {
+                    subscribe(channelName, listeners, subscribeCodec);
+                }
             }
 
         });
@@ -273,26 +282,11 @@ public class MasterSlaveEntry {
                     return;
                 }
                 
-                log.debug("resubscribed listeners of '{}' channel to '{}'", channelName, future.getNow().getConnection().getRedisClient());
+                log.info("listeners of '{}' channel to '{}' have been resubscribed", channelName, future.getNow().getConnection().getRedisClient());
             }
         });
     }
 
-    private void reattachPatternPubSubListeners(final String channelName, final Collection<RedisPubSubListener<?>> listeners, boolean temporaryDown) {
-        RFuture<Codec> subscribeCodec = connectionManager.punsubscribe(channelName, temporaryDown);
-        if (listeners.isEmpty()) {
-            return;
-        }
-        
-        subscribeCodec.addListener(new FutureListener<Codec>() {
-            @Override
-            public void operationComplete(Future<Codec> future) throws Exception {
-                Codec subscribeCodec = future.get();
-                psubscribe(channelName, listeners, subscribeCodec);
-            }
-        });
-    }
-    
     private void psubscribe(final String channelName, final Collection<RedisPubSubListener<?>> listeners,
             final Codec subscribeCodec) {
         RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[listeners.size()]));
@@ -368,6 +362,10 @@ public class MasterSlaveEntry {
         return slaveBalancer.contains(addr);
     }
     
+    public int getAvailableClients() {
+        return slaveBalancer.getAvailableClients();
+    }
+
     public RFuture<Void> addSlave(URI address) {
         return addSlave(address, false, NodeType.SLAVE);
     }
@@ -432,6 +430,10 @@ public class MasterSlaveEntry {
             log.info("master {} excluded from slaves", addr);
         }
         return true;
+    }
+    
+    public boolean isSlaveUnfreezed(URI address) {
+        return slaveBalancer.isUnfreezed(address);
     }
     
     public boolean slaveUp(URI address, FreezeReason freezeReason) {
@@ -530,7 +532,7 @@ public class MasterSlaveEntry {
     }
 
     public void unfreeze() {
-        masterEntry.resetFailedAttempts();
+        masterEntry.resetFirstFail();
         synchronized (masterEntry) {
             masterEntry.setFreezed(false);
             masterEntry.setFreezeReason(null);

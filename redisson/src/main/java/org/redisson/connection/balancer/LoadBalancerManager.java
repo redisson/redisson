@@ -135,7 +135,7 @@ public class LoadBalancerManager {
             if ((freezeReason == FreezeReason.RECONNECT
                     && entry.getFreezeReason() == FreezeReason.RECONNECT)
                         || freezeReason != FreezeReason.RECONNECT) {
-                entry.resetFailedAttempts();
+                entry.resetFirstFail();
                 entry.setFreezed(false);
                 entry.setFreezeReason(null);
                 return true;
@@ -188,6 +188,11 @@ public class LoadBalancerManager {
     public boolean contains(InetSocketAddress addr) {
         return getEntry(addr) != null;
     }
+
+    public boolean isUnfreezed(URI addr) {
+        ClientConnectionsEntry entry = getEntry(addr);
+        return !entry.isFreezed();
+    }
     
     public boolean contains(URI addr) {
         return getEntry(addr) != null;
@@ -222,10 +227,6 @@ public class LoadBalancerManager {
         return client2Entry.get(redisClient);
     }
 
-    protected String convert(InetSocketAddress addr) {
-        return addr.getAddress().getHostAddress() + ":" + addr.getPort();
-    }
-    
     public RFuture<RedisConnection> getConnection(RedisCommand<?> command, URI addr) {
         ClientConnectionsEntry entry = getEntry(addr);
         if (entry != null) {

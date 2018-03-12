@@ -41,6 +41,10 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     private int slaveConnectionPoolSize = 64;
 
+    private int failedSlaveReconnectionInterval = 3000;
+    
+    private int failedSlaveCheckInterval = 60000;
+    
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
      */
@@ -82,6 +86,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setReadMode(config.getReadMode());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setFailedSlaveCheckInterval(config.getFailedSlaveCheckInterval());
+        setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
     }
 
     /**
@@ -100,6 +106,47 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getSlaveConnectionPoolSize() {
         return slaveConnectionPoolSize;
+    }
+    
+    /**
+     * Interval of Redis Slave reconnection attempt when
+     * it was excluded from internal list of available servers.
+     * <p>
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     * <p>
+     * Default is 3000
+     *
+     * @param failedSlavesReconnectionTimeout - retry timeout in milliseconds
+     * @return config
+     */
+
+    public T setFailedSlaveReconnectionInterval(int failedSlavesReconnectionTimeout) {
+        this.failedSlaveReconnectionInterval = failedSlavesReconnectionTimeout;
+        return (T) this;
+    }
+
+    public int getFailedSlaveReconnectionInterval() {
+        return failedSlaveReconnectionInterval;
+    }
+
+    
+    /**
+     * Redis Slave node is excluded from the internal list of available nodes
+     * when the time interval from the moment of first Redis command execution failure
+     * on this server reaches <code>slaveFailsInterval</code> value.
+     * <p>
+     * Default is <code>60000</code>
+     *
+     * @param slaveFailsInterval - time interval in milliseconds
+     * @return config
+     */
+    public T setFailedSlaveCheckInterval(int slaveFailsInterval) {
+        this.failedSlaveCheckInterval = slaveFailsInterval;
+        return (T) this;
+    }
+    public int getFailedSlaveCheckInterval() {
+        return failedSlaveCheckInterval;
     }
 
     /**

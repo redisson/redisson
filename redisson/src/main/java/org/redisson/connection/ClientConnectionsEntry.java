@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -57,7 +57,7 @@ public class ClientConnectionsEntry {
     private volatile NodeType nodeType;
     private ConnectionManager connectionManager;
 
-    private final AtomicInteger failedAttempts = new AtomicInteger();
+    private final AtomicLong firstFailTime = new AtomicLong(0);
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType nodeType) {
@@ -80,16 +80,19 @@ public class ClientConnectionsEntry {
         return nodeType;
     }
 
-    public void resetFailedAttempts() {
-        failedAttempts.set(0);
+    public void resetFirstFail() {
+        firstFailTime.set(0);
     }
 
-    public int getFailedAttempts() {
-        return failedAttempts.get();
+    public boolean isFailed() {
+        if (firstFailTime.get() != 0) {
+            return System.currentTimeMillis() - firstFailTime.get() > connectionManager.getConfig().getFailedSlaveCheckInterval(); 
+        }
+        return false;
     }
-
-    public int incFailedAttempts() {
-        return failedAttempts.incrementAndGet();
+    
+    public void trySetupFistFail() {
+        firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
     public RedisClient getClient() {
@@ -243,7 +246,7 @@ public class ClientConnectionsEntry {
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
                 + freeConnectionsCounter + ", freezed=" + freezed + ", freezeReason=" + freezeReason
-                + ", client=" + client + ", nodeType=" + nodeType + ", failedAttempts=" + failedAttempts
+                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + firstFailTime
                 + "]";
     }
 

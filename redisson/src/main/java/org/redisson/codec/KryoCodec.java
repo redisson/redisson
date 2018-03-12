@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -40,13 +40,15 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
-public class KryoCodec implements Codec {
+public class KryoCodec extends BaseCodec {
 
     public interface KryoPool {
 
         Kryo get();
 
         void yield(Kryo kryo);
+        
+        ClassLoader getClassLoader();
 
     }
 
@@ -88,6 +90,11 @@ public class KryoCodec implements Codec {
                 kryo.register(clazz);
             }
             return kryo;
+        }
+
+        @Override
+        public ClassLoader getClassLoader() {
+            return classLoader;
         }
 
     }
@@ -172,26 +179,6 @@ public class KryoCodec implements Codec {
     }
 
     @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
@@ -199,6 +186,14 @@ public class KryoCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (kryoPool.getClassLoader() != null) {
+            return kryoPool.getClassLoader();
+        }
+        return super.getClassLoader();
     }
 
 }

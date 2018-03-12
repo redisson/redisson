@@ -81,4 +81,9 @@ public class BitSetCodec implements Codec {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
+    }
+
 }

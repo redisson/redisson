@@ -150,4 +150,9 @@ public class LocalCachedMessageCodec implements Codec {
         return encoder;
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
+    }
+
 }

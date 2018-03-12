@@ -70,5 +70,12 @@ public interface Codec {
      * @return encoder
      */
     Encoder getValueEncoder();
+    
+    /**
+     * Returns class loader object used to load classes used in decoding process
+     * 
+     * @return class loader
+     */
+    ClassLoader getClassLoader();
 
 }

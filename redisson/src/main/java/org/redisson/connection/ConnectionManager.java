@@ -29,6 +29,7 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -112,9 +113,7 @@ public interface ConnectionManager {
 
     void unsubscribe(String channelName, AsyncSemaphore lock);
     
-    RFuture<Codec> unsubscribe(String channelName, boolean temporaryDown);
-
-    RFuture<Codec> punsubscribe(String channelName, boolean temporaryDown);
+    RFuture<Codec> unsubscribe(String channelName, PubSubType topicType);
 
     void punsubscribe(String channelName, AsyncSemaphore lock);
     

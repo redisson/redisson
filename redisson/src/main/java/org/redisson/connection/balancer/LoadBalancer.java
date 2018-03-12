@@ -19,6 +19,11 @@ import java.util.List;
 
 import org.redisson.connection.ClientConnectionsEntry;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface LoadBalancer {
 
     ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy);

@@ -51,7 +51,7 @@ public class RedissonRedLock extends RedissonMultiLock {
 
     @Override
     protected long calcLockWaitTime(long remainTime) {
-        return Math.max(remainTime / locks.size(), 1000);
+        return Math.max(remainTime / locks.size(), 1);
     }
     
     @Override

@@ -48,6 +48,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
     
     private final Codec codec;
+    private final ClassLoader codecClassLoader;
     private final String name;
     private final CommandExecutor commandExecutor;
 
@@ -68,6 +69,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.responses = responses;
         
         try {
+            this.codecClassLoader = codec.getClassLoader();
             this.codec = codec.getClass().getConstructor(ClassLoader.class).newInstance(classLoader);
         } catch (Exception e) {
             throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
@@ -166,7 +168,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         try {
             buf.writeBytes(state);
             
-            RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());
+            RedissonClassLoader cl = new RedissonClassLoader(codecClassLoader);
             cl.loadClass(className, classBody);
             classLoader.setCurrentClassLoader(cl);
             
@@ -199,7 +201,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         try {
             buf.writeBytes(state);
             
-            RedissonClassLoader cl = new RedissonClassLoader(getClass().getClassLoader());
+            RedissonClassLoader cl = new RedissonClassLoader(codecClassLoader);
             cl.loadClass(className, classBody);
             classLoader.setCurrentClassLoader(cl);
         

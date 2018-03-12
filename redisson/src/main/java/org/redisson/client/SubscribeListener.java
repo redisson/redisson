@@ -21,6 +21,11 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
     Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();

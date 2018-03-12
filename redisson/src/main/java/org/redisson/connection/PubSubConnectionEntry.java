@@ -165,23 +165,18 @@ public class PubSubConnectionEntry {
         conn.psubscribe(codec, pattern);
     }
 
-    private SubscribeListener addSubscribeListener(String channel, PubSubType type) {
-        SubscribeListener subscribeListener = new SubscribeListener(channel, type);
-        SubscribeListener oldSubscribeListener = subscribeChannelListeners.putIfAbsent(channel, subscribeListener);
-        if (oldSubscribeListener != null) {
-            return oldSubscribeListener;
-        } else {
-            conn.addListener(subscribeListener);
-            return subscribeListener;
-        }
-    }
-
-    public Future<Void> getSubscribeFuture(String channel, PubSubType type) {
+    public SubscribeListener getSubscribeFuture(String channel, PubSubType type) {
         SubscribeListener listener = subscribeChannelListeners.get(channel);
         if (listener == null) {
-            listener = addSubscribeListener(channel, type);
+            listener = new SubscribeListener(channel, type);
+            SubscribeListener oldSubscribeListener = subscribeChannelListeners.putIfAbsent(channel, listener);
+            if (oldSubscribeListener != null) {
+                listener = oldSubscribeListener;
+            } else {
+                conn.addListener(listener);
+            }
         }
-        return listener.getSuccessFuture();
+        return listener;
     }
     
     public void unsubscribe(final String channel, final RedisPubSubListener<?> listener) {

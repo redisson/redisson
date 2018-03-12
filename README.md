@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.6.1  | 15.02.2018 | 1.8, 1.9+ | Yes | 3.1.x |
-| 2.11.1 | 15.02.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
+| 3.6.2  | 05.03.2018 | 1.8, 1.9+ | Yes | 3.1.x |
+| 2.11.2 | 05.03.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
 
 
 Features
@@ -37,11 +37,12 @@ Features
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
-* [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#141-spring-cache) implementation   
-* [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-hibernate-cache) implementation 
-* [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-jcache-api-jsr-107-implementation) implementation  
-* [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#144-tomcat-redis-session-manager) implementation  
-* [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#145-spring-session) implementation  
+* [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#141-spring-framework)
+* [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-spring-cache) implementation
+* [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-hibernate-cache) implementation
+* [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-jcache-api-jsr-107-implementation) implementation
+* [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#145-tomcat-redis-session-manager) implementation
+* [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#146-spring-session) implementation
 * [Redis pipelining](https://github.com/redisson/redisson/wiki/10.-additional-features#102-execution-batches-of-commands) (command batches)
 * Supports Android platform  
 * Supports auto-reconnection  
@@ -94,23 +95,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.6.1</version>
+       <version>3.6.2</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.11.1</version>
+       <version>2.11.2</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.6.1'  
+    compile 'org.redisson:redisson:3.6.2'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.11.1'
+    compile 'org.redisson:redisson:2.11.2'
 
 #### Java
 
@@ -135,11 +136,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.6.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.1&e=jar),
-[Redisson node 3.6.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.1&e=jar)  
+[Redisson 3.6.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.2&e=jar),
+[Redisson node 3.6.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.2&e=jar)  
 
-[Redisson 2.11.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.1&e=jar),
-[Redisson node 2.11.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.1&e=jar)  
+[Redisson 2.11.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.2&e=jar),
+[Redisson node 2.11.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.2&e=jar)  
 
 ### Supported by
 

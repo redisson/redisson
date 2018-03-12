@@ -1442,7 +1442,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     private V getAndRemoveValue(K key) {
         double syncId = PlatformDependent.threadLocalRandom().nextDouble();
-        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
+        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
               + "if value == false then "
                   + "return {nil}; "

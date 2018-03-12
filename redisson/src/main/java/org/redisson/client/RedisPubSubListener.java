@@ -18,6 +18,12 @@ package org.redisson.client;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public interface RedisPubSubListener<V> extends MessageListener<V> {
 
     boolean onStatus(PubSubType type, String channel);

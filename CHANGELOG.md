@@ -4,6 +4,27 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 05-Mar-2018 - versions 2.11.2 and 3.6.2 released
+
+[Redisson PRO](https://redisson.pro) performance improvements for follow `performanceMode` values:
+
+`HIGHER_THROUGHPUT` - up to **25%** performance growth  
+`LOWER_LATENCY_AUTO` - up to **100%** performance growth  
+`LOWER_LATENCY_MODE_2` - up to **100%** performance growth  
+`LOWER_LATENCY_MODE_1` - up to **100%** performance growth  
+
+Feature - new values added to `performanceMode` setting  
+Feature - `lockAsync` and `unlockAsync` methods added to `RedissonMultiLock`  
+Feature - `RMapCache.remainTimeToLive` method added  
+Feature - `Config.addressResolverGroupFactory` setting added (thanks @Hai Saadon)  
+Improvement - `UpdateMode.AFTER_REQUEST` update mode optimization in tomcat session manager  
+Improvement - removed ByteBuf object usage during collection iteration  
+Fixed - `Unable to send command` error under heavy load using Redisson PRO  
+Fixed - `expire`, `expireAt` and `clearExpire` commands aren't implemented properly for `RBloomFilter`, `RDelayedQueue`, `RFairLock`, `RLocalCachedMap` and `RPermitExpirableSemaphore` object  
+Fixed - Redis clients duplication during discovering ip change of hostname  
+Fixed - tomcat session renewal in tomcat session manager  
+Fixed - `failedAttempts` setting should be applied to Slave nodes only  
+
 ### 15-Feb-2018 - versions 2.11.1 and 3.6.1 released
 
 Feature - `RedissonClusteredSpringLocalCachedCacheManager` added. Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache-and-data-partitioning) for more details  

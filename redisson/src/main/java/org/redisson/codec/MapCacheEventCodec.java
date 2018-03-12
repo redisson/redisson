@@ -104,4 +104,9 @@ public class MapCacheEventCodec implements Codec {
         return key;
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
+    }
+
 }

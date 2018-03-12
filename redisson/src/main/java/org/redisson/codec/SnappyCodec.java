@@ -17,6 +17,7 @@ package org.redisson.codec;
 
 import java.io.IOException;
 
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -36,7 +37,7 @@ import io.netty.handler.codec.compression.Snappy;
  * @author Nikita Koksharov
  *
  */
-public class SnappyCodec implements Codec {
+public class SnappyCodec extends BaseCodec {
 
     private static final ThreadLocal<Snappy> snappyDecoder = new ThreadLocal<Snappy>() {
         protected Snappy initialValue() {
@@ -111,26 +112,6 @@ public class SnappyCodec implements Codec {
     };
 
     @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
@@ -138,6 +119,11 @@ public class SnappyCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        return innerCodec.getClassLoader();
     }
     
 }

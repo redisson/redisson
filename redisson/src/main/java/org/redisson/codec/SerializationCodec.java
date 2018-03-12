@@ -113,5 +113,13 @@ public class SerializationCodec implements Codec {
     public Encoder getValueEncoder() {
         return encoder;
     }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (classLoader != null) {
+            return classLoader;
+        }
+        return getClass().getClassLoader();
+    }
 
 }
