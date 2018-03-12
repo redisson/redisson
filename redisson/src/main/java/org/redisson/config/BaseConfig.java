@@ -17,6 +17,9 @@ package org.redisson.config;
 
 import java.net.URI;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -24,6 +27,8 @@ import java.net.URI;
  * @param <T> config type
  */
 class BaseConfig<T extends BaseConfig<T>> {
+    
+    private static final Logger log = LoggerFactory.getLogger("config");
 
     /**
      * If pooled connection not used for a <code>timeout</code> time
@@ -58,25 +63,6 @@ class BaseConfig<T extends BaseConfig<T>> {
     private int retryAttempts = 3;
 
     private int retryInterval = 1500;
-
-    /**
-     * Reconnection attempt timeout to Redis server then
-     * it has been excluded from internal list of available servers.
-     *
-     * On every such timeout event Redisson tries
-     * to connect to disconnected Redis server.
-     *
-     * @see #failedAttempts
-     *
-     */
-    private int reconnectionTimeout = 3000;
-
-    /**
-     * Redis server will be excluded from the list of available nodes
-     * when sequential unsuccessful execution attempts of any Redis command
-     * reaches <code>failedAttempts</code>.
-     */
-    private int failedAttempts = 3;
 
     /**
      * Password for Redis authentication. Should be null if not needed
@@ -125,8 +111,6 @@ class BaseConfig<T extends BaseConfig<T>> {
         setPingTimeout(config.getPingTimeout());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
-        setFailedAttempts(config.getFailedAttempts());
-        setReconnectionTimeout(config.getReconnectionTimeout());
         setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification());
         setSslProvider(config.getSslProvider());
         setSslTruststore(config.getSslTruststore());
@@ -291,49 +275,24 @@ class BaseConfig<T extends BaseConfig<T>> {
         return idleConnectionTimeout;
     }
 
-    /**
-     * Reconnection attempt timeout to Redis server when
-     * it has been excluded from internal list of available servers.
-     * <p>
-     * On every such timeout event Redisson tries
-     * to connect to disconnected Redis server.
-     * <p>
-     * Default is 3000
-     *
-     * @see #failedAttempts
-     *
-     * @param slaveRetryTimeout - retry timeout in milliseconds
-     * @return config
+    /*
+     * Use setFailedSlaveReconnectionInterval instead
      */
-
+    @Deprecated
     public T setReconnectionTimeout(int slaveRetryTimeout) {
-        this.reconnectionTimeout = slaveRetryTimeout;
+        log.warn("'reconnectionTimeout' setting in unavailable. Please use 'failedSlaveReconnectionInterval' setting instead!");
         return (T) this;
     }
 
-    public int getReconnectionTimeout() {
-        return reconnectionTimeout;
-    }
-
-    /**
-     * Redis server will be excluded from the internal list of available nodes
-     * when sequential unsuccessful execution attempts of any Redis command
-     * on this server reaches <code>failedAttempts</code>.
-     * <p>
-     * Default is 3
-     *
-     * @param slaveFailedAttempts - attempts
-     * @return config
+    /*
+     * Use setFailedSlaveCheckInterval instead
      */
+    @Deprecated
     public T setFailedAttempts(int slaveFailedAttempts) {
-        this.failedAttempts = slaveFailedAttempts;
+        log.warn("'failedAttempts' setting in unavailable. Please use 'failedSlaveCheckInterval' setting instead!");
         return (T) this;
     }
-
-    public int getFailedAttempts() {
-        return failedAttempts;
-    }
-
+    
     public boolean isSslEnableEndpointIdentification() {
         return sslEnableEndpointIdentification;
     }

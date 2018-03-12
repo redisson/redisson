@@ -28,6 +28,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class RandomLoadBalancer implements LoadBalancer {
 
+    @Override
     public ClientConnectionsEntry getEntry(List<ClientConnectionsEntry> clientsCopy) {
         int ind = PlatformDependent.threadLocalRandom().nextInt(clientsCopy.size());
         return clientsCopy.get(ind);

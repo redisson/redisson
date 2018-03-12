@@ -522,8 +522,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     protected RFuture<Void> addSlave(final String ip, final String port, final String slaveAddr) {
         final RPromise<Void> result = new RedissonPromise<Void>();
         // to avoid addition twice
+        final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
+        final URI uri = convert(ip, port);
         if (slaves.add(slaveAddr) && !config.checkSkipSlavesInit()) {
-            final MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
             RFuture<Void> future = entry.addSlave(URIBuilder.create(slaveAddr));
             future.addListener(new FutureListener<Void>() {
                 @Override
@@ -535,8 +536,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         return;
                     }
 
-                    URI uri = convert(ip, port);
-                    if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
+                    if (entry.isSlaveUnfreezed(uri) || entry.slaveUp(uri, FreezeReason.MANAGER)) {
                         String slaveAddr = ip + ":" + port;
                         log.info("slave: {} added", slaveAddr);
                         result.trySuccess(null);
@@ -545,7 +545,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
             });
         } else {
-            slaveUp(ip, port);
+            if (entry.hasSlave(uri)) {
+                slaveUp(ip, port);
+            }
             result.trySuccess(null);
         }
         return result;

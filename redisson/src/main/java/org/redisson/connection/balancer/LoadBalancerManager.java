@@ -135,7 +135,7 @@ public class LoadBalancerManager {
             if ((freezeReason == FreezeReason.RECONNECT
                     && entry.getFreezeReason() == FreezeReason.RECONNECT)
                         || freezeReason != FreezeReason.RECONNECT) {
-                entry.resetFailedAttempts();
+                entry.resetFirstFail();
                 entry.setFreezed(false);
                 entry.setFreezeReason(null);
                 return true;
@@ -187,6 +187,11 @@ public class LoadBalancerManager {
 
     public boolean contains(InetSocketAddress addr) {
         return getEntry(addr) != null;
+    }
+
+    public boolean isUnfreezed(URI addr) {
+        ClientConnectionsEntry entry = getEntry(addr);
+        return !entry.isFreezed();
     }
     
     public boolean contains(URI addr) {

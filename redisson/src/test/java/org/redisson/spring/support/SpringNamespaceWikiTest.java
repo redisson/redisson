@@ -135,8 +135,6 @@ public class SpringNamespaceWikiTest {
             assertEquals(40000, single.getTimeout());
             assertEquals(5, single.getRetryAttempts());
             assertEquals(60000, single.getRetryInterval());
-            assertEquals(70000, single.getReconnectionTimeout());
-            assertEquals(8, single.getFailedAttempts());
             assertEquals("do_not_use_if_it_is_not_set", single.getPassword());
             assertEquals(10, single.getSubscriptionsPerConnection());
             assertEquals("client_name", single.getClientName());
