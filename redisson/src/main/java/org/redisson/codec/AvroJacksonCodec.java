@@ -48,6 +48,12 @@ public class AvroJacksonCodec extends JsonJacksonCodec {
             this.type = type;
             this.schema = schema;
         }
+        
+        @Override
+        public AvroMapper copy() {
+            _checkInvalidCopy(AvroExtendedMapper.class);
+            return new AvroExtendedMapper(type, schema);
+        }
 
         @Override
         public void writeValue(OutputStream out, Object value)

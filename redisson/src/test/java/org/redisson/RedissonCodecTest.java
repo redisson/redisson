@@ -44,7 +44,7 @@ public class RedissonCodecTest extends BaseTest {
     private Codec cborCodec = new CborJacksonCodec();
     private Codec fstCodec = new FstCodec();
     private Codec snappyCodec = new SnappyCodec();
-    private Codec msgPackCodec = new MsgPackJacksonCodec();
+//    private Codec msgPackCodec = new MsgPackJacksonCodec();
     private Codec lz4Codec = new LZ4Codec();
     private Codec jsonListOfStringCodec = new JsonJacksonMapCodec(
                     new TypeReference<String>() {}, new TypeReference<List<String>>() {});
@@ -67,14 +67,14 @@ public class RedissonCodecTest extends BaseTest {
         test(redisson);
     }
     
-    @Test
-    public void testMsgPack() {
-        Config config = createConfig();
-        config.setCodec(msgPackCodec);
-        RedissonClient redisson = Redisson.create(config);
-
-        test(redisson);
-    }
+//    @Test
+//    public void testMsgPack() {
+//        Config config = createConfig();
+//        config.setCodec(msgPackCodec);
+//        RedissonClient redisson = Redisson.create(config);
+//
+//        test(redisson);
+//    }
     
     @Test
     public void testSmile() {

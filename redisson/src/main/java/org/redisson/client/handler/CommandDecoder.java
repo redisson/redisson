@@ -92,8 +92,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         state().setDecoderState(null);
 
         if (data == null) {
-            while (in.writerIndex() > in.readerIndex()) {
-                decode(in, null, null, ctx.channel());
+            try {
+                while (in.writerIndex() > in.readerIndex()) {
+                    decode(in, null, null, ctx.channel());
+                }
+            } catch (Exception e) {
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                throw e;
             }
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
@@ -104,6 +109,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     decode(in, cmd, null, ctx.channel());
                 }
             } catch (Exception e) {
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
                 cmd.tryFailure(e);
                 throw e;
             }
