@@ -35,6 +35,7 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -77,6 +78,8 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
     
+    String sslHostname;
+    
     public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         for (ClusterSlotRange clusterSlotRange : slotRanges) {
             for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
@@ -89,6 +92,10 @@ public class MasterSlaveEntry {
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
+        
+        if (connectionManager instanceof ClusterConnectionManager) {
+            sslHostname = ((ClusterConnectionManager) connectionManager).getConfigEndpointHostName();
+        }
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -111,13 +118,13 @@ public class MasterSlaveEntry {
     }
     
     public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, URI uri) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, sslHostname);
         return setupMasterEntry(client);
     }
     
 
     public RFuture<RedisClient> setupMasterEntry(URI address) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
         return setupMasterEntry(client);
     }
 
@@ -404,12 +411,12 @@ public class MasterSlaveEntry {
     }
     
     private RFuture<Void> addSlave(InetSocketAddress address, URI uri, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri);
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
     
     private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
 

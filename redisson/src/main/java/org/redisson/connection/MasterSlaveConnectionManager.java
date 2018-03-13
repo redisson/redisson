@@ -250,7 +250,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
     
-    protected RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg, final URI addr, RedisClient client) {
+    protected RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg, final URI addr, RedisClient client, String sslHostname) {
         final Object key;
         if (client != null) {
             key = client;
@@ -263,7 +263,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         if (addr != null) {
-            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
+            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts(), sslHostname);
         }
         final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
         RFuture<RedisConnection> future = client.connectAsync();
@@ -430,15 +430,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RedisClient createClient(NodeType type, URI address) {
-        RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
+    public RedisClient createClient(NodeType type, URI address, String sslHostname) {
+        RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts(), sslHostname);
         clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
     
     @Override
-    public RedisClient createClient(NodeType type, InetSocketAddress address, URI uri) {
-        RedisClient client = createClient(type, address, uri, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts());
+    public RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, String sslHostname) {
+        RedisClient client = createClient(type, address, uri, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts(), sslHostname);
         clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
@@ -452,19 +452,19 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout) {
-        RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout);
+    public RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname) {
+        RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
         return RedisClient.create(redisConfig);
     }
     
-    private RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, int timeout, int commandTimeout) {
-        RedisClientConfig redisConfig = createRedisConfig(type, null, timeout, commandTimeout);
+    private RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, int timeout, int commandTimeout, String sslHostname) {
+        RedisClientConfig redisConfig = createRedisConfig(type, null, timeout, commandTimeout, sslHostname);
         redisConfig.setAddress(address, uri);
         return RedisClient.create(redisConfig);
     }
 
 
-    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout) {
+    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname) {
         RedisClientConfig redisConfig = new RedisClientConfig();
         redisConfig.setAddress(address)
               .setTimer(timer)
@@ -474,6 +474,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSocketChannelClass(socketChannelClass)
               .setConnectTimeout(timeout)
               .setCommandTimeout(commandTimeout)
+              .setSslHostname(sslHostname)
               .setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification())
               .setSslProvider(config.getSslProvider())
               .setSslTruststore(config.getSslTruststore())

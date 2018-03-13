@@ -82,6 +82,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private RedisStrictCommand<List<ClusterNodeInfo>> clusterNodesCommand;
     
+    private String configEndpointHostName;
+    
     private boolean isConfigEndpoint;
 
     private AddressResolver<InetSocketAddress> resolver;
@@ -95,7 +97,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Throwable lastException = null;
         List<String> failedMasters = new ArrayList<String>();
         for (URI addr : cfg.getNodeAddresses()) {
-            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null);
+            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
 
@@ -104,6 +106,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     Future<List<InetSocketAddress>> addrsFuture = resolver.resolveAll(InetSocketAddress.createUnresolved(addr.getHost(), addr.getPort()));
                     List<InetSocketAddress> allAddrs = addrsFuture.syncUninterruptibly().getNow();
                     if (allAddrs.size() > 1) {
+                        configEndpointHostName = addr.getHost();
                         isConfigEndpoint = true;
                     } else {
                         resolver.close();
@@ -178,8 +181,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     @Override
-    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout) {
-        RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout);
+    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname) {
+        RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
         result.setReadOnly(type == NodeType.SLAVE && config.getReadMode() != ReadMode.MASTER);
         return result;
     }
@@ -198,7 +201,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         final RPromise<Collection<RFuture<Void>>> result = new RedissonPromise<Collection<RFuture<Void>>>();
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), null);
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, partition.getMasterAddress(), null, configEndpointHostName);
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -351,7 +354,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
         final URI uri = iterator.next();
-        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, null);
+        RFuture<RedisConnection> connectionFuture = connectToNode(cfg, uri, null, configEndpointHostName);
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -650,6 +653,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 break;
             }
         }
+    }
+    
+    public String getConfigEndpointHostName() {
+        return configEndpointHostName;
     }
 
     @Override

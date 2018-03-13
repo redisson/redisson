@@ -33,6 +33,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.SslProvider;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -162,7 +163,12 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
 
         SslContext sslContext = sslContextBuilder.build();
-        SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), config.getAddress().getHost(), config.getAddress().getPort());
+        String hostname = config.getSslHostname();
+        if (hostname == null || URIBuilder.isValidIP(hostname)) {
+            hostname = config.getAddress().getHost();
+        }
+        
+        SSLEngine sslEngine = sslContext.newEngine(ch.alloc(), hostname, config.getAddress().getPort());
         sslEngine.setSSLParameters(sslParams);
         
         SslHandler sslHandler = new SslHandler(sslEngine);

@@ -97,11 +97,11 @@ public interface ConnectionManager {
 
     RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout);
+    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname);
 
-    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri);
+    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, String sslHostname);
     
-    RedisClient createClient(NodeType type, URI address);
+    RedisClient createClient(NodeType type, URI address, String sslHostname);
 
     MasterSlaveEntry getEntry(RedisClient redisClient);
     

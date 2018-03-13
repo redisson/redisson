@@ -90,7 +90,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
         
         for (URI addr : cfg.getSentinelAddresses()) {
-            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts());
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -261,7 +261,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         RedisClient client = iterator.next();
-        RFuture<RedisConnection> connectionFuture = connectToNode(null, null, client);
+        RFuture<RedisConnection> connectionFuture = connectToNode(null, null, client, null);
         connectionFuture.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -433,7 +433,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return RedissonPromise.newSucceededFuture(null);
         }
         
-        client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts());
+        client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts(), null);
         RedisClient oldClient = sentinels.putIfAbsent(key, client);
         if (oldClient != null) {
             return RedissonPromise.newSucceededFuture(null);
