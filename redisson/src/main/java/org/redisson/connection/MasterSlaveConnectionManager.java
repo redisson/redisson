@@ -25,10 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -37,19 +34,13 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.redisson.Version;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.client.BaseRedisPubSubListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisNodeNotFoundException;
-import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
-import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.BaseMasterSlaveServersConfig;
@@ -61,6 +52,7 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.URIBuilder;
 import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,10 +128,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected final Class<? extends SocketChannel> socketChannelClass;
 
-    protected final ConcurrentMap<String, PubSubConnectionEntry> name2PubSubConnection = PlatformDependent.newConcurrentHashMap();
-    
-    protected final Queue<PubSubConnectionEntry> freePubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
-
     protected DNSMonitor dnsMonitor;
     
     protected MasterSlaveServersConfig config;
@@ -161,13 +149,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final ExecutorService executor; 
     
-    private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
-    
     private final CommandSyncService commandExecutor;
     
     private final Config cfg;
 
     protected final DnsAddressResolverGroup resolverGroup;
+    
+    private PublishSubscribeService subscribeService;
     
     private final Map<Object, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
     
@@ -179,8 +167,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
         this(config);
-        initTimer(cfg);
         this.config = cfg;
+        
+        initTimer(cfg);
         initSingleEntry();
     }
 
@@ -348,6 +337,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         connectionWatcher = new IdleConnectionWatcher(this, config);
+        subscribeService = new PublishSubscribeService(this, config);
     }
 
     protected void initSingleEntry() {
@@ -500,304 +490,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return singleSlotRange.getStartSlot();
     }
 
-    @Override
-    public PubSubConnectionEntry getPubSubEntry(String channelName) {
-        return name2PubSubConnection.get(channelName);
-    }
-
-    @Override
-    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.PSUBSCRIBE, codec, channelName, new RedissonPromise<PubSubConnectionEntry>(), listeners);
-    }
-    
-    @Override
-    public RFuture<PubSubConnectionEntry> psubscribe(String channelName, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
-        subscribe(codec, channelName, promise, PubSubType.PSUBSCRIBE, semaphore, listeners);
-        return promise;
-    }
-
-    @Override
-    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?>... listeners) {
-        return subscribe(PubSubType.SUBSCRIBE, codec, channelName, new RedissonPromise<PubSubConnectionEntry>(), listeners);
-    }
-
-    private RFuture<PubSubConnectionEntry> subscribe(final PubSubType type, final Codec codec, final String channelName,
-            final RPromise<PubSubConnectionEntry> promise, final RedisPubSubListener<?>... listeners) {
-        final AsyncSemaphore lock = getSemaphore(channelName);
-        lock.acquire(new Runnable() {
-            @Override
-            public void run() {
-                if (promise.isDone()) {
-                    lock.release();
-                    return;
-                }
-                
-                final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
-                result.addListener(new FutureListener<PubSubConnectionEntry>() {
-                    @Override
-                    public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            subscribe(type, codec, channelName, promise, listeners);
-                            return;
-                        }
-                        
-                        promise.trySuccess(result.getNow());
-                    }
-                });
-                subscribe(codec, channelName, result, type, lock, listeners);
-            }
-        });
-        return promise;
-    }
-    
-    public RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners) {
-        RPromise<PubSubConnectionEntry> promise = new RedissonPromise<PubSubConnectionEntry>();
-        subscribe(codec, channelName, promise, PubSubType.SUBSCRIBE, semaphore, listeners);
-        return promise;
-    }
-
-    public AsyncSemaphore getSemaphore(String channelName) {
-        return locks[Math.abs(channelName.hashCode() % locks.length)];
-    }
-    
-    private void subscribe(final Codec codec, final String channelName, 
-            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock, final RedisPubSubListener<?>... listeners) {
-        final PubSubConnectionEntry connEntry = name2PubSubConnection.get(channelName);
-        if (connEntry != null) {
-            subscribe(channelName, promise, type, lock, connEntry, listeners);
-            return;
-        }
-
-        freePubSubLock.acquire(new Runnable() {
-
-            @Override
-            public void run() {
-                if (promise.isDone()) {
-                    lock.release();
-                    freePubSubLock.release();
-                    return;
-                }
-                
-                final PubSubConnectionEntry freeEntry = freePubSubConnections.peek();
-                if (freeEntry == null) {
-                    connect(codec, channelName, promise, type, lock, listeners);
-                    return;
-                }
-                
-                int remainFreeAmount = freeEntry.tryAcquire();
-                if (remainFreeAmount == -1) {
-                    throw new IllegalStateException();
-                }
-                
-                final PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, freeEntry);
-                if (oldEntry != null) {
-                    freeEntry.release();
-                    freePubSubLock.release();
-                    
-                    subscribe(channelName, promise, type, lock, oldEntry, listeners);
-                    return;
-                }
-                
-                if (remainFreeAmount == 0) {
-                    freePubSubConnections.poll();
-                }
-                freePubSubLock.release();
-                
-                subscribe(channelName, promise, type, lock, freeEntry, listeners);
-                
-                if (PubSubType.PSUBSCRIBE == type) {
-                    freeEntry.psubscribe(codec, channelName);
-                } else {
-                    freeEntry.subscribe(codec, channelName);
-                }
-            }
-            
-        });
-    }
-
-    private void subscribe(final String channelName, final RPromise<PubSubConnectionEntry> promise,
-            final PubSubType type, final AsyncSemaphore lock, final PubSubConnectionEntry connEntry,
-            final RedisPubSubListener<?>... listeners) {
-        for (RedisPubSubListener<?> listener : listeners) {
-            connEntry.addListener(channelName, listener);
-        }
-        SubscribeListener listener = connEntry.getSubscribeFuture(channelName, type);
-        final Future<Void> subscribeFuture = listener.getSuccessFuture();
-        
-        subscribeFuture.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!promise.trySuccess(connEntry)) {
-                    for (RedisPubSubListener<?> listener : listeners) {
-                        connEntry.removeListener(channelName, listener);
-                    }
-                    if (!connEntry.hasListeners(channelName)) {
-                        unsubscribe(channelName, lock);
-                    } else {
-                        lock.release();
-                    }
-                } else {
-                    lock.release();
-                }
-            }
-        });
-
-        newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                if (promise.tryFailure(new RedisTimeoutException())) {
-                    subscribeFuture.cancel(false);
-                }
-            }
-        }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
-    }
-
-    private void connect(final Codec codec, final String channelName,
-            final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock, final RedisPubSubListener<?>... listeners) {
-        final int slot = calcSlot(channelName);
-        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
-        connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
-
-            @Override
-            public void operationComplete(Future<RedisPubSubConnection> future) throws Exception {
-                if (!future.isSuccess()) {
-                    freePubSubLock.release();
-                    lock.release();
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-
-                RedisPubSubConnection conn = future.getNow();
-                
-                final PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-                entry.tryAcquire();
-                
-                final PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
-                if (oldEntry != null) {
-                    releaseSubscribeConnection(slot, entry);
-                    
-                    freePubSubLock.release();
-
-                    subscribe(channelName, promise, type, lock, oldEntry, listeners);
-                    return;
-                }
-                
-                freePubSubConnections.add(entry);
-                freePubSubLock.release();
-                
-                subscribe(channelName, promise, type, lock, entry, listeners);
-                
-                if (PubSubType.PSUBSCRIBE == type) {
-                    entry.psubscribe(codec, channelName);
-                } else {
-                    entry.subscribe(codec, channelName);
-                }
-                
-            }
-        });
-    }
-
-    public void unsubscribe(final String channelName, final AsyncSemaphore lock) {
-        final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-        if (entry == null) {
-            lock.release();
-            return;
-        }
-        
-        entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
-            
-            @Override
-            public boolean onStatus(PubSubType type, String channel) {
-                if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
-                    
-                    if (entry.release() == 1) {
-                        freePubSubConnections.add(entry);
-                    }
-                    
-                    lock.release();
-                    return true;
-                }
-                return false;
-            }
-            
-        });
-    }
-    
-    @Override
-    public RFuture<Codec> unsubscribe(final String channelName, final PubSubType topicType) {
-        final RPromise<Codec> result = new RedissonPromise<Codec>();
-        final AsyncSemaphore lock = getSemaphore(channelName);
-        lock.acquire(new Runnable() {
-            @Override
-            public void run() {
-                final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-                if (entry == null) {
-                    lock.release();
-                    result.trySuccess(null);
-                    return;
-                }
-
-                freePubSubLock.acquire(new Runnable() {
-                    @Override
-                    public void run() {
-                        freePubSubConnections.remove(entry);
-                        freePubSubLock.release();
-                        
-                        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
-                        RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
-
-                            @Override
-                            public boolean onStatus(PubSubType type, String channel) {
-                                if (type == topicType && channel.equals(channelName)) {
-                                    lock.release();
-                                    result.trySuccess(entryCodec);
-                                    return true;
-                                }
-                                return false;
-                            }
-
-                        };
-
-                        if (topicType == PubSubType.PUNSUBSCRIBE) {
-                            entry.punsubscribe(channelName, listener);
-                        } else {
-                            entry.unsubscribe(channelName, listener);
-                        }
-                    }
-                });
-            }
-        });
-        
-        return result;
-    }
-    
-    @Override
-    public void punsubscribe(final String channelName, final AsyncSemaphore lock) {
-        final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-        if (entry == null) {
-            lock.release();
-            return;
-        }
-        
-        entry.punsubscribe(channelName, new BaseRedisPubSubListener() {
-            
-            @Override
-            public boolean onStatus(PubSubType type, String channel) {
-                if (type == PubSubType.PUNSUBSCRIBE && channel.equals(channelName)) {
-                    
-                    if (entry.release() == 1) {
-                        freePubSubConnections.add(entry);
-                    }
-                    
-                    lock.release();
-                    return true;
-                }
-                return false;
-            }
-            
-        });
-    }
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
@@ -902,24 +594,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         return entry.connectionReadOp(command);
-    }
-
-    RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
-        MasterSlaveEntry entry = getEntry(slot);
-        if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet");
-            return RedissonPromise.newFailedFuture(ex);
-        }
-        return entry.nextPubSubConnection();
-    }
-
-    protected void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
-        MasterSlaveEntry entry = getEntry(slot);
-        if (entry == null) {
-            log.error("Node for slot: " + slot + " can't be found");
-        } else {
-            entry.returnPubSubConnection(pubSubEntry);
-        }
     }
 
     @Override
@@ -1034,6 +708,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             Thread.currentThread().interrupt();
         }
         group.shutdownGracefully().syncUninterruptibly();
+    }
+    
+    public PublishSubscribeService getSubscribeService() {
+        return subscribeService;
     }
     
     public ExecutorService getExecutor() {

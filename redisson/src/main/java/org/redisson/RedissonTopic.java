@@ -34,6 +34,7 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PublishSubscribeService;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
@@ -48,6 +49,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonTopic<M> implements RTopic<M> {
 
+    final PublishSubscribeService subscribeService;
     final CommandAsyncExecutor commandExecutor;
     private final String name;
     private final Codec codec;
@@ -60,6 +62,7 @@ public class RedissonTopic<M> implements RTopic<M> {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.codec = codec;
+        this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
     public List<String> getChannelNames() {
@@ -103,13 +106,13 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, name, pubSubListener);
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
     
     public RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().subscribe(codec, name, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, name, pubSubListener);
         final RPromise<Integer> result = new RedissonPromise<Integer>();
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
@@ -127,10 +130,10 @@ public class RedissonTopic<M> implements RTopic<M> {
 
     @Override
     public void removeAllListeners() {
-        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
         acquire(semaphore);
         
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
         if (entry == null) {
             semaphore.release();
             return;
@@ -138,7 +141,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
         entry.removeAllListeners(name);
         if (!entry.hasListeners(name)) {
-            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+            subscribeService.unsubscribe(name, semaphore);
         } else {
             semaphore.release();
         }
@@ -154,10 +157,10 @@ public class RedissonTopic<M> implements RTopic<M> {
     
     @Override
     public void removeListener(MessageListener<?> listener) {
-        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
         acquire(semaphore);
         
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
         if (entry == null) {
             semaphore.release();
             return;
@@ -165,7 +168,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
         entry.removeListener(name, listener);
         if (!entry.hasListeners(name)) {
-            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+            subscribeService.unsubscribe(name, semaphore);
         } else {
             semaphore.release();
         }
@@ -174,10 +177,10 @@ public class RedissonTopic<M> implements RTopic<M> {
     
     @Override
     public void removeListener(int listenerId) {
-        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
         acquire(semaphore);
         
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
         if (entry == null) {
             semaphore.release();
             return;
@@ -185,7 +188,7 @@ public class RedissonTopic<M> implements RTopic<M> {
 
         entry.removeListener(name, listenerId);
         if (!entry.hasListeners(name)) {
-            commandExecutor.getConnectionManager().unsubscribe(name, semaphore);
+            subscribeService.unsubscribe(name, semaphore);
         } else {
             semaphore.release();
         }
