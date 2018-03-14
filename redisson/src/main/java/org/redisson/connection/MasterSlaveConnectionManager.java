@@ -21,7 +21,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -138,8 +137,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final RPromise<Boolean> shutdownPromise;
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
-
-    private final Map<RedisClient, RedisClientEntry> clientEntries = PlatformDependent.newConcurrentHashMap();
 
     private IdleConnectionWatcher connectionWatcher;
 
@@ -422,22 +419,17 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public RedisClient createClient(NodeType type, URI address, String sslHostname) {
         RedisClient client = createClient(type, address, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts(), sslHostname);
-        clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
     
     @Override
     public RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, String sslHostname) {
         RedisClient client = createClient(type, address, uri, config.getConnectTimeout(), config.getRetryInterval() * config.getRetryAttempts(), sslHostname);
-        clientEntries.put(client, new RedisClientEntry(client, commandExecutor, type));
         return client;
     }
 
     @Override
     public void shutdownAsync(RedisClient client) {
-        if (clientEntries.remove(client) == null) {
-            log.error("Can't find client {}", client);
-        }
         client.shutdownAsync();
     }
 
@@ -662,11 +654,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     @Override
     public boolean isShutdown() {
         return group.isTerminated();
-    }
-
-    @Override
-    public Collection<RedisClientEntry> getClients() {
-        return Collections.unmodifiableCollection(clientEntries.values());
     }
 
     @Override

@@ -67,8 +67,6 @@ public interface ConnectionManager {
     
     IdleConnectionWatcher getConnectionWatcher();
 
-    Collection<RedisClientEntry> getClients();
-
     void shutdownAsync(RedisClient client);
 
     int calcSlot(String key);

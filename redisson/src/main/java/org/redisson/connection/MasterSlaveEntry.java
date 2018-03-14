@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -29,12 +30,9 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -48,7 +46,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
 import org.redisson.misc.URIBuilder;
-import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -348,6 +345,16 @@ public class MasterSlaveEntry {
         return addSlave(client, freezed, nodeType);
     }
 
+    public Collection<ClientConnectionsEntry> getSlaveEntries() {
+        List<ClientConnectionsEntry> result = new ArrayList<ClientConnectionsEntry>();
+        for (ClientConnectionsEntry slaveEntry : slaveBalancer.getEntries()) {
+            if (slaveEntry.getNodeType() == NodeType.SLAVE) {
+                result.add(slaveEntry);
+            }
+        }
+        return result;
+    }
+    
     public RedisClient getClient() {
         return masterEntry.getClient();
     }

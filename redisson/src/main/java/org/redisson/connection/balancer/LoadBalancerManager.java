@@ -17,6 +17,8 @@ package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 
 import org.redisson.api.NodeType;
@@ -98,6 +100,10 @@ public class LoadBalancerManager {
         return result;
     }
 
+    public Collection<ClientConnectionsEntry> getEntries() {
+        return Collections.unmodifiableCollection(client2Entry.values());
+    }
+    
     public int getAvailableClients() {
         int count = 0;
         for (ClientConnectionsEntry connectionEntry : client2Entry.values()) {
@@ -151,12 +157,6 @@ public class LoadBalancerManager {
     
     public ClientConnectionsEntry freeze(InetSocketAddress address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
-        return freeze(connectionEntry, freezeReason);
-    }
-
-    
-    public ClientConnectionsEntry freeze(RedisClient redisClient, FreezeReason freezeReason) {
-        ClientConnectionsEntry connectionEntry = getEntry(redisClient);
         return freeze(connectionEntry, freezeReason);
     }
 
