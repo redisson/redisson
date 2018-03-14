@@ -17,34 +17,44 @@ package org.redisson.misc;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.regex.Pattern;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class URIBuilder {
-    
+
+    private static final Pattern ipv4Pattern = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ipv6Pattern = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
+
     public static URI create(String uri) {
         URI u = URI.create(uri);
-        //Let's assuming most of the time it is OK.
+        // Let's assuming most of the time it is OK.
         if (u.getHost() != null) {
             return u;
         }
-        String s = uri.substring(0, uri.lastIndexOf(":"))
-                .replaceFirst("redis://", "")
-                .replaceFirst("rediss://", "");
-        //Assuming this is an IPv6 format, other situations will be handled by
-        //Netty at a later stage.
+        String s = uri.substring(0, uri.lastIndexOf(":")).replaceFirst("redis://", "").replaceFirst("rediss://", "");
+        // Assuming this is an IPv6 format, other situations will be handled by
+        // Netty at a later stage.
         return URI.create(uri.replace(s, "[" + s + "]"));
     }
     
+    public static boolean isValidIP(String host) {
+        if (ipv4Pattern.matcher(host).matches()) {
+            return true;
+        }
+        
+        return ipv6Pattern.matcher(host).matches();
+    }
+
     public static boolean compare(InetSocketAddress entryAddr, URI addr) {
         if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
                 || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
-                    && entryAddr.getPort() == addr.getPort()) {
+                && entryAddr.getPort() == addr.getPort()) {
             return true;
         }
         return false;
     }
-    
+
 }

@@ -11,12 +11,13 @@ import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 
 public class WeightedRoundRobinBalancerTest {
 
-    @Test
+    @Test(expected = WriteRedisConnectionException.class)
     public void testUseMasterForReadsIfNoConnectionsToSlaves() throws IOException, InterruptedException {
         RedisProcess master = null;
         RedisProcess slave = null;

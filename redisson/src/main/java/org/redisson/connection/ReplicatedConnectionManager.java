@@ -67,7 +67,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         initTimer(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null);
+            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
             if (connection == null) {
@@ -119,7 +119,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         return;
                     }
 
-                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null);
+                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
                     connectionFuture.addListener(new FutureListener<RedisConnection>() {
                         @Override
                         public void operationComplete(Future<RedisConnection> future) throws Exception {

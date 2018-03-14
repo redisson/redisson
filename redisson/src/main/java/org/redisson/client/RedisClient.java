@@ -315,6 +315,11 @@ public class RedisClient {
                     return;
                 }
                 
+                if (!hasOwnTimer && !hasOwnExecutor && !hasOwnResolver && !hasOwnGroup) {
+                    result.trySuccess(null);
+                    return;
+                }
+                
                 Thread t = new Thread() {
                     @Override
                     public void run() {

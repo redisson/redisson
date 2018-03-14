@@ -40,8 +40,8 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
 
-    public void unsubscribe(final E entry, final String entryName, final String channelName, final ConnectionManager connectionManager) {
-        final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
+    public void unsubscribe(final E entry, final String entryName, final String channelName, final PublishSubscribeService subscribeService) {
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         semaphore.acquire(new Runnable() {
             @Override
             public void run() {
@@ -51,7 +51,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     if (!removed) {
                         throw new IllegalStateException();
                     }
-                    connectionManager.unsubscribe(channelName, semaphore);
+                    subscribeService.unsubscribe(channelName, semaphore);
                 } else {
                     semaphore.release();
                 }
@@ -64,9 +64,9 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         return entries.get(entryName);
     }
 
-    public RFuture<E> subscribe(final String entryName, final String channelName, final ConnectionManager connectionManager) {
+    public RFuture<E> subscribe(final String entryName, final String channelName, final PublishSubscribeService subscribeService) {
         final AtomicReference<Runnable> listenerHolder = new AtomicReference<Runnable>();
-        final AsyncSemaphore semaphore = connectionManager.getSemaphore(channelName);
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         final RPromise<E> newPromise = new RedissonPromise<E>() {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
@@ -98,7 +98,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 }
                 
                 RedisPubSubListener<Object> listener = createListener(channelName, value);
-                connectionManager.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
+                subscribeService.subscribe(LongCodec.INSTANCE, channelName, semaphore, listener);
             }
         };
         semaphore.acquire(listener);

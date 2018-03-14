@@ -140,7 +140,8 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
 
     public RMap<String, Object> getMap(String sessionId) {
-        return redisson.getMap(keyPrefix + "redisson_tomcat_session:" + sessionId);
+        String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
+        return redisson.getMap(keyPrefix + separator + "redisson_tomcat_session:" + sessionId);
     }
     
     @Override

@@ -26,15 +26,13 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
-import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PublishSubscribeService;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
@@ -51,6 +49,8 @@ public interface ConnectionManager {
     
     CommandSyncService getCommandExecutor();
     
+    PublishSubscribeService getSubscribeService();
+    
     ExecutorService getExecutor();
     
     URI getLastClusterNode();
@@ -59,21 +59,13 @@ public interface ConnectionManager {
 
     boolean isClusterMode();
 
-    AsyncSemaphore getSemaphore(String channelName);
-    
     ConnectionEventsHub getConnectionEventsHub();
 
     boolean isShutdown();
 
     boolean isShuttingDown();
-
-    RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, RedisPubSubListener<?>... listeners);
-
-    RFuture<PubSubConnectionEntry> subscribe(Codec codec, String channelName, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners);
     
     IdleConnectionWatcher getConnectionWatcher();
-
-    Collection<RedisClientEntry> getClients();
 
     void shutdownAsync(RedisClient client);
 
@@ -97,25 +89,13 @@ public interface ConnectionManager {
 
     RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout);
+    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname);
 
-    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri);
+    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, String sslHostname);
     
-    RedisClient createClient(NodeType type, URI address);
+    RedisClient createClient(NodeType type, URI address, String sslHostname);
 
     MasterSlaveEntry getEntry(RedisClient redisClient);
-    
-    PubSubConnectionEntry getPubSubEntry(String channelName);
-
-    RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, RedisPubSubListener<?>... listeners);
-    
-    RFuture<PubSubConnectionEntry> psubscribe(String pattern, Codec codec, AsyncSemaphore semaphore, RedisPubSubListener<?>... listeners);
-
-    void unsubscribe(String channelName, AsyncSemaphore lock);
-    
-    RFuture<Codec> unsubscribe(String channelName, PubSubType topicType);
-
-    void punsubscribe(String channelName, AsyncSemaphore lock);
     
     void shutdown();
 

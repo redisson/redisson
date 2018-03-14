@@ -106,11 +106,11 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private RFuture<RedissonCountDownLatchEntry> subscribe() {
-        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
+        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
     }
 
     private void unsubscribe(RFuture<RedissonCountDownLatchEntry> future) {
-        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager());
+        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
     }
 
     @Override

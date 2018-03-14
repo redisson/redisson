@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -29,12 +30,10 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.pubsub.PubSubType;
+import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -77,6 +76,8 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
     
+    String sslHostname;
+    
     public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         for (ClusterSlotRange clusterSlotRange : slotRanges) {
             for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
@@ -89,6 +90,10 @@ public class MasterSlaveEntry {
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
+        
+        if (connectionManager instanceof ClusterConnectionManager) {
+            sslHostname = ((ClusterConnectionManager) connectionManager).getConfigEndpointHostName();
+        }
     }
 
     public MasterSlaveServersConfig getConfig() {
@@ -111,13 +116,13 @@ public class MasterSlaveEntry {
     }
     
     public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, URI uri) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, sslHostname);
         return setupMasterEntry(client);
     }
     
 
     public RFuture<RedisClient> setupMasterEntry(URI address) {
-        RedisClient client = connectionManager.createClient(NodeType.MASTER, address);
+        RedisClient client = connectionManager.createClient(NodeType.MASTER, address, sslHostname);
         return setupMasterEntry(client);
     }
 
@@ -164,7 +169,7 @@ public class MasterSlaveEntry {
             return false;
         }
         
-        return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
+        return slaveDown(entry);
     }
     
     public boolean slaveDown(InetSocketAddress address, FreezeReason freezeReason) {
@@ -173,7 +178,7 @@ public class MasterSlaveEntry {
             return false;
         }
         
-        return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
+        return slaveDown(entry);
     }
     
     public boolean slaveDown(URI address, FreezeReason freezeReason) {
@@ -182,10 +187,10 @@ public class MasterSlaveEntry {
             return false;
         }
         
-        return slaveDown(entry, freezeReason == FreezeReason.SYSTEM);
+        return slaveDown(entry);
     }
     
-    private boolean slaveDown(ClientConnectionsEntry entry, boolean temporaryDown) {
+    private boolean slaveDown(ClientConnectionsEntry entry) {
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
@@ -198,7 +203,7 @@ public class MasterSlaveEntry {
         closeConnections(entry);
         
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
-            reattachPubSub(connection, temporaryDown);
+            connectionManager.getSubscribeService().reattachPubSub(connection);
         }
         entry.getAllSubscribeConnections().clear();
         
@@ -231,79 +236,6 @@ public class MasterSlaveEntry {
         }
     }
     
-    private void reattachPubSub(RedisPubSubConnection redisPubSubConnection, boolean temporaryDown) {
-        for (String channelName : redisPubSubConnection.getChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
-            Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners, PubSubType.UNSUBSCRIBE);
-        }
-
-        for (String channelName : redisPubSubConnection.getPatternChannels().keySet()) {
-            PubSubConnectionEntry pubSubEntry = connectionManager.getPubSubEntry(channelName);
-            Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
-            reattachPubSubListeners(channelName, listeners, PubSubType.PUNSUBSCRIBE);
-        }
-    }
-
-    private void reattachPubSubListeners(final String channelName, final Collection<RedisPubSubListener<?>> listeners, final PubSubType topicType) {
-        RFuture<Codec> subscribeCodec = connectionManager.unsubscribe(channelName, topicType);
-        if (listeners.isEmpty()) {
-            return;
-        }
-        
-        subscribeCodec.addListener(new FutureListener<Codec>() {
-            @Override
-            public void operationComplete(Future<Codec> future) throws Exception {
-                if (future.get() == null) {
-                    return;
-                }
-                
-                Codec subscribeCodec = future.get();
-                if (topicType == PubSubType.PUNSUBSCRIBE) {
-                    psubscribe(channelName, listeners, subscribeCodec);
-                } else {
-                    subscribe(channelName, listeners, subscribeCodec);
-                }
-            }
-
-        });
-    }
-
-    private void subscribe(final String channelName, final Collection<RedisPubSubListener<?>> listeners,
-            final Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.subscribe(subscribeCodec, channelName, listeners.toArray(new RedisPubSubListener[listeners.size()]));
-        subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
-            
-            @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future)
-                    throws Exception {
-                if (!future.isSuccess()) {
-                    subscribe(channelName, listeners, subscribeCodec);
-                    return;
-                }
-                
-                log.info("listeners of '{}' channel to '{}' have been resubscribed", channelName, future.getNow().getConnection().getRedisClient());
-            }
-        });
-    }
-
-    private void psubscribe(final String channelName, final Collection<RedisPubSubListener<?>> listeners,
-            final Codec subscribeCodec) {
-        RFuture<PubSubConnectionEntry> subscribeFuture = connectionManager.psubscribe(channelName, subscribeCodec, listeners.toArray(new RedisPubSubListener[listeners.size()]));
-        subscribeFuture.addListener(new FutureListener<PubSubConnectionEntry>() {
-            @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future)
-                    throws Exception {
-                if (!future.isSuccess()) {
-                    psubscribe(channelName, listeners, subscribeCodec);
-                    return;
-                }
-                
-                log.debug("resubscribed listeners for '{}' channel-pattern to '{}'", channelName, future.getNow().getConnection().getRedisClient());
-            }
-        });
-    }
-
     private void reattachBlockingQueue(RedisConnection connection) {
         final CommandData<?, ?> commandData = connection.getCurrentCommand();
 
@@ -404,15 +336,25 @@ public class MasterSlaveEntry {
     }
     
     private RFuture<Void> addSlave(InetSocketAddress address, URI uri, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri);
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
     
     private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address);
+        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
 
+    public Collection<ClientConnectionsEntry> getSlaveEntries() {
+        List<ClientConnectionsEntry> result = new ArrayList<ClientConnectionsEntry>();
+        for (ClientConnectionsEntry slaveEntry : slaveBalancer.getEntries()) {
+            if (slaveEntry.getNodeType() == NodeType.SLAVE) {
+                result.add(slaveEntry);
+            }
+        }
+        return result;
+    }
+    
     public RedisClient getClient() {
         return masterEntry.getClient();
     }
@@ -503,7 +445,7 @@ public class MasterSlaveEntry {
                 pubSubConnectionPool.remove(oldMaster);
                 
                 oldMaster.freezeMaster(FreezeReason.MANAGER);
-                slaveDown(oldMaster, false);
+                slaveDown(oldMaster);
 
                 slaveBalancer.changeType(oldMaster.getClient(), NodeType.SLAVE);
                 slaveBalancer.changeType(newMasterClient, NodeType.MASTER);
@@ -566,7 +508,7 @@ public class MasterSlaveEntry {
         return slaveBalancer.getConnection(command, addr);
     }
 
-    RFuture<RedisPubSubConnection> nextPubSubConnection() {
+    public RFuture<RedisPubSubConnection> nextPubSubConnection() {
         if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
             return pubSubConnectionPool.get();
         }
