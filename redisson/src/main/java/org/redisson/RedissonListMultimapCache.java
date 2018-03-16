@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -56,6 +55,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
+    @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -83,7 +83,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         return suffixName(getName(), "redisson_list_multimap_ttl");
     }
 
-
+    @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
         ByteBuf valueState = encodeMapValue(value);
 
@@ -114,6 +114,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                 valueState, System.currentTimeMillis(), prefix);
     }
 
+    @Override
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -148,6 +149,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
     }
 
+    @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -166,12 +168,13 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
             Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
     }
 
+    @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
 
         String valuesName = getValuesName(keyHash);
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "redis.call('hdel', KEYS[1], ARGV[1]); " +
                 "local members = redis.call('lrange', KEYS[2], 0, -1); " +
                 "redis.call('del', KEYS[2]); " +
