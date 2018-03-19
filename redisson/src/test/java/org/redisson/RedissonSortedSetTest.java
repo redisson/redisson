@@ -14,9 +14,21 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RSortedSet;
+import org.redisson.client.codec.LongCodec;
 
 public class RedissonSortedSetTest extends BaseTest {
 
+    @Test
+    public void test1() {
+        RSortedSet<Long> set = redisson.getSortedSet("simple", LongCodec.INSTANCE);
+        set.add(2L);
+        set.add(0L);
+        set.add(1L);
+        set.add(5L);
+        
+        assertThat(set.readAll()).containsExactly(0L, 1L, 2L, 5L);
+    }
+    
     @Test
     public void testReadAll() {
         RSortedSet<Integer> set = redisson.getSortedSet("simple");

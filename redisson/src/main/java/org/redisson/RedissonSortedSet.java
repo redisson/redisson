@@ -119,7 +119,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.getList(getName());
+        list = (RedissonList<V>) redisson.getList(getName(), codec);
 
         loadComparator();
     }
