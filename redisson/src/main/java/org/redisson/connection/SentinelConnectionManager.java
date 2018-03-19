@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -76,8 +77,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
 
-    public SentinelConnectionManager(SentinelServersConfig cfg, Config config) {
-        super(config);
+    public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
+        super(config, id);
         
         if (cfg.getMasterName() == null) {
             throw new IllegalArgumentException("masterName parameter is not defined!");

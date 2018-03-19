@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -88,8 +89,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private AddressResolver<InetSocketAddress> resolver;
     
-    public ClusterConnectionManager(ClusterServersConfig cfg, Config config) {
-        super(config);
+    public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
+        super(config, id);
 
         this.config = create(cfg);
         initTimer(this.config);

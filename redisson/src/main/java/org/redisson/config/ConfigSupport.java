@@ -25,6 +25,7 @@ import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
+import java.util.UUID;
 
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
@@ -223,24 +224,26 @@ public class ConfigSupport {
     }
     
     public static ConnectionManager createConnectionManager(Config configCopy) {
+        UUID id = UUID.randomUUID();
+        
         if (configCopy.getMasterSlaveServersConfig() != null) {
             validate(configCopy.getMasterSlaveServersConfig());
-            return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy);
+            return new MasterSlaveConnectionManager(configCopy.getMasterSlaveServersConfig(), configCopy, id);
         } else if (configCopy.getSingleServerConfig() != null) {
             validate(configCopy.getSingleServerConfig());
-            return new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy);
+            return new SingleConnectionManager(configCopy.getSingleServerConfig(), configCopy, id);
         } else if (configCopy.getSentinelServersConfig() != null) {
             validate(configCopy.getSentinelServersConfig());
-            return new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy);
+            return new SentinelConnectionManager(configCopy.getSentinelServersConfig(), configCopy, id);
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
-            return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy);
+            return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy, id);
         } else if (configCopy.getElasticacheServersConfig() != null) {
             validate(configCopy.getElasticacheServersConfig());
-            return new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy);
+            return new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy, id);
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
-            return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy);
+            return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy, id);
         } else if (configCopy.getConnectionManager() != null) {
             return configCopy.getConnectionManager();
         }else {

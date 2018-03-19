@@ -111,7 +111,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
-    protected final UUID id = UUID.randomUUID();
+    protected final UUID id;
     
     public static final int MAX_SLOT = 16384;
 
@@ -162,15 +162,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
-        this(config);
+    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
+        this(config, id);
         this.config = cfg;
         
         initTimer(cfg);
         initSingleEntry();
     }
 
-    public MasterSlaveConnectionManager(Config cfg) {
+    protected MasterSlaveConnectionManager(Config cfg, UUID id) {
+        this.id = id;
         Version.logVersion();
 
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
