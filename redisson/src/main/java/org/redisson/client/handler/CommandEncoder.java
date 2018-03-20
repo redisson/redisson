@@ -19,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -93,7 +94,7 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
             }
             
             if (log.isTraceEnabled()) {
-                log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
+                log.trace("channel: {} message: {}", ctx.channel(), RedisCommands.AUTH.equals(msg.getCommand()) ? "Auth Command" : out.toString(CharsetUtil.UTF_8));
             }
         } catch (Exception e) {
             msg.tryFailure(e);
