@@ -368,8 +368,9 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !addr.equals(entry.getClient().getAddr())) {
-            slaveDown(addr, FreezeReason.SYSTEM);
-            log.info("master {} excluded from slaves", addr);
+            if (slaveDown(addr, FreezeReason.SYSTEM)) {
+                log.info("master {} excluded from slaves", addr);
+            }
         }
         return true;
     }
@@ -387,8 +388,9 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !URIBuilder.compare(addr, address)) {
-            slaveDown(addr, FreezeReason.SYSTEM);
-            log.info("master {} excluded from slaves", addr);
+            if (slaveDown(addr, FreezeReason.SYSTEM)) {
+                log.info("master {} excluded from slaves", addr);
+            }
         }
         return true;
     }
@@ -402,8 +404,9 @@ public class MasterSlaveEntry {
         // exclude master from slaves
         if (!config.checkSkipSlavesInit()
                 && !addr.equals(address)) {
-            slaveDown(addr, FreezeReason.SYSTEM);
-            log.info("master {} excluded from slaves", addr);
+            if (slaveDown(addr, FreezeReason.SYSTEM)) {
+                log.info("master {} excluded from slaves", addr);
+            }
         }
         return true;
     }
@@ -415,11 +418,13 @@ public class MasterSlaveEntry {
      * Shutdown old master client.
      * 
      * @param address of Redis
+     * @return 
      */
-    public void changeMaster(URI address) {
+    public RFuture<RedisClient> changeMaster(URI address) {
         final ClientConnectionsEntry oldMaster = masterEntry;
         RFuture<RedisClient> future = setupMasterEntry(address);
         changeMaster(address, oldMaster, future);
+        return future;
     }
     
     public void changeMaster(InetSocketAddress address, URI uri) {
@@ -467,10 +472,6 @@ public class MasterSlaveEntry {
 
     public FreezeReason getFreezeReason() {
         return masterEntry.getFreezeReason();
-    }
-
-    public void freeze() {
-        masterEntry.freezeMaster(FreezeReason.MANAGER);
     }
 
     public void unfreeze() {

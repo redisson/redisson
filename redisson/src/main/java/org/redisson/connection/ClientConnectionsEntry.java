@@ -141,6 +141,11 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseConnection(RedisConnection connection) {
+        if (client != connection.getRedisClient()) {
+            connection.closeAsync();
+            return;
+        }
+
         connection.setLastUsageTime(System.currentTimeMillis());
         freeConnections.add(connection);
     }
@@ -215,6 +220,11 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        if (client != connection.getRedisClient()) {
+            connection.closeAsync();
+            return;
+        }
+        
         connection.setLastUsageTime(System.currentTimeMillis());
         freeSubscribeConnections.add(connection);
     }
@@ -227,17 +237,11 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.release();
     }
 
-    public boolean freezeMaster(FreezeReason reason) {
+    public void freezeMaster(FreezeReason reason) {
         synchronized (this) {
             setFreezed(true);
-            // only RECONNECT freeze reason could be replaced
-            if (getFreezeReason() == null
-                    || getFreezeReason() == FreezeReason.RECONNECT) {
-                setFreezeReason(reason);
-                return true;
-            }
+            setFreezeReason(reason);
         }
-        return false;
     }
 
     @Override
