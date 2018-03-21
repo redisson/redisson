@@ -111,7 +111,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
-    protected final UUID id = UUID.randomUUID();
+    protected final UUID id;
     
     public static final int MAX_SLOT = 16384;
 
@@ -162,15 +162,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
 
-    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config) {
-        this(config);
+    public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
+        this(config, id);
         this.config = cfg;
         
         initTimer(cfg);
         initSingleEntry();
     }
 
-    public MasterSlaveConnectionManager(Config cfg) {
+    protected MasterSlaveConnectionManager(Config cfg, UUID id) {
+        this.id = id;
         Version.logVersion();
 
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
@@ -527,10 +528,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
     
     protected final void changeMaster(int slot, URI address) {
-        MasterSlaveEntry entry = getEntry(slot);
+        final MasterSlaveEntry entry = getEntry(slot);
         client2entry.remove(entry.getClient());
-        entry.changeMaster(address);
-        client2entry.put(entry.getClient(), entry);
+        entry.changeMaster(address).addListener(new FutureListener<RedisClient>() {
+            @Override
+            public void operationComplete(Future<RedisClient> future) throws Exception {
+                if (future.isSuccess()) {
+                    client2entry.put(entry.getClient(), entry);
+                }
+            }
+        });
     }
 
     protected final void addEntry(Integer slot, MasterSlaveEntry entry) {

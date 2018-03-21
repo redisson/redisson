@@ -15,6 +15,8 @@
  */
 package org.redisson.connection;
 
+import java.util.UUID;
+
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
@@ -28,8 +30,8 @@ import org.redisson.config.SubscriptionMode;
  */
 public class SingleConnectionManager extends MasterSlaveConnectionManager {
 
-    public SingleConnectionManager(SingleServerConfig cfg, Config config) {
-        super(create(cfg), config);
+    public SingleConnectionManager(SingleServerConfig cfg, Config config, UUID id) {
+        super(create(cfg), config, id);
     }
 
     private static MasterSlaveServersConfig create(SingleServerConfig cfg) {

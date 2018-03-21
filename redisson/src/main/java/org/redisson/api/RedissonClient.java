@@ -972,7 +972,7 @@ public interface RedissonClient {
     /**
      * Returns {@code true} if this Redisson instance has been shut down.
      *
-     * @return code true} if this Redisson instance has been shut down overwise <code>false</code>
+     * @return {@code true} if this Redisson instance has been shut down overwise <code>false</code>
      */
     boolean isShutdown();
 

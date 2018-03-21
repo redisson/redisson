@@ -17,6 +17,7 @@ package org.redisson.connection;
 
 import java.net.URI;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -60,8 +61,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         slave
     }
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config) {
-        super(config);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id) {
+        super(config, id);
 
         this.config = create(cfg);
         initTimer(this.config);

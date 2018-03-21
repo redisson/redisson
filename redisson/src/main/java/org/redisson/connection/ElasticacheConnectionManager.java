@@ -15,14 +15,16 @@
  */
 package org.redisson.connection;
 
+import java.util.UUID;
+
 import org.redisson.config.Config;
 import org.redisson.config.ElasticacheServersConfig;
 
 @Deprecated
 public class ElasticacheConnectionManager extends ReplicatedConnectionManager {
 
-    public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config) {
-        super(cfg, config);
+    public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config, UUID id) {
+        super(cfg, config, id);
     }
 
 }

@@ -178,13 +178,13 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
         
-        List<InetSocketAddress> failedAttempts = new LinkedList<InetSocketAddress>();
+        List<InetSocketAddress> failed = new LinkedList<InetSocketAddress>();
         List<InetSocketAddress> freezed = new LinkedList<InetSocketAddress>();
         for (ClientConnectionsEntry entry : entries) {
-            if (entry.isFreezed()) {
+            if (entry.isFailed()) {
+                failed.add(entry.getClient().getAddr());
+            } else if (entry.isFreezed()) {
                 freezed.add(entry.getClient().getAddr());
-            } else {
-                failedAttempts.add(entry.getClient().getAddr());
             }
         }
 
@@ -192,8 +192,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (!freezed.isEmpty()) {
             errorMsg.append(" Disconnected hosts: " + freezed);
         }
-        if (!failedAttempts.isEmpty()) {
-            errorMsg.append(" Hosts disconnected due to `failedAttempts` limit reached: " + failedAttempts);
+        if (!failed.isEmpty()) {
+            errorMsg.append(" Hosts disconnected due to errors during `failedSlaveCheckInterval`: " + failed);
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());

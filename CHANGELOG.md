@@ -4,6 +4,18 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 14-Mar-2018 - versions 2.11.3 and 3.6.3 released
+
+Feature - DNS monitoring for Sentinel nodes  
+Fixed - Old/stale nodes not removed from NodesGroup  
+Fixed - CertificateException while connecting over SSL to Azure or AWS Elasticache config endpoint  
+Fixed - publish subscribe connections couldn't be resubscribed during failover  
+Fixed - RedissonRedLock.tryLock doesn't work for some values of wait time parameter  
+Fixed - NPE in JCache.getAndRemoveValue  
+Fixed - memory leak in publish subscribe  
+Fixed - codec classLoader wasn't used in `ExecutorService` and `RemoteService` objects  
+Fixed - warning for disconnected slaves in sentinel mode  
+
 ### 05-Mar-2018 - versions 2.11.2 and 3.6.2 released
 
 [Redisson PRO](https://redisson.pro) performance improvements for follow `performanceMode` values:

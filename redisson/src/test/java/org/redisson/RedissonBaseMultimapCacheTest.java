@@ -13,6 +13,16 @@ public abstract class RedissonBaseMultimapCacheTest extends BaseTest {
     abstract RMultimapCache<String, String> getMultimapCache(String name);
     
     @Test
+    public void testRemoveAll() {
+        RMultimapCache<String, String> multimap = getMultimapCache("test");
+        multimap.put("1", "1");
+        multimap.put("1", "2");
+
+        multimap.removeAll("1");
+        assertThat(multimap.size()).isZero();
+    }
+    
+    @Test
     public void testContains() {
         RMultimapCache<String, String> multimap = getMultimapCache("test");
         multimap.put("1", "1");
