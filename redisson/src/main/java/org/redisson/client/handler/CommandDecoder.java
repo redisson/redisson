@@ -198,7 +198,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 
                 decode(in, commandData, null, ctx.channel());
                 
-                if (commandData != null && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())) {
+                if (commandData != null && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())
+                        && commandData.getPromise().isSuccess()) {
                     List<Object> objects = (List<Object>) commandData.getPromise().getNow();
                     Iterator<Object> iter = objects.iterator();
                     boolean multiFound = false; 
@@ -218,7 +219,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                 }
             } catch (Exception e) {
-                commandData.tryFailure(e);
+                if (commandData != null) {
+                    commandData.tryFailure(e);
+                }
                 throw e;
             }
             i++;
