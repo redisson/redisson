@@ -598,7 +598,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         args.add(System.currentTimeMillis());
         encode(args, keys);
 
-        Map<K, V> res = evalWrite(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 2, true), ValueType.MAP_VALUE),
+        Map<K, V> res = evalWrite(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0), ValueType.MAP_VALUE),
                         "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                       + "local accessTimeout = ARGV[1]; "
                       + "local currentTime = tonumber(ARGV[2]); "
