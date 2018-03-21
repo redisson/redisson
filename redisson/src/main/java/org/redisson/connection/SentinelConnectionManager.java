@@ -351,7 +351,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             slaveDown(ip, port);
                             continue;
                         }
-                        if (!isUseSameMaster(ip, port, masterHost, masterPort)) {
+                        if (masterHost.equals("?") || !isUseSameMaster(ip, port, masterHost, masterPort)) {
                             continue;
                         }
                         
@@ -367,7 +367,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             Set<String> removedSlaves = new HashSet<String>(slaves);
                             removedSlaves.removeAll(currentSlaves);
                             for (String slave : removedSlaves) {
-                                slaves.remove(slave);
                                 String[] parts = slave.replace("redis://", "").split(":");
                                 slaveDown(parts[0], parts[1]);
                             }
