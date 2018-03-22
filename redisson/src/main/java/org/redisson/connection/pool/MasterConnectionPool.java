@@ -15,11 +15,13 @@
  */
 package org.redisson.connection.pool;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
-import org.redisson.connection.ClientConnectionsEntry;
 
 
 /**
@@ -35,10 +37,10 @@ public class MasterConnectionPool extends ConnectionPool<RedisConnection> {
     }
 
     @Override
-    protected ClientConnectionsEntry getEntry() {
-        return entries.get(0);
+    public RFuture<RedisConnection> get(RedisCommand<?> command) {
+        return acquireConnection(command, entries.get(0));
     }
-
+    
     public void remove(ClientConnectionsEntry entry) {
         entries.remove(entry);
     }

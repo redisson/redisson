@@ -37,6 +37,7 @@ import org.redisson.api.listener.StatusListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonTopicTest {
@@ -684,7 +685,7 @@ public class RedissonTopicTest {
                 for (int i = 0; i < 100; i++) {
                     RFuture<?> f1 = redisson.getBucket("i" + i).getAsync();
                     RFuture<?> f2 = redisson.getBucket("i" + i).setAsync("");
-                    RFuture<?> f3 = redisson.getTopic("topic").publishAsync("testmsg");
+                    RFuture<?> f3 = redisson.getTopic("topic").publishAsync(1);
                     futures.add(f1);
                     futures.add(f2);
                     futures.add(f3);
@@ -716,6 +717,7 @@ public class RedissonTopicTest {
         
         Config config = new Config();
         config.useClusterServers()
+        .setSubscriptionMode(SubscriptionMode.SLAVE)
         .setLoadBalancer(new RandomLoadBalancer())
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
