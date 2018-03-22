@@ -164,18 +164,16 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     protected abstract int getMinimumIdleSize(ClientConnectionsEntry entry);
 
-    protected ClientConnectionsEntry getEntry() {
-        return config.getLoadBalancer().getEntry(entries);
-    }
-
     public RFuture<T> get(RedisCommand<?> command) {
-        for (int j = entries.size() - 1; j >= 0; j--) {
-            final ClientConnectionsEntry entry = getEntry();
+        List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
+        while (!entriesCopy.isEmpty()) {
+            ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy);
             if ((!entry.isFreezed() || 
                     (entry.getFreezeReason() == FreezeReason.SYSTEM && config.getReadMode() == ReadMode.MASTER_SLAVE)) && 
         		    tryAcquireConnection(entry)) {
                 return acquireConnection(command, entry);
             }
+            entriesCopy.remove(entry);
         }
         
         List<InetSocketAddress> failed = new LinkedList<InetSocketAddress>();
@@ -201,21 +199,14 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        if ((!entry.isFreezed() || entry.getFreezeReason() == FreezeReason.SYSTEM) && 
-        		tryAcquireConnection(entry)) {
-            return acquireConnection(command, entry);
-        }
-
-        RedisConnectionException exception = new RedisConnectionException(
-                "Can't aquire connection to " + entry);
-        return RedissonPromise.newFailedFuture(exception);
+        return acquireConnection(command, entry);
     }
 
     public static abstract class AcquireCallback<T> implements Runnable, FutureListener<T> {
         
     }
     
-    private RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
+    protected final RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
         final RPromise<T> result = new RedissonPromise<T>();
 
         AcquireCallback<T> callback = new AcquireCallback<T>() {
