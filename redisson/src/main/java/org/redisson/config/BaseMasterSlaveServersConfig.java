@@ -57,7 +57,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private ReadMode readMode = ReadMode.SLAVE;
     
-    private SubscriptionMode subscriptionMode = SubscriptionMode.SLAVE;
+    private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
     
     /**
      * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
@@ -314,7 +314,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Set node type used for subscription operation.
      * <p>
-     * Default is <code>SLAVE</code>
+     * Default is <code>MASTER</code>
      *
      * @param subscriptionMode param
      * @return config
