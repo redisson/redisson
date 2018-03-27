@@ -30,6 +30,14 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set<V>> {
 
     /**
+     * Returns lock instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return lock
+     */
+    RLock getLock(V value);
+    
+    /**
      * Returns values iterator matches <code>pattern</code>. 
      * 
      * @param pattern for values
