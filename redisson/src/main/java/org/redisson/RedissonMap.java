@@ -106,20 +106,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public RLock getLock(K key) {
-        String lockName = getLockName(key);
+        String lockName = getLockName(key, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
-        String lockName = getLockName(key);
+        String lockName = getLockName(key, "rw_lock");
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
     
-    private String getLockName(Object key) {
+    private String getLockName(Object key, String suffix) {
         ByteBuf keyState = encodeMapKey(key);
         try {
-            return suffixName(getName(), Hash.hash128toBase64(keyState) + ":key");
+            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
         } finally {
             keyState.release();
         }
