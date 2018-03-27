@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -103,6 +104,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
     }
     
+    @Override
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDate = 92233720368547758; " +
@@ -442,6 +444,11 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
+    public RLock getLock(V value) {
+        return set.getLock(value);
+    }
+    
+    @Override
     public boolean removeAll(Collection<?> c) {
         return get(removeAllAsync(c));
     }
@@ -529,106 +536,128 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SINTER, args.toArray());
     }
 
+    @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order) {
         return set.readSortAsync(order);
     }
 
+    @Override
     public Set<V> readSort(SortOrder order) {
         return set.readSort(order);
     }
 
+    @Override
     public RFuture<Set<V>> readSortAsync(SortOrder order, int offset, int count) {
         return set.readSortAsync(order, offset, count);
     }
 
+    @Override
     public Set<V> readSort(SortOrder order, int offset, int count) {
         return set.readSort(order, offset, count);
     }
 
+    @Override
     public Set<V> readSort(String byPattern, SortOrder order) {
         return set.readSort(byPattern, order);
     }
 
+    @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
         return set.readSortAsync(byPattern, order);
     }
 
+    @Override
     public Set<V> readSort(String byPattern, SortOrder order, int offset, int count) {
         return set.readSort(byPattern, order, offset, count);
     }
 
+    @Override
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order, int offset, int count) {
         return set.readSortAsync(byPattern, order, offset, count);
     }
 
+    @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSort(byPattern, getPatterns, order);
     }
 
+    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order) {
         return set.readSortAsync(byPattern, getPatterns, order);
     }
 
+    @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset,
             int count) {
         return set.readSort(byPattern, getPatterns, order, offset, count);
     }
 
+    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.readSortAsync(byPattern, getPatterns, order, offset, count);
     }
 
+    @Override
     public int sortTo(String destName, SortOrder order) {
         return set.sortTo(destName, order);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order) {
         return set.sortToAsync(destName, order);
     }
 
+    @Override
     public int sortTo(String destName, SortOrder order, int offset, int count) {
         return set.sortTo(destName, order, offset, count);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, SortOrder order, int offset, int count) {
         return set.sortToAsync(destName, order, offset, count);
     }
 
+    @Override
     public int sortTo(String destName, String byPattern, SortOrder order) {
         return set.sortTo(destName, byPattern, order);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order) {
         return set.sortToAsync(destName, byPattern, order);
     }
 
+    @Override
     public int sortTo(String destName, String byPattern, SortOrder order, int offset, int count) {
         return set.sortTo(destName, byPattern, order, offset, count);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, SortOrder order, int offset, int count) {
         return set.sortToAsync(destName, byPattern, order, offset, count);
     }
 
+    @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return set.sortTo(destName, byPattern, getPatterns, order);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order) {
         return set.sortToAsync(destName, byPattern, getPatterns, order);
     }
 
+    @Override
     public int sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset,
             int count) {
         return set.sortTo(destName, byPattern, getPatterns, order, offset, count);
     }
 
+    @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.sortToAsync(destName, byPattern, getPatterns, order, offset, count);
     }
-
-    
     
 }
