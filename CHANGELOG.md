@@ -4,6 +4,17 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 27-Mar-2018 - versions 2.11.4 and 3.6.4 released
+
+Feature - `RSet.getLock` method added  
+Fixed - race condition with load balancer node selection  
+Fixed - `READONLY can't write against a read only slave` error during failover  
+Fixed - NPE during failover in Sentinel mode  
+Fixed - `JCache.getAll` causes io.netty.util.IllegalReferenceCountException  
+Fixed - NPE in CommandDecoder handler while using RBatch object  
+Fixed - `RSortedSet` object tries to compare wrong types  
+Fixed - `ClassCastException` in `RListMultimapCache.removeAll` method  
+
 ### 14-Mar-2018 - versions 2.11.3 and 3.6.3 released
 
 Feature - DNS monitoring for Sentinel nodes  
