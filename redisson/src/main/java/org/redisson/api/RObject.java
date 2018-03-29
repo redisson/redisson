@@ -33,7 +33,7 @@ public interface RObject extends RObjectAsync {
     boolean touch();
     
     /**
-     * Transfer an object from source Redis instance to destination Redis instance
+     * Copy object from source Redis instance to destination Redis instance
      *
      * @param host - destination host
      * @param port - destination port
@@ -42,6 +42,16 @@ public interface RObject extends RObjectAsync {
      */
     void migrate(String host, int port, int database, long timeout);
 
+    /**
+     * Copy object from source Redis instance to destination Redis instance
+     *
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     */
+    void copy(String host, int port, int database, long timeout);
+    
     /**
      * Move object to another database
      *

@@ -104,6 +104,16 @@ public abstract class RedissonObject implements RObject {
     }
     
     @Override
+    public void copy(String host, int port, int database, long timeout) {
+        get(copyAsync(host, port, database, timeout));
+    }
+
+    @Override
+    public RFuture<Void> copyAsync(String host, int port, int database, long timeout) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database, timeout, "COPY");
+    }
+    
+    @Override
     public boolean move(int database) {
         return get(moveAsync(database));
     }

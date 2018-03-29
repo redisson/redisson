@@ -142,6 +142,29 @@ public class RedissonBucketTest extends BaseTest {
         runner.stop();
     }
 
+    @Test
+    public void testCopy() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisProcess runner = new RedisRunner()
+                .appendonly(true)
+                .randomDir()
+                .randomPort()
+                .run();
+        
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        
+        bucket.copy(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        RedissonClient r = Redisson.create(config);
+        
+        RBucket<String> bucket2 = r.getBucket("test");
+        assertThat(bucket2.get()).isEqualTo("someValue");
+        assertThat(bucket.get()).isEqualTo("someValue");
+        
+        runner.stop();
+    }
 
     @Test
     public void testRename() {
