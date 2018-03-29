@@ -248,7 +248,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void checkState(final SentinelServersConfig cfg, final Iterator<RedisClient> iterator, final AtomicReference<Throwable> lastException) {
         if (!iterator.hasNext()) {
-            log.error("Can't update cluster state", lastException.get());
+            if (lastException.get() != null) {
+                log.error("Can't update cluster state", lastException.get());
+            }
             scheduleChangeCheck(cfg, null);
             return;
         }
