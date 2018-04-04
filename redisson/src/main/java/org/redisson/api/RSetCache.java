@@ -41,6 +41,14 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
 
     /**
+     * Returns lock instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return lock
+     */
+    RLock getLock(V value);
+    
+    /**
      * Returns values iterator matches <code>pattern</code>. 
      * 
      * @param pattern for values
