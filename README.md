@@ -1,13 +1,13 @@
 Redisson: Redis based In-Memory Data Grid for Java.
 ====
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.5.7) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [Support chat](https://gitter.im/mrniko/redisson) | **[Redisson PRO](https://redisson.pro)**
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.5.7) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Support chat](https://gitter.im/mrniko/redisson) | **[Redisson PRO](https://redisson.pro)**
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.6.3  | 14.03.2018 | 1.8, 1.9+ | Yes | 3.1.x |
-| 2.11.3 | 14.03.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
+| 3.6.4  | 27.03.2018 | 1.8, 1.9+ | Yes | 3.1.x |
+| 2.11.4 | 27.03.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
 
 
 Features
@@ -95,23 +95,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.6.3</version>
+       <version>3.6.4</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.11.3</version>
+       <version>2.11.4</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.6.3'  
+    compile 'org.redisson:redisson:3.6.4'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.11.3'
+    compile 'org.redisson:redisson:2.11.4'
 
 #### Java
 
@@ -133,14 +133,32 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
+FAQs
+===============================
+[Q: I saw a RedisTimeOutException, What does it mean? What shall I do? Can Redisson Team fix it?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-i-saw-a-redistimeoutexception-what-does-it-mean-what-shall-i-do-can-redisson-team-fix-it)
+
+[Q: I saw a com.fasterxml.jackson.databind.JsonMappingException during deserialization process, can you fix it?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-i-saw-a-comfasterxmljacksondatabindjsonmappingexception-during-deserialization-process-can-you-fix-it)
+
+[Q: There were too many quotes appeared in the redis-cli console output, how do I fix it?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-there-were-too-many-quotes-appeared-in-the-redis-cli-console-output-how-do-i-fix-it)
+
+[Q: When do I need to shut down a Redisson instance, at the end of each request or the end of the life of a thread?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-when-do-i-need-to-shut-down-a-redisson-instance-at-the-end-of-each-request-or-the-end-of-the-life-of-a-thread)
+
+[Q: In MapCache/SetCache/SpringCache/JCache, I have set an expiry time to an entry, why is it still there when it should be disappeared?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-in-mapcachesetcachespringcachejcache-i-have-set-an-expiry-time-to-an-entry-why-is-it-still-there-when-it-should-be-disappeared)
+
+[Q: How can I perform Pipelining/Transaction through Redisson?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-how-can-i-perform-pipeliningtransaction-through-redisson)
+
+[Q: Is Redisson thread safe? Can I share an instance of it between different threads?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-is-redisson-thread-safe-can-i-share-an-instance-of-it-between-different-threads)
+
+[Q: Can I use different encoder/decoders for different tasks?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-can-i-use-different-encoderdecoders-for-different-tasks)
+
 Downloads
 ===============================
    
-[Redisson 3.6.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.3&e=jar),
-[Redisson node 3.6.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.3&e=jar)  
+[Redisson 3.6.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.4&e=jar),
+[Redisson node 3.6.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.4&e=jar)  
 
-[Redisson 2.11.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.3&e=jar),
-[Redisson node 2.11.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.3&e=jar)  
+[Redisson 2.11.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.4&e=jar),
+[Redisson node 2.11.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.4&e=jar)  
 
 ### Supported by
 

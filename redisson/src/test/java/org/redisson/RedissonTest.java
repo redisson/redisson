@@ -1,7 +1,7 @@
 package org.redisson;
 
-import static org.awaitility.Awaitility.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.redisson.BaseTest.createInstance;
 
 import java.io.IOException;
@@ -31,30 +31,43 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
 import org.redisson.api.Node.InfoSection;
-import org.redisson.api.listener.MessageListener;
-import org.redisson.api.listener.StatusListener;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
-import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.misc.HashValue;
 
-import io.netty.buffer.Unpooled;
-
 public class RedissonTest {
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
+    
+    @Test
+    public void testDecoderError() {
+        redisson.getBucket("testbucket", new StringCodec()).set("{INVALID JSON!}");
+
+        for (int i = 0; i < 256; i++) {
+          try {
+              redisson.getBucket("testbucket", new JsonJacksonCodec()).get();
+              Assert.fail();
+          } catch (Exception e) {
+              // skip
+          }
+        }
+
+        redisson.getBucket("testbucket2").set("should work");
+    }
     
     @Test
     public void testSmallPool() throws InterruptedException {

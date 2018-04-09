@@ -235,16 +235,13 @@ public class CommandBatchService extends CommandAsyncService {
                     List<Object> responses = new ArrayList<Object>(entries.size());
                     int syncedSlaves = 0;
                     for (BatchCommandData<?, ?> commandEntry : entries) {
-                        if (!isWaitCommand(commandEntry)
-                                && !commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
+                        if (isWaitCommand(commandEntry)) {
+                            syncedSlaves = (Integer) commandEntry.getPromise().getNow();
+                        } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                                 && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                             Object entryResult = commandEntry.getPromise().getNow();
                             entryResult = tryHandleReference(entryResult);
                             responses.add(entryResult);
-                        } else {
-                            if (isWaitCommand(commandEntry)) {
-                                syncedSlaves = (Integer) commandEntry.getPromise().getNow();
-                            }
                         }
                     }
                     

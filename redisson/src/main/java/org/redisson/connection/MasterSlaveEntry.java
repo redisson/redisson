@@ -418,7 +418,7 @@ public class MasterSlaveEntry {
      * Shutdown old master client.
      * 
      * @param address of Redis
-     * @return 
+     * @return client 
      */
     public RFuture<RedisClient> changeMaster(URI address) {
         final ClientConnectionsEntry oldMaster = masterEntry;

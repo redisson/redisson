@@ -347,7 +347,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private void checkClusterState(final ClusterServersConfig cfg, final Iterator<URI> iterator, final AtomicReference<Throwable> lastException) {
         if (!iterator.hasNext()) {
-            log.error("Can't update cluster state", lastException.get());
+            if (lastException.get() != null) {
+                log.error("Can't update cluster state", lastException.get());
+            }
             scheduleClusterChangeCheck(cfg, null);
             return;
         }

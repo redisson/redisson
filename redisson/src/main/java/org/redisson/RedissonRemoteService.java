@@ -92,7 +92,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('lrem', KEYS[1], 1, ARGV[1]); "
-              + "redis.call('hset', KEYS[2], ARGV[1]);"
+              + "redis.call('hdel', KEYS[2], ARGV[1]);"
               + "return 1;",
               Arrays.<Object>asList(requestQueueName, requestQueueName + ":tasks"),
               taskId.toString());

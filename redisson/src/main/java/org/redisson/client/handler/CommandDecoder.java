@@ -98,6 +98,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             } catch (Exception e) {
                 log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                sendNext(ctx);
                 throw e;
             }
         } else if (data instanceof CommandData) {
@@ -111,6 +112,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             } catch (Exception e) {
                 log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
                 cmd.tryFailure(e);
+                sendNext(ctx);
                 throw e;
             }
         } else if (data instanceof CommandsData) {
@@ -119,13 +121,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 decodeCommandBatch(ctx, in, data, commands);
             } catch (Exception e) {
                 commands.getPromise().tryFailure(e);
+                sendNext(ctx);
                 throw e;
             }
             return;
         }
         
-        ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
+        sendNext(ctx);
+    }
 
+    protected void sendNext(ChannelHandlerContext ctx) {
+        ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
         state(null);
     }
 
@@ -242,9 +248,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
             }
             
-            ctx.pipeline().get(CommandsQueue.class).sendNextCommand(ctx.channel());
-
-            state(null);
+            sendNext(ctx);
         } else {
             checkpoint();
             state().setBatchIndex(i);

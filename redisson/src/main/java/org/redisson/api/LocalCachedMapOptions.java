@@ -21,7 +21,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 
 /**
- * RLocalCachedMap options object. Used to specify RLocalCachedMap settings.
+ * Configuration for LocalCachedMap object.
  * 
  * @author Nikita Koksharov
  *

@@ -190,6 +190,30 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
         return new RedissonList<V>(codec, commandExecutor, setName, null) {
             
             @Override
+            public RFuture<Boolean> addAsync(V value) {
+                return RedissonListMultimap.this.putAsync(key, value);
+            }
+            
+            @Override
+            public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
+                return RedissonListMultimap.this.putAllAsync(key, c);
+            }
+            
+            @Override
+            public RFuture<Boolean> removeAsync(Object value) {
+                return RedissonListMultimap.this.removeAsync(key, value);
+            }
+            
+            @Override
+            public RFuture<Boolean> removeAllAsync(Collection<?> c) {
+                ByteBuf keyState = encodeMapKey(key);
+                return commandExecutor.evalWriteAsync(RedissonListMultimap.this.getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                        "return redis.call('del', KEYS[2]) > 0; ",
+                    Arrays.<Object>asList(RedissonListMultimap.this.getName(), setName), keyState);
+            }
+            
+            @Override
             public RFuture<Boolean> deleteAsync() {
                 ByteBuf keyState = encodeMapKey(key);
                 return RedissonListMultimap.this.fastRemoveAsync(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);

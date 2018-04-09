@@ -53,7 +53,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     RedissonClient redisson;
     
-    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         this.redisson = redisson;
     }
