@@ -118,6 +118,91 @@ public class RedissonSetMultimapTest extends BaseTest {
     }
 
     @Test
+    public void testGetAdd() {
+        RSetMultimap<String, Integer> multimap1 = redisson.getSetMultimap("myMultimap1");
+        Set<Integer> one = multimap1.get("1");
+        Set<Integer> two = multimap1.get("2");
+        Set<Integer> four = multimap1.get("4");
+        one.add(1);
+        one.add(2);
+        one.add(3);
+        two.add(5);
+        two.add(6);
+        four.add(7);
+        
+        assertThat(multimap1.keySet()).containsOnly("1", "2", "4");
+        assertThat(multimap1.keySize()).isEqualTo(3);
+        assertThat(multimap1.get("1")).containsOnly(1, 2, 3);
+        assertThat(multimap1.get("2")).containsOnly(5, 6);
+        assertThat(multimap1.get("4")).containsOnly(7);
+    }
+
+    @Test
+    public void testGetAddAll() {
+        RSetMultimap<String, Integer> multimap1 = redisson.getSetMultimap("myMultimap1");
+        Set<Integer> one = multimap1.get("1");
+        Set<Integer> two = multimap1.get("2");
+        Set<Integer> four = multimap1.get("4");
+        one.addAll(Arrays.asList(1, 2, 3));
+        two.addAll(Arrays.asList(5, 6));
+        four.addAll(Arrays.asList(7));
+        
+        assertThat(multimap1.keySet()).containsOnly("1", "2", "4");
+        assertThat(multimap1.keySize()).isEqualTo(3);
+        assertThat(multimap1.get("1")).containsOnly(1, 2, 3);
+        assertThat(multimap1.get("2")).containsOnly(5, 6);
+        assertThat(multimap1.get("4")).containsOnly(7);
+    }
+
+    
+    @Test
+    public void testGetRemove() {
+        RSetMultimap<String, Integer> multimap1 = redisson.getSetMultimap("myMultimap1");
+        Set<Integer> one = multimap1.get("1");
+        Set<Integer> two = multimap1.get("2");
+        Set<Integer> four = multimap1.get("4");
+        one.add(1);
+        one.add(2);
+        one.add(3);
+        two.add(5);
+        two.add(6);
+        four.add(7);
+        
+        assertThat(one.remove(1)).isTrue();
+        assertThat(one.remove(2)).isTrue();
+        assertThat(two.remove(5)).isTrue();
+        assertThat(four.remove(7)).isTrue();
+        
+        assertThat(multimap1.keySet()).containsOnly("1", "2");
+        assertThat(multimap1.keySize()).isEqualTo(2);
+        assertThat(multimap1.get("1")).containsOnly(3);
+        assertThat(multimap1.get("2")).containsOnly(6);
+    }
+
+    @Test
+    public void testGetRemoveAll() {
+        RSetMultimap<String, Integer> multimap1 = redisson.getSetMultimap("myMultimap1");
+        Set<Integer> one = multimap1.get("1");
+        Set<Integer> two = multimap1.get("2");
+        Set<Integer> four = multimap1.get("4");
+        one.add(1);
+        one.add(2);
+        one.add(3);
+        two.add(5);
+        two.add(6);
+        four.add(7);
+        
+        assertThat(one.removeAll(Arrays.asList(1, 2, 3))).isTrue();
+        assertThat(two.removeAll(Arrays.asList(5, 6))).isTrue();
+        assertThat(four.removeAll(Arrays.asList(7))).isTrue();
+        assertThat(four.removeAll(Arrays.asList(9))).isFalse();
+        
+        assertThat(multimap1.keySet()).isEmpty();
+        assertThat(multimap1.keySize()).isEqualTo(0);
+    }
+
+    
+    @Test
     public void testSize() {
         RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
