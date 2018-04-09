@@ -604,9 +604,11 @@ public class Config {
      * Switch to round robin {@link io.netty.resolver.dns.RoundRobinDnsAddressResolverGroup} when you need to optimize the url resolving.
      * 
      * @param addressResolverGroupFactory
+     * @return config
      */
-    public void setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {
+    public Config setAddressResolverGroupFactory(AddressResolverGroupFactory addressResolverGroupFactory) {
         this.addressResolverGroupFactory = addressResolverGroupFactory;
+        return this;
     }
     public AddressResolverGroupFactory getAddressResolverGroupFactory() {
         return addressResolverGroupFactory;

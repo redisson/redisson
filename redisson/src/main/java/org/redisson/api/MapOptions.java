@@ -19,7 +19,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 
 /**
- * RMap options object.
+ * Configuration for Map object.
  * 
  * @author Nikita Koksharov
  *
