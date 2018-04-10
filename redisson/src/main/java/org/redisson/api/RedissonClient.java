@@ -900,9 +900,17 @@ public interface RedissonClient {
     RRemoteService getRemoteService(String name, Codec codec);
 
     /**
-     * Return batch object which executes group of
-     * command in pipeline.
-     *
+     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 
+     * @param options - transaction options
+     * @return Transaction object
+     */
+    RTransaction createTransaction(TransactionOptions options);
+    
+    /**
+     * Creates batch object which could be executed later 
+     * with collected group of commands in pipeline mode.
+     * <p>
      * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
      *
      * @return Batch object

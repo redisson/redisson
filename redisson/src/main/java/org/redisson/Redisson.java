@@ -70,8 +70,10 @@ import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetMultimapCache;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RTopic;
+import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
@@ -81,6 +83,7 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.remote.ResponseEntry;
+import org.redisson.transaction.RedissonTransaction;
 
 import io.netty.util.internal.PlatformDependent;
 
@@ -569,6 +572,11 @@ public class Redisson implements RedissonClient {
         return new RedissonKeys(connectionManager.getCommandExecutor());
     }
 
+    @Override
+    public RTransaction createTransaction(TransactionOptions options) {
+        return new RedissonTransaction(connectionManager.getCommandExecutor(), options);
+    }
+    
     @Override
     public RBatch createBatch() {
         RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.LocalCachedMapOptions;
@@ -36,6 +37,7 @@ import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RTopic;
@@ -46,6 +48,10 @@ import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.cache.LocalCachedMapClear;
+import org.redisson.cache.LocalCachedMapDisable;
+import org.redisson.cache.LocalCachedMapDisableAck;
+import org.redisson.cache.LocalCachedMapDisabledKey;
+import org.redisson.cache.LocalCachedMapEnable;
 import org.redisson.cache.LocalCachedMapInvalidate;
 import org.redisson.cache.LocalCachedMapUpdate;
 import org.redisson.cache.LocalCachedMessageCodec;
@@ -71,6 +77,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -84,6 +91,10 @@ import io.netty.util.internal.PlatformDependent;
 @SuppressWarnings("serial")
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
+    public static final String TOPIC_SUFFIX = "topic";
+    public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
+    public static final String DISABLED_ACK_SUFFIX = ":topic";
+    
     private static final Logger log = LoggerFactory.getLogger(RedissonLocalCachedMap.class);
     
     public static class CacheKey implements Serializable {
@@ -179,6 +190,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private byte[] instanceId;
     private RTopic<Object> invalidationTopic;
     private Cache<CacheKey, CacheValue> cache;
+    private Map<CacheKey, String> disabledKeys = new ConcurrentHashMap<CacheKey, String>();
     private int invalidateEntryOnChange;
     private int syncListenerId;
     private int reconnectionListenerId;
@@ -186,12 +198,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private SyncStrategy syncStrategy;
     private final Codec topicCodec = new LocalCachedMessageCodec();
 
-    protected RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+    public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
         super(commandExecutor, name, redisson, options);
         init(name, options, redisson, evictionScheduler);
     }
 
-    protected RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
+    public RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
         super(codec, connectionManager, name, redisson, options);
         init(name, options, redisson, evictionScheduler);
     }
@@ -214,8 +226,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         addListeners(name, options, redisson);
     }
 
-    private void addListeners(String name, final LocalCachedMapOptions<K, V> options, final RedissonClient redisson) {
-        invalidationTopic = new RedissonTopic<Object>(topicCodec, commandExecutor, suffixName(name, "topic"));
+    private void addListeners(final String name, final LocalCachedMapOptions<K, V> options, final RedissonClient redisson) {
+        invalidationTopic = new RedissonTopic<Object>(topicCodec, commandExecutor, suffixName(name, TOPIC_SUFFIX));
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
             reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
@@ -275,6 +287,29 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             syncListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
                 @Override
                 public void onMessage(String channel, Object msg) {
+                    if (msg instanceof LocalCachedMapDisable) {
+                        LocalCachedMapDisable m = (LocalCachedMapDisable) msg;
+                        String requestId = m.getRequestId();
+                        Set<CacheKey> keysToDisable = new HashSet<CacheKey>();
+                        for (byte[] keyHash : ((LocalCachedMapDisable) msg).getKeyHashes()) {
+                            CacheKey key = new CacheKey(keyHash);
+                            keysToDisable.add(key);
+                        }
+                        
+                        disableKeys(requestId, keysToDisable, m.getTimeout());
+                        
+                        RedissonTopic<Object> topic = new RedissonTopic<Object>(topicCodec, commandExecutor, suffixName(name, requestId + DISABLED_ACK_SUFFIX));
+                        topic.publishAsync(new LocalCachedMapDisableAck());
+                    }
+                    
+                    if (msg instanceof LocalCachedMapEnable) {
+                        LocalCachedMapEnable m = (LocalCachedMapEnable) msg;
+                        for (byte[] keyHash : m.getKeyHashes()) {
+                            CacheKey key = new CacheKey(keyHash);
+                            disabledKeys.remove(key, m.getRequestId());
+                        }
+                    }
+                    
                     if (msg instanceof LocalCachedMapClear) {
                         cache.clear();
                     }
@@ -299,7 +334,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                                 CacheKey cacheKey = toCacheKey(keyBuf);
                                 Object key = codec.getMapKeyDecoder().decode(keyBuf, null);
                                 Object value = codec.getMapValueDecoder().decode(valueBuf, null);
-                                cache.put(cacheKey, new CacheValue(key, value));
+                                cachePut(cacheKey, key, value);
                             } catch (IOException e) {
                                 log.error("Can't decode map entry", e);
                             } finally {
@@ -315,9 +350,46 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     }
                 }
             });
+            
+            String disabledKeysName = RedissonObject.suffixName(getName(), DISABLED_KEYS_SUFFIX);
+            RListMultimapCache<LocalCachedMapDisabledKey, String> multimap = redisson.getListMultimapCache(disabledKeysName, getCodec());
+            
+            for (LocalCachedMapDisabledKey key : multimap.readAllKeySet()) {
+                Set<CacheKey> keysToDisable = new HashSet<CacheKey>();
+                for (String hash : multimap.getAll(key)) {
+                    CacheKey cacheKey = new CacheKey(ByteBufUtil.decodeHexDump(hash));
+                    keysToDisable.add(cacheKey);
+                }
+                
+                disableKeys(key.getRequestId(), keysToDisable, key.getTimeout());
+            }
         }
     }
-
+    
+    private void disableKeys(final String requestId, final Set<CacheKey> keys, long timeout) {
+        for (CacheKey key : keys) {
+            disabledKeys.put(key, requestId);
+            cache.remove(key);
+        }
+        
+        commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+            @Override
+            public void run() {
+                for (CacheKey cacheKey : keys) {
+                    disabledKeys.remove(cacheKey, requestId);
+                }
+            }
+        }, timeout, TimeUnit.MILLISECONDS);
+    }
+    
+    private void cachePut(CacheKey cacheKey, Object key, Object value) {
+        if (disabledKeys.containsKey(cacheKey)) {
+            return;
+        }
+        
+        cache.put(cacheKey, new CacheValue(key, value));
+    }
+    
     protected Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<K, V> options) {
         if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
             return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
@@ -337,7 +409,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
     }
     
-    private CacheKey toCacheKey(Object key) {
+    public CacheKey toCacheKey(Object key) {
         ByteBuf encoded = encodeMapKey(key);
         try {
             return toCacheKey(encoded);
@@ -392,7 +464,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 V value = future.getNow();
                 if (value != null) {
-                    cache.put(cacheKey, new CacheValue(key, value));
+                    cachePut(cacheKey, key, value);
                 }
             }
         });
@@ -430,8 +502,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         CacheKey cacheKey = toCacheKey(mapKey);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
         ByteBuf msg = createSyncMessage(mapKey, mapValue, cacheKey);
-        CacheValue cacheValue = new CacheValue(key, value);
-        cache.put(cacheKey, cacheValue);
+        cachePut(cacheKey, key, value);
+
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                   "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
@@ -461,8 +533,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         CacheKey cacheKey = toCacheKey(encodedKey);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
         ByteBuf msg = createSyncMessage(encodedKey, encodedValue, cacheKey);
-        CacheValue cacheValue = new CacheValue(key, value);
-        cache.put(cacheKey, cacheValue);
+        cachePut(cacheKey, key, value);
+
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "if ARGV[4] == '1' then "
                     + "redis.call('publish', KEYS[2], ARGV[3]); "
@@ -490,7 +562,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<V> removeOperationAsync(K key) {
+    protected RFuture<V> removeOperationAsync(K key) {
         ByteBuf keyEncoded = encodeMapKey(key);
         CacheKey cacheKey = toCacheKey(keyEncoded);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
@@ -721,8 +793,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private void cacheMap(Map<?, ?> map) {
         for (java.util.Map.Entry<?, ?> entry : map.entrySet()) {
             CacheKey cacheKey = toCacheKey(entry.getKey());
-            CacheValue cacheValue = new CacheValue(entry.getKey(), entry.getValue());
-            cache.put(cacheKey, cacheValue);
+            cachePut(cacheKey, entry.getKey(), entry.getValue());
         }
     }
 
@@ -804,7 +875,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<V> addAndGetOperationAsync(final K key, Number value) {
+    protected RFuture<V> addAndGetOperationAsync(final K key, Number value) {
         final ByteBuf keyState = encodeMapKey(key);
         CacheKey cacheKey = toCacheKey(keyState);
         ByteBuf msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
@@ -832,7 +903,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 V value = future.getNow();
                 if (value != null) {
                     CacheKey cacheKey = toCacheKey(key);
-                    cache.put(cacheKey, new CacheValue(key, value));
+                    cachePut(cacheKey, key, value);
                 }
             }
         });
@@ -851,7 +922,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 if (future.getNow()) {
                     CacheKey cacheKey = toCacheKey(key);
-                    cache.put(cacheKey, new CacheValue(key, value));
+                    cachePut(cacheKey, key, value);
                 }
             }
         });
@@ -927,7 +998,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 for (java.util.Map.Entry<K, V> entry : future.getNow().entrySet()) {
                     CacheKey cacheKey = toCacheKey(entry.getKey());
-                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+                    cachePut(cacheKey, entry.getKey(), entry.getValue());
                 }
                 result.putAll(future.getNow());
                 promise.trySuccess(result);
@@ -945,7 +1016,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         //  few misses after this process
         for(Entry<K,V> entry : super.entrySet()) {
             CacheKey cacheKey = toCacheKey(entry.getKey());
-            cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+            cachePut(cacheKey, entry.getKey(), entry.getValue());
         }
     }
     
@@ -995,7 +1066,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 for (java.util.Map.Entry<K, V> entry : future.getNow()) {
                     CacheKey cacheKey = toCacheKey(entry.getKey());
-                    cache.put(cacheKey, new CacheValue(entry.getKey(), entry.getValue()));
+                    cachePut(cacheKey, entry.getKey(), entry.getValue());
                 }
                 result.addAll(future.getNow());
                 promise.trySuccess(result);
@@ -1068,7 +1139,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 if (future.getNow() != null) {
                     CacheKey cacheKey = toCacheKey(key);
-                    cache.put(cacheKey, new CacheValue(key, value));
+                    cachePut(cacheKey, key, value);
                 }
             }
         });
@@ -1115,7 +1186,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 }
                 
                 if (future.getNow()) {
-                    cache.put(cacheKey, new CacheValue(key, newValue));
+                    cachePut(cacheKey, key, newValue);
                 }
             }
         });
@@ -1181,7 +1252,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
                 if (future.getNow() == null) {
                     CacheKey cacheKey = toCacheKey(key);
-                    cache.put(cacheKey, new CacheValue(key, value));
+                    cachePut(cacheKey, key, value);
                 }
             }
         });
