@@ -39,7 +39,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
 
     private final RedissonMultimapCache<K> baseCache;
     
-    RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
         if (evictionScheduler != null) {
             evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
@@ -47,7 +47,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
-    RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+    public RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
         if (evictionScheduler != null) {
             evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
