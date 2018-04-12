@@ -39,6 +39,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.cache.Cache;
+import org.redisson.cache.CacheKey;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.cache.LocalCacheListener;
@@ -80,49 +81,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String TOPIC_SUFFIX = "topic";
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
-    
-    public static class CacheKey implements Serializable {
         
-        private final byte[] keyHash;
-
-        public CacheKey(byte[] keyHash) {
-            super();
-            this.keyHash = keyHash;
-        }
-
-        public byte[] getKeyHash() {
-            return keyHash;
-        }
-        
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + Arrays.hashCode(keyHash);
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            CacheKey other = (CacheKey) obj;
-            if (!Arrays.equals(keyHash, other.keyHash))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "CacheKey [keyHash=" + Arrays.toString(keyHash) + "]";
-        }
-        
-    }
-    
     public static class CacheValue implements Serializable {
         
         private final Object key;

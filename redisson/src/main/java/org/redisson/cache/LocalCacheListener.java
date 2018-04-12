@@ -25,14 +25,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonListMultimapCache;
-import org.redisson.RedissonLocalCachedMap.CacheKey;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonTopic;
 import org.redisson.api.LocalCachedMapOptions;
-import org.redisson.api.RFuture;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
+import org.redisson.api.RFuture;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RObject;
 import org.redisson.api.RScoredSortedSet;
