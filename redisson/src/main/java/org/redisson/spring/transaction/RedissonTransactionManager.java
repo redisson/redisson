@@ -15,58 +15,112 @@
  */
 package org.redisson.spring.transaction;
 
-import org.redisson.api.RBatch;
+import java.util.concurrent.TimeUnit;
+
+import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.TransactionOptions;
+import org.springframework.transaction.NoTransactionException;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonTransactionManager extends AbstractPlatformTransactionManager implements ResourceTransactionManager {
 
+    private static final long serialVersionUID = -6151310954082124041L;
+    
     private RedissonClient redisson;
     
+    public RedissonTransactionManager(RedissonClient redisson) {
+        this.redisson = redisson;
+    }
+    
+    public RTransaction getCurrentTransaction() {
+        RedissonTransactionHolder to = (RedissonTransactionHolder) TransactionSynchronizationManager.getResource(redisson);
+        if (to == null) {
+            throw new NoTransactionException("No transaction is available for the current thread");
+        }
+        return to.getTransaction();
+    }
+
     @Override
     protected Object doGetTransaction() throws TransactionException {
-        RedissonTransactionObject tObject = new RedissonTransactionObject();
+        RedissonTransactionObject transactionObject = new RedissonTransactionObject();
         
-        TransactionSynchronizationManager.getResource(redisson);
-        // TODO Auto-generated method stub
-        return null;
+        RedissonTransactionHolder holder = (RedissonTransactionHolder) TransactionSynchronizationManager.getResource(redisson);
+        if (holder != null) {
+            transactionObject.setTransactionHolder(holder);
+        }
+        return transactionObject;
     }
     
     @Override
     protected boolean isExistingTransaction(Object transaction) throws TransactionException {
-        // TODO Auto-generated method stub
-        return super.isExistingTransaction(transaction);
+        RedissonTransactionObject transactionObject = (RedissonTransactionObject) transaction;
+        return transactionObject.getTransactionHolder() != null;
     }
 
     @Override
     protected void doBegin(Object transaction, TransactionDefinition definition) throws TransactionException {
         RedissonTransactionObject tObject = (RedissonTransactionObject) transaction;
         
-        if (tObject.getBatch() == null) {
-            RBatch batch = redisson.createBatch();
-            batch.atomic();
-            tObject.setBatch(batch);
+        if (tObject.getTransactionHolder() == null) {
+            int timeout = determineTimeout(definition);
+            TransactionOptions options = TransactionOptions.defaults();
+            if (timeout != TransactionDefinition.TIMEOUT_DEFAULT) {
+                options.timeout(timeout, TimeUnit.SECONDS);
+            }
+            
+            RTransaction trans = redisson.createTransaction(options);
+            RedissonTransactionHolder holder = new RedissonTransactionHolder();
+            holder.setTransaction(trans);
+            tObject.setTransactionHolder(holder);
+            TransactionSynchronizationManager.bindResource(redisson, holder);
         }
-        
     }
 
     @Override
     protected void doCommit(DefaultTransactionStatus status) throws TransactionException {
-        // TODO Auto-generated method stub
-        
+        RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
+        try {
+            to.getTransactionHolder().getTransaction().commit();
+        } catch (TransactionException e) {
+            throw new TransactionSystemException("Unable to commit transaction", e);
+        }
     }
 
     @Override
     protected void doRollback(DefaultTransactionStatus status) throws TransactionException {
-        // TODO Auto-generated method stub
-        
+        RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
+        try {
+            to.getTransactionHolder().getTransaction().rollback();
+        } catch (TransactionException e) {
+            throw new TransactionSystemException("Unable to commit transaction", e);
+        }
     }
 
+    @Override
+    protected void doSetRollbackOnly(DefaultTransactionStatus status) throws TransactionException {
+        RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
+        to.setRollbackOnly(true);
+    }
+    
+    @Override
+    protected void doCleanupAfterCompletion(Object transaction) {
+        TransactionSynchronizationManager.unbindResourceIfPossible(redisson);
+        RedissonTransactionObject to = (RedissonTransactionObject) transaction;
+        to.getTransactionHolder().setTransaction(null);
+    }
+    
     @Override
     public Object getResourceFactory() {
         return redisson;

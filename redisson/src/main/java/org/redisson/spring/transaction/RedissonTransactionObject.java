@@ -15,25 +15,33 @@
  */
 package org.redisson.spring.transaction;
 
-import org.redisson.api.RBatch;
 import org.springframework.transaction.support.SmartTransactionObject;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonTransactionObject implements SmartTransactionObject {
 
-    private RBatch batch;
+    private boolean isRollbackOnly;
+    private RedissonTransactionHolder transactionHolder;
+
+    public RedissonTransactionHolder getTransactionHolder() {
+        return transactionHolder;
+    }
+
+    public void setTransactionHolder(RedissonTransactionHolder transaction) {
+        this.transactionHolder = transaction;
+    }
+
+    public void setRollbackOnly(boolean isRollbackOnly) {
+        this.isRollbackOnly = isRollbackOnly;
+    }
     
-    public RBatch getBatch() {
-        return batch;
-    }
-
-    public void setBatch(RBatch batch) {
-        this.batch = batch;
-    }
-
     @Override
     public boolean isRollbackOnly() {
-        // TODO Auto-generated method stub
-        return false;
+        return isRollbackOnly;
     }
 
     @Override
