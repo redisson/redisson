@@ -189,8 +189,12 @@ public class RedissonTransaction implements RTransaction {
             syncSlaves = entry.getAvailableClients() - 1;
         }
         
-        transactionExecutor.execute(syncSlaves, options.getSyncTimeout(), false, 
-                options.getResponseTimeout(), options.getRetryAttempts(), options.getRetryInterval(), true);
+        try {
+            transactionExecutor.execute(syncSlaves, options.getSyncTimeout(), false, 
+                    options.getResponseTimeout(), options.getRetryAttempts(), options.getRetryInterval(), true);
+        } catch (Exception e) {
+            throw new TransactionException("Unable to execute transaction", e);
+        }
         
         enableLocalCache(id, hashes);
         
@@ -219,7 +223,7 @@ public class RedissonTransaction implements RTransaction {
         try {
             publishBatch.execute();
         } catch (Exception e) {
-            throw new TransactionException("Unable to finish transaction over local cached map objects: " + localCaches, e);
+            // skip it. Disabled local cache entries are enabled once reach timeout.
         }
 
     }
@@ -336,7 +340,13 @@ public class RedissonTransaction implements RTransaction {
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.rollback(executorService);
         }
-        executorService.execute(0, 0, false, 0, 0, 0, true);
+
+        try {
+            executorService.execute(0, 0, false, 0, 0, 0, true);
+        } catch (Exception e) {
+            throw new TransactionException("Unable to execute transaction", e);
+        }
+
         operations.clear();
         executed.set(true);
     }
