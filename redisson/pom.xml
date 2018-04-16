@@ -151,6 +151,12 @@
             <version>[3.1,)</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>[3.1,5.0)</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>net.jpountz.lz4</groupId>

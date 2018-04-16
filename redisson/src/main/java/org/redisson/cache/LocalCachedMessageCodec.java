@@ -19,21 +19,24 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.CharsetUtil;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class LocalCachedMessageCodec implements Codec {
+public class LocalCachedMessageCodec extends BaseCodec {
 
+    public static final LocalCachedMessageCodec INSTANCE = new LocalCachedMessageCodec();
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -72,6 +75,37 @@ public class LocalCachedMessageCodec implements Codec {
                 }
                 return new LocalCachedMapUpdate(entries);
             }
+            
+            if (type == 0x3) {
+                byte len = buf.readByte();
+                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
+                long timeout = buf.readLong();
+                int hashesCount = buf.readInt();
+                byte[][] hashes = new byte[hashesCount][];
+                for (int i = 0; i < hashesCount; i++) {
+                    byte[] keyHash = new byte[16];
+                    buf.readBytes(keyHash);
+                    hashes[i] = keyHash;
+                }
+                return new LocalCachedMapDisable(requestId.toString(), hashes, timeout);
+            }
+            
+            if (type == 0x4) {
+                return new LocalCachedMapDisableAck();
+            }
+
+            if (type == 0x5) {
+                byte len = buf.readByte();
+                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
+                int hashesCount = buf.readInt();
+                byte[][] hashes = new byte[hashesCount][];
+                for (int i = 0; i < hashesCount; i++) {
+                    byte[] keyHash = new byte[16];
+                    buf.readBytes(keyHash);
+                    hashes[i] = keyHash;
+                }
+                return new LocalCachedMapEnable(requestId.toString(), hashes);
+            }
 
             throw new IllegalArgumentException("Can't parse packet");
         }
@@ -90,6 +124,7 @@ public class LocalCachedMessageCodec implements Codec {
                 LocalCachedMapInvalidate li = (LocalCachedMapInvalidate) in;
                 ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
                 result.writeByte(0x1);
+                
                 result.writeBytes(li.getExcludedId());
                 result.writeInt(li.getKeyHashes().length);
                 for (int i = 0; i < li.getKeyHashes().length; i++) {
@@ -100,7 +135,7 @@ public class LocalCachedMessageCodec implements Codec {
             
             if (in instanceof LocalCachedMapUpdate) {
                 LocalCachedMapUpdate li = (LocalCachedMapUpdate) in;
-                ByteBuf result = ByteBufAllocator.DEFAULT.buffer(256);
+                ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
                 result.writeByte(0x2);
 
                 for (LocalCachedMapUpdate.Entry e : li.getEntries()) {
@@ -108,6 +143,41 @@ public class LocalCachedMessageCodec implements Codec {
                     result.writeBytes(e.getKey());
                     result.writeInt(e.getValue().length);
                     result.writeBytes(e.getValue());
+                }
+                return result;
+            }
+            
+            if (in instanceof LocalCachedMapDisable) {
+                LocalCachedMapDisable li = (LocalCachedMapDisable) in;
+                ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
+                result.writeByte(0x3);
+                
+                result.writeByte(li.getRequestId().length());
+                result.writeCharSequence(li.getRequestId(), CharsetUtil.UTF_8);
+                result.writeLong(li.getTimeout());
+                result.writeInt(li.getKeyHashes().length);
+                for (int i = 0; i < li.getKeyHashes().length; i++) {
+                    result.writeBytes(li.getKeyHashes()[i]);
+                }
+                return result;
+            }
+
+            if (in instanceof LocalCachedMapDisableAck) {
+                ByteBuf result = ByteBufAllocator.DEFAULT.buffer(1);
+                result.writeByte(0x4);
+                return result;
+            }
+
+            if (in instanceof LocalCachedMapEnable) {
+                LocalCachedMapEnable li = (LocalCachedMapEnable) in;
+                ByteBuf result = ByteBufAllocator.DEFAULT.buffer();
+                result.writeByte(0x5);
+                
+                result.writeByte(li.getRequestId().length());
+                result.writeCharSequence(li.getRequestId(), CharsetUtil.UTF_8);
+                result.writeInt(li.getKeyHashes().length);
+                for (int i = 0; i < li.getKeyHashes().length; i++) {
+                    result.writeBytes(li.getKeyHashes()[i]);
                 }
                 return result;
             }
@@ -121,26 +191,6 @@ public class LocalCachedMessageCodec implements Codec {
     }
 
     @Override
-    public Decoder<Object> getMapValueDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
     }
@@ -148,11 +198,6 @@ public class LocalCachedMessageCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
-    }
-
-    @Override
-    public ClassLoader getClassLoader() {
-        return getClass().getClassLoader();
     }
 
 }

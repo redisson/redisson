@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.6.4  | 27.03.2018 | 1.8, 1.9+ | Yes | 3.1.x |
-| 2.11.4 | 27.03.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
+| 3.6.5  | 09.04.2018 | 1.8, 1.9+ | Yes | 3.1.x |
+| 2.11.5 | 09.04.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
 
 
 Features
@@ -95,23 +95,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.6.4</version>
+       <version>3.6.5</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.11.4</version>
+       <version>2.11.5</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.6.4'  
+    compile 'org.redisson:redisson:3.6.5'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.11.4'
+    compile 'org.redisson:redisson:2.11.5'
 
 #### Java
 
@@ -133,6 +133,15 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
+Downloads
+===============================
+   
+[Redisson 3.6.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.5&e=jar),
+[Redisson node 3.6.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.5&e=jar)  
+
+[Redisson 2.11.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.5&e=jar),
+[Redisson node 2.11.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.5&e=jar)  
+
 FAQs
 ===============================
 [Q: I saw a RedisTimeOutException, What does it mean? What shall I do? Can Redisson Team fix it?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-i-saw-a-redistimeoutexception-what-does-it-mean-what-shall-i-do-can-redisson-team-fix-it)
@@ -150,15 +159,6 @@ FAQs
 [Q: Is Redisson thread safe? Can I share an instance of it between different threads?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-is-redisson-thread-safe-can-i-share-an-instance-of-it-between-different-threads)
 
 [Q: Can I use different encoder/decoders for different tasks?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-can-i-use-different-encoderdecoders-for-different-tasks)
-
-Downloads
-===============================
-   
-[Redisson 3.6.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.6.4&e=jar),
-[Redisson node 3.6.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.6.4&e=jar)  
-
-[Redisson 2.11.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.11.4&e=jar),
-[Redisson node 2.11.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.11.4&e=jar)  
 
 ### Supported by
 

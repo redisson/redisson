@@ -12,20 +12,18 @@ import org.junit.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
-import org.redisson.api.RedissonClient;
-import org.redisson.codec.JsonJacksonCodec;
 
 public class RedissonMapTest extends BaseMapTest {
 
         @Override
     protected <K, V> RMap<K, V> getMap(String name) {
         return redisson.getMap(name);
-        }
+    }
 
         @Override
     protected <K, V> RMap<K, V> getMap(String name, Codec codec) {
         return redisson.getMap(name, codec);
-        }
+    }
 
         @Override
     protected <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map) {

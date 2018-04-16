@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.RedissonLocalCachedMap.CacheKey;
 import org.redisson.RedissonLocalCachedMap.CacheValue;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
@@ -20,6 +19,7 @@ import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
 import org.redisson.cache.Cache;
+import org.redisson.cache.CacheKey;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 

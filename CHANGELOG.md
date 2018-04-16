@@ -4,6 +4,17 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 09-Apr-2018 - versions 2.11.5 and 3.6.5 released
+Feature - `RKeys.copy` method added  
+Feature - `RObject.copy` method added  
+Feature - `RSetCache.getLock` method added  
+Fixed - `ClusterConnectionManager` throws `IllegalArgumentException`  
+Fixed - `CommandDecoder` doesn't remove command from commands queue when response was decoded with error  
+Fixed - `RSetMultimap.get()` doesn't create multimap entry in case of absence  
+Fixed - an error shouldn't appear if Redisson successfully got the information at least from one sentinel/cluster Redis node  
+Fixed - `RObject.migrate` method  
+Fixed - hdel comand wasn't used during remote service task removal  
+
 ### 27-Mar-2018 - versions 2.11.4 and 3.6.4 released
 
 Feature - `RSet.getLock` method added  

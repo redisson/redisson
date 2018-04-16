@@ -17,6 +17,7 @@ import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
@@ -24,8 +25,8 @@ import org.redisson.api.RListAsync;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RScript;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RScript.Mode;
+import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
@@ -34,13 +35,13 @@ public class RedissonBatchTest extends BaseTest {
 
 //    @Test
     public void testBatchRedirect() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         for (int i = 0; i < 5; i++) {
             batch.getMap("" + i).fastPutAsync("" + i, i);
         }
         batch.execute();
 
-        batch = redisson.createBatch();
+        batch = redisson.createBatch(BatchOptions.defaults());
         for (int i = 0; i < 1; i++) {
             batch.getMap("" + i).sizeAsync();
             batch.getMap("" + i).containsValueAsync("" + i);
@@ -52,11 +53,13 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testBigRequestAtomic() {
-        RBatch batch = redisson.createBatch();
-        batch.atomic();
-        batch.timeout(15, TimeUnit.SECONDS);
-        batch.retryInterval(1, TimeUnit.SECONDS);
-        batch.retryAttempts(5);
+        BatchOptions options = BatchOptions.defaults()
+                    .atomic()
+                    .responseTimeout(15, TimeUnit.SECONDS)
+                    .retryInterval(1, TimeUnit.SECONDS)
+                    .retryAttempts(5);
+        
+        RBatch batch = redisson.createBatch(options);
         for (int i = 0; i < 100; i++) {
             batch.getBucket("" + i).setAsync(i);
             batch.getBucket("" + i).getAsync();
@@ -87,13 +90,15 @@ public class RedissonBatchTest extends BaseTest {
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
-        RBatch batch = redisson.createBatch();
+        BatchOptions options = BatchOptions.defaults()
+                .syncSlaves(1, 1, TimeUnit.SECONDS);
+        
+        RBatch batch = redisson.createBatch(options);
         for (int i = 0; i < 100; i++) {
             RMapAsync<String, String> map = batch.getMap("test");
             map.putAsync("" + i, "" + i);
         }
 
-        batch.syncSlaves(1, 1, TimeUnit.SECONDS);
         BatchResult<?> result = batch.execute();
         assertThat(result.getSyncedSlaves()).isEqualTo(1);
         
@@ -102,7 +107,7 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testWriteTimeout() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         for (int i = 0; i < 200000; i++) {
             RMapCacheAsync<String, String> map = batch.getMapCache("test");
             map.putAsync("" + i, "" + i, 10, TimeUnit.SECONDS);
@@ -113,13 +118,16 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testSkipResult() {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
-        RBatch batch = redisson.createBatch();
+        
+        BatchOptions options = BatchOptions.defaults()
+                                            .skipResult();
+
+        RBatch batch = redisson.createBatch(options);
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
         batch.getBucket("A3").setAsync("001");
         batch.getKeys().deleteAsync("A1");
         batch.getKeys().deleteAsync("A2");
-        batch.skipResult();
         batch.execute();
         
         assertThat(redisson.getBucket("A1").isExists()).isFalse();
@@ -128,7 +136,7 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testBatchNPE() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.getBucket("A1").setAsync("001");
         batch.getBucket("A2").setAsync("001");
         batch.getBucket("A3").setAsync("001");
@@ -139,8 +147,10 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testAtomic() {
-        RBatch batch = redisson.createBatch();
-        batch.atomic();
+        BatchOptions options = BatchOptions.defaults()
+                                            .atomic();
+        
+        RBatch batch = redisson.createBatch(options);
         RFuture<Long> f1 = batch.getAtomicLong("A1").addAndGetAsync(1);
         RFuture<Long> f2 = batch.getAtomicLong("A2").addAndGetAsync(2);
         RFuture<Long> f3 = batch.getAtomicLong("A3").addAndGetAsync(3);
@@ -176,13 +186,15 @@ public class RedissonBatchTest extends BaseTest {
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
-        RBatch batch = redisson.createBatch();
+        BatchOptions options = BatchOptions.defaults()
+                                            .atomic()
+                                            .syncSlaves(1, 1, TimeUnit.SECONDS);
+
+        RBatch batch = redisson.createBatch(options);
         for (int i = 0; i < 10; i++) {
             batch.getAtomicLong("{test}" + i).addAndGetAsync(i);
         }
 
-        batch.atomic();
-        batch.syncSlaves(1, 1, TimeUnit.SECONDS);
         BatchResult<?> result = batch.execute();
         assertThat(result.getSyncedSlaves()).isEqualTo(1);
         int i = 0;
@@ -196,7 +208,7 @@ public class RedissonBatchTest extends BaseTest {
     
     @Test
     public void testDifferentCodecs() {
-        RBatch b = redisson.createBatch();
+        RBatch b = redisson.createBatch(BatchOptions.defaults());
         b.getMap("test1").putAsync("1", "2");
         b.getMap("test2", StringCodec.INSTANCE).putAsync("21", "3");
         RFuture<Object> val1 = b.getMap("test1").getAsync("1");
@@ -209,7 +221,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testBatchList() {
-        RBatch b = redisson.createBatch();
+        RBatch b = redisson.createBatch(BatchOptions.defaults());
         RListAsync<Integer> listAsync = b.getList("list");
         for (int i = 1; i < 540; i++) {
             listAsync.addAsync(i);
@@ -220,7 +232,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testBatchBigRequest() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         for (int i = 0; i < 210; i++) {
             batch.getMap("test").fastPutAsync("1", "2");
             batch.getMap("test").fastPutAsync("2", "3");
@@ -234,7 +246,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test(expected=RedisException.class)
     public void testExceptionHandling() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.getMap("test").putAsync("1", "2");
         batch.getScript().evalAsync(Mode.READ_WRITE, "wrong_code", RScript.ReturnType.VALUE);
         batch.execute();
@@ -242,7 +254,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test(expected=IllegalStateException.class)
     public void testTwice() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.getMap("test").putAsync("1", "2");
         batch.execute();
         batch.execute();
@@ -251,14 +263,14 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testEmpty() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.execute();
     }
     
     @Test
     public void testOrdering() throws InterruptedException {
         ExecutorService e = Executors.newFixedThreadPool(16);
-        final RBatch batch = redisson.createBatch();
+        final RBatch batch = redisson.createBatch(BatchOptions.defaults());
         final AtomicLong index = new AtomicLong(-1);
         final List<RFuture<Long>> futures = new CopyOnWriteArrayList<>();
         for (int i = 0; i < 500; i++) {
@@ -292,7 +304,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void test() {
-        RBatch batch = redisson.createBatch();
+        RBatch batch = redisson.createBatch(BatchOptions.defaults());
         batch.getMap("test").fastPutAsync("1", "2");
         batch.getMap("test").fastPutAsync("2", "3");
         batch.getMap("test").putAsync("2", "5");

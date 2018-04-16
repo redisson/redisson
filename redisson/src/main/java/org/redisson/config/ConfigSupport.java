@@ -19,9 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
@@ -124,102 +121,63 @@ public class ConfigSupport {
 
     private ObjectMapper jsonMapper = createMapper(null, null);
     private ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
-
-    private void patchUriObject() throws IOException {
-        patchUriField("lowMask", "L_DASH");
-        patchUriField("highMask", "H_DASH");
-    }
-    
-    private void patchUriField(String methodName, String fieldName)
-            throws IOException {
-        try {
-            Method lowMask = URI.class.getDeclaredMethod(methodName, String.class);
-            lowMask.setAccessible(true);
-            Long lowMaskValue = (Long) lowMask.invoke(null, "-_");
-            
-            Field lowDash = URI.class.getDeclaredField(fieldName);
-            
-            Field modifiers = Field.class.getDeclaredField("modifiers");
-            modifiers.setAccessible(true);
-            modifiers.setInt(lowDash, lowDash.getModifiers() & ~Modifier.FINAL);
-            
-            lowDash.setAccessible(true);
-            lowDash.setLong(null, lowMaskValue);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-    }
     
     public <T> T fromJSON(String content, Class<T> configType) throws IOException {
-        patchUriObject();
         return jsonMapper.readValue(content, configType);
     }
 
     public <T> T fromJSON(File file, Class<T> configType) throws IOException {
-        patchUriObject();
         return fromJSON(file, configType, null);
     }
     
     public <T> T fromJSON(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
-        patchUriObject();
         jsonMapper = createMapper(null, classLoader);
         return jsonMapper.readValue(file, configType);
     }
 
     public <T> T fromJSON(URL url, Class<T> configType) throws IOException {
-        patchUriObject();
         return jsonMapper.readValue(url, configType);
     }
 
     public <T> T fromJSON(Reader reader, Class<T> configType) throws IOException {
-        patchUriObject();
         return jsonMapper.readValue(reader, configType);
     }
 
     public <T> T fromJSON(InputStream inputStream, Class<T> configType) throws IOException {
-        patchUriObject();
         return jsonMapper.readValue(inputStream, configType);
     }
 
     public String toJSON(Config config) throws IOException {
-        patchUriObject();
         return jsonMapper.writeValueAsString(config);
     }
 
     public <T> T fromYAML(String content, Class<T> configType) throws IOException {
-        patchUriObject();
         return yamlMapper.readValue(content, configType);
     }
 
     public <T> T fromYAML(File file, Class<T> configType) throws IOException {
-        patchUriObject();
         return yamlMapper.readValue(file, configType);
     }
     
     public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
-        patchUriObject();
         yamlMapper = createMapper(new YAMLFactory(), classLoader);
         return yamlMapper.readValue(file, configType);
     }
 
 
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
-        patchUriObject();
         return yamlMapper.readValue(url, configType);
     }
 
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
-        patchUriObject();
         return yamlMapper.readValue(reader, configType);
     }
 
     public <T> T fromYAML(InputStream inputStream, Class<T> configType) throws IOException {
-        patchUriObject();
         return yamlMapper.readValue(inputStream, configType);
     }
 
     public String toYAML(Config config) throws IOException {
-        patchUriObject();
         return yamlMapper.writeValueAsString(config);
     }
     

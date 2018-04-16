@@ -124,6 +124,21 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Boolean> fastPutAsync(K key, V value);
 
     /**
+     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * <p>
+     * Works faster than <code>{@link RMap#replaceAsync(Object, Object)}</code> but not returning
+     * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key exists and value was updated.
+     *         <code>false</code> if key doesn't exists and value wasn't updated.
+     */
+    RFuture<Boolean> fastReplaceAsync(K key, V value);
+    
+    /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * only if there is no any association with specified<code>key</code>.
      * <p>

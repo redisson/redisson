@@ -15,18 +15,14 @@
  */
 package org.redisson.reactive;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
-import org.redisson.RedissonLock;
 import org.redisson.RedissonSemaphore;
 import org.redisson.api.RFuture;
-import org.redisson.api.RLockAsync;
 import org.redisson.api.RSemaphoreAsync;
 import org.redisson.api.RSemaphoreReactive;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.pubsub.SemaphorePubSub;
 
@@ -42,10 +38,6 @@ public class RedissonSemaphoreReactive extends RedissonExpirableReactive impleme
     public RedissonSemaphoreReactive(CommandReactiveExecutor connectionManager, String name, SemaphorePubSub semaphorePubSub) {
         super(connectionManager, name);
         instance = new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
-    }
-
-    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
-        return new RedissonLock(commandExecutor, name);
     }
 
     @Override

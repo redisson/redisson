@@ -219,7 +219,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Removes <code>keys</code> from map by one operation
      * <p>
-     * Works faster than <code>{@link RMap#remove(Object)}</code> but not returning
+     * Works faster than <code>{@link #remove(Object)}</code> but not returning
      * the value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
@@ -232,7 +232,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>.
      * <p>
-     * Works faster than <code>{@link RMap#put(Object, Object)}</code> but not returning
+     * Works faster than <code>{@link #put(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
@@ -245,10 +245,25 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     boolean fastPut(K key, V value);
 
     /**
+     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * <p>
+     * Works faster than <code>{@link #replace(Object, Object)}</code> but not returning
+     * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key exists and value was updated.
+     *         <code>false</code> if key doesn't exists and value wasn't updated.
+     */
+    boolean fastReplace(K key, V value);
+    
+    /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * only if there is no any association with specified<code>key</code>.
      * <p>
-     * Works faster than <code>{@link RMap#putIfAbsent(Object, Object)}</code> but not returning
+     * Works faster than <code>{@link #putIfAbsent(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.

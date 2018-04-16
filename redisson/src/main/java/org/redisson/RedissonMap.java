@@ -623,6 +623,47 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 + "end",
             Collections.<Object>singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
     }
+    
+    @Override
+    public boolean fastReplace(K key, V value) {
+        return get(fastReplaceAsync(key, value));
+    }
+
+    @Override
+    public RFuture<Boolean> fastReplaceAsync(final K key, final V value) {
+        checkKey(key);
+        checkValue(value);
+        
+        RFuture<Boolean> future = fastReplaceOperationAsync(key, value);
+        if (hasNoWriter()) {
+            return future;
+        }
+        
+        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
+            @Override
+            public void execute() {
+                options.getWriter().write(key, value);
+            }
+            
+            @Override
+            protected boolean condition(Future<Boolean> future) {
+                return future.getNow();
+            }
+        };
+        return mapWriterFuture(future, listener);
+    }
+
+    protected RFuture<Boolean> fastReplaceOperationAsync(final K key, final V value) {
+        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return 1; "
+                + "else "
+                    + "return 0; "
+                + "end",
+            Collections.<Object>singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+    }
+    
 
     public RFuture<V> getOperationAsync(K key) {
         return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), encodeMapKey(key));
