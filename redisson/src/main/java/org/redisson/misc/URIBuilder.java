@@ -15,6 +15,9 @@
  */
 package org.redisson.misc;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.regex.Pattern;
@@ -38,6 +41,31 @@ public class URIBuilder {
         // Assuming this is an IPv6 format, other situations will be handled by
         // Netty at a later stage.
         return URI.create(uri.replace(s, "[" + s + "]"));
+    }
+    
+    public static void patchUriObject() {
+        try {
+            patchUriField(35184372088832L, "L_DASH");
+            patchUriField(2147483648L, "H_DASH");
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
+    private static void patchUriField(Long maskValue, String fieldName)
+            throws IOException {
+        try {
+            Field field = URI.class.getDeclaredField(fieldName);
+            
+            Field modifiers = Field.class.getDeclaredField("modifiers");
+            modifiers.setAccessible(true);
+            modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            
+            field.setAccessible(true);
+            field.setLong(null, maskValue);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
     }
     
     public static boolean isValidIP(String host) {
