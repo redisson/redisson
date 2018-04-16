@@ -41,6 +41,7 @@ import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
+import org.redisson.api.RPermitExpirableSemaphoreReactive;
 import org.redisson.api.RQueueReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RScoredSortedSetReactive;
@@ -76,6 +77,7 @@ import org.redisson.reactive.RedissonLockReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
+import org.redisson.reactive.RedissonPermitExpirableSemaphoreReactive;
 import org.redisson.reactive.RedissonQueueReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
@@ -117,6 +119,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RSemaphoreReactive getSemaphore(String name) {
         return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
+    }
+    
+    @Override
+    public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
+        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);        
     }
     
     @Override

@@ -39,6 +39,15 @@ public interface RedissonReactiveClient {
     RSemaphoreReactive getSemaphore(String name);
     
     /**
+     * Returns semaphore instance by name.
+     * Supports lease time parameter for each acquired permit.
+     * 
+     * @param name - name of object
+     * @return PermitExpirableSemaphore object
+     */
+    RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name);
+    
+    /**
      * Returns readWriteLock instance by name.
      *
      * @param name - name of object

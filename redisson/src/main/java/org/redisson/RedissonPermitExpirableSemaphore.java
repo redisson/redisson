@@ -24,7 +24,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
@@ -45,13 +45,13 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     private final SemaphorePubSub semaphorePubSub;
 
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
 
     private final String timeoutName;
     
     private final long nonExpirableTimeout = 922337203685477L;
 
-    protected RedissonPermitExpirableSemaphore(CommandExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
+    public RedissonPermitExpirableSemaphore(CommandAsyncExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
         super(commandExecutor, name);
         this.timeoutName = suffixName(name, "timeout");
         this.commandExecutor = commandExecutor;
