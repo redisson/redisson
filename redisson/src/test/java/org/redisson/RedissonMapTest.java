@@ -12,7 +12,6 @@ import org.junit.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.JsonJacksonCodec;
 
 public class RedissonMapTest extends BaseMapTest {
 

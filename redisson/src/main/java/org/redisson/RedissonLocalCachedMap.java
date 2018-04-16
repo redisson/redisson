@@ -871,10 +871,57 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    protected RFuture<V> replaceOperationAsync(K key, V value) {
-        final ByteBuf keyState = encodeMapKey(key);
+    public RFuture<Boolean> fastReplaceAsync(final K key, final V value) {
+        RFuture<Boolean> future = super.fastReplaceAsync(key, value);
+        future.addListener(new FutureListener<Boolean>() {
+            @Override
+            public void operationComplete(Future<Boolean> future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                
+                if (future.getNow()) {
+                    CacheKey cacheKey = toCacheKey(key);
+                    cachePut(cacheKey, key, value);
+                }
+            }
+        });
+        
+        return future;
+    }
+    
+    @Override
+    protected RFuture<Boolean> fastReplaceOperationAsync(K key, V value) {
+        ByteBuf keyState = encodeMapKey(key);
         ByteBuf valueState = encodeMapValue(value);
-        final CacheKey cacheKey = toCacheKey(keyState);
+        CacheKey cacheKey = toCacheKey(keyState);
+        byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
+        ByteBuf msg = createSyncMessage(keyState, valueState, cacheKey);
+        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                    
+                    + "if ARGV[3] == '1' then "
+                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                    + "end;"
+                    + "if ARGV[3] == '2' then "
+                        + "redis.call('zadd', KEYS[3], ARGV[5], ARGV[6]);"
+                        + "redis.call('publish', KEYS[2], ARGV[4]); "
+                    + "end;"
+
+                    + "return 1; "
+                + "else "
+                    + "return 0; "
+                + "end",
+                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
+    }
+    
+    @Override
+    protected RFuture<V> replaceOperationAsync(K key, V value) {
+        ByteBuf keyState = encodeMapKey(key);
+        ByteBuf valueState = encodeMapValue(value);
+        CacheKey cacheKey = toCacheKey(keyState);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
         ByteBuf msg = createSyncMessage(keyState, valueState, cacheKey);
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
@@ -920,10 +967,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
-        final ByteBuf keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         ByteBuf oldValueState = encodeMapValue(oldValue);
         ByteBuf newValueState = encodeMapValue(newValue);
-        final CacheKey cacheKey = toCacheKey(keyState);
+        CacheKey cacheKey = toCacheKey(keyState);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
         ByteBuf msg = createSyncMessage(keyState, newValueState, cacheKey);
         return commandExecutor.evalWriteAsync(getName(key), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -967,9 +1014,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
-        final ByteBuf keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         ByteBuf valueState = encodeMapValue(value);
-        final CacheKey cacheKey = toCacheKey(keyState);
+        CacheKey cacheKey = toCacheKey(keyState);
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
         ByteBuf msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
         

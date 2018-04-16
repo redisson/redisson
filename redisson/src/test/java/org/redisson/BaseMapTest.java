@@ -587,6 +587,18 @@ public abstract class BaseMapTest extends BaseTest {
         assertThat(map.get(1)).isEqualTo(3);
         Assert.assertEquals(1, map.size());
     }
+    
+    @Test
+    public void testFastReplace() throws Exception {
+        RMap<Integer, Integer> map = getMap("simple");
+        map.put(1, 2);
+        
+        assertThat(map.fastReplace(1, 3)).isTrue();
+        assertThat(map.fastReplace(2, 0)).isFalse();
+        
+        Assert.assertEquals(1, map.size());
+        assertThat(map.get(1)).isEqualTo(3);
+    }
 
     @Test
     public void testEquals() {
