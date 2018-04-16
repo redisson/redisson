@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonReactiveClient;
@@ -61,7 +62,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt, ignoreRedirect);
     }
 
-    public RFuture<BatchResult<?>> executeAsync(int syncSlaves, long syncTimeout, boolean skipResult, long responseTimeout, int retryAttempts, long retryInterval, boolean atomic) {
+    public RFuture<BatchResult<?>> executeAsync(BatchOptions options) {
         for (Publisher<?> publisher : publishers) {
             publisher.subscribe(new DefaultSubscriber<Object>() {
                 @Override
@@ -71,7 +72,7 @@ public class CommandReactiveBatchService extends CommandReactiveService {
             });
         }
 
-        return batchService.executeAsync(syncSlaves, syncTimeout, skipResult, responseTimeout, retryAttempts, retryInterval, atomic);
+        return batchService.executeAsync(options);
     }
 
     @Override

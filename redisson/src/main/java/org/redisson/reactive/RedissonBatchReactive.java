@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
+import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
@@ -55,19 +56,12 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandReactiveBatchService executorService;
-
-    private long timeout;
-    private int retryAttempts;
-    private long retryInterval;
-
-    private int syncSlaves;
-    private long syncTimeout;
-    private boolean skipResult;
-    private boolean atomic;
+    private final BatchOptions options;
     
-    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandReactiveBatchService(connectionManager);
+        this.options = options;
     }
 
     @Override
@@ -220,44 +214,43 @@ public class RedissonBatchReactive implements RBatchReactive {
         return new NettyFuturePublisher<BatchResult<?>>(new Supplier<RFuture<BatchResult<?>>>() {
             @Override
             public RFuture<BatchResult<?>> get() {
-                return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
+                return executorService.executeAsync(options);
             }
         });
     }
     
     public RBatchReactive atomic() {
-        this.atomic = true;
+        options.atomic();
         return this;
     }
     
     @Override
     public RBatchReactive syncSlaves(int slaves, long timeout, TimeUnit unit) {
-        this.syncSlaves = slaves;
-        this.syncTimeout = unit.toMillis(timeout);
+        options.syncSlaves(slaves, timeout, unit);
         return this;
     }
     
     @Override
     public RBatchReactive skipResult() {
-        this.skipResult = true;
+        options.skipResult();
         return this;
     }
     
     @Override
     public RBatchReactive retryAttempts(int retryAttempts) {
-        this.retryAttempts = retryAttempts;
+        options.retryAttempts(retryAttempts);
         return this;
     }
     
     @Override
     public RBatchReactive retryInterval(long retryInterval, TimeUnit unit) {
-        this.retryInterval = unit.toMillis(retryInterval);
+        options.retryInterval(retryInterval, unit);
         return this;
     }
     
     @Override
     public RBatchReactive timeout(long timeout, TimeUnit unit) {
-        this.timeout = unit.toMillis(timeout);
+        options.responseTimeout(timeout, unit);
         return this;
     }
 

@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicDoubleAsync;
 import org.redisson.api.RAtomicLongAsync;
@@ -57,19 +58,12 @@ public class RedissonBatch implements RBatch {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
+    private final BatchOptions options;
 
-    private long timeout;
-    private int retryAttempts;
-    private long retryInterval;
-
-    private int syncSlaves;
-    private long syncTimeout;
-    private boolean skipResult;
-    private boolean atomic;
-
-    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
+    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
         this.executorService = new CommandBatchService(connectionManager);
         this.evictionScheduler = evictionScheduler;
+        this.options = options;
     }
 
     @Override
@@ -234,59 +228,48 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public RBatch syncSlaves(int slaves, long timeout, TimeUnit unit) {
-        this.syncSlaves = slaves;
-        this.syncTimeout = unit.toMillis(timeout);
+        options.syncSlaves(slaves, timeout, unit);
         return this;
     }
     
     @Override
     public RBatch atomic() {
-        this.atomic = true;
+        options.atomic();
         return this;
     }
     
     @Override
     public RBatch skipResult() {
-        this.skipResult = true;
+        options.skipResult();
         return this;
     }
     
     @Override
     public RBatch retryAttempts(int retryAttempts) {
-        this.retryAttempts = retryAttempts;
+        options.retryAttempts(retryAttempts);
         return this;
     }
     
     @Override
     public RBatch retryInterval(long retryInterval, TimeUnit unit) {
-        this.retryInterval = unit.toMillis(retryInterval);
+        options.retryInterval(retryInterval, unit);
         return this;
     }
     
     @Override
     public RBatch timeout(long timeout, TimeUnit unit) {
-        this.timeout = unit.toMillis(timeout);
+        options.responseTimeout(timeout, unit);
         return this;
     }
     
     @Override
     public BatchResult<?> execute() {
-        return executorService.execute(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
+        return executorService.execute(options);
     }
 
     @Override
-    public void executeSkipResult() {
-        executorService.execute(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval, atomic);
-    }
-    
-    @Override
-    public RFuture<Void> executeSkipResultAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval, atomic);
-    }
-    
-    @Override
     public RFuture<BatchResult<?>> executeAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval, atomic);
+        return executorService.executeAsync(options);
     }
     
     @Override

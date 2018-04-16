@@ -251,66 +251,40 @@ public interface RBatchReactive {
      */
     Publisher<BatchResult<?>> execute();
 
-    /**
-     * Command replies are skipped such approach saves response bandwidth.
-     * <p>
-     * NOTE: Redis 3.2+ required
-     * 
-     * @return self instance
+    /*
+     * Use BatchOptions#atomic
      */
-    RBatchReactive skipResult();
+    @Deprecated
+    RBatchReactive atomic();
     
-    /**
-     * 
-     * <p>
-     * NOTE: Redis 3.0+ required
-     * 
-     * @param slaves number to sync
-     * @param timeout for sync operation
-     * @param unit value
-     * @return self instance
+    /*
+     * Use BatchOptions#skipResult
      */
+    @Deprecated
+    RBatchReactive skipResult();
+
+    /*
+     * Use BatchOptions#syncSlaves
+     */
+    @Deprecated
     RBatchReactive syncSlaves(int slaves, long timeout, TimeUnit unit);
     
-    /**
-     * Defines timeout for Redis response. 
-     * Starts to countdown when Redis command has been successfully sent.
-     * <p>
-     * <code>0</code> value means use <code>Config.setTimeout</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+    /*
+     * Use BatchOptions#responseTimeout
      */
+    @Deprecated
     RBatchReactive timeout(long timeout, TimeUnit unit);
 
-    /**
-     * Defines time interval for another one attempt send Redis commands batch 
-     * if it hasn't been sent already.
-     * <p>
-     * <code>0</code> value means use <code>Config.setRetryInterval</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param retryInterval value
-     * @param unit value
-     * @return self instance
+    /*
+     * Use BatchOptions#retryInterval
      */
+    @Deprecated
     RBatchReactive retryInterval(long retryInterval, TimeUnit unit);
 
-    /**
-     * Defines attempts amount to re-send Redis commands batch
-     * if it hasn't been sent already.
-     * <p>
-     * <code>0</code> value means use <code>Config.setRetryAttempts</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param retryAttempts value
-     * @return self instance
+    /*
+     * Use BatchOptions#retryAttempts
      */
+    @Deprecated
     RBatchReactive retryAttempts(int retryAttempts);
-    
+
 }

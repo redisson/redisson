@@ -902,19 +902,27 @@ public interface RedissonClient {
     /**
      * Creates transaction with <b>READ_COMMITTED</b> isolation level.
      * 
-     * @param options - transaction options
+     * @param options - transaction configuration
      * @return Transaction object
      */
     RTransaction createTransaction(TransactionOptions options);
-    
+
     /**
      * Creates batch object which could be executed later 
      * with collected group of commands in pipeline mode.
      * <p>
      * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
      *
+     * @param options - batch configuration
      * @return Batch object
      */
+    RBatch createBatch(BatchOptions options);
+
+    /*
+     * Use #createBatch(BatchOptions)
+     * 
+     */
+    @Deprecated
     RBatch createBatch();
     
     /**

@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNodesGroup;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapOptions;
@@ -576,14 +577,19 @@ public class Redisson implements RedissonClient {
     public RTransaction createTransaction(TransactionOptions options) {
         return new RedissonTransaction(connectionManager.getCommandExecutor(), options);
     }
-    
+
     @Override
-    public RBatch createBatch() {
-        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager);
+    public RBatch createBatch(BatchOptions options) {
+        RedissonBatch batch = new RedissonBatch(evictionScheduler, connectionManager, options);
         if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
         return batch;
+    }
+    
+    @Override
+    public RBatch createBatch() {
+        return createBatch(BatchOptions.defaults());
     }
 
     @Override

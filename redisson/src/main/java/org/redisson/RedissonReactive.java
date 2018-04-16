@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
+import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
@@ -326,14 +327,19 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RScriptReactive getScript() {
         return new RedissonScriptReactive(commandExecutor);
     }
-
+    
     @Override
-    public RBatchReactive createBatch() {
-        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager);
+    public RBatchReactive createBatch(BatchOptions options) {
+        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, options);
         if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }
         return batch;
+    }
+
+    @Override
+    public RBatchReactive createBatch() {
+        return createBatch(BatchOptions.defaults());
     }
 
     @Override

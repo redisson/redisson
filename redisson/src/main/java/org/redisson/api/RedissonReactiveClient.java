@@ -507,8 +507,15 @@ public interface RedissonReactiveClient {
      *
      * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
      *
+     * @param options - batch configuration
      * @return Batch object
      */
+    RBatchReactive createBatch(BatchOptions options);
+
+    /*
+     * Use createBatch(BatchOptions)
+     */
+    @Deprecated
     RBatchReactive createBatch();
 
     /**

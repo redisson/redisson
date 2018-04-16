@@ -32,6 +32,7 @@ import org.redisson.RedissonBatch;
 import org.redisson.RedissonLocalCachedMap;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonTopic;
+import org.redisson.api.BatchOptions;
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
@@ -190,8 +191,14 @@ public class RedissonTransaction implements RTransaction {
         }
         
         try {
-            transactionExecutor.execute(syncSlaves, options.getSyncTimeout(), false, 
-                    options.getResponseTimeout(), options.getRetryAttempts(), options.getRetryInterval(), true);
+            BatchOptions batchOptions = BatchOptions.defaults()
+                                                    .syncSlaves(syncSlaves, options.getSyncTimeout(), TimeUnit.MILLISECONDS)
+                                                    .responseTimeout(options.getResponseTimeout(), TimeUnit.MILLISECONDS)
+                                                    .retryAttempts(options.getRetryAttempts())
+                                                    .retryInterval(options.getRetryInterval(), TimeUnit.MILLISECONDS)
+                                                    .atomic();
+            
+            transactionExecutor.execute(batchOptions);
         } catch (Exception e) {
             throw new TransactionException("Unable to execute transaction", e);
         }
@@ -212,7 +219,7 @@ public class RedissonTransaction implements RTransaction {
             return;
         }
         
-        RedissonBatch publishBatch = new RedissonBatch(null, commandExecutor.getConnectionManager());
+        RedissonBatch publishBatch = new RedissonBatch(null, commandExecutor.getConnectionManager(), BatchOptions.defaults());
         for (Entry<TransactionalOperation, List<byte[]>> entry : hashes.entrySet()) {
             String name = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.TOPIC_SUFFIX);
             RTopicAsync<Object> topic = publishBatch.getTopic(name, LocalCachedMessageCodec.INSTANCE);
@@ -234,7 +241,7 @@ public class RedissonTransaction implements RTransaction {
         }
         
         Map<TransactionalOperation, List<byte[]>> hashes = new HashMap<TransactionalOperation, List<byte[]>>(localCaches.size());
-        RedissonBatch batch = new RedissonBatch(null, commandExecutor.getConnectionManager());
+        RedissonBatch batch = new RedissonBatch(null, commandExecutor.getConnectionManager(), BatchOptions.defaults());
         for (TransactionalOperation transactionalOperation : operations) {
             if (localCaches.contains(transactionalOperation.getName())) {
                 MapOperation mapOperation = (MapOperation) transactionalOperation;
@@ -281,7 +288,7 @@ public class RedissonTransaction implements RTransaction {
             });
         }
         
-        RedissonBatch publishBatch = new RedissonBatch(null, commandExecutor.getConnectionManager());
+        RedissonBatch publishBatch = new RedissonBatch(null, commandExecutor.getConnectionManager(), BatchOptions.defaults());
         for (final Entry<TransactionalOperation, List<byte[]>> entry : hashes.entrySet()) {
             String disabledKeysName = RedissonObject.suffixName(entry.getKey().getName(), RedissonLocalCachedMap.DISABLED_KEYS_SUFFIX);
             RMultimapCacheAsync<LocalCachedMapDisabledKey, String> multimap = publishBatch.getListMultimapCache(disabledKeysName, entry.getKey().getCodec());
@@ -342,7 +349,7 @@ public class RedissonTransaction implements RTransaction {
         }
 
         try {
-            executorService.execute(0, 0, false, 0, 0, 0, true);
+            executorService.execute(BatchOptions.defaults());
         } catch (Exception e) {
             throw new TransactionException("Unable to execute transaction", e);
         }
