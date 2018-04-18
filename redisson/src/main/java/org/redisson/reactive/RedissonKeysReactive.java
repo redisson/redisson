@@ -18,6 +18,7 @@ package org.redisson.reactive;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -25,6 +26,7 @@ import org.reactivestreams.Subscription;
 import org.redisson.RedissonKeys;
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeysReactive;
+import org.redisson.api.RType;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -216,6 +218,146 @@ public class RedissonKeysReactive implements RKeysReactive {
             @Override
             public RFuture<Void> get() {
                 return instance.flushallAsync();
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> move(final String name, final int database) {
+        return commandExecutor.reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.moveAsync(name, database);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Void> migrate(final String name, final String host, final int port, final int database, final long timeout) {
+        return commandExecutor.reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.migrateAsync(name, host, port, database, timeout);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Void> copy(final String name, final String host, final int port, final int database, final long timeout) {
+        return commandExecutor.reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.copyAsync(name, host, port, database, timeout);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> expire(final String name, final long timeToLive, final TimeUnit timeUnit) {
+        return commandExecutor.reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.expireAsync(name, timeToLive, timeUnit);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> expireAt(final String name, final long timestamp) {
+        return commandExecutor.reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.expireAtAsync(name, timestamp);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> clearExpire(final String name) {
+        return commandExecutor.reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.clearExpireAsync(name);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> renamenx(final String oldName, final String newName) {
+        return commandExecutor.reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.renamenxAsync(oldName, newName);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Void> rename(final String currentName, final String newName) {
+        return commandExecutor.reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.renameAsync(currentName, newName);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> remainTimeToLive(final String name) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.remainTimeToLiveAsync(name);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> touch(final String... names) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.touchAsync(names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> countExists(final String... names) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.countExistsAsync(names);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<RType> getType(final String key) {
+        return commandExecutor.reactive(new Supplier<RFuture<RType>>() {
+            @Override
+            public RFuture<RType> get() {
+                return instance.getTypeAsync(key);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> unlink(final String... keys) {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.unlinkAsync(keys);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> count() {
+        return commandExecutor.reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.countAsync();
             }
         });
     }

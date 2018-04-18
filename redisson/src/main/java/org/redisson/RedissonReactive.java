@@ -52,7 +52,9 @@ import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
+import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.ReferenceCodecProvider;
@@ -88,6 +90,7 @@ import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.reactive.RedissonTopicReactive;
+import org.redisson.reactive.RedissonTransactionReactive;
 
 /**
  * Main infrastructure class allows to get access
@@ -410,6 +413,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
         return new RedissonMapReactive<K, V>(codec, commandExecutor, name, options);
+    }
+
+    @Override
+    public RTransactionReactive createTransaction(TransactionOptions options) {
+        return new RedissonTransactionReactive(commandExecutor, options);
     }
 }
 

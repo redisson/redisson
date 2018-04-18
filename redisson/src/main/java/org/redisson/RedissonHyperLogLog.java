@@ -34,11 +34,11 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
-    protected RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 

@@ -107,9 +107,9 @@ public class RedissonTopic<M> implements RTopic<M> {
     
     @Override
     public RFuture<Integer> addListenerAsync(final MessageListener<M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
+        final PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
         RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, name, pubSubListener);
-        RPromise<Integer> result = new RedissonPromise<Integer>();
+        final RPromise<Integer> result = new RedissonPromise<Integer>();
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {

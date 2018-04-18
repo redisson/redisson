@@ -19,6 +19,12 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V>
+ */
 public interface RHyperLogLogReactive<V> extends RExpirableReactive {
 
     Publisher<Boolean> add(V obj);

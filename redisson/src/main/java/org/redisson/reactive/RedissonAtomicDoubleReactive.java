@@ -35,9 +35,14 @@ public class RedissonAtomicDoubleReactive extends RedissonExpirableReactive impl
     private final RAtomicDoubleAsync instance;
     
     public RedissonAtomicDoubleReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonAtomicDouble(commandExecutor, name);
+        this(commandExecutor, name, new RedissonAtomicDouble(commandExecutor, name));
     }
+    
+    public RedissonAtomicDoubleReactive(CommandReactiveExecutor commandExecutor, String name, RAtomicDoubleAsync instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
+    }
+
 
     @Override
     public Publisher<Double> addAndGet(final double delta) {

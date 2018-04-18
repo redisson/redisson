@@ -20,10 +20,10 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonReference;
+import org.redisson.api.RExpirableAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObjectReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.misc.RedissonObjectFactory;
 
@@ -43,19 +43,21 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     final CommandReactiveExecutor commandExecutor;
     private final String name;
     final Codec codec;
+    protected RExpirableAsync instance;
 
-    public RedissonObjectReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonObjectReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RExpirableAsync instance) {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
+        this.instance = instance;
     }
 
     public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
         return commandExecutor.reactive(supplier);
     }
 
-    public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name) {
-        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
+    public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name, RExpirableAsync instance) {
+        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, instance);
     }
 
     protected <V> Stream<V> newSucceeded(V result) {
@@ -124,33 +126,63 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     }
     
     @Override
-    public Publisher<Void> rename(String newName) {
-        return commandExecutor.writeReactive(getName(), RedisCommands.RENAME, getName(), newName);
+    public Publisher<Void> rename(final String newName) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.renameAsync(newName);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> migrate(String host, int port, int database) {
-        return commandExecutor.writeReactive(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
+    public Publisher<Void> migrate(final String host, final int port, final int database, final long timeout) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.migrateAsync(host, port, database, timeout);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> move(int database) {
-        return commandExecutor.writeReactive(getName(), RedisCommands.MOVE, getName(), database);
+    public Publisher<Boolean> move(final int database) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.moveAsync(database);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> renamenx(String newName) {
-        return commandExecutor.writeReactive(getName(), RedisCommands.RENAMENX, getName(), newName);
+    public Publisher<Boolean> renamenx(final String newName) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.renamenxAsync(newName);
+            }
+        });
     }
 
     @Override
     public Publisher<Boolean> delete() {
-        return commandExecutor.writeReactive(getName(), RedisCommands.DEL_BOOL, getName());
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.deleteAsync();
+            }
+        });
     }
 
     @Override
     public Publisher<Boolean> isExists() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.EXISTS, getName());
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.isExistsAsync();
+            }
+        });
     }
 
 }

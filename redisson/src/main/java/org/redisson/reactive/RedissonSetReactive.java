@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,6 +24,7 @@ import java.util.Set;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.RSetAsync;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -45,17 +45,26 @@ import reactor.fn.Supplier;
  */
 public class RedissonSetReactive<V> extends RedissonExpirableReactive implements RSetReactive<V> {
 
-    private final RedissonSet<V> instance;
+    private final RSetAsync<V> instance;
 
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, null);
+        this(commandExecutor, name, new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, null));
+    }
+    
+    public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name, RSetAsync<V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonSet<V>(codec, commandExecutor, name, null);
+        this(codec, commandExecutor, name, new RedissonSet<V>(codec, commandExecutor, name, null));
     }
+    
+    public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RSetAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
+    }
+
 
     @Override
     public Publisher<Integer> addAll(Publisher<? extends V> c) {

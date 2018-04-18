@@ -35,10 +35,14 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     private final RAtomicLongAsync instance;
     
     public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonAtomicLong(commandExecutor, name);
+        this(commandExecutor, name, new RedissonAtomicLong(commandExecutor, name));
     }
 
+    public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name, RAtomicLongAsync instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
+    }
+    
     @Override
     public Publisher<Long> addAndGet(final long delta) {
         return reactive(new Supplier<RFuture<Long>>() {

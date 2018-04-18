@@ -502,6 +502,14 @@ public interface RedissonReactiveClient {
     RScriptReactive getScript();
 
     /**
+     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 
+     * @param options - transaction configuration
+     * @return Transaction object
+     */
+    RTransactionReactive createTransaction(TransactionOptions options);
+    
+    /**
      * Return batch object which executes group of
      * command in pipeline.
      *

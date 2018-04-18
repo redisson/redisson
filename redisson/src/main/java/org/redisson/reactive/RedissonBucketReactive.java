@@ -38,13 +38,21 @@ public class RedissonBucketReactive<V> extends RedissonExpirableReactive impleme
     private final RBucketAsync<V> instance;
     
     public RedissonBucketReactive(CommandReactiveExecutor connectionManager, String name) {
-        super(connectionManager, name);
-        instance = new RedissonBucket<V>(connectionManager, name);
+        this(connectionManager, name, new RedissonBucket<V>(connectionManager, name));
+    }
+    
+    public RedissonBucketReactive(CommandReactiveExecutor connectionManager, String name, RBucketAsync<V> instance) {
+        super(connectionManager, name, instance);
+        this.instance = instance;
     }
 
     public RedissonBucketReactive(Codec codec, CommandReactiveExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
-        instance = new RedissonBucket<V>(codec, connectionManager, name);
+        this(codec, connectionManager, name, new RedissonBucket<V>(codec, connectionManager, name));
+    }
+    
+    public RedissonBucketReactive(Codec codec, CommandReactiveExecutor connectionManager, String name, RBucketAsync<V> instance) {
+        super(codec, connectionManager, name, instance);
+        this.instance = instance;
     }
 
     @Override
@@ -53,6 +61,16 @@ public class RedissonBucketReactive<V> extends RedissonExpirableReactive impleme
             @Override
             public RFuture<V> get() {
                 return instance.getAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<V> getAndDelete() {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.getAndDeleteAsync();
             }
         });
     }

@@ -45,6 +45,8 @@ public interface RBucketReactive<V> extends RExpirableReactive {
     Publisher<V> getAndSet(V newValue);
 
     Publisher<V> get();
+    
+    Publisher<V> getAndDelete();
 
     Publisher<Void> set(V value);
 

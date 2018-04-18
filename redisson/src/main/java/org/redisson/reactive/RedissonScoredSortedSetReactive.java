@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 
@@ -47,13 +46,21 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     private final RScoredSortedSetAsync<V> instance;
     
     public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
+        this(commandExecutor, name, new RedissonScoredSortedSet<V>(commandExecutor, name, null));
     }
 
+    public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name, RScoredSortedSetAsync<V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
+    }
+    
     public RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
+        this(codec, commandExecutor, name, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null));
+    }
+
+    public RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RScoredSortedSetAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     @Override

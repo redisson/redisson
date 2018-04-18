@@ -21,10 +21,15 @@ import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonHyperLogLog;
+import org.redisson.api.RFuture;
+import org.redisson.api.RHyperLogLogAsync;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
+
+import reactor.fn.Supplier;
 
 /**
  * 
@@ -34,46 +39,66 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonHyperLogLogReactive<V> extends RedissonExpirableReactive implements RHyperLogLogReactive<V> {
 
+    private final RHyperLogLogAsync<V> instance;
+    
     public RedissonHyperLogLogReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+        super(commandExecutor, name, new RedissonHyperLogLog<V>(commandExecutor, name));
+        this.instance = (RHyperLogLogAsync<V>) super.instance;
     }
-
+    
     public RedissonHyperLogLogReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+        super(codec, commandExecutor, name, new RedissonHyperLogLog<V>(commandExecutor, name));
+        this.instance = (RHyperLogLogAsync<V>) super.instance;
     }
 
     @Override
-    public Publisher<Boolean> add(V obj) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), encode(obj));
+    public Publisher<Boolean> add(final V obj) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.addAsync(obj);
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> addAll(Collection<V> objects) {
-        List<Object> args = new ArrayList<Object>(objects.size() + 1);
-        args.add(getName());
-        encode(args, objects);
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
+    public Publisher<Boolean> addAll(final Collection<V> objects) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.addAllAsync(objects);
+            }
+        });
     }
 
     @Override
     public Publisher<Long> count() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFCOUNT, getName());
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.countAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Long> countWith(String... otherLogNames) {
-        List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
-        args.add(getName());
-        args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFCOUNT, args.toArray());
+    public Publisher<Long> countWith(final String... otherLogNames) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.countWithAsync(otherLogNames);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> mergeWith(String... otherLogNames) {
-        List<Object> args = new ArrayList<Object>(otherLogNames.length + 1);
-        args.add(getName());
-        args.addAll(Arrays.asList(otherLogNames));
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.PFMERGE, args.toArray());
+    public Publisher<Void> mergeWith(final String... otherLogNames) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.mergeWithAsync(otherLogNames);
+            }
+        });
     }
 
 }

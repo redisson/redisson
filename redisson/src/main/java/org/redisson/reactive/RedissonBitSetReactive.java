@@ -19,6 +19,7 @@ import java.util.BitSet;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonBitSet;
+import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.BitSetCodec;
@@ -35,11 +36,15 @@ import reactor.rx.Streams;
  */
 public class RedissonBitSetReactive extends RedissonExpirableReactive implements RBitSetReactive {
 
-    private final RedissonBitSet instance;
+    private final RBitSetAsync instance;
     
     public RedissonBitSetReactive(CommandReactiveExecutor connectionManager, String name) {
-        super(connectionManager, name);
-        this.instance = new RedissonBitSet(connectionManager, name);
+        this(connectionManager, name, new RedissonBitSet(connectionManager, name));
+    }
+
+    public RedissonBitSetReactive(CommandReactiveExecutor connectionManager, String name, RBitSetAsync instance) {
+        super(connectionManager, name, instance);
+        this.instance = instance;
     }
 
     public Publisher<Boolean> get(final long bitIndex) {

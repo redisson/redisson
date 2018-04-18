@@ -510,7 +510,7 @@ public class BaseTransactionalMap<K, V> {
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
-                AtomicLong counter = new AtomicLong();
+                final AtomicLong counter = new AtomicLong();
                 List<K> keyList = Arrays.asList(keys);
                 for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
                     K key = iterator.next();
