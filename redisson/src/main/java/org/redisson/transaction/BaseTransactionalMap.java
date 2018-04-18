@@ -166,8 +166,6 @@ public class BaseTransactionalMap<K, V> {
                 result.trySuccess(exists);
             }
         });
-        
-        result.trySuccess(null);
         return result;
     }
 
@@ -536,13 +534,14 @@ public class BaseTransactionalMap<K, V> {
                             return;
                         }
                         
-                        for (K key : keys) {
+                        for (K key : future.getNow().keySet()) {
                             HashValue keyHash = toKeyHash(key);
                             operations.add(new MapFastRemoveOperation(map, key));
+                            counter.incrementAndGet();
                             state.put(keyHash, MapEntry.NULL);
                         }
 
-                        result.trySuccess(null);
+                        result.trySuccess(counter.get());
                     }
                 });
             }

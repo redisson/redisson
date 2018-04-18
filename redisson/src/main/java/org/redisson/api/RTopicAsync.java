@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import org.redisson.api.listener.MessageListener;
+
 /**
  * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -28,8 +30,19 @@ public interface RTopicAsync<M> {
      * Publish the message to all subscribers of this topic asynchronously
      *
      * @param message to send
-     * @return the <code>RFuture</code> object with number of clients that received the message
+     * @return number of clients that received the message
      */
     RFuture<Long> publishAsync(M message);
+    
+    /**
+     * Subscribes to this topic.
+     * <code>MessageListener.onMessage</code> is called when any message
+     * is published on this topic.
+     *
+     * @param listener for messages
+     * @return locally unique listener id
+     * @see org.redisson.api.listener.MessageListener
+     */
+    RFuture<Integer> addListenerAsync(MessageListener<M> listener);
 
 }

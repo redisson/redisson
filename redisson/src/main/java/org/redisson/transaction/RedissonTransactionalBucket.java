@@ -155,8 +155,6 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         result.trySuccess(future.getNow());
                     }
                 });
-                
-                result.trySuccess(null);
             }
         });
         return result;
@@ -193,8 +191,6 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         result.trySuccess(future.getNow());
                     }
                 });
-                
-                result.trySuccess(null);
             }
         });
         return result;
@@ -231,8 +227,6 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         result.trySuccess(future.getNow());
                     }
                 });
-                
-                result.trySuccess(null);
             }
         });
         return result;
