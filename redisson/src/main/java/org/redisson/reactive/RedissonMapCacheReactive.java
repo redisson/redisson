@@ -65,13 +65,21 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     private final RMapCacheAsync<K, V> mapCache;
 
     public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options);
+        this(commandExecutor, name, options, new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options));
     }
 
+    public RedissonMapCacheReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapCacheAsync<K, V> mapCache) {
+        super(commandExecutor, name, mapCache);
+        this.mapCache = mapCache;
+    }
+    
     public RedissonMapCacheReactive(EvictionScheduler evictionScheduler, Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(codec, commandExecutor, name);
-        this.mapCache = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options);
+        this(codec, commandExecutor, name, options, new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options));
+    }
+    
+    public RedissonMapCacheReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapCacheAsync<K, V> mapCache) {
+        super(codec, commandExecutor, name, mapCache);
+        this.mapCache = mapCache;
     }
 
     @Override

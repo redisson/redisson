@@ -39,8 +39,8 @@ public class RedissonPermitExpirableSemaphoreReactive extends RedissonExpirableR
     private final RPermitExpirableSemaphoreAsync instance;
     
     public RedissonPermitExpirableSemaphoreReactive(CommandReactiveExecutor connectionManager, String name, SemaphorePubSub semaphorePubSub) {
-        super(connectionManager, name);
-        instance = new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub);
+        super(connectionManager, name, new RedissonPermitExpirableSemaphore(connectionManager, name, semaphorePubSub));
+        instance = (RPermitExpirableSemaphoreAsync) super.instance;
     }
 
     protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {

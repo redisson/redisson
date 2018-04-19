@@ -42,12 +42,12 @@ abstract class RedissonBaseMultimapReactive<K, V> extends RedissonExpirableReact
     private final RMultimap<K, V> instance;
     
     public RedissonBaseMultimapReactive(RMultimap<K, V> instance, CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+        super(commandExecutor, name, instance);
         this.instance = instance;
     }
 
     public RedissonBaseMultimapReactive(RMultimap<K, V> instance, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+        super(codec, commandExecutor, name, instance);
         this.instance = instance;
     }
 

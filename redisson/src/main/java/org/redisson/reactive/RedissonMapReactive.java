@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,13 +54,21 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     private final RMapAsync<K, V> instance;
 
     public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        this(commandExecutor, name, options, new RedissonMap<K, V>(commandExecutor, name, null, options));
+    }
+    
+    public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapAsync<K, V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        this(codec, commandExecutor, name, options, new RedissonMap<K, V>(codec, commandExecutor, name, null, options));
+    }
+    
+    public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapAsync<K, V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     @Override

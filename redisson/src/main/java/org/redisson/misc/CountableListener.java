@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.connection;
+package org.redisson.misc;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.redisson.misc.RPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -51,6 +49,15 @@ public class CountableListener<T> implements FutureListener<Object> {
         counter.incrementAndGet();
     }
     
+    public void decCounter() {
+        if (counter.decrementAndGet() == 0) {
+            onSuccess(value);
+            if (result != null) {
+                result.trySuccess(value);
+            }
+        }
+    }
+    
     @Override
     public void operationComplete(Future<Object> future) throws Exception {
         if (!future.isSuccess()) {
@@ -59,13 +66,8 @@ public class CountableListener<T> implements FutureListener<Object> {
             }
             return;
         }
-        
-        if (counter.decrementAndGet() == 0) {
-            onSuccess(value);
-            if (result != null) {
-                result.trySuccess(value);
-            }
-        }
+
+        decCounter();
     }
 
     protected void onSuccess(T value) {

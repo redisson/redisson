@@ -36,9 +36,10 @@ public interface RObjectReactive {
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    Publisher<Void> migrate(String host, int port, int database);
+    Publisher<Void> migrate(String host, int port, int database, long timeout);
 
     /**
      * Move object to another database in  mode

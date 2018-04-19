@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 
 /**
@@ -22,11 +23,11 @@ import org.redisson.client.codec.Codec;
  * Uses locks for write operations and maintains data modification operations list till the commit/rollback operation.
  * <p>
  * Transaction isolation level: <b>READ_COMMITTED</b>
- * 
+ *
  * @author Nikita Koksharov
  *
  */
-public interface RTransaction {
+public interface RTransactionReactive {
 
     /**
      * Returns transactional object holder instance by name.
@@ -35,7 +36,7 @@ public interface RTransaction {
      * @param name - name of object
      * @return Bucket object
      */
-    <V> RBucket<V> getBucket(String name);
+    <V> RBucketReactive<V> getBucket(String name);
     
     /**
      * Returns transactional object holder instance by name
@@ -46,7 +47,7 @@ public interface RTransaction {
      * @param codec - codec for values
      * @return Bucket object
      */
-    <V> RBucket<V> getBucket(String name, Codec codec);
+    <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
      * Returns transactional map instance by name.
@@ -56,7 +57,7 @@ public interface RTransaction {
      * @param name - name of object
      * @return Map object
      */
-    <K, V> RMap<K, V> getMap(String name);
+    <K, V> RMapReactive<K, V> getMap(String name);
 
     /**
      * Returns transactional map instance by name
@@ -68,7 +69,7 @@ public interface RTransaction {
      * @param codec - codec for keys and values
      * @return Map object
      */
-    <K, V> RMap<K, V> getMap(String name, Codec codec);
+    <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
     
     /**
      * Returns transactional set instance by name.
@@ -77,7 +78,7 @@ public interface RTransaction {
      * @param name - name of object
      * @return Set object
      */
-    <V> RSet<V> getSet(String name);
+    <V> RSetReactive<V> getSet(String name);
     
     /**
      * Returns transactional set instance by name
@@ -88,7 +89,7 @@ public interface RTransaction {
      * @param codec - codec for values
      * @return Set object
      */
-    <V> RSet<V> getSet(String name, Codec codec);
+    <V> RSetReactive<V> getSet(String name, Codec codec);
     
     /**
      * Returns transactional set-based cache instance by <code>name</code>.
@@ -100,7 +101,7 @@ public interface RTransaction {
      * @param name - name of object
      * @return SetCache object
      */
-    <V> RSetCache<V> getSetCache(String name);
+    <V> RSetCacheReactive<V> getSetCache(String name);
     
     /**
      * Returns transactional set-based cache instance by <code>name</code>.
@@ -113,7 +114,7 @@ public interface RTransaction {
      * @param codec - codec for values
      * @return SetCache object
      */
-    <V> RSetCache<V> getSetCache(String name, Codec codec);
+    <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
     
     /**
      * Returns transactional map-based cache instance by name.
@@ -126,7 +127,7 @@ public interface RTransaction {
      * @param name - name of object
      * @return MapCache object
      */
-    <K, V> RMapCache<K, V> getMapCache(String name);
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name);
 
     /**
      * Returns transactional map-based cache instance by <code>name</code>
@@ -141,36 +142,16 @@ public interface RTransaction {
      * @param codec - codec for keys and values
      * @return MapCache object
      */
-    <K, V> RMapCache<K, V> getMapCache(String name, Codec codec);
-    
-    /**
-     * Returns transactional local cached map proxy for specified local cached map instance.
-     * 
-     * @param <K> type of key
-     * @param <V> type of value
-     * @param fromInstance - local cache map instance
-     * @return LocalCachedMap object
-     */
-    <K, V> RLocalCachedMap<K, V> getLocalCachedMap(RLocalCachedMap<K, V> fromInstance);
+    <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
     
     /**
      * Commits all changes made on this transaction.
      */
-    void commit();
-
-    /**
-     * Commits all changes made on this transaction in async mode.
-     */
-    RFuture<Void> commitAsync();
+    Publisher<Void> commit();
     
     /**
      * Rollback all changes made on this transaction.
      */
-    void rollback();
-    
-    /**
-     * Rollback all changes made on this transaction in async mode.
-     */
-    RFuture<Void> rollbackAsync();
-    
+    Publisher<Void> rollback();
+
 }

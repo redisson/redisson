@@ -13,28 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.transaction;
 
-import java.util.Collection;
-
-import org.reactivestreams.Publisher;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
  */
-public interface RHyperLogLogReactive<V> extends RExpirableReactive {
+public class HashValue {
 
-    Publisher<Boolean> add(V obj);
-
-    Publisher<Boolean> addAll(Collection<V> objects);
-
-    Publisher<Long> count();
-
-    Publisher<Long> countWith(String ... otherLogNames);
-
-    Publisher<Void> mergeWith(String ... otherLogNames);
-
+    private final AtomicInteger counter = new AtomicInteger();
+    private final List<byte[]> keyIds = new ArrayList<byte[]>();
+    
+    public HashValue() {
+    }
+    
+    public AtomicInteger getCounter() {
+        return counter;
+    }
+    
+    public List<byte[]> getKeyIds() {
+        return keyIds;
+    }
+    
 }

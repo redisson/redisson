@@ -34,6 +34,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListAsync;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -53,16 +54,16 @@ import reactor.core.publisher.Mono;
  */
 public class RedissonListReactive<V> extends RedissonExpirableReactive implements RListReactive<V> {
 
-    private final RedissonList<V> instance;
+    private final RListAsync<V> instance;
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonList<V>(commandExecutor, name, null);
+        super(commandExecutor, name, new RedissonList<V>(commandExecutor, name, null));
+        this.instance = (RListAsync<V>) super.instance;
     }
 
     public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonList<V>(codec, commandExecutor, name, null);
+        super(codec, commandExecutor, name, new RedissonList<V>(codec, commandExecutor, name, null));
+        this.instance = (RListAsync<V>) super.instance;
     }
 
     @Override
@@ -305,7 +306,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         return reactive(new Supplier<RFuture<Long>>() {
             @Override
             public RFuture<Long> get() {
-                return instance.indexOfAsync(o, new LongReplayConvertor());
+                return ((RedissonList)instance).indexOfAsync(o, new LongReplayConvertor());
             }
         });
     }
@@ -315,7 +316,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         return reactive(new Supplier<RFuture<Long>>() {
             @Override
             public RFuture<Long> get() {
-                return instance.lastIndexOfAsync(o, new LongReplayConvertor());
+                return ((RedissonList)instance).lastIndexOfAsync(o, new LongReplayConvertor());
             }
         });
     }

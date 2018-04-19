@@ -565,5 +565,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         String lockName = getLockName(value);
         return new RedissonLock(commandExecutor, lockName);
     }
+
+    @Override
+    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, RedisClient client, long startPos,
+            String pattern) {
+        throw new UnsupportedOperationException();
+    }
     
 }

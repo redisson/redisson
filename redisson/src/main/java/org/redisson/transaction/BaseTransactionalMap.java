@@ -166,8 +166,6 @@ public class BaseTransactionalMap<K, V> {
                 result.trySuccess(exists);
             }
         });
-        
-        result.trySuccess(null);
         return result;
     }
 
@@ -512,7 +510,7 @@ public class BaseTransactionalMap<K, V> {
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
-                AtomicLong counter = new AtomicLong();
+                final AtomicLong counter = new AtomicLong();
                 List<K> keyList = Arrays.asList(keys);
                 for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
                     K key = iterator.next();
@@ -536,13 +534,14 @@ public class BaseTransactionalMap<K, V> {
                             return;
                         }
                         
-                        for (K key : keys) {
+                        for (K key : future.getNow().keySet()) {
                             HashValue keyHash = toKeyHash(key);
                             operations.add(new MapFastRemoveOperation(map, key));
+                            counter.incrementAndGet();
                             state.put(keyHash, MapEntry.NULL);
                         }
 
-                        result.trySuccess(null);
+                        result.trySuccess(counter.get());
                     }
                 });
             }

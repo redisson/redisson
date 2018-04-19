@@ -36,8 +36,8 @@ public class RedissonSemaphoreReactive extends RedissonExpirableReactive impleme
     private final RSemaphoreAsync instance;
     
     public RedissonSemaphoreReactive(CommandReactiveExecutor connectionManager, String name, SemaphorePubSub semaphorePubSub) {
-        super(connectionManager, name);
-        instance = new RedissonSemaphore(commandExecutor, name, semaphorePubSub);
+        super(connectionManager, name, new RedissonSemaphore(connectionManager, name, semaphorePubSub));
+        instance = (RSemaphoreAsync) super.instance;
     }
 
     @Override

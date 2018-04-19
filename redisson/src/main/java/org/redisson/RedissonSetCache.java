@@ -128,6 +128,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return get(f);
     }
 
+    @Override
     public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern) {
         List<Object> params = new ArrayList<Object>();
         params.add(startPos);

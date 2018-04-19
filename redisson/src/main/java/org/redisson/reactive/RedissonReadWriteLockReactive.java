@@ -16,11 +16,9 @@
 package org.redisson.reactive;
 
 import org.redisson.RedissonReadWriteLock;
-import org.redisson.api.RLockAsync;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RReadWriteLockReactive;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandReactiveExecutor;
 
 /**
@@ -33,28 +31,18 @@ public class RedissonReadWriteLockReactive extends RedissonExpirableReactive imp
     private final RReadWriteLock instance;
     
     public RedissonReadWriteLockReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        this.instance = new RedissonReadWriteLock(commandExecutor, name);
+        super(commandExecutor, name, new RedissonReadWriteLock(commandExecutor, name));
+        this.instance = (RReadWriteLock) super.instance;
     }
 
     @Override
     public RLockReactive readLock() {
-        return new RedissonLockReactive(commandExecutor, getName()) {
-            @Override
-            protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
-                return instance.readLock();
-            }
-        };
+        return new RedissonLockReactive(commandExecutor, getName(), instance.readLock());
     }
 
     @Override
     public RLockReactive writeLock() {
-        return new RedissonLockReactive(commandExecutor, getName()) {
-            @Override
-            protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name) {
-                return instance.writeLock();
-            }
-        };
+        return new RedissonLockReactive(commandExecutor, getName(), instance.writeLock());
     }
 
     

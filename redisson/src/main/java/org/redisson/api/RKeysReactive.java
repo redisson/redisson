@@ -16,11 +16,130 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RKeysReactive {
 
+    /**
+     * Move object to another database
+     *
+     * @param name of object
+     * @param database - Redis database number
+     * @return <code>true</code> if key was moved else <code>false</code>
+     */
+    Publisher<Boolean> move(String name, int database);
+    
+    /**
+     * Transfer object from source Redis instance to destination Redis instance
+     *
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     */
+    Publisher<Void> migrate(String name, String host, int port, int database, long timeout);
+    
+    /**
+     * Copy object from source Redis instance to destination Redis instance
+     *
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     */
+    Publisher<Void> copy(String name, String host, int port, int database, long timeout);
+    
+    /**
+     * Set a timeout for object. After the timeout has expired,
+     * the key will automatically be deleted.
+     *
+     * @param name of object
+     * @param timeToLive - timeout before object will be deleted
+     * @param timeUnit - timeout time unit
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    Publisher<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
+    
+    /**
+     * Set an expire date for object. When expire date comes
+     * the key will automatically be deleted.
+     * 
+     * @param name of object
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
+     * @return <code>true</code> if the timeout was set and <code>false</code> if not
+     */
+    Publisher<Boolean> expireAt(String name, long timestamp);
+    
+    /**
+     * Clear an expire timeout or expire date for object.
+     * 
+     * @param name of object
+     * @return <code>true</code> if timeout was removed
+     *         <code>false</code> if object does not exist or does not have an associated timeout
+     */
+    Publisher<Boolean> clearExpire(String name);
+    
+    /**
+     * Rename object with <code>oldName</code> to <code>newName</code>
+     * only if new key is not exists
+     *
+     * @param oldName - old name of object
+     * @param newName - new name of object
+     * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
+     */
+    Publisher<Boolean> renamenx(String oldName, String newName);
+    
+    /**
+     * Rename current object key to <code>newName</code>
+     *
+     * @param currentName - current name of object
+     * @param newName - new name of object
+     */
+    Publisher<Void> rename(String currentName, String newName);
+    
+    /**
+     * Remaining time to live of Redisson object that has a timeout
+     *
+     * @param name of key
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    Publisher<Long> remainTimeToLive(String name);
+
+    /**
+     * Update the last access time of an object. 
+     * 
+     * @param names of keys
+     * @return count of objects were touched
+     */
+    Publisher<Long> touch(String... names);
+    
+    /**
+     * Checks if provided keys exist
+     * 
+     * @param names of keys
+     * @return amount of existing keys
+     */
+    Publisher<Long> countExists(String... names);
+    
+    /**
+     * Get Redis object type by key
+     * 
+     * @param key - name of key
+     * @return type of key
+     */
+    Publisher<RType> getType(String key);
+    
     /**
      * Load keys in incrementally iterate mode.
      *
@@ -105,6 +224,24 @@ public interface RKeysReactive {
      */
     Publisher<Long> delete(String ... keys);
 
+    /**
+     * Delete multiple objects by name.
+     * Actual removal will happen later asynchronously.
+     * <p>
+     * Requires Redis 4.0+
+     * 
+     * @param keys of objects
+     * @return number of removed keys
+     */
+    Publisher<Long> unlink(String ... keys);
+    
+    /**
+     * Returns the number of keys in the currently-selected database
+     *
+     * @return count of keys
+     */
+    Publisher<Long> count();
+    
     /**
      * Delete all the keys of the currently selected database
      *
