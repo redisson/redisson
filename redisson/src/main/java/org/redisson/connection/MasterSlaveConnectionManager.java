@@ -147,7 +147,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final ExecutorService executor; 
     
     private final CommandSyncService commandExecutor;
-    
+
     private final Config cfg;
 
     protected final DnsAddressResolverGroup resolverGroup;
@@ -186,7 +186,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
-            } else {
+        } else {
                 this.group = cfg.getEventLoopGroup();
             }
 
@@ -218,7 +218,24 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.shutdownPromise = new RedissonPromise<Boolean>();
         this.commandExecutor = new CommandSyncService(this);
     }
+    
+    /*
+     * Remove it once https://github.com/netty/netty/issues/7882 get resolved
+     */
+    protected DnsAddressResolverGroup createResolverGroup() {
+        if (cfg.getTransportMode() == TransportMode.EPOLL) {
+            return cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+        } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
+            return cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+        }
+        
+        return cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+    }
 
+    public SlotGenerator getSlotGenerator() {
+        return slotGenerator;
+    }
+    
     protected void closeNodeConnections() {
         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
@@ -351,7 +368,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             RFuture<RedisClient> f = entry.setupMasterEntry(config.getMasterAddress());
             f.syncUninterruptibly();
-            
+        
             for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
                 addEntry(slot, entry);
             }
@@ -499,14 +516,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (URIBuilder.compare(entry.getClient().getAddr(), addr)) {
                 return entry;
-            }
+    }
             if (entry.hasSlave(addr)) {
                 return entry;
             }
         }
         return null;
     }
-    
+
     @Override
     public MasterSlaveEntry getEntry(RedisClient redisClient) {
         MasterSlaveEntry entry = client2entry.get(redisClient);
@@ -636,7 +653,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : getEntrySet()) {
             entry.shutdown();
         }
-
+        
         if (cfg.getExecutor() == null) {
             executor.shutdown();
             try {

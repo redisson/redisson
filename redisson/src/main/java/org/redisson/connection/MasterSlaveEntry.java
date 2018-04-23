@@ -115,7 +115,7 @@ public class MasterSlaveEntry {
         }
         return result;
     }
-    
+
     public RFuture<RedisClient> setupMasterEntry(InetSocketAddress address, URI uri) {
         RedisClient client = connectionManager.createClient(NodeType.MASTER, address, uri, sslHostname);
         return setupMasterEntry(client);
@@ -139,25 +139,25 @@ public class MasterSlaveEntry {
                     return;
                 }
                 
-                masterEntry = new ClientConnectionsEntry(
-                        client, 
-                        config.getMasterConnectionMinimumIdleSize(), 
-                        config.getMasterConnectionPoolSize(),
-                        config.getSubscriptionConnectionMinimumIdleSize(),
-                        config.getSubscriptionConnectionPoolSize(), 
-                        connectionManager, 
+        masterEntry = new ClientConnectionsEntry(
+                client, 
+                config.getMasterConnectionMinimumIdleSize(), 
+                config.getMasterConnectionPoolSize(),
+                config.getSubscriptionConnectionMinimumIdleSize(),
+                config.getSubscriptionConnectionPoolSize(), 
+                connectionManager, 
                         NodeType.MASTER);
-                
-                CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client);
-                RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-                listener.incCounter();
-                writeFuture.addListener(listener);
-                
-                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                    RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-                    listener.incCounter();
-                    pubSubFuture.addListener(listener);
-                }
+        
+        CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client);
+        RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+        listener.incCounter();
+        writeFuture.addListener(listener);
+        
+        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+            RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+            listener.incCounter();
+            pubSubFuture.addListener(listener);
+        }
             }
         });
         
@@ -306,7 +306,7 @@ public class MasterSlaveEntry {
     public RFuture<Void> addSlave(InetSocketAddress address, URI uri) {
         return addSlave(address, uri, false, NodeType.SLAVE);
     }
-    
+        
     private RFuture<Void> addSlave(final RedisClient client, final boolean freezed, final NodeType nodeType) {
         final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
@@ -317,7 +317,7 @@ public class MasterSlaveEntry {
                     result.tryFailure(future.cause());
                     return;
                 }
-                
+
                 ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                         config.getSlaveConnectionMinimumIdleSize(),
                         config.getSlaveConnectionPoolSize(),
@@ -335,7 +335,7 @@ public class MasterSlaveEntry {
         });
         return result;
     }
-    
+
     private RFuture<Void> addSlave(InetSocketAddress address, URI uri, final boolean freezed, final NodeType nodeType) {
         RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, uri, sslHostname);
         return addSlave(client, freezed, nodeType);
@@ -346,6 +346,10 @@ public class MasterSlaveEntry {
         return addSlave(client, freezed, nodeType);
     }
 
+    public ClientConnectionsEntry getSlaveEntry(RedisClient client) {
+        return slaveBalancer.getEntry(client);
+    }
+    
     public Collection<ClientConnectionsEntry> getSlaveEntries() {
         List<ClientConnectionsEntry> result = new ArrayList<ClientConnectionsEntry>();
         for (ClientConnectionsEntry slaveEntry : slaveBalancer.getEntries()) {
