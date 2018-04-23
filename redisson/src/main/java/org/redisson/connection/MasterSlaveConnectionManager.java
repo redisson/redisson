@@ -232,10 +232,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
     }
 
-    public SlotGenerator getSlotGenerator() {
-        return slotGenerator;
-    }
-    
     protected void closeNodeConnections() {
         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
