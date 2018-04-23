@@ -1401,6 +1401,11 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
 
+    @Test
+    public void testDeleteNotExisted() {
+        RLiveObjectService service = redisson.getLiveObjectService();
+        assertThat(service.delete(Customer.class, "id")).isFalse();
+    }
     
     @Test
     public void testDelete() {
