@@ -142,8 +142,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final ConnectionEventsHub connectionEventsHub = new ConnectionEventsHub();
     
-    private final AsyncSemaphore[] locks = new AsyncSemaphore[50];
-    
     private final ExecutorService executor; 
     
     private final CommandSyncService commandExecutor;
@@ -156,12 +154,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private final Map<Object, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
     
-    {
-        for (int i = 0; i < locks.length; i++) {
-            locks[i] = new AsyncSemaphore(1);
-        }
-    }
-
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
         this(config, id);
         this.config = cfg;

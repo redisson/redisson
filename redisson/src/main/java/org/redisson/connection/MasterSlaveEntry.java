@@ -471,22 +471,6 @@ public class MasterSlaveEntry {
         });
     }
 
-    public boolean isFreezed() {
-        return masterEntry.isFreezed();
-    }
-
-    public FreezeReason getFreezeReason() {
-        return masterEntry.getFreezeReason();
-    }
-
-    public void unfreeze() {
-        masterEntry.resetFirstFail();
-        synchronized (masterEntry) {
-            masterEntry.setFreezed(false);
-            masterEntry.setFreezeReason(null);
-        }
-    }
-
     public void shutdownMasterAsync() {
         if (!active.compareAndSet(true, false)) {
             return;
