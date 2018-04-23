@@ -122,7 +122,7 @@ public class BatchOptions {
     }
     
     /**
-     * Atomically executes all batched commands as a single command.
+     * Switches batch to atomic mode. Redis atomically executes all commands of this batch as a single command.
      * <p>
      * Please note, that in cluster mode all objects should be on the same cluster slot.
      * https://github.com/antirez/redis/issues/3682 
@@ -138,7 +138,7 @@ public class BatchOptions {
     }
     
     /**
-     * Inform Redis not to send reply. It may save network traffic.
+     * Inform Redis not to send reply. This allows to save network traffic for commands with batch with big response.
      * <p>
      * NOTE: Redis 3.2+ required
      * 
