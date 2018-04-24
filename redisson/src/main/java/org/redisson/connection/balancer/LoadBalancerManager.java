@@ -86,8 +86,8 @@ public class LoadBalancerManager {
         CountableListener<Void> listener = new CountableListener<Void>(result, null) {
             @Override
             protected void onSuccess(Void value) {
-                client2Entry.put(entry.getClient(), entry);
-            }
+                    client2Entry.put(entry.getClient(), entry);
+                }
         };
 
         RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
@@ -149,12 +149,12 @@ public class LoadBalancerManager {
         }
         return false;
     }
-
+    
     public ClientConnectionsEntry freeze(URI address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
     }
-    
+
     public ClientConnectionsEntry freeze(InetSocketAddress address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
@@ -197,7 +197,7 @@ public class LoadBalancerManager {
     public boolean contains(URI addr) {
         return getEntry(addr) != null;
     }
-    
+
     public boolean contains(RedisClient redisClient) {
         return getEntry(redisClient) != null;
     }
@@ -222,8 +222,7 @@ public class LoadBalancerManager {
         return null;
     }
 
-    
-    protected ClientConnectionsEntry getEntry(RedisClient redisClient) {
+    public ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return client2Entry.get(redisClient);
     }
 

@@ -485,8 +485,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T, K> void delete(Class<T> entityClass, K id) {
-        asLiveObject(get(entityClass, id)).delete();
+    public <T, K> boolean delete(Class<T> entityClass, K id) {
+        T entity = get(entityClass, id);
+        if (entity == null) {
+            return false;
+        }
+        return asLiveObject(entity).delete();
     }
 
     @Override

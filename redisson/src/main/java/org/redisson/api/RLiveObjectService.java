@@ -120,9 +120,11 @@ public interface RLiveObjectService {
      * @param <K> Key type
      * @param entityClass - object class
      * @param id - object id
+     * 
+     * @return <code>true</code> if entity was deleted successfully, <code>false</code> otherwise 
      */
-    <T, K> void delete(Class<T> entityClass, K id);
-
+    <T, K> boolean delete(Class<T> entityClass, K id);
+    
     /**
      * To cast the instance to RLiveObject instance.
      * 
