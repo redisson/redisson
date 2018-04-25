@@ -81,7 +81,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String TOPIC_SUFFIX = "topic";
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
-        
+
     public static class CacheValue implements Serializable {
         
         private final Object key;
@@ -119,6 +119,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         @Override
+        public int hashCode() {
+            return getValue() == null ? 0 : getValue().hashCode();
+        }
+
+        @Override
         public String toString() {
             return "CacheValue [key=" + key + ", value=" + value + "]";
         }
@@ -136,7 +141,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private SyncStrategy syncStrategy;
 
     private LocalCacheListener listener;
-    
+
     public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
         super(commandExecutor, name, redisson, options);
         init(name, options, redisson, evictionScheduler);
@@ -163,7 +168,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         cache = createCache(options);
 
         listener = new LocalCacheListener(name, commandExecutor, cache, this, instanceId, codec, options, cacheUpdateLogTime) {
-            
+
             @Override
             protected void updateCache(ByteBuf keyBuf, ByteBuf valueBuf) throws IOException {
                 CacheKey cacheKey = toCacheKey(keyBuf);
@@ -171,7 +176,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 Object value = codec.getMapValueDecoder().decode(valueBuf, null);
                 cachePut(cacheKey, key, value);
             }
-            
+
         };
         listener.add();
     }
@@ -180,10 +185,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         if (listener.isDisabled(cacheKey)) {
             return;
         }
-        
+
         cache.put(cacheKey, new CacheValue(key, value));
     }
-    
+
     protected Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<K, V> options) {
         if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
             return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
@@ -264,7 +269,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         });
         return future;
     }
-    
+
     protected static byte[] generateId() {
         byte[] id = new byte[16];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
@@ -305,7 +310,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     + "redis.call('publish', KEYS[2], ARGV[3]); "
                 + "end;"
                 + "return v; ",
-                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 mapKey, mapValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
     }
 
@@ -337,7 +342,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                   + "return 0; "
                 + "end; "
                 + "return 1; ",
-                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 encodedKey, encodedValue, msg, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
     }
     
@@ -365,7 +370,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                     + "end;"
                 + "end; "
                 + "return v",
-                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 keyEncoded, msgEncoded, invalidateEntryOnChange, System.currentTimeMillis(), entryId);
     }
 
@@ -393,7 +398,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                                 + "table.insert(result, val);"
                               + "end;"
                               + "return result;",
-                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName()), 
+                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName()),
                                 params.toArray());            
             }
             
@@ -424,7 +429,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                                 + "table.insert(result, val);"
                               + "end;"
                               + "return result;",
-                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                                 params.toArray());            
             }
     
@@ -473,7 +478,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                                 + "end;"
                               + "end;"
                               + "return counter;",
-                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName()), 
+                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName()),
                                 params.toArray());            
             }
             
@@ -503,7 +508,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                                 + "end;"
                               + "end;"
                               + "return counter;",
-                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                                Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                                 params.toArray());            
             }
 
@@ -531,7 +536,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "return 1;" 
               + "end; "
               + "return 0;",
-              Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+              Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
               msgEncoded, invalidateEntryOnChange);
     }
 
@@ -675,7 +680,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                    + "redis.call('publish', KEYS[2], ARGV[4]); "
               + "end;"
               + "return result; ",
-              Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+              Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
               keyState, new BigDecimal(value.toString()).toPlainString(), invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
 
         future.addListener(new FutureListener<V>() {
@@ -804,12 +809,12 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             cachePut(cacheKey, entry.getKey(), entry.getValue());
         }
     }
-    
+
     @Override
     public void clearLocalCache() {
         get(clearLocalCacheAsync());
     }
-    
+
     @Override
     public RFuture<Void> clearLocalCacheAsync() {
         return listener.clearLocalCacheAsync();
@@ -879,17 +884,17 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 if (!future.isSuccess()) {
                     return;
                 }
-                
+
                 if (future.getNow()) {
                     CacheKey cacheKey = toCacheKey(key);
                     cachePut(cacheKey, key, value);
                 }
             }
         });
-        
+
         return future;
     }
-    
+
     @Override
     protected RFuture<Boolean> fastReplaceOperationAsync(K key, V value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -900,7 +905,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
-                    
+
                     + "if ARGV[3] == '1' then "
                         + "redis.call('publish', KEYS[2], ARGV[4]); "
                     + "end;"
@@ -913,10 +918,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "else "
                     + "return 0; "
                 + "end",
-                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
     }
-    
+
     @Override
     protected RFuture<V> replaceOperationAsync(K key, V value) {
         ByteBuf keyState = encodeMapKey(key);
@@ -941,7 +946,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "else "
                     + "return nil; "
                 + "end",
-                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
     }
     
@@ -987,7 +992,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "else "
                     + "return 0; "
                 + "end",
-                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+                Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 keyState, oldValueState, newValueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
     }
 
@@ -1033,7 +1038,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "else "
                     + "return 0 "
                 + "end",
-            Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
+            Arrays.<Object>asList(getName(key), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
             keyState, valueState, invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
     }
     

@@ -83,9 +83,6 @@ public class AsyncDetails<V, R> {
         this.params = params;
         this.mainPromise = mainPromise;
         this.attempt = attempt;
-        this.writeFuture = writeFuture;
-        this.exception = exception;
-        this.timeout = timeout;
     }
     
     public ChannelFuture getWriteFuture() {

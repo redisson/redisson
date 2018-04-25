@@ -77,12 +77,12 @@ public final class CronSchedule {
             throw new IllegalArgumentException("You must specify at least one day of week.");
         }
 
-        String expression = String.format("0 %d %d ? * %d", minute, hour, daysOfWeek[0]);
+        StringBuilder expression = new StringBuilder(String.format("0 %d %d ? * %d", minute, hour, daysOfWeek[0]));
         for (int i = 1; i < daysOfWeek.length; i++) {
-            expression = expression + "," + daysOfWeek[i];
+            expression.append(",").append(daysOfWeek[i]);
         }
 
-        return of(expression);
+        return of(expression.toString());
     }
 
     /**
