@@ -547,4 +547,9 @@ public class MasterSlaveEntry {
         return slots;
     }
 
+    @Override
+    public String toString() {
+        return "MasterSlaveEntry [masterEntry=" + masterEntry + "]";
+    }
+
 }
