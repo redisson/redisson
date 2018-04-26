@@ -24,7 +24,8 @@ import java.util.List;
 import org.redisson.api.RBitSet;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -57,12 +58,12 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Boolean> getAsync(long bitIndex) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.GETBIT, getName(), bitIndex);
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETBIT, getName(), bitIndex);
     }
 
     @Override
-    public void set(long bitIndex) {
-        get(setAsync(bitIndex, true));
+    public boolean set(long bitIndex) {
+        return get(setAsync(bitIndex, true));
     }
 
     @Override
@@ -82,11 +83,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Boolean> setAsync(long bitIndex, boolean value) {
-        RedisCommand<Boolean> command = RedisCommands.SETBIT_TRUE;
-        if (!value) {
-            command = RedisCommands.SETBIT_FALSE;
-        }
-        return commandExecutor.writeAsync(getName(), codec, command, getName(), bitIndex, value ? 1 : 0);
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT, getName(), bitIndex, value ? 1 : 0);
     }
 
     @Override
@@ -204,7 +201,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     public RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value) {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (long i = fromIndex; i < toIndex; i++) {
-            executorService.writeAsync(getName(), codec, RedisCommands.SETBIT_VOID, getName(), i, value ? 1 : 0);
+            executorService.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getName(), i, value ? 1 : 0);
         }
         return executorService.executeAsyncVoid();
     }
@@ -231,7 +228,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> sizeAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.BITS_SIZE, getName());
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITS_SIZE, getName());
     }
 
     @Override
@@ -241,7 +238,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> cardinalityAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITCOUNT, getName());
     }
 
     @Override
