@@ -719,11 +719,7 @@ public class RedissonTest {
         }
         
         redisson.getBucket(key).set("123");
-        
-        List<ClusterNodeInfo> nodes = cc.sync(RedisCommands.CLUSTER_NODES);
-        for (ClusterNodeInfo clusterNodeInfo : nodes) {
-            System.out.println(clusterNodeInfo);
-        }
+        redisson.getBucket(key).get();
         
         redisson.shutdown();
         process.shutdown();
