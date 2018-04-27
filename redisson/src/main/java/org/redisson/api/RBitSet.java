@@ -52,8 +52,16 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      */
     void clear(long fromIndex, long toIndex);
 
+    /**
+     * Copy bits state of source BitSet object to this object
+     * 
+     * @param bs - BitSet source
+     */
     void set(BitSet bs);
 
+    /**
+     * Executes NOT operation over all bits
+     */
     void not();
 
     /**
@@ -84,9 +92,10 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * Set bit to one at specified bitIndex
      * 
      * @param bitIndex - index of bit
-     * 
+     * @return <code>true</code> - if previous value was true, 
+     * <code>false</code> - if previous value was false
      */
-    void set(long bitIndex);
+    boolean set(long bitIndex);
 
     /**
      * Set bit to <code>value</code> at specified <code>bitIndex</code>
@@ -122,10 +131,28 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
 
     BitSet asBitSet();
 
+    /**
+     * Executes OR operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     */
     void or(String... bitSetNames);
 
+    /**
+     * Executes AND operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     */
     void and(String... bitSetNames);
 
+    /**
+     * Executes XOR operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     */
     void xor(String... bitSetNames);
 
 }

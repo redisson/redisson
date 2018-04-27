@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RMap;
+import org.redisson.api.RTopic;
 import org.redisson.tomcat.RedissonSessionManager.ReadMode;
 import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 
@@ -37,6 +38,7 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
+    private RTopic<AttributeMessage> topic;
     private final RedissonSessionManager.ReadMode readMode;
     private final UpdateMode updateMode;
     
@@ -69,6 +71,15 @@ public class RedissonSession extends StandardSession {
     public void setId(String id, boolean notify) {
         super.setId(id, notify);
         map = redissonManager.getMap(id);
+        topic = redissonManager.getTopic();
+    }
+    
+    public void delete() {
+        map.delete();
+        if (readMode == ReadMode.MEMORY) {
+            topic.publish(new AttributesClearMessage(getId()));
+        }
+        map = null;
     }
     
     @Override
@@ -81,6 +92,9 @@ public class RedissonSession extends StandardSession {
             newMap.put("session:lastAccessedTime", lastAccessedTime);
             newMap.put("session:thisAccessedTime", thisAccessedTime);
             map.putAll(newMap);
+            if (readMode == ReadMode.MEMORY) {
+                topic.publish(new AttributesPutAllMessage(getId(), newMap));
+            }
         }
     }
     
@@ -93,6 +107,9 @@ public class RedissonSession extends StandardSession {
             newMap.put("session:lastAccessedTime", lastAccessedTime);
             newMap.put("session:thisAccessedTime", thisAccessedTime);
             map.putAll(newMap);
+            if (readMode == ReadMode.MEMORY) {
+                topic.publish(new AttributesPutAllMessage(getId(), newMap));
+            }
             if (getMaxInactiveInterval() >= 0) {
                 map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
             }
@@ -104,10 +121,17 @@ public class RedissonSession extends StandardSession {
         super.setMaxInactiveInterval(interval);
         
         if (map != null) {
-            map.fastPut("session:maxInactiveInterval", maxInactiveInterval);
+            fastPut("session:maxInactiveInterval", maxInactiveInterval);
             if (maxInactiveInterval >= 0) {
                 map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
             }
+        }
+    }
+    
+    private void fastPut(String name, Object value) {
+        map.fastPut(name, value);
+        if (readMode == ReadMode.MEMORY) {
+            topic.publish(new AttributeUpdateMessage(getId(), name, value));
         }
     }
     
@@ -120,7 +144,7 @@ public class RedissonSession extends StandardSession {
                 return;
             }
 
-            map.fastPut("session:isValid", isValid);
+            fastPut("session:isValid", isValid);
         }
     }
     
@@ -129,7 +153,7 @@ public class RedissonSession extends StandardSession {
         super.setNew(isNew);
         
         if (map != null) {
-            map.fastPut("session:isNew", isNew);
+            fastPut("session:isNew", isNew);
         }
     }
     
@@ -139,8 +163,12 @@ public class RedissonSession extends StandardSession {
         super.endAccess();
 
         if (isNew != oldValue) {
-            map.fastPut("session:isNew", isNew);
+            fastPut("session:isNew", isNew);
         }
+    }
+    
+    public void superSetAttribute(String name, Object value, boolean notify) {
+        super.setAttribute(name, value, notify);
     }
     
     @Override
@@ -148,8 +176,12 @@ public class RedissonSession extends StandardSession {
         super.setAttribute(name, value, notify);
         
         if (updateMode == UpdateMode.DEFAULT && map != null && value != null) {
-            map.fastPut(name, value);
+            fastPut(name, value);
         }
+    }
+    
+    public void superRemoveAttributeInternal(String name, boolean notify) {
+        super.removeAttributeInternal(name, notify);
     }
     
     @Override
@@ -158,6 +190,9 @@ public class RedissonSession extends StandardSession {
         
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
+            if (readMode == ReadMode.MEMORY) {
+                topic.publish(new AttributeRemoveMessage(getId(), name));
+            }
         }
     }
     
@@ -177,6 +212,9 @@ public class RedissonSession extends StandardSession {
         }
         
         map.putAll(newMap);
+        if (readMode == ReadMode.MEMORY) {
+            topic.publish(new AttributesPutAllMessage(getId(), newMap));
+        }
         
         if (maxInactiveInterval >= 0) {
             map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
@@ -210,7 +248,7 @@ public class RedissonSession extends StandardSession {
         }
 
         for (Entry<String, Object> entry : attrs.entrySet()) {
-            setAttribute(entry.getKey(), entry.getValue(), false);
+            super.setAttribute(entry.getKey(), entry.getValue(), false);
         }
     }
     

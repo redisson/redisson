@@ -57,8 +57,19 @@ public interface RBitSetAsync extends RExpirableAsync {
      */
     RFuture<Void> clearAsync(long fromIndex, long toIndex);
 
+    /**
+     * Copy bits state of source BitSet object to this object
+     * 
+     * @param bs - BitSet source
+     * @return void
+     */
     RFuture<Void> setAsync(BitSet bs);
 
+    /**
+     * Executes NOT operation over all bits
+     * 
+     * @return void
+     */
     RFuture<Void> notAsync();
 
     /**
@@ -67,7 +78,6 @@ public interface RBitSetAsync extends RExpirableAsync {
      * @param fromIndex inclusive
      * @param toIndex exclusive
      * @return void
-     * 
      */
     RFuture<Void> setAsync(long fromIndex, long toIndex);
 
@@ -90,7 +100,8 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Set bit to one at specified bitIndex
      * 
      * @param bitIndex - index of bit
-     * @return void
+     * @return <code>true</code> - if previous value was true, 
+     * <code>false</code> - if previous value was false
      */
     RFuture<Boolean> setAsync(long bitIndex);
 
@@ -99,9 +110,9 @@ public interface RBitSetAsync extends RExpirableAsync {
      * 
      * @param bitIndex - index of bit
      * @param value true = 1, false = 0
-     * @return previous value
-     * 
-    */
+     * @return <code>true</code> - if previous value was true, 
+     * <code>false</code> - if previous value was false
+     */
     RFuture<Boolean> setAsync(long bitIndex, boolean value);
 
     /**
@@ -127,10 +138,31 @@ public interface RBitSetAsync extends RExpirableAsync {
      */
     RFuture<Void> clearAsync();
 
+    /**
+     * Executes OR operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     * @return void
+     */
     RFuture<Void> orAsync(String... bitSetNames);
 
+    /**
+     * Executes AND operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     * @return void
+     */
     RFuture<Void> andAsync(String... bitSetNames);
 
+    /**
+     * Executes XOR operation over this object and specified bitsets.
+     * Stores result into this object.
+     * 
+     * @param bitSetNames - name of stored bitsets
+     * @return void
+     */
     RFuture<Void> xorAsync(String... bitSetNames);
 
 }

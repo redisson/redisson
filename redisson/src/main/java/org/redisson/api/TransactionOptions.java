@@ -46,7 +46,7 @@ public class TransactionOptions {
 
     /**
      * Defines timeout for Redis response. 
-     * Starts to countdown when Redis command has been successfully sent.
+     * Starts to countdown when transaction has been successfully sent.
      * <p>
      * Default is <code>3000 milliseconds</code>
      * 
@@ -64,7 +64,7 @@ public class TransactionOptions {
     }
 
     /**
-     * Defines attempts amount to send Redis commands batch
+     * Defines attempts amount to send transaction
      * if it hasn't been sent already.
      * <p>
      * Default is <code>3 attempts</code>
@@ -82,7 +82,7 @@ public class TransactionOptions {
     }
     
     /**
-     * Defines time interval for each attempt to send Redis commands batch 
+     * Defines time interval for each attempt to send transaction 
      * if it hasn't been sent already.
      * <p>
      * Default is <code>1500 milliseconds</code>
@@ -99,7 +99,7 @@ public class TransactionOptions {
     /**
      * Synchronization data timeout between Redis master participating in transaction and its slaves.
      * <p>
-     * Default syncSlaves is <code>5000 milliseconds</code>
+     * Default is <code>5000 milliseconds</code>
      * 
      * @param syncTimeout - synchronization timeout
      * @param syncUnit - synchronization timeout time unit
@@ -117,7 +117,7 @@ public class TransactionOptions {
         return timeout;
     }
     /**
-     * If transaction hasn't committed within <code>timeout</code> it will rollback automatically.
+     * If transaction hasn't been committed within <code>timeout</code> it will rollback automatically.
      * <p>
      * Default is <code>5000 milliseconds</code>
      * 

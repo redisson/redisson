@@ -800,7 +800,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
         });
     }
-
+    
     private <R, V> void checkAttemptFuture(final NodeSource source, final AsyncDetails<V, R> details,
             Future<R> future, final boolean ignoreRedirect) {
         details.getTimeout().cancel();
@@ -808,62 +808,72 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return;
         }
 
-        details.removeMainPromiseListener();
-
-        if (future.cause() instanceof RedisMovedException && !ignoreRedirect) {
-            RedisMovedException ex = (RedisMovedException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED), details.getCodec(),
-                    details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-            AsyncDetails.release(details);
-            return;
-        }
-
-        if (future.cause() instanceof RedisAskException && !ignoreRedirect) {
-            RedisAskException ex = (RedisAskException) future.cause();
-            async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK), details.getCodec(),
-                    details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-            AsyncDetails.release(details);
-            return;
-        }
-
-        if (future.cause() instanceof RedisLoadingException) {
-            async(details.isReadOnlyMode(), source, details.getCodec(),
-                    details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-            AsyncDetails.release(details);
-            return;
-        }
-
-        if (future.cause() instanceof RedisTryAgainException) {
-            connectionManager.newTimeout(new TimerTask() {
-                @Override
-                public void run(Timeout timeout) throws Exception {
-                    async(details.isReadOnlyMode(), source, details.getCodec(),
-                            details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-
+        try {
+            details.removeMainPromiseListener();
+            
+            if (future.cause() instanceof RedisMovedException && !ignoreRedirect) {
+                RedisMovedException ex = (RedisMovedException) future.cause();
+                if (source.getRedirect() == Redirect.MOVED) {
+                    details.getMainPromise().tryFailure(new RedisException("MOVED redirection loop detected. Node " + source.getAddr() + " has further redirect to " + ex.getUrl()));
+                    return;
                 }
-            }, 1, TimeUnit.SECONDS);
-            AsyncDetails.release(details);
-            return;
-        }
-
-        free(details);
-
-        if (future.isSuccess()) {
-            R res = future.getNow();
-            if (res instanceof RedisClientResult) {
-                ((RedisClientResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
+                
+                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED), details.getCodec(),
+                        details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
+                AsyncDetails.release(details);
+                return;
             }
-
-            if (isRedissonReferenceSupportEnabled()) {
-                handleReference(details.getMainPromise(), res);
+            
+            if (future.cause() instanceof RedisAskException && !ignoreRedirect) {
+                RedisAskException ex = (RedisAskException) future.cause();
+                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK), details.getCodec(),
+                        details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
+                AsyncDetails.release(details);
+                return;
+            }
+            
+            if (future.cause() instanceof RedisLoadingException) {
+                async(details.isReadOnlyMode(), source, details.getCodec(),
+                        details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
+                AsyncDetails.release(details);
+                return;
+            }
+            
+            if (future.cause() instanceof RedisTryAgainException) {
+                connectionManager.newTimeout(new TimerTask() {
+                    @Override
+                    public void run(Timeout timeout) throws Exception {
+                        async(details.isReadOnlyMode(), source, details.getCodec(),
+                                details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
+                        
+                    }
+                }, 1, TimeUnit.SECONDS);
+                AsyncDetails.release(details);
+                return;
+            }
+            
+            free(details);
+            
+            if (future.isSuccess()) {
+                R res = future.getNow();
+                if (res instanceof RedisClientResult) {
+                    ((RedisClientResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
+                }
+                
+                if (isRedissonReferenceSupportEnabled()) {
+                    handleReference(details.getMainPromise(), res);
+                } else {
+                    details.getMainPromise().trySuccess(res);
+                }
             } else {
-                details.getMainPromise().trySuccess(res);
+                details.getMainPromise().tryFailure(future.cause());
             }
-        } else {
-            details.getMainPromise().tryFailure(future.cause());
+            
+            AsyncDetails.release(details);
+        } catch (RuntimeException e) {
+            details.getMainPromise().tryFailure(e);
+			throw e;
         }
-
-        AsyncDetails.release(details);
     }
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
