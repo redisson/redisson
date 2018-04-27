@@ -18,6 +18,31 @@ import org.redisson.config.Config;
 public class RedissonSessionManagerTest {
 
     @Test
+    public void testUpdateTwoServers() throws Exception {
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        server1.start();
+
+        Executor executor = Executor.newInstance();
+        BasicCookieStore cookieStore = new BasicCookieStore();
+        executor.use(cookieStore);
+        
+        write(executor, "test", "1234");
+
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        server2.start();
+
+        read(8081, executor, "test", "1234");
+        read(executor, "test", "1234");
+        write(executor, "test", "324");
+        read(8081, executor, "test", "324");
+        
+        Executor.closeIdleConnections();
+        server1.stop();
+        server2.stop();
+    }
+
+    
+    @Test
     public void testExpiration() throws Exception {
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
         server1.start();
@@ -170,7 +195,7 @@ public class RedissonSessionManagerTest {
         String response = executor.execute(Request.Get(url)).returnContent().asString();
         Assert.assertEquals(value, response);
     }
-
+    
     private void read(Executor executor, String key, String value) throws IOException, ClientProtocolException {
         String url = "http://localhost:8080/myapp/read?key=" + key;
         String response = executor.execute(Request.Get(url)).returnContent().asString();

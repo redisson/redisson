@@ -18,6 +18,7 @@ package org.redisson.tomcat;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpSession;
 
@@ -30,7 +31,9 @@ import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
+import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
@@ -121,7 +124,12 @@ public class RedissonSessionManager extends ManagerBase {
 
     public RMap<String, Object> getMap(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
-        return redisson.getMap(keyPrefix + separator + "redisson_tomcat_session:" + sessionId);
+        final String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
+        return redisson.getMap(name);
+    }
+    
+    public RTopic<AttributeMessage> getTopic() {
+        return redisson.getTopic("redisson:tomcat_session_updates");
     }
     
     @Override
@@ -129,6 +137,7 @@ public class RedissonSessionManager extends ManagerBase {
         Session result = super.findSession(id);
         if (result == null && id != null) {
             Map<String, Object> attrs = getMap(id).readAllMap();
+            
             if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
                 log.info("Session " + id + " can't be found");
                 return null;
@@ -142,7 +151,7 @@ public class RedissonSessionManager extends ManagerBase {
             session.endAccess();
             return session;
         }
-        
+
         result.access();
         result.endAccess();
         
@@ -170,13 +179,49 @@ public class RedissonSessionManager extends ManagerBase {
     @Override
     protected void startInternal() throws LifecycleException {
         super.startInternal();
-        
         redisson = buildClient();
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
 
+        if (readMode == ReadMode.MEMORY) {
+            RTopic<AttributeMessage> updatesTopic = getTopic();
+            updatesTopic.addListener(new MessageListener<AttributeMessage>() {
+                
+                @Override
+                public void onMessage(String channel, AttributeMessage msg) {
+                    try {
+                        // TODO make it thread-safe
+                        RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
+                        if (session != null) {
+                            if (msg instanceof AttributeRemoveMessage) {
+                                session.superRemoveAttributeInternal(((AttributeRemoveMessage)msg).getName(), true);
+                            }
+
+                            if (msg instanceof AttributesClearMessage) {
+                                RedissonSessionManager.super.remove(session, false);
+                            }
+                            
+                            if (msg instanceof AttributesPutAllMessage) {
+                                AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
+                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
+                                    session.superSetAttribute(entry.getKey(), entry.getValue(), true);
+                                }
+                            }
+                            
+                            if (msg instanceof AttributeUpdateMessage) {
+                                AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
+                                session.superSetAttribute(m.getName(), m.getValue(), true);
+                            }
+                        }
+                    } catch (IOException e) {
+                        log.error("Can't handle topic message", e);
+                    }
+                }
+            });
+        }
+        
         setState(LifecycleState.STARTING);
     }
 
