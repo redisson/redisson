@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 
 import io.netty.channel.ChannelHandler.Sharable;
@@ -50,12 +51,12 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     protected void sendPing(final ChannelHandlerContext ctx) {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        final RFuture<Object> future = connection.async(RedisCommands.PING);
+        final RFuture<String> future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         
         config.getTimer().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (future.cancel(false)) {
+                if (future.cancel(false) || !future.isSuccess()) {
                     ctx.channel().close();
                 } else {
                     sendPing(ctx);
