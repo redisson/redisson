@@ -167,10 +167,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
                     return null;
                 }
                 return commandData.getCommand().getReplayMultiDecoder();
-            } else if (parts.get(0).equals("message")) {
+            } else if (command.equals("message")) {
                 String channelName = (String) parts.get(1);
                 return entries.get(channelName).getDecoder();
-            } else if (parts.get(0).equals("pmessage")) {
+            } else if (command.equals("pmessage")) {
                 String patternName = (String) parts.get(1);
                 return entries.get(patternName).getDecoder();
             }
@@ -191,6 +191,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return entries.get(patternName).getDecoder().getDecoder(parts.size(), state());
             }
         }
+        if (data != null && data.getCommand().getName().equals(RedisCommands.PING.getName())) {
+            return data.getCodec().getValueDecoder();
+        }
+        
         return super.selectDecoder(data, parts);
     }
 

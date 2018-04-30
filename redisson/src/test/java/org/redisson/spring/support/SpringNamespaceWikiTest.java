@@ -143,7 +143,6 @@ public class SpringNamespaceWikiTest {
             assertEquals(13, single.getConnectionMinimumIdleSize());
             assertEquals(14, single.getConnectionPoolSize());
             assertEquals(15, single.getDatabase());
-            assertEquals(false, single.isDnsMonitoring());
             assertEquals(80000, single.getDnsMonitoringInterval());
             ((ConfigurableApplicationContext) context).close();
         } finally {

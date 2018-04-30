@@ -58,15 +58,6 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     private int database = 0;
 
     /**
-     * Should the server address be monitored for changes in DNS? Useful for
-     * AWS ElastiCache where the client is pointed at the endpoint for a replication group
-     * which is a DNS alias to the current master node.<br>
-     * <em>NB: applications must ensure the JVM DNS cache TTL is low enough to support this.</em>
-     * e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
-     */
-    private boolean dnsMonitoring = true;
-
-    /**
      * Interval in milliseconds to check DNS
      */
     private long dnsMonitoringInterval = 5000;
@@ -79,7 +70,6 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
         setAddress(config.getAddress());
         setConnectionPoolSize(config.getConnectionPoolSize());
         setSubscriptionConnectionPoolSize(config.getSubscriptionConnectionPoolSize());
-        setDnsMonitoring(config.isDnsMonitoring());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
         setSubscriptionConnectionMinimumIdleSize(config.getSubscriptionConnectionMinimumIdleSize());
         setConnectionMinimumIdleSize(config.getConnectionMinimumIdleSize());
@@ -143,27 +133,11 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     }
 
     /**
-     * Monitoring of the endpoint address for DNS changes.
+     * Interval in milliseconds to check the endpoint's DNS<p>
+     * Applications must ensure the JVM DNS cache TTL is low enough to support this.<p>
+     * Set <code>-1</code> to disable.
      * <p>
-     * Applications must ensure the JVM DNS cache TTL is low enough to support this
-     * <p>
-     * Default is <code>true</code>
-     *
-     * @param dnsMonitoring flag
-     * @return config
-     */
-    public SingleServerConfig setDnsMonitoring(boolean dnsMonitoring) {
-        this.dnsMonitoring = dnsMonitoring;
-        return this;
-    }
-    public boolean isDnsMonitoring() {
-        return dnsMonitoring;
-    }
-
-    /**
-     * Interval in milliseconds to check the endpoint DNS if {@link #isDnsMonitoring()} is true.
-     *
-     * Default is <code>5000</code>
+     * Default is <code>5000</code>.
      *
      * @param dnsMonitoringInterval time
      * @return config

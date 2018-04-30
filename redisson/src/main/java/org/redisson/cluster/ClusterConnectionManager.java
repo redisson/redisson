@@ -87,8 +87,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private boolean isConfigEndpoint;
 
-    private AddressResolver<InetSocketAddress> resolver;
-    
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
         super(config, id);
 
@@ -103,15 +101,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
 
                 if (cfg.getNodeAddresses().size() == 1) {
-                    this.resolver = resolverGroup.getResolver(getGroup().next());
+                    AddressResolver<InetSocketAddress> resolver = createResolverGroup().getResolver(getGroup().next());
                     Future<List<InetSocketAddress>> addrsFuture = resolver.resolveAll(InetSocketAddress.createUnresolved(addr.getHost(), addr.getPort()));
                     List<InetSocketAddress> allAddrs = addrsFuture.syncUninterruptibly().getNow();
                     if (allAddrs.size() > 1) {
                         configEndpointHostName = addr.getHost();
                         isConfigEndpoint = true;
-                    } else {
-                        resolver.close();
                     }
+                    resolver.close();
                 }
                 
                 clusterNodesCommand = RedisCommands.CLUSTER_NODES;
@@ -296,12 +293,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void run() {
                 if (isConfigEndpoint) {
                     final URI uri = cfg.getNodeAddresses().iterator().next();
+                    final AddressResolver<InetSocketAddress> resolver = createResolverGroup().getResolver(getGroup().next());
                     Future<List<InetSocketAddress>> allNodes = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
                     allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
                         @Override
                         public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
                             AtomicReference<Throwable> lastException = new AtomicReference<Throwable>(future.cause());
                             if (!future.isSuccess()) {
+                                resolver.close();
                                 checkClusterState(cfg, Collections.<URI>emptyList().iterator(), lastException);
                                 return;
                             }
@@ -312,6 +311,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 nodes.add(node);
                             }
                             
+                            resolver.close();
                             Iterator<URI> nodesIterator = nodes.iterator();
                             checkClusterState(cfg, nodesIterator, lastException);
                         }
