@@ -288,6 +288,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
         }
+        if (permits == 0) {
+            return RedissonPromise.newSucceededFuture(true);
+        }
 
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local value = redis.call('get', KEYS[1]); " +
@@ -468,6 +471,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Void> releaseAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return RedissonPromise.newSucceededFuture(null);
         }
 
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
