@@ -199,6 +199,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public int countActiveWorkers() {
         String id = generateRequestId();
         int subscribers = (int) workersTopic.publish(id);
+        if (subscribers == 0) {
+            return 0;
+        }
+
         RSemaphore semaphore = redisson.getSemaphore(workersSemaphoreName + ":" + id);
         try {
             semaphore.tryAcquire(subscribers, 10, TimeUnit.MINUTES);
