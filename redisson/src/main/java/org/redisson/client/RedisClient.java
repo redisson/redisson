@@ -15,8 +15,10 @@
  */
 package org.redisson.client;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -45,6 +47,7 @@ import io.netty.resolver.AddressResolver;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.NetUtil;
 import io.netty.util.Timer;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -166,6 +169,17 @@ public class RedisClient {
             return resolvedAddrFuture.get();
         }
         
+        byte[] addr = NetUtil.createByteArrayFromIpAddressString(uri.getHost());
+        if (addr != null) {
+            try {
+                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr), uri.getPort());
+            } catch (UnknownHostException e) {
+                // skip
+            }
+            promise.trySuccess(resolvedAddr);
+            return promise;
+        }
+        
         AddressResolver<InetSocketAddress> resolver = (AddressResolver<InetSocketAddress>) bootstrap.config().resolver().getResolver(bootstrap.config().group().next());
         Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
         resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
@@ -176,11 +190,22 @@ public class RedisClient {
                     return;
                 }
                 
-                resolvedAddr = future.getNow();
-                promise.trySuccess(future.getNow());
+                InetSocketAddress resolved = future.getNow();
+                resolvedAddr = createInetSocketAddress(resolved, uri.getHost());
+                promise.trySuccess(resolvedAddr);
             }
+
         });
         return promise;
+    }
+
+    private InetSocketAddress createInetSocketAddress(InetSocketAddress resolved, String host) {
+        byte[] addr = NetUtil.createByteArrayFromIpAddressString(resolved.getAddress().getHostAddress());
+        try {
+            return new InetSocketAddress(InetAddress.getByAddress(host, addr), resolved.getPort());
+        } catch (UnknownHostException e) {
+            throw new RuntimeException(e);
+        }
     }
     
     public RFuture<RedisConnection> connectAsync() {
