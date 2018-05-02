@@ -16,7 +16,7 @@
 package org.redisson.tomcat;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -27,9 +27,15 @@ public class AttributeUpdateMessage extends AttributeMessage {
 
     public AttributeUpdateMessage() {
     }
-    
+
     public AttributeUpdateMessage(String sessionId, String name, Object value) {
         super(sessionId);
+        this.name = name;
+        this.value = value;
+    }
+
+    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value) {
+        super(nodeId, sessionId);
         this.name = name;
         this.value = value;
     }
@@ -37,9 +43,9 @@ public class AttributeUpdateMessage extends AttributeMessage {
     public String getName() {
         return name;
     }
-    
+
     public Object getValue() {
         return value;
     }
-    
+
 }

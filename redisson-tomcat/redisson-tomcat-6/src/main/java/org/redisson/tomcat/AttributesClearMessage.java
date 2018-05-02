@@ -16,7 +16,7 @@
 package org.redisson.tomcat;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  *
  */
@@ -27,6 +27,10 @@ public class AttributesClearMessage extends AttributeMessage {
 
     public AttributesClearMessage(String sessionId) {
         super(sessionId);
+    }
+
+    public AttributesClearMessage(String nodeId, String sessionId) {
+        super(nodeId, sessionId);
     }
 
 }

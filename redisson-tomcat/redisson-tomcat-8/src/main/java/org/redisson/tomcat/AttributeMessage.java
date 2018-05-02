@@ -15,24 +15,35 @@
  */
 package org.redisson.tomcat;
 
+import java.io.Serializable;
+
 /**
- * 
  * @author Nikita Koksharov
- *
  */
-public class AttributeMessage {
+public class AttributeMessage implements Serializable {
 
     private String sessionId;
 
+    private String nodeId;
+
     public AttributeMessage() {
     }
-    
+
     public AttributeMessage(String sessionId) {
         this.sessionId = sessionId;
     }
-    
+
+    public AttributeMessage(String nodeId, String sessionId) {
+        this(sessionId);
+        this.nodeId = nodeId;
+    }
+
     public String getSessionId() {
         return sessionId;
     }
-    
+
+    public String getNodeId() {
+        return nodeId;
+    }
+
 }
