@@ -203,13 +203,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern);
             }
 
             @Override
-            void remove(V value) {
-                RedissonSetMultimapValues.this.remove(value);
+            protected void remove(ScanObjectEntry value) {
+                RedissonSetMultimapValues.this.remove((V)value.getObj());
             }
             
         };

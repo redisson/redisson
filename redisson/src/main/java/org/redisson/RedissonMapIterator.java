@@ -17,37 +17,38 @@ package org.redisson;
 
 import java.util.Map.Entry;
 
-import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
  * @param <M> loaded value type
  */
-public class RedissonMapIterator<K, V, M> extends RedissonBaseMapIterator<K, V, M> {
+public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
-    private final RedissonMap<K, V> map;
+    private final RedissonMap map;
     private final String pattern;
 
-    public RedissonMapIterator(RedissonMap<K, V> map, String pattern) {
+    public RedissonMapIterator(RedissonMap map, String pattern) {
         this.map = map;
         this.pattern = pattern;
     }
 
-    protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
+    @Override
+    protected Object put(Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
+        return map.put(entry.getKey().getObj(), value);
+    }
+
+    @Override
+    protected ScanResult<Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client, long nextIterPos) {
         return map.scanIterator(map.getName(), client, nextIterPos, pattern);
     }
 
-    protected void removeKey() {
-        map.fastRemove((K)entry.getKey().getObj());
-    }
-
-    protected V put(Entry<ScanObjectEntry, ScanObjectEntry> entry, V value) {
-        return map.put((K) entry.getKey().getObj(), value);
+    @Override
+    protected void remove(Entry<ScanObjectEntry, ScanObjectEntry> value) {
+        map.fastRemove(value.getKey().getObj());
     }
 
 }

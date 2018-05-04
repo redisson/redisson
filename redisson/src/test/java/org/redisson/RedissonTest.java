@@ -116,7 +116,7 @@ public class RedissonTest {
         RedissonBaseIterator iter = new RedissonBaseIterator() {
             int i;
             @Override
-            ListScanResult iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult iterator(RedisClient client, long nextIterPos) {
                 i++;
                 if (i == 1) {
                     return new ListScanResult(13L, Collections.emptyList());
@@ -129,7 +129,7 @@ public class RedissonTest {
             }
 
             @Override
-            void remove(Object value) {
+            protected void remove(Object value) {
             }
             
         };
@@ -142,7 +142,7 @@ public class RedissonTest {
         RedissonBaseIterator<Integer> iter = new RedissonBaseIterator<Integer>() {
             int i;
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 i++;
                 if (i == 1) {
                     return new ListScanResult<ScanObjectEntry>(14L, Arrays.asList(new ScanObjectEntry(new HashValue(new long[]{1L}) , 1)));
@@ -161,7 +161,7 @@ public class RedissonTest {
             }
 
             @Override
-            void remove(Integer value) {
+            protected void remove(ScanObjectEntry value) {
             }
             
         };

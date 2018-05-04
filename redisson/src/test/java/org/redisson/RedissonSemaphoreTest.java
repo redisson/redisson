@@ -2,17 +2,22 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.RSemaphore;
 
 public class RedissonSemaphoreTest extends BaseConcurrentTest {
 
+    @Test
+    public void testZero() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+        assertThat(s.tryAcquire(0, 10, TimeUnit.MINUTES)).isTrue();
+        s.release(0);
+        assertThat(s.availablePermits()).isZero();
+    }
+    
     @Test
     public void testAcquireWithoutSetPermits() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");

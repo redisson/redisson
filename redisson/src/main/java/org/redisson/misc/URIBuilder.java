@@ -18,18 +18,18 @@ package org.redisson.misc;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.regex.Pattern;
+import java.net.UnknownHostException;
+
+import io.netty.util.NetUtil;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class URIBuilder {
-
-    private static final Pattern ipv4Pattern = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
-    private static final Pattern ipv6Pattern = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
 
     public static URI create(String uri) {
         URI u = URI.create(uri);
@@ -68,15 +68,11 @@ public class URIBuilder {
         }
     }
     
-    public static boolean isValidIP(String host) {
-        if (ipv4Pattern.matcher(host).matches()) {
-            return true;
+    public static boolean compare(InetSocketAddress entryAddr, URI addr) {
+        if (addr.getHost().equals("localhost")) {
+            System.out.println("host to compare: " + addr.getHost());
         }
         
-        return ipv6Pattern.matcher(host).matches();
-    }
-
-    public static boolean compare(InetSocketAddress entryAddr, URI addr) {
         if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
                 || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
                 && entryAddr.getPort() == addr.getPort()) {

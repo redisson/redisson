@@ -161,13 +161,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(getName(), client, nextIterPos, pattern);
             }
 
             @Override
-            void remove(V value) {
-                RedissonSetCache.this.remove(value);
+            protected void remove(ScanObjectEntry value) {
+                RedissonSetCache.this.remove((V)value.getObj());
             }
             
         };

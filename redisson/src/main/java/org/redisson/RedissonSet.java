@@ -109,13 +109,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(getName(), client, nextIterPos, pattern);
             }
 
             @Override
-            void remove(V value) {
-                RedissonSet.this.remove(value);
+            protected void remove(ScanObjectEntry value) {
+                RedissonSet.this.remove((V)value.getObj());
             }
             
         };
