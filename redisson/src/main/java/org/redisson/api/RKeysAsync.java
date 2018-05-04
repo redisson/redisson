@@ -158,17 +158,10 @@ public interface RKeysAsync {
      */
     RFuture<String> randomKeyAsync();
 
-    /**
-     * Find keys by key search pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern - match pattern
-     * @return collections of keys
+    /*
+     * Use getKeysByPattern method instead
      */
+    @Deprecated
     RFuture<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**
