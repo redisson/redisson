@@ -1102,7 +1102,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected Iterator<K> keyIterator(String pattern) {
-        return new RedissonMapIterator<K, V, K>(RedissonMap.this, pattern) {
+        return new RedissonMapIterator<K>(RedissonMap.this, pattern) {
             @Override
             protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (K) entry.getKey().getObj();
@@ -1153,7 +1153,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected Iterator<V> valueIterator(String pattern) {
-        return new RedissonMapIterator<K, V, V>(RedissonMap.this, pattern) {
+        return new RedissonMapIterator<V>(RedissonMap.this, pattern) {
             @Override
             protected V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (V) entry.getValue().getObj();
@@ -1200,7 +1200,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected Iterator<Map.Entry<K,V>> entryIterator(String pattern) {
-        return new RedissonMapIterator<K, V, Map.Entry<K, V>>(RedissonMap.this, pattern);
+        return new RedissonMapIterator<Map.Entry<K, V>>(RedissonMap.this, pattern);
     }
 
     private void loadValue(final K key, final RPromise<V> result, final boolean replaceValue) {

@@ -52,6 +52,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.redisson.Redisson;
 import org.redisson.RedissonBaseMapIterator;
 import org.redisson.RedissonObject;
+import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
@@ -2094,25 +2095,26 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     protected Iterator<K> keyIterator() {
-        return new RedissonBaseMapIterator<K, V, K>() {
+        return new RedissonBaseMapIterator<K>() {
             @Override
             protected K getValue(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 return (K) entry.getKey().getObj();
             }
 
             @Override
-            protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
+            protected void remove(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> value) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            protected Object put(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            protected ScanResult<java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client,
+                    long nextIterPos) {
                 return JCache.this.scanIterator(JCache.this.getName(), client, nextIterPos);
-            }
-
-            @Override
-            protected void removeKey() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            protected V put(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, V value) {
-                throw new UnsupportedOperationException();
             }
         };
     }
@@ -2412,7 +2414,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public Iterator<javax.cache.Cache.Entry<K, V>> iterator() {
         checkNotClosed();
-        return new RedissonBaseMapIterator<K, V, javax.cache.Cache.Entry<K, V>>() {
+        return new RedissonBaseMapIterator<javax.cache.Cache.Entry<K, V>>() {
             @Override
             protected Cache.Entry<K, V> getValue(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 cacheManager.getStatBean(JCache.this).addHits(1);
@@ -2427,19 +2429,23 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             }
 
             @Override
-            protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
-                return JCache.this.scanIterator(JCache.this.getName(), client, nextIterPos);
-            }
-
-            @Override
-            protected void removeKey() {
+            protected void remove(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                 JCache.this.remove((K) entry.getKey().getObj());
             }
 
             @Override
-            protected V put(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, V value) {
+            protected Object put(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
                 throw new UnsupportedOperationException();
             }
+
+
+
+            @Override
+            protected ScanResult<java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client,
+                    long nextIterPos) {
+                return JCache.this.scanIterator(JCache.this.getName(), client, nextIterPos);
+            }
+
         };
     }
 

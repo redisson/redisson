@@ -15,6 +15,8 @@
  */
 package org.redisson;
 
+import java.util.Collection;
+
 import org.redisson.client.RedisClient;
 
 /**
@@ -22,10 +24,14 @@ import org.redisson.client.RedisClient;
  * @author Nikita Koksharov
  *
  */
-public interface RedisClientResult {
+public interface ScanResult<R> {
 
     void setRedisClient(RedisClient addr);
 
     RedisClient getRedisClient();
+    
+    long getPos();
+    
+    Collection<R> getValues();
 
 }

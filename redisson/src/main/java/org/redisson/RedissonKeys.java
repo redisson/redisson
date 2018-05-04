@@ -121,13 +121,13 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<String>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 
             @Override
-            void remove(String value) {
-                RedissonKeys.this.delete(value);
+            protected void remove(ScanObjectEntry value) {
+                RedissonKeys.this.delete((String)value.getObj());
             }
             
         };

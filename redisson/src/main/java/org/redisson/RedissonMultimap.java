@@ -318,7 +318,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMultiMapKeysIterator<K, V, K>(RedissonMultimap.this) {
+            return new RedissonMultiMapKeysIterator<K>(RedissonMultimap.this) {
                 @Override
                 protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
                     return (K) entry.getKey().getObj();

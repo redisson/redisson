@@ -322,13 +322,13 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(client, nextIterPos);
             }
 
             @Override
-            void remove(V value) {
-                RedissonScoredSortedSet.this.remove(value);
+            protected void remove(ScanObjectEntry value) {
+                RedissonScoredSortedSet.this.remove((V)value.getObj());
             }
             
         };
