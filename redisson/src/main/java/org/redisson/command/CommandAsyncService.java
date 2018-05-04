@@ -29,7 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.RedisClientResult;
+import org.redisson.ScanResult;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.SlotCallback;
@@ -856,8 +856,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             
             if (future.isSuccess()) {
                 R res = future.getNow();
-                if (res instanceof RedisClientResult) {
-                    ((RedisClientResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
+                if (res instanceof ScanResult) {
+                    ((ScanResult) res).setRedisClient(details.getConnectionFuture().getNow().getRedisClient());
                 }
                 
                 if (isRedissonReferenceSupportEnabled()) {
