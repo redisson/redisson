@@ -295,7 +295,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
                             AtomicReference<Throwable> lastException = new AtomicReference<Throwable>(future.cause());
                             if (!future.isSuccess()) {
-                                resolver.close();
                                 checkClusterState(cfg, Collections.<URI>emptyList().iterator(), lastException);
                                 return;
                             }
@@ -306,7 +305,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 nodes.add(node);
                             }
                             
-                            resolver.close();
                             Iterator<URI> nodesIterator = nodes.iterator();
                             checkClusterState(cfg, nodesIterator, lastException);
                         }
