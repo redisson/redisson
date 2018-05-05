@@ -198,17 +198,10 @@ public interface RKeys extends RKeysAsync {
      */
     String randomKey();
 
-    /**
-     * Find keys by key search pattern at once using KEYS command.
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern - match pattern
-     * @return collection of keys
+    /*
+     * Use getKeysByPattern method instead
      */
+    @Deprecated
     Collection<String> findKeysByPattern(String pattern);
 
     /**

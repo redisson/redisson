@@ -61,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.resolver.AddressResolver;
+import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -100,15 +101,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             try {
                 RedisConnection connection = connectionFuture.syncUninterruptibly().getNow();
 
-                if (cfg.getNodeAddresses().size() == 1) {
-                    AddressResolver<InetSocketAddress> resolver = createResolverGroup().getResolver(getGroup().next());
-                    Future<List<InetSocketAddress>> addrsFuture = resolver.resolveAll(InetSocketAddress.createUnresolved(addr.getHost(), addr.getPort()));
-                    List<InetSocketAddress> allAddrs = addrsFuture.syncUninterruptibly().getNow();
-                    if (allAddrs.size() > 1) {
-                        configEndpointHostName = addr.getHost();
-                        isConfigEndpoint = true;
-                    }
-                    resolver.close();
+                if (cfg.getNodeAddresses().size() == 1 && NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null) {
+                    configEndpointHostName = addr.getHost();
+                    isConfigEndpoint = true;
                 }
                 
                 clusterNodesCommand = RedisCommands.CLUSTER_NODES;
@@ -300,7 +295,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
                             AtomicReference<Throwable> lastException = new AtomicReference<Throwable>(future.cause());
                             if (!future.isSuccess()) {
-                                resolver.close();
                                 checkClusterState(cfg, Collections.<URI>emptyList().iterator(), lastException);
                                 return;
                             }
@@ -311,7 +305,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 nodes.add(node);
                             }
                             
-                            resolver.close();
                             Iterator<URI> nodesIterator = nodes.iterator();
                             checkClusterState(cfg, nodesIterator, lastException);
                         }
