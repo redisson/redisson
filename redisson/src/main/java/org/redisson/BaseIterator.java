@@ -55,6 +55,9 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                 
                 client = res.getRedisClient();
                 
+                lastIter = res.getValues().iterator();
+                nextIterPos = res.getPos();
+
                 if (res.getPos() == 0) {
                     finished = true;
                     if (res.getValues().isEmpty()) {
@@ -69,8 +72,6 @@ public abstract class BaseIterator<V, E> implements Iterator<V> {
                         return false;
                     }
                 }
-                lastIter = res.getValues().iterator();
-                nextIterPos = res.getPos();
             } while (!lastIter.hasNext());
         }
         return lastIter.hasNext();
