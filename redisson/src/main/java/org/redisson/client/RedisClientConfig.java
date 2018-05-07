@@ -68,6 +68,7 @@ public class RedisClientConfig {
     
     RedisClientConfig(RedisClientConfig config) {
         super();
+        this.addr = config.addr;
         this.address = config.address;
         this.timer = config.timer;
         this.executor = config.executor;
