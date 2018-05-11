@@ -65,7 +65,6 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
@@ -568,7 +567,7 @@ public abstract class BaseRemoteService {
             }
         });
     }
-
+    
     private <T> T sync(final Class<T> remoteInterface, final RemoteInvocationOptions options) {
         // local copy of the options, to prevent mutation
         final RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
@@ -595,20 +594,53 @@ public abstract class BaseRemoteService {
                 RemotePromise<Object> addPromise = new RemotePromise<Object>(requestId);
                 RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args, optionsCopy,
                         System.currentTimeMillis());
-                addAsync(requestQueueName, request, addPromise).sync();
                 
-                RBlockingQueue<RRemoteServiceResponse> responseQueue = null;
-                if (optionsCopy.isAckExpected() || optionsCopy.isResultExpected()) {
-                    responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
-                }
-
-                // poll for the ack only if expected
+                final RFuture<RemoteServiceAck> ackFuture;
                 if (optionsCopy.isAckExpected()) {
+                    ackFuture = poll(optionsCopy.getAckTimeoutInMillis(), requestId, false);
+                } else {
+                    ackFuture = null;
+                }
+                
+                final RPromise<RRemoteServiceResponse> responseFuture;
+                if (optionsCopy.isResultExpected()) {
+                    responseFuture = poll(optionsCopy.getExecutionTimeoutInMillis(), requestId, false);
+                } else {
+                    responseFuture = null;
+                }
+                
+                RFuture<Boolean> futureAdd = addAsync(requestQueueName, request, addPromise);
+                futureAdd.await();
+                if (!futureAdd.isSuccess()) {
+                    if (responseFuture != null) {
+                        responseFuture.cancel(false);
+                    }
+                    if (ackFuture != null) {
+                        ackFuture.cancel(false);
+                    }
+                    throw futureAdd.cause();
+                }
+                
+                if (!futureAdd.get()) {
+                    if (responseFuture != null) {
+                        responseFuture.cancel(false);
+                    }
+                    if (ackFuture != null) {
+                        ackFuture.cancel(false);
+                    }
+                    throw new RedisException("Task hasn't been added");
+                }
+                
+                // poll for the ack only if expected
+                if (ackFuture != null) {
                     String ackName = getAckName(requestId);
-                    RemoteServiceAck ack = (RemoteServiceAck) responseQueue.poll(optionsCopy.getAckTimeoutInMillis(),
-                            TimeUnit.MILLISECONDS);
+                    ackFuture.await();
+                    RemoteServiceAck ack = ackFuture.getNow();
                     if (ack == null) {
-                        ack = tryPollAckAgain(optionsCopy, responseQueue, ackName);
+                        RFuture<RemoteServiceAck> ackFutureAttempt = 
+                                tryPollAckAgainAsync(optionsCopy, ackName, requestId);
+                        ackFutureAttempt.await();
+                        ack = ackFutureAttempt.getNow();
                         if (ack == null) {
                             throw new RemoteServiceAckTimeoutException("No ACK response after "
                                     + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
@@ -618,9 +650,9 @@ public abstract class BaseRemoteService {
                 }
 
                 // poll for the response only if expected
-                if (optionsCopy.isResultExpected()) {
-                    RemoteServiceResponse response = (RemoteServiceResponse) responseQueue
-                            .poll(optionsCopy.getExecutionTimeoutInMillis(), TimeUnit.MILLISECONDS);
+                if (responseFuture != null) {
+                    responseFuture.awaitUninterruptibly();
+                    RemoteServiceResponse response = (RemoteServiceResponse) responseFuture.getNow();
                     if (response == null) {
                         throw new RemoteServiceTimeoutException("No response after "
                                 + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + request);
@@ -636,25 +668,6 @@ public abstract class BaseRemoteService {
 
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] { remoteInterface }, handler);
-    }
-
-    private RemoteServiceAck tryPollAckAgain(RemoteInvocationOptions optionsCopy,
-            RBlockingQueue<? extends RRemoteServiceResponse> responseQueue, String ackName)
-            throws InterruptedException {
-        RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(ackName, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                    "if redis.call('setnx', KEYS[1], 1) == 1 then " 
-                        + "redis.call('pexpire', KEYS[1], ARGV[1]);"
-                        + "return 0;" 
-                    + "end;" 
-                    + "redis.call('del', KEYS[1]);" 
-                    + "return 1;",
-                Arrays.<Object> asList(ackName), optionsCopy.getAckTimeoutInMillis());
-
-        ackClientsFuture.sync();
-        if (ackClientsFuture.getNow()) {
-            return (RemoteServiceAck) responseQueue.poll();
-        }
-        return null;
     }
 
     private RFuture<RemoteServiceAck> tryPollAckAgainAsync(final RemoteInvocationOptions optionsCopy,
