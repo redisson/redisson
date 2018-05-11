@@ -32,6 +32,9 @@ public class MapCacheFastPutOperation extends MapOperation {
     private long maxIdleTime;
     private TimeUnit maxIdleUnit;
 
+    public MapCacheFastPutOperation() {
+    }
+    
     public MapCacheFastPutOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         super(map, key, value);
         this.ttl = ttl;
@@ -45,4 +48,20 @@ public class MapCacheFastPutOperation extends MapOperation {
         ((RMapCache<Object, Object>)map).fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
     }
 
+    public long getTTL() {
+        return ttl;
+    }
+    
+    public TimeUnit getTTLUnit() {
+        return ttlUnit;
+    }
+    
+    public TimeUnit getMaxIdleUnit() {
+        return maxIdleUnit;
+    }
+    
+    public long getMaxIdleTime() {
+        return maxIdleTime;
+    }
+    
 }

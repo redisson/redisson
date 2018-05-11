@@ -24,6 +24,9 @@ import org.redisson.api.RMap;
  */
 public class MapPutOperation extends MapOperation {
 
+    public MapPutOperation() {
+    }
+    
     public MapPutOperation(RMap<?, ?> map, Object key, Object value) {
         super(map, key, value);
     }

@@ -24,6 +24,9 @@ import org.redisson.api.RMap;
  */
 public class MapReplaceOperation extends MapOperation {
 
+    public MapReplaceOperation() {
+    }
+    
     public MapReplaceOperation(RMap<?, ?> map, Object key, Object value, Object oldValue) {
         super(map, key, value, oldValue);
     }

@@ -28,9 +28,10 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DelegateDecoderCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.misc.RedissonPromise;
@@ -59,8 +60,8 @@ public class RedissonBuckets implements RBuckets {
 
     @Override
     public <V> List<RBucket<V>> find(String pattern) {
-        Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
-        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
+        Iterable<String> keys = redisson.getKeys().getKeysByPattern(pattern);
+        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>();
         for (String key : keys) {
             if(key == null) {
                 continue;
@@ -95,7 +96,7 @@ public class RedissonBuckets implements RBuckets {
         }
 
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
-        return commandExecutor.readAsync(keys[0], new DelegateDecoderCodec(codec), command, keys);
+        return commandExecutor.readAsync(keys[0], new CompositeCodec(StringCodec.INSTANCE, codec, codec), command, keys);
     }
 
     @Override

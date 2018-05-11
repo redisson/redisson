@@ -34,6 +34,7 @@ import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
 import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
+import org.redisson.api.RKeys;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListMultimapReactive;
@@ -162,10 +163,10 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
-        RFuture<Collection<String>> r = commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
-        Collection<String> keys = commandExecutor.get(r);
+        RKeys redissonKeys = new RedissonKeys(commandExecutor);
+        Iterable<String> keys = redissonKeys.getKeysByPattern(pattern);
 
-        List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>(keys.size());
+        List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>();
         for (Object key : keys) {
             if(key != null) {
                 buckets.add(this.<V>getBucket(key.toString()));

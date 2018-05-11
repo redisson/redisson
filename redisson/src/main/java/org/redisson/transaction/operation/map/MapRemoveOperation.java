@@ -24,6 +24,9 @@ import org.redisson.api.RMap;
  */
 public class MapRemoveOperation extends MapOperation {
 
+    public MapRemoveOperation() {
+    }
+    
     public MapRemoveOperation(RMap<?, ?> map, Object key) {
         super(map, key, null);
     }

@@ -81,13 +81,13 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.8.0</version>
+            <version>3.9.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>3.0.0</version>
+            <version>3.1.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -239,7 +239,7 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.7.10</version>
+            <version>1.8.11</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>

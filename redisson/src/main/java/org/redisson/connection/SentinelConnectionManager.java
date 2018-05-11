@@ -425,15 +425,27 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<Void> registerSentinel(final URI addr, final MasterSlaveServersConfig c) {
-        String key = addr.getHost() + ":" + addr.getPort();
-        RedisClient client = sentinels.get(key);
-        if (client != null) {
+        final String key = addr.getHost() + ":" + addr.getPort();
+        RedisClient sentinel = sentinels.get(key);
+        if (sentinel != null) {
             return RedissonPromise.newSucceededFuture(null);
         }
         
-        client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts(), null);
-        sentinels.putIfAbsent(key, client);
-        return RedissonPromise.newSucceededFuture(null);
+        final RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts(), null);
+        final RPromise<Void> result = new RedissonPromise<Void>();
+        RFuture<InetSocketAddress> future = client.resolveAddr();
+        future.addListener(new FutureListener<InetSocketAddress>() {
+            @Override
+            public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+
+                sentinels.putIfAbsent(key, client);
+            }
+        });
+        return result;
     }
 
     private RFuture<Void> addSlave(final String ip, final String port, final String slaveAddr) {
