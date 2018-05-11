@@ -25,8 +25,11 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public abstract class TransactionalOperation {
 
-    protected final Codec codec;
-    protected final String name;
+    protected Codec codec;
+    protected String name;
+    
+    public TransactionalOperation() {
+    }
     
     public TransactionalOperation(String name, Codec codec) {
         this.name = name;

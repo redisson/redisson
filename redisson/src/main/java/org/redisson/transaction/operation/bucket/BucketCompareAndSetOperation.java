@@ -29,9 +29,9 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class BucketCompareAndSetOperation<V> extends TransactionalOperation {
 
-    private final V expected;
-    private final V value;
-    private final String lockName;
+    private V expected;
+    private V value;
+    private String lockName;
     
     public BucketCompareAndSetOperation(String name, String lockName, Codec codec, V expected, V value) {
         super(name, codec);
@@ -52,6 +52,18 @@ public class BucketCompareAndSetOperation<V> extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
         lock.unlockAsync();
+    }
+    
+    public V getExpected() {
+        return expected;
+    }
+    
+    public V getValue() {
+        return value;
+    }
+    
+    public String getLockName() {
+        return lockName;
     }
 
 }

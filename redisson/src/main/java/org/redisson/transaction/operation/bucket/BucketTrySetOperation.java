@@ -31,11 +31,11 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class BucketTrySetOperation<V> extends TransactionalOperation {
 
-    private final Object value;
-    private final String lockName;
+    private Object value;
+    private String lockName;
     private long timeToLive;
     private TimeUnit timeUnit;
-
+    
     public BucketTrySetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit) {
         this(name, lockName, codec, value);
         this.timeToLive = timeToLive;
@@ -64,6 +64,22 @@ public class BucketTrySetOperation<V> extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
         lock.unlockAsync();
+    }
+    
+    public Object getValue() {
+        return value;
+    }
+    
+    public String getLockName() {
+        return lockName;
+    }
+    
+    public long getTimeToLive() {
+        return timeToLive;
+    }
+    
+    public TimeUnit getTimeUnit() {
+        return timeUnit;
     }
 
 }

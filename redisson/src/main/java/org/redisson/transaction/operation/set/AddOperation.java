@@ -18,6 +18,7 @@ package org.redisson.transaction.operation.set;
 import org.redisson.RedissonSet;
 import org.redisson.api.RObject;
 import org.redisson.api.RSet;
+import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
@@ -28,10 +29,14 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class AddOperation extends TransactionalOperation {
 
-    final Object value;
+    private Object value;
     
     public AddOperation(RObject set, Object value) {
-        super(set.getName(), set.getCodec());
+        this(set.getName(), set.getCodec(), value);
+    }
+    
+    public AddOperation(String name, Codec codec, Object value) {
+        super(name, codec);
         this.value = value;
     }
 
@@ -48,4 +53,8 @@ public class AddOperation extends TransactionalOperation {
         set.getLock(value).unlockAsync();
     }
 
+    public Object getValue() {
+        return value;
+    }
+    
 }

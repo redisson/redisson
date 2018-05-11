@@ -31,7 +31,7 @@ public class MapCacheFastPutIfAbsentOperation extends MapOperation {
     private TimeUnit ttlUnit;
     private long maxIdleTime;
     private TimeUnit maxIdleUnit;
-    
+
     public MapCacheFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit,
             long maxIdleTime, TimeUnit maxIdleUnit) {
         super(map, key, value);
@@ -44,6 +44,22 @@ public class MapCacheFastPutIfAbsentOperation extends MapOperation {
     @Override
     public void commit(RMap<Object, Object> map) {
         ((RMapCache<Object, Object>)map).fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+    }
+    
+    public long getTTL() {
+        return ttl;
+    }
+    
+    public TimeUnit getTTLUnit() {
+        return ttlUnit;
+    }
+    
+    public long getMaxIdleTime() {
+        return maxIdleTime;
+    }
+    
+    public TimeUnit getMaxIdleUnit() {
+        return maxIdleUnit;
     }
     
 }

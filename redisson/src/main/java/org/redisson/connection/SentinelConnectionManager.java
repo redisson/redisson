@@ -425,7 +425,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<Void> registerSentinel(final URI addr, final MasterSlaveServersConfig c) {
-        String key = addr.getHost() + ":" + addr.getPort();
+        final String key = addr.getHost() + ":" + addr.getPort();
         RedisClient sentinel = sentinels.get(key);
         if (sentinel != null) {
             return RedissonPromise.newSucceededFuture(null);

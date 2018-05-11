@@ -29,7 +29,7 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
 
-    private final String lockName;
+    private String lockName;
     
     public BucketGetAndDeleteOperation(String name, String lockName, Codec codec) {
         super(name, codec);
@@ -48,6 +48,10 @@ public class BucketGetAndDeleteOperation<V> extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
         lock.unlockAsync();
+    }
+    
+    public String getLockName() {
+        return lockName;
     }
 
 }

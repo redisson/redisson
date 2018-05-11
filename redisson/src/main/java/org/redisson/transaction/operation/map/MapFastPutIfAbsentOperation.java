@@ -24,6 +24,9 @@ import org.redisson.api.RMap;
  */
 public class MapFastPutIfAbsentOperation extends MapOperation {
 
+    public MapFastPutIfAbsentOperation() {
+    }
+    
     public MapFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value) {
         super(map, key, value);
     }

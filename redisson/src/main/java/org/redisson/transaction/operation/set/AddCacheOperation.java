@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.RedissonSetCache;
 import org.redisson.api.RObject;
 import org.redisson.api.RSetCache;
+import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
@@ -30,21 +31,24 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class AddCacheOperation extends TransactionalOperation {
 
-    final Object value;
-    final long ttl;
-    final TimeUnit timeUnit;
+    private Object value;
+    private long ttl;
+    private TimeUnit timeUnit;
     
     public AddCacheOperation(RObject set, Object value) {
         this(set, value, 0, null);
     }
     
     public AddCacheOperation(RObject set, Object value, long ttl, TimeUnit timeUnit) {
-        super(set.getName(), set.getCodec());
+        this(set.getName(), set.getCodec(), value, ttl, timeUnit);
+    }
+
+    public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit) {
+        super(name, codec);
         this.value = value;
         this.timeUnit = timeUnit;
         this.ttl = ttl;
     }
-
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
@@ -63,4 +67,16 @@ public class AddCacheOperation extends TransactionalOperation {
         set.getLock(value).unlockAsync();
     }
 
+    public Object getValue() {
+        return value;
+    }
+    
+    public TimeUnit getTimeUnit() {
+        return timeUnit;
+    }
+    
+    public long getTTL() {
+        return ttl;
+    }
+    
 }
