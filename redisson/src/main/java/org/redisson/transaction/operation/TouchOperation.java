@@ -27,7 +27,7 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class TouchOperation extends TransactionalOperation {
 
-    private final String lockName;
+    private String lockName;
     
     public TouchOperation(String name) {
         this(name, null);
@@ -50,6 +50,10 @@ public class TouchOperation extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RedissonLock lock = new RedissonLock(commandExecutor, lockName);
         lock.unlockAsync();
+    }
+    
+    public String getLockName() {
+        return lockName;
     }
 
 }

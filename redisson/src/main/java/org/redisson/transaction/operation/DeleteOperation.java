@@ -27,7 +27,7 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class DeleteOperation extends TransactionalOperation {
 
-    private final String lockName;
+    private String lockName;
     
     public DeleteOperation(String name) {
         this(name, null);
@@ -54,6 +54,10 @@ public class DeleteOperation extends TransactionalOperation {
             RedissonLock lock = new RedissonLock(commandExecutor, lockName);
             lock.unlockAsync();
         }
+    }
+    
+    public String getLockName() {
+        return lockName;
     }
 
 }

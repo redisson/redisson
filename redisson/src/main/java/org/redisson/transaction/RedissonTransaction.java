@@ -79,8 +79,8 @@ public class RedissonTransaction implements RTransaction {
     private final AtomicBoolean executed = new AtomicBoolean();
     
     private final TransactionOptions options;
-    private final List<TransactionalOperation> operations = new ArrayList<TransactionalOperation>();
-    private final Set<String> localCaches = new HashSet<String>();
+    private List<TransactionalOperation> operations = new ArrayList<TransactionalOperation>();
+    private Set<String> localCaches = new HashSet<String>();
     private final long startTime = System.currentTimeMillis();
     
     public RedissonTransaction(CommandAsyncExecutor commandExecutor, TransactionOptions options) {
@@ -89,6 +89,15 @@ public class RedissonTransaction implements RTransaction {
         this.commandExecutor = commandExecutor;
     }
     
+    public RedissonTransaction(CommandAsyncExecutor commandExecutor, TransactionOptions options,
+            List<TransactionalOperation> operations, Set<String> localCaches) {
+        super();
+        this.commandExecutor = commandExecutor;
+        this.options = options;
+        this.operations = operations;
+        this.localCaches = localCaches;
+    }
+
     @Override
     public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(RLocalCachedMap<K, V> fromInstance) {
         checkState();
@@ -183,7 +192,7 @@ public class RedissonTransaction implements RTransaction {
 
         final String id = generateId();
         final RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id);
+        RFuture<Map<HashKey, HashValue>> future = disableLocalCacheAsync(id, localCaches, operations);
         future.addListener(new FutureListener<Map<HashKey, HashValue>>() {
             @Override
             public void operationComplete(Future<Map<HashKey, HashValue>> future) throws Exception {
@@ -224,7 +233,6 @@ public class RedissonTransaction implements RTransaction {
                         }
                         
                         enableLocalCacheAsync(id, hashes);
-                        operations.clear();
                         executed.set(true);
                         
                         result.trySuccess(null);
@@ -234,9 +242,13 @@ public class RedissonTransaction implements RTransaction {
         });
         return result;
     }
-    
+
     @Override
     public void commit() {
+        commit(localCaches, operations);
+    }
+    
+    public void commit(Set<String> localCaches, List<TransactionalOperation> operations) {
         checkState();
         
         checkTimeout();
@@ -248,7 +260,7 @@ public class RedissonTransaction implements RTransaction {
         }
 
         String id = generateId();
-        Map<HashKey, HashValue> hashes = disableLocalCache(id);
+        Map<HashKey, HashValue> hashes = disableLocalCache(id, localCaches, operations);
         
         try {
             checkTimeout();
@@ -278,12 +290,11 @@ public class RedissonTransaction implements RTransaction {
         
         enableLocalCache(id, hashes);
         
-        operations.clear();
         executed.set(true);
     }
 
     private void checkTimeout() {
-        if (System.currentTimeMillis() - startTime > options.getTimeout()) {
+        if (options.getTimeout() != -1 && System.currentTimeMillis() - startTime > options.getTimeout()) {
             throw new TransactionTimeoutException("Transaction was discarded due to timeout " + options.getTimeout() + " milliseconds");
         }
     }
@@ -324,7 +335,7 @@ public class RedissonTransaction implements RTransaction {
         }
     }
     
-    private Map<HashKey, HashValue> disableLocalCache(String requestId) {
+    private Map<HashKey, HashValue> disableLocalCache(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -420,7 +431,7 @@ public class RedissonTransaction implements RTransaction {
         return hashes;
     }
     
-    private RFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(final String requestId) {
+    private RFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(final String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
             return RedissonPromise.newSucceededFuture(Collections.<HashKey, HashValue>emptyMap());
         }
@@ -559,9 +570,13 @@ public class RedissonTransaction implements RTransaction {
         PlatformDependent.threadLocalRandom().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
-    
+
     @Override
     public void rollback() {
+        rollback(operations);
+    }
+    
+    public void rollback(List<TransactionalOperation> operations) {
         checkState();
 
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
@@ -604,6 +619,14 @@ public class RedissonTransaction implements RTransaction {
             }
         });
         return result;
+    }
+    
+    public Set<String> getLocalCaches() {
+        return localCaches;
+    }
+    
+    public List<TransactionalOperation> getOperations() {
+        return operations;
     }
 
     protected void checkState() {

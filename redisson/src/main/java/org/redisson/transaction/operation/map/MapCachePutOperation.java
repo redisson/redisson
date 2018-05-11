@@ -32,6 +32,9 @@ public class MapCachePutOperation extends MapOperation {
     private long maxIdleTimeout;
     private TimeUnit maxIdleUnit;
     
+    public MapCachePutOperation() {
+    }
+    
     public MapCachePutOperation(RMap<?, ?> map, Object key, Object value, long ttlTimeout, TimeUnit ttlUnit, long maxIdleTimeout, TimeUnit maxIdleUnit) {
         super(map, key, value);
         this.ttlTimeout = ttlTimeout;
@@ -43,6 +46,22 @@ public class MapCachePutOperation extends MapOperation {
     @Override
     public void commit(RMap<Object, Object> map) {
         ((RMapCache<Object, Object>)map).putAsync(key, value, ttlTimeout, ttlUnit, maxIdleTimeout, maxIdleUnit);
+    }
+    
+    public long getTTL() {
+        return ttlTimeout;
+    }
+    
+    public TimeUnit getTTLUnit() {
+        return ttlUnit;
+    }
+    
+    public long getMaxIdleTimeout() {
+        return maxIdleTimeout;
+    }
+    
+    public TimeUnit getMaxIdleUnit() {
+        return maxIdleUnit;
     }
     
 }

@@ -18,6 +18,7 @@ package org.redisson.transaction.operation.set;
 import org.redisson.RedissonSetCache;
 import org.redisson.api.RObject;
 import org.redisson.api.RSetCache;
+import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
@@ -28,10 +29,14 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class RemoveCacheOperation extends TransactionalOperation {
 
-    final Object value;
+    private Object value;
     
     public RemoveCacheOperation(RObject set, Object value) {
-        super(set.getName(), set.getCodec());
+        this(set.getName(), set.getCodec(), value);
+    }
+    
+    public RemoveCacheOperation(String name, Codec codec, Object value) {
+        super(name, codec);
         this.value = value;
     }
 
@@ -46,6 +51,10 @@ public class RemoveCacheOperation extends TransactionalOperation {
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
         set.getLock(value).unlockAsync();
+    }
+    
+    public Object getValue() {
+        return value;
     }
 
 }

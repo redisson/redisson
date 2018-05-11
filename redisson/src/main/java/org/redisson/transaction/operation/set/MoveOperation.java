@@ -18,6 +18,7 @@ package org.redisson.transaction.operation.set;
 import org.redisson.RedissonSet;
 import org.redisson.api.RObject;
 import org.redisson.api.RSet;
+import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 
@@ -28,12 +29,16 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class MoveOperation extends TransactionalOperation {
 
-    final String destinationName;
-    final Object value;
-    final long threadId;
+    private String destinationName;
+    private Object value;
+    private long threadId;
     
     public MoveOperation(RObject set, String destinationName, long threadId, Object value) {
-        super(set.getName(), set.getCodec());
+        this(set.getName(), set.getCodec(), destinationName, threadId, value);
+    }
+    
+    public MoveOperation(String name, Codec codec, String destinationName, long threadId, Object value) {
+        super(name, codec);
         this.destinationName = destinationName;
         this.value = value;
         this.threadId = threadId;
@@ -54,6 +59,18 @@ public class MoveOperation extends TransactionalOperation {
         RSet<Object> destinationSet = new RedissonSet<Object>(codec, commandExecutor, destinationName, null);
         destinationSet.getLock(value).unlockAsync(threadId);
         set.getLock(value).unlockAsync(threadId);
+    }
+    
+    public String getDestinationName() {
+        return destinationName;
+    }
+    
+    public Object getValue() {
+        return value;
+    }
+    
+    public long getThreadId() {
+        return threadId;
     }
 
 }

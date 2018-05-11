@@ -118,6 +118,7 @@ public class TransactionOptions {
     }
     /**
      * If transaction hasn't been committed within <code>timeout</code> it will rollback automatically.
+     * Set <code>-1</code> to disable.
      * <p>
      * Default is <code>5000 milliseconds</code>
      * 
@@ -126,6 +127,10 @@ public class TransactionOptions {
      * @return self instance
      */
     public TransactionOptions timeout(long timeout, TimeUnit timeoutUnit) {
+        if (timeout == -1) {
+            this.timeout = timeout;
+            return this;
+        }
         this.timeout = timeoutUnit.toMillis(timeout);
         return this;
     }

@@ -29,10 +29,13 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public abstract class MapOperation extends TransactionalOperation {
 
-    final Object key;
-    final Object value;
-    final Object oldValue;
-    final RMap<?, ?> map;
+    Object key;
+    Object value;
+    Object oldValue;
+    RMap<?, ?> map;
+    
+    public MapOperation() {
+    }
     
     public MapOperation(RMap<?, ?> map, Object key, Object value) {
         this(map, key, value, null);
@@ -76,5 +79,11 @@ public abstract class MapOperation extends TransactionalOperation {
 
     protected abstract void commit(RMap<Object, Object> map);
 
+    public Object getValue() {
+        return value;
+    }
     
+    public Object getOldValue() {
+        return oldValue;
+    }
 }
