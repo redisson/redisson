@@ -60,8 +60,8 @@ public class RedissonBuckets implements RBuckets {
 
     @Override
     public <V> List<RBucket<V>> find(String pattern) {
-        Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
-        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
+        Iterable<String> keys = redisson.getKeys().getKeysByPattern(pattern);
+        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>();
         for (String key : keys) {
             if(key == null) {
                 continue;
