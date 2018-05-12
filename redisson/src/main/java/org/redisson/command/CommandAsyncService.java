@@ -726,10 +726,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 public void run(Timeout timeout) throws Exception {
                     // re-connection hasn't been made
                     // and connection is still active
-                    if (orignalChannel == connection.getChannel()
-                            && connection.isActive()) {
-                        return;
-                    }
+//                    if (orignalChannel == connection.getChannel()
+//                            && connection.isActive()) {
+//                        return;
+//                    }
 
                     if (details.getAttemptPromise().trySuccess(null)) {
                         connection.forceFastReconnectAsync();
