@@ -38,7 +38,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         return redisson.getBlockingQueue("queue");
     }
     
-//    @Test
+    @Test
     public void testPollWithBrokenConnection() throws IOException, InterruptedException, ExecutionException {
         RedisProcess runner = new RedisRunner()
                 .nosave()
