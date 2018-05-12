@@ -363,9 +363,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "                redis.call('zrem', KEYS[2], lruItem); " +
                             "                redis.call('zrem', KEYS[3], lruItem); " +
                             "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                            "                local removedChannelName = KEYS[6]; " +
-                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                            "                redis.call('publish', removedChannelName, msg); " +
+                            "                if lruItemValue ~= false then " +
+                                "                local removedChannelName = KEYS[6]; " +
+                                "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                                "                redis.call('publish', removedChannelName, msg); " +
+                                             "end; " +
                             "            end; " +
                             "        end; " +
                             "    end; " +
@@ -527,9 +529,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "                    redis.call('zrem', KEYS[2], lruItem);" +
                 "                    redis.call('zrem', KEYS[3], lruItem);" +
                 "                    redis.call('zrem', lastAccessTimeSetName, lruItem);" +
-                "                    local removedChannelName = KEYS[7];" +
-                "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue);" +
-                "                    redis.call('publish', removedChannelName, msg);" +
+                "                    if lruItemValue ~= false then " +
+                    "                    local removedChannelName = KEYS[7];" +
+                    "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue);" +
+                    "                    redis.call('publish', removedChannelName, msg);" +
+                                    "end; " +
                 "                end;" +
                 "            end" +
                 "        end;" +
@@ -596,9 +600,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                local removedChannelName = KEYS[6]; " +
-                        "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                redis.call('publish', removedChannelName, msg); " +
+                        "                if lruItemValue ~= false then " +
+                            "                local removedChannelName = KEYS[6]; " +
+                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                redis.call('publish', removedChannelName, msg); " + 
+                                        "end; " +
                         "            end; " +
                         "        end; " +
                         "    end; " +
@@ -672,9 +678,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                local removedChannelName = KEYS[7]; " +
-                        "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                redis.call('publish', removedChannelName, msg); " +
+                        "                if lruItemValue ~= false then " +                        
+                            "                local removedChannelName = KEYS[7]; " +
+                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                redis.call('publish', removedChannelName, msg); " +
+                                        "end; " +
                         "            end; " +
                         "        end; " +
                         "    end; " +
@@ -804,9 +812,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                local removedChannelName = KEYS[7]; " +
-                        "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                redis.call('publish', removedChannelName, msg); " +
+                        "                if lruItemValue ~= false then " +
+                            "                local removedChannelName = KEYS[7]; " +
+                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                redis.call('publish', removedChannelName, msg); " +
+                                        "end; " +
                         "            end; " +
                         "        end; " +
                         "    end; " +
@@ -940,9 +950,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                local removedChannelName = KEYS[7]; " +
-                        "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                redis.call('publish', removedChannelName, msg); " +
+                                       " if lruItemValue ~= false then " +
+                            "                local removedChannelName = KEYS[7]; " +
+                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                redis.call('publish', removedChannelName, msg); " + 
+                                        "end; " +
                         "            end; " +
                         "        end; " +
                         "    end; " +
@@ -1339,9 +1351,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                redis.call('zrem', KEYS[2], lruItem); " +
                         "                redis.call('zrem', KEYS[3], lruItem); " +
                         "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                local removedChannelName = KEYS[7]; " +
-                        "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                redis.call('publish', removedChannelName, msg); " +
+                                       " if lruItemValue ~= false then " +
+                            "                local removedChannelName = KEYS[7]; " +
+                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                redis.call('publish', removedChannelName, msg); " + 
+                                        "end; " +
                         "            end; " +
                         "        end; " +
                         "    end; " +
@@ -1389,9 +1403,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "                redis.call('zrem', KEYS[2], lruItem); " +
                             "                redis.call('zrem', KEYS[3], lruItem); " +
                             "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                            "                local removedChannelName = KEYS[6]; " +
-                            "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                            "                redis.call('publish', removedChannelName, msg); " +
+                                           " if lruItemValue ~= false then " +
+                                "                local removedChannelName = KEYS[6]; " +
+                                "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                                "                redis.call('publish', removedChannelName, msg); " + 
+                                            "end; " +
                             "            end; " +
                             "        end; " +
                             "    end; " +
@@ -1533,9 +1549,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                    redis.call('zrem', KEYS[2], lruItem); " +
                         "                    redis.call('zrem', KEYS[3], lruItem); " +
                         "                    redis.call('zrem', lastAccessTimeSetName, lruItem); " +
-                        "                    local removedChannelName = KEYS[6]; " +
-                        "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
-                        "                    redis.call('publish', removedChannelName, msg); " +
+                                           " if lruItemValue ~= false then " +
+                            "                    local removedChannelName = KEYS[6]; " +
+                            "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue); " +
+                            "                    redis.call('publish', removedChannelName, msg); " + 
+                                            "end; " +
                         "                end; " +
                         "            end; " +
                         "        end; " +
@@ -1724,9 +1742,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "                    redis.call('zrem', KEYS[2], lruItem);" +
                         "                    redis.call('zrem', KEYS[3], lruItem);" +
                         "                    redis.call('zrem', lastAccessTimeSetName, lruItem);" +
-                        "                    local removedChannelName = KEYS[7];" +
-                        "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue);" +
-                        "                    redis.call('publish', removedChannelName, msg);" +
+                                           " if lruItemValue ~= false then " +
+                            "                    local removedChannelName = KEYS[7];" +
+                            "                    local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(lruItemValue), lruItemValue);" +
+                            "                    redis.call('publish', removedChannelName, msg);"
+                                          + "end; " +
                         "                end;" +
                         "            end" +
                         "        end;" +

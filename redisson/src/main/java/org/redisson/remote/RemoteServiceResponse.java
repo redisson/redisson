@@ -43,6 +43,7 @@ public class RemoteServiceResponse implements RRemoteServiceResponse, Serializab
         this.id = id;
     }
     
+    @Override
     public String getId() {
         return id;
     }
