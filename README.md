@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.6.5  | 09.04.2018 | 1.8, 1.9+ | Yes | 3.1.x |
-| 2.11.5 | 09.04.2018 | 1.6, 1.7, 1.8, 1.9 and Android | No | 2.0.8 |
+| 3.7.0  | 14.05.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
+| 2.12.0 | 14.05.2018 | 1.6, 1.7, 1.8, 1.9, 1.10 and Android | No | 2.0.8 |
 
 
 Features
@@ -39,7 +39,10 @@ Features
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service
 * [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#141-spring-framework)
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-spring-cache) implementation
+* [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-transaction-manager) implementation
 * [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-hibernate-cache) implementation
+* [Transactions API](https://github.com/redisson/redisson/wiki/10.-Additional-features#104-transactions)
+* [XA Transaction API](https://github.com/redisson/redisson/wiki/10.-additional-features/#105-xa-transactions) implementation
 * [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-jcache-api-jsr-107-implementation) implementation
 * [Tomcat Session Manager](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#145-tomcat-redis-session-manager) implementation
 * [Spring Session](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#146-spring-session) implementation
@@ -50,7 +53,7 @@ Features
 * Supports OSGi  
 * Supports SSL  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 1000 unit tests  
+* With over 1800 unit tests  
 
 Used by
 ================================
