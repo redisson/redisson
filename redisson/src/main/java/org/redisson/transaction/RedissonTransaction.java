@@ -186,7 +186,6 @@ public class RedissonTransaction implements RTransaction {
         
         final CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager());
         for (TransactionalOperation transactionalOperation : operations) {
-            System.out.println("transactionalOperation " + transactionalOperation);
             transactionalOperation.commit(transactionExecutor);
         }
 
