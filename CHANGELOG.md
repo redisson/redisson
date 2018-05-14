@@ -4,6 +4,30 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 14-May-2018 - versions 2.12.0 and 3.7.0 released
+Feature - __Proxy mode__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#29-proxy-mode) for more details  
+Feature - __Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features/#104-transactions) for more details  
+Feature - __Spring Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-transaction-manager) for more details  
+Feature - __XA Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features/#105-xa-transactions) for more details  
+Feature - `RPermitExpirableSemaphoreReactive` object added  
+Feature - `RMap.fastReplace` method added  
+Feature - PING support for Pub/Sub connections  
+Improvement - `RBatch` object settings extracted as BatchOptions object  
+Improvement - `RBitSet.set` method should return boolean  
+Fixed - New IP discovery through DNS doesn't work for cluster mode  
+Fixed - replication for Tomcat Session Manager with `readMode=INMEMORY`  
+Fixed - `pingConnectionInterval` is not applied  
+Fixed - JDK10 compatibility  
+Fixed - `RLiveObjectService.delete` throws NPE if entity doesn't exist  
+Fixed - `RSemaphore` object doesn't work with zero permit  
+Fixed - `RExecutorService.countActiveWorkers` hangs if there are no registered workers  
+Fixed - Iterator loop and incorrect result returning  
+Fixed - SSL connection to Azure redis is failed  
+Fixed - NPE in SentinelConnectionManager  
+Fixed - RemoteService synchronous invocations aren't thread safe (regression since 2.10.5 / 3.5.5 versions)  
+Fixed - `bad argument #1 to 'len' (string expected, got boolean)` error arise for `RMapCache` object  
+Fixed - `RedisTimeoutException` arise during blocking command execution on RBlockingQueue and RBlockingDeque objects  
+
 ### 09-Apr-2018 - versions 2.11.5 and 3.6.5 released
 Feature - `RKeys.copy` method added  
 Feature - `RObject.copy` method added  
