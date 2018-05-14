@@ -18,12 +18,8 @@ package org.redisson.misc;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
-
-import io.netty.util.NetUtil;
 
 /**
  *
@@ -69,10 +65,6 @@ public class URIBuilder {
     }
     
     public static boolean compare(InetSocketAddress entryAddr, URI addr) {
-        if (addr.getHost().equals("localhost")) {
-            System.out.println("host to compare: " + addr.getHost());
-        }
-        
         if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
                 || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
                 && entryAddr.getPort() == addr.getPort()) {
