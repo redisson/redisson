@@ -539,7 +539,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                 if (details.getWriteFuture() != null && details.getWriteFuture().cancel(false)) {
                                     if (details.getException() == null) {
                                         details.setException(new RedisTimeoutException("Unable to send command! "
-                                                    + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow().getChannel() 
+                                                    + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow() 
                                                     + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
                                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
