@@ -72,26 +72,6 @@ public class ScheduledTasksService extends TasksService {
         request.getArgs()[requestIndex] = request.getId();
         Long startTime = (Long)request.getArgs()[3];
         
-        if (requestId != null) {
-            return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                    // check if executor service not in shutdown state and previous task exists
-                    "if redis.call('exists', KEYS[2]) == 0 and redis.call('hexists', KEYS[5], ARGV[2]) == 1 then "
-                        + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
-                        + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
-                        + "redis.call('incr', KEYS[1]);"
-                        // if new task added to queue head then publish its startTime 
-                        // to all scheduler workers 
-                        + "local v = redis.call('zrange', KEYS[3], 0, 0); "
-                        + "if v[1] == ARGV[2] then "
-                           + "redis.call('publish', KEYS[4], ARGV[1]); "
-                        + "end "
-                        + "return 1;"
-                    + "end;"
-                    + "return 0;", 
-                    Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
-                    startTime, request.getId(), encode(request));
-        }
-        
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
