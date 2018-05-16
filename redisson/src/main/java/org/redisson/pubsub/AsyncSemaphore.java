@@ -122,7 +122,7 @@ public class AsyncSemaphore {
 
     @Override
     public String toString() {
-        return counter;
+        return String.valueOf(counter);
     }
     
     
