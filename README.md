@@ -105,7 +105,7 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.11.0</version>
+       <version>2.12.0</version>
     </dependency>
 
 
