@@ -138,15 +138,9 @@ public class TasksService extends BaseRemoteService {
     }
 
     public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {
-        final Class<?> syncInterface = RemoteExecutorService.class;
-
-        if (!redisson.getMap(tasksName, LongCodec.INSTANCE).containsKey(requestId)) {
-            return RedissonPromise.newSucceededFuture(false);
-        }
-
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         
-        String requestQueueName = getRequestQueueName(syncInterface);
+        String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         RFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
         removeFuture.addListener(new FutureListener<Boolean>() {
             @Override

@@ -187,7 +187,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
                 final String requestId = future.getNow();
                 RMap<String, RemoteServiceRequest> tasks = redisson.getMap(requestQueue.getName() + ":tasks", new CompositeCodec(StringCodec.INSTANCE, codec, codec));
-                RFuture<RemoteServiceRequest> taskFuture = tasks.getAsync(requestId);
+                RFuture<RemoteServiceRequest> taskFuture = tasks.removeAsync(requestId);
                 taskFuture.addListener(new FutureListener<RemoteServiceRequest>() {
 
                     @Override
