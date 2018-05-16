@@ -47,7 +47,7 @@ public class RedisConnection implements RedisCommands {
 
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
-    final RedisClient redisClient;
+    protected final RedisClient redisClient;
 
     private volatile RPromise<Void> fastReconnect;
     private volatile boolean closed;
