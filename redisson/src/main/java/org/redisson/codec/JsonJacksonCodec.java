@@ -153,8 +153,6 @@ public class JsonJacksonCodec extends BaseCodec {
     }
 
     protected void init(ObjectMapper objectMapper) {
-        objectMapper.registerModule(new DefenceModule());
-        
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setVisibility(objectMapper.getSerializationConfig()
                                                     .getDefaultVisibilityChecker()

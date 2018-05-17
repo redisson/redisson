@@ -220,10 +220,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             return;
                         }
 
-                        final String responseName = getResponseQueueName(request.getExecutorId());
 
                         // send the ack only if expected
                         if (request.getOptions().isAckExpected()) {
+                            final String responseName = getResponseQueueName(request.getExecutorId());
                             String ackName = getAckName(request.getId());
                                     RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
                                             LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,

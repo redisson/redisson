@@ -627,7 +627,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
-        resolverGroup.close();
 
         if (cfg.getExecutor() == null) {
             executor.shutdown();
@@ -651,6 +650,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         result.awaitUninterruptibly(timeout, unit);
+        resolverGroup.close();
         
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();

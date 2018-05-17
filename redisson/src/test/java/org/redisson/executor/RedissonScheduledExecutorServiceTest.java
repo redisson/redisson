@@ -79,7 +79,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         }
         
         for (RScheduledFuture<?> future : futures) {
-            assertThat(future.awaitUninterruptibly(5000)).isTrue();
+            assertThat(future.awaitUninterruptibly(5100)).isTrue();
         }
         
         node.shutdown();
@@ -111,6 +111,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         cancel(future1);
         Thread.sleep(2000);
         assertThat(redisson.getAtomicLong("executed1").isExists()).isFalse();
+        
+        redisson.getKeys().delete("executed1");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -121,6 +124,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         Thread.sleep(2000);
         assertThat(redisson.getAtomicLong("executed1").isExists()).isFalse();
         assertThat(executor.delete()).isFalse();
+        
+        redisson.getKeys().delete("executed1");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -135,6 +141,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         Thread.sleep(2000);
         assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
         assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
+        
+        redisson.getKeys().delete("executed1", "executed2");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -155,6 +164,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(2);
+        
+        redisson.getKeys().delete("executed1", "executed2");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -180,6 +192,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(3);
+        
+        redisson.getKeys().delete("counter", "executed1", "executed2");
+        assertThat(redisson.getKeys().count()).isZero();
     }
 
     private void cancel(ScheduledFuture<?> future1) throws InterruptedException, ExecutionException {
@@ -204,6 +219,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
 
         Thread.sleep(3000);
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(5);
+        
+        redisson.getKeys().delete("executed1");
+        assertThat(redisson.getKeys().count()).isZero();
     }
 
 
@@ -223,6 +241,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed3").get()).isEqualTo(1);
+        
+        redisson.getKeys().delete("executed1", "executed2", "executed3");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -239,6 +260,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed2").get()).isEqualTo(1);
         assertThat(redisson.getAtomicLong("executed3").get()).isEqualTo(1);
+        
+        redisson.getKeys().delete("executed1", "executed2", "executed3");
+        assertThat(redisson.getKeys().count()).isZero();
     }
     
     @Test
@@ -249,6 +273,9 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         future.get();
         assertThat(System.currentTimeMillis() - startTime).isBetween(5000L, 5200L);
         assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(1);
+        
+        redisson.getKeys().delete("executed");
+        assertThat(redisson.getKeys().count()).isZero();
     }
 
     @Test
