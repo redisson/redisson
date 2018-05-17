@@ -719,7 +719,7 @@ public abstract class BaseRemoteService {
                 }
 
                 RMap<String, T> canceledRequests = redisson.getMap(mapName, codec);
-                RFuture<T> future = canceledRequests.getAsync(requestId.toString());
+                RFuture<T> future = canceledRequests.removeAsync(requestId.toString());
                 future.addListener(new FutureListener<T>() {
                     @Override
                     public void operationComplete(Future<T> future) throws Exception {

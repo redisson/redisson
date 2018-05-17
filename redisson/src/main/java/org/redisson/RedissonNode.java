@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
@@ -116,7 +117,7 @@ public class RedissonNode {
      */
     public void shutdown() {
         if (hasRedissonInstance) {
-            redisson.shutdown();
+            redisson.shutdown(0, 15, TimeUnit.MINUTES);
             log.info("Redisson node has been shutdown successfully");
         }
     }
