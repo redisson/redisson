@@ -470,11 +470,9 @@ public class RedissonTransaction implements RTransaction {
                 }
                 
                 final CountableListener<Map<HashKey, HashValue>> listener = 
-                                new CountableListener<Map<HashKey, HashValue>>(result, hashes);
-                listener.setCounter(hashes.size());
+                                new CountableListener<Map<HashKey, HashValue>>(result, hashes, hashes.size());
                 RPromise<Void> subscriptionFuture = new RedissonPromise<Void>();
-                final CountableListener<Void> subscribedFutures = new CountableListener<Void>(subscriptionFuture, null);
-                subscribedFutures.setCounter(hashes.size());
+                final CountableListener<Void> subscribedFutures = new CountableListener<Void>(subscriptionFuture, null, hashes.size());
                 
                 final List<RTopic<Object>> topics = new ArrayList<RTopic<Object>>();
                 for (final Entry<HashKey, HashValue> entry : hashes.entrySet()) {
