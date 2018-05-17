@@ -83,19 +83,17 @@ public class LoadBalancerManager {
     public RFuture<Void> add(final ClientConnectionsEntry entry) {
         RPromise<Void> result = new RedissonPromise<Void>();
         
-        CountableListener<Void> listener = new CountableListener<Void>(result, null) {
+        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2) {
             @Override
             protected void onSuccess(Void value) {
-                    client2Entry.put(entry.getClient(), entry);
-                }
+                client2Entry.put(entry.getClient(), entry);
+            }
         };
 
         RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
-        listener.incCounter();
         slaveFuture.addListener(listener);
         
         RFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-        listener.incCounter();
         pubSubFuture.addListener(listener);
         return result;
     }
@@ -249,16 +247,16 @@ public class LoadBalancerManager {
         slaveConnectionPool.returnConnection(entry, connection);
     }
 
-    public void shutdown() {
-        for (ClientConnectionsEntry entry : client2Entry.values()) {
-            entry.getClient().shutdown();
+    public RFuture<Void> shutdownAsync() {
+        if (client2Entry.values().isEmpty()) {
+            return RedissonPromise.<Void>newSucceededFuture(null);
         }
-    }
-
-    public void shutdownAsync() {
+        RPromise<Void> result = new RedissonPromise<Void>();
+        CountableListener<Void> listener = new CountableListener<Void>(result, null, client2Entry.values().size());
         for (ClientConnectionsEntry entry : client2Entry.values()) {
-            connectionManager.shutdownAsync(entry.getClient());
+            entry.getClient().shutdownAsync().addListener(listener);
         }
+        return result;
     }
 
 }

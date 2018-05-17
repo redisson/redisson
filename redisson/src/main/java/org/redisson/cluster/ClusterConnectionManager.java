@@ -582,7 +582,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (Integer slot : removedSlots) {
             MasterSlaveEntry entry = removeEntry(slot);
             if (entry.getSlotRanges().isEmpty()) {
-                entry.shutdownMasterAsync();
+                entry.shutdownAsync();
                 log.info("{} master and slaves for it removed", entry.getClient().getAddr());
             }
         }

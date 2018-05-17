@@ -46,11 +46,11 @@ import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.TransportMode;
+import org.redisson.misc.CountableListener;
 import org.redisson.misc.InfinitySemaphoreLatch;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.URIBuilder;
-import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PublishSubscribeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -436,11 +436,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public void shutdownAsync(RedisClient client) {
-        client.shutdownAsync();
-    }
-
-    @Override
     public RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname) {
         RedisClientConfig redisConfig = createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
         return RedisClient.create(redisConfig);
@@ -632,17 +627,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+        resolverGroup.close();
 
-        timer.stop();
-        
-        shutdownLatch.close();
-        shutdownPromise.trySuccess(true);
-        shutdownLatch.awaitUninterruptibly();
-
-        for (MasterSlaveEntry entry : getEntrySet()) {
-            entry.shutdown();
-        }
-        
         if (cfg.getExecutor() == null) {
             executor.shutdown();
             try {
@@ -651,8 +637,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 Thread.currentThread().interrupt();
             }
         }
+
+        timer.stop();
         
-        resolverGroup.close();
+        shutdownLatch.close();
+        shutdownPromise.trySuccess(true);
+        shutdownLatch.awaitUninterruptibly();
+
+        RPromise<Void> result = new RedissonPromise<Void>();
+        CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
+        for (MasterSlaveEntry entry : getEntrySet()) {
+            entry.shutdownAsync().addListener(listener);
+        }
+        
+        result.awaitUninterruptibly(timeout, unit);
         
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
