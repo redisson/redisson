@@ -81,7 +81,7 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.9.1</version>
+            <version>3.10.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -89,6 +89,12 @@
             <artifactId>awaitility</artifactId>
             <version>3.1.0</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+           <groupId>org.jmockit</groupId>
+           <artifactId>jmockit</artifactId>
+           <version>1.39</version>
+           <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -101,12 +107,6 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.25</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-           <groupId>org.jmockit</groupId>
-           <artifactId>jmockit</artifactId>
-           <version>1.33</version>
-           <scope>test</scope>
         </dependency>
 
         <dependency>
