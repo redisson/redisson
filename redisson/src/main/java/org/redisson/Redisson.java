@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNodesGroup;
+import org.redisson.api.ExecutorOptions;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
@@ -375,7 +376,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {
-        return new RedissonExecutorService(connectionManager.getCodec(), connectionManager.getCommandExecutor(), this, name, queueTransferService, responses);
+        return getExecutorService(name, connectionManager.getCodec());
+    }
+    
+    @Override
+    public RScheduledExecutorService getExecutorService(String name, ExecutorOptions options) {
+        return getExecutorService(name, connectionManager.getCodec(), options);
     }
     
     @Override
@@ -386,7 +392,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
-        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses);
+        return getExecutorService(name, codec, ExecutorOptions.defaults());
+    }
+    
+    @Override
+    public RScheduledExecutorService getExecutorService(String name, Codec codec, ExecutorOptions options) {
+        return new RedissonExecutorService(codec, connectionManager.getCommandExecutor(), this, name, queueTransferService, responses, options);
     }
     
     @Override
