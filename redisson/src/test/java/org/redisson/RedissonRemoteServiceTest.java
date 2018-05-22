@@ -424,7 +424,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             r2.shutdown();
         }
     }
-    
+
     @Test
     public void testInvocations() {
         RedissonClient r1 = createInstance();
@@ -451,6 +451,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
         }
         
+        assertThat(r1.getKeys().count()).isZero();
         r1.shutdown();
         r2.shutdown();
     }

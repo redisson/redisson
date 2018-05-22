@@ -15,9 +15,9 @@
  */
 package org.redisson.remote;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Arrays;
+
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 
 /**
  * 
@@ -26,41 +26,26 @@ import io.netty.buffer.Unpooled;
  */
 public class RequestId {
 
-    private final long id0;
-    private final long id1;
+    private final byte[] id;
     
     public RequestId(String id) {
         this(ByteBufUtil.decodeHexDump(id));
     }
     
     public RequestId(byte[] buf) {
-        ByteBuf b = Unpooled.wrappedBuffer(buf);
-        try {
-            id0 = b.readLong();
-            id1 = b.readLong();
-        } finally {
-            b.release();
-        }
+        id = buf;
     }
     
     @Override
     public String toString() {
-        ByteBuf id = Unpooled.buffer(16);
-        try {
-            id.writeLong(id0);
-            id.writeLong(id1);
-            return ByteBufUtil.hexDump(id);
-        } finally {
-            id.release();
-        }
+        return ByteBufUtil.hexDump(id);
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + (int) (id0 ^ (id0 >>> 32));
-        result = prime * result + (int) (id1 ^ (id1 >>> 32));
+        result = prime * result + Arrays.hashCode(id);
         return result;
     }
 
@@ -73,12 +58,9 @@ public class RequestId {
         if (getClass() != obj.getClass())
             return false;
         RequestId other = (RequestId) obj;
-        if (id0 != other.id0)
-            return false;
-        if (id1 != other.id1)
+        if (!Arrays.equals(id, other.id))
             return false;
         return true;
     }
 
-    
 }

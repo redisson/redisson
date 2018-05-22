@@ -39,7 +39,9 @@ import org.redisson.api.annotation.RRemoteAsync;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
@@ -718,8 +720,8 @@ public abstract class BaseRemoteService {
                     return;
                 }
 
-                RMap<String, T> canceledRequests = redisson.getMap(mapName, codec);
-                RFuture<T> future = canceledRequests.getAsync(requestId.toString());
+                RMap<String, T> canceledRequests = redisson.getMap(mapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
+                RFuture<T> future = canceledRequests.removeAsync(requestId.toString());
                 future.addListener(new FutureListener<T>() {
                     @Override
                     public void operationComplete(Future<T> future) throws Exception {
@@ -744,9 +746,10 @@ public abstract class BaseRemoteService {
     }
 
     protected RequestId generateRequestId() {
-        byte[] id = new byte[16];
+        byte[] id = new byte[17];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
         PlatformDependent.threadLocalRandom().nextBytes(id);
+        id[0] = 0;
         return new RequestId(id);
     }
 
@@ -757,7 +760,7 @@ public abstract class BaseRemoteService {
 
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
             boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise) {
-        RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, codec);
+        RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
         canceledRequests.putAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         

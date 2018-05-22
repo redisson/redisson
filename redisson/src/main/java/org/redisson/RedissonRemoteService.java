@@ -187,7 +187,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
 
                 final String requestId = future.getNow();
                 RMap<String, RemoteServiceRequest> tasks = redisson.getMap(requestQueue.getName() + ":tasks", new CompositeCodec(StringCodec.INSTANCE, codec, codec));
-                RFuture<RemoteServiceRequest> taskFuture = tasks.getAsync(requestId);
+                RFuture<RemoteServiceRequest> taskFuture = getTask(requestId, tasks);
                 taskFuture.addListener(new FutureListener<RemoteServiceRequest>() {
 
                     @Override
@@ -220,10 +220,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                             return;
                         }
 
-                        final String responseName = getResponseQueueName(request.getExecutorId());
 
                         // send the ack only if expected
                         if (request.getOptions().isAckExpected()) {
+                            final String responseName = getResponseQueueName(request.getExecutorId());
                             String ackName = getAckName(request.getId());
                                     RFuture<Boolean> ackClientsFuture = commandExecutor.evalWriteAsync(responseName,
                                             LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -330,7 +330,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     
                     // could be removed not from future object
                     if (future.getNow().isSendResponse()) {
-                        RMap<String, RemoteServiceCancelResponse> map = redisson.getMap(cancelResponseMapName, codec);
+                        RMap<String, RemoteServiceCancelResponse> map = redisson.getMap(cancelResponseMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
                         map.putAsync(request.getId(), response);
                         map.expireAsync(60, TimeUnit.SECONDS);
                     }
@@ -395,6 +395,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             // re-subscribe anyways after the method invocation
             subscribe(remoteInterface, requestQueue, executor);
         }
+    }
+
+    protected RFuture<RemoteServiceRequest> getTask(final String requestId, RMap<String, RemoteServiceRequest> tasks) {
+        return tasks.removeAsync(requestId);
     }
 
 }

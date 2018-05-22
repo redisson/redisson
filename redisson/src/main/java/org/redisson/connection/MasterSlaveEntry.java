@@ -139,25 +139,28 @@ public class MasterSlaveEntry {
                     return;
                 }
                 
-        masterEntry = new ClientConnectionsEntry(
-                client, 
-                config.getMasterConnectionMinimumIdleSize(), 
-                config.getMasterConnectionPoolSize(),
-                config.getSubscriptionConnectionMinimumIdleSize(),
-                config.getSubscriptionConnectionPoolSize(), 
-                connectionManager, 
-                        NodeType.MASTER);
-        
-        CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client);
-        RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-        listener.incCounter();
-        writeFuture.addListener(listener);
-        
-        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-            listener.incCounter();
-            pubSubFuture.addListener(listener);
-        }
+                masterEntry = new ClientConnectionsEntry(
+                        client, 
+                        config.getMasterConnectionMinimumIdleSize(), 
+                        config.getMasterConnectionPoolSize(),
+                        config.getSubscriptionConnectionMinimumIdleSize(),
+                        config.getSubscriptionConnectionPoolSize(), 
+                        connectionManager, 
+                                NodeType.MASTER);
+                
+                int counter = 1;
+                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+                    counter++;
+                }
+                
+                CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client, counter);
+                RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+                writeFuture.addListener(listener);
+                
+                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+                    RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+                    pubSubFuture.addListener(listener);
+                }
             }
         });
         
@@ -465,19 +468,22 @@ public class MasterSlaveEntry {
                         && slaveBalancer.getAvailableClients() > 1) {
                     slaveDown(newMasterClient.getAddr(), FreezeReason.SYSTEM);
                 }
-                connectionManager.shutdownAsync(oldMaster.getClient());
+                oldMaster.getClient().shutdownAsync();
                 log.info("master {} has changed to {}", oldMaster.getClient().getAddr(), masterEntry.getClient().getAddr());
             }
         });
     }
 
-    public void shutdownMasterAsync() {
+    public RFuture<Void> shutdownAsync() {
         if (!active.compareAndSet(true, false)) {
-            return;
+            return RedissonPromise.<Void>newSucceededFuture(null);
         }
 
-        connectionManager.shutdownAsync(masterEntry.getClient());
-        slaveBalancer.shutdownAsync();
+        RPromise<Void> result = new RedissonPromise<Void>();
+        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
+        masterEntry.getClient().shutdownAsync().addListener(listener);
+        slaveBalancer.shutdownAsync().addListener(listener);
+        return result;
     }
 
     public RFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
@@ -524,15 +530,6 @@ public class MasterSlaveEntry {
             return;
         }
         slaveBalancer.returnConnection(connection);
-    }
-
-    public void shutdown() {
-        if (!active.compareAndSet(true, false)) {
-            return;
-        }
-
-        masterEntry.getClient().shutdown();
-        slaveBalancer.shutdown();
     }
 
     public void addSlotRange(Integer range) {
