@@ -840,6 +840,15 @@ public interface RedissonClient {
     RScheduledExecutorService getExecutorService(String name);
 
     /**
+     * Returns ScheduledExecutorService by name
+     * 
+     * @param name - name of object
+     * @param options - options for executor
+     * @return ScheduledExecutorService object
+     */
+    RScheduledExecutorService getExecutorService(String name, ExecutorOptions options);
+    
+    /**
      * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization
      * 
@@ -864,6 +873,17 @@ public interface RedissonClient {
      * @since 2.8.2
      */
     RScheduledExecutorService getExecutorService(String name, Codec codec);
+
+    /**
+     * Returns ScheduledExecutorService by name 
+     * using provided codec for task, response and request serialization
+     * 
+     * @param name - name of object
+     * @param codec - codec for task, response and request
+     * @param options - options for executor
+     * @return ScheduledExecutorService object
+     */
+    RScheduledExecutorService getExecutorService(String name, Codec codec, ExecutorOptions options);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)

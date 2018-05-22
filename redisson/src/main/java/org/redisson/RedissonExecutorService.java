@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.CronSchedule;
+import org.redisson.api.ExecutorOptions;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
@@ -60,6 +61,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.executor.RedissonExecutorBatchFuture;
 import org.redisson.executor.RedissonExecutorFuture;
 import org.redisson.executor.RedissonExecutorFutureReference;
+import org.redisson.executor.RedissonExecutorRemoteService;
 import org.redisson.executor.RedissonScheduledFuture;
 import org.redisson.executor.RemoteExecutorService;
 import org.redisson.executor.RemoteExecutorServiceAsync;
@@ -105,6 +107,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String tasksName;
     private final String schedulerQueueName;
     private final String schedulerChannelName;
+    private final String tasksRetryIntervalName;
     
     private final String workersChannelName;
     private final String workersSemaphoreName;
@@ -123,6 +126,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final RemoteExecutorServiceAsync asyncServiceWithoutResult;
     
     private final ScheduledTasksService scheduledRemoteService;
+    private final TasksService executorRemoteService;
     
     private final Map<Class<?>, byte[]> class2bytes = PlatformDependent.newConcurrentHashMap();
 
@@ -136,7 +140,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<RExecutorFuture<?>>();
     private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(PlatformDependent.<RedissonExecutorFutureReference, Boolean>newConcurrentHashMap());
     
-    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses) {
+    public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, 
+            String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, ExecutorOptions options) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -152,7 +157,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             this.executorId = connectionManager.getId().toString() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
-        remoteService = redisson.getRemoteService(name, codec);
+        remoteService = new RedissonExecutorRemoteService(codec, redisson, name, connectionManager.getCommandExecutor(), executorId, responses);
         requestQueueName = ((RedissonRemoteService)remoteService).getRequestQueueName(RemoteExecutorService.class);
         responseQueueName = ((RedissonRemoteService)remoteService).getResponseQueueName(executorId);
         String objectName = requestQueueName;
@@ -161,7 +166,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         statusName = objectName + ":status";
         terminationTopic = redisson.getTopic(objectName + ":termination-topic", codec);
 
-        
+        tasksRetryIntervalName = objectName + ":retry-interval";
         schedulerChannelName = objectName + ":scheduler-channel";
         schedulerQueueName = objectName + ":scheduler";
         
@@ -171,11 +176,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         
         workersTopic = redisson.getTopic(workersChannelName);
         
-        TasksService executorRemoteService = new TasksService(codec, redisson, name, commandExecutor, executorId, responses);
+        executorRemoteService = new TasksService(codec, redisson, name, commandExecutor, executorId, responses);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
         executorRemoteService.setTasksName(tasksName);
+        executorRemoteService.setSchedulerChannelName(schedulerChannelName);
+        executorRemoteService.setSchedulerQueueName(schedulerQueueName);
+        executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        executorRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
         asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         
@@ -186,6 +195,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         scheduledRemoteService.setSchedulerQueueName(schedulerQueueName);
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
+        scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        scheduledRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
         asyncScheduledService = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
     }
@@ -234,9 +245,32 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             protected RFuture<Long> pushTaskAsync() {
                 return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                         "local expiredTaskIds = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
+                      + "local retryInterval = redis.call('get', KEYS[4]);"
                       + "if #expiredTaskIds > 0 then "
                           + "redis.call('zrem', KEYS[2], unpack(expiredTaskIds));"
-                          + "redis.call('rpush', KEYS[1], unpack(expiredTaskIds));"
+                          + "if retryInterval ~= false then "
+                              + "local startTime = tonumber(ARGV[1]) + tonumber(retryInterval);"
+                              + "for i = 1, #expiredTaskIds, 1 do "
+                                  + "local name = expiredTaskIds[i];"
+                                  + "local scheduledName = expiredTaskIds[i];"
+                                  + "if string.sub(scheduledName, 1, 2) ~= 'ff' then "
+                                      + "scheduledName = 'ff' .. scheduledName; "
+                                  + "else "
+                                      + "name = string.sub(name, 3, string.len(name)); "
+                                  + "end;"
+                                      
+                                  + "redis.call('zadd', KEYS[2], startTime, scheduledName);"
+                                  + "local v = redis.call('zrange', KEYS[2], 0, 0); "
+                                  // if new task added to queue head then publish its startTime 
+                                  // to all scheduler workers 
+                                  + "if v[1] == expiredTaskIds[i] then "
+                                      + "redis.call('publish', KEYS[3], startTime); "
+                                  + "end;"
+                                  + "redis.call('rpush', KEYS[1], name);"
+                              + "end; "
+                          + "else "
+                              + "redis.call('rpush', KEYS[1], unpack(expiredTaskIds));"
+                          + "end; "
                       + "end; "
                         // get startTime from scheduler queue head task
                       + "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); "
@@ -244,7 +278,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                          + "return v[2]; "
                       + "end "
                       + "return nil;",
-                      Arrays.<Object>asList(requestQueueName, schedulerQueueName), 
+                      Arrays.<Object>asList(requestQueueName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName), 
                       System.currentTimeMillis(), 100);
             }
         };
@@ -258,6 +292,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
+        service.setTasksRetryIntervalName(tasksRetryIntervalName);
         
         remoteService.register(RemoteExecutorService.class, service, workers, executor);
         workersGroupListenerId = workersTopic.addListener(new MessageListener<String>() {
@@ -269,6 +304,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         });
     }
 
+    private long repeatInterval = 5000;
+    
     @Override
     public void execute(Runnable task) {
         check(task);
@@ -305,6 +342,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
         executorRemoteService.setTasksName(tasksName);
+        executorRemoteService.setSchedulerChannelName(schedulerChannelName);
+        executorRemoteService.setSchedulerQueueName(schedulerQueueName);
+        executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
         return executorRemoteService;
     }
     
@@ -363,7 +403,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                         + "redis.call('set', KEYS[2], ARGV[1]);"
                      + "end;"
                 + "end;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, terminationTopic.getChannelNames().get(0)),
+                Arrays.<Object>asList(tasksCounterName, statusName, terminationTopic.getChannelNames().get(0), tasksRetryIntervalName),
                 SHUTDOWN_STATE, TERMINATED_STATE);
     }
 
@@ -845,8 +885,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public boolean cancelTask(String taskId) {
-        RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
+        if (taskId.startsWith("01")) {
+            RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
+            return commandExecutor.get(scheduledFuture);
+        }
+        RFuture<Boolean> scheduledFuture = executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
         return commandExecutor.get(scheduledFuture);
+        
     }
 
     private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,
@@ -910,8 +955,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw ee;
 
         } finally {
-            for (Future<T> f : futures)
+            for (Future<T> f : futures) {
                 f.cancel(true);
+            }
         }
     }
     
