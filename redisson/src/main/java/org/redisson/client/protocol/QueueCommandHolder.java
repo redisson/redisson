@@ -19,9 +19,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.netty.channel.ChannelPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class QueueCommandHolder {
 
-    final AtomicBoolean sended = new AtomicBoolean();
+    final AtomicBoolean sent = new AtomicBoolean();
     final ChannelPromise channelPromise;
     final QueueCommand command;
 
@@ -40,7 +45,7 @@ public class QueueCommandHolder {
     }
 
     public boolean trySend() {
-        return sended.compareAndSet(false, true);
+        return sent.compareAndSet(false, true);
     }
 
     @Override

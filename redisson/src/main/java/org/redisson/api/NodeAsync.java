@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Map;
 
 import org.redisson.api.Node.InfoSection;
+import org.redisson.client.protocol.Time;
 
 /**
  * Redis node interface
@@ -29,7 +30,7 @@ public interface NodeAsync {
 
     RFuture<Map<String, String>> infoAsync(InfoSection section);
     
-    RFuture<Long> timeAsync();
+    RFuture<Time> timeAsync();
     
     RFuture<Boolean> pingAsync();
 

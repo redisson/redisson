@@ -19,33 +19,32 @@ package org.redisson.client.protocol;
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value type
  */
-public class ScoredEntry<V> {
+public class Time {
 
-    private final Double score;
-    private final V value;
-
-    public ScoredEntry(Double score, V value) {
+    private final int seconds;
+    private final int microseconds;
+    
+    public Time(int seconds, int microseconds) {
         super();
-        this.score = score;
-        this.value = value;
+        this.seconds = seconds;
+        this.microseconds = microseconds;
     }
-
-    public V getValue() {
-        return value;
+   
+    public int getMicroseconds() {
+        return microseconds;
     }
-
-    public Double getScore() {
-        return score;
+    
+    public int getSeconds() {
+        return seconds;
     }
 
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + ((score == null) ? 0 : score.hashCode());
-        result = prime * result + ((value == null) ? 0 : value.hashCode());
+        result = prime * result + microseconds;
+        result = prime * result + seconds;
         return result;
     }
 
@@ -57,18 +56,12 @@ public class ScoredEntry<V> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        ScoredEntry other = (ScoredEntry) obj;
-        if (score == null) {
-            if (other.score != null)
-                return false;
-        } else if (!score.equals(other.score))
+        Time other = (Time) obj;
+        if (microseconds != other.microseconds)
             return false;
-        if (value == null) {
-            if (other.value != null)
-                return false;
-        } else if (!value.equals(other.value))
+        if (seconds != other.seconds)
             return false;
         return true;
     }
-
+    
 }
