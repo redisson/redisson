@@ -29,6 +29,15 @@ import org.reactivestreams.Publisher;
 public interface RSetReactive<V> extends RCollectionReactive<V> {
 
     /**
+     * Removes and returns random elements from set
+     * in async mode
+     * 
+     * @param amount of random values
+     * @return random values
+     */
+    Publisher<Set<V>> removeRandom(int amount);
+    
+    /**
      * Removes and returns random element from set
      * in async mode
      *
@@ -55,6 +64,13 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
     Publisher<Boolean> move(String destination, V member);
 
     /**
+     * Read all elements at once
+     *
+     * @return values
+     */
+    Publisher<Set<V>> readAll();
+    
+    /**
      * Union sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
@@ -80,6 +96,15 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * @return size of diff
      */
     Publisher<Long> diff(String... names);
+    
+    /**
+     * Diff sets specified by name with current set.
+     * Without current set state change.
+     * 
+     * @param names - name of sets
+     * @return values
+     */
+    Publisher<Set<V>> readDiff(String... names);
     
     /**
      * Intersection sets specified by name and write to current set.

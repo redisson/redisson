@@ -60,6 +60,7 @@ import org.redisson.api.RPriorityBlockingQueue;
 import org.redisson.api.RPriorityDeque;
 import org.redisson.api.RPriorityQueue;
 import org.redisson.api.RQueue;
+import org.redisson.api.RRateLimiter;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RScheduledExecutorService;
@@ -209,6 +210,11 @@ public class Redisson implements RedissonClient {
         return new RedissonBucket<V>(connectionManager.getCommandExecutor(), name);
     }
 
+    @Override
+    public RRateLimiter getRateLimiter(String name) {
+        return new RedissonRateLimiter(connectionManager.getCommandExecutor(), name);
+    }
+    
     @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         return new RedissonBucket<V>(codec, connectionManager.getCommandExecutor(), name);

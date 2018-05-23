@@ -30,6 +30,14 @@ import org.redisson.config.Config;
 public interface RedissonClient {
 
     /**
+     * Returns rate limiter instance by <code>name</code>
+     * 
+     * @param name of rate limiter
+     * @return RateLimiter object
+     */
+    RRateLimiter getRateLimiter(String name);
+    
+    /**
      * Returns binary stream holder instance by <code>name</code>
      * 
      * @param name of binary stream

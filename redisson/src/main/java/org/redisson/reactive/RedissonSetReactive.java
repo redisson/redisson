@@ -73,8 +73,23 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<Set<V>> removeRandom(final int amount) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.removeRandomAsync(amount);
+            }
+        });
+    }
+    
+    @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -83,6 +98,16 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
             @Override
             public RFuture<Boolean> get() {
                 return instance.containsAsync(o);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Set<V>> readAll() {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readAllAsync();
             }
         });
     }
@@ -198,6 +223,16 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
         args.add(getName());
         args.addAll(Arrays.asList(names));
         return commandExecutor.writeReactive(getName(), codec, RedisCommands.SDIFFSTORE, args.toArray());
+    }
+    
+    @Override
+    public Publisher<Set<V>> readDiff(final String... names) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readDiffAsync(names);
+            }
+        });
     }
     
     @Override

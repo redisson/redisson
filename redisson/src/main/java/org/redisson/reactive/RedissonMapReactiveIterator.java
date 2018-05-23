@@ -92,57 +92,18 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                     public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
                         if (finished) {
                             client = null;
-                            firstValues = null;
-                            lastValues = null;
                             nextIterPos = 0;
                             return;
                         }
 
-                        long prevIterPos = nextIterPos;
-                        
-                        lastValues = convert(res.getMap());
                         client = res.getRedisClient();
+                        nextIterPos = res.getPos();
                         
-                        if (nextIterPos == 0 && firstValues == null) {
-                            firstValues = lastValues;
-                            lastValues = null;
-                            if (firstValues.isEmpty()) {
-                                client = null;
-                                firstValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                            }
-                        } else { 
-                            if (firstValues.isEmpty()) {
-                                firstValues = lastValues;
-                                lastValues = null;
-                                if (firstValues.isEmpty()) {
-                                    if (res.getPos() == 0) {
-                                        finished = true;
-                                        emitter.complete();
-                                        return;
-                                    }
-                                }
-                            } else if (lastValues.keySet().removeAll(firstValues.keySet())) {
-
-                                client = null;
-                                firstValues = null;
-                                lastValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                                finished = true;
-                                emitter.complete();
-                                return;
-                            }
-                        }
-
                         for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
                             M val = getValue(entry);
                             emitter.next(val);
                             elementsRead.incrementAndGet();
                         }
-
-                        nextIterPos = res.getPos();
                         
                         if (elementsRead.get() >= readAmount.get()) {
                             emitter.complete();
@@ -150,7 +111,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                             completed = true;
                             return;
                         }
-                        if (prevIterPos == nextIterPos) {
+                        if (res.getPos() == 0 && !tryAgain()) {
                             finished = true;
                             emitter.complete();
                         }
@@ -174,14 +135,10 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
         });
     }
     
-    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
-        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getHash(), entry.getValue().getHash());
-        }
-        return result;
+    protected boolean tryAgain() {
+        return false;
     }
-
+    
     M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
         return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
 

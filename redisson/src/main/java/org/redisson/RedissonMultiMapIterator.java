@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,7 +26,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.HashValue;
 
 /**
  * 
@@ -39,7 +37,6 @@ import org.redisson.misc.HashValue;
  */
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
-    private Map<HashValue, HashValue> firstKeys;
     private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> keysIter;
     protected long keysIterPos = 0;
 
@@ -50,6 +47,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
     protected RedisClient client;
 
     private boolean finished;
+    private boolean keysFinished;
     private boolean removeExecuted;
     protected V entry;
 
@@ -68,33 +66,26 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     @Override
     public boolean hasNext() {
+        if (valuesIter != null && valuesIter.hasNext()) {
+            return true;
+        }
         if (finished) {
             return false;
         }
 
-        if (valuesIter != null && valuesIter.hasNext()) {
-            return true;
-        }
-
-        if (keysIter == null || !keysIter.hasNext()) {
-            MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, keysIterPos);
-            client = res.getRedisClient();
-            if (keysIterPos == 0 && firstKeys == null) {
-                firstKeys = convert(res.getMap());
-            } else {
-                Map<HashValue, HashValue> newValues = convert(res.getMap());
-                if (newValues.equals(firstKeys)) {
-                    finished = true;
-                    firstKeys = null;
-                    return false;
+        while (true) {
+            if (!keysFinished && (keysIter == null || !keysIter.hasNext())) {
+                MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, keysIterPos);
+                client = res.getRedisClient();
+                keysIter = res.getMap().entrySet().iterator();
+                keysIterPos = res.getPos();
+                
+                if (res.getPos() == 0) {
+                    keysFinished = true;
                 }
             }
-            keysIter = res.getMap().entrySet().iterator();
-            keysIterPos = res.getPos();
-        }
-
-        while (true) {
-            if (keysIter.hasNext()) {
+            
+            while (keysIter.hasNext()) {
                 Entry<ScanObjectEntry, ScanObjectEntry> e = keysIter.next();
                 currentKey = (K) e.getKey().getObj();
                 String name = e.getValue().getObj().toString();
@@ -102,21 +93,16 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
                 if (valuesIter.hasNext()) {
                     return true;
                 }
-            } else {
+            }
+            
+            if (keysIterPos == 0) {
+                finished = true;
                 return false;
             }
         }
     }
 
     protected abstract Iterator<V> getIterator(String name);
-
-    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
-        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getHash(), entry.getValue().getHash());
-        }
-        return result;
-    }
 
     @Override
     public M next() {
@@ -146,10 +132,10 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
         if (removeExecuted) {
             throw new IllegalStateException("Element been already deleted");
         }
+        if (valuesIter == null || entry == null) {
+            throw new IllegalStateException();
+        }
 
-        // lazy init iterator
-        hasNext();
-        keysIter.remove();
         map.remove(currentKey, entry);
         removeExecuted = true;
     }

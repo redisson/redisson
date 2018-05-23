@@ -15,36 +15,42 @@
  */
 package org.redisson.api;
 
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
-
 /**
- * Async set functions
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <V> value
  */
-public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
+public enum RateIntervalUnit {
 
-    Publisher<Boolean> add(V value, long ttl, TimeUnit unit);
-
-    /**
-     * Returns the number of elements in cache.
-     * This number can reflects expired elements too
-     * due to non realtime cleanup process.
-     *
-     */
-    @Override
-    Publisher<Integer> size();
-
-    /**
-     * Read all elements at once
-     *
-     * @return values
-     */
-    Publisher<Set<V>> readAll();
+    SECONDS {
+        @Override
+        public long toMillis(long value) {
+            return TimeUnit.SECONDS.toMillis(value);
+        }
+    },
     
+    MINUTES {
+        @Override
+        public long toMillis(long value) {
+            return TimeUnit.MINUTES.toMillis(value);
+        }
+    },
+    
+    HOURS {
+        @Override
+        public long toMillis(long value) {
+            return TimeUnit.HOURS.toMillis(value);
+        }
+    },
+    
+    DAYS {
+        @Override
+        public long toMillis(long value) {
+            return TimeUnit.DAYS.toMillis(value);
+        }
+    };
+    
+    public abstract long toMillis(long value);
 }

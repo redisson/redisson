@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -139,6 +140,16 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
                 Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, encode(value));
     }
 
+    @Override
+    public Publisher<Set<V>> readAll() {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
+    
     @Override
     public Publisher<Boolean> remove(final Object o) {
         return reactive(new Supplier<RFuture<Boolean>>() {
