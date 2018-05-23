@@ -572,11 +572,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         MasterSlaveEntry entry = source.getEntry();
-        if (entry == null && source.getSlot() != null) {
-            entry = getEntry(source.getSlot());
-        }
         if (source.getRedisClient() != null) {
             entry = getEntry(source.getRedisClient());
+        }
+        if (entry == null && source.getSlot() != null) {
+            entry = getEntry(source.getSlot());
         }
         return entry;
     }
@@ -591,6 +591,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         if (source.getRedirect() != null) {
             return entry.connectionReadOp(command, source.getAddr());
+        }
+        if (source.getRedisClient() != null) {
+            return entry.connectionReadOp(command, source.getRedisClient());
         }
         
         return entry.connectionReadOp(command);

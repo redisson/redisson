@@ -498,10 +498,11 @@ public class MasterSlaveEntry {
     }
 
     public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, URI addr) {
-        if (config.getReadMode() == ReadMode.MASTER) {
-            return connectionWriteOp(command);
-        }
         return slaveBalancer.getConnection(command, addr);
+    }
+    
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
+        return slaveBalancer.getConnection(command, client);
     }
 
     public RFuture<RedisPubSubConnection> nextPubSubConnection() {

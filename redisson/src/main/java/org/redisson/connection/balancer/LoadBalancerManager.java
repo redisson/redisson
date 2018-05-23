@@ -232,6 +232,15 @@ public class LoadBalancerManager {
         RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + addr);
         return RedissonPromise.newFailedFuture(exception);
     }
+    
+    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisClient client) {
+        ClientConnectionsEntry entry = getEntry(client);
+        if (entry != null) {
+            return slaveConnectionPool.get(command, entry);
+        }
+        RedisConnectionException exception = new RedisConnectionException("Can't find entry for " + client);
+        return RedissonPromise.newFailedFuture(exception);
+    }
 
     public RFuture<RedisConnection> nextConnection(RedisCommand<?> command) {
         return slaveConnectionPool.get(command);
