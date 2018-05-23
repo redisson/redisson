@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -56,18 +55,15 @@ import io.netty.buffer.ByteBuf;
  */
 public abstract class RedissonMultimap<K, V> extends RedissonExpirable implements RMultimap<K, V> {
 
-    private final UUID id;
     final String prefix;
     
     RedissonMultimap(CommandAsyncExecutor commandAsyncExecutor, String name) {
         super(commandAsyncExecutor, name);
-        this.id = commandAsyncExecutor.getConnectionManager().getId();
         prefix = suffixName(getName(), "");
     }
 
     RedissonMultimap(Codec codec, CommandAsyncExecutor commandAsyncExecutor, String name) {
         super(codec, commandAsyncExecutor, name);
-        this.id = commandAsyncExecutor.getConnectionManager().getId();
         prefix = suffixName(getName(), "");
     }
 

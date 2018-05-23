@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.reactivestreams.Publisher;
 
@@ -29,6 +30,32 @@ import org.reactivestreams.Publisher;
 // TODO add sublist support
 public interface RListReactive<V> extends RCollectionReactive<V> {
 
+    /**
+     * Loads elements by specified <code>indexes</code>
+     * 
+     * @param indexes of elements
+     * @return elements
+     */
+    Publisher<List<V>> get(int ...indexes);
+    
+    /**
+     * Add <code>element</code> after <code>elementToFind</code>
+     * 
+     * @param elementToFind - object to find
+     * @param element - object to add
+     * @return new list size
+     */
+    Publisher<Integer> addAfter(V elementToFind, V element);
+    
+    /**
+     * Add <code>element</code> before <code>elementToFind</code>
+     * 
+     * @param elementToFind - object to find
+     * @param element - object to add
+     * @return new list size
+     */
+    Publisher<Integer> addBefore(V elementToFind, V element);
+    
     Publisher<V> descendingIterator();
 
     Publisher<V> descendingIterator(int startIndex);
@@ -50,5 +77,30 @@ public interface RListReactive<V> extends RCollectionReactive<V> {
     Publisher<V> get(long index);
 
     Publisher<V> remove(long index);
+    
+    /**
+     * Read all elements at once
+     *
+     * @return list of values
+     */
+    Publisher<List<V>> readAll();
 
+    /**
+     * Trim list and remains elements only in specified range
+     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     *
+     * @param fromIndex - from index
+     * @param toIndex - to index
+     * @return void
+     */
+    Publisher<Void> trim(int fromIndex, int toIndex);
+
+    /**
+     * Remove object by specified index
+     * 
+     * @param index - index of object
+     * @return void
+     */
+    Publisher<Void> fastRemove(long index);
+    
 }
