@@ -124,7 +124,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 List<Boolean> result = (List<Boolean>) executorService.execute();
 
                 for (Boolean val : result.subList(1, result.size()-1)) {
-                    if (val) {
+                    if (!val) {
                         return true;
                     }
                 }
