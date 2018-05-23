@@ -44,6 +44,7 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.Time;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.cluster.ClusterNodeInfo;
@@ -555,7 +556,10 @@ public class RedissonTest {
         Iterator<Node> iter = nodes.getNodes().iterator();
 
         Node node1 = iter.next();
-        assertThat(node1.time()).isGreaterThan(100000L);
+        Time time = node1.time();
+        assertThat(time.getSeconds()).isGreaterThan(time.getMicroseconds());
+        assertThat(time.getSeconds()).isGreaterThan(1000000000);
+        assertThat(time.getMicroseconds()).isGreaterThan(10000);
     }
 
     @Test

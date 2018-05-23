@@ -18,7 +18,9 @@ package org.redisson.client.protocol.convertor;
 import java.util.List;
 
 import org.redisson.client.handler.State;
-import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Time;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
  * 
@@ -26,15 +28,17 @@ import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
  *
  */
 
-public class LongListObjectDecoder extends ListFirstObjectDecoder {
+public class TimeObjectDecoder implements MultiDecoder<Time> {
 
     @Override
-    public Object decode(List<Object> parts, State state) {
-        Object result = super.decode(parts, state);
-        if (result != null) {
-            return Long.valueOf(result.toString());
-        }
-        return result;
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public Time decode(List<Object> parts, State state) {
+        return new Time(((Long)parts.get(0)).intValue(), ((Long)parts.get(1)).intValue());
     }
     
 }

@@ -22,8 +22,10 @@ import org.redisson.api.ClusterNode;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.Time;
 import org.redisson.command.CommandSyncService;
 
 /**
@@ -93,12 +95,12 @@ public class RedisClientEntry implements ClusterNode {
     }
 
     @Override
-    public RFuture<Long> timeAsync() {
-        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.TIME);
+    public RFuture<Time> timeAsync() {
+        return commandExecutor.readAsync(client, LongCodec.INSTANCE, RedisCommands.TIME);
     }
     
     @Override
-    public long time() {
+    public Time time() {
         return commandExecutor.get(timeAsync());
     }
     
