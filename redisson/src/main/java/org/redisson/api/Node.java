@@ -18,6 +18,8 @@ package org.redisson.api;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import org.redisson.client.protocol.Time;
+
 /**
  * Redis node interface
  *
@@ -35,7 +37,7 @@ public interface Node extends NodeAsync {
      * 
      * @return time in seconds
      */
-    long time();
+    Time time();
     
     /**
      * Returns node type
