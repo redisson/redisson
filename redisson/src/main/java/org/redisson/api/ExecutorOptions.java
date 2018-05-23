@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ExecutorOptions {
     
-    private long taskRetryInterval = 60000;
+    private long taskRetryInterval = 5 * 60000;
 
     private ExecutorOptions() {
     }
@@ -42,7 +42,9 @@ public class ExecutorOptions {
      * Defines task retry interval at the end of which task is executed again.
      * ExecutorService worker re-schedule task execution retry every 5 seconds.
      * <p>
-     * Default is <code>1 minute</code>
+     * Set <code>0</code> to disable.
+     * <p>
+     * Default is <code>5 minutes</code>
      * 
      * @param timeout value
      * @param unit value
