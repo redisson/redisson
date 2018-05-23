@@ -15,16 +15,12 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.misc.HashValue;
 
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
@@ -41,8 +37,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
     public void subscribe(final Subscriber<? super V> t) {
         t.onSubscribe(new ReactiveSubscription<V>(this, t) {
 
-            private List<HashValue> firstValues;
-            private List<HashValue> lastValues;
             private long nextIterPos;
             private RedisClient client;
 
@@ -51,12 +45,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
             @Override
             protected void onRequest(long n) {
                 nextValues();
-            }
-
-            private void handle(List<ScanObjectEntry> vals) {
-                for (ScanObjectEntry val : vals) {
-                    onNext((V)val.getObj());
-                }
             }
 
             protected void nextValues() {
@@ -72,54 +60,18 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                     public void onNext(ListScanResult<ScanObjectEntry> res) {
                         if (finished) {
                             client = null;
-                            firstValues = null;
-                            lastValues = null;
                             nextIterPos = 0;
                             return;
                         }
 
-                        long prevIterPos = nextIterPos;
-                        
-                        lastValues = convert(res.getValues());
                         client = res.getRedisClient();
-                        
-                        if (nextIterPos == 0 && firstValues == null) {
-                            firstValues = lastValues;
-                            lastValues = null;
-                            if (firstValues.isEmpty()) {
-                                client = null;
-                                firstValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                            }
-                        } else { 
-                            if (firstValues.isEmpty()) {
-                                firstValues = lastValues;
-                                lastValues = null;
-                                if (firstValues.isEmpty()) {
-                                    if (res.getPos() == 0) {
-                                        finished = true;
-                                        m.onComplete();
-                                        return;
-                                    }
-                                }
-                            } else if (lastValues.removeAll(firstValues)) {
-                                client = null;
-                                firstValues = null;
-                                lastValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                                finished = true;
-                                m.onComplete();
-                                return;
-                            }
-                        }
-
-                        handle(res.getValues());
-
                         nextIterPos = res.getPos();
                         
-                        if (prevIterPos == nextIterPos) {
+                        for (ScanObjectEntry val : res.getValues()) {
+                            m.onNext((V)val.getObj());
+                        }
+
+                        if (res.getPos() == 0) {
                             finished = true;
                             m.onComplete();
                         }
@@ -142,14 +94,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
         });
     }
     
-    private List<HashValue> convert(List<ScanObjectEntry> list) {
-        List<HashValue> result = new ArrayList<HashValue>(list.size());
-        for (ScanObjectEntry entry : list) {
-            result.add(entry.getHash());
-        }
-        return result;
-    }
-
     protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos);
 
 }

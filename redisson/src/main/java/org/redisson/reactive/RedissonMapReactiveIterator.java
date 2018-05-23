@@ -16,8 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
@@ -26,7 +24,6 @@ import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.misc.HashValue;
 
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
@@ -54,8 +51,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
             public void subscribe(final Subscriber<? super M> t) {
                 t.onSubscribe(new ReactiveSubscription<M>(this, t) {
 
-                    private Map<HashValue, HashValue> firstValues;
-                    private long iterPos = 0;
+                    private long nextIterPos = 0;
                     private RedisClient client;
 
                     private long currentIndex;
@@ -66,17 +62,9 @@ public class RedissonMapReactiveIterator<K, V, M> {
                         nextValues();
                     }
 
-                    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-                        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
-                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-                            result.put(entry.getKey().getHash(), entry.getValue().getHash());
-                        }
-                        return result;
-                    }
-
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, iterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
+                        map.scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {
@@ -85,16 +73,15 @@ public class RedissonMapReactiveIterator<K, V, M> {
                             
                             @Override
                             public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
-                                client = res.getRedisClient();
-                                if (iterPos == 0 && firstValues == null) {
-                                    firstValues = convert(res.getMap());
-                                } else if (convert(res.getMap()).equals(firstValues)) {
-                                    m.onComplete();
-                                    currentIndex = 0;
+                                if (currentIndex == 0) {
+                                    client = null;
+                                    nextIterPos = 0;
                                     return;
                                 }
 
-                                iterPos = res.getPos();
+                                client = res.getRedisClient();
+                                nextIterPos = res.getPos();
+
                                 for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
                                     M val = getValue(entry);
                                     m.onNext(val);
@@ -103,6 +90,11 @@ public class RedissonMapReactiveIterator<K, V, M> {
                                         m.onComplete();
                                         return;
                                     }
+                                }
+                                
+                                if (res.getPos() == 0) {
+                                    currentIndex = 0;
+                                    m.onComplete();
                                 }
                             }
 
