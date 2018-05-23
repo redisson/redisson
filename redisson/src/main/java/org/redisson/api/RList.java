@@ -92,6 +92,11 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      */
     void trim(int fromIndex, int toIndex);
 
+    /**
+     * Remove object by specified index
+     * 
+     * @param index - index of object
+     */
     void fastRemove(int index);
     
 }

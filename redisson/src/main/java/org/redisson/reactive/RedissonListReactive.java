@@ -63,10 +63,20 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         super(codec, commandExecutor, name, new RedissonList<V>(codec, commandExecutor, name, null));
         this.instance = (RListAsync<V>) super.instance;
     }
+    
+    public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RListAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = (RListAsync<V>) super.instance;
+    }
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.LLEN_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -143,7 +153,67 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
         };
     }
+    
+    @Override
+    public Publisher<Void> trim(final int fromIndex, final int toIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.trimAsync(fromIndex, toIndex);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Void> fastRemove(final long index) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.fastRemoveAsync(index);
+            }
+        });
+    }
 
+    @Override
+    public Publisher<List<V>> readAll() {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Integer> addBefore(final V elementToFind, final V element) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addBeforeAsync(elementToFind, element);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Integer> addAfter(final V elementToFind, final V element) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addAfterAsync(elementToFind, element);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<List<V>> get(final int ...indexes) {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return instance.getAsync(indexes);
+            }
+        });
+    }
+    
     @Override
     public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), encode(e));

@@ -26,7 +26,7 @@ import org.reactivestreams.Publisher;
  * @param <K> key type
  * @param <V> value type
  */
-public interface RMultimapReactive<K, V> {
+public interface RMultimapReactive<K, V> extends RExpirableReactive {
 
     /**
      * Returns the number of key-value pairs in this multimap.

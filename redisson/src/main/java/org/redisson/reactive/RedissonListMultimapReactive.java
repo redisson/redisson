@@ -15,21 +15,20 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonListMultimap;
+import org.redisson.api.RFuture;
+import org.redisson.api.RList;
+import org.redisson.api.RListMultimap;
 import org.redisson.api.RListMultimapReactive;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
 
-import io.netty.buffer.ByteBuf;
+import reactor.fn.Supplier;
 
 /**
  * 
@@ -49,95 +48,39 @@ public class RedissonListMultimapReactive<K, V> extends RedissonBaseMultimapReac
     }
 
     @Override
-    public RListReactive<V> get(final K key) {
-        final ByteBuf keyState = encodeMapKey(key);
-        final String keyHash = hashAndRelease(keyState);
-        final String setName = getValuesName(keyHash);
-
-        return new RedissonListReactive<V>(codec, commandExecutor, setName) {
-            
-            @Override
-            public Publisher<Boolean> delete() {
-                ByteBuf keyState = encodeMapKey(key);
-                return RedissonListMultimapReactive.this.fastRemove(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
-            }
-            
-            @Override
-            public Publisher<Boolean> clearExpire() {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-            @Override
-            public Publisher<Boolean> expire(long timeToLive, TimeUnit timeUnit) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-            @Override
-            public Publisher<Boolean> expireAt(long timestamp) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-            @Override
-            public Publisher<Long> remainTimeToLive() {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-            @Override
-            public Publisher<Void> rename(String newName) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-            @Override
-            public Publisher<Boolean> renamenx(String newName) {
-                throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
-            }
-            
-        };
+    public RListReactive<V> get(K key) {
+        RList<V> list = ((RListMultimap<K, V>)instance).get(key);
+        return new RedissonListReactive<V>(codec, commandExecutor, list.getName(), list);
     }
 
     @Override
-    public Publisher<List<V>> getAll(K key) {
-        ByteBuf keyState = encodeMapKey(key);
-        String keyHash = hashAndRelease(keyState);
-        String setName = getValuesName(keyHash);
-
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.LRANGE, setName, 0, -1);
+    public Publisher<List<V>> getAll(final K key) {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return (RFuture<List<V>>)(Object)((RListMultimap<K, V>)instance).getAllAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<List<V>> removeAll(Object key) {
-        ByteBuf keyState = encodeMapKey(key);
-        String keyHash = hash(keyState);
-
-        String setName = getValuesName(keyHash);
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LIST,
-                "redis.call('hdel', KEYS[1], ARGV[1]); " +
-                "local members = redis.call('lrange', KEYS[2], 0, -1); " +
-                "redis.call('del', KEYS[2]); " +
-                "return members; ",
-            Arrays.<Object>asList(getName(), setName), keyState);
+    public Publisher<List<V>> removeAll(final Object key) {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return (RFuture<List<V>>)(Object)((RListMultimap<K, V>)instance).removeAllAsync(key);
+            }
+        });
     }
 
     @Override
-    public Publisher<List<V>> replaceValues(K key, Iterable<? extends V> values) {
-        List<Object> params = new ArrayList<Object>();
-        ByteBuf keyState = encodeMapKey(key);
-        params.add(keyState);
-        String keyHash = hash(keyState);
-        params.add(keyHash);
-        for (Object value : values) {
-            ByteBuf valueState = encodeMapValue(value);
-            params.add(valueState);
-        }
-
-        String setName = getValuesName(keyHash);
-        return commandExecutor.evalWriteReactive(getName(), codec, RedisCommands.EVAL_LIST,
-                "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); " +
-                "local members = redis.call('lrange', KEYS[2], 0, -1); " +
-                "redis.call('del', KEYS[2]); " +
-                "redis.call('rpush', KEYS[2], unpack(ARGV, 3, #ARGV)); " +
-                "return members; ",
-            Arrays.<Object>asList(getName(), setName), params.toArray());
+    public Publisher<List<V>> replaceValues(final K key, final Iterable<? extends V> values) {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return (RFuture<List<V>>)(Object)((RListMultimap<K, V>)instance).replaceValuesAsync(key, values);
+            }
+        });
     }
 
 }
