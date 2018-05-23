@@ -502,6 +502,9 @@ public class MasterSlaveEntry {
     }
     
     public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisClient client) {
+        if (config.getReadMode() == ReadMode.MASTER) {
+            return connectionWriteOp(command);
+        }
         return slaveBalancer.getConnection(command, client);
     }
 
