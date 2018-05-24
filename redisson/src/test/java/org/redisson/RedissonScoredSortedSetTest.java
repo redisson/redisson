@@ -249,7 +249,33 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         Assert.assertEquals("c", set.pollLast());
         assertThat(set).containsExactly("a", "b");
     }
+    
+    @Test
+    public void testPollLastAmount() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollLast(2)).isEmpty();
 
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        assertThat(set.pollLast(2)).containsExactly("b", "c");
+        assertThat(set).containsExactly("a");
+    }
+
+    @Test
+    public void testPollFistAmount() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(2)).isEmpty();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        assertThat(set.pollFirst(2)).containsExactly("a", "b");
+        assertThat(set).containsExactly("c");
+    }
+    
     @Test
     public void testPollFirst() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
@@ -271,6 +297,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.3, "c");
         set.add(0.4, "d");
 
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.first()).isNull();
+        assertThat(set2.last()).isNull();
         Assert.assertEquals("a", set.first());
         Assert.assertEquals("d", set.last());
     }
@@ -283,6 +312,9 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.3, "c");
         set.add(0.4, "d");
 
+        RScoredSortedSet<String> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.firstScore()).isNull();
+        assertThat(set2.lastScore()).isNull();
         assertThat(set.firstScore()).isEqualTo(0.1);
         assertThat(set.lastScore()).isEqualTo(0.4);
     }
