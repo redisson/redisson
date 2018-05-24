@@ -30,16 +30,64 @@ import org.redisson.client.protocol.ScoredEntry;
  */
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
-    RFuture<V> pollLastAsync();
+    /**
+     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<Collection<V>> pollFirstAsync(int count);
 
+    /**
+     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<Collection<V>> pollLastAsync(int count);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
     RFuture<V> pollFirstAsync();
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync();
+
+    /**
+     * Returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element or {@code null} if this sorted set is empty
+     */
     RFuture<V> firstAsync();
 
+    /**
+     * Returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<V> lastAsync();
-    
+
+    /**
+     * Returns score of the head element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<Double> firstScoreAsync();
-    
+
+    /**
+     * Returns score of the tail element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<Double> lastScoreAsync();
 
     RFuture<Long> addAllAsync(Map<V, Double> objects);
@@ -48,8 +96,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
+    /**
+     * Returns rank of value, with the scores ordered from low to high.
+     * 
+     * @param o - object
+     * @return rank or <code>null</code> if value does not exist
+     */
     RFuture<Integer> rankAsync(V o);
     
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o - object
+     * @return rank or <code>null</code> if value does not exist
+     */
     RFuture<Integer> revRankAsync(V o);
 
     /**

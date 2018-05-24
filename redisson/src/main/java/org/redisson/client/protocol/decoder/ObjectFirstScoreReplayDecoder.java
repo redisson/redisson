@@ -39,6 +39,9 @@ public class ObjectFirstScoreReplayDecoder implements MultiDecoder<Double> {
     
     @Override
     public Double decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;
+        }
         return (Double) parts.get(1);
     }
 

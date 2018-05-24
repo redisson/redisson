@@ -45,16 +45,64 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
+    /**
+     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    Collection<V> pollFirst(int count);
+
+    /**
+     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     * 
+     * @param count - elements amount
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    Collection<V> pollLast(int count);
+    
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
     V pollFirst();
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     V pollLast();
 
+    /**
+     * Returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element or {@code null} if this sorted set is empty
+     */
     V first();
 
+    /**
+     * Returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     V last();
-    
+
+    /**
+     * Returns score of the tail element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     Double firstScore();
-    
+
+    /**
+     * Returns score of the head element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     Double lastScore();
 
     Long addAll(Map<V, Double> objects);
