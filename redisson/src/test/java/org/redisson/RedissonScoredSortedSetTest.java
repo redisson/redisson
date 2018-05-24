@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -262,7 +263,33 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(set.pollLast(2)).containsExactly("b", "c");
         assertThat(set).containsExactly("a");
     }
+    
+    @Test
+    public void testPollLastTimeout() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollLast(1, TimeUnit.SECONDS)).isNull();
 
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        assertThat(set.pollLast(1, TimeUnit.SECONDS)).isEqualTo("c");
+        assertThat(set).containsExactly("a", "b");
+    }
+
+    @Test
+    public void testPollFirstTimeout() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
+
+        set.add(0.1, "a");
+        set.add(0.2, "b");
+        set.add(0.3, "c");
+
+        assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isEqualTo("a");
+        assertThat(set).containsExactly("b", "c");
+    }
+    
     @Test
     public void testPollFistAmount() {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");

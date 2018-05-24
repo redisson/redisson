@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.redisson.api.RType;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.convertor.BitSetReplayConvertor;
 import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
@@ -57,6 +56,7 @@ import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.ScoredSortedSetPolledObjectDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
@@ -93,8 +93,6 @@ public interface RedisCommands {
     RedisStrictCommand<Integer> BITPOS = new RedisStrictCommand<Integer>("BITPOS", new IntegerReplayConvertor());
     RedisStrictCommand<Void> SETBIT_VOID = new RedisStrictCommand<Void>("SETBIT", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> SETBIT = new RedisStrictCommand<Boolean>("SETBIT", new BooleanReplayConvertor());
-    RedisStrictCommand<Boolean> SETBIT_TRUE = new RedisStrictCommand<Boolean>("SETBIT", new BitSetReplayConvertor(0));
-    RedisStrictCommand<Boolean> SETBIT_FALSE = new RedisStrictCommand<Boolean>("SETBIT", new BitSetReplayConvertor(1));
     RedisStrictCommand<Void> BITOP = new RedisStrictCommand<Void>("BITOP", new VoidReplayConvertor());
 
     RedisStrictCommand<Integer> WAIT = new RedisStrictCommand<Integer>("WAIT", new IntegerReplayConvertor());
@@ -193,9 +191,11 @@ public interface RedisCommands {
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
     RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
     RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
+    RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
+    RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 
     Set<String> BLOCKING_COMMANDS = new HashSet<String>(
-            Arrays.asList(BLPOP_VALUE.getName(), BRPOP_VALUE.getName(), BRPOPLPUSH.getName()));
+            Arrays.asList(BLPOP_VALUE.getName(), BRPOP_VALUE.getName(), BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
     RedisStrictCommand<Long> PFCOUNT = new RedisStrictCommand<Long>("PFCOUNT");

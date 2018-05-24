@@ -70,8 +70,16 @@ public abstract class RedissonObject implements RObject {
         return "{" + name + "}:" + suffix;
     }
 
-    protected <V> V get(RFuture<V> future) {
+    protected final <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
+    }
+    
+    protected final long toSeconds(long timeout, TimeUnit unit) {
+        long seconds = unit.toSeconds(timeout);
+        if (timeout != 0 && seconds == 0) {
+            seconds = 1;
+        }
+        return seconds;
     }
 
     @Override

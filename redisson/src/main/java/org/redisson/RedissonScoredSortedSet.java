@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
@@ -136,6 +137,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                 + "end "
                 + "return v;",
                 Collections.<Object>singletonList(getName()), from, to);
+    }
+
+    @Override
+    public V pollFirst(long timeout, TimeUnit unit) {
+        return get(pollFirstAsync(timeout, unit));
+    }
+    
+    @Override
+    public RFuture<V> pollFirstAsync(long timeout, TimeUnit unit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMIN_VALUE, getName(), toSeconds(timeout, unit));
+    }
+    
+    @Override
+    public V pollLast(long timeout, TimeUnit unit) {
+        return get(pollLastAsync(timeout, unit));
+    }
+    
+    @Override
+    public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMAX_VALUE, getName(), toSeconds(timeout, unit));
     }
 
     @Override
