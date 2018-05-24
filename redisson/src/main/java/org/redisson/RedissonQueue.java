@@ -68,14 +68,6 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
         return value;
     }
     
-    protected long toSeconds(long timeout, TimeUnit unit) {
-        long seconds = unit.toSeconds(timeout);
-        if (timeout != 0 && seconds == 0) {
-            seconds = 1;
-        }
-        return seconds;
-    }
-    
     @Override
     public V remove() {
         return removeFirst();

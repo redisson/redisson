@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.protocol.ScoredEntry;
@@ -44,6 +45,29 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return MapReduce instance
      */
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
+    
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollFirst(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    V pollLast(long timeout, TimeUnit unit);
     
     /**
      * Removes and returns the head elements or {@code null} if this sorted set is empty.

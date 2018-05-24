@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
@@ -30,6 +31,29 @@ import org.redisson.client.protocol.ScoredEntry;
  */
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
+    
     /**
      * Removes and returns the head elements or {@code null} if this sorted set is empty.
      *
