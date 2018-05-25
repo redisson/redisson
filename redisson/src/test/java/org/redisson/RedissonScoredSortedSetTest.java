@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
@@ -29,6 +30,42 @@ import org.redisson.client.protocol.ScoredEntry;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
+    @Test
+    public void testPollFirstFromAny() throws InterruptedException {
+        final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+            RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+            queue3.add(0.1, 2);
+            queue1.add(0.1, 1);
+            queue2.add(0.1, 3);
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.pollFirstFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+
+        Assert.assertEquals(2, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+
+    @Test
+    public void testPollLastFromAny() throws InterruptedException {
+        final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+            RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+            queue3.add(0.1, 2);
+            queue1.add(0.1, 1);
+            queue2.add(0.1, 3);
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.pollLastFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+
+        Assert.assertEquals(2, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+    
     @Test
     public void testSortOrder() {
         RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("list", IntegerCodec.INSTANCE);

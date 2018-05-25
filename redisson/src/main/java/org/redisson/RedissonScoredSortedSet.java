@@ -150,6 +150,38 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
     
     @Override
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+        return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(toSeconds(timeout, unit));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMIN_VALUE, params.toArray());
+    }
+
+    @Override
+    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+        return get(pollLastFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(toSeconds(timeout, unit));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMAX_VALUE, params.toArray());
+    }
+    
+    @Override
     public V pollLast(long timeout, TimeUnit unit) {
         return get(pollLastAsync(timeout, unit));
     }

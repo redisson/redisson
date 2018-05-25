@@ -32,7 +32,42 @@ import org.redisson.client.protocol.ScoredEntry;
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
     /**
+     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element, or {@code null} if all sorted sets are empty 
+     */
+    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
+     * Removes and returns first available head element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, or {@code null} if all sorted sets are empty
+     *  
+     */
+    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
      *
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
@@ -45,6 +80,8 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
      *
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
@@ -174,7 +211,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     /**
      * Adds element to this set only if has not been added before.
      * <p>
-     * Works only with <b>Redis 3.0.2 and higher.</b>
+     * Requires <b>Redis 3.0.2 and higher.</b>
      *
      * @param score - object score
      * @param object - object itself

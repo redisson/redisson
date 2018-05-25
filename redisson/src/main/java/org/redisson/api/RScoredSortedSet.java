@@ -47,6 +47,38 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     /**
+     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element, or {@code null} if all sorted sets are empty 
+     */
+    V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
+     * Removes and returns first available head element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, or {@code null} if all sorted sets are empty 
+     */
+    V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+        
+    /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
      *
      * @param timeout how long to wait before giving up, in units of
