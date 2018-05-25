@@ -32,7 +32,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -249,7 +248,7 @@ public class MasterSlaveEntry {
             return;
         }
 
-        RFuture<RedisConnection> newConnection = connectionReadOp(RedisCommands.BLPOP_VALUE);
+        RFuture<RedisConnection> newConnection = connectionWriteOp(commandData.getCommand());
         newConnection.addListener(new FutureListener<RedisConnection>() {
             @Override
             public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -263,7 +262,7 @@ public class MasterSlaveEntry {
                 final FutureListener<Object> listener = new FutureListener<Object>() {
                     @Override
                     public void operationComplete(Future<Object> future) throws Exception {
-                        releaseRead(newConnection);
+                        releaseWrite(newConnection);
                     }
                 };
                 commandData.getPromise().addListener(listener);
@@ -277,7 +276,7 @@ public class MasterSlaveEntry {
                         if (!future.isSuccess()) {
                             listener.operationComplete(null);
                             commandData.getPromise().removeListener(listener);
-                            releaseRead(newConnection);
+                            releaseWrite(newConnection);
                             log.error("Can't resubscribe blocking queue {}", commandData);
                         }
                     }
