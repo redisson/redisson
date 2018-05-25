@@ -32,7 +32,6 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Returns zero if there are no any set bit.
      * 
      * @return "logical size" = index of highest set bit plus one
-     * @return void
      */
     RFuture<Long> lengthAsync();
 
