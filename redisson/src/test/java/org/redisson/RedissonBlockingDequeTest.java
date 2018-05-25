@@ -16,7 +16,7 @@ public class RedissonBlockingDequeTest extends BaseTest {
         RBlockingDeque<String> blockingDeque = redisson.getBlockingDeque("blocking_deque");
         long start = System.currentTimeMillis();
         String redisTask = blockingDeque.pollLastAndOfferFirstTo("deque", 1, TimeUnit.SECONDS);
-        assertThat(System.currentTimeMillis() - start).isBetween(950L, 1050L);
+        assertThat(System.currentTimeMillis() - start).isBetween(950L, 1100L);
         assertThat(redisTask).isNull();
     }
     
