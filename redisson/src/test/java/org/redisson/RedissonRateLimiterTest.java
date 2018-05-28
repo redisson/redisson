@@ -35,7 +35,7 @@ public class RedissonRateLimiterTest extends BaseTest {
     }
     
     @Test
-    public void test3() throws InterruptedException {
+    public void testConcurrency() throws InterruptedException {
         RRateLimiter rr = redisson.getRateLimiter("test");
         assertThat(rr.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS)).isTrue();
         assertThat(rr.trySetRate(RateType.OVERALL, 20, 1, RateIntervalUnit.SECONDS)).isFalse();
@@ -55,7 +55,8 @@ public class RedissonRateLimiterTest extends BaseTest {
                             }
                         }
                         try {
-                            Thread.sleep(ThreadLocalRandom.current().nextInt(10));                        } catch (InterruptedException e) {
+                            Thread.sleep(ThreadLocalRandom.current().nextInt(10));
+                        } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
                         
