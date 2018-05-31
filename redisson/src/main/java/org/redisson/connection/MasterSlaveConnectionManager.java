@@ -211,19 +211,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         this.commandExecutor = new CommandSyncService(this);
     }
     
-    /*
-     * Remove it once https://github.com/netty/netty/issues/7882 get resolved
-     */
-    protected DnsAddressResolverGroup createResolverGroup() {
-        if (cfg.getTransportMode() == TransportMode.EPOLL) {
-            return cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
-        } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
-            return cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
-        }
-        
-        return cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
-    }
-
     protected void closeNodeConnections() {
         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisConnection connection : nodeConnections.values()) {
