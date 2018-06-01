@@ -1,9 +1,12 @@
 package org.redisson.transaction;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 import org.redisson.BaseTest;
@@ -16,6 +19,25 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
     protected abstract RMap<String, String> getMap();
     
     protected abstract RMap<String, String> getTransactionalMap(RTransaction transaction);
+    
+    @Test
+    public void testFastPut() throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(16);
+        for (int i = 0; i < 500; i++) {
+            executor.submit(() -> {
+                for (int j = 0; j < 100; j++) {
+                    RTransaction t = redisson.createTransaction(TransactionOptions.defaults());
+                    RMap<String, String> map = getTransactionalMap(t);
+                    map.fastPut("1", "1");
+                    t.commit();
+                }
+            });
+        }
+        
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+    }
+    
     
     @Test
     public void testPutAll() {
