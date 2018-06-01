@@ -17,6 +17,8 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -24,17 +26,25 @@ import org.redisson.client.protocol.Decoder;
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-public class ObjectFirstResultReplayDecoder<T> implements MultiDecoder<T> {
+public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> {
 
     @Override
-    public T decode(List<Object> parts, State state) {
-        return (T) parts.get(0);
+    public Object decode(List<Object> parts, State state) {
+        if (!parts.isEmpty()) {
+            return parts.get(2);
+        }
+        return null;
     }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum == 0) {
+            return StringCodec.INSTANCE.getValueDecoder();
+        }
+        if (paramNum == 1) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
+        }
         return null;
     }
 

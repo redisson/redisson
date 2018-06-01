@@ -23,6 +23,7 @@ import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterSlotRange;
+import org.redisson.cluster.ClusterNodeInfo.Flag;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -53,17 +54,19 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String nodeId = params[0];
             node.setNodeId(nodeId);
 
-            String protocol = "redis://";
-            if (ssl) {
-                protocol = "rediss://";
-            }
-            String addr = protocol + params[1].split("@")[0];
-            node.setAddress(addr);
-
             String flags = params[2];
             for (String flag : flags.split(",")) {
                 String flagValue = flag.toUpperCase().replaceAll("\\?", "");
                 node.addFlag(ClusterNodeInfo.Flag.valueOf(flagValue));
+            }
+            
+            if (!node.containsFlag(Flag.NOADDR)) {
+                String protocol = "redis://";
+                if (ssl) {
+                    protocol = "rediss://";
+                }
+                String addr = protocol + params[1].split("@")[0];
+                node.setAddress(addr);
             }
 
             String slaveOf = params[3];

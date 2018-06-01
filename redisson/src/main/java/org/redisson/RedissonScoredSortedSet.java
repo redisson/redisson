@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
@@ -36,6 +37,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -90,24 +92,103 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> pollFirst(int count) {
+        return get(pollFirstAsync(count));
+    }
+    
+    @Override
+    public Collection<V> pollLast(int count) {
+        return get(pollLastAsync(count));
+    }
+    
+    @Override
+    public RFuture<Collection<V>> pollFirstAsync(int count) {
+        if (count <= 0) {
+            return RedissonPromise.<Collection<V>>newSucceededFuture(Collections.<V>emptyList());
+        }
+
+        return poll(0, count-1, RedisCommands.EVAL_LIST);
+    }
+    
+    @Override
+    public RFuture<Collection<V>> pollLastAsync(int count) {
+        if (count <= 0) {
+            return RedissonPromise.<Collection<V>>newSucceededFuture(Collections.<V>emptyList());
+        }
+        return poll(-count, -1, RedisCommands.EVAL_LIST);
+    }
+    
+    @Override
     public RFuture<V> pollFirstAsync() {
-        return poll(0);
+        return poll(0, 0, RedisCommands.EVAL_FIRST_LIST);
     }
 
     @Override
     public RFuture<V> pollLastAsync() {
-        return poll(-1);
+        return poll(-1, -1, RedisCommands.EVAL_FIRST_LIST);
     }
 
-    private RFuture<V> poll(int index) {
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+    private <T> RFuture<T> poll(int from, int to, RedisCommand<?> command) {
+        return commandExecutor.evalWriteAsync(getName(), codec, command,
                 "local v = redis.call('zrange', KEYS[1], ARGV[1], ARGV[2]); "
-                + "if v[1] ~= nil then "
+                + "if #v > 0 then "
                     + "redis.call('zremrangebyrank', KEYS[1], ARGV[1], ARGV[2]); "
-                    + "return v[1]; "
+                    + "return v; "
                 + "end "
-                + "return nil;",
-                Collections.<Object>singletonList(getName()), index, index);
+                + "return v;",
+                Collections.<Object>singletonList(getName()), from, to);
+    }
+
+    @Override
+    public V pollFirst(long timeout, TimeUnit unit) {
+        return get(pollFirstAsync(timeout, unit));
+    }
+    
+    @Override
+    public RFuture<V> pollFirstAsync(long timeout, TimeUnit unit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMIN_VALUE, getName(), toSeconds(timeout, unit));
+    }
+    
+    @Override
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+        return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(toSeconds(timeout, unit));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMIN_VALUE, params.toArray());
+    }
+
+    @Override
+    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+        return get(pollLastFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+        params.add(getName());
+        for (Object name : queueNames) {
+            params.add(name);
+        }
+        params.add(toSeconds(timeout, unit));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMAX_VALUE, params.toArray());
+    }
+    
+    @Override
+    public V pollLast(long timeout, TimeUnit unit) {
+        return get(pollLastAsync(timeout, unit));
+    }
+    
+    @Override
+    public RFuture<V> pollLastAsync(long timeout, TimeUnit unit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BZPOPMAX_VALUE, getName(), toSeconds(timeout, unit));
     }
 
     @Override

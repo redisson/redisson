@@ -85,7 +85,12 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override

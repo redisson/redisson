@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
@@ -30,16 +31,124 @@ import org.redisson.client.protocol.ScoredEntry;
  */
 public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsync<Set<V>> {
 
-    RFuture<V> pollLastAsync();
+    /**
+     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element, or {@code null} if all sorted sets are empty 
+     */
+    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
+     * Removes and returns first available head element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, or {@code null} if all sorted sets are empty
+     *  
+     */
+    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
+    
+    /**
+     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    RFuture<Collection<V>> pollFirstAsync(int count);
+
+    /**
+     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<Collection<V>> pollLastAsync(int count);
+
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
     RFuture<V> pollFirstAsync();
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    RFuture<V> pollLastAsync();
+
+    /**
+     * Returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element or {@code null} if this sorted set is empty
+     */
     RFuture<V> firstAsync();
 
+    /**
+     * Returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<V> lastAsync();
-    
+
+    /**
+     * Returns score of the head element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<Double> firstScoreAsync();
-    
+
+    /**
+     * Returns score of the tail element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     RFuture<Double> lastScoreAsync();
 
     RFuture<Long> addAllAsync(Map<V, Double> objects);
@@ -48,8 +157,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
 
     RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
+    /**
+     * Returns rank of value, with the scores ordered from low to high.
+     * 
+     * @param o - object
+     * @return rank or <code>null</code> if value does not exist
+     */
     RFuture<Integer> rankAsync(V o);
     
+    /**
+     * Returns rank of value, with the scores ordered from high to low.
+     * 
+     * @param o - object
+     * @return rank or <code>null</code> if value does not exist
+     */
     RFuture<Integer> revRankAsync(V o);
 
     /**
@@ -90,7 +211,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     /**
      * Adds element to this set only if has not been added before.
      * <p>
-     * Works only with <b>Redis 3.0.2 and higher.</b>
+     * Requires <b>Redis 3.0.2 and higher.</b>
      *
      * @param score - object score
      * @param object - object itself

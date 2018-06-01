@@ -288,7 +288,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             public void run() {
                 if (isConfigEndpoint) {
                     final URI uri = cfg.getNodeAddresses().iterator().next();
-                    final AddressResolver<InetSocketAddress> resolver = createResolverGroup().getResolver(getGroup().next());
+                    final AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(getGroup().next());
                     Future<List<InetSocketAddress>> allNodes = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
                     allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
                         @Override
