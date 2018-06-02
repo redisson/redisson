@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.7.0  | 14.05.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
-| 2.12.0 | 14.05.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
+| 3.7.1  | 02.06.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
+| 2.12.1 | 02.06.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
 
 
 Features
