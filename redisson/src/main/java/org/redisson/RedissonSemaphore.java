@@ -180,45 +180,41 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 // waiting for message
                 final long current = System.currentTimeMillis();
                 final RedissonLockEntry entry = getEntry();
-                synchronized (entry) {
-                    if (entry.getLatch().tryAcquire()) {
-                        tryAcquireAsync(time, permits, subscribeFuture, result);
-                    } else {
-                        final AtomicBoolean executed = new AtomicBoolean();
-                        final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-                        final Runnable listener = new Runnable() {
-                            @Override
-                            public void run() {
-                                executed.set(true);
-                                if (futureRef.get() != null && !futureRef.get().cancel()) {
-                                    entry.getLatch().release();
-                                    return;
-                                }
-                                long elapsed = System.currentTimeMillis() - current;
-                                time.addAndGet(-elapsed);
-
-                                tryAcquireAsync(time, permits, subscribeFuture, result);
+                if (entry.getLatch().tryAcquire()) {
+                    tryAcquireAsync(time, permits, subscribeFuture, result);
+                } else {
+                    final AtomicBoolean executed = new AtomicBoolean();
+                    final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+                    final Runnable listener = new Runnable() {
+                        @Override
+                        public void run() {
+                            executed.set(true);
+                            if (futureRef.get() != null && !futureRef.get().cancel()) {
+                                entry.getLatch().release();
+                                return;
                             }
-                        };
-                        entry.addListener(listener);
+                            long elapsed = System.currentTimeMillis() - current;
+                            time.addAndGet(-elapsed);
 
-                        long t = time.get();
-                        if (!executed.get()) {
-                            Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                                @Override
-                                public void run(Timeout timeout) throws Exception {
-                                    synchronized (entry) {
-                                        if (entry.removeListener(listener)) {
-                                            long elapsed = System.currentTimeMillis() - current;
-                                            time.addAndGet(-elapsed);
-                                            
-                                            tryAcquireAsync(time, permits, subscribeFuture, result);
-                                        }
-                                    }
-                                }
-                            }, t, TimeUnit.MILLISECONDS);
-                            futureRef.set(scheduledFuture);
+                            tryAcquireAsync(time, permits, subscribeFuture, result);
                         }
+                    };
+                    entry.addListener(listener);
+
+                    long t = time.get();
+                    if (!executed.get()) {
+                        Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                            @Override
+                            public void run(Timeout timeout) throws Exception {
+                                if (entry.removeListener(listener)) {
+                                    long elapsed = System.currentTimeMillis() - current;
+                                    time.addAndGet(-elapsed);
+                                    
+                                    tryAcquireAsync(time, permits, subscribeFuture, result);
+                                }
+                            }
+                        }, t, TimeUnit.MILLISECONDS);
+                        futureRef.set(scheduledFuture);
                     }
                 }
             }
@@ -251,18 +247,16 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 }
                 
                 final RedissonLockEntry entry = getEntry();
-                synchronized (entry) {
-                    if (entry.getLatch().tryAcquire(permits)) {
-                        acquireAsync(permits, subscribeFuture, result);
-                    } else {
-                        Runnable listener = new Runnable() {
-                            @Override
-                            public void run() {
-                                acquireAsync(permits, subscribeFuture, result);
-                            }
-                        };
-                        entry.addListener(listener);
-                    }
+                if (entry.getLatch().tryAcquire(permits)) {
+                    acquireAsync(permits, subscribeFuture, result);
+                } else {
+                    Runnable listener = new Runnable() {
+                        @Override
+                        public void run() {
+                            acquireAsync(permits, subscribeFuture, result);
+                        }
+                    };
+                    entry.addListener(listener);
                 }
             }
         });
