@@ -22,8 +22,8 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
     
     @Test
     public void testFastPut() throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(16);
-        for (int i = 0; i < 500; i++) {
+        ExecutorService executor = Executors.newFixedThreadPool(200);
+        for (int i = 0; i < 2000; i++) {
             executor.submit(() -> {
                 for (int j = 0; j < 100; j++) {
                     RTransaction t = redisson.createTransaction(TransactionOptions.defaults());
@@ -35,7 +35,7 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
         }
         
         executor.shutdown();
-        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+        assertThat(executor.awaitTermination(2, TimeUnit.MINUTES)).isTrue();
     }
     
     
