@@ -151,14 +151,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         instanceId = generateId();
         
         syncStrategy = options.getSyncStrategy();
-        
-        if (options.getSyncStrategy() != SyncStrategy.NONE) {
-            invalidateEntryOnChange = 1;
-        }
-        if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD) {
-            invalidateEntryOnChange = 2;
-            evictionScheduler.schedule(listener.getUpdatesLogName(), cacheUpdateLogTime + TimeUnit.MINUTES.toMillis(1));
-        }
 
         cache = createCache(options);
 
@@ -174,6 +166,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             
         };
         listener.add();
+
+        if (options.getSyncStrategy() != SyncStrategy.NONE) {
+            invalidateEntryOnChange = 1;
+        }
+        if (options.getReconnectionStrategy() == ReconnectionStrategy.LOAD) {
+            invalidateEntryOnChange = 2;
+            evictionScheduler.schedule(listener.getUpdatesLogName(), cacheUpdateLogTime + TimeUnit.MINUTES.toMillis(1));
+        }
     }
 
     private void cachePut(CacheKey cacheKey, Object key, Object value) {
