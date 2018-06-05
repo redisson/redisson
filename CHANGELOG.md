@@ -4,6 +4,24 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 02-Jun-2018 - versions 2.12.1 and 3.7.1 released
+Feature - `RRateLimiter` object moved to open-source version  
+Feature - ExecutorService task failover. Default failover interval is 60 seconds  
+Feature - `RScoredSortedSet.pollFirst` and `pollLast` methods with count parameter added  
+Feature - `RScoredSortedSet.pollFirst` and `pollLast` methods with timeout added  
+Feature - `RScoredSortedSet.pollFirstFromAny` and `pollLastFromAny` methods added  
+Improvement - `Node.time()` method returns `Time` object  
+Improvement -  RListReactive, RMapCacheReactive, RSetCacheReactive and RSetReactive are up-to-date to Async interfaces  
+Fixed - setPingConnectionInterval is not propagated for single server configuration  
+Fixed - ClusterConnectionManager should use shared resolverGroup  
+Fixed - value can't be added to BloomFilter  
+Fixed - Redis nodes with noaddr flag should be parsed correctly  
+Fixed - methods belongs to transactional objects get blocked at high concurrency  
+Fixed - Collection iterator doesn't use the same Redis node  
+Fixed - ExecuteService response queue expiration time set to one hour  
+Fixed - Executed remote tasks are not removed from Redis  
+Fixed - `reconnectionTimeout` and `failedAttempts` renamed in xsd schema  
+
 ### 14-May-2018 - versions 2.12.0 and 3.7.0 released
 Feature - __Proxy mode__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#29-proxy-mode) for more details  
 Feature - __Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features/#104-transactions) for more details  
