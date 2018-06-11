@@ -37,6 +37,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.ScanCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
@@ -370,7 +371,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE_CONTAINS, getName(), encode(o));
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZSCORE_CONTAINS, getName(), encode(o));
     }
 
     @Override
@@ -380,7 +381,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Double> getScoreAsync(V o) {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.ZSCORE, getName(), encode(o));
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZSCORE, getName(), encode(o));
     }
 
     @Override
