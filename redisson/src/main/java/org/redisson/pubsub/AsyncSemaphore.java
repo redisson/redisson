@@ -28,8 +28,55 @@ import java.util.concurrent.TimeUnit;
  */
 public class AsyncSemaphore {
 
+    private static class Entry {
+        
+        private Runnable runnable;
+        private int permits;
+        
+        public Entry(Runnable runnable, int permits) {
+            super();
+            this.runnable = runnable;
+            this.permits = permits;
+        }
+        
+        public int getPermits() {
+            return permits;
+        }
+        
+        public Runnable getRunnable() {
+            return runnable;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((runnable == null) ? 0 : runnable.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            Entry other = (Entry) obj;
+            if (runnable == null) {
+                if (other.runnable != null)
+                    return false;
+            } else if (!runnable.equals(other.runnable))
+                return false;
+            return true;
+        }
+        
+        
+    }
+    
     private int counter;
-    private final Set<Runnable> listeners = new LinkedHashSet<Runnable>();
+    private final Set<Entry> listeners = new LinkedHashSet<Entry>();
 
     public AsyncSemaphore(int permits) {
         counter = permits;
@@ -75,15 +122,18 @@ public class AsyncSemaphore {
     }
     
     public void acquire(Runnable listener) {
+        acquire(listener, 1);
+    }
+    
+    public void acquire(Runnable listener, int permits) {
         boolean run = false;
         
         synchronized (this) {
-            if (counter == 0) {
-                listeners.add(listener);
+            if (counter < permits) {
+                listeners.add(new Entry(listener, permits));
                 return;
-            }
-            if (counter > 0) {
-                counter--;
+            } else {
+                counter -= permits;
                 run = true;
             }
         }
@@ -95,7 +145,7 @@ public class AsyncSemaphore {
     
     public boolean remove(Runnable listener) {
         synchronized (this) {
-            return listeners.remove(listener);
+            return listeners.remove(new Entry(listener, 0));
         }
     }
 
@@ -104,19 +154,22 @@ public class AsyncSemaphore {
     }
     
     public void release() {
-        Runnable runnable = null;
+        Entry entryToAcquire = null;
         
         synchronized (this) {
             counter++;
-            Iterator<Runnable> iter = listeners.iterator();
+            Iterator<Entry> iter = listeners.iterator();
             if (iter.hasNext()) {
-                runnable = iter.next();
-                iter.remove();
+                Entry entry = iter.next();
+                if (entry.getPermits() >= counter) {
+                    iter.remove();
+                    entryToAcquire = entry;
+                }
             }
         }
         
-        if (runnable != null) {
-            acquire(runnable);
+        if (entryToAcquire != null) {
+            acquire(entryToAcquire.getRunnable(), entryToAcquire.getPermits());
         }
     }
 

@@ -61,7 +61,7 @@ public class RedissonBatch implements RBatch {
     private final BatchOptions options;
 
     public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
-        this.executorService = new CommandBatchService(connectionManager);
+        this.executorService = new CommandBatchService(connectionManager, options);
         this.evictionScheduler = evictionScheduler;
         this.options = options;
     }
@@ -264,12 +264,12 @@ public class RedissonBatch implements RBatch {
     
     @Override
     public BatchResult<?> execute() {
-        return executorService.execute(options);
+        return executorService.execute(BatchOptions.defaults());
     }
 
     @Override
     public RFuture<BatchResult<?>> executeAsync() {
-        return executorService.executeAsync(options);
+        return executorService.executeAsync(BatchOptions.defaults());
     }
     
     @Override

@@ -36,7 +36,7 @@ public class CountableListener<T> implements FutureListener<Object> {
     }
     
     public CountableListener(RPromise<T> result, T value) {
-        this(null, null, 0);
+        this(result, value, 0);
     }
     
     public CountableListener(RPromise<T> result, T value, int count) {
