@@ -15,12 +15,14 @@
  */
 package org.redisson.cache;
 
+import java.io.Serializable;
+
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class LocalCachedMapDisabledKey {
+public class LocalCachedMapDisabledKey implements Serializable {
 
     private String requestId;
     private long timeout;
