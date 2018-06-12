@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +80,7 @@ public class RedissonTransaction implements RTransaction {
     private final AtomicBoolean executed = new AtomicBoolean();
     
     private final TransactionOptions options;
-    private List<TransactionalOperation> operations = new ArrayList<TransactionalOperation>();
+    private List<TransactionalOperation> operations = new CopyOnWriteArrayList<TransactionalOperation>();
     private Set<String> localCaches = new HashSet<String>();
     private final long startTime = System.currentTimeMillis();
     
@@ -287,6 +288,7 @@ public class RedissonTransaction implements RTransaction {
 
     private void checkTimeout() {
         if (options.getTimeout() != -1 && System.currentTimeMillis() - startTime > options.getTimeout()) {
+            rollbackAsync();
             throw new TransactionTimeoutException("Transaction was discarded due to timeout " + options.getTimeout() + " milliseconds");
         }
     }

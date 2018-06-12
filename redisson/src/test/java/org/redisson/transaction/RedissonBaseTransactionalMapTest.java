@@ -22,7 +22,7 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
     
     @Test
     public void testFastPut() throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(200);
+        ExecutorService executor = Executors.newFixedThreadPool(2000);
         for (int i = 0; i < 2000; i++) {
             executor.submit(() -> {
                 for (int j = 0; j < 100; j++) {
