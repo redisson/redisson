@@ -174,6 +174,8 @@ public class CommandPubSubDecoder extends CommandDecoder {
             } else if (command.equals("pmessage")) {
                 String patternName = (String) parts.get(1);
                 return entries.get(patternName).getDecoder();
+            } else if (command.equals("pong")) {
+                return null;
             }
         }
 
