@@ -32,6 +32,7 @@ import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
+import org.redisson.api.NodeType;
 import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RFuture;
@@ -506,6 +507,8 @@ public class RedissonTest {
     public void testNode() {
         Node node = redisson.getNodesGroup().getNode(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         assertThat(node).isNotNull();
+        
+        assertThat(node.info(InfoSection.ALL)).isNotEmpty();
     }
     
     @Test
@@ -642,6 +645,38 @@ public class RedissonTest {
         });
 
         Assert.assertTrue(nodes.pingAll());
+    }
+
+    @Test
+    public void testNodesInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slot1)
+                .addNode(master2, slot2)
+                .addNode(master3, slot3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        for (Node node : redisson.getClusterNodesGroup().getNodes()) {
+            assertThat(node.info(InfoSection.ALL)).isNotEmpty();
+        }
+        assertThat(redisson.getClusterNodesGroup().getNodes(NodeType.SLAVE)).hasSize(3);
+        assertThat(redisson.getClusterNodesGroup().getNodes(NodeType.MASTER)).hasSize(3);
+        assertThat(redisson.getClusterNodesGroup().getNodes()).hasSize(6);
+        
+        redisson.shutdown();
+        process.shutdown();
     }
     
     @Test
