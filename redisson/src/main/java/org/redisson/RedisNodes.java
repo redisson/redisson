@@ -60,12 +60,12 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         URI addr = URIBuilder.create(address);
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            if (URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() && URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
                 return (N) new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
             }
-            for (ClientConnectionsEntry entry : masterSlaveEntry.getSlaveEntries()) {
-                if (URIBuilder.compare(entry.getClient().getAddr(), addr) ||
-                        entry.getFreezeReason() == null || entry.getFreezeReason() == FreezeReason.RECONNECT) {
+
+            for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
+                if (URIBuilder.compare(entry.getClient().getAddr(), addr) && entry.getFreezeReason() != FreezeReason.MANAGER) {
                     return (N) new RedisClientEntry(entry.getClient(), connectionManager.getCommandExecutor(), entry.getNodeType());
                 }
             }
@@ -78,16 +78,15 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         List<N> result = new ArrayList<N>();
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            if (type == NodeType.MASTER) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() && type == NodeType.MASTER) {
                 RedisClientEntry entry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
                 result.add((N) entry);
             }
-            if (type == NodeType.SLAVE) {
-                for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getSlaveEntries()) {
-                    if (slaveEntry.getFreezeReason() == null || slaveEntry.getFreezeReason() == FreezeReason.RECONNECT) {
-                        RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
-                        result.add((N) entry);
-                    }
+            
+            for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
+                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER && slaveEntry.getNodeType() == type) {
+                    RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
+                    result.add((N) entry);
                 }
             }
         }
@@ -100,11 +99,13 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         List<N> result = new ArrayList<N>();
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            RedisClientEntry masterEntry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
-            result.add((N) masterEntry);
+            if (masterSlaveEntry.getAllEntries().isEmpty()) {
+                RedisClientEntry masterEntry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                result.add((N) masterEntry);
+            }
             
-            for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getSlaveEntries()) {
-                if (slaveEntry.getFreezeReason() == null || slaveEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+            for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
+                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER) {
                     RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
                     result.add((N) entry);
                 }

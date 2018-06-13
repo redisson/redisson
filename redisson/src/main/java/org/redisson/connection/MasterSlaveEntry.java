@@ -352,14 +352,8 @@ public class MasterSlaveEntry {
         return slaveBalancer.getEntry(client);
     }
     
-    public Collection<ClientConnectionsEntry> getSlaveEntries() {
-        List<ClientConnectionsEntry> result = new ArrayList<ClientConnectionsEntry>();
-        for (ClientConnectionsEntry slaveEntry : slaveBalancer.getEntries()) {
-            if (slaveEntry.getNodeType() == NodeType.SLAVE) {
-                result.add(slaveEntry);
-            }
-        }
-        return result;
+    public Collection<ClientConnectionsEntry> getAllEntries() {
+        return slaveBalancer.getEntries();
     }
     
     public RedisClient getClient() {
