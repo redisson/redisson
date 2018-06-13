@@ -15,12 +15,14 @@
  */
 package org.redisson.cache;
 
+import java.io.Serializable;
+
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class LocalCachedMapEnable {
+public class LocalCachedMapEnable implements Serializable {
 
     private byte[][] keyHashes;
     private String requestId;

@@ -28,20 +28,31 @@ import org.redisson.misc.RPromise;
 public class CommandsData implements QueueCommand {
 
     private final List<CommandData<?, ?>> commands;
+    private final List<CommandData<?, ?>> attachedCommands;
     private final RPromise<Void> promise;
     private final boolean skipResult;
     private final boolean atomic;
 
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands) {
-        this(promise, commands, false, false);
+        this(promise, commands, null);
     }
     
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands) {
+        this(promise, commands, attachedCommands, false, false);
+    }
+    
+    
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic) {
+        this(promise, commands, null, skipResult, atomic);
+    }
+    
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands, boolean skipResult, boolean atomic) {
         super();
         this.promise = promise;
         this.commands = commands;
         this.skipResult = skipResult;
         this.atomic = atomic;
+        this.attachedCommands = attachedCommands;
     }
 
     public RPromise<Void> getPromise() {
@@ -54,6 +65,10 @@ public class CommandsData implements QueueCommand {
     
     public boolean isSkipResult() {
         return skipResult;
+    }
+    
+    public List<CommandData<?, ?>> getAttachedCommands() {
+        return attachedCommands;
     }
     
     public List<CommandData<?, ?>> getCommands() {

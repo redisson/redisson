@@ -53,10 +53,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private final ClassLoaderDelegator classLoader = new ClassLoaderDelegator();
-    
     private final Codec codec;
-    private final ClassLoader codecClassLoader;
     private final String name;
     private final CommandExecutor commandExecutor;
 
@@ -77,12 +74,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.redisson = redisson;
         this.responses = responses;
         
-        try {
-            this.codecClassLoader = codec.getClassLoader();
-            this.codec = codec.getClass().getConstructor(ClassLoader.class).newInstance(classLoader);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
-        }
+        this.codec = codec;
     }
     
     public void setTasksRetryIntervalName(String tasksRetryInterval) {
@@ -184,11 +176,10 @@ public class TasksRunnerService implements RemoteExecutorService {
         try {
             buf.writeBytes(state);
             
-            RedissonClassLoader cl = new RedissonClassLoader(codecClassLoader);
+            RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
             cl.loadClass(className, classBody);
-            classLoader.setCurrentClassLoader(cl);
-            
-            Callable<?> callable = decode(buf);
+
+            Callable<?> callable = decode(cl, buf);
             return callable.call();
         } catch (RedissonShutdownException e) {
             return null;
@@ -248,12 +239,17 @@ public class TasksRunnerService implements RemoteExecutorService {
         });
     }
 
-
     @SuppressWarnings("unchecked")
-    private <T> T decode(ByteBuf buf) throws IOException {
-        T task = (T) codec.getValueDecoder().decode(buf, null);
-        Injector.inject(task, redisson);
-        return task;
+    private <T> T decode(RedissonClassLoader cl, ByteBuf buf) throws IOException {
+        try {
+            Codec codec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
+            T task = (T) codec.getValueDecoder().decode(buf, null);
+            Injector.inject(task, redisson);
+            return task;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+        }
+
     }
 
     @Override
@@ -266,11 +262,10 @@ public class TasksRunnerService implements RemoteExecutorService {
         try {
             buf.writeBytes(state);
             
-            RedissonClassLoader cl = new RedissonClassLoader(codecClassLoader);
+            RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
             cl.loadClass(className, classBody);
-            classLoader.setCurrentClassLoader(cl);
         
-            Runnable runnable = decode(buf);
+            Runnable runnable = decode(cl, buf);
             runnable.run();
         } catch (RedissonShutdownException e) {
             // skip
@@ -295,8 +290,6 @@ public class TasksRunnerService implements RemoteExecutorService {
      * @param requestId
      */
     private void finish(String requestId) {
-        classLoader.clearCurrentClassLoader();
-
         commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
              + "if scheduled == false then "

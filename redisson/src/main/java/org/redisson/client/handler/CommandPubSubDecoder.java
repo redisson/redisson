@@ -43,6 +43,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandPubSubDecoder extends CommandDecoder {
 
+    private static final List<String> MESSAGES = Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe");
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<String, PubSubEntry> entries = new HashMap<String, PubSubEntry>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();
@@ -159,7 +160,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return null;
             }
             String command = parts.get(0).toString();
-            if (Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe").contains(command)) {
+            if (MESSAGES.contains(command)) {
                 String channelName = parts.get(1).toString();
                 PubSubKey key = new PubSubKey(channelName, command);
                 CommandData<Object, Object> commandData = commands.get(key);
@@ -173,6 +174,8 @@ public class CommandPubSubDecoder extends CommandDecoder {
             } else if (command.equals("pmessage")) {
                 String patternName = (String) parts.get(1);
                 return entries.get(patternName).getDecoder();
+            } else if (command.equals("pong")) {
+                return null;
             }
         }
 

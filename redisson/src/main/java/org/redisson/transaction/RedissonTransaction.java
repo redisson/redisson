@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -79,7 +80,7 @@ public class RedissonTransaction implements RTransaction {
     private final AtomicBoolean executed = new AtomicBoolean();
     
     private final TransactionOptions options;
-    private List<TransactionalOperation> operations = new ArrayList<TransactionalOperation>();
+    private List<TransactionalOperation> operations = new CopyOnWriteArrayList<TransactionalOperation>();
     private Set<String> localCaches = new HashSet<String>();
     private final long startTime = System.currentTimeMillis();
     
@@ -183,8 +184,9 @@ public class RedissonTransaction implements RTransaction {
         
         checkTimeout();
         
+        BatchOptions batchOptions = createOptions();
         
-        final CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager());
+        final CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager(), batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }
@@ -208,21 +210,8 @@ public class RedissonTransaction implements RTransaction {
                     result.tryFailure(e);
                     return;
                 }
-                
-                int syncSlaves = 0;
-                if (!commandExecutor.getConnectionManager().isClusterMode()) {
-                    MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
-                    syncSlaves = entry.getAvailableClients() - 1;
-                }
-                
-                BatchOptions batchOptions = BatchOptions.defaults()
-                        .syncSlaves(syncSlaves, options.getSyncTimeout(), TimeUnit.MILLISECONDS)
-                        .responseTimeout(options.getResponseTimeout(), TimeUnit.MILLISECONDS)
-                        .retryAttempts(options.getRetryAttempts())
-                        .retryInterval(options.getRetryInterval(), TimeUnit.MILLISECONDS)
-                        .atomic();
-                
-                RFuture<Object> transactionFuture = transactionExecutor.executeAsync(batchOptions);
+                                
+                RFuture<List<?>> transactionFuture = transactionExecutor.executeAsync();
                 transactionFuture.addListener(new FutureListener<Object>() {
                     @Override
                     public void operationComplete(Future<Object> future) throws Exception {
@@ -242,6 +231,22 @@ public class RedissonTransaction implements RTransaction {
         return result;
     }
 
+    private BatchOptions createOptions() {
+        int syncSlaves = 0;
+        if (!commandExecutor.getConnectionManager().isClusterMode()) {
+            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
+            syncSlaves = entry.getAvailableClients() - 1;
+        }
+        
+        BatchOptions batchOptions = BatchOptions.defaults()
+                .syncSlaves(syncSlaves, options.getSyncTimeout(), TimeUnit.MILLISECONDS)
+                .responseTimeout(options.getResponseTimeout(), TimeUnit.MILLISECONDS)
+                .retryAttempts(options.getRetryAttempts())
+                .retryInterval(options.getRetryInterval(), TimeUnit.MILLISECONDS)
+                .atomic();
+        return batchOptions;
+    }
+
     @Override
     public void commit() {
         commit(localCaches, operations);
@@ -252,8 +257,9 @@ public class RedissonTransaction implements RTransaction {
         
         checkTimeout();
         
+        BatchOptions batchOptions = createOptions();
         
-        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager());
+        CommandBatchService transactionExecutor = new CommandBatchService(commandExecutor.getConnectionManager(), batchOptions);
         for (TransactionalOperation transactionalOperation : operations) {
             transactionalOperation.commit(transactionExecutor);
         }
@@ -268,21 +274,9 @@ public class RedissonTransaction implements RTransaction {
             throw e;
         }
 
-        int syncSlaves = 0;
-        if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntrySet().iterator().next();
-            syncSlaves = entry.getAvailableClients() - 1;
-        }
-        
         try {
-            BatchOptions batchOptions = BatchOptions.defaults()
-                                                    .syncSlaves(syncSlaves, options.getSyncTimeout(), TimeUnit.MILLISECONDS)
-                                                    .responseTimeout(options.getResponseTimeout(), TimeUnit.MILLISECONDS)
-                                                    .retryAttempts(options.getRetryAttempts())
-                                                    .retryInterval(options.getRetryInterval(), TimeUnit.MILLISECONDS)
-                                                    .atomic();
             
-            transactionExecutor.execute(batchOptions);
+            transactionExecutor.execute();
         } catch (Exception e) {
             throw new TransactionException("Unable to execute transaction", e);
         }
@@ -294,6 +288,7 @@ public class RedissonTransaction implements RTransaction {
 
     private void checkTimeout() {
         if (options.getTimeout() != -1 && System.currentTimeMillis() - startTime > options.getTimeout()) {
+            rollbackAsync();
             throw new TransactionTimeoutException("Transaction was discarded due to timeout " + options.getTimeout() + " milliseconds");
         }
     }
@@ -582,7 +577,7 @@ public class RedissonTransaction implements RTransaction {
         }
 
         try {
-            executorService.execute(BatchOptions.defaults());
+            executorService.execute();
         } catch (Exception e) {
             throw new TransactionException("Unable to rollback transaction", e);
         }
@@ -601,7 +596,7 @@ public class RedissonTransaction implements RTransaction {
         }
 
         final RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<Object> future = executorService.executeAsync(BatchOptions.defaults());
+        RFuture<List<?>> future = executorService.executeAsync();
         future.addListener(new FutureListener<Object>() {
             @Override
             public void operationComplete(Future<Object> future) throws Exception {

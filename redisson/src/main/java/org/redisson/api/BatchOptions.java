@@ -18,12 +18,53 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for Batch.
+ * Configuration for Batch objecct.
  * 
  * @author Nikita Koksharov
  *
  */
 public class BatchOptions {
+    
+    public enum ExecutionMode {
+
+        /**
+         * Store batched invocations in Redis and execute them atomically as a single command.
+         * <p>
+         * Please note, that in cluster mode all objects should be on the same cluster slot.
+         * https://github.com/antirez/redis/issues/3682 
+         * 
+         */
+        REDIS_READ_ATOMIC,
+
+        /**
+         * Store batched invocations in Redis and execute them atomically as a single command.
+         * <p>
+         * Please note, that in cluster mode all objects should be on the same cluster slot.
+         * https://github.com/antirez/redis/issues/3682 
+         * 
+         */
+        REDIS_WRITE_ATOMIC,
+
+        /**
+         * Store batched invocations in memory on Redisson side and execute them on Redis.
+         * <p>
+         * Default mode
+         * 
+         */
+        IN_MEMORY,
+        
+        /**
+         * Store batched invocations on Redisson side and executes them atomically on Redis as a single command.
+         * <p>
+         * Please note, that in cluster mode all objects should be on the same cluster slot.
+         * https://github.com/antirez/redis/issues/3682 
+         * 
+         */
+        IN_MEMORY_ATOMIC,
+        
+    }
+    
+    private ExecutionMode executionMode = ExecutionMode.IN_MEMORY;
     
     private long responseTimeout;
     private int retryAttempts;
@@ -32,7 +73,6 @@ public class BatchOptions {
     private long syncTimeout;
     private int syncSlaves;
     private boolean skipResult;
-    private boolean atomic;
 
     private BatchOptions() {
     }
@@ -122,19 +162,13 @@ public class BatchOptions {
     }
     
     /**
-     * Switches batch to atomic mode. Redis atomically executes all commands of this batch as a single command.
-     * <p>
-     * Please note, that in cluster mode all objects should be on the same cluster slot.
-     * https://github.com/antirez/redis/issues/3682 
+     * Use {@link #executionMode(ExecutionMode)} setting instead
      * 
-     * @return self instance
      */
+    @Deprecated
     public BatchOptions atomic() {
-        atomic = true;
+        executionMode = ExecutionMode.IN_MEMORY_ATOMIC;
         return this;
-    }
-    public boolean isAtomic() {
-        return atomic;
     }
     
     /**
@@ -152,4 +186,27 @@ public class BatchOptions {
         return skipResult;
     }
 
+    /**
+     * Sets execution mode.
+     * 
+     * @see ExecutionMode
+     * 
+     * @param executionMode - batch execution mode
+     * @return self instance
+     */
+    public BatchOptions executionMode(ExecutionMode executionMode) {
+        this.executionMode = executionMode;
+        return this;
+    }
+    public ExecutionMode getExecutionMode() {
+        return executionMode;
+    }
+
+    @Override
+    public String toString() {
+        return "BatchOptions [queueStore=" + executionMode + "]";
+    }
+    
+    
+    
 }
