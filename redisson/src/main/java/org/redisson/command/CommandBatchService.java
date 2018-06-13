@@ -229,6 +229,7 @@ public class CommandBatchService extends CommandAsyncService {
             BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
             super.handleError(sentPromise, cause);
+            super.handleError(promise, cause);
             semaphore.release();
             return;
         }
@@ -462,38 +463,41 @@ public class CommandBatchService extends CommandAsyncService {
                                 return;
                             }
                             
-                            for (java.util.Map.Entry<MasterSlaveEntry, List<Object>> entry : future.getNow().entrySet()) {
-                                Entry commandEntry = commands.get(entry.getKey());
-                                Iterator<Object> resultIter = entry.getValue().iterator();
-                                for (BatchCommandData<?, ?> data : commandEntry.getCommands()) {
-                                    if (data.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
-                                        break;
+                            try {
+                                for (java.util.Map.Entry<MasterSlaveEntry, List<Object>> entry : future.getNow().entrySet()) {
+                                    Entry commandEntry = commands.get(entry.getKey());
+                                    Iterator<Object> resultIter = entry.getValue().iterator();
+                                    for (BatchCommandData<?, ?> data : commandEntry.getCommands()) {
+                                        if (data.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
+                                            break;
+                                        }
+                                        RPromise<Object> promise = (RPromise<Object>) data.getPromise();
+                                        promise.trySuccess(resultIter.next());
                                     }
-                                    RPromise<Object> promise = (RPromise<Object>) data.getPromise();
-                                    promise.trySuccess(resultIter.next());
                                 }
-                            }
-                            
-                            List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
-                            for (Entry e : commands.values()) {
-                                entries.addAll(e.getCommands());
-                            }
-                            Collections.sort(entries);
-                            List<Object> responses = new ArrayList<Object>(entries.size());
-                            int syncedSlaves = 0;
-                            for (BatchCommandData<?, ?> commandEntry : entries) {
-                                if (isWaitCommand(commandEntry)) {
-                                    syncedSlaves += (Integer) commandEntry.getPromise().getNow();
-                                } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
-                                        && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
-                                    Object entryResult = commandEntry.getPromise().getNow();
-                                    entryResult = tryHandleReference(entryResult);
-                                    responses.add(entryResult);
+                                
+                                List<BatchCommandData> entries = new ArrayList<BatchCommandData>();
+                                for (Entry e : commands.values()) {
+                                    entries.addAll(e.getCommands());
                                 }
+                                Collections.sort(entries);
+                                List<Object> responses = new ArrayList<Object>(entries.size());
+                                int syncedSlaves = 0;
+                                for (BatchCommandData<?, ?> commandEntry : entries) {
+                                    if (isWaitCommand(commandEntry)) {
+                                        syncedSlaves += (Integer) commandEntry.getPromise().getNow();
+                                    } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
+                                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
+                                        Object entryResult = commandEntry.getPromise().getNow();
+                                        entryResult = tryHandleReference(entryResult);
+                                        responses.add(entryResult);
+                                    }
+                                }
+                                BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
+                                resultPromise.trySuccess((R)result);
+                            } catch (Exception e) {
+                                resultPromise.tryFailure(e);
                             }
-                            
-                            BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
-                            resultPromise.trySuccess((R)result);
                             
                             commands = null;
                         }

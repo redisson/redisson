@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -28,6 +29,7 @@ import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 import org.redisson.api.RMapAsync;
+import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
@@ -135,15 +137,20 @@ public class RedissonBatchTest extends BaseTest {
         
         process.shutdown();
     }
-    
+
     @Test
     public void testWriteTimeout() {
         RBatch batch = redisson.createBatch(batchOptions);
+        RMapCacheAsync<String, String> map = batch.getMapCache("test");
         for (int i = 0; i < 200000; i++) {
-            RMapCacheAsync<String, String> map = batch.getMapCache("test");
-            map.putAsync("" + i, "" + i, 10, TimeUnit.SECONDS);
+            RFuture<String> f = map.putAsync("" + i, "" + i, 5, TimeUnit.MINUTES);
+            if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
+                f.syncUninterruptibly();
+            }
         }
+        
         batch.execute();
+        assertThat(redisson.getMapCache("test").size()).isEqualTo(200000);
     }
     
     @Test
