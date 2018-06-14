@@ -857,18 +857,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 
                 handleSuccess(details.getMainPromise(), details.getCommand(), res);
             } else {
-                handleError(details.getMainPromise(), future.cause());
+                handleError(details, details.getMainPromise(), future.cause());
             }
             
             AsyncDetails.release(details);
         } catch (RuntimeException e) {
-            handleError(details.getMainPromise(), e);
+            handleError(details, details.getMainPromise(), e);
 			throw e;
         }
     }
 
-    protected <R> void handleError(RPromise<R> promise, Throwable cause) {
-        promise.tryFailure(cause);
+    protected <V, R> void handleError(AsyncDetails<V, R> details, RPromise<R> mainPromise, Throwable cause) {
+        mainPromise.tryFailure(cause);
     }
 
     protected <R> void handleSuccess(RPromise<R> promise, RedisCommand<?> command, R res) {
