@@ -3,7 +3,6 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -29,7 +28,6 @@ import org.redisson.api.RBatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 import org.redisson.api.RMapAsync;
-import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheAsync;
 import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
@@ -79,6 +77,38 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> t = batch.execute();
         System.out.println(t);
+    }
+    
+    @Test
+    public void testConnectionLeakAfterError() throws InterruptedException {
+        Config config = createConfig();
+        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+
+        RedissonClient redisson = Redisson.create(config);
+        
+        BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
+        RBatch batch = redisson.createBatch(batchOptions);
+        for (int i = 0; i < 200000; i++) {
+            batch.getBucket("test").setAsync(123);
+        }
+        
+        try {
+            batch.execute();
+            Assert.fail();
+        } catch (Exception e) {
+            // skip
+        }
+        
+        redisson.getBucket("test3").set(4);
+        assertThat(redisson.getBucket("test3").get()).isEqualTo(4);
+        
+        batch = redisson.createBatch(batchOptions);
+        batch.getBucket("test1").setAsync(1);
+        batch.getBucket("test2").setAsync(2);
+        batch.execute();
+        
+        assertThat(redisson.getBucket("test1").get()).isEqualTo(1);
+        assertThat(redisson.getBucket("test2").get()).isEqualTo(2);
     }
     
     @Test
