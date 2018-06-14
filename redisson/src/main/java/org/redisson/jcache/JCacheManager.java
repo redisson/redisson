@@ -38,7 +38,6 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.redisson.Redisson;
-import org.redisson.api.RedissonClient;
 import org.redisson.jcache.bean.EmptyStatisticsMXBean;
 import org.redisson.jcache.bean.JCacheManagementMXBean;
 import org.redisson.jcache.bean.JCacheStatisticsMXBean;
@@ -365,7 +364,9 @@ public class JCacheManager implements CacheManager {
                         // skip
                     }
                 }
-                redisson.shutdown();
+                if (redisson != null) {
+                    redisson.shutdown();
+                }
                 closed = true;
             }
         }
