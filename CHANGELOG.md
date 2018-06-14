@@ -4,6 +4,21 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 14-Jun-2018 - versions 2.12.1 and 3.7.1 released
+
+Feature - `RBatchOptions.executionMode` setting added Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
+Fixed - NPE in JCacheManager.close method  
+Fixed - ExecutorService tasks aren't reloaded properly  
+Fixed - removed unnecessary creation of HashMap instances in cluster mode  
+Fixed - `RedisNode.info` doesn't work  
+Fixed - NullPointerException when using setPingConnectionInterval in Pub/Sub mode  
+Fixed - LocalCachedMapDisable should implement Serializable  
+Fixed - `ConcurrentModificationException` in `RTransaction.execute` method  
+Fixed - exception handling in Fst and Json codec  
+Fixed - `RedissonScoredSortedSet.contains` and `RedissonScoredSortedSet.getScoreAsync` methods use wrong codec  
+Fixed - NPE if `RedissonLocalCachedMap` init with `ReconnectionStrategy.LOAD` param  
+Fixed - transactional object methods get blocked at high concurrency  
+
 ### 02-Jun-2018 - versions 2.12.1 and 3.7.1 released
 Feature - `RRateLimiter` object moved to open-source version  
 Feature - ExecutorService task failover. Default failover interval is 60 seconds  
