@@ -47,6 +47,7 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -281,7 +282,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
 
         MasterSlaveEntry entry = nodes.remove(0);
-        async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, attemptPromise, 0, false, null);
+        async(true, new NodeSource(entry), StringCodec.INSTANCE, command, params, attemptPromise, 0, false, null);
     }
 
     @Override
