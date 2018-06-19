@@ -185,12 +185,22 @@ public interface RKeys extends RKeysAsync {
     Iterable<String> getKeysByPattern(String pattern, int count);
     
     /**
-     * Get all keys using iterator. Keys traversing with SCAN operation
+     * Get all keys using iterator. Keys traversing with SCAN operation. 
+     * Each SCAN operation loads up to <code>10</code> keys per request. 
      *
      * @return Iterable object
      */
     Iterable<String> getKeys();
 
+    /**
+     * Get all keys using iterator. Keys traversing with SCAN operation.
+     * Each SCAN operation loads up to <code>count</code> keys per request.
+     *
+     * @param count - keys loaded per request to Redis
+     * @return Iterable object
+     */
+    Iterable<String> getKeys(int count);
+    
     /**
      * Get random key
      *
