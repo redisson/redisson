@@ -23,12 +23,40 @@ import org.redisson.config.Config;
 /**
  * Main Redisson interface for access
  * to all redisson objects with sync/async interface.
+ * 
+ * @see RedissonReactiveClient
  *
  * @author Nikita Koksharov
  *
  */
 public interface RedissonClient {
 
+    /**
+     * Returns stream instance by <code>name</code>
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name of stream
+     * @return RStream object
+     */
+    <K, V> RStream<K, V> getStream(String name);
+    
+    /**
+     * Returns stream instance by <code>name</code>
+     * using provided <code>codec</code> for entries.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of stream
+     * @param codec - codec for entry
+     * @return RStream object
+     */
+    <K, V> RStream<K, V> getStream(String name, Codec codec);
+    
     /**
      * Returns rate limiter instance by <code>name</code>
      * 

@@ -21,52 +21,25 @@ import java.util.Map;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.convertor.Convertor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
-
-    private Decoder<Object> codec;
-    private Convertor<?> convertor;
-    
-    public ObjectMapReplayDecoder() {
-    }
-    
-    public ObjectMapReplayDecoder(Decoder<Object> codec) {
-        super();
-        this.codec = codec;
-    }
-    
-    public ObjectMapReplayDecoder(Decoder<Object> codec, Convertor<?> convertor) {
-        super();
-        this.codec = codec;
-        this.convertor = convertor;
-    }
+public class ObjectMapJoinDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
-        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
+        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
         for (int i = 0; i < parts.size(); i++) {
-            if (i % 2 != 0) {
-                if (convertor != null) {
-                    result.put(convertor.convert(parts.get(i-1)), parts.get(i));
-                } else {
-                    result.put(parts.get(i-1), parts.get(i));
-                }
-           }
+            result.putAll((Map<? extends Object, ? extends Object>) parts.get(i));
         }
         return result;
     }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        if (codec != null) {
-            return codec;
-        }
         return null;
     }
 

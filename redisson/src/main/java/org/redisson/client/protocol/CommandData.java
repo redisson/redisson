@@ -97,7 +97,9 @@ public class CommandData<T, R> implements QueueCommand {
     }
     
     public boolean isBlockingCommand() {
-        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName());
+        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName()) 
+                || RedisCommands.XREAD_BLOCKING_SINGLE == command
+                    || RedisCommands.XREAD_BLOCKING == command;
     }
 
 }

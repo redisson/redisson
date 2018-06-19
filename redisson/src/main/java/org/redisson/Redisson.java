@@ -72,6 +72,7 @@ import org.redisson.api.RSetCache;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetMultimapCache;
 import org.redisson.api.RSortedSet;
+import org.redisson.api.RStream;
 import org.redisson.api.RTopic;
 import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;
@@ -188,6 +189,16 @@ public class Redisson implements RedissonClient {
             react.enableRedissonReferenceSupport();
         }
         return react;
+    }
+    
+    @Override
+    public <K, V> RStream<K, V> getStream(String name) {
+        return new RedissonStream<K, V>(connectionManager.getCommandExecutor(), name);
+    }
+    
+    @Override
+    public <K, V> RStream<K, V> getStream(String name, Codec codec) {
+        return new RedissonStream<K, V>(codec, connectionManager.getCommandExecutor(), name);
     }
     
     @Override

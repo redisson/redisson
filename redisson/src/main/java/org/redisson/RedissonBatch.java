@@ -42,6 +42,7 @@ import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScriptAsync;
 import org.redisson.api.RSetAsync;
 import org.redisson.api.RSetCacheAsync;
+import org.redisson.api.RStreamAsync;
 import org.redisson.api.RTopicAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
@@ -324,6 +325,16 @@ public class RedissonBatch implements RBatch {
 
     protected void enableRedissonReferenceSupport(Redisson redisson) {
         this.executorService.enableRedissonReferenceSupport(redisson);
+    }
+
+    @Override
+    public <K, V> RStreamAsync<K, V> getStream(String name) {
+        return new RedissonStream<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RStreamAsync<K, V> getStream(String name, Codec codec) {  
+        return new RedissonStream<K, V>(codec, executorService, name);
     }
 
 }
