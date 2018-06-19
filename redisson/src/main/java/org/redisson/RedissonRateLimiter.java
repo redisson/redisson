@@ -122,7 +122,11 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
     @Override
     public RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit) {
         RPromise<Boolean> promise = new RedissonPromise<Boolean>();
-        tryAcquireAsync(permits, promise, unit.toMillis(timeout));
+        long timeoutInMillis = -1;
+        if (timeout > 0) {
+            timeoutInMillis = unit.toMillis(timeout);
+        }
+        tryAcquireAsync(permits, promise, timeoutInMillis);
         return promise;
     }
     
