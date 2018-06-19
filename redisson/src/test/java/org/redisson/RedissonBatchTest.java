@@ -82,7 +82,10 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = createConfig();
-        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+        config.useSingleServer()
+                .setRetryInterval(1500)
+                .setTimeout(3000)
+                .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
         

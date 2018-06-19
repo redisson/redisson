@@ -561,7 +561,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getMainPromise().isCancelled()) {
                     if (details.getAttemptPromise().cancel(false)) {
-                        free(details);
+                        free(details.getParams());
                         AsyncDetails.release(details);
                     }
                     return;
@@ -649,12 +649,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     protected void free(final Object[] params) {
         for (Object obj : params) {
-            ReferenceCountUtil.safeRelease(obj);
-        }
-    }
-
-    protected <V, R> void free(final AsyncDetails<V, R> details) {
-        for (Object obj : details.getParams()) {
             ReferenceCountUtil.safeRelease(obj);
         }
     }
@@ -866,7 +860,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 return;
             }
             
-            free(details);
+            free(details.getParams());
             
             if (future.isSuccess()) {
                 R res = future.getNow();
