@@ -121,13 +121,15 @@ public class TasksRunnerService implements RemoteExecutorService {
     @Override
     public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId) {
         Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
-        RFuture<Void> future = asyncScheduledServiceAtFixed(executorId, requestId).schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, executorId, requestId);
-        try {
-            executeRunnable(className, classBody, state, requestId);
-        } catch (RuntimeException e) {
-            // cancel task if it throws an exception
-            future.cancel(true);
-            throw e;
+        if (nextStartDate != null) {
+            RFuture<Void> future = asyncScheduledServiceAtFixed(executorId, requestId).schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, executorId, requestId);
+            try {
+                executeRunnable(className, classBody, state, requestId);
+            } catch (RuntimeException e) {
+                // cancel task if it throws an exception
+                future.cancel(true);
+                throw e;
+            }
         }
     }
 
