@@ -18,8 +18,10 @@ package org.redisson.client.handler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.RedisPubSubConnection;
@@ -43,7 +45,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class CommandPubSubDecoder extends CommandDecoder {
 
-    private static final List<String> MESSAGES = Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe");
+    private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe"));
     // It is not needed to use concurrent map because responses are coming consecutive
     private final Map<String, PubSubEntry> entries = new HashMap<String, PubSubEntry>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();

@@ -194,5 +194,10 @@ public class RedissonPromise<T> implements RPromise<T> {
             throw new IllegalStateException(e);
         }
     }
-    
+
+    @Override
+    public String toString() {
+        return "RedissonPromise [promise=" + promise + "]";
+    }
+
 }

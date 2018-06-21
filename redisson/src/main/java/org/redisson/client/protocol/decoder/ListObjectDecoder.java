@@ -26,7 +26,14 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class QueueObjectDecoder implements MultiDecoder<Object> {
+public class ListObjectDecoder<T> implements MultiDecoder<T> {
+
+    private int index;
+    
+    public ListObjectDecoder(int index) {
+        super();
+        this.index = index;
+    }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
@@ -37,11 +44,11 @@ public class QueueObjectDecoder implements MultiDecoder<Object> {
     }
     
     @Override
-    public Object decode(List<Object> parts, State state) {
+    public T decode(List<Object> parts, State state) {
         if (parts.isEmpty()) {
             return null;
         }
-        return parts.get(1);
+        return (T) parts.get(index);
     }
 
 }
