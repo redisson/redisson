@@ -49,8 +49,8 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.SlotsDecoder;
@@ -427,12 +427,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     private void handleResult(CommandData<Object, Object> data, List<Object> parts, Object result, boolean multiResult, Channel channel) {
-        if (data != null) {
-            if (multiResult) {
-                result = data.getCommand().getConvertor().convertMulti(result);
-            } else {
-                result = data.getCommand().getConvertor().convert(result);
-            }
+        if (data != null && !multiResult) {
+            result = data.getCommand().getConvertor().convert(result);
         }
         if (parts != null) {
             parts.add(result);

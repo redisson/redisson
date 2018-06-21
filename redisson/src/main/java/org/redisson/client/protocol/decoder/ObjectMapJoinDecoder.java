@@ -15,43 +15,32 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class KeyValueObjectDecoder implements MultiDecoder<Object> {
+public class ObjectMapJoinDecoder implements MultiDecoder<Map<Object, Object>> {
+
+    @Override
+    public Map<Object, Object> decode(List<Object> parts, State state) {
+        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
+        for (int i = 0; i < parts.size(); i++) {
+            result.putAll((Map<? extends Object, ? extends Object>) parts.get(i));
+        }
+        return result;
+    }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        if (paramNum == 0) {
-            return new Decoder<Object>() {
-                @Override
-                public Object decode(ByteBuf buf, State state) throws IOException {
-                    String status = buf.toString(CharsetUtil.UTF_8);
-                    buf.skipBytes(1);
-                    return status;
-                }
-            };
-        }
         return null;
-    }
-    
-    @Override
-    public Object decode(List<Object> parts, State state) {
-        if (parts.isEmpty()) {
-            return null;
-        }
-        return new KeyValueMessage(parts.get(0), parts.get(1));
     }
 
 }

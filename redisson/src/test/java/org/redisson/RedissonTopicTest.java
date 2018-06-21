@@ -7,7 +7,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -102,6 +106,31 @@ public class RedissonTopicTest {
             return true;
         }
 
+    }
+    
+    @Test
+    public void testPing() throws InterruptedException {
+        Config config = BaseTest.createConfig();
+        config.useSingleServer().setPingConnectionInterval(50);
+        RedissonClient redisson = Redisson.create(config);
+
+        Set<String> sentItems = new HashSet<>();
+        Set<String> receivedItems = new HashSet<>();
+        
+        RTopic<String> eventsTopic = redisson.getTopic("eventsTopic");
+        eventsTopic.addListener((channel, msg) -> receivedItems.add(msg));
+
+        for(int i = 0; i<1000; i++){
+            final String message = UUID.randomUUID().toString();
+            eventsTopic.publish(message);
+            sentItems.add(message);
+            Thread.sleep(10);
+        }
+        
+        Thread.sleep(2000);
+        
+        assertThat(sentItems).hasSameSizeAs(receivedItems);
+        redisson.shutdown();
     }
     
     @Test

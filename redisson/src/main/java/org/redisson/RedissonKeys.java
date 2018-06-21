@@ -107,6 +107,11 @@ public class RedissonKeys implements RKeys {
     public Iterable<String> getKeys() {
         return getKeysByPattern(null);
     }
+    
+    @Override
+    public Iterable<String> getKeys(int count) {
+        return getKeysByPattern(null, count);
+    }
 
     private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {

@@ -82,7 +82,10 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = createConfig();
-        config.useSingleServer().setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
+        config.useSingleServer()
+                .setRetryInterval(1500)
+                .setTimeout(3000)
+                .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
         
@@ -170,6 +173,10 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testWriteTimeout() {
+        Config config = createConfig();
+        config.useSingleServer().setTimeout(15000);
+        RedissonClient redisson = Redisson.create(config);
+
         RBatch batch = redisson.createBatch(batchOptions);
         RMapCacheAsync<String, String> map = batch.getMapCache("test");
         for (int i = 0; i < 200000; i++) {
@@ -181,6 +188,7 @@ public class RedissonBatchTest extends BaseTest {
         
         batch.execute();
         assertThat(redisson.getMapCache("test").size()).isEqualTo(200000);
+        redisson.shutdown();
     }
     
     @Test
@@ -314,6 +322,10 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testBatchBigRequest() {
+        Config config = createConfig();
+        config.useSingleServer().setTimeout(15000);
+        RedissonClient redisson = Redisson.create(config);
+
         RBatch batch = redisson.createBatch(batchOptions);
         for (int i = 0; i < 210; i++) {
             batch.getMap("test").fastPutAsync("1", "2");
@@ -324,6 +336,8 @@ public class RedissonBatchTest extends BaseTest {
         }
         BatchResult<?> res = batch.execute();
         Assert.assertEquals(210*5, res.getResponses().size());
+        
+        redisson.shutdown();
     }
 
     @Test(expected=RedisException.class)

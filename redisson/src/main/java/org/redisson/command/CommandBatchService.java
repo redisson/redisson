@@ -167,15 +167,20 @@ public class CommandBatchService extends CommandAsyncService {
             if (!readOnlyMode) {
                 entry.setReadOnlyMode(false);
             }
-            if (isRedissonReferenceSupportEnabled()) {
-                for (int i = 0; i < params.length; i++) {
-                    RedissonReference reference = RedissonObjectFactory.toReference(connectionManager.getCfg(), params[i]);
-                    if (reference != null) {
-                        params[i] = reference;
+            
+            Object[] batchParams = null;
+            if (!isRedisBasedQueue()) {
+                batchParams = params;
+                if (isRedissonReferenceSupportEnabled()) {
+                    for (int i = 0; i < batchParams.length; i++) {
+                        RedissonReference reference = RedissonObjectFactory.toReference(connectionManager.getCfg(), batchParams[i]);
+                        if (reference != null) {
+                            batchParams[i] = reference;
+                        }
                     }
                 }
             }
-            BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, params, index.incrementAndGet());
+            BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, batchParams, index.incrementAndGet());
             entry.getCommands().add(commandData);
         }
         
@@ -218,7 +223,7 @@ public class CommandBatchService extends CommandAsyncService {
         if (isRedisBasedQueue()) {
             BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-            super.handleSuccess(sentPromise, command, res);
+            super.handleSuccess(sentPromise, command, null);
             semaphore.release();
         }
     }

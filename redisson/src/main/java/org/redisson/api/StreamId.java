@@ -1,0 +1,115 @@
+/**
+ * Copyright 2018 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.redisson.api;
+
+/**
+ * Stream ID used by Redis Stream 
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class StreamId {
+
+    /**
+     * Defines minimal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
+     */
+    public static final StreamId MIN = new StreamId(-1);
+    
+    /**
+     * Defines maximal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
+     */
+    public static final StreamId MAX = new StreamId(-1);
+    
+    /**
+     * Defines latest id to receive Stream entries added since method invocation.
+     * <p>
+     * Used  in {@link RStream#read} and {@link RStreamAsync#readAsync} methods
+     */
+    public static final StreamId NEWEST = new StreamId(-1);
+    
+    private long id0;
+    private long id1;
+    
+    public StreamId(long id0) {
+        super();
+        this.id0 = id0;
+    }
+
+    public StreamId(long id0, long id1) {
+        super();
+        this.id0 = id0;
+        this.id1 = id1;
+    }
+    
+    /**
+     * Returns first part of ID
+     * 
+     * @return first part of ID
+     */
+    public long getId0() {
+        return id0;
+    }
+
+    /**
+     * Returns second part of ID
+     * 
+     * @return second part of ID
+     */
+    public long getId1() {
+        return id1;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (int) (id0 ^ (id0 >>> 32));
+        result = prime * result + (int) (id1 ^ (id1 >>> 32));
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        StreamId other = (StreamId) obj;
+        if (id0 != other.id0)
+            return false;
+        if (id1 != other.id1)
+            return false;
+        return true;
+    }
+    
+    @Override
+    public String toString() {
+        if (this == NEWEST) {
+            return "$";
+        }
+        if (this == MIN) {
+            return "-";
+        }
+        if (this == MAX) {
+            return "+";
+        }
+
+        return id0 + "-" + id1;
+    }
+    
+}

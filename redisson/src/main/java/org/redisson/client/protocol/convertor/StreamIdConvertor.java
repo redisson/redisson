@@ -15,21 +15,19 @@
  */
 package org.redisson.client.protocol.convertor;
 
-import org.redisson.client.protocol.decoder.KeyValueMessage;
+import org.redisson.api.StreamId;
 
-public class KeyValueConvertor implements Convertor<Object> {
-
-    @Override
-    public Object convertMulti(Object obj) {
-        if (obj != null) {
-            return ((KeyValueMessage)obj).getValue();
-        }
-        return null;
-    }
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class StreamIdConvertor extends SingleConvertor<StreamId> {
 
     @Override
-    public Object convert(Object obj) {
-        return obj;
+    public StreamId convert(Object id) {
+        String[] parts = id.toString().split("-");
+        return new StreamId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
     }
 
 }

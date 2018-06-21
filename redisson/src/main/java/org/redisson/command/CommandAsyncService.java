@@ -47,6 +47,7 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -281,7 +282,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
 
         MasterSlaveEntry entry = nodes.remove(0);
-        async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, attemptPromise, 0, false, null);
+        async(true, new NodeSource(entry), StringCodec.INSTANCE, command, params, attemptPromise, 0, false, null);
     }
 
     @Override
@@ -560,7 +561,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getMainPromise().isCancelled()) {
                     if (details.getAttemptPromise().cancel(false)) {
-                        free(details);
+                        free(details.getParams());
                         AsyncDetails.release(details);
                     }
                     return;
@@ -652,12 +653,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    protected <V, R> void free(final AsyncDetails<V, R> details) {
-        for (Object obj : details.getParams()) {
-            ReferenceCountUtil.safeRelease(obj);
-        }
-    }
-
     private <V, R> void checkWriteFuture(final AsyncDetails<V, R> details, final RedisConnection connection) {
         ChannelFuture future = details.getWriteFuture();
         if (future.isCancelled() || details.getAttemptPromise().isDone()) {
@@ -679,8 +674,26 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getTimeout().cancel();
 
         long timeoutTime = connectionManager.getConfig().getTimeout();
-        if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())) {
-            Long popTimeout = Long.valueOf(details.getParams()[details.getParams().length - 1].toString());
+        if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())
+                || RedisCommands.XREAD_BLOCKING_SINGLE == details.getCommand()
+                    || RedisCommands.XREAD_BLOCKING == details.getCommand()) {
+            Long popTimeout = null;
+            if (RedisCommands.XREAD_BLOCKING_SINGLE == details.getCommand()
+                    || RedisCommands.XREAD_BLOCKING == details.getCommand()) {
+                boolean found = false;
+                for (Object param : details.getParams()) {
+                    if (found) {
+                        popTimeout = Long.valueOf(param.toString()) / 1000;
+                        break;
+                    }
+                    if (param instanceof String) {
+                        found = true; 
+                    }
+                }
+            } else {
+                popTimeout = Long.valueOf(details.getParams()[details.getParams().length - 1].toString());
+            }
+            
             handleBlockingOperations(details, connection, popTimeout);
             if (popTimeout == 0) {
                 return;
@@ -847,7 +860,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 return;
             }
             
-            free(details);
+            free(details.getParams());
             
             if (future.isSuccess()) {
                 R res = future.getNow();

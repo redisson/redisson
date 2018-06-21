@@ -249,5 +249,10 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
             throw new IllegalStateException(e);
         }
     }
-    
+
+    @Override
+    public String toString() {
+        return "RedissonPromise [promise=" + promise + "]";
+    }
+
 }
