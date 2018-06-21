@@ -165,7 +165,7 @@ public class RedisConnection implements RedisCommands {
         }
     }
 
-    public <T> T sync(RedisStrictCommand<T> command, Object ... params) {
+    public <T> T sync(RedisCommand<T> command, Object ... params) {
         return sync(null, command, params);
     }
 
