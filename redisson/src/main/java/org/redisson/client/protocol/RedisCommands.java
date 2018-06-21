@@ -16,9 +16,7 @@
 package org.redisson.client.protocol;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -26,7 +24,6 @@ import java.util.Set;
 
 import org.redisson.api.RType;
 import org.redisson.api.StreamId;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
@@ -38,16 +35,13 @@ import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleNullSafeReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
-import org.redisson.client.protocol.convertor.KeyValueConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
-import org.redisson.client.protocol.convertor.SingleConvertor;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 import org.redisson.client.protocol.convertor.TimeObjectDecoder;
 import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.TypeConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
-import org.redisson.client.protocol.decoder.KeyValueObjectDecoder;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.ListResultReplayDecoder;
@@ -63,6 +57,7 @@ import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapJoinDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.QueueObjectDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetPolledObjectDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
@@ -197,8 +192,8 @@ public interface RedisCommands {
 
     RedisCommand<Object> RPOPLPUSH = new RedisCommand<Object>("RPOPLPUSH");
     RedisCommand<Object> BRPOPLPUSH = new RedisCommand<Object>("BRPOPLPUSH");
-    RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
-    RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new KeyValueObjectDecoder(), new KeyValueConvertor());
+    RedisCommand<Object> BLPOP_VALUE = new RedisCommand<Object>("BLPOP", new QueueObjectDecoder());
+    RedisCommand<Object> BRPOP_VALUE = new RedisCommand<Object>("BRPOP", new QueueObjectDecoder());
     RedisCommand<Object> BZPOPMIN_VALUE = new RedisCommand<Object>("BZPOPMIN", new ScoredSortedSetPolledObjectDecoder());
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 

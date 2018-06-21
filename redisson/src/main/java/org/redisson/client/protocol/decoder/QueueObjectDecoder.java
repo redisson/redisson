@@ -13,23 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.client.protocol.decoder;
 
-import org.redisson.client.protocol.decoder.KeyValueMessage;
+import java.util.List;
 
-public class KeyValueConvertor implements Convertor<Object> {
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class QueueObjectDecoder implements MultiDecoder<Object> {
 
     @Override
-    public Object convertMulti(Object obj) {
-        if (obj != null) {
-            return ((KeyValueMessage)obj).getValue();
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum == 0) {
+            return StringCodec.INSTANCE.getValueDecoder();
         }
         return null;
     }
-
+    
     @Override
-    public Object convert(Object obj) {
-        return obj;
+    public Object decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;
+        }
+        return parts.get(1);
     }
 
 }
