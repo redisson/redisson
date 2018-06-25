@@ -7,11 +7,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -114,22 +111,22 @@ public class RedissonTopicTest {
         config.useSingleServer().setPingConnectionInterval(50);
         RedissonClient redisson = Redisson.create(config);
 
-        Set<String> sentItems = new HashSet<>();
-        Set<String> receivedItems = new HashSet<>();
+        int count = 1000;
+        CountDownLatch latch = new CountDownLatch(count);
         
         RTopic<String> eventsTopic = redisson.getTopic("eventsTopic");
-        eventsTopic.addListener((channel, msg) -> receivedItems.add(msg));
+        eventsTopic.addListener((channel, msg) -> {
+            latch.countDown();
+        });
 
-        for(int i = 0; i<1000; i++){
+        for(int i = 0; i<count; i++){
             final String message = UUID.randomUUID().toString();
             eventsTopic.publish(message);
-            sentItems.add(message);
             Thread.sleep(10);
         }
         
-        Thread.sleep(2000);
+        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
         
-        assertThat(sentItems).hasSameSizeAs(receivedItems);
         redisson.shutdown();
     }
     

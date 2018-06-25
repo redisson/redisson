@@ -24,7 +24,6 @@ import java.util.NoSuchElementException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -37,7 +36,7 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
-    private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> keysIter;
+    private Iterator<Map.Entry<Object, Object>> keysIter;
     protected long keysIterPos = 0;
 
     private K currentKey;
@@ -75,7 +74,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
         while (true) {
             if (!keysFinished && (keysIter == null || !keysIter.hasNext())) {
-                MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, keysIterPos);
+                MapScanResult<Object, Object> res = map.scanIterator(client, keysIterPos);
                 client = res.getRedisClient();
                 keysIter = res.getMap().entrySet().iterator();
                 keysIterPos = res.getPos();
@@ -86,9 +85,9 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
             }
             
             while (keysIter.hasNext()) {
-                Entry<ScanObjectEntry, ScanObjectEntry> e = keysIter.next();
-                currentKey = (K) e.getKey().getObj();
-                String name = e.getValue().getObj().toString();
+                Entry<Object, Object> e = keysIter.next();
+                currentKey = (K) e.getKey();
+                String name = e.getValue().toString();
                 valuesIter = getIterator(name);
                 if (valuesIter.hasNext()) {
                     return true;

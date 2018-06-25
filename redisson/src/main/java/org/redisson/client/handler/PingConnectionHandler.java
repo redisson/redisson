@@ -57,7 +57,6 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run(Timeout timeout) throws Exception {
                 if (future.cancel(false) || !future.isSuccess()) {
-                    System.out.println("closed!!! " + future + " " + connection.getChannel());
                     ctx.channel().close();
                 } else {
                     sendPing(ctx);
