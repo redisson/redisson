@@ -31,7 +31,6 @@ import org.redisson.api.RMapReactive;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -202,10 +201,10 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(final RedisClient client, final long startPos) {
-        return reactive(new Supplier<RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>>>() {
+    public Publisher<MapScanResult<Object, Object>> scanIteratorReactive(final RedisClient client, final long startPos) {
+        return reactive(new Supplier<RFuture<MapScanResult<Object, Object>>>() {
             @Override
-            public RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> get() {
+            public RFuture<MapScanResult<Object, Object>> get() {
                 return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos, null);
             }
         });
@@ -330,8 +329,8 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     public Publisher<V> valueIterator() {
         return new RedissonMapReactiveIterator<K, V, V>(this) {
             @Override
-            V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (V) entry.getValue().getObj();
+            V getValue(Entry<Object, Object> entry) {
+                return (V) entry.getValue();
             }
         }.stream();
     }
@@ -340,8 +339,8 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     public Publisher<K> keyIterator() {
         return new RedissonMapReactiveIterator<K, V, K>(this) {
             @Override
-            K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
+            K getValue(Entry<Object, Object> entry) {
+                return (K) entry.getKey();
             }
         }.stream();
     }

@@ -42,14 +42,12 @@ import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.mapreduce.RedissonMapReduce;
@@ -1014,14 +1012,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    public MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern) {
+    public MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos, String pattern) {
         if (pattern == null) {
-            RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-                                    = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+            RFuture<MapScanResult<Object, Object>> f 
+                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos);
             return get(f);
         }
-        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-                                    = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos, "MATCH", pattern);
+        RFuture<MapScanResult<Object, Object>> f 
+                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "MATCH", pattern);
         return get(f);
     }
 
@@ -1104,8 +1102,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected Iterator<K> keyIterator(String pattern) {
         return new RedissonMapIterator<K>(RedissonMap.this, pattern) {
             @Override
-            protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
+            protected K getValue(java.util.Map.Entry<Object, Object> entry) {
+                return (K) entry.getKey();
             }
         };
     }
@@ -1155,8 +1153,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     protected Iterator<V> valueIterator(String pattern) {
         return new RedissonMapIterator<V>(RedissonMap.this, pattern) {
             @Override
-            protected V getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (V) entry.getValue().getObj();
+            protected V getValue(java.util.Map.Entry<Object, Object> entry) {
+                return (V) entry.getValue();
             }
         };
     }

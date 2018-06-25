@@ -28,10 +28,8 @@ import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapReactive;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
@@ -292,8 +290,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         });
     }
 
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(RedisClient client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), new MapScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
+    public Publisher<MapScanResult<Object, Object>> scanIteratorReactive(RedisClient client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.HSCAN, getName(), startPos);
     }
 
     @Override
@@ -305,8 +303,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     public Publisher<V> valueIterator() {
         return new RedissonMapReactiveIterator<K, V, V>(this) {
             @Override
-            V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (V) entry.getValue().getObj();
+            V getValue(Entry<Object, Object> entry) {
+                return (V) entry.getValue();
             }
         }.stream();
     }
@@ -315,8 +313,8 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     public Publisher<K> keyIterator() {
         return new RedissonMapReactiveIterator<K, V, K>(this) {
             @Override
-            K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
+            K getValue(Entry<Object, Object> entry) {
+                return (K) entry.getKey();
             }
         }.stream();
     }

@@ -24,7 +24,6 @@ import org.redisson.api.RLock;
 import org.redisson.api.RSet;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.set.AddOperation;
@@ -48,7 +47,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
     }
 
     @Override
-    protected ListScanResult<ScanObjectEntry> scanIteratorSource(String name, RedisClient client, long startPos,
+    protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
             String pattern) {
         return ((RedissonSet<?>)set).scanIterator(name, client, startPos, pattern);
     }

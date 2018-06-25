@@ -30,7 +30,6 @@ import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -39,7 +38,6 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.LongMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -167,7 +165,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, long startPos, String pattern) {
+    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -176,7 +174,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
             params.add(pattern);
         }
         
-        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new MapScanCodec(codec), EVAL_SSCAN,
+        RFuture<ListScanResult<Object>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -203,13 +201,13 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
+            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
                 return scanIterator(client, nextIterPos, pattern);
             }
 
             @Override
-            protected void remove(ScanObjectEntry value) {
-                RedissonSetMultimapValues.this.remove((V)value.getObj());
+            protected void remove(Object value) {
+                RedissonSetMultimapValues.this.remove((V)value);
             }
             
         };

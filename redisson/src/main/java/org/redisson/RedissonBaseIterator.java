@@ -15,19 +15,17 @@
  */
 package org.redisson;
 
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
-
 /**
  * 
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
-abstract class RedissonBaseIterator<V> extends BaseIterator<V, ScanObjectEntry> {
+abstract class RedissonBaseIterator<V> extends BaseIterator<V, Object> {
 
     @Override
-    protected V getValue(ScanObjectEntry entry) {
-        return (V) entry.getObj();
+    protected V getValue(Object entry) {
+        return (V) entry;
     }
     
 }

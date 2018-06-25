@@ -34,12 +34,11 @@ import org.redisson.api.RReadWriteLock;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
@@ -301,8 +300,8 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(RedisClient client, long startPos) {
-        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new MapScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
+    MapScanResult<Object, Object> scanIterator(RedisClient client, long startPos) {
+        RFuture<MapScanResult<Object, Object>> f = commandExecutor.readAsync(client, getName(), new CompositeCodec(codec, StringCodec.INSTANCE, codec), RedisCommands.HSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -316,8 +315,8 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         public Iterator<K> iterator() {
             return new RedissonMultiMapKeysIterator<K>(RedissonMultimap.this) {
                 @Override
-                protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (K) entry.getKey().getObj();
+                protected K getValue(java.util.Map.Entry<Object, Object> entry) {
+                    return (K) entry.getKey();
                 }
             };
         }

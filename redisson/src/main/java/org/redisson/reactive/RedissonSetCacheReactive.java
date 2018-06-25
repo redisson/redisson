@@ -32,7 +32,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -102,10 +101,10 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         });
     }
 
-    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(final RedisClient client, final long startPos) {
-        return reactive(new Supplier<RFuture<ListScanResult<ScanObjectEntry>>>() {
+    Publisher<ListScanResult<Object>> scanIterator(final RedisClient client, final long startPos) {
+        return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
             @Override
-            public RFuture<ListScanResult<ScanObjectEntry>> get() {
+            public RFuture<ListScanResult<Object>> get() {
                 return ((ScanIterator)instance).scanIteratorAsync(getName(), client, startPos, null);
             }
         });
@@ -115,7 +114,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos) {
+            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
                 return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
             }
         };

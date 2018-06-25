@@ -38,7 +38,6 @@ import org.redisson.api.RMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
@@ -109,15 +108,6 @@ public class BaseTransactionalMap<K, V> {
 
     HashValue toKeyHash(Object key) {
         ByteBuf keyState = ((RedissonObject)map).encodeMapKey(key);
-        try {
-            return new HashValue(Hash.hash128(keyState));
-        } finally {
-            keyState.release();
-        }
-    }
-    
-    private HashValue toValueHash(Object value) {
-        ByteBuf keyState = ((RedissonObject)map).encodeMapValue(value);
         try {
             return new HashValue(Hash.hash128(keyState));
         } finally {
@@ -202,21 +192,20 @@ public class BaseTransactionalMap<K, V> {
         return result;
     }
     
-    protected MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client,
+    protected MapScanResult<Object, Object> scanIterator(String name, RedisClient client,
             long startPos, String pattern) {
-        MapScanResult<ScanObjectEntry, ScanObjectEntry> res = ((RedissonMap<?, ?>)map).scanIterator(name, client, startPos, pattern);
+        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>)map).scanIterator(name, client, startPos, pattern);
         Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-        for (Iterator<ScanObjectEntry> iterator = res.getMap().keySet().iterator(); iterator.hasNext();) {
-            ScanObjectEntry entry = iterator.next();
-            MapEntry mapEntry = newstate.remove(entry.getHash());
+        for (Iterator<Object> iterator = res.getMap().keySet().iterator(); iterator.hasNext();) {
+            Object entry = iterator.next();
+            MapEntry mapEntry = newstate.remove(toKeyHash(entry));
             if (mapEntry != null) {
                 if (mapEntry == MapEntry.NULL) {
                     iterator.remove();
                     continue;
                 }
                 
-                HashValue valueHash = toValueHash(mapEntry.getValue());
-                res.getMap().put(entry, new ScanObjectEntry(valueHash, mapEntry.getValue()));
+                res.getMap().put(entry, mapEntry.getValue());
             }
         }
         
@@ -226,9 +215,7 @@ public class BaseTransactionalMap<K, V> {
                     continue;
                 }
                 
-                ScanObjectEntry key = new ScanObjectEntry(entry.getKey(), entry.getValue().getKey());
-                ScanObjectEntry value = new ScanObjectEntry(toValueHash(entry.getValue().getValue()), entry.getValue().getValue());
-                res.getMap().put(key, value);
+                res.getMap().put(entry.getValue().getKey(), entry.getValue().getValue());
             }
         }
 
