@@ -66,12 +66,8 @@ public class LoadBalancerManager {
         pubSubConnectionPool = new PubSubConnectionPool(config, connectionManager, entry);
     }
 
-    public void changeType(RedisClient redisClient, NodeType nodeType) {
-        ClientConnectionsEntry entry = getEntry(redisClient);
-        changeType(nodeType, entry);
-    }
-
-    protected void changeType(NodeType nodeType, ClientConnectionsEntry entry) {
+    public void changeType(InetSocketAddress address, NodeType nodeType) {
+        ClientConnectionsEntry entry = getEntry(address);
         if (entry != null) {
             if (connectionManager.isClusterMode()) {
                 entry.getClient().getConfig().setReadOnly(nodeType == NodeType.SLAVE && connectionManager.getConfig().getReadMode() != ReadMode.MASTER);
@@ -79,7 +75,7 @@ public class LoadBalancerManager {
             entry.setNodeType(nodeType);
         }
     }
-    
+
     public RFuture<Void> add(final ClientConnectionsEntry entry) {
         RPromise<Void> result = new RedissonPromise<Void>();
         
@@ -200,7 +196,7 @@ public class LoadBalancerManager {
         return getEntry(redisClient) != null;
     }
 
-    protected ClientConnectionsEntry getEntry(URI addr) {
+    private ClientConnectionsEntry getEntry(URI addr) {
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress entryAddr = entry.getClient().getAddr();
             if (URIBuilder.compare(entryAddr, addr)) {
@@ -210,7 +206,7 @@ public class LoadBalancerManager {
         return null;
     }
     
-    protected ClientConnectionsEntry getEntry(InetSocketAddress address) {
+    private ClientConnectionsEntry getEntry(InetSocketAddress address) {
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress addr = entry.getClient().getAddr();
             if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
@@ -220,7 +216,7 @@ public class LoadBalancerManager {
         return null;
     }
 
-    public ClientConnectionsEntry getEntry(RedisClient redisClient) {
+    private ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return client2Entry.get(redisClient);
     }
 
