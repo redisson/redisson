@@ -16,8 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -28,8 +26,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
-import org.redisson.misc.HashValue;
 
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -45,17 +41,19 @@ import reactor.core.publisher.Mono;
 public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
 
     private final MapReactive<K, V> map;
+    private final String pattern;
+    private final int count;
 
-    public RedissonMapReactiveIterator(MapReactive<K, V> map) {
+    public RedissonMapReactiveIterator(MapReactive<K, V> map, String pattern, int count) {
         this.map = map;
+        this.pattern = pattern;
+        this.count = count;
     }
     
     @Override
     public void accept(FluxSink<M> emitter) {
         emitter.onRequest(new LongConsumer() {
 
-            private Map<HashValue, HashValue> firstValues;
-            private Map<HashValue, HashValue> lastValues;
             private long nextIterPos;
             private RedisClient client;
             private AtomicLong elementsRead = new AtomicLong();
@@ -74,14 +72,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
             };
             
             protected void nextValues(FluxSink<M> emitter) {
-                map.scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
-                    private Map<HashValue, HashValue> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-                        Map<HashValue, HashValue> result = new HashMap<HashValue, HashValue>(map.size());
-                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-                            result.put(entry.getKey().getHash(), entry.getValue().getHash());
-                        }
-                        return result;
-                    }
+                    map.scanIteratorReactive(client, nextIterPos, pattern, count).subscribe(new Subscriber<MapScanResult<Object, Object>>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -89,7 +80,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                     }
                     
                     @Override
-                    public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
+                    public void onNext(MapScanResult<Object, Object> res) {
                         if (finished) {
                             client = null;
                             nextIterPos = 0;
@@ -99,7 +90,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
                         client = res.getRedisClient();
                         nextIterPos = res.getPos();
                         
-                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
+                        for (Entry<Object, Object> entry : res.getMap().entrySet()) {
                             M val = getValue(entry);
                             emitter.next(val);
                             elementsRead.incrementAndGet();
@@ -139,12 +130,12 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
         return false;
     }
     
-    M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
+    M getValue(final Entry<Object, Object> entry) {
+        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey(), (V)entry.getValue()) {
 
             @Override
             public V setValue(V value) {
-                Publisher<V> publisher = map.put((K) entry.getKey().getObj(), value);
+                Publisher<V> publisher = map.put((K) entry.getKey(), value);
                 return Mono.from(publisher).block();
             }
 

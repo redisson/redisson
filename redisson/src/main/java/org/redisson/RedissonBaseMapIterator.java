@@ -19,19 +19,17 @@ import java.util.AbstractMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
-
 /**
  * 
  * @author Nikita Koksharov
  *
  * @param <V> value type
  */
-public abstract class RedissonBaseMapIterator<V> extends BaseIterator<V, Map.Entry<ScanObjectEntry, ScanObjectEntry>> {
+public abstract class RedissonBaseMapIterator<V> extends BaseIterator<V, Map.Entry<Object, Object>> {
 
     @SuppressWarnings("unchecked")
-    protected V getValue(final Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-        return (V)new AbstractMap.SimpleEntry(entry.getKey().getObj(), entry.getValue().getObj()) {
+    protected V getValue(final Map.Entry<Object, Object> entry) {
+        return (V)new AbstractMap.SimpleEntry(entry.getKey(), entry.getValue()) {
 
             @Override
             public Object setValue(Object value) {
@@ -41,6 +39,6 @@ public abstract class RedissonBaseMapIterator<V> extends BaseIterator<V, Map.Ent
         };
     }
 
-    protected abstract Object put(Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value);
+    protected abstract Object put(Entry<Object, Object> entry, Object value);
 
 }

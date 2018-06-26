@@ -24,7 +24,6 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 import reactor.core.publisher.FluxSink;
 
@@ -58,7 +57,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
             }
             
             protected void nextValues(FluxSink<V> emitter) {
-                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<ScanObjectEntry>>() {
+                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<Object>>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -66,7 +65,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
                     }
 
                     @Override
-                    public void onNext(ListScanResult<ScanObjectEntry> res) {
+                    public void onNext(ListScanResult<Object> res) {
                         if (finished) {
                             client = null;
                             nextIterPos = 0;
@@ -76,8 +75,8 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
                         client = res.getRedisClient();
                         nextIterPos = res.getPos();
 
-                        for (ScanObjectEntry val : res.getValues()) {
-                            emitter.next((V)val.getObj());
+                        for (Object val : res.getValues()) {
+                            emitter.next((V)val);
                             elementsRead.incrementAndGet();
                         }
                         
@@ -114,6 +113,6 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
         return false;
     }
 
-    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(RedisClient client, long nextIterPos);
+    protected abstract Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos);
 
 }

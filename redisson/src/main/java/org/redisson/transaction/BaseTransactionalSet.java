@@ -36,7 +36,6 @@ import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
@@ -176,16 +175,16 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return set.containsAsync(value);
     }
     
-    protected abstract ListScanResult<ScanObjectEntry> scanIteratorSource(String name, RedisClient client,
-            long startPos, String pattern);
+    protected abstract ListScanResult<Object> scanIteratorSource(String name, RedisClient client,
+            long startPos, String pattern, int count);
     
-    protected ListScanResult<ScanObjectEntry> scanIterator(String name, RedisClient client,
-            long startPos, String pattern) {
-        ListScanResult<ScanObjectEntry> res = scanIteratorSource(name, client, startPos, pattern);
+    protected ListScanResult<Object> scanIterator(String name, RedisClient client,
+            long startPos, String pattern, int count) {
+        ListScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
         Map<HashValue, Object> newstate = new HashMap<HashValue, Object>(state);
-        for (Iterator<ScanObjectEntry> iterator = res.getValues().iterator(); iterator.hasNext();) {
-            ScanObjectEntry entry = iterator.next();
-            Object value = newstate.remove(entry.getHash());
+        for (Iterator<Object> iterator = res.getValues().iterator(); iterator.hasNext();) {
+            Object entry = iterator.next();
+            Object value = newstate.remove(toHash(entry));
             if (value == NULL) {
                 iterator.remove();
             }
@@ -196,7 +195,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                 if (entry.getValue() == NULL) {
                     continue;
                 }
-                res.getValues().add(new ScanObjectEntry(entry.getKey(), entry.getValue()));
+                res.getValues().add(entry.getValue());
             }
         }
         
