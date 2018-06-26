@@ -346,8 +346,19 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return keySet(null);
     }
     
+    @Override
     public Set<K> keySet(String pattern) {
-        return new KeySet(pattern);
+        return keySet(pattern, 10);
+    }
+    
+    @Override
+    public Set<K> keySet(String pattern, int count) {
+        return new KeySet(pattern, count);
+    }
+
+    @Override
+    public Set<K> keySet(int count) {
+        return keySet(null, count);
     }
 
     @Override
@@ -355,8 +366,19 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return values(null);
     }
 
+    @Override
+    public Collection<V> values(String keyPattern, int count) {
+        return new Values(keyPattern, count);
+    }
+    
+    @Override
     public Collection<V> values(String keyPattern) {
-        return new Values(keyPattern);
+        return values(keyPattern, 10);
+    }
+
+    @Override
+    public Collection<V> values(int count) {
+        return values(null, count);
     }
     
     @Override
@@ -364,10 +386,21 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return entrySet(null);
     }
     
+    @Override
     public Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern) {
-        return new EntrySet(keyPattern);
+        return entrySet(keyPattern, 10);
     }
 
+    @Override
+    public Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern, int count) {
+        return new EntrySet(keyPattern, count);
+    }
+
+    @Override
+    public Set<java.util.Map.Entry<K, V>> entrySet(int count) {
+        return entrySet(null, count);
+    }
+    
     @Override
     public Set<K> readAllKeySet() {
         return get(readAllKeySetAsync());
@@ -1012,15 +1045,20 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return get(fastRemoveAsync(keys));
     }
 
-    public MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos, String pattern) {
+    public MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+        RFuture<MapScanResult<Object, Object>> f = scanIteratorAsync(name, client, startPos, pattern, count);
+        return get(f);
+    }
+    
+    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<MapScanResult<Object, Object>> f 
-                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos);
-            return get(f);
+                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "COUNT", count);
+            return f;
         }
         RFuture<MapScanResult<Object, Object>> f 
-                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "MATCH", pattern);
-        return get(f);
+                                    = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "MATCH", pattern, "COUNT", count);
+        return f;
     }
 
     @Override
@@ -1099,8 +1137,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return h;
     }
 
-    protected Iterator<K> keyIterator(String pattern) {
-        return new RedissonMapIterator<K>(RedissonMap.this, pattern) {
+    protected Iterator<K> keyIterator(String pattern, int count) {
+        return new RedissonMapIterator<K>(RedissonMap.this, pattern, count) {
             @Override
             protected K getValue(java.util.Map.Entry<Object, Object> entry) {
                 return (K) entry.getKey();
@@ -1111,14 +1149,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     class KeySet extends AbstractSet<K> {
 
         private final String pattern;
+        private final int count;
         
-        public KeySet(String pattern) {
+        public KeySet(String pattern, int count) {
             this.pattern = pattern;
+            this.count = count;
         }
 
         @Override
         public Iterator<K> iterator() {
-            return keyIterator(pattern);
+            return keyIterator(pattern, count);
         }
 
         @Override
@@ -1150,8 +1190,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected Iterator<V> valueIterator(String pattern) {
-        return new RedissonMapIterator<V>(RedissonMap.this, pattern) {
+    protected Iterator<V> valueIterator(String pattern, int count) {
+        return new RedissonMapIterator<V>(RedissonMap.this, pattern, count) {
             @Override
             protected V getValue(java.util.Map.Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -1162,14 +1202,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     final class Values extends AbstractCollection<V> {
 
         private final String keyPattern;
+        private final int count;
         
-        public Values(String keyPattern) {
+        public Values(String keyPattern, int count) {
             this.keyPattern = keyPattern;
+            this.count = count;
         }
 
         @Override
         public Iterator<V> iterator() {
-            return valueIterator(keyPattern);
+            return valueIterator(keyPattern, count);
         }
 
         @Override
@@ -1197,8 +1239,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected Iterator<Map.Entry<K,V>> entryIterator(String pattern) {
-        return new RedissonMapIterator<Map.Entry<K, V>>(RedissonMap.this, pattern);
+    protected Iterator<Map.Entry<K,V>> entryIterator(String pattern, int count) {
+        return new RedissonMapIterator<Map.Entry<K, V>>(RedissonMap.this, pattern, count);
     }
 
     private void loadValue(final K key, final RPromise<V> result, final boolean replaceValue) {
@@ -1286,13 +1328,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
 
         private final String keyPattern;
+        private final int count;
         
-        public EntrySet(String keyPattern) {
+        public EntrySet(String keyPattern, int count) {
             this.keyPattern = keyPattern;
+            this.count = count;
         }
 
         public final Iterator<Map.Entry<K,V>> iterator() {
-            return entryIterator(keyPattern);
+            return entryIterator(keyPattern, count);
         }
 
         public final boolean contains(Object o) {

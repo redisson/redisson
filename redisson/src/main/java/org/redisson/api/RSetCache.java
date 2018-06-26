@@ -49,9 +49,29 @@ public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
     RLock getLock(V value);
     
     /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(int count);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern, int count);
+
+    /**
      * Returns values iterator matches <code>pattern</code>. 
      * 
-     * @param pattern for values
+     * @param pattern - search pattern
      * @return iterator
      */
     Iterator<V> iterator(String pattern);

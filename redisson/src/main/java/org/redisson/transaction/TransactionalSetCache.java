@@ -49,8 +49,8 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
 
     @Override
     protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
-            String pattern) {
-        return ((RedissonSetCache<?>)set).scanIterator(name, client, startPos, pattern);
+            String pattern, int count) {
+        return ((RedissonSetCache<?>)set).scanIterator(name, client, startPos, pattern, count);
     }
 
     @Override

@@ -26,9 +26,9 @@ import org.redisson.client.protocol.decoder.ListScanResult;
  */
 public interface ScanIterator {
 
-    ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern);
+    ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count);
 
-    RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern);
+    RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count);
     
     boolean remove(Object value);
     

@@ -165,7 +165,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern) {
+    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -173,6 +173,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         if (pattern != null) {
             params.add(pattern);
         }
+        params.add(count);
         
         RFuture<ListScanResult<Object>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
@@ -185,10 +186,10 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               + "end;"
 
               + "local res; "
-              + "if (#ARGV == 4) then "
-                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'match', ARGV[4]); "
+              + "if (#ARGV == 5) then "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'match', ARGV[4], 'count', ARGV[5]); "
               + "else "
-                  + "res = redis.call('sscan', KEYS[2], ARGV[2]); "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'count', ARGV[4]); "
               + "end;"
 
               + "return res;", 
@@ -197,12 +198,23 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
       return get(f);
     }
 
-    public Iterator<V> iterator(final String pattern) {
+    @Override
+    public Iterator<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Iterator<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
-                return scanIterator(client, nextIterPos, pattern);
+                return scanIterator(client, nextIterPos, pattern, count);
             }
 
             @Override

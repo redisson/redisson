@@ -29,10 +29,12 @@ public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
     private final RedissonMap map;
     private final String pattern;
+    private final int count;
 
-    public RedissonMapIterator(RedissonMap map, String pattern) {
+    public RedissonMapIterator(RedissonMap map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
+        this.count = count;
     }
 
     @Override
@@ -42,7 +44,7 @@ public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
     @Override
     protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
-        return map.scanIterator(map.getName(), client, nextIterPos, pattern);
+        return map.scanIterator(map.getName(), client, nextIterPos, pattern, count);
     }
 
     @Override

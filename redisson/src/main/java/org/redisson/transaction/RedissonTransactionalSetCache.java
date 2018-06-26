@@ -95,9 +95,9 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
     }
 
     @Override
-    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern) {
+    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
         checkState();
-        return transactionalSet.scanIterator(name, client, startPos, pattern);
+        return transactionalSet.scanIterator(name, client, startPos, pattern, count);
     }
 
     @Override
