@@ -288,7 +288,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @see #readAllEntrySet()
      * 
-     * @param keyPattern - key pattern
+     * @param pattern - key pattern
      * @return iterator
      */
     Publisher<Map.Entry<K, V>> entryIterator(String pattern);
@@ -308,7 +308,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @see #readAllEntrySet()
      * 
-     * @param keyPattern - key pattern
+     * @param pattern - key pattern
      * @param count - size of entries batch
      * @return iterator
      */
@@ -350,7 +350,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @see #readAllValues()
      * 
-     * @param keyPattern - key pattern
+     * @param pattern - key pattern
      * @return iterator
      */
     Publisher<V> valueIterator(String pattern);
@@ -370,7 +370,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @see #readAllValues()
      * 
-     * @param keyPattern - key pattern
+     * @param pattern - key pattern
      * @param count - size of values batch
      * @return iterator
      */
