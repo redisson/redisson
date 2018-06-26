@@ -23,10 +23,10 @@ import org.redisson.codec.FstCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.KryoCodec;
 import org.redisson.codec.LZ4Codec;
-import org.redisson.codec.MsgPackJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.codec.SmileJacksonCodec;
 import org.redisson.codec.SnappyCodec;
+import org.redisson.codec.SnappyCodecV2;
 import org.redisson.config.Config;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -44,6 +44,7 @@ public class RedissonCodecTest extends BaseTest {
     private Codec cborCodec = new CborJacksonCodec();
     private Codec fstCodec = new FstCodec();
     private Codec snappyCodec = new SnappyCodec();
+    private Codec snappyCodecV2 = new SnappyCodecV2();
 //    private Codec msgPackCodec = new MsgPackJacksonCodec();
     private Codec lz4Codec = new LZ4Codec();
     private Codec jsonListOfStringCodec = new JsonJacksonMapCodec(
@@ -127,6 +128,25 @@ public class RedissonCodecTest extends BaseTest {
 
         test(redisson);
     }
+    
+    @Test
+    public void testSnappyV2() {
+        Config config = createConfig();
+        config.setCodec(snappyCodecV2);
+        RedissonClient redisson = Redisson.create(config);
+
+        test(redisson);
+    }
+    
+    @Test
+    public void testSnappyBigV2() throws IOException {
+        Codec sc = new SnappyCodecV2();
+        String randomData = RandomString.make(Short.MAX_VALUE*2 + 142);
+        ByteBuf g = sc.getValueEncoder().encode(randomData);
+        String decompressedData = (String) sc.getValueDecoder().decode(g, null);
+        assertThat(decompressedData).isEqualTo(randomData);
+    }
+
 
     @Test
     public void testJson() {
