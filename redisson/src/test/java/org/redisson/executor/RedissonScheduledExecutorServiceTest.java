@@ -138,6 +138,12 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
     }
     
+    @Test(expected = IllegalArgumentException.class)
+    public void testWrongCronExpression() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0 44 12 19 JUN ? 2018"));
+    }
+    
     @Test
     public void testCronExpressionMultipleTasks() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
