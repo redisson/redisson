@@ -176,11 +176,11 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     protected abstract ListScanResult<Object> scanIteratorSource(String name, RedisClient client,
-            long startPos, String pattern);
+            long startPos, String pattern, int count);
     
     protected ListScanResult<Object> scanIterator(String name, RedisClient client,
-            long startPos, String pattern) {
-        ListScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern);
+            long startPos, String pattern, int count) {
+        ListScanResult<Object> res = scanIteratorSource(name, client, startPos, pattern, count);
         Map<HashValue, Object> newstate = new HashMap<HashValue, Object>(state);
         for (Iterator<Object> iterator = res.getValues().iterator(); iterator.hasNext();) {
             Object entry = iterator.next();

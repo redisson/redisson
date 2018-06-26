@@ -224,6 +224,7 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
     /**
      * Remaining time to live of map entry associated with a <code>key</code>. 
      *
+     * @param key - map key
      * @return time in milliseconds
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.

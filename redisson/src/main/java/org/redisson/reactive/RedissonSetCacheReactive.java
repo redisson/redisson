@@ -105,7 +105,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
             @Override
             public RFuture<ListScanResult<Object>> get() {
-                return ((ScanIterator)instance).scanIteratorAsync(getName(), client, startPos, null);
+                return ((ScanIterator)instance).scanIteratorAsync(getName(), client, startPos, null, 10);
             }
         });
     }

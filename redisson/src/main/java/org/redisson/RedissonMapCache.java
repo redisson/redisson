@@ -1208,17 +1208,18 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos, String pattern) {
-        return get(scanIteratorAsync(name, client, startPos, pattern));
+    public MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+        return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
-    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(final String name, RedisClient client, long startPos, String pattern) {
+    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(final String name, RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
         if (pattern != null) {
             params.add(pattern);
         }
+        params.add(count);
 
         RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
                 new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(codec), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
@@ -1226,10 +1227,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local result = {}; "
                 + "local idleKeys = {}; "
                 + "local res; "
-                + "if (#ARGV == 3) then "
-                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'match', ARGV[3]); "
+                + "if (#ARGV == 4) then "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'match', ARGV[3], 'count', ARGV[4]); "
                 + "else "
-                    + " res = redis.call('hscan', KEYS[1], ARGV[2]); "
+                    + " res = redis.call('hscan', KEYS[1], ARGV[2], 'count', ARGV[3]); "
                 + "end;"
                 + "local currentTime = tonumber(ARGV[1]); "
                 + "for i, value in ipairs(res[2]) do "

@@ -28,7 +28,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
  */
 interface MapReactive<K, V> {
 
-    Publisher<MapScanResult<Object, Object>> scanIteratorReactive(RedisClient client, long startPos);
+    Publisher<MapScanResult<Object, Object>> scanIteratorReactive(RedisClient client, long startPos, String pattern, int count);
     
     Publisher<V> put(K key, V value);
     

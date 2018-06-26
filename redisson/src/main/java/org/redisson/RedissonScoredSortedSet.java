@@ -392,18 +392,37 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZRANK_INT, getName(), encode(o));
     }
 
-    private ListScanResult<Object> scanIterator(RedisClient client, long startPos) {
-        RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
+        if (pattern == null) {
+            RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos, "COUNT", count);
+            return get(f);
+        }
+        RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos, "MATCH", pattern, "COUNT", count);
         return get(f);
     }
 
     @Override
     public Iterator<V> iterator() {
+        return iterator(null, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(int count) {
+        return iterator(null, count);
+    }
+
+    @Override
+    public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
-                return scanIterator(client, nextIterPos);
+                return scanIterator(client, nextIterPos, pattern, count);
             }
 
             @Override
@@ -413,7 +432,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             
         };
     }
-
+    
     @Override
     public Object[] toArray() {
         List<Object> res = (List<Object>) get(valueRangeAsync(0, -1));

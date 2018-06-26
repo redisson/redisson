@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -229,9 +230,48 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     boolean tryAdd(double score, V object);
 
+    /**
+     * Returns size of this set.
+     * 
+     * @return size
+     */
     int size();
 
+    /**
+     * Returns <code>true</code> if this set is empty
+     * 
+     * @return <code>true</code> if empty
+     */
     boolean isEmpty();
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(int count);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern, int count);
 
     boolean contains(Object o);
 

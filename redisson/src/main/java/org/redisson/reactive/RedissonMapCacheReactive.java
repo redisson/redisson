@@ -201,11 +201,11 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
     }
 
     @Override
-    public Publisher<MapScanResult<Object, Object>> scanIteratorReactive(final RedisClient client, final long startPos) {
+    public Publisher<MapScanResult<Object, Object>> scanIteratorReactive(final RedisClient client, final long startPos, final String pattern, final int count) {
         return reactive(new Supplier<RFuture<MapScanResult<Object, Object>>>() {
             @Override
             public RFuture<MapScanResult<Object, Object>> get() {
-                return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos, null);
+                return ((RedissonMapCache<K, V>)mapCache).scanIteratorAsync(getName(), client, startPos, pattern, count);
             }
         });
     }
@@ -322,12 +322,42 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<Map.Entry<K, V>> entryIterator() {
-        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this).stream();
+        return entryIterator(null);
+    }
+    
+    @Override
+    public Publisher<Map.Entry<K, V>> entryIterator(int count) {
+        return entryIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<Map.Entry<K, V>> entryIterator(String pattern) {
+        return entryIterator(pattern, 10);
+    }
+    
+    @Override
+    public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this, pattern, count).stream();
     }
 
     @Override
     public Publisher<V> valueIterator() {
-        return new RedissonMapReactiveIterator<K, V, V>(this) {
+        return valueIterator(null);
+    }
+    
+    @Override
+    public Publisher<V> valueIterator(String pattern) {
+        return valueIterator(pattern, 10);
+    }
+    
+    @Override
+    public Publisher<V> valueIterator(int count) {
+        return valueIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<V> valueIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, V>(this, pattern, count) {
             @Override
             V getValue(Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -337,7 +367,22 @@ public class RedissonMapCacheReactive<K, V> extends RedissonExpirableReactive im
 
     @Override
     public Publisher<K> keyIterator() {
-        return new RedissonMapReactiveIterator<K, V, K>(this) {
+        return keyIterator(null);
+    }
+    
+    @Override
+    public Publisher<K> keyIterator(String pattern) {
+        return keyIterator(pattern, 10);
+    }
+
+    @Override
+    public Publisher<K> keyIterator(int count) {
+        return keyIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<K> keyIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, K>(this, pattern, count) {
             @Override
             K getValue(Entry<Object, Object> entry) {
                 return (K) entry.getKey();

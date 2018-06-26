@@ -193,8 +193,8 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected MapScanResult<Object, Object> scanIterator(String name, RedisClient client,
-            long startPos, String pattern) {
-        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>)map).scanIterator(name, client, startPos, pattern);
+            long startPos, String pattern, int count) {
+        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>)map).scanIterator(name, client, startPos, pattern, count);
         Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
         for (Iterator<Object> iterator = res.getMap().keySet().iterator(); iterator.hasNext();) {
             Object entry = iterator.next();

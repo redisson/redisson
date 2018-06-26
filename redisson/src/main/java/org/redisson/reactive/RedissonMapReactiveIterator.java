@@ -38,9 +38,13 @@ import reactor.rx.subscription.ReactiveSubscription;
 public class RedissonMapReactiveIterator<K, V, M> {
 
     private final MapReactive<K, V> map;
+    private final String pattern;
+    private final int count;
 
-    public RedissonMapReactiveIterator(MapReactive<K, V> map) {
+    public RedissonMapReactiveIterator(MapReactive<K, V> map, String pattern, int count) {
         this.map = map;
+        this.pattern = pattern;
+        this.count = count;
     }
 
     public Publisher<M> stream() {
@@ -63,7 +67,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<MapScanResult<Object, Object>>() {
+                        map.scanIteratorReactive(client, nextIterPos, pattern, count).subscribe(new Subscriber<MapScanResult<Object, Object>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {
