@@ -93,13 +93,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
-        if (pattern == null) {
-            RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "COUNT", count);
-            return get(f);
-        }
-
-        RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "MATCH", pattern, "COUNT", count);
-        return get(f);
+        return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
     @Override
@@ -577,7 +571,11 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos,
             String pattern, int count) {
-        throw new UnsupportedOperationException();
+        if (pattern == null) {
+            return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "COUNT", count);
+        }
+
+        return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "MATCH", pattern, "COUNT", count);
     }
     
 }
