@@ -109,8 +109,13 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
         });
     }
 
-    private Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.SSCAN, getName(), startPos);
+    private Publisher<ListScanResult<Object>> scanIteratorReactive(final RedisClient client, final long startPos, final String pattern, final int count) {
+        return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
+            @Override
+            public RFuture<ListScanResult<Object>> get() {
+                return ((RedissonSet)instance).scanIteratorAsync(getName(), client, startPos, pattern, count);
+            }
+        });
     }
 
     @Override
@@ -249,15 +254,30 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
             }
         });
     }
+    
+    @Override
+    public Publisher<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Publisher<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
 
     @Override
-    public Publisher<V> iterator() {
+    public Publisher<V> iterator(final String pattern, final int count) {
         return new SetReactiveIterator<V>() {
             @Override
             protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
-                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos);
+                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos, pattern, count);
             }
         };
     }
 
+    @Override
+    public Publisher<V> iterator() {
+        return iterator(null, 10);
+    }
+    
 }
