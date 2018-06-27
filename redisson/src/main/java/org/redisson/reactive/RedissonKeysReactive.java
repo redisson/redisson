@@ -67,10 +67,15 @@ public class RedissonKeysReactive implements RKeysReactive {
     }
 
     @Override
-    public Publisher<String> getKeysByPattern(final String pattern) {
+    public Publisher<String> getKeysByPattern(String pattern) {
+        return getKeysByPattern(pattern, 10);
+    }
+    
+    @Override
+    public Publisher<String> getKeysByPattern(String pattern, int count) {
         List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
-            publishers.add(createKeysIterator(entry, pattern));
+            publishers.add(createKeysIterator(entry, pattern, count));
         }
         return Flux.merge(publishers);
     }
@@ -80,14 +85,19 @@ public class RedissonKeysReactive implements RKeysReactive {
         return getKeysByPattern(null);
     }
 
-    private Publisher<ListScanResult<String>> scanIterator(MasterSlaveEntry entry, long startPos, String pattern) {
-        if (pattern == null) {
-            return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos);
-        }
-        return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern);
+    @Override
+    public Publisher<String> getKeys(int count) {
+        return getKeysByPattern(null, count);
     }
 
-    private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern) {
+    private Publisher<ListScanResult<String>> scanIterator(MasterSlaveEntry entry, long startPos, String pattern, int count) {
+        if (pattern == null) {
+            return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
+        }
+        return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
+    }
+
+    private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
         return Flux.create(new Consumer<FluxSink<String>>() {
             
             @Override
@@ -105,7 +115,7 @@ public class RedissonKeysReactive implements RKeysReactive {
                     }
                     
                     protected void nextValues(FluxSink<String> emitter) {
-                        scanIterator(entry, nextIterPos, pattern).subscribe(new Subscriber<ListScanResult<String>>() {
+                        scanIterator(entry, nextIterPos, pattern, count).subscribe(new Subscriber<ListScanResult<String>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {
