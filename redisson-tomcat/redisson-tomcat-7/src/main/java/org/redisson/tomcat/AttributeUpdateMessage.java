@@ -23,12 +23,12 @@ package org.redisson.tomcat;
 public class AttributeUpdateMessage extends AttributeMessage {
 
     private String name;
-    private Object value;
+    private byte[] value;
 
     public AttributeUpdateMessage() {
     }
     
-    public AttributeUpdateMessage(String sessionId, String name, Object value) {
+    public AttributeUpdateMessage(String sessionId, String name, byte[] value) {
         super(sessionId);
         this.name = name;
         this.value = value;
@@ -38,7 +38,7 @@ public class AttributeUpdateMessage extends AttributeMessage {
         return name;
     }
     
-    public Object getValue() {
+    public byte[] getValue() {
         return value;
     }
     

@@ -93,7 +93,7 @@ public class RedissonSession extends StandardSession {
             newMap.put("session:thisAccessedTime", thisAccessedTime);
             map.putAll(newMap);
             if (readMode == ReadMode.MEMORY) {
-                topic.publish(new AttributesPutAllMessage(getId(), newMap));
+                topic.publish(createPutAllMessage(newMap));
             }
         }
     }
@@ -108,12 +108,20 @@ public class RedissonSession extends StandardSession {
             newMap.put("session:thisAccessedTime", thisAccessedTime);
             map.putAll(newMap);
             if (readMode == ReadMode.MEMORY) {
-                topic.publish(new AttributesPutAllMessage(getId(), newMap));
+                topic.publish(createPutAllMessage(newMap));
             }
             if (getMaxInactiveInterval() >= 0) {
                 map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
             }
         }
+    }
+    
+    protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
+        Map<String, byte[]> map = new HashMap<String, byte[]>();
+        for (Entry<String, Object> entry : newMap.entrySet()) {
+            map.put(entry.getKey(), redissonManager.encode(entry.getValue()));
+        }
+        return new AttributesPutAllMessage(getId(), map);
     }
     
     @Override
@@ -131,7 +139,7 @@ public class RedissonSession extends StandardSession {
     private void fastPut(String name, Object value) {
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributeUpdateMessage(getId(), name, value));
+            topic.publish(new AttributeUpdateMessage(getId(), name, redissonManager.encode(value)));
         }
     }
     
@@ -213,7 +221,7 @@ public class RedissonSession extends StandardSession {
         
         map.putAll(newMap);
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributesPutAllMessage(getId(), newMap));
+            topic.publish(createPutAllMessage(newMap));
         }
         
         if (maxInactiveInterval >= 0) {

@@ -36,6 +36,9 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+
 /**
  * Redisson Session Manager for Apache Tomcat
  * 
@@ -171,6 +174,27 @@ public class RedissonSessionManager extends ManagerBase {
         }
     }
     
+    protected Object decode(byte[] bb) throws IOException {
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(bb.length);
+        buf.writeBytes(bb);
+        Object value = redisson.getConfig().getCodec().getValueDecoder().decode(buf, null);
+        buf.release();
+        return value;
+    }
+    
+    public byte[] encode(Object value) {
+        try {
+            ByteBuf encoded = redisson.getConfig().getCodec().getValueEncoder().encode(value);
+            byte[] dst = new byte[encoded.readableBytes()];
+            encoded.readBytes(dst);
+            encoded.release();
+            return dst;
+        } catch (IOException e) {
+            log.error("Unable to encode object", e);
+            throw new IllegalStateException(e);
+        }
+    }
+    
     public RedissonClient getRedisson() {
         return redisson;
     }
@@ -204,14 +228,14 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
-                                    session.superSetAttribute(entry.getKey(), entry.getValue(), true);
+                                for (Entry<String, byte[]> entry : m.getAttrs().entrySet()) {
+                                    session.superSetAttribute(entry.getKey(), decode(entry.getValue()), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(), true);
+                                session.superSetAttribute(m.getName(), decode(m.getValue()), true);
                             }
                         }
                     } catch (IOException e) {
@@ -239,10 +263,14 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         try {
+            try {
             Config c = new Config(config);
             Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
                             .newInstance(Thread.currentThread().getContextClassLoader());
             config.setCodec(codec);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+            }
             
             return Redisson.create(config);
         } catch (Exception e) {

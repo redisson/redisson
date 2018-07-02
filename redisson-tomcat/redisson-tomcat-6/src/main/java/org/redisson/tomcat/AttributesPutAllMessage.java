@@ -24,17 +24,17 @@ import java.util.Map;
  */
 public class AttributesPutAllMessage extends AttributeMessage {
 
-    private Map<String, Object> attrs;
+    private Map<String, byte[]> attrs;
     
     public AttributesPutAllMessage() {
     }
 
-    public AttributesPutAllMessage(String sessionId, Map<String, Object> attrs) {
+    public AttributesPutAllMessage(String sessionId, Map<String, byte[]> attrs) {
         super(sessionId);
         this.attrs = attrs;
     }
     
-    public Map<String, Object> getAttrs() {
+    public Map<String, byte[]> getAttrs() {
         return attrs;
     }
 
