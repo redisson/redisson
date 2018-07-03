@@ -19,11 +19,11 @@ public class RedissonRateLimiterTest extends BaseTest {
 
     @Test
     public void testAcquire() {
-        RRateLimiter rr = redisson.getRateLimiter("test");
-        assertThat(rr.trySetRate(RateType.OVERALL, 10, 1, RateIntervalUnit.SECONDS)).isTrue();
-        rr.acquire(1);
-        rr.acquire(5);
-        rr.acquire(4);
+        RRateLimiter rr = redisson.getRateLimiter("acquire");
+        assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
+        for (int i = 0; i < 10; i++) {
+            rr.acquire(1);
+        }
         assertThat(rr.tryAcquire()).isFalse();
     }
     

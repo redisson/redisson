@@ -153,7 +153,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                         public void run() {
                             tryAcquireAsync(permits, promise, timeoutInMillis);
                         }
-                    }, delay, TimeUnit.SECONDS);
+                    }, delay, TimeUnit.MILLISECONDS);
                     return;
                 }
                 
