@@ -2,7 +2,6 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -85,7 +84,7 @@ public class RedissonStreamTest extends BaseTest {
         t.start();
         
         long start = System.currentTimeMillis();
-        Map<String, Map<StreamId, Map<String, String>>> s = stream.read(2, 5, TimeUnit.SECONDS, Collections.singleton("test1"), new StreamId(0), StreamId.NEWEST);
+        Map<String, Map<StreamId, Map<String, String>>> s = stream.read(2, 5, TimeUnit.SECONDS, new StreamId(0), "test1", StreamId.NEWEST);
         assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
         assertThat(s).hasSize(1);
         assertThat(s.get("test").get(new StreamId(1))).isEqualTo(entries1);
@@ -141,7 +140,7 @@ public class RedissonStreamTest extends BaseTest {
     @Test
     public void testReadMultiKeysEmpty() {
         RStream<String, String> stream = redisson.getStream("test2");
-        Map<String, Map<StreamId, Map<String, String>>> s = stream.read(10, Collections.singleton("test1"), new StreamId(0), new StreamId(0));
+        Map<String, Map<StreamId, Map<String, String>>> s = stream.read(10, new StreamId(0), "test1", new StreamId(0));
         assertThat(s).isEmpty();
     }
     
@@ -160,7 +159,7 @@ public class RedissonStreamTest extends BaseTest {
         entries2.put("6", "66");
         stream2.addAll(entries2);
         
-        Map<String, Map<StreamId, Map<String, String>>> s = stream2.read(10, Collections.singleton("test1"), new StreamId(0), new StreamId(0));
+        Map<String, Map<StreamId, Map<String, String>>> s = stream2.read(10, new StreamId(0), "test1", new StreamId(0));
         assertThat(s).hasSize(2);
         assertThat(s.get("test1").values().iterator().next()).isEqualTo(entries1);
         assertThat(s.get("test2").values().iterator().next()).isEqualTo(entries2);

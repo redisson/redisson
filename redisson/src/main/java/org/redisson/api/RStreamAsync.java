@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -167,52 +166,152 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamId ... ids);
 
     /**
-     * Read stream data by specified collection of keys including this stream and Stream ID per key.
-     * First Stream ID is related to this stream.
+     * Read stream data by specified stream name including this stream.
      * 
-     * @param keys - collection of keys
-     * @param ids - collection of Stream IDs
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(Collection<String> keys, StreamId ... ids);
-    
-    /**
-     * Read stream data by specified collection of keys including this stream and Stream ID per key.
-     * First Stream ID is related to this stream.
-     * 
-     * @param count - stream data size limit
-     * @param keys - collection of keys
-     * @param ids - collection of Stream IDs
-     * @return stream data mapped by key and Stream ID
-     */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, Collection<String> keys, StreamId ... ids);
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String name2, StreamId id2);
 
     /**
-     * Read stream data by specified collection of keys including this stream and Stream ID per key.
-     * First Stream ID is related to this stream.
-     * Wait for first stream data availability for specified <code>timeout</code> interval.
+     * Read stream data by specified stream names including this stream.
+     * 
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
+     * @param name3 - name of third stream
+     * @param id3 - id of third stream
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    
+    /**
+     * Read stream data by specified stream id mapped by name including this stream.
+     * 
+     * @param id - id of this stream
+     * @param nameToId - stream id mapped by name
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, Map<String, StreamId> nameToId);
+
+    /**
+     * Read stream data by specified stream name including this stream.
+     * 
+     * @param count - stream data size limit
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String name2, StreamId id2);
+
+    /**
+     * Read stream data by specified stream names including this stream.
+     * 
+     * @param count - stream data size limit
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
+     * @param name3 - name of third stream
+     * @param id3 - id of third stream
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    
+    /**
+     * Read stream data by specified stream id mapped by name including this stream.
+     * 
+     * @param count - stream data size limit
+     * @param id - id of this stream
+     * @param nameToId - stream id mapped by name
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, Map<String, StreamId> nameToId);
+
+    /**
+     * Read stream data by specified stream name including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
      * 
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit
-     * @param keys - collection of keys
-     * @param ids - collection of Stream IDs
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, Collection<String> keys, StreamId ... ids);
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+
+    /**
+     * Read stream data by specified stream names including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
+     * @param name3 - name of third stream
+     * @param id3 - id of third stream
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
-     * Read stream data by specified collection of keys including this stream and Stream ID per key.
-     * First Stream ID is related to this stream.
-     * Wait for first stream data availability for specified <code>timeout</code> interval.
+     * Read stream data by specified stream id mapped by name including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - id of this stream
+     * @param nameToId - stream id mapped by name
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
+
+    /**
+     * Read stream data by specified stream name including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
      * 
      * @param count - stream data size limit
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit
-     * @param keys - collection of keys
-     * @param ids - collection of Stream IDs
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, Collection<String> keys, StreamId ... ids);
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+
+    /**
+     * Read stream data by specified stream names including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - id of this stream
+     * @param name2 - name of second stream
+     * @param id2 - id of second stream
+     * @param name3 - name of third stream
+     * @param id3 - id of third stream
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    
+    /**
+     * Read stream data by specified stream id mapped by name including this stream.
+     * Wait for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - id of this stream
+     * @param nameToId - stream id mapped by name
+     * @return stream data mapped by key and Stream ID
+     */
+    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
     
     /**
      * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
