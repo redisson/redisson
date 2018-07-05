@@ -27,7 +27,6 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -229,7 +228,7 @@ public class RedisConnection implements RedisCommands {
         return new CommandData<T, R>(promise, encoder, command, params);
     }
 
-    public void setClosed(boolean closed) {
+    private void setClosed(boolean closed) {
         this.closed = closed;
     }
 
@@ -246,10 +245,19 @@ public class RedisConnection implements RedisCommands {
         fastReconnect = null;
     }
     
+    private void close() {
+        CommandData command = getCurrentCommand();
+        if (command != null && command.isBlockingCommand()) {
+            channel.close();
+        } else {
+            async(RedisCommands.QUIT);
+        }
+    }
+    
     public RFuture<Void> forceFastReconnectAsync() {
         RedissonPromise<Void> promise = new RedissonPromise<Void>();
         fastReconnect = promise;
-        channel.close();
+        close();
         return promise;
     }
 
@@ -265,7 +273,8 @@ public class RedisConnection implements RedisCommands {
 
     public ChannelFuture closeAsync() {
         setClosed(true);
-        return channel.close();
+        close();
+        return channel.closeFuture();
     }
 
     @Override
