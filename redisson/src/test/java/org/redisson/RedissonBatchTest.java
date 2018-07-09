@@ -29,6 +29,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapCacheAsync;
+import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
 import org.redisson.api.RedissonClient;
@@ -77,6 +78,17 @@ public class RedissonBatchTest extends BaseTest {
         }
         List<?> t = batch.execute();
         System.out.println(t);
+    }
+
+    @Test
+    public void testConvertor() {
+        RBatch batch = redisson.createBatch(batchOptions);
+
+        batch.getScoredSortedSet("myZKey").addScoreAsync("abc", 1d);
+        batch.execute();
+        
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("myZKey");
+        assertThat(set.getScore("abc")).isEqualTo(1d);
     }
     
     @Test
