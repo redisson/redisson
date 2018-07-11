@@ -105,17 +105,21 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         state().setDecoderState(null);
 
-        if (data == null) {
-            try {
-                while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, ctx.channel(), false);
-                }
-            } catch (Exception e) {
-                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+        decodeCommand(ctx, in, data);
+    }
+
+    protected void sendNext(ChannelHandlerContext ctx, QueueCommand data) {
+        if (data != null) {
+            if (data.isExecuted()) {
                 sendNext(ctx);
-                throw e;
             }
-        } else if (data instanceof CommandData) {
+        } else {
+            sendNext(ctx);
+        }
+    }
+
+    protected void decodeCommand(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data) throws Exception {
+        if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
                 if (state().getLevels().size() > 0) {
@@ -123,6 +127,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 } else {
                     decode(in, cmd, null, ctx.channel(), false);
                 }
+                sendNext(ctx, data);
             } catch (Exception e) {
                 log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
                 cmd.tryFailure(e);
@@ -138,10 +143,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 sendNext(ctx);
                 throw e;
             }
-            return;
         }
-        
-        sendNext(ctx);
     }
 
     protected void sendNext(ChannelHandlerContext ctx) {
@@ -149,7 +151,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         state(null);
     }
 
-    private void decodeFromCheckpoint(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
+    protected void decodeFromCheckpoint(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
             CommandData<Object, Object> cmd) throws IOException {
         if (state().getLevels().size() == 2) {
             StateLevel secondLevel = state().getLevels().get(1);
@@ -448,7 +450,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             if (parts.isEmpty()) {
                 return null;
             }
-                }
+        }
         return data.getCommand().getReplayMultiDecoder();
     }
 
