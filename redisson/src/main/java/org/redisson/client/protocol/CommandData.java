@@ -102,4 +102,9 @@ public class CommandData<T, R> implements QueueCommand {
                     || RedisCommands.XREAD_BLOCKING == command;
     }
 
+    @Override
+    public boolean isExecuted() {
+        return promise.isDone();
+    }
+
 }

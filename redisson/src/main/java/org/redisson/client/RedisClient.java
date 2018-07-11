@@ -326,12 +326,12 @@ public class RedisClient {
         for (Channel channel : channels) {
             RedisConnection connection = RedisConnection.getFrom(channel);
             if (connection != null) {
-                connection.setClosed(true);
+                connection.closeAsync();
             }
         }
-        ChannelGroupFuture channelsFuture = channels.close();
-        
+
         final RPromise<Void> result = new RedissonPromise<Void>();
+        ChannelGroupFuture channelsFuture = channels.newCloseFuture();
         channelsFuture.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {

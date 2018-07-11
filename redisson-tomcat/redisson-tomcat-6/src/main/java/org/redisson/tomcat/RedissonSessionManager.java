@@ -137,6 +137,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             sessionId = generateSessionId();
         }
         
+        session.setManager(this);
         session.setId(sessionId);
         session.save();
         
@@ -150,7 +151,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
     
     public RTopic<AttributeMessage> getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates");
+        return redisson.getTopic("redisson:tomcat_session_updates:" + container.getName());
     }
     
     @Override
@@ -166,6 +167,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
+            session.setManager(this);
             session.load(attrs);
             
             session.access();
@@ -260,6 +262,15 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
 
         try {
+            try {
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+            }
+            
             return Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
@@ -285,8 +296,10 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) findSession(session.getId());
-            sess.save();
+            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+            if (sess != null) {
+                sess.save();
+            }
         }
     }
 

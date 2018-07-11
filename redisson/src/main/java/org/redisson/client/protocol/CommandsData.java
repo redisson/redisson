@@ -96,4 +96,9 @@ public class CommandsData implements QueueCommand {
         return "CommandsData [commands=" + commands + "]";
     }
 
+    @Override
+    public boolean isExecuted() {
+        return promise.isDone();
+    }
+
 }

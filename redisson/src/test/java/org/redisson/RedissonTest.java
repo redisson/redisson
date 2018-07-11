@@ -239,14 +239,19 @@ public class RedissonTest {
         });
 
         assertThat(id).isNotZero();
-
+        
         r.getBucket("1").get();
         Assert.assertEquals(0, p.stop());
+        
+        await().atMost(2, TimeUnit.SECONDS).until(() -> disconnectCounter.get() == 1);
         
         try {
             r.getBucket("1").get();
         } catch (Exception e) {
         }
+        
+        assertThat(connectCounter.get()).isEqualTo(0);
+        assertThat(disconnectCounter.get()).isEqualTo(1);
 
         RedisProcess pp = new RedisRunner()
                 .nosave()
@@ -256,12 +261,11 @@ public class RedissonTest {
 
         r.getBucket("1").get();
 
+        assertThat(connectCounter.get()).isEqualTo(1);
+        assertThat(disconnectCounter.get()).isEqualTo(1);
+
         r.shutdown();
-
         Assert.assertEquals(0, pp.stop());
-
-        await().atMost(2, TimeUnit.SECONDS).until(() -> connectCounter.get() == 1);
-        await().atMost(2, TimeUnit.SECONDS).until(() -> disconnectCounter.get() == 1);
     }
     
     @Test

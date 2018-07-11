@@ -36,6 +36,9 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.internal.PlatformDependent;
+
 /**
  * Redisson Session Manager for Apache Tomcat
  * 
@@ -57,6 +60,15 @@ public class RedissonSessionManager extends ManagerBase {
 
     private String keyPrefix = "";
     
+    private final String id = ByteBufUtil.hexDump(generateId());
+    
+    protected static byte[] generateId() {
+        byte[] id = new byte[16];
+        // TODO JDK UPGRADE replace to native ThreadLocalRandom
+        PlatformDependent.threadLocalRandom().nextBytes(id);
+        return id;
+    }
+            
     public String getUpdateMode() {
         return updateMode.toString();
     }
@@ -115,6 +127,7 @@ public class RedissonSessionManager extends ManagerBase {
             sessionId = generateSessionId();
         }
         
+        session.setManager(this);
         session.setId(sessionId);
         session.save();
         
@@ -128,7 +141,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
     
     public RTopic<AttributeMessage> getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates");
+        return redisson.getTopic("redisson:tomcat_session_updates:" + getContext().getName());
     }
     
     @Override
@@ -144,6 +157,7 @@ public class RedissonSessionManager extends ManagerBase {
             
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
+            session.setManager(this);
             session.load(attrs);
             
             session.access();
@@ -239,10 +253,14 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         try {
+            try {
             Config c = new Config(config);
             Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
                             .newInstance(Thread.currentThread().getContextClassLoader());
             config.setCodec(codec);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+            }
             
             return Redisson.create(config);
         } catch (Exception e) {
@@ -272,9 +290,11 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) findSession(session.getId());
+            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+            if (sess != null) {
             sess.save();            
         }
+    }
     }
     
 }
