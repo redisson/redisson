@@ -36,8 +36,8 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.internal.PlatformDependent;
 
 /**
  * Redisson Session Manager for Apache Tomcat
@@ -60,6 +60,15 @@ public class RedissonSessionManager extends ManagerBase {
 
     private String keyPrefix = "";
     
+    private final String id = ByteBufUtil.hexDump(generateId());
+    
+    protected static byte[] generateId() {
+        byte[] id = new byte[16];
+        // TODO JDK UPGRADE replace to native ThreadLocalRandom
+        PlatformDependent.threadLocalRandom().nextBytes(id);
+        return id;
+    }
+            
     public String getUpdateMode() {
         return updateMode.toString();
     }
@@ -118,6 +127,7 @@ public class RedissonSessionManager extends ManagerBase {
             sessionId = generateSessionId();
         }
         
+        session.setManager(this);
         session.setId(sessionId);
         session.save();
         
@@ -131,7 +141,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
     
     public RTopic<AttributeMessage> getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates");
+        return redisson.getTopic("redisson:tomcat_session_updates:" + getContext().getName());
     }
     
     @Override
@@ -147,6 +157,7 @@ public class RedissonSessionManager extends ManagerBase {
             
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
+            session.setManager(this);
             session.load(attrs);
             
             session.access();
@@ -171,27 +182,6 @@ public class RedissonSessionManager extends ManagerBase {
         
         if (session.getIdInternal() != null) {
             ((RedissonSession)session).delete();
-        }
-    }
-    
-    protected Object decode(byte[] bb) throws IOException {
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(bb.length);
-        buf.writeBytes(bb);
-        Object value = redisson.getConfig().getCodec().getValueDecoder().decode(buf, null);
-        buf.release();
-        return value;
-    }
-    
-    public byte[] encode(Object value) {
-        try {
-            ByteBuf encoded = redisson.getConfig().getCodec().getValueEncoder().encode(value);
-            byte[] dst = new byte[encoded.readableBytes()];
-            encoded.readBytes(dst);
-            encoded.release();
-            return dst;
-        } catch (IOException e) {
-            log.error("Unable to encode object", e);
-            throw new IllegalStateException(e);
         }
     }
     
@@ -228,14 +218,14 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, byte[]> entry : m.getAttrs().entrySet()) {
-                                    session.superSetAttribute(entry.getKey(), decode(entry.getValue()), true);
+                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
+                                    session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), decode(m.getValue()), true);
+                                session.superSetAttribute(m.getName(), m.getValue(), true);
                             }
                         }
                     } catch (IOException e) {
@@ -300,9 +290,11 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) findSession(session.getId());
+            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+            if (sess != null) {
             sess.save();            
         }
+    }
     }
     
 }

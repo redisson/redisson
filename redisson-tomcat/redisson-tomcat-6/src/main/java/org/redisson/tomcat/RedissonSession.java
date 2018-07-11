@@ -117,9 +117,9 @@ public class RedissonSession extends StandardSession {
     }
     
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
-        Map<String, byte[]> map = new HashMap<String, byte[]>();
+        Map<String, Object> map = new HashMap<String, Object>();
         for (Entry<String, Object> entry : newMap.entrySet()) {
-            map.put(entry.getKey(), redissonManager.encode(entry.getValue()));
+            map.put(entry.getKey(), entry.getValue());
         }
         return new AttributesPutAllMessage(getId(), map);
     }
@@ -139,7 +139,7 @@ public class RedissonSession extends StandardSession {
     private void fastPut(String name, Object value) {
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributeUpdateMessage(getId(), name, redissonManager.encode(value)));
+            topic.publish(new AttributeUpdateMessage(getId(), name, value));
         }
     }
     

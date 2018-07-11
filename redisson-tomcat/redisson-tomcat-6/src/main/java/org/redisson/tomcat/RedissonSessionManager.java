@@ -39,9 +39,6 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-
 /**
  * Redisson Session Manager for Apache Tomcat
  * 
@@ -140,6 +137,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             sessionId = generateSessionId();
         }
         
+        session.setManager(this);
         session.setId(sessionId);
         session.save();
         
@@ -153,7 +151,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
     
     public RTopic<AttributeMessage> getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates");
+        return redisson.getTopic("redisson:tomcat_session_updates:" + container.getName());
     }
     
     @Override
@@ -169,6 +167,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
+            session.setManager(this);
             session.load(attrs);
             
             session.access();
@@ -193,27 +192,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         
         if (session.getIdInternal() != null) {
             ((RedissonSession)session).delete();
-        }
-    }
-    
-    protected Object decode(byte[] bb) throws IOException {
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(bb.length);
-        buf.writeBytes(bb);
-        Object value = redisson.getConfig().getCodec().getValueDecoder().decode(buf, null);
-        buf.release();
-        return value;
-    }
-    
-    public byte[] encode(Object value) {
-        try {
-            ByteBuf encoded = redisson.getConfig().getCodec().getValueEncoder().encode(value);
-            byte[] dst = new byte[encoded.readableBytes()];
-            encoded.readBytes(dst);
-            encoded.release();
-            return dst;
-        } catch (IOException e) {
-            log.error("Unable to encode object", e);
-            throw new IllegalStateException(e);
         }
     }
     
@@ -249,14 +227,14 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, byte[]> entry : m.getAttrs().entrySet()) {
-                                    session.superSetAttribute(entry.getKey(), decode(entry.getValue()), true);
+                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
+                                    session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), decode(m.getValue()), true);
+                                session.superSetAttribute(m.getName(), m.getValue(), true);
                             }
                         }
                     } catch (IOException e) {
@@ -284,6 +262,15 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
 
         try {
+            try {
+            Config c = new Config(config);
+            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
+                            .newInstance(Thread.currentThread().getContextClassLoader());
+            config.setCodec(codec);
+            } catch (Exception e) {
+                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+            }
+            
             return Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
@@ -309,8 +296,10 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) findSession(session.getId());
-            sess.save();
+            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+            if (sess != null) {
+                sess.save();
+            }
         }
     }
 
