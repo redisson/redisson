@@ -448,6 +448,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 sentinels.putIfAbsent(key, client);
+                result.trySuccess(null);
             }
         });
         return result;
