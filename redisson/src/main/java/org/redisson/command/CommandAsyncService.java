@@ -1051,7 +1051,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             RPromise<Void> main = new RedissonPromise<Void>();
-            ChannelFuture future = connection.send(new CommandsData(main, list));
+            ChannelFuture future = connection.send(new CommandsData(main, list, false));
             details.setWriteFuture(future);
         } else {
             if (log.isDebugEnabled()) {

@@ -228,7 +228,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 
                 try {
-                    decode(in, commandData, null, ctx.channel(), !commandBatch.isAtomic());
+                    decode(in, commandData, null, ctx.channel(), commandBatch.isQueued());
                 } finally {
                     if (commandData != null && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())) {
                         commandsData.remove();
