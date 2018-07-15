@@ -627,12 +627,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
         }
 
-        timer.stop();
-        
-        shutdownLatch.close();
-        shutdownPromise.trySuccess(true);
-        shutdownLatch.awaitUninterruptibly();
-
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
         for (MasterSlaveEntry entry : getEntrySet()) {
@@ -641,6 +635,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         result.awaitUninterruptibly(timeout, unit);
         resolverGroup.close();
+
+        timer.stop();
+        shutdownLatch.close();
+        shutdownPromise.trySuccess(true);
+        shutdownLatch.awaitUninterruptibly();
         
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();

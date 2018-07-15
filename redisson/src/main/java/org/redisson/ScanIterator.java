@@ -18,7 +18,6 @@ package org.redisson;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 /**
  * 
@@ -27,9 +26,9 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
  */
 public interface ScanIterator {
 
-    ListScanResult<ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos, String pattern);
+    ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count);
 
-    RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern);
+    RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count);
     
     boolean remove(Object value);
     

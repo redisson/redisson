@@ -32,33 +32,39 @@ public class CommandsData implements QueueCommand {
     private final RPromise<Void> promise;
     private final boolean skipResult;
     private final boolean atomic;
+    private final boolean queued;
 
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands) {
-        this(promise, commands, null);
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean queued) {
+        this(promise, commands, null, false, false, queued);
     }
     
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands) {
-        this(promise, commands, attachedCommands, false, false);
+        this(promise, commands, attachedCommands, false, false, true);
     }
     
-    
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic) {
-        this(promise, commands, null, skipResult, atomic);
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued) {
+        this(promise, commands, null, skipResult, atomic, queued);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands, boolean skipResult, boolean atomic) {
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands, 
+            boolean skipResult, boolean atomic, boolean queued) {
         super();
         this.promise = promise;
         this.commands = commands;
         this.skipResult = skipResult;
         this.atomic = atomic;
         this.attachedCommands = attachedCommands;
+        this.queued = queued;
     }
 
     public RPromise<Void> getPromise() {
         return promise;
     }
 
+    public boolean isQueued() {
+        return queued;
+    }
+    
     public boolean isAtomic() {
         return atomic;
     }
@@ -94,6 +100,11 @@ public class CommandsData implements QueueCommand {
     @Override
     public String toString() {
         return "CommandsData [commands=" + commands + "]";
+    }
+
+    @Override
+    public boolean isExecuted() {
+        return promise.isDone();
     }
 
 }

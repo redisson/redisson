@@ -57,7 +57,7 @@ public class RedissonSessionManager extends ManagerBase {
     private UpdateMode updateMode = UpdateMode.DEFAULT;
 
     private String keyPrefix = "";
-    
+
     public String getUpdateMode() {
         return updateMode.toString();
     }
@@ -116,6 +116,7 @@ public class RedissonSessionManager extends ManagerBase {
             sessionId = generateSessionId();
         }
         
+        session.setManager(this);
         session.setId(sessionId);
         session.save();
         
@@ -129,7 +130,7 @@ public class RedissonSessionManager extends ManagerBase {
     }
     
     public RTopic<AttributeMessage> getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates");
+        return redisson.getTopic("redisson:tomcat_session_updates:" + container.getName());
     }
     
     @Override
@@ -145,6 +146,7 @@ public class RedissonSessionManager extends ManagerBase {
             
             RedissonSession session = (RedissonSession) createEmptySession();
             session.setId(id);
+            session.setManager(this);
             session.load(attrs);
             
             session.access();
@@ -277,8 +279,10 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) findSession(session.getId());
-            sess.save();            
+            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+            if (sess != null) {
+                sess.save();
+            }
         }
     }
     

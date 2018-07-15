@@ -16,7 +16,8 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -147,8 +148,8 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, Collection<String> keys, StreamId ... ids) {
-        return readAsync(count, -1, null, keys, ids);
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, Map<String, StreamId> keyToId) {
+        return readAsync(count, -1, null, id, keyToId);
     }
 
     @Override
@@ -157,11 +158,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, Collection<String> keys, StreamId... ids) {
-        if (keys.size() + 1 != ids.length) {
-            throw new IllegalArgumentException("keys amount should be lower by one than ids amount");
-        }
-        
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> keyToId) {
         List<Object> params = new ArrayList<Object>();
         if (count > 0) {
             params.add("COUNT");
@@ -175,14 +172,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         params.add("STREAMS");
         params.add(getName());
-        if (keys != null) {
-            for (String key : keys) {
-                params.add(key);
-            }
+        for (String key : keyToId.keySet()) {
+            params.add(key);
         }
         
-        for (StreamId id : ids) {
-            params.add(id.toString());
+        params.add(id);
+        for (StreamId nextId : keyToId.values()) {
+            params.add(nextId.toString());
         }
 
         if (timeout > 0) {
@@ -294,14 +290,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public Map<String, Map<StreamId, Map<K, V>>> read(int count, Collection<String> keys, StreamId... ids) {
-        return get(readAsync(count, keys, ids));
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, StreamId id, Map<String, StreamId> keyToId) {
+        return get(readAsync(count, id, keyToId));
     }
 
     @Override
-    public Map<String, Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, Collection<String> keys,
-            StreamId... ids) {
-        return get(readAsync(count, timeout, unit, keys, ids));
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> keyToId) {
+        return get(readAsync(count, timeout, unit, id, keyToId));
     }
 
     @Override
@@ -355,14 +350,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(Collection<String> keys, StreamId... ids) {
-        return readAsync(0, keys, ids);
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, Map<String, StreamId> keyToId) {
+        return readAsync(0, id, keyToId);
     }
 
     @Override
-    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit,
-            Collection<String> keys, StreamId... ids) {
-        return readAsync(0, timeout, unit, keys, ids);
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> keyToId) {
+        return readAsync(0, timeout, unit, id, keyToId);
     }
 
     @Override
@@ -386,14 +380,13 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public Map<String, Map<StreamId, Map<K, V>>> read(Collection<String> keys, StreamId... ids) {
-        return read(0, keys, ids);
+    public Map<String, Map<StreamId, Map<K, V>>> read(StreamId id, Map<String, StreamId> keyToId) {
+        return read(0, id, keyToId);
     }
 
     @Override
-    public Map<String, Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, Collection<String> keys,
-            StreamId... ids) {
-        return read(0, timeout, unit, keys, ids);
+    public Map<String, Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> keyToId) {
+        return read(0, timeout, unit, id, keyToId);
     }
 
     @Override
@@ -405,5 +398,109 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public Map<StreamId, Map<K, V>> rangeReversed(StreamId startId, StreamId endId) {
         return rangeReversed(0, startId, endId);
     }
-    
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String key2, StreamId id2) {
+        return readAsync(id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String key2, StreamId id2, String key3,
+            StreamId id3) {
+        Map<String, StreamId> params = new HashMap<String, StreamId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String key2, StreamId id2) {
+        return readAsync(count, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String key2, StreamId id2,
+            String key3, StreamId id3) {
+        Map<String, StreamId> params = new HashMap<String, StreamId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(count, id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id,
+            String key2, StreamId id2) {
+        return readAsync(timeout, unit, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id,
+            String key2, StreamId id2, String key3, StreamId id3) {
+        Map<String, StreamId> params = new HashMap<String, StreamId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(timeout, unit, id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id,
+            String key2, StreamId id2) {
+        return readAsync(count, timeout, unit, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id,
+            String key2, StreamId id2, String key3, StreamId id3) {
+        Map<String, StreamId> params = new HashMap<String, StreamId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(count, timeout, unit, id, params);
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(StreamId id, String key2, StreamId id2) {
+        return get(readAsync(id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(StreamId id, String key2, StreamId id2, String key3,
+            StreamId id3) {
+        return get(readAsync(id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, StreamId id, String key2, StreamId id2) {
+        return get(readAsync(count, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, StreamId id, String key2, StreamId id2, String key3,
+            StreamId id3) {
+        return get(readAsync(count, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId id, String key2,
+            StreamId id2) {
+        return get(readAsync(timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId id, String key2,
+            StreamId id2, String key3, StreamId id3) {
+        return get(readAsync(timeout, unit, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId id, String key2,
+            StreamId id2) {
+        return get(readAsync(count, timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId id, String key2,
+            StreamId id2, String key3, StreamId id3) {
+        return get(readAsync(count, timeout, unit, id, key2, id2, key3, id3));
+    }
+
 }

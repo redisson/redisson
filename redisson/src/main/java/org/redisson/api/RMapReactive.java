@@ -17,8 +17,8 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.map.MapLoader;
@@ -252,10 +252,189 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      */
     Publisher<V> putIfAbsent(K key, V value);
 
+    /**
+     * Returns iterator over map entries collection. 
+     * Map entries are loaded in batch. Batch size is <code>10</code>.
+     * 
+     * @see #readAllEntrySet()
+     *  
+     * @return iterator
+     */
     Publisher<Map.Entry<K, V>> entryIterator();
+    
+    /**
+     * Returns iterator over map entries collection.
+     * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllEntrySet()
+     * 
+     * @param count - size of entries batch
+     * @return iterator
+     */
+    Publisher<Map.Entry<K, V>> entryIterator(int count);
+    
+    /**
+     * Returns iterator over map entries collection.
+     * Map entries are loaded in batch. Batch size is <code>10</code>. 
+     * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllEntrySet()
+     * 
+     * @param pattern - key pattern
+     * @return iterator
+     */
+    Publisher<Map.Entry<K, V>> entryIterator(String pattern);
+    
+    /**
+     * Returns iterator over map entries collection.
+     * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllEntrySet()
+     * 
+     * @param pattern - key pattern
+     * @param count - size of entries batch
+     * @return iterator
+     */
+    Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count);
 
+    /**
+     * Returns iterator over values collection of this map. 
+     * Values are loaded in batch. Batch size is <code>10</code>.
+     * 
+     * @see #readAllValues()
+     * 
+     * @return iterator
+     */
     Publisher<V> valueIterator();
+    
+    /**
+     * Returns iterator over values collection of this map.
+     * Values are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllValues()
+     * 
+     * @param count - size of values batch
+     * @return iterator
+     */
+    Publisher<V> valueIterator(int count);
+    
+    /**
+     * Returns iterator over values collection of this map.
+     * Values are loaded in batch. Batch size is <code>10</code>. 
+     * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllValues()
+     * 
+     * @param pattern - key pattern
+     * @return iterator
+     */
+    Publisher<V> valueIterator(String pattern);
+    
+    /**
+     * Returns iterator over values collection of this map.
+     * Values are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllValues()
+     * 
+     * @param pattern - key pattern
+     * @param count - size of values batch
+     * @return iterator
+     */
+    Publisher<V> valueIterator(String pattern, int count);
 
+    /**
+     * Returns iterator over key set of this map. 
+     * Keys are loaded in batch. Batch size is <code>10</code>.
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @return iterator
+     */
     Publisher<K> keyIterator();
+    
+    /**
+     * Returns iterator over key set of this map.
+     * Keys are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @param count - size of keys batch
+     * @return iterator
+     */
+    Publisher<K> keyIterator(int count);
+    
+    /**
+     * Returns iterator over key set of this map. 
+     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @param pattern - key pattern
+     * @return iterator
+     */
+    Publisher<K> keyIterator(String pattern);
+
+    /**
+     * Returns iterator over key set of this map.
+     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
+     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @param pattern - key pattern
+     * @param count - size of keys batch
+     * @return iterator
+     */
+    Publisher<K> keyIterator(String pattern, int count);
 
 }

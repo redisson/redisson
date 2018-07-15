@@ -29,9 +29,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.ScanResult;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
+import org.redisson.ScanResult;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -55,7 +55,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -1005,8 +1004,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             Map oldMap = ((MapScanResult) o).getMap();
             Map map = tryHandleReference(oldMap);
             if (map != oldMap) {
-                MapScanResult<ScanObjectEntry, ScanObjectEntry> newScanResult
-                        = new MapScanResult<ScanObjectEntry, ScanObjectEntry>(scanResult.getPos(), map);
+                MapScanResult<Object, Object> newScanResult
+                        = new MapScanResult<Object, Object>(scanResult.getPos(), map);
                 newScanResult.setRedisClient(scanResult.getRedisClient());
                 return (T) newScanResult;
             } else {
@@ -1023,10 +1022,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
             ScoredEntry<?> se = ((ScoredEntry<?>) o);
             return (T) new ScoredEntry(se.getScore(), fromReference(se.getValue()));
-        } else if (o instanceof ScanObjectEntry) {
-            ScanObjectEntry keyScan = (ScanObjectEntry) o;
-            Object obj = tryHandleReference0(keyScan.getObj());
-            return obj != keyScan.getObj() ? (T) new ScanObjectEntry(keyScan.getHash(), obj) : o;
         } else if (o instanceof Map.Entry) {
             Map.Entry old = (Map.Entry) o;
             Object key = tryHandleReference0(old.getKey());
@@ -1056,7 +1051,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             list.add(new CommandData<Void, Void>(promise, details.getCodec(), RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             RPromise<Void> main = new RedissonPromise<Void>();
-            ChannelFuture future = connection.send(new CommandsData(main, list));
+            ChannelFuture future = connection.send(new CommandsData(main, list, false));
             details.setWriteFuture(future);
         } else {
             if (log.isDebugEnabled()) {

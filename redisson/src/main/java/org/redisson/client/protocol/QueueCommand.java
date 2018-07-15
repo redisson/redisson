@@ -28,4 +28,6 @@ public interface QueueCommand {
 
     boolean tryFailure(Throwable cause);
     
+    boolean isExecuted();
+    
 }

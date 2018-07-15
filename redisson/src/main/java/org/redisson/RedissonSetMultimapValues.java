@@ -30,7 +30,6 @@ import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
@@ -39,7 +38,6 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.LongMultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -167,7 +165,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
          System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(o));
     }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(RedisClient client, long startPos, String pattern) {
+    private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -175,8 +173,9 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
         if (pattern != null) {
             params.add(pattern);
         }
+        params.add(count);
         
-        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.evalReadAsync(client, getName(), new MapScanCodec(codec), EVAL_SSCAN,
+        RFuture<ListScanResult<Object>> f = commandExecutor.evalReadAsync(client, getName(), codec, EVAL_SSCAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
               + "if expireDateScore ~= false then "
@@ -187,10 +186,10 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
               + "end;"
 
               + "local res; "
-              + "if (#ARGV == 4) then "
-                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'match', ARGV[4]); "
+              + "if (#ARGV == 5) then "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'match', ARGV[4], 'count', ARGV[5]); "
               + "else "
-                  + "res = redis.call('sscan', KEYS[2], ARGV[2]); "
+                  + "res = redis.call('sscan', KEYS[2], ARGV[2], 'count', ARGV[4]); "
               + "end;"
 
               + "return res;", 
@@ -199,17 +198,28 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
       return get(f);
     }
 
-    public Iterator<V> iterator(final String pattern) {
+    @Override
+    public Iterator<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Iterator<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            protected ListScanResult<ScanObjectEntry> iterator(RedisClient client, long nextIterPos) {
-                return scanIterator(client, nextIterPos, pattern);
+            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return scanIterator(client, nextIterPos, pattern, count);
             }
 
             @Override
-            protected void remove(ScanObjectEntry value) {
-                RedissonSetMultimapValues.this.remove((V)value.getObj());
+            protected void remove(Object value) {
+                RedissonSetMultimapValues.this.remove((V)value);
             }
             
         };

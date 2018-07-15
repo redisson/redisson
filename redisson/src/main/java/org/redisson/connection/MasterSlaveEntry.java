@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -348,10 +347,6 @@ public class MasterSlaveEntry {
         return addSlave(client, freezed, nodeType);
     }
 
-    public ClientConnectionsEntry getSlaveEntry(RedisClient client) {
-        return slaveBalancer.getEntry(client);
-    }
-    
     public Collection<ClientConnectionsEntry> getAllEntries() {
         return slaveBalancer.getEntries();
     }
@@ -453,8 +448,8 @@ public class MasterSlaveEntry {
                 oldMaster.freezeMaster(FreezeReason.MANAGER);
                 slaveDown(oldMaster);
 
-                slaveBalancer.changeType(oldMaster.getClient(), NodeType.SLAVE);
-                slaveBalancer.changeType(newMasterClient, NodeType.MASTER);
+                slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
+                slaveBalancer.changeType(newMasterClient.getAddr(), NodeType.MASTER);
 
                 // more than one slave available, so master can be removed from slaves
                 if (!config.checkSkipSlavesInit()

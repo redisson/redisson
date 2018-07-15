@@ -60,12 +60,10 @@ import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.jcache.JMutableEntry.Action;
 import org.redisson.jcache.configuration.JCacheConfiguration;
@@ -73,7 +71,6 @@ import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * JCache implementation
@@ -2084,9 +2081,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
     }
     
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(String name, RedisClient client, long startPos) {
-        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f 
-            = commandExecutor.readAsync(client, name, new MapScanCodec(codec), RedisCommands.HSCAN, name, startPos);
+    MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos) {
+        RFuture<MapScanResult<Object, Object>> f 
+            = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos);
         try {
             return get(f);
         } catch (Exception e) {
@@ -2097,22 +2094,22 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     protected Iterator<K> keyIterator() {
         return new RedissonBaseMapIterator<K>() {
             @Override
-            protected K getValue(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
+            protected K getValue(Map.Entry<Object, Object> entry) {
+                return (K) entry.getKey();
             }
 
             @Override
-            protected void remove(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> value) {
+            protected void remove(java.util.Map.Entry<Object, Object> value) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            protected Object put(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
+            protected Object put(java.util.Map.Entry<Object, Object> entry, Object value) {
                 throw new UnsupportedOperationException();
             }
 
             @Override
-            protected ScanResult<java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client,
+            protected ScanResult<java.util.Map.Entry<Object, Object>> iterator(RedisClient client,
                     long nextIterPos) {
                 return JCache.this.scanIterator(JCache.this.getName(), client, nextIterPos);
             }
@@ -2416,32 +2413,32 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         checkNotClosed();
         return new RedissonBaseMapIterator<javax.cache.Cache.Entry<K, V>>() {
             @Override
-            protected Cache.Entry<K, V> getValue(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
+            protected Cache.Entry<K, V> getValue(Map.Entry<Object, Object> entry) {
                 cacheManager.getStatBean(JCache.this).addHits(1);
                 Long accessTimeout = getAccessTimeout();
-                JCacheEntry<K, V> je = new JCacheEntry<K, V>((K) entry.getKey().getObj(), (V) entry.getValue().getObj());
+                JCacheEntry<K, V> je = new JCacheEntry<K, V>((K) entry.getKey(), (V) entry.getValue());
                 if (accessTimeout == 0) {
                     remove();
                 } else if (accessTimeout != -1) {
-                    write(getName(), RedisCommands.ZADD_BOOL, getTimeoutSetName(), accessTimeout, encodeMapKey(entry.getKey().getObj()));
+                    write(getName(), RedisCommands.ZADD_BOOL, getTimeoutSetName(), accessTimeout, encodeMapKey(entry.getKey()));
                 }
                 return je;
             }
 
             @Override
-            protected void remove(Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                JCache.this.remove((K) entry.getKey().getObj());
+            protected void remove(Map.Entry<Object, Object> entry) {
+                JCache.this.remove((K) entry.getKey());
             }
 
             @Override
-            protected Object put(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
+            protected Object put(java.util.Map.Entry<Object, Object> entry, Object value) {
                 throw new UnsupportedOperationException();
             }
 
 
 
             @Override
-            protected ScanResult<java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client,
+            protected ScanResult<java.util.Map.Entry<Object, Object>> iterator(RedisClient client,
                     long nextIterPos) {
                 return JCache.this.scanIterator(JCache.this.getName(), client, nextIterPos);
             }

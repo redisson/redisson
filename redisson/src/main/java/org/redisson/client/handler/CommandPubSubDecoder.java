@@ -27,14 +27,19 @@ import java.util.concurrent.ExecutorService;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListObjectDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.CharsetUtil;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -64,10 +69,41 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
+    protected void decodeCommand(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data) throws Exception {
+        if (data == null) {
+            try {
+                while (in.writerIndex() > in.readerIndex()) {
+                    decode(in, null, null, ctx.channel(), false);
+                }
+                sendNext(ctx);
+            } catch (Exception e) {
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                sendNext(ctx);
+                throw e;
+            }
+        } else if (data instanceof CommandData) {
+            CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+            try {
+                if (state().getLevels().size() > 0) {
+                    decodeFromCheckpoint(ctx, in, data, cmd);
+                } else {
+                    while (in.writerIndex() > in.readerIndex()) {
+                        decode(in, cmd, null, ctx.channel(), false);
+                    }
+                }
+                sendNext(ctx, data);
+            } catch (Exception e) {
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                cmd.tryFailure(e);
+                sendNext(ctx);
+                throw e;
+            }
+        }
+    }
+    
+    @Override
     protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
             final Object result) throws IOException {
-        super.decodeResult(data, parts, channel, result);
-        
         if (result instanceof Message) {
             checkpoint();
 
@@ -117,6 +153,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
                     }
                 });
             }
+        } else {
+            if (data != null && data.getCommand().getName().equals("PING")) {
+                super.decodeResult(data, parts, channel, result);
+            }
         }
     }
 
@@ -157,28 +197,26 @@ public class CommandPubSubDecoder extends CommandDecoder {
     
     @Override
     protected MultiDecoder<Object> messageDecoder(CommandData<Object, Object> data, List<Object> parts) {
-        if (data == null) {
-            if (parts.isEmpty()) {
+        if (parts.isEmpty()) {
+            return null;
+        }
+        String command = parts.get(0).toString();
+        if (MESSAGES.contains(command)) {
+            String channelName = parts.get(1).toString();
+            PubSubKey key = new PubSubKey(channelName, command);
+            CommandData<Object, Object> commandData = commands.get(key);
+            if (commandData == null) {
                 return null;
             }
-            String command = parts.get(0).toString();
-            if (MESSAGES.contains(command)) {
-                String channelName = parts.get(1).toString();
-                PubSubKey key = new PubSubKey(channelName, command);
-                CommandData<Object, Object> commandData = commands.get(key);
-                if (commandData == null) {
-                    return null;
-                }
-                return commandData.getCommand().getReplayMultiDecoder();
-            } else if (command.equals("message")) {
-                String channelName = (String) parts.get(1);
-                return entries.get(channelName).getDecoder();
-            } else if (command.equals("pmessage")) {
-                String patternName = (String) parts.get(1);
-                return entries.get(patternName).getDecoder();
-            } else if (command.equals("pong")) {
-                return null;
-            }
+            return commandData.getCommand().getReplayMultiDecoder();
+        } else if (command.equals("message")) {
+            String channelName = (String) parts.get(1);
+            return entries.get(channelName).getDecoder();
+        } else if (command.equals("pmessage")) {
+            String patternName = (String) parts.get(1);
+            return entries.get(patternName).getDecoder();
+        } else if (command.equals("pong")) {
+            return new ListObjectDecoder<Object>(0);
         }
 
         return data.getCommand().getReplayMultiDecoder();
@@ -186,7 +224,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     @Override
     protected Decoder<Object> selectDecoder(CommandData<Object, Object> data, List<Object> parts) {
-        if (data == null && parts != null) {
+        if (parts != null) {
+            if (data != null && parts.size() == 1 && "pong".equals(parts.get(0))) {
+                return data.getCodec().getValueDecoder();
+            }
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
                 String channelName = (String) parts.get(1);
                 return entries.get(channelName).getDecoder().getDecoder(parts.size(), state());
@@ -196,6 +237,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return entries.get(patternName).getDecoder().getDecoder(parts.size(), state());
             }
         }
+        
         if (data != null && data.getCommand().getName().equals(RedisCommands.PING.getName())) {
             return data.getCodec().getValueDecoder();
         }

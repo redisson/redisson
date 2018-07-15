@@ -18,6 +18,41 @@ import org.redisson.config.Config;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testDumpAndRestore() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+        
+        byte[] state = al.dump();
+        al.delete();
+        
+        al.restore(state);
+        assertThat(al.get()).isEqualTo(1234);
+        
+        RBucket<Integer> bucket = redisson.getBucket("test2");
+        bucket.set(300);
+        bucket.restoreAndReplace(state);
+        assertThat(bucket.get()).isEqualTo(1234);
+    }
+    
+    @Test
+    public void testDumpAndRestoreTTL() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+        
+        byte[] state = al.dump();
+        al.delete();
+        
+        al.restore(state, 10, TimeUnit.SECONDS);
+        assertThat(al.get()).isEqualTo(1234);
+        assertThat(al.remainTimeToLive()).isBetween(9500L, 10000L);
+        
+        RBucket<Integer> bucket = redisson.getBucket("test2");
+        bucket.set(300);
+        bucket.restoreAndReplace(state, 10, TimeUnit.SECONDS);
+        assertThat(bucket.get()).isEqualTo(1234);
+    }
+    
+    @Test
     public void testGetAndDelete() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(10);

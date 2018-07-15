@@ -4,7 +4,18 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
-### 14-Jun-2018 - versions 2.12.1 and 3.7.1 released
+### 27-Jun-2018 - versions 2.12.3 and 3.7.3 released
+Feature - added `RKeys.getKeys` method with batch size  
+Feature - added `SnappyCodecV2` codec  
+Fixed - `SerializationCodec` doesn't support proxied classes  
+Fixed - NPE if `RScheduledExecutorService`'s task scheduled with cron expression for finite number of execution  
+Fixed - validation of cron expression parameter of `RScheduledExecutorService.schedule` method  
+Feature - Iterator with batch size param for all `RSet`, `RMap`, `RMapCached` objects  
+Fixed - missing PubSub messages when `pingConnectionInterval` setting is specified  
+Fixed - excessive memory consumption if batched commands queued on Redis side  
+Fixed - `RRateLimiter.acquire` method throws NPE  
+
+### 14-Jun-2018 - versions 2.12.2 and 3.7.2 released
 
 Feature - `RBatchOptions.executionMode` setting added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
 Fixed - NPE in JCacheManager.close method  

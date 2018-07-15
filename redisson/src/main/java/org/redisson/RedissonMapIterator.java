@@ -18,7 +18,6 @@ package org.redisson;
 import java.util.Map.Entry;
 
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 /**
  * 
@@ -30,25 +29,27 @@ public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
     private final RedissonMap map;
     private final String pattern;
+    private final int count;
 
-    public RedissonMapIterator(RedissonMap map, String pattern) {
+    public RedissonMapIterator(RedissonMap map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
+        this.count = count;
     }
 
     @Override
-    protected Object put(Entry<ScanObjectEntry, ScanObjectEntry> entry, Object value) {
-        return map.put(entry.getKey().getObj(), value);
+    protected Object put(Entry<Object, Object> entry, Object value) {
+        return map.put(entry.getKey(), value);
     }
 
     @Override
-    protected ScanResult<Entry<ScanObjectEntry, ScanObjectEntry>> iterator(RedisClient client, long nextIterPos) {
-        return map.scanIterator(map.getName(), client, nextIterPos, pattern);
+    protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
+        return map.scanIterator(map.getName(), client, nextIterPos, pattern, count);
     }
 
     @Override
-    protected void remove(Entry<ScanObjectEntry, ScanObjectEntry> value) {
-        map.fastRemove(value.getKey().getObj());
+    protected void remove(Entry<Object, Object> value) {
+        map.fastRemove(value.getKey());
     }
 
 }

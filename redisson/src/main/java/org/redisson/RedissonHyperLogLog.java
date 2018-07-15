@@ -77,7 +77,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         encode(args, objects);
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, args.toArray());
     }
 
     @Override

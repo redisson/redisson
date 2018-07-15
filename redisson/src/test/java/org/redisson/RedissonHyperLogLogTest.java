@@ -1,11 +1,21 @@
 package org.redisson;
 
+import java.util.Arrays;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RHyperLogLog;
 
 public class RedissonHyperLogLogTest extends BaseTest {
 
+    @Test
+    public void testAddAll() {
+        RHyperLogLog<Integer> log = redisson.getHyperLogLog("log");
+        log.addAll(Arrays.asList(1, 2, 3));
+        
+        Assert.assertEquals(3L, log.count());
+    }
+    
     @Test
     public void testAdd() {
         RHyperLogLog<Integer> log = redisson.getHyperLogLog("log");

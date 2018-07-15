@@ -837,11 +837,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule) {
-
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, cronSchedule);
-        if (future == null) {
-            return null;
-        }
         RemotePromise<?> rp = (RemotePromise<?>)future.getInnerPromise();
         syncExecute(rp);
         storeReference(future, rp.getRequestId());
@@ -855,7 +851,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] state = encode(task);
         final Date startDate = cronSchedule.getExpression().getNextValidTimeAfter(new Date());
         if (startDate == null) {
-            return null;
+            throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
         long startTime = startDate.getTime();
         RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression().getCronExpression(), executorId, null);
