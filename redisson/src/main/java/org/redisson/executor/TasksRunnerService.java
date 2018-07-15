@@ -15,13 +15,12 @@
  */
 package org.redisson.executor;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import org.redisson.Redisson;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonShutdownException;
@@ -38,12 +37,12 @@ import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Executor service runs Callable and Runnable tasks.
@@ -119,7 +118,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
     
     @Override
-    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId) {
+    public void schedule(String className, byte[] classBody, byte[] state, long startTime, CronExpression cronExpression, String executorId, String requestId) {
         Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
         RFuture<Void> future = null;
         if (nextStartDate != null) {

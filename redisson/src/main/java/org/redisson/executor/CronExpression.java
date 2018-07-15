@@ -32,24 +32,21 @@
 
 package org.redisson.executor;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.text.ParseException;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
-import java.util.TimeZone;
-import java.util.TreeSet;
+import java.util.*;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 
 /**
  * @author Sharada Jambula, James House
  * @author Contributions from Mads Henderson
  * @author Refactoring from CronTrigger to CronExpression by Aaron Craven
  */
+@JsonAutoDetect(creatorVisibility = ANY, fieldVisibility = ANY)
 public final class CronExpression implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 12423409423L;
@@ -111,19 +108,19 @@ public final class CronExpression implements Serializable, Cloneable {
     public static final int MAX_YEAR = Calendar.getInstance().get(Calendar.YEAR) + 100;
 
     /**
-     * Constructs a new <CODE>CronExpression</CODE> based on the specified 
+     * Constructs a new <CODE>CronExpression</CODE> based on the specified
      * parameter.
-     * 
+     *
      * @param cronExpression String representation of the cron expression the
      *                       new object should represent
      */
-    public CronExpression(String cronExpression) {
+    public CronExpression(@JsonProperty("cronExpression") String cronExpression) {
         if (cronExpression == null) {
             throw new IllegalArgumentException("cronExpression cannot be null");
         }
-        
+
         this.cronExpression = cronExpression.toUpperCase(Locale.US);
-        
+
         try {
             buildExpression(this.cronExpression);
         } catch (ParseException e) {

@@ -15,61 +15,18 @@
  */
 package org.redisson;
 
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.ref.ReferenceQueue;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.api.CronSchedule;
-import org.redisson.api.ExecutorOptions;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RExecutorBatchFuture;
-import org.redisson.api.RExecutorFuture;
-import org.redisson.api.RFuture;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RScheduledExecutorService;
-import org.redisson.api.RScheduledFuture;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RTopic;
-import org.redisson.api.RemoteInvocationOptions;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.internal.PlatformDependent;
+import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.executor.RedissonExecutorBatchFuture;
-import org.redisson.executor.RedissonExecutorFuture;
-import org.redisson.executor.RedissonExecutorFutureReference;
-import org.redisson.executor.RedissonExecutorRemoteService;
-import org.redisson.executor.RedissonScheduledFuture;
-import org.redisson.executor.RemoteExecutorService;
-import org.redisson.executor.RemoteExecutorServiceAsync;
-import org.redisson.executor.RemotePromise;
-import org.redisson.executor.ScheduledTasksService;
-import org.redisson.executor.TasksBatchService;
-import org.redisson.executor.TasksRunnerService;
-import org.redisson.executor.TasksService;
+import org.redisson.executor.*;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
@@ -80,10 +37,14 @@ import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.internal.PlatformDependent;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.ref.ReferenceQueue;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -854,7 +815,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
         long startTime = startDate.getTime();
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression().getCronExpression(), executorId, null);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression(), executorId, null);
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {
