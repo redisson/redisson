@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonReference;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
@@ -106,12 +107,13 @@ public class RedissonObjectFactory {
         ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         if (type != null) {
             if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
-                RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+                RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
                 REntity anno = ClassUtils.getAnnotation(type, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
-                return (T) liveObjectService.get(type, ns.resolveId(rr.getKeyName()));
+                Object id = ns.resolveId(rr.getKeyName());
+                return (T) liveObjectService.createLiveObject(type, id);
             }
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {

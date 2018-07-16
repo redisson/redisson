@@ -127,6 +127,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return providerCache.get(resolverClass);
     }
 
+    public <T, K> T createLiveObject(Class<T> entityClass, K id) {
+        try {
+            return instantiateLiveObject(getProxyClass(entityClass), id);
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
+        }
+    }
+    
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
