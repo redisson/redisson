@@ -119,7 +119,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @Override
     public void schedule(String className, byte[] classBody, byte[] state, long startTime, CronExpression cronExpression, String executorId, String requestId) {
-        Date nextStartDate = new CronExpression(cronExpression).getNextValidTimeAfter(new Date());
+        Date nextStartDate = cronExpression.getNextValidTimeAfter(new Date());
         RFuture<Void> future = null;
         if (nextStartDate != null) {
             RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(executorId, requestId);

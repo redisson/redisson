@@ -14,3 +14,5 @@ nb-configuration.xml
 nbactions-unit-test.xml
 config.json
 config_single_server.json
+dependency-reduced-pom.xml
+dependency-reduced-pom.xml
