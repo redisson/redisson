@@ -29,7 +29,6 @@ import org.redisson.client.RedisConnectionException;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
 import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionManager;
@@ -168,8 +167,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
         while (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy);
-            if ((!entry.isFreezed() || 
-                    (entry.getFreezeReason() == FreezeReason.SYSTEM && config.getReadMode() == ReadMode.MASTER_SLAVE)) && 
+            if ((!entry.isFreezed() || entry.isMasterForRead()) && 
         		    tryAcquireConnection(entry)) {
                 return acquireConnection(command, entry);
             }
@@ -421,7 +419,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public void returnConnection(ClientConnectionsEntry entry, T connection) {
-        if (entry.isFreezed()) {
+        if (entry.isFreezed() && !entry.isMasterForRead()) {
             connection.closeAsync();
         } else {
             releaseConnection(entry, connection);
