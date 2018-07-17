@@ -4,6 +4,17 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 16-Jul-2018 - versions 2.12.4 and 3.7.4 released
+Feature - dump and restore methods added to `RObject` interface  
+Fixed - Redis response hangs if `RLiveObject` stored as nested object  
+Fixed - slow Redisson initialization in Sentinel  
+Fixed - missing PubSub messages when pingConnectionInterval setting is specified  
+Fixed - `RBatch` in `ExecutionMode.REDIS_WRITE_ATOMIC` and `ExecutionMode.REDIS_READ_ATOMIC` modes throws NumberFormatException exception  
+Fixed - `RRedissonRateLimiter.acquire` blocks forever  
+Fixed - lot of connections remain in TIME_WAIT state after Redisson shutdown  
+Fixed - `ClassNotFoundException` arise in Tomcat session manager  
+Fixed - `RHyperLogLog.addAll` method doesn't add all elements  
+
 ### 27-Jun-2018 - versions 2.12.3 and 3.7.3 released
 Feature - added `RKeys.getKeys` method with batch size  
 Feature - added `SnappyCodecV2` codec  
