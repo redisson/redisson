@@ -699,7 +699,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .intercept(MethodDelegation.to(
                                 new AccessorInterceptor(redisson, objectBuilder)))
                 
-                .make().load(getClass().getClassLoader(),
+                .make().load(entityClass.getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
         classCache.putIfAbsent(entityClass, proxied);
