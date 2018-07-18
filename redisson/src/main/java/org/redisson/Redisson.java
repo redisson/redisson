@@ -158,7 +158,7 @@ public class Redisson implements RedissonClient {
     public static RedissonClient create(Config config) {
         Redisson redisson = new Redisson(config);
         if (config.isReferenceEnabled()) {
-            redisson.enableRedissonReferenceSupport(config);
+            redisson.enableRedissonReferenceSupport();
         }
         return redisson;
     }
@@ -186,7 +186,7 @@ public class Redisson implements RedissonClient {
     public static RedissonReactiveClient createReactive(Config config) {
         RedissonReactive react = new RedissonReactive(config);
         if (config.isReferenceEnabled()) {
-            react.enableRedissonReferenceSupport(config);
+            react.enableRedissonReferenceSupport();
         }
         return react;
     }
@@ -664,10 +664,8 @@ public class Redisson implements RedissonClient {
         return connectionManager.isShuttingDown();
     }
 
-    protected void enableRedissonReferenceSupport(Config config) {
+    protected void enableRedissonReferenceSupport() {
         this.connectionManager.getCommandExecutor().enableRedissonReferenceSupport(this);
-        Codec codec = config.getCodec();
-        config.getReferenceCodecProvider().registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     @Override

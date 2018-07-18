@@ -389,10 +389,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return connectionManager.isShuttingDown();
     }
 
-    protected void enableRedissonReferenceSupport(Config config) {
+    protected void enableRedissonReferenceSupport() {
         this.commandExecutor.enableRedissonReferenceSupport(this);
-        Codec codec = config.getCodec();
-        config.getReferenceCodecProvider().registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     @Override
