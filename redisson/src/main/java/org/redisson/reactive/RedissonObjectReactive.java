@@ -17,6 +17,7 @@ package org.redisson.reactive;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonReference;
@@ -123,6 +124,86 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
+    }
+    
+    @Override
+    public Publisher<Void> restore(final byte[] state) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.restoreAsync(state);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Void> restore(final byte[] state, final long timeToLive, final TimeUnit timeUnit) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.restoreAsync(state, timeToLive, timeUnit);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Void> restoreAndReplace(final byte[] state) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.restoreAndReplaceAsync(state);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Void> restoreAndReplace(final byte[] state, final long timeToLive, final TimeUnit timeUnit) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.restoreAndReplaceAsync(state, timeToLive, timeUnit);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<byte[]> dump() {
+        return reactive(new Supplier<RFuture<byte[]>>() {
+            @Override
+            public RFuture<byte[]> get() {
+                return instance.dumpAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Boolean> touch() {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.touchAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Boolean> unlink() {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.unlinkAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Void> copy(final String host, final int port, final int database, final long timeout) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.copyAsync(host, port, database, timeout);
+            }
+        });
     }
     
     @Override
