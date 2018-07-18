@@ -106,9 +106,6 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
 
         RSetReactive<RBucketReactive> s2 = reactive1.getSet("s1");
         RBucketReactive<MyObject> b2 = sync(s2.iterator(1));
-        System.out.println(codec);
-        System.out.println(b1.getCodec());
-        System.out.println(b2.getCodec());
         assertTrue(codec == b2.getCodec());
         assertTrue(sync(b2.get()) instanceof MyObject);
         reactive.shutdown();
