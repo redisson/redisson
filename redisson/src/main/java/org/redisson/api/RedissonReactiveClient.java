@@ -31,6 +31,14 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns rate limiter instance by <code>name</code>
+     * 
+     * @param name of rate limiter
+     * @return RateLimiter object
+     */
+    RRateLimiterReactive getRateLimiter(String name);
+    
+    /**
      * Returns semaphore instance by name
      *
      * @param name - name of object

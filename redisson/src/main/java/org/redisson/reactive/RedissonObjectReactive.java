@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonReference;
-import org.redisson.api.RExpirableAsync;
 import org.redisson.api.RFuture;
+import org.redisson.api.RObjectAsync;
 import org.redisson.api.RObjectReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
@@ -44,9 +44,9 @@ abstract class RedissonObjectReactive implements RObjectReactive {
     final CommandReactiveExecutor commandExecutor;
     private final String name;
     final Codec codec;
-    protected RExpirableAsync instance;
+    protected RObjectAsync instance;
 
-    public RedissonObjectReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RExpirableAsync instance) {
+    public RedissonObjectReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RObjectAsync instance) {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
@@ -57,7 +57,7 @@ abstract class RedissonObjectReactive implements RObjectReactive {
         return commandExecutor.reactive(supplier);
     }
 
-    public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name, RExpirableAsync instance) {
+    public RedissonObjectReactive(CommandReactiveExecutor commandExecutor, String name, RObjectAsync instance) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, instance);
     }
 

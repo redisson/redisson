@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,7 +31,6 @@ import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
-import org.redisson.api.RFuture;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeys;
 import org.redisson.api.RKeysReactive;
@@ -45,6 +43,7 @@ import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.RPermitExpirableSemaphoreReactive;
 import org.redisson.api.RQueueReactive;
+import org.redisson.api.RRateLimiterReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
@@ -57,7 +56,6 @@ import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
@@ -83,6 +81,7 @@ import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
 import org.redisson.reactive.RedissonPermitExpirableSemaphoreReactive;
 import org.redisson.reactive.RedissonQueueReactive;
+import org.redisson.reactive.RedissonRateLimiterReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonScriptReactive;
@@ -121,6 +120,11 @@ public class RedissonReactive implements RedissonReactiveClient {
         codecProvider = config.getReferenceCodecProvider();
     }
 
+    @Override
+    public RRateLimiterReactive getRateLimiter(String name) {
+        return new RedissonRateLimiterReactive(commandExecutor, name);
+    }
+    
     @Override
     public RSemaphoreReactive getSemaphore(String name) {
         return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
