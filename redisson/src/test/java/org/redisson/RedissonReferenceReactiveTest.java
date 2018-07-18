@@ -109,6 +109,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         assertTrue(codec == b2.getCodec());
         assertTrue(sync(b2.get()) instanceof MyObject);
         reactive.shutdown();
+        reactive1.shutdown();
     }
 
     public static class MyObject {
