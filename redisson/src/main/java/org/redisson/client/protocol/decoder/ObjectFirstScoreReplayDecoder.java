@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,9 @@ public class ObjectFirstScoreReplayDecoder implements MultiDecoder<Double> {
     
     @Override
     public Double decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;
+        }
         return (Double) parts.get(1);
     }
 

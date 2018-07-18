@@ -1,0 +1,2427 @@
+<?xml version="1.0"?>
+<!--
+
+    Copyright 2016 Nikita Koksharov
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<xsd:schema version="1.0"
+            xmlns="http://redisson.org/schema/redisson"
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            xmlns:beans="http://www.springframework.org/schema/beans"
+            targetNamespace="http://redisson.org/schema/redisson"
+            elementFormDefault="qualified"
+            attributeFormDefault="unqualified">
+    <xsd:import namespace="http://www.springframework.org/schema/beans"
+                schemaLocation="http://www.springframework.org/schema/beans/spring-beans.xsd"/>
+    <xsd:annotation>
+        <xsd:documentation>
+        <![CDATA[ Namespace support for the Redisson in Spring Framework ]]>
+        </xsd:documentation>
+    </xsd:annotation>
+    
+    <xsd:simpleType name="readMode"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="SLAVE">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Read from slave nodes.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MASTER">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Read from master node.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MASTER_SLAVE">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Read from master and slave nodes.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="subscriptionMode"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="SLAVE">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Subscribe with slave nodes.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MASTER">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Subscribe with master node.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="evictionPolicy"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="NONE">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Doesn't use eviction policy, but timeToLive and maxIdleTime params are
+        still working.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="LRU">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Set cache with LRU (least recently used) eviction policy.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="LFU">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Set cache with LFU (least frequently used) eviction policy.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="SOFT">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Set cache with soft references. The garbage collector will evict items
+        from the cache when the JVM is running out of memory. A JVM flag
+        -XX:SoftRefLRUPolicyMSPerMB=??? is required to function.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="timeUnit"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="NANOSECONDS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing one thousandth of a microsecond.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MICROSECONDS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing one thousandth of a millisecond.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MILLISECONDS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing one thousandth of a second.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="SECONDS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing one second.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="MINUTES">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing sixty seconds.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="HOURS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing sixty minutes.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="DAYS">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Time unit representing twenty four hours.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:simpleType name="sslProvider"> 
+        <xsd:restriction base="xsd:string">
+            <xsd:enumeration value="JDK">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Use JDK default implementation to handle SSL connection.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+            <xsd:enumeration value="OPENSSL">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        Use OpenSSL-based implementation to handle SSL connection.
+        <code>netty-tcnative</code> lib is required to be in classpath.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:enumeration>
+        </xsd:restriction>
+    </xsd:simpleType>
+    
+    <xsd:complexType abstract="true" name="baseType">
+        <xsd:complexContent>
+            <xsd:extension base="beans:identifiedType">
+                <xsd:sequence>
+                    <xsd:element ref="beans:description" minOccurs="0"/>
+                    <xsd:element ref="beans:qualifier" minOccurs="0"/>
+                </xsd:sequence>
+                <xsd:attribute name="name" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+	Can be used to create one or more aliases illegal in an (XML) id.
+	Multiple aliases can be separated by any number of spaces, commas,
+	or semi-colons (or indeed any mixture of the three).
+                            
+        Names listed here can be used for @Qualifier matching only when the 
+        <code>&lt;qualifier&gt;</code> is not used.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractConfig">
+        <xsd:complexContent>
+            <xsd:extension base="baseType">
+                <xsd:attribute name="threads" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Threads amount shared between all redis node clients.
+        
+        Default: 0, means current processors amount * 2
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="netty-threads" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Netty worker threads.
+        
+        Default: 0, means current processors amount * 2
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="redisson-reference-enabled"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Config option for enabling Redisson Reference feature.
+        
+        Default: true
+                    ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="use-linux-native-epoll"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Config option for using linux native epoll. A separate dependency is
+        required.
+        
+        Default: false
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="codec-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        System default Redis key/value codec. Value is the bean name reference.
+        
+        Default: A JsonJacksonCodec instance
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="codec-provider-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        For codec registry and look up. Value is the bean name reference. 
+        
+        Default: A DefaultCodecProvider instance
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="resolver-provider-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        For resolver registry and look up. Value is the bean name reference.
+        
+        Default: A DefaultResolverProvider instance
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="executor-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Custom ExecutorService instance. Value is the bean name reference.
+        
+        Default: A Redisson provided instance.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="event-loop-group-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Custom EventLoopGroup instance. Value is the bean name reference.
+        
+        Default: A Redisson provided instance.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="baseConfig">
+        <xsd:attribute name="idle-connection-timeout" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        If pooled connection not used for a <code>timeout</code> time
+        and current connections amount bigger than minimum idle connections pool
+        size, then it will closed and removed from pool.
+        Value in milliseconds.
+        
+        Default: 10000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ping-timeout" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code>
+        operation. Value in milliseconds.
+        
+        Default: 1000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="connect-timeout" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Timeout during connecting to any Redis server.
+        Value in milliseconds.
+        
+        Default: 10000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="timeout" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Redis server response timeout. Starts to countdown when Redis command 
+        was succesfully sent. Value in milliseconds.
+        
+        Default: 3000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="retry-attempts" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Command retry attempts.
+        
+        Default: 3
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="retry-interval" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Command retry interval.
+        
+        Default: 1500
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="failed-slave-reconnection-interval" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+	      Interval of Redis Slave reconnection attempt when
+	      it was excluded from internal list of available servers.
+	     
+	      On every such timeout event Redisson tries
+	      to connect to disconnected Redis server.
+	     
+	      Default is 3000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="failed-slave-check-interval" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+	       Redis Slave node failing to execute commands is excluded from the internal list of available nodes
+	       when the time interval from the moment of first Redis command execution failure
+	       on this server reaches <code>slaveFailsInterval</code> value.
+	
+	       Default is 60000
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="password" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Password for Redis authentication. Should be null if not needed.
+
+        Default: null
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="subscriptions-per-connection" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Subscriptions per Redis connection limit.
+
+        Default: 5
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="client-name" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Name of client connection.
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-enable-endpoint-identification" type="xsd:boolean">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Enables SSL endpoint identification.
+        
+        Default: true
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-provider" type="sslProvider">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Defines SSL provider used to handle SSL connections.
+        
+        Default: JDK
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-truststore" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Defines path to SSL truststore.
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-truststore-password" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Defines password for SSL truststore.
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-keystore" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Defines path to SSL keystore.
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="ssl-keystore-password" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Defines password for SSL keystore.
+                ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="baseMasterSlaveServersConfig">
+        <xsd:complexContent>
+            <xsd:extension base="baseConfig">
+                <xsd:attribute name="load-balancer-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Сonnection load balancer for multiple Redis slave servers. Value is the
+        bean name reference.
+        
+        Default: A RoundRobinLoadBalancer instance
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="slave-connection-minimum-idle-size"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis 'slave' node minimum idle connection amount for <b>each</b> slave
+        node.
+        
+        Default: 10
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="slave-connection-pool-size" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis 'slave' node maximum connection pool size for <b>each</b> slave
+        node.
+        
+        Default: 64
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="master-connection-minimum-idle-size"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis 'master' node minimum idle connection amount for <b>each</b> slave
+        node.
+        
+        Default: 10
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="master-connection-pool-size"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis 'master' node maximum connection pool size.
+        
+        Default: 64
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="read-mode" type="readMode">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Set node type used for read operation.
+        
+        Default: SLAVE
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="subscription-mode" type="subscriptionMode">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Set node type used for subscription operation.
+        
+        Default: SLAVE
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute
+                    name="subscription-connection-minimum-idle-size"
+                    type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Minimum idle subscription connection amount.
+        
+        Default: 1
+                        ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="subscription-connection-pool-size"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis subscription connection maximum pool size.
+                            
+        Default: 50
+                        ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractClusterType">
+        <xsd:complexContent>
+            <xsd:extension base="baseMasterSlaveServersConfig">
+                <xsd:sequence>
+                    <xsd:element ref="node-address" minOccurs="1"
+                                 maxOccurs="unbounded" />
+                </xsd:sequence>
+                <xsd:attribute name="scan-interval" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Replication group scan interval in milliseconds.
+        
+        Default: 1000
+                        ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType abstract="true" name="abstractReplicatedType">
+        <xsd:complexContent>
+            <xsd:extension base="abstractClusterType">
+                <xsd:attribute name="database" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Database index used for Redis connection.
+        
+        Default: 0
+                        ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType abstract="true" name="multiLock">
+        <xsd:complexContent>
+            <xsd:extension base="abstractRService">
+                <xsd:choice minOccurs="1" maxOccurs="unbounded">
+                    <xsd:element ref="beans:ref"/>
+                    <xsd:element ref="lock"/>
+                    <xsd:element ref="fair-lock"/>
+                    <xsd:element ref="read-lock"/>
+                    <xsd:element ref="write-lock"/>
+                </xsd:choice>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+
+    <xsd:complexType abstract="true" name="serverAddress">
+        <xsd:attribute name="value" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Address format is host:port
+             ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractRService">
+        <xsd:complexContent>
+            <xsd:extension base="baseType">
+                <xsd:attribute name="redisson-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redisson client used to create this object. Value is the bean name
+        reference.
+        
+        Default: The parent &lt;Client&gt; element. Or none if it is not inside
+                 one.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractRObject">
+        <xsd:complexContent>
+            <xsd:extension base="abstractRService">
+                <xsd:attribute name="key" type="xsd:string" use="required">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Redis key name.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractEncodedType">
+        <xsd:complexContent>
+            <xsd:extension base="abstractRService">
+                <xsd:attribute name="codec-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Codec used for this key. Value is the bean name reference.
+        
+        Default: The codec specified in the &lt;Client&gt; element.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractEncodedRObject">
+        <xsd:complexContent>
+            <xsd:extension base="abstractRObject">
+                <xsd:attribute name="codec-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Codec used for this key. Value is the bean name reference.
+        
+        Default: The codec specified in the &lt;Client&gt; element.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractRPCClientType">
+        <xsd:complexContent>
+            <xsd:extension base="baseType">
+                <xsd:attribute name="api-class" use="required"
+                               type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Remote service interface class.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+                <xsd:attribute name="remote-service-ref" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Remote service used to register the interface. Value is the bean name
+        reference.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
+            </xsd:extension>
+        </xsd:complexContent>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractRPCServerType">
+        <xsd:attribute name="api-class" use="required"
+                       type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Remote service interface class.
+                     ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="remote-service-ref" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Remote service used to register the interface. Value is the bean name
+        reference.
+                     ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+    
+    <xsd:complexType abstract="true" name="abstractRemoteOptionsType">
+        <xsd:attribute name="within" use="required" type="xsd:string">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Expected time value.
+                     ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+        <xsd:attribute name="time-unit" type="timeUnit">
+            <xsd:annotation>
+                <xsd:documentation><![CDATA[
+        Expected time unit.
+        
+        Default unit is MILLISECONDS
+                     ]]></xsd:documentation>
+            </xsd:annotation>
+        </xsd:attribute>
+    </xsd:complexType>
+    
+    <!-- Start of Configuration Types -->
+    <xsd:element name="slave-address">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configure slave addresses. One or more is required.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="serverAddress" />
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="sentinel-address">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configure sentinel addresses. One or more is required.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="serverAddress" />
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="node-address">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configure node addresses. One or more is required.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="serverAddress" />
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="single-server">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configuration for single redis server.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseConfig">
+                    <xsd:attribute name="address" type="xsd:string"
+                                   default="redis://127.0.0.1:6379">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis server address. Address format is host:port 
+        
+        Default: redis://127.0.0.1:6379
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute
+                        name="subscription-connection-minimum-idle-size"
+                        type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Minimum idle subscription connection amount.
+        
+        Default: 1
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="subscription-connection-pool-size"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis subscription connection maximum pool size.
+                            
+        Default: 50
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="connection-minimum-idle-size"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Minimum idle Redis connection amount.
+                            
+        Default: 10
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="connection-pool-size" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis connection maximum pool size.
+                            
+        Default: 64
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="database" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Database index used for Redis connection.
+                            
+        Default: 0
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="dns-monitoring" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Should the server address be monitored for changes in DNS? Useful for
+        AWS ElastiCache where the client is pointed at the endpoint for a
+        replication group which is a DNS alias to the current master node.<br>
+        <em>NB: applications must ensure the JVM DNS cache TTL is low enough to
+        support this.</em> e.g., http://docs.aws.amazon.com/AWSSdkDocsJava/latest/DeveloperGuide/java-dg-jvm-ttl.html
+                            
+        Default: false
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="dns-monitoring-interval" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        DNS change monitoring interval in milliseconds.
+                            
+        Default: 5000
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="sentinel-servers">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configuration for redis sentinel managed servers.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseMasterSlaveServersConfig">
+                    <xsd:sequence>
+                        <xsd:element ref="sentinel-address" minOccurs="1"
+                                     maxOccurs="unbounded" />
+                    </xsd:sequence>
+                    <xsd:attribute name="master-name" use="required"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Master server name used by Redis Sentinel servers and master change
+        monitoring task.
+        
+        Default: There is no default value
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="database" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Database index used for Redis connection.
+                            
+        Default: 0
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="master-slave-servers">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configuration for master slave servers.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseMasterSlaveServersConfig">
+                    <xsd:sequence>
+                        <xsd:element ref="slave-address" minOccurs="1"
+                                     maxOccurs="unbounded" />
+                    </xsd:sequence>
+                    <xsd:attribute name="master-address" use="required"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis master server address. Address format is host:port
+        
+        Default: There is no default value
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="database" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Database index used for Redis connection.
+                            
+        Default: 0
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="cluster-servers">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configuration for redis cluster servers.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractClusterType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="replicated-servers">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Configuration for replicated redis servers.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractReplicatedType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="local-cached-map-options">
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        Used to specify RLocalCachedMap settings.
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                    <xsd:attribute name="invalidate-entry-on-change"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets entry invalidation behavior. if <code>true</code> then invalidation
+        message which removes corresponding entry from cache will be sent to all
+        other RLocalCachedMap instances on each entry update/remove operation.
+        if <code>false</code> then invalidation message won't be sent.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="eviction-policy" type="evictionPolicy">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets eviction policy.
+        <p><code>LRU</code> - uses cache with LRU (least recently used) eviction
+                policy.
+        <p><code>LFU</code> - uses cache with LFU (least frequently used)
+                eviction policy.
+        <p><code>SOFT</code> - uses cache with soft references. The garbage
+                collector will evict items from the cache when the JVM is
+                running out of memory. JVM flag -XX:SoftRefLRUPolicyMSPerMB=???
+                is required to function.
+        <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and
+                maxIdleTime params are still working.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="cache-size" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets cache size. If size is <code>0</code> then local cache is unbounded.
+                 ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="time-to-live" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets time to live value for each map entry in cache.
+        If value equals to <code>0</code> then timeout is not applied.
+        
+        Default unit is MILLISECONDS
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="time-to-live-unit" type="timeUnit">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets time to live time unit.
+        
+        Default unit is MILLISECONDS
+                 ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="max-idle" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets max idle time value for each map entry in cache.
+        If value equals to <code>0</code> then timeout is not applied.
+        
+        Default unit is MILLISECONDS
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="max-idle-unit" type="timeUnit">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Sets max idle time time unit.
+        
+        Default unit is MILLISECONDS
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="remote-no-ack">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        No acknowledgement is expected for the remote service (RPC service)
+         ]]></xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    
+    <xsd:element name="remote-ack">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Remote service (RPC service) acknowledgement expectation settings.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRemoteOptionsType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="remote-no-result">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        No result is expected for the remote service (RPC service).
+         ]]></xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+    
+    <xsd:element name="remote-result">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Remote service (RPC service) result expectation settings.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRemoteOptionsType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="remote-invocation-options">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Remote service (RPC service) invocation options.
+        
+        Used to tune how remote service (RPC service) will behave in regard to
+        the remote invocations acknowledgement and execution timeout.
+        
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="0" maxOccurs="1">
+                            <xsd:element ref="remote-no-ack"/>
+                            <xsd:element ref="remote-ack"/>
+                        </xsd:choice>
+                        <xsd:choice minOccurs="0" maxOccurs="1">
+                            <xsd:element ref="remote-no-result"/>
+                            <xsd:element ref="remote-result"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="live-object-registration">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Pre register the class with the service, registering all the classes on
+        startup can speed up the instance creation. This is <b>NOT</b> mandatory
+        since the class will also be registered lazily when it is first used.
+        
+        All classed registered with the service is stored in a class cache.
+        
+        The cache is independent between different RedissonClient instances. When
+        a class is registered in one RLiveObjectService instance it is also
+        accessible in another RLiveObjectService instance so long as they are 
+        created by the same RedissonClient instance.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:attribute name="class" use="required" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        The class to be pre registered with Live Object Service.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
+            <xsd:attribute name="live-object-service-ref" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation><![CDATA[
+        The Live Object Service to be used for registration. Value is the bean
+        name reference.
+                 ]]></xsd:documentation>
+                </xsd:annotation>
+            </xsd:attribute>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="live-object">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Pre register the class with the service, registering all the classes on
+        startup can speed up the instance creation. This is <b>NOT</b> mandatory
+        since the class will also be registered lazily when it is first used.
+        
+        All classed registered with the service is stored in a class cache.
+        
+        The cache is independent between different RedissonClient instances. When
+        a class is registered in one RLiveObjectService instance it is also
+        accessible in another RLiveObjectService instance so long as they are 
+        created by the same RedissonClient instance.
+        
+        One of "object-id" or "object-id-ref" attribute is required.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:attribute name="class" use="required" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        The class to be pre registered with Live Object Service.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="live-object-service-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        The Live Object Service to be used for registration. Value is the bean
+        name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="object-id" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        The Live Object id. For id is string type only.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="object-id-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        The Live Object id. Value is the bean name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    <!-- End of Configuration Types -->
+    
+    <!-- Start of RObject Types -->
+    <xsd:element name="binary-stream">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson provides RBinaryStream object as holder for binary stream.
+        It exposes InputStream and OutputStream object as well. Maximum byte
+        stream size is limited by Redis master node memory only.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="geo">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed RGeo object for Java is a holder for geospatial
+        items.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="set-cache">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Set for Java implements java.util.Set interface.
+        Keeps elements uniqueness via element state comparison. Set size limited
+        by Redis to 4_294_967_295 elements.
+        
+        <b>Set eviction</b>
+        
+        Redisson distributed Set for Java with eviction support implemented by
+        separate RSetCache object which extends RSet interface. It also
+        implements java.util.Set interface.
+
+        Current redis implementation doesn't has set value eviction
+        functionality. Therefore expired values are cleaned by
+        org.redisson.EvictionScheduler. It removes 100 expired values at once.
+        Task launch time tuned automatically and depends on expired entries
+        amount deleted in previous time and varies between 1 second to 2 hours.
+        Thus if clean task deletes 100 values each time it will be executed
+        every second (minimum execution delay). But if current expired values
+        amount is lower than previous one then execution delay will be increased
+        by 1.5 times.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="map-cache">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Map for Java implements
+        java.util.concurrent.ConcurrentMap and java.util.Map interfaces. It
+        keeps elements in insertion order. Map size limited by Redis to
+        4_294_967_295 elements.
+        
+        <b>Map eviction</b>
+        
+        Redisson distributed Map for Java with eviction support implemented by
+        separate RMapCache object which extends RMap interface. It keeps
+        elements in insertion order and implements
+        java.util.concurrent.ConcurrentMap and java.util.Map interfaces.
+        Redisson has a Spring Cache integration which based on Map and MapCache
+        objects.
+
+        Current redis implementation doesn't has map entry eviction
+        functionality. Therefore expired entries are cleaned by
+        org.redisson.EvictionScheduler. It removes 100 expired entries at once.
+        Task launch time tuned automatically and depends on expired entries
+        amount deleted in previous time and varies between 1 second to 2 hours.
+        Thus if clean task deletes 100 entries each time it will be executed
+        every second (minimum execution delay). But if current expired entries
+        amount is lower than previous one then execution delay will be increased
+        by 1.5 times.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="bucket">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed RBucket object for Java is an universal holder for
+        any type of object. Maximum object size is 512MB.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="buckets">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson provides interface for mass operations with Bucket objects
+        using default or provided codec.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedType"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="hyper-log-log">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed HyperLogLog object for Java. Probabilistic data
+        structure that lets you maintain counts of millions of items with
+        extreme space efficiency.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="list">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed List object for Java implements java.util.List
+        interface. Keeps elements in insertion order. List size limited by Redis
+        to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="list-multimap">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Multimap for Java allows to bind multiple values
+        per key. Keys amount limited by Redis to 4_294_967_295 elements.
+
+        List based Multimap for Java stores insertion order and allows
+        duplicates for values mapped to key.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="list-multimap-cache">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Multimap for Java allows to bind multiple values
+        per key. Keys amount limited by Redis to 4_294_967_295 elements.
+
+        List based Multimap for Java stores insertion order and allows
+        duplicates for values mapped to key.
+        
+        Multimap object for Java with eviction support implemented by separated
+        MultimapCache object. There are RSetMultimapCache and RListMultimapCache
+        objects for Set and List Multimaps respectivly.
+
+        Expired entries are cleaned by org.redisson.EvictionScheduler. It
+        removes 100 expired entries at once. Task launch time tuned
+        automatically and depends on expired entries amount deleted in previous
+        time and varies between 1 second to 2 hours. Thus if clean task deletes
+        100 entries each time it will be executed every second (minimum
+        execution delay). But if current expired entries amount is lower than
+        previous one then execution delay will be increased by 1.5 times.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="local-cached-map">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Map for Java implements
+        java.util.concurrent.ConcurrentMap and java.util.Map interfaces. It
+        keeps elements in insertion order. Map size limited by Redis to
+        4_294_967_295 elements.
+        
+        <b>Map local cache</b>
+        
+        In case when a Map is used mostly for read operations and/or network
+        roundtrips are undesirable. Redisson offers RLocalCachedMap object which
+        caches Map entries on Redisson side.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="0" maxOccurs="1">
+                            <xsd:element ref="local-cached-map-options"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="map">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Map for Java implements
+        java.util.concurrent.ConcurrentMap and java.util.Map interfaces. It
+        keeps elements in insertion order. Map size limited by Redis to
+        4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="set-multimap">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Multimap for Java allows to bind multiple values
+        per key. Keys amount limited by Redis to 4_294_967_295 elements.
+
+        Set based Multimap doesn't allow duplications for values per key.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="set-multimap-cache">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Multimap for Java allows to bind multiple values
+        per key. Keys amount limited by Redis to 4_294_967_295 elements.
+
+        Set based Multimap doesn't allow duplications for values per key.
+        
+        Multimap object for Java with eviction support implemented by separated
+        MultimapCache object. There are RSetMultimapCache and RListMultimapCache
+        objects for Set and List Multimaps respectivly.
+
+        Expired entries are cleaned by org.redisson.EvictionScheduler. It
+        removes 100 expired entries at once. Task launch time tuned
+        automatically and depends on expired entries amount deleted in previous
+        time and varies between 1 second to 2 hours. Thus if clean task deletes
+        100 entries each time it will be executed every second (minimum
+        execution delay). But if current expired entries amount is lower than
+        previous one then execution delay will be increased by 1.5 times.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="semaphore">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Semaphore object for Java similar to
+        java.util.concurrent.Semaphore object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="permit-expirable-semaphore">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Semaphore object with lease time parameter support for each acquired
+        permit. Each permit identified by own id and could be released only
+        using its id.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed reentrant Lock for Java implements
+        java.util.concurrent.locks.Lock interface and supports TTL.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="fair-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed reentrant fair Lock for Java implements
+        java.util.concurrent.locks.Lock interface and supports TTL and
+        guarantees that Redisson client threads will acquire it in is same order
+        they requested it. It has same interface as simple Lock object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="read-write-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed reentrant fair Lock for Java implements
+        java.util.concurrent.locks.Lock interface and supports TTL and
+        guarantees that Redisson client threads will acquire it in is same order
+        they requested it. It has same interface as simple Lock object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="0" maxOccurs="1">
+                            <xsd:element ref="read-lock"/>
+                        </xsd:choice>
+                        <xsd:choice minOccurs="0" maxOccurs="1">
+                            <xsd:element ref="write-lock"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="read-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed reentrant ReadWriteLock object for Java implements
+        java.util.concurrent.locks.ReadWriteLock interface and supports TTL.
+        Many ReadLock owners and only one WriteLock owner are allowed.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:attribute name="read-write-lock-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Destination queue. Value is the bean name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="write-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed reentrant ReadWriteLock object for Java implements
+        java.util.concurrent.locks.ReadWriteLock interface and supports TTL.
+        Many ReadLock owners and only one WriteLock owner are allowed.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:attribute name="read-write-lock-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Destination queue. Value is the bean name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="multi-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson MultiLock groups multiple RLock objects and handles them as one
+        lock. Each RLock object may belong to different Redisson instances.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="multiLock"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="red-lock">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        RedissonRedLock implements Redlock locking algorithm. It groups multiple
+        RLock objects and handles them as one lock. Each RLock object may belong
+        to different Redisson instances.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="multiLock"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="set">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Set for Java implements java.util.Set interface.
+        Keeps elements uniqueness via element state comparison. Set size limited
+        by Redis to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="sorted-set">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based distributed SortedSet for Java implements
+        java.util.SortedSet interface. Uses comparator to sort elements and keep
+        uniqueness.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="scored-sorted-set">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed ScoredSortedSet object. Sorts elements by score
+        defined during element insertion. Keeps elements uniqueness via element
+        state comparison.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="lex-sorted-set">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Set object for Java allows String objects only with
+        lexicographical ordering and implements java.util.Set<String> interface.
+        Keeps elements uniqueness via element state comparison.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="topic">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Set object for Java allows String objects only with
+        lexicographical ordering and implements java.util.Set<String> interface.
+        Keeps elements uniqueness via element state comparison.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedType">
+                    <xsd:attribute name="topic" type="xsd:string" use="required">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Name of the topic.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="pattern-topic">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Set object for Java allows String objects only with
+        lexicographical ordering and implements java.util.Set<String> interface.
+        Keeps elements uniqueness via element state comparison.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedType">
+                    <xsd:attribute name="pattern" type="xsd:string" use="required">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Name of the topic.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="blocking-fair-queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        When queue consumers in different parts of network: some of them closer
+        to redis and some further. "further" consumers will get lower amount of
+        messages from queue due to network delays. In turn "closer" consumers
+        will get higher amount and this could lead to client overloading.
+
+        Blocking queue with fair polling and guarantees access order for poll
+        and take methods and allows to get uniformly distributed consumption.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed unbounded Queue for Java implements java.util.Queue
+        interface. Queue size limited by Redis to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="delayed-queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based Delayed queue for Java allows to transfer each element to
+        destination queue with specified delay. Could be useful for exponential
+        backoff strategy used for message delivery to consumer. Destination
+        queue could be any queue implemented RQueue interface.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRService">
+                    <xsd:attribute name="destination-queue-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Destination queue. Value is the bean name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="priority-queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based distributed PriorityQueue for Java implements
+        java.util.Queue interface. Uses comparator to sort elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="priority-deque">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based distributed PriorityDeque for Java implements
+        java.util.Deque interface. Uses comparator to sort elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="blocking-queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed unbounded BlockingQueue for Java implements
+        java.util.concurrent.BlockingQueue interface. BlockingQueue size limited
+        by Redis to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="bounded-blocking-queue">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed BoundedBlockingQueue for Java implements
+        java.util.concurrent.BlockingQueue interface. BoundedBlockingQueue size
+        limited by Redis to 4_294_967_295 elements. Queue capacity should be
+        defined once before usage.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="deque">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed unbounded Deque for Java implements java.util.Deque
+        interface. Deque size limited by Redis to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="blocking-deque">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed unbounded BlockingQueue for Java implements
+        java.util.concurrent.BlockingQueue interface. BlockingQueue size limited
+        by Redis to 4_294_967_295 elements.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="atomic-long">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed AtomicLong object for Java has structure similar to
+        java.util.concurrent.atomic.AtomicLong object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="atomic-double">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed AtomicDouble object for Java.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="count-down-latch">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed CountDownLatch object for Java has structure
+        similar to java.util.concurrent.CountDownLatch object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="bit-set">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed BitSet object for Java has structure similar to
+        java.util.BitSet and represents vector of bits that grows as needed.
+        BitSet size limited by Redis to 4_294_967_295.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="bloom-filter">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based Bloom filter for Java.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedRObject"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="script">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        LUA script operations object.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRService"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="executor-service">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redisson distributed Executor service for Java implements
+        java.util.concurrent.ExecutorService and allows to run
+        java.util.concurrent.Callable and java.lang.Runnable tasks on different
+        Redisson nodes. Tasks have an access to Redisson instance, can do any
+        manipulations with Redis data and execute distributed computations in
+        fast and efficient way.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedType">
+                    <xsd:attribute name="service" use="required" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Remote operations prefixed default value
+        
+        Default: redisson_remote_service
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="remote-service">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Redis based distributed remote service (RPC service) for Java allows to
+        execute object methods by remote interface on different Redisson
+        instances. In other words it allows Java remote calls with Redis. Uses
+        POJO objects, method parameters and result object type can literally be
+        anything.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractEncodedType">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                            <xsd:element ref="rpc-server"/>
+                            <xsd:element ref="rpc-client"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                    <xsd:attribute name="service" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Remote operations prefixed default value
+        
+        Default: redisson_remote_service
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="keys">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        For key and DB related operations.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRService"/>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="live-object-service">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        A Live Object can be understood as an enhanced version of standard Java
+        object, of which an instance reference can be shared not only between
+        threads in a single JVM, but can also be shared between different JVMs
+        across different machines. Wikipedia discribes it as:
+        
+        <quote>
+        Live distributed object (also abbreviated as live object) refers to a
+        running instance of a distributed multi-party (or peer-to-peer) protocol,
+        viewed from the object-oriented perspective, as an entity that has a
+        distinct identity, may encapsulate internal state and threads of
+        execution, and that exhibits a well-defined externally visible behavior.
+        </quote>
+        
+        Redisson Live Object (RLO) realised this idea by mapping all the fields
+        inside a Java class to a redis hash through a runtime-constructed proxy
+        class. All the get/set methods of each field are translated to hget/hset
+        commands operated on the redis hash, making it accessable to/from any
+        clients connected to the same redis server. As we all know, the field
+        values of an object represent its state; having them stored in a remote
+        repository, redis, makes it a distributed object. This object is a
+        Redisson Live Object.
+
+        By using RLO, sharing an object between applications and/or servers is
+        the same as sharing one in a standalone application. This removes the
+        need for serialization and deserialization, and at the same time reduces
+        the complexity of the programming model: Changes made to one field
+        is (almost^) immediately accessable to other processes, applications and
+        servers. (^Redis' eventual consistant replication rule still applies
+        when connected to slave nodes)
+
+        Since the redis server is a single-threaded application, all field
+        access to the live object is automatically executed in atomic fashion: a
+        value will not be changed when you are reading it.
+
+        With RLO, you can treat the redis server as a shared Heap space for all
+        connected JVMs.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRService">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                            <xsd:element ref="live-object"/>
+                            <xsd:element ref="live-object-registration"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="rpc-server">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Remote service (RPC service) registration. 
+        
+        Remote invocations executes in sequential mode if only 1 workers are
+        available. Remote invocations executes in parallel mode if 1+ workers
+        are available.
+                
+        Command will be queued when there is no available workers.
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRPCServerType">
+                    <xsd:attribute name="bean" use="required"
+                                   type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Remote service (RPC service) implementation provider. This is the server
+        side instance. Value is the bean name reference.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="concurrent-workers" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Remote service (RPC service) concurrent workers amount. Remote
+        invocations executes in sequential mode if only 1 workers are available.
+        Remote invocations executes in parallel mode if 1+ workers are available.
+        
+        Command will be queued when there is no available workers.
+        
+        Default: 1
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="executor-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        ExecutorService used for running the job. Value is the bean name
+        reference.
+                                
+        Default: Inherited from the RedissonClient instance.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <xsd:element name="rpc-client">
+        <xsd:annotation>
+            <xsd:documentation><![CDATA[
+        Remote client (RPC service) proxy. 
+        
+         ]]></xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractRPCClientType">
+                    <xsd:sequence minOccurs="0" maxOccurs="1">
+                        <xsd:element ref="remote-invocation-options"/>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+    
+    <!-- End of RObject Types -->
+    
+    <xsd:element name="client">
+        <xsd:annotation>
+            <xsd:documentation>
+                Define and create a Redisson instance.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="abstractConfig">
+                    <xsd:sequence>
+                        <xsd:choice minOccurs="1" maxOccurs="1">
+                            <xsd:element ref="single-server"/>
+                            <xsd:element ref="sentinel-servers"/>
+                            <xsd:element ref="master-slave-servers"/>
+                            <xsd:element ref="cluster-servers"/>
+                            <xsd:element ref="replicated-servers"/>
+                        </xsd:choice>
+                        <xsd:choice minOccurs="0" maxOccurs="unbounded">
+                            <xsd:element ref="binary-stream"/>
+                            <xsd:element ref="geo"/>
+                            <xsd:element ref="set-cache"/>
+                            <xsd:element ref="map-cache"/>
+                            <xsd:element ref="bucket"/>
+                            <xsd:element ref="buckets"/>
+                            <xsd:element ref="hyper-log-log"/>
+                            <xsd:element ref="list"/>
+                            <xsd:element ref="list-multimap"/>
+                            <xsd:element ref="list-multimap-cache"/>
+                            <xsd:element ref="local-cached-map"/>
+                            <xsd:element ref="map"/>
+                            <xsd:element ref="set-multimap"/>
+                            <xsd:element ref="set-multimap-cache"/>
+                            <xsd:element ref="semaphore"/>
+                            <xsd:element ref="permit-expirable-semaphore"/>
+                            <xsd:element ref="lock"/>
+                            <xsd:element ref="fair-lock"/>
+                            <xsd:element ref="read-write-lock"/>
+                            <xsd:element ref="multi-lock"/>
+                            <xsd:element ref="red-lock"/>
+                            <xsd:element ref="set"/>
+                            <xsd:element ref="sorted-set"/>
+                            <xsd:element ref="scored-sorted-set"/>
+                            <xsd:element ref="lex-sorted-set"/>
+                            <xsd:element ref="topic"/>
+                            <xsd:element ref="pattern-topic"/>
+                            <xsd:element ref="blocking-fair-queue"/>
+                            <xsd:element ref="queue"/>
+                            <xsd:element ref="delayed-queue"/>
+                            <xsd:element ref="priority-queue"/>
+                            <xsd:element ref="priority-deque"/>
+                            <xsd:element ref="blocking-queue"/>
+                            <xsd:element ref="bounded-blocking-queue"/>
+                            <xsd:element ref="deque"/>
+                            <xsd:element ref="blocking-deque"/>
+                            <xsd:element ref="atomic-long"/>
+                            <xsd:element ref="atomic-double"/>
+                            <xsd:element ref="count-down-latch"/>
+                            <xsd:element ref="bit-set"/>
+                            <xsd:element ref="bloom-filter"/>
+                            <xsd:element ref="script"/>
+                            <xsd:element ref="executor-service"/>
+                            <xsd:element ref="remote-service"/>
+                            <xsd:element ref="keys"/>
+                            <xsd:element ref="live-object-service"/>
+                        </xsd:choice>
+                    </xsd:sequence>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+
+    <xsd:element name="redis">
+        <xsd:annotation>
+            <xsd:documentation>
+                Define and create a RedisClient instance.
+            </xsd:documentation>
+        </xsd:annotation>
+        <xsd:complexType>
+            <xsd:complexContent>
+                <xsd:extension base="baseType">
+                    <xsd:attribute name="address" type="xsd:string"
+                                   default="redis://127.0.0.1:6379">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis server address.
+        
+        Default: redis://127.0.0.1:6379
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="timer-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Timer bean reference.
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="executor-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Executor bean reference.
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="group-ref" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        EventLoopGroup bean reference.
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="socket-channel-class" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Class name of the SocketChannel.
+                        ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="connect-timeout" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Timeout during connecting to any Redis server.
+        Value in milliseconds.
+        
+        Default: 10000
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="command-timeout" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Redis server command timeout. Starts to countdown when Redis command 
+        was succesfully sent. Value in milliseconds.
+        
+        Default: 10000
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-enable-endpoint-identification" type="xsd:boolean">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Enables SSL endpoint identification.
+        
+        Default: true
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-provider" type="sslProvider">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Defines SSL provider used to handle SSL connections.
+        
+        Default: JDK
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-truststore" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Defines path to SSL truststore.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-truststore-password" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Defines password for SSL truststore.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-keystore" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Defines path to SSL keystore.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="ssl-keystore-password" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Defines password for SSL keystore.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="password" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Password for redis.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="database" type="xsd:int">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Database index used for Redis connection.
+        
+        Default: 0
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="client-name" type="xsd:string">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        Name of client connection.
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                    <xsd:attribute name="read-only" type="xsd:boolean">
+                        <xsd:annotation>
+                            <xsd:documentation><![CDATA[
+        True to set connection to read only mode.
+        
+        Default: false
+                         ]]></xsd:documentation>
+                        </xsd:annotation>
+                    </xsd:attribute>
+                </xsd:extension>
+            </xsd:complexContent>
+        </xsd:complexType>
+    </xsd:element>
+</xsd:schema>

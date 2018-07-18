@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import java.io.IOException;
 import org.nustaq.serialization.FSTConfiguration;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -39,7 +39,7 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
-public class FstCodec implements Codec {
+public class FstCodec extends BaseCodec {
 
     private final FSTConfiguration config;
 
@@ -90,29 +90,12 @@ public class FstCodec implements Codec {
             } catch (IOException e) {
                 out.release();
                 throw e;
+            } catch (Exception e) {
+                out.release();
+                throw new IOException(e);
             }
         }
     };
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
-    }
 
     @Override
     public Decoder<Object> getValueDecoder() {
@@ -122,6 +105,15 @@ public class FstCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (config.getClassLoader() != null) {
+            return config.getClassLoader();
+        }
+
+        return super.getClassLoader();
     }
 
 }

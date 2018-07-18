@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,20 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
                    + "end",
                 Collections.<Object>singletonList(getName()), expect, update);
     }
+    
+    @Override
+    public long getAndDelete() {
+        return get(getAndDeleteAsync());
+    }
+    
+    @Override
+    public RFuture<Long> getAndDeleteAsync() {
+        return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG_SAFE,
+                   "local currValue = redis.call('get', KEYS[1]); "
+                 + "redis.call('del', KEYS[1]); "
+                 + "return currValue; ",
+                Collections.<Object>singletonList(getName()));
+    }
 
     @Override
     public long decrementAndGet() {
@@ -79,12 +93,12 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public long get() {
-        return addAndGet(0);
+        return get(getAsync());
     }
 
     @Override
     public RFuture<Long> getAsync() {
-        return addAndGetAsync(0);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GET_LONG, getName());
     }
 
     @Override

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import org.redisson.api.mapreduce.RMapReduce;
 public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K, V> {
 
     /**
-     * Loads all map entries to this Redis map.
+     * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.
      * 
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
      * @param parallelism - parallelism level, used to increase speed of process execution
@@ -46,7 +46,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     void loadAll(boolean replaceExistingValues, int parallelism);
     
     /**
-     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
      * 
      * @param keys - map keys
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
@@ -219,7 +219,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Removes <code>keys</code> from map by one operation
      * <p>
-     * Works faster than <code>{@link RMap#remove(Object)}</code> but not returning
+     * Works faster than <code>{@link #remove(Object)}</code> but not returning
      * the value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
@@ -232,7 +232,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>.
      * <p>
-     * Works faster than <code>{@link RMap#put(Object, Object)}</code> but not returning
+     * Works faster than <code>{@link #put(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
@@ -245,10 +245,25 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     boolean fastPut(K key, V value);
 
     /**
+     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * <p>
+     * Works faster than <code>{@link #replace(Object, Object)}</code> but not returning
+     * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key exists and value was updated.
+     *         <code>false</code> if key doesn't exists and value wasn't updated.
+     */
+    boolean fastReplace(K key, V value);
+    
+    /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * only if there is no any association with specified<code>key</code>.
      * <p>
-     * Works faster than <code>{@link RMap#putIfAbsent(Object, Object)}</code> but not returning
+     * Works faster than <code>{@link #putIfAbsent(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
@@ -289,8 +304,10 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Map<K, V> readAllMap();
     
     /**
-     * Returns key set. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
+     * Returns key set of this map. 
+     * Keys are loaded in batch. Batch size is <code>10</code>.
+     * 
+     * @see #readAllKeySet()
      * 
      * @return key set
      */
@@ -298,8 +315,20 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Set<K> keySet();
 
     /**
-     * Returns key set matches pattern. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllKeySet()} does.
+     * Returns key set of this map.
+     * Keys are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @param count - size of keys batch
+     * @return key set
+     */
+    Set<K> keySet(int count);
+    
+    /**
+     * Returns key set of this map.
+     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
+     * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
      * 
      *  Supported glob-style patterns:
      *  <p>
@@ -308,25 +337,49 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *    h*llo subscribes to hllo and heeeello
      *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllKeySet()
+     * 
+     * @param pattern - key pattern
+     * @param count - size of keys batch
+     * @return key set
+     */
+    Set<K> keySet(String pattern, int count);
+    
+    /**
+     * Returns key set of this map. 
+     * If <code>pattern</code> is not null then only keys match this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllKeySet()
      * 
      * @param pattern - key pattern
      * @return key set
      */
     Set<K> keySet(String pattern);
-
     
     /**
-     * Returns values collection. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllValues()} does.
+     * Returns values collection of this map. 
+     * Values are loaded in batch. Batch size is <code>10</code>.
      * 
-     * @return value collection
+     * @see #readAllValues()
+     * 
+     * @return values collection
      */
     @Override
     Collection<V> values();
 
     /**
-     * Returns values collection matches key pattern. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllValues()} does.
+     * Returns values collection of this map.
+     * Values are loaded in batch. Batch size is <code>10</code>. 
+     * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
      * 
      *  Supported glob-style patterns:
      *  <p>
@@ -336,23 +389,60 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
+     * @see #readAllValues()
+     * 
      * @param keyPattern - key pattern
-     * @return value collection
+     * @return values collection
      */
     Collection<V> values(String keyPattern);
 
     /**
-     * Returns map entries collection. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllEntrySet()} does.
+     * Returns values collection of this map.
+     * Values are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
      * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllValues()
+     * 
+     * @param keyPattern - key pattern
+     * @param count - size of values batch
+     * @return values collection
+     */
+    Collection<V> values(String keyPattern, int count);
+    
+    /**
+     * Returns values collection of this map.
+     * Values are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllValues()
+     * 
+     * @param count - size of values batch
+     * @return values collection
+     */
+    Collection<V> values(int count);
+    
+    /**
+     * Returns map entries collection. 
+     * Map entries are loaded in batch. Batch size is <code>10</code>.
+     * 
+     * @see #readAllEntrySet()
+     *  
      * @return map entries collection
      */
     @Override
     Set<java.util.Map.Entry<K, V>> entrySet();
 
     /**
-     * Returns map entries collection matches key pattern. 
-     * This method <b>DOESN'T</b> fetch all of them as {@link #readAllEntrySet()} does.
+     * Returns map entries collection.
+     * Map entries are loaded in batch. Batch size is <code>10</code>. 
+     * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
      * 
      *  Supported glob-style patterns:
      *  <p>
@@ -362,9 +452,43 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *    <p>
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
+     * @see #readAllEntrySet()
+     * 
      * @param keyPattern - key pattern
      * @return map entries collection
      */
     Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern);
+    
+    /**
+     * Returns map entries collection.
+     * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * If <code>keyPattern</code> is not null then only entries mapped by matched keys of this pattern are loaded.
+     * 
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     * 
+     * @see #readAllEntrySet()
+     * 
+     * @param keyPattern - key pattern
+     * @param count - size of entries batch
+     * @return map entries collection
+     */
+    Set<java.util.Map.Entry<K, V>> entrySet(String keyPattern, int count);
+
+    /**
+     * Returns map entries collection.
+     * Map entries are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @see #readAllEntrySet()
+     * 
+     * @param count - size of entries batch
+     * @return map entries collection
+     */
+    Set<java.util.Map.Entry<K, V>> entrySet(int count);
     
 }

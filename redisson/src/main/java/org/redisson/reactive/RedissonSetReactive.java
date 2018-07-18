@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,12 +24,12 @@ import java.util.Set;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.RSetAsync;
 import org.redisson.api.RSetReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.Supplier;
@@ -44,17 +43,26 @@ import reactor.fn.Supplier;
  */
 public class RedissonSetReactive<V> extends RedissonExpirableReactive implements RSetReactive<V> {
 
-    private final RedissonSet<V> instance;
+    private final RSetAsync<V> instance;
 
     public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, null);
+        this(commandExecutor, name, new RedissonSet<V>(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name, null));
+    }
+    
+    public RedissonSetReactive(CommandReactiveExecutor commandExecutor, String name, RSetAsync<V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonSet<V>(codec, commandExecutor, name, null);
+        this(codec, commandExecutor, name, new RedissonSet<V>(codec, commandExecutor, name, null));
     }
+    
+    public RedissonSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RSetAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
+    }
+
 
     @Override
     public Publisher<Integer> addAll(Publisher<? extends V> c) {
@@ -62,8 +70,23 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
 
     @Override
+    public Publisher<Set<V>> removeRandom(final int amount) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.removeRandomAsync(amount);
+            }
+        });
+    }
+    
+    @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.SCARD_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -75,9 +98,24 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
             }
         });
     }
+    
+    @Override
+    public Publisher<Set<V>> readAll() {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
 
-    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.SSCAN, getName(), startPos);
+    private Publisher<ListScanResult<Object>> scanIteratorReactive(final RedisClient client, final long startPos, final String pattern, final int count) {
+        return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
+            @Override
+            public RFuture<ListScanResult<Object>> get() {
+                return ((RedissonSet)instance).scanIteratorAsync(getName(), client, startPos, pattern, count);
+            }
+        });
     }
 
     @Override
@@ -190,6 +228,16 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     }
     
     @Override
+    public Publisher<Set<V>> readDiff(final String... names) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readDiffAsync(names);
+            }
+        });
+    }
+    
+    @Override
     public Publisher<Long> union(String... names) {
         List<Object> args = new ArrayList<Object>(names.length + 1);
         args.add(getName());
@@ -206,15 +254,30 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
             }
         });
     }
+    
+    @Override
+    public Publisher<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Publisher<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
 
     @Override
-    public Publisher<V> iterator() {
+    public Publisher<V> iterator(final String pattern, final int count) {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
-                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos);
+            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
+                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos, pattern, count);
             }
         };
     }
 
+    @Override
+    public Publisher<V> iterator() {
+        return iterator(null, 10);
+    }
+    
 }

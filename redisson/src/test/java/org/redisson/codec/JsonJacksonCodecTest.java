@@ -2,6 +2,8 @@ package org.redisson.codec;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -33,5 +35,18 @@ public class JsonJacksonCodecTest {
         codec.getObjectMapper().readValue(JSON, Bean1599.class);
         Assert.fail("Should not pass");
     }
-    
+
+    @Test
+    public void shouldNotOverrideProvidedObjectMapperProperties() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+        objectMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, false);
+        JsonJacksonCodec codec = new JsonJacksonCodec(objectMapper);
+
+        Assert.assertTrue(objectMapper.getDeserializationConfig().isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+        Assert.assertFalse(codec.getObjectMapper().getDeserializationConfig().isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES));
+
+        Assert.assertFalse(objectMapper.getDeserializationConfig().isEnabled(DeserializationFeature.UNWRAP_ROOT_VALUE));
+        Assert.assertFalse(codec.getObjectMapper().getDeserializationConfig().isEnabled(DeserializationFeature.UNWRAP_ROOT_VALUE));
+    }
 }

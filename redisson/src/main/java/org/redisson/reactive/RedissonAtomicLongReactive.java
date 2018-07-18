@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import org.redisson.api.RFuture;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.Supplier;
-import reactor.rx.Streams;
 
 /**
  * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
@@ -36,10 +35,14 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     private final RAtomicLongAsync instance;
     
     public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonAtomicLong(commandExecutor, name);
+        this(commandExecutor, name, new RedissonAtomicLong(commandExecutor, name));
     }
 
+    public RedissonAtomicLongReactive(CommandReactiveExecutor commandExecutor, String name, RAtomicLongAsync instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
+    }
+    
     @Override
     public Publisher<Long> addAndGet(final long delta) {
         return reactive(new Supplier<RFuture<Long>>() {
@@ -127,7 +130,7 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
     }
 
     public String toString() {
-        return Long.toString(Streams.create(get()).next().poll());
+        return instance.toString();
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Iterator;
 import java.util.Set;
 
 import org.reactivestreams.Publisher;
@@ -28,6 +29,43 @@ import org.reactivestreams.Publisher;
  */
 public interface RSetReactive<V> extends RCollectionReactive<V> {
 
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Publisher<V> iterator(int count);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Publisher<V> iterator(String pattern, int count);
+    
+    /**
+     * Returns iterator over elements in this set matches <code>pattern</code>. 
+     * 
+     * @param pattern - search pattern
+     * @return iterator
+     */
+    Publisher<V> iterator(String pattern);
+    
+    /**
+     * Removes and returns random elements from set
+     * in async mode
+     * 
+     * @param amount of random values
+     * @return random values
+     */
+    Publisher<Set<V>> removeRandom(int amount);
+    
     /**
      * Removes and returns random element from set
      * in async mode
@@ -55,6 +93,13 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
     Publisher<Boolean> move(String destination, V member);
 
     /**
+     * Read all elements at once
+     *
+     * @return values
+     */
+    Publisher<Set<V>> readAll();
+    
+    /**
      * Union sets specified by name and write to current set.
      * If current set already exists, it is overwritten.
      *
@@ -80,6 +125,15 @@ public interface RSetReactive<V> extends RCollectionReactive<V> {
      * @return size of diff
      */
     Publisher<Long> diff(String... names);
+    
+    /**
+     * Diff sets specified by name with current set.
+     * Without current set state change.
+     * 
+     * @param names - name of sets
+     * @return values
+     */
+    Publisher<Set<V>> readDiff(String... names);
     
     /**
      * Intersection sets specified by name and write to current set.

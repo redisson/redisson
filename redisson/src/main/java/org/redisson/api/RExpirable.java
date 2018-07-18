@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,7 +64,7 @@ public interface RExpirable extends RObject, RExpirableAsync {
     boolean clearExpire();
 
     /**
-     * Remaining time to live of Redisson object that has a timeout
+     * Remaining time to live of Redisson object that has a timeout 
      *
      * @return time in milliseconds
      *          -2 if the key does not exist.

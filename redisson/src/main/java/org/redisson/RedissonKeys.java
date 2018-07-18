@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,18 +30,18 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
 import org.redisson.api.RObject;
 import org.redisson.api.RType;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
-import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -106,13 +105,18 @@ public class RedissonKeys implements RKeys {
     public Iterable<String> getKeys() {
         return getKeysByPattern(null);
     }
+    
+    @Override
+    public Iterable<String> getKeys(int count) {
+        return getKeysByPattern(null, count);
+    }
 
-    private ListScanResult<ScanObjectEntry> scanIterator(InetSocketAddress client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
+    private ListScanResult<Object> scanIterator(RedisClient client, MasterSlaveEntry entry, long startPos, String pattern, int count) {
         if (pattern == null) {
-            RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "COUNT", count);
+            RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
             return commandExecutor.get(f);
         }
-        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, entry, new ScanCodec(StringCodec.INSTANCE), RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
+        RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
         return commandExecutor.get(f);
     }
 
@@ -120,13 +124,13 @@ public class RedissonKeys implements RKeys {
         return new RedissonBaseIterator<String>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
+            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
                 return RedissonKeys.this.scanIterator(client, entry, nextIterPos, pattern, count);
             }
 
             @Override
-            void remove(String value) {
-                RedissonKeys.this.delete(value);
+            protected void remove(Object value) {
+                RedissonKeys.this.delete((String)value);
             }
             
         };
@@ -203,7 +207,7 @@ public class RedissonKeys implements RKeys {
     @Override
     public RFuture<Long> deleteByPatternAsync(final String pattern) {
         final int batchSize = 100;
-        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = new RedissonPromise<Long>();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
@@ -309,7 +313,7 @@ public class RedissonKeys implements RKeys {
             list.add(key);
         }
 
-        final RPromise<Long> result = commandExecutor.getConnectionManager().newPromise();
+        final RPromise<Long> result = new RedissonPromise<Long>();
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         final AtomicLong executed = new AtomicLong(range2key.size());
@@ -484,15 +488,25 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public void migrate(String name, String host, int port, int database) {
-        commandExecutor.get(migrateAsync(name, host, port, database));
+    public void migrate(String name, String host, int port, int database, long timeout) {
+        commandExecutor.get(migrateAsync(name, host, port, database, timeout));
     }
 
     @Override
-    public RFuture<Void> migrateAsync(String name, String host, int port, int database) {
-        return commandExecutor.writeAsync(name, RedisCommands.MIGRATE, host, port, name, database);
+    public RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout) {
+        return commandExecutor.writeAsync(name, RedisCommands.MIGRATE, host, port, name, database, timeout);
     }
 
+    @Override
+    public void copy(String name, String host, int port, int database, long timeout) {
+        commandExecutor.get(copyAsync(name, host, port, database, timeout));
+    }
+
+    @Override
+    public RFuture<Void> copyAsync(String name, String host, int port, int database, long timeout) {
+        return commandExecutor.writeAsync(name, RedisCommands.MIGRATE, host, port, name, database, timeout, "COPY");
+    }
+    
     @Override
     public boolean move(String name, int database) {
         return commandExecutor.get(moveAsync(name, database));

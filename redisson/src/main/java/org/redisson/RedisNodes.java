@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,13 +30,16 @@ import org.redisson.api.NodesGroup;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.RedisClientEntry;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.URIBuilder;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -55,12 +57,17 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
     @Override
     public N getNode(String address) {
-        Collection<N> clients = (Collection<N>) connectionManager.getClients();
-        URI uri = URIBuilder.create(address);
-        InetSocketAddress addr = new InetSocketAddress(uri.getHost(), uri.getPort());
-        for (N node : clients) {
-            if (node.getAddr().equals(addr)) {
-                return node;
+        Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
+        URI addr = URIBuilder.create(address);
+        for (MasterSlaveEntry masterSlaveEntry : entries) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() && URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
+                return (N) new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+            }
+
+            for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
+                if (URIBuilder.compare(entry.getClient().getAddr(), addr) && entry.getFreezeReason() != FreezeReason.MANAGER) {
+                    return (N) new RedisClientEntry(entry.getClient(), connectionManager.getCommandExecutor(), entry.getNodeType());
+                }
             }
         }
         return null;
@@ -68,11 +75,19 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     
     @Override
     public Collection<N> getNodes(NodeType type) {
-        Collection<N> clients = (Collection<N>) connectionManager.getClients();
+        Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         List<N> result = new ArrayList<N>();
-        for (N node : clients) {
-            if (node.getType().equals(type)) {
-                result.add(node);
+        for (MasterSlaveEntry masterSlaveEntry : entries) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() && type == NodeType.MASTER) {
+                RedisClientEntry entry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                result.add((N) entry);
+            }
+            
+            for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
+                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER && slaveEntry.getNodeType() == type) {
+                    RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
+                    result.add((N) entry);
+                }
             }
         }
         return result;
@@ -81,12 +96,27 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
     @Override
     public Collection<N> getNodes() {
-        return (Collection<N>) connectionManager.getClients();
+        Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
+        List<N> result = new ArrayList<N>();
+        for (MasterSlaveEntry masterSlaveEntry : entries) {
+            if (masterSlaveEntry.getAllEntries().isEmpty()) {
+                RedisClientEntry masterEntry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
+                result.add((N) masterEntry);
+            }
+            
+            for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
+                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER) {
+                    RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
+                    result.add((N) entry);
+                }
+            }
+        }
+        return result;
     }
 
     @Override
     public boolean pingAll() {
-        List<RedisClientEntry> clients = new ArrayList<RedisClientEntry>(connectionManager.getClients());
+        List<RedisClientEntry> clients = new ArrayList<RedisClientEntry>((Collection<RedisClientEntry>)getNodes());
         final Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<RedisConnection, RFuture<String>>(clients.size());
         final CountDownLatch latch = new CountDownLatch(clients.size());
         for (RedisClientEntry entry : clients) {

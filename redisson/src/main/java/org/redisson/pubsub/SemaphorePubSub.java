@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,27 +32,12 @@ public class SemaphorePubSub extends PublishSubscribe<RedissonLockEntry> {
 
     @Override
     protected void onMessage(RedissonLockEntry value, Long message) {
-        value.getLatch().release(message.intValue());
-        
-        while (true) {
-            Runnable runnableToExecute = null;
-            synchronized (value) {
-                Runnable runnable = value.getListeners().poll();
-                if (runnable != null) {
-                    if (value.getLatch().tryAcquire()) {
-                        runnableToExecute = runnable;
-                    } else {
-                        value.addListener(runnable);
-                    }
-                }
-            }
-            
-            if (runnableToExecute != null) {
-                runnableToExecute.run();
-            } else {
-                return;
-            }
+        Runnable runnableToExecute = value.getListeners().poll();
+        if (runnableToExecute != null) {
+            runnableToExecute.run();
         }
+        
+        value.getLatch().release(message.intValue());
     }
 
 }

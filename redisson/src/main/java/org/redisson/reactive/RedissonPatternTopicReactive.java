@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,11 +26,15 @@ import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.client.RedisPubSubListener;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PublishSubscribeService;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -45,6 +49,7 @@ import reactor.fn.Supplier;
  */
 public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M> {
 
+    final PublishSubscribeService subscribeService;
     final CommandReactiveExecutor commandExecutor;
     private final String name;
     private final Codec codec;
@@ -57,6 +62,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.codec = codec;
+        this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
     @Override
@@ -64,7 +70,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
-                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                RPromise<Integer> promise = new RedissonPromise<Integer>();
                 addListener(new PubSubPatternStatusListener(listener, name), promise);
                 return promise;
             }
@@ -76,7 +82,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
-                RPromise<Integer> promise = commandExecutor.getConnectionManager().newPromise();
+                RPromise<Integer> promise = new RedissonPromise<Integer>();
                 PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
                 addListener(pubSubListener, promise);
                 return promise;
@@ -85,7 +91,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     }
 
     private void addListener(final RedisPubSubListener<M> pubSubListener, final RPromise<Integer> promise) {
-        RFuture<PubSubConnectionEntry> future = commandExecutor.getConnectionManager().psubscribe(name, codec, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(name, codec, pubSubListener);
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
@@ -98,13 +104,21 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
             }
         });
     }
+    
+    protected void acquire(AsyncSemaphore semaphore) {
+        MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        if (!semaphore.tryAcquire(timeout)) {
+            throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
+        }
+    }
 
     @Override
     public void removeListener(int listenerId) {
-        AsyncSemaphore semaphore = commandExecutor.getConnectionManager().getSemaphore(name);
-        semaphore.acquireUninterruptibly();
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
+        acquire(semaphore);
 
-        PubSubConnectionEntry entry = commandExecutor.getConnectionManager().getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
         if (entry == null) {
             semaphore.release();
             return;
@@ -112,7 +126,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
         
         entry.removeListener(name, listenerId);
         if (!entry.hasListeners(name)) {
-            commandExecutor.getConnectionManager().punsubscribe(name, semaphore);
+            subscribeService.punsubscribe(name, semaphore);
         } else {
             semaphore.release();
         }

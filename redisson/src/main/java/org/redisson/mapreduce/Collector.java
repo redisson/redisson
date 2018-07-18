@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import org.redisson.api.RListMultimap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
-import net.openhft.hashing.LongHashFunction;
 
 /**
  * 
@@ -57,7 +57,7 @@ public class Collector<K, V> implements RCollector<K, V> {
     public void emit(K key, V value) {
         try {
             ByteBuf encodedKey = codec.getValueEncoder().encode(key);
-            long hash = LongHashFunction.xx().hashBytes(encodedKey.internalNioBuffer(encodedKey.readerIndex(), encodedKey.readableBytes()));
+            long hash = Hash.hash64(encodedKey);
             encodedKey.release();
             int part = (int) Math.abs(hash % parts);
             String partName = name + ":" + part;

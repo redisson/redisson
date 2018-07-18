@@ -4,6 +4,218 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 16-Jul-2018 - versions 2.12.4 and 3.7.4 released
+Feature - dump and restore methods added to `RObject` interface  
+Fixed - Redis response hangs if `RLiveObject` stored as nested object  
+Fixed - slow Redisson initialization in Sentinel  
+Fixed - missing PubSub messages when pingConnectionInterval setting is specified  
+Fixed - `RBatch` in `ExecutionMode.REDIS_WRITE_ATOMIC` and `ExecutionMode.REDIS_READ_ATOMIC` modes throws NumberFormatException exception  
+Fixed - `RRedissonRateLimiter.acquire` blocks forever  
+Fixed - lot of connections remain in TIME_WAIT state after Redisson shutdown  
+Fixed - `ClassNotFoundException` arise in Tomcat session manager  
+Fixed - `RHyperLogLog.addAll` method doesn't add all elements  
+
+### 27-Jun-2018 - versions 2.12.3 and 3.7.3 released
+Feature - added `RKeys.getKeys` method with batch size  
+Feature - added `SnappyCodecV2` codec  
+Fixed - `SerializationCodec` doesn't support proxied classes  
+Fixed - NPE if `RScheduledExecutorService`'s task scheduled with cron expression for finite number of execution  
+Fixed - validation of cron expression parameter of `RScheduledExecutorService.schedule` method  
+Feature - Iterator with batch size param for all `RSet`, `RMap`, `RMapCached` objects  
+Fixed - missing PubSub messages when `pingConnectionInterval` setting is specified  
+Fixed - excessive memory consumption if batched commands queued on Redis side  
+Fixed - `RRateLimiter.acquire` method throws NPE  
+
+### 14-Jun-2018 - versions 2.12.2 and 3.7.2 released
+
+Feature - `RBatchOptions.executionMode` setting added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
+Fixed - NPE in JCacheManager.close method  
+Fixed - ExecutorService tasks aren't reloaded properly  
+Fixed - removed unnecessary creation of HashMap instances in cluster mode  
+Fixed - `RedisNode.info` doesn't work  
+Fixed - NullPointerException when using setPingConnectionInterval in Pub/Sub mode  
+Fixed - LocalCachedMapDisable should implement Serializable  
+Fixed - `ConcurrentModificationException` in `RTransaction.execute` method  
+Fixed - exception handling in Fst and Json codec  
+Fixed - `RedissonScoredSortedSet.contains` and `RedissonScoredSortedSet.getScoreAsync` methods use wrong codec  
+Fixed - NPE if `RedissonLocalCachedMap` init with `ReconnectionStrategy.LOAD` param  
+Fixed - transactional object methods get blocked at high concurrency  
+
+### 02-Jun-2018 - versions 2.12.1 and 3.7.1 released
+Feature - `RRateLimiter` object moved to open-source version  
+Feature - ExecutorService task failover. Default failover interval is 60 seconds  
+Feature - `RScoredSortedSet.pollFirst` and `pollLast` methods with count parameter added  
+Feature - `RScoredSortedSet.pollFirst` and `pollLast` methods with timeout added  
+Feature - `RScoredSortedSet.pollFirstFromAny` and `pollLastFromAny` methods added  
+Improvement - `Node.time()` method returns `Time` object  
+Improvement -  RListReactive, RMapCacheReactive, RSetCacheReactive and RSetReactive are up-to-date to Async interfaces  
+Fixed - setPingConnectionInterval is not propagated for single server configuration  
+Fixed - ClusterConnectionManager should use shared resolverGroup  
+Fixed - value can't be added to BloomFilter  
+Fixed - Redis nodes with noaddr flag should be parsed correctly  
+Fixed - methods belongs to transactional objects get blocked at high concurrency  
+Fixed - Collection iterator doesn't use the same Redis node  
+Fixed - ExecuteService response queue expiration time set to one hour  
+Fixed - Executed remote tasks are not removed from Redis  
+Fixed - `reconnectionTimeout` and `failedAttempts` renamed in xsd schema  
+
+### 14-May-2018 - versions 2.12.0 and 3.7.0 released
+Feature - __Proxy mode__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#29-proxy-mode) for more details  
+Feature - __Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features/#104-transactions) for more details  
+Feature - __Spring Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-transaction-manager) for more details  
+Feature - __XA Transaction API implementation__  Please refer to [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features/#105-xa-transactions) for more details  
+Feature - `RPermitExpirableSemaphoreReactive` object added  
+Feature - `RMap.fastReplace` method added  
+Feature - PING support for Pub/Sub connections  
+Improvement - `RBatch` object settings extracted as BatchOptions object  
+Improvement - `RBitSet.set` method should return boolean  
+Fixed - New IP discovery through DNS doesn't work for cluster mode  
+Fixed - replication for Tomcat Session Manager with `readMode=INMEMORY`  
+Fixed - `pingConnectionInterval` is not applied  
+Fixed - JDK10 compatibility  
+Fixed - `RLiveObjectService.delete` throws NPE if entity doesn't exist  
+Fixed - `RSemaphore` object doesn't work with zero permit  
+Fixed - `RExecutorService.countActiveWorkers` hangs if there are no registered workers  
+Fixed - Iterator loop and incorrect result returning  
+Fixed - SSL connection to Azure redis is failed  
+Fixed - NPE in SentinelConnectionManager  
+Fixed - RemoteService synchronous invocations aren't thread safe (regression since 2.10.5 / 3.5.5 versions)  
+Fixed - `bad argument #1 to 'len' (string expected, got boolean)` error arise for `RMapCache` object  
+Fixed - `RedisTimeoutException` arise during blocking command execution on RBlockingQueue and RBlockingDeque objects  
+
+### 09-Apr-2018 - versions 2.11.5 and 3.6.5 released
+Feature - `RKeys.copy` method added  
+Feature - `RObject.copy` method added  
+Feature - `RSetCache.getLock` method added  
+Fixed - `ClusterConnectionManager` throws `IllegalArgumentException`  
+Fixed - `CommandDecoder` doesn't remove command from commands queue when response was decoded with error  
+Fixed - `RSetMultimap.get()` doesn't create multimap entry in case of absence  
+Fixed - an error shouldn't appear if Redisson successfully got the information at least from one sentinel/cluster Redis node  
+Fixed - `RObject.migrate` method  
+Fixed - hdel comand wasn't used during remote service task removal  
+
+### 27-Mar-2018 - versions 2.11.4 and 3.6.4 released
+
+Feature - `RSet.getLock` method added  
+Fixed - race condition with load balancer node selection  
+Fixed - `READONLY can't write against a read only slave` error during failover  
+Fixed - NPE during failover in Sentinel mode  
+Fixed - `JCache.getAll` causes io.netty.util.IllegalReferenceCountException  
+Fixed - NPE in CommandDecoder handler while using RBatch object  
+Fixed - `RSortedSet` object tries to compare wrong types  
+Fixed - `ClassCastException` in `RListMultimapCache.removeAll` method  
+
+### 14-Mar-2018 - versions 2.11.3 and 3.6.3 released
+
+Feature - DNS monitoring for Sentinel nodes  
+Fixed - Old/stale nodes not removed from NodesGroup  
+Fixed - CertificateException while connecting over SSL to Azure or AWS Elasticache config endpoint  
+Fixed - publish subscribe connections couldn't be resubscribed during failover  
+Fixed - RedissonRedLock.tryLock doesn't work for some values of wait time parameter  
+Fixed - NPE in JCache.getAndRemoveValue  
+Fixed - memory leak in publish subscribe  
+Fixed - codec classLoader wasn't used in `ExecutorService` and `RemoteService` objects  
+Fixed - warning for disconnected slaves in sentinel mode  
+
+### 05-Mar-2018 - versions 2.11.2 and 3.6.2 released
+
+[Redisson PRO](https://redisson.pro) performance improvements for follow `performanceMode` values:
+
+`HIGHER_THROUGHPUT` - up to **25%** performance growth  
+`LOWER_LATENCY_AUTO` - up to **100%** performance growth  
+`LOWER_LATENCY_MODE_2` - up to **100%** performance growth  
+`LOWER_LATENCY_MODE_1` - up to **100%** performance growth  
+
+Feature - new values added to `performanceMode` setting  
+Feature - `lockAsync` and `unlockAsync` methods added to `RedissonMultiLock`  
+Feature - `RMapCache.remainTimeToLive` method added  
+Feature - `Config.addressResolverGroupFactory` setting added (thanks @Hai Saadon)  
+Improvement - `UpdateMode.AFTER_REQUEST` update mode optimization in tomcat session manager  
+Improvement - removed ByteBuf object usage during collection iteration  
+Fixed - `Unable to send command` error under heavy load using Redisson PRO  
+Fixed - `expire`, `expireAt` and `clearExpire` commands aren't implemented properly for `RBloomFilter`, `RDelayedQueue`, `RFairLock`, `RLocalCachedMap` and `RPermitExpirableSemaphore` object  
+Fixed - Redis clients duplication during discovering ip change of hostname  
+Fixed - tomcat session renewal in tomcat session manager  
+Fixed - `failedAttempts` setting should be applied to Slave nodes only  
+
+### 15-Feb-2018 - versions 2.11.1 and 3.6.1 released
+
+Feature - `RedissonClusteredSpringLocalCachedCacheManager` added. Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#1421-spring-cache-local-cache-and-data-partitioning) for more details  
+Feature - `rangeTailReversed`, `rangeHeadReversed` and `rangeReversed` methods added to `RLexSortedSet` object  
+Feature - `RBucketsAsync` interface added  
+Feature - `scanInterval` setting added for Sentinel mode  
+Feature - `RLocalCachedMap.clearLocalCache` method added  
+Fixed - remove `hset` command invocation during `RMapCache` entry loading  
+Fixed - buffer leak in `replace` and `remove` methods of `RLocalCachedMap` object  
+Fixed - `RRemoteService` object throws NPE  
+Fixed - Multimap cluster compatibility  
+Fixed - Enum support for Live Objects  
+Fixed - Jackson 2.9 compatibility  
+Fixed - `RTopic.removeAllListeners` got blocked on invocation  
+Fixed - possible pubsub listeners leak  
+Fixed - `RBatch` throws NPE with big pipeline in atomic mode  
+Fixed - Warning about `CommandDecoder.decode()` method  
+
+### 29-Jan-2018 - versions 2.11.0 and 3.6.0 released
+
+Feature - __`atomic` setting added to RBatch object__  Please read [documentation](https://github.com/redisson/redisson/wiki/10.-additional-features#103-execution-batches-of-commands) for more details  
+Feature - __`updateMode` setting added to Tomcat Redis Session Manager__  Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#145-tomcat-redis-session-manager) for more details  
+Feature - __`RateLimiter` object added__  Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#612-ratelimiter) for more details  
+Feature - __`RClusteredBloomFilter` object added__  Please read [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects#681-bloom-filter-data-partitioning) for more details  
+Feature - __`KQueue` support added__  Please read [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#eventloopgroup) for more details  
+Feature - __`Tomcat 9` support added__  Please read [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#145-tomcat-redis-session-manager) for more details  
+Feature - __`RPriorityBlockingQueue` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#718-priority-blocking-queue) for more details  
+Feature - __`RPriorityBlockingDeque` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#719-priority-blocking-deque) for more details  
+Feature - __`RLongAdder` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#610-longadder) for more details  
+Feature - __`DoubleAdder` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#611-doubleadder) for more details  
+Feature - `RBucket.getAndDelete`, `RAtomicLong.getAndDelete` and `RAtomicDouble.getAndDelete` methods added  
+Feature - __`RAtomicDoubleReactive` object added__  
+Feature - `RPriorityQueue.pollLastAndOfferFirstTo` method added  
+Improvement - support single config endpoint node for cluster mode  
+Improvement - hash functions replaced with https://github.com/google/highwayhash  
+Fixed - JDK 1.6+ compatibility for RemoteService  
+Fixed - `setDnsMonitoringInterval(-1)` doesn't disable DNS monitoring  
+Fixed - `RLocalCachedMap.putAll` gets stuck if map passed as parameter contains > 10000 elements  
+Fixed - `RLocalCachedMap.put` value encoding  
+Fixed - `RKeys.countExists` and `RKeys.touch` return wrong result in cluster mode  
+Fixed - Wrong parsing of RScript.ReturnType.MULTI result  
+Fixed - RedissonReadLock by name with colon couldn't be unlocked properly  
+Fixed - `rg.springframework.cache.Cache$ValueRetrievalException`shouldn't be wrapped by IllegalStateException  
+Fixed - `RMapCache` listeners are not working on cross-platform environment  
+Fixed - JsonJacksonCoded shouldn't override provided objectMapper settings (thanks to @gzeskas)  
+
+### 25-Dec-2017 - versions 2.10.7 and 3.5.7 released
+
+Feature - __`RClusteredBitSet` object added__ Please read [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects/#641-bitset-data-partitioning) for more details  
+Improvement - Memory consumption optimization. `RExecutorFuture` and `RScheduledFuture` shouldn't be tracked if they weren't stored  
+Improvement - Config settings `codecProvider` and `redissonReferenceEnabled` renamed to `referenceCodecProvider` and `referenceEnabled`  
+Fixed - `RedissonRedLock` couldn't be locked in some cases  
+Fixed - `RRemoteService` can't ack when running redis in cluster mode  
+Fixed - DNSMonitor fails on bootstrap with custom event loop  
+Fixed - Redis domain name IP address renew process  
+
+### 08-Dec-2017 - versions 2.10.6 and 3.5.6 released
+
+Feature - `RSetMultimapReactive` object added  
+Feature - `RListMultimapReactive` object added  
+Feature - `ReconnectionStrategy` and `SyncStrategy` added to `LocalCachedMapOptions`  
+Feature - `pingConnectionInterval` setting added  
+Improvement - added sync on key for `JCache.invoke` method  
+Fixed - arguments encoding for `RScript`  
+Fixed - `MapLoader` hangs if loaded value is null  
+Fixed - OutOfMemory during `RExecutorService` usage  
+Fixed - NPE in `RedissonSession.save` method  
+Fixed - NPE during `RExecutorService` usage  
+Fixed - `SnappyCodec` can't handle data more than 32Kb  
+Fixed - failed to continue poll remote responses if current waiting for response has been canceled  
+Fixed - SSL support for cluster mode  
+Fixed - task with longer start time shouldn't overlap current task with shorter start time  
+Fixed - DNS monitor caches host name binding  
+Fixed - ReadMode.MASTER_SLAVE should be taken in account  
+Fixed - slave nodes should be added without freeze state  
+Fixed - master node should be disabled if any slave up  
+Fixed - handling connection to Redis nodes returned to online state  
+
 ### 31-Oct-2017 - versions 2.10.5 and 3.5.5 released
 `ProjectReactor` dependency for `3.5.5` version was updated to `3.1.1` version  
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class StringCodec implements Codec {
+public class StringCodec extends BaseCodec {
 
     public static final StringCodec INSTANCE = new StringCodec();
 
@@ -79,26 +79,6 @@ public class StringCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
     }
 
 }

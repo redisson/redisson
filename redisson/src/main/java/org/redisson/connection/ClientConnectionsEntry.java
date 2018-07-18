@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ package org.redisson.connection;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -25,6 +25,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +55,10 @@ public class ClientConnectionsEntry {
     private FreezeReason freezeReason;
     final RedisClient client;
 
-    private NodeType nodeType;
+    private volatile NodeType nodeType;
     private ConnectionManager connectionManager;
 
-    private final AtomicInteger failedAttempts = new AtomicInteger();
+    private final AtomicLong firstFailTime = new AtomicLong(0);
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType nodeType) {
@@ -73,6 +74,10 @@ public class ClientConnectionsEntry {
         connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
     }
     
+    public boolean isMasterForRead() {
+        return getFreezeReason() == FreezeReason.SYSTEM && getConfig().getReadMode() == ReadMode.MASTER_SLAVE;
+    }
+    
     public void setNodeType(NodeType nodeType) {
         this.nodeType = nodeType;
     }
@@ -80,16 +85,19 @@ public class ClientConnectionsEntry {
         return nodeType;
     }
 
-    public void resetFailedAttempts() {
-        failedAttempts.set(0);
+    public void resetFirstFail() {
+        firstFailTime.set(0);
     }
 
-    public int getFailedAttempts() {
-        return failedAttempts.get();
+    public boolean isFailed() {
+        if (firstFailTime.get() != 0) {
+            return System.currentTimeMillis() - firstFailTime.get() > connectionManager.getConfig().getFailedSlaveCheckInterval(); 
+        }
+        return false;
     }
-
-    public int incFailedAttempts() {
-        return failedAttempts.incrementAndGet();
+    
+    public void trySetupFistFail() {
+        firstFailTime.compareAndSet(0, System.currentTimeMillis());
     }
 
     public RedisClient getClient() {
@@ -138,6 +146,11 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseConnection(RedisConnection connection) {
+        if (client != connection.getRedisClient()) {
+            connection.closeAsync();
+            return;
+        }
+
         connection.setLastUsageTime(System.currentTimeMillis());
         freeConnections.add(connection);
     }
@@ -212,6 +225,11 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        if (client != connection.getRedisClient()) {
+            connection.closeAsync();
+            return;
+        }
+        
         connection.setLastUsageTime(System.currentTimeMillis());
         freeSubscribeConnections.add(connection);
     }
@@ -224,17 +242,11 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.release();
     }
 
-    public boolean freezeMaster(FreezeReason reason) {
+    public void freezeMaster(FreezeReason reason) {
         synchronized (this) {
             setFreezed(true);
-            // only RECONNECT freeze reason could be replaced
-            if (getFreezeReason() == null
-                    || getFreezeReason() == FreezeReason.RECONNECT) {
-                setFreezeReason(reason);
-                return true;
-            }
+            setFreezeReason(reason);
         }
-        return false;
     }
 
     @Override
@@ -243,7 +255,7 @@ public class ClientConnectionsEntry {
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
                 + freeConnectionsCounter + ", freezed=" + freezed + ", freezeReason=" + freezeReason
-                + ", client=" + client + ", nodeType=" + nodeType + ", failedAttempts=" + failedAttempts
+                + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + firstFailTime
                 + "]";
     }
 

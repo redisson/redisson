@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,16 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
-    Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
-    String name;
-    PubSubType type;
+    private final Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+    private final String name;
+    private final PubSubType type;
 
     public SubscribeListener(String name, PubSubType type) {
         super();

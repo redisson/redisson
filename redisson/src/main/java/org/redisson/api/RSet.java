@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,37 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set<V>> {
 
     /**
-     * Returns values iterator matches <code>pattern</code>. 
+     * Returns lock instance associated with <code>value</code>
      * 
-     * @param pattern for values
+     * @param value - set value
+     * @return lock
+     */
+    RLock getLock(V value);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(int count);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern, int count);
+    
+    /**
+     * Returns iterator over elements in this set matches <code>pattern</code>. 
+     * 
+     * @param pattern - search pattern
      * @return iterator
      */
     Iterator<V> iterator(String pattern);

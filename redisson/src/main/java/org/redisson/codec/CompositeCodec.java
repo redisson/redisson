@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,6 +69,11 @@ public class CompositeCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return valueCodec.getValueEncoder();
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
     }
 
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
  */
 package org.redisson.connection;
 
+import java.util.UUID;
+
 import org.redisson.config.Config;
 import org.redisson.config.ElasticacheServersConfig;
 
 @Deprecated
 public class ElasticacheConnectionManager extends ReplicatedConnectionManager {
 
-    public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config) {
-        super(cfg, config);
+    public ElasticacheConnectionManager(ElasticacheServersConfig cfg, Config config, UUID id) {
+        super(cfg, config, id);
     }
 
 }

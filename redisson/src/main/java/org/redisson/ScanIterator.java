@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,9 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
-
+import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
 /**
  * 
@@ -27,8 +26,10 @@ import org.redisson.client.protocol.decoder.ScanObjectEntry;
  */
 public interface ScanIterator {
 
-    ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern);
+    ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count);
 
+    RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count);
+    
     boolean remove(Object value);
     
 }

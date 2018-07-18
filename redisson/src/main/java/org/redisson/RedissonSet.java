@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -25,17 +24,21 @@ import java.util.List;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.Hash;
+import org.redisson.misc.RedissonPromise;
+
+import io.netty.buffer.ByteBuf;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -48,7 +51,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     RedissonClient redisson;
     
-    protected RedissonSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonSet(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name);
         this.redisson = redisson;
     }
@@ -89,28 +92,32 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
-    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
-        if (pattern == null) {
-            RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos);
-            return get(f);
-        }
-
-        RFuture<ListScanResult<ScanObjectEntry>> f = commandExecutor.readAsync(client, name, new ScanCodec(codec), RedisCommands.SSCAN, name, startPos, "MATCH", pattern);
-        return get(f);
+    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+        return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
     @Override
-    public Iterator<V> iterator(final String pattern) {
+    public Iterator<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Iterator<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos, pattern);
+            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return scanIterator(getName(), client, nextIterPos, pattern, count);
             }
 
             @Override
-            void remove(V value) {
-                RedissonSet.this.remove(value);
+            protected void remove(Object value) {
+                RedissonSet.this.remove((V)value);
             }
             
         };
@@ -211,15 +218,17 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(true);
+            return RedissonPromise.newSucceededFuture(true);
         }
+        
+        String tempName = suffixName(getName(), "redisson_temp");
         
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                         "redis.call('sadd', KEYS[2], unpack(ARGV)); "
                         + "local size = redis.call('sdiff', KEYS[2], KEYS[1]);"
                         + "redis.call('del', KEYS[2]); "
                         + "return #size == 0 and 1 or 0; ",
-                       Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), encode(c).toArray());
+                       Arrays.<Object>asList(getName(), tempName), encode(c).toArray());
     }
 
     @Override
@@ -230,7 +239,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
         
         List<Object> args = new ArrayList<Object>(c.size() + 1);
@@ -249,19 +258,23 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         if (c.isEmpty()) {
             return deleteAsync();
         }
+        
+        String tempName = suffixName(getName(), "redisson_temp");
+        
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                "redis.call('sadd', KEYS[2], unpack(ARGV)); "
                 + "local prevSize = redis.call('scard', KEYS[1]); "
                 + "local size = redis.call('sinterstore', KEYS[1], KEYS[1], KEYS[2]);"
                 + "redis.call('del', KEYS[2]); "
                 + "return size ~= prevSize and 1 or 0; ",
-            Arrays.<Object>asList(getName(), "redisson_temp__{" + getName() + "}"), encode(c).toArray());
+            Arrays.<Object>asList(getName(), tempName), 
+            encode(c).toArray());
     }
 
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
         
         List<Object> args = new ArrayList<Object>(c.size() + 1);
@@ -538,6 +551,31 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         params.add(destName);
         
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
+    }
+
+    private String getLockName(Object value) {
+        ByteBuf state = encode(value);
+        try {
+            return suffixName(getName(value), Hash.hash128toBase64(state) + ":lock");
+        } finally {
+            state.release();
+        }
+    }
+    
+    @Override
+    public RLock getLock(V value) {
+        String lockName = getLockName(value);
+        return new RedissonLock(commandExecutor, lockName);
+    }
+
+    @Override
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos,
+            String pattern, int count) {
+        if (pattern == null) {
+            return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "COUNT", count);
+        }
+
+        return commandExecutor.readAsync(client, name, codec, RedisCommands.SSCAN, name, startPos, "MATCH", pattern, "COUNT", count);
     }
     
 }

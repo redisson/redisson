@@ -1,25 +1,31 @@
 package org.redisson.spring.support;
 
-import io.netty.channel.EventLoopGroup;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import static org.hamcrest.Matchers.*;
+
 import org.junit.Test;
 import org.redisson.ClusterRunner;
 import org.redisson.RedisRunner;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-import static org.junit.Assert.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.config.Config;
 import org.redisson.config.SingleServerConfig;
-import org.redisson.liveobject.provider.ResolverProvider;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import io.netty.channel.EventLoopGroup;
 
 /**
  *
@@ -116,9 +122,8 @@ public class SpringNamespaceWikiTest {
             assertEquals(2, config.getNettyThreads());
             assertSame(context.getBean("myCodec", Codec.class), config.getCodec());
             assertEquals(false, config.isUseLinuxNativeEpoll());
-            assertEquals(false, config.isRedissonReferenceEnabled());
-            assertSame(context.getBean("myCodecProvider", CodecProvider.class), config.getCodecProvider());
-            assertSame(context.getBean("myResolverProvider", ResolverProvider.class), config.getResolverProvider());
+            assertEquals(false, config.isReferenceEnabled());
+            assertSame(context.getBean("myCodecProvider", ReferenceCodecProvider.class), config.getReferenceCodecProvider());
             assertSame(context.getBean("myExecutor", Executor.class), config.getExecutor());
             assertSame(context.getBean("myEventLoopGroup", EventLoopGroup.class), config.getEventLoopGroup());
             Method method = Config.class.getDeclaredMethod("getSingleServerConfig", (Class<?>[]) null);
@@ -130,8 +135,6 @@ public class SpringNamespaceWikiTest {
             assertEquals(40000, single.getTimeout());
             assertEquals(5, single.getRetryAttempts());
             assertEquals(60000, single.getRetryInterval());
-            assertEquals(70000, single.getReconnectionTimeout());
-            assertEquals(8, single.getFailedAttempts());
             assertEquals("do_not_use_if_it_is_not_set", single.getPassword());
             assertEquals(10, single.getSubscriptionsPerConnection());
             assertEquals("client_name", single.getClientName());
@@ -140,7 +143,6 @@ public class SpringNamespaceWikiTest {
             assertEquals(13, single.getConnectionMinimumIdleSize());
             assertEquals(14, single.getConnectionPoolSize());
             assertEquals(15, single.getDatabase());
-            assertEquals(false, single.isDnsMonitoring());
             assertEquals(80000, single.getDnsMonitoringInterval());
             ((ConfigurableApplicationContext) context).close();
         } finally {

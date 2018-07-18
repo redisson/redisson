@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,14 @@
  */
 package org.redisson.misc;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.redisson.api.RFuture;
 
+import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ImmediateEventExecutor;
 import io.netty.util.concurrent.Promise;
@@ -32,6 +34,17 @@ import io.netty.util.concurrent.Promise;
  * @param <T> type of object
  */
 public class RedissonPromise<T> implements RPromise<T> {
+
+    private static final Field listenersField;
+    
+    static {
+        try {
+            listenersField = DefaultPromise.class.getDeclaredField("listeners");
+            listenersField.setAccessible(true);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     private final Promise<T> promise = ImmediateEventExecutor.INSTANCE.newPromise();
     
@@ -172,5 +185,19 @@ public class RedissonPromise<T> implements RPromise<T> {
     public boolean cancel(boolean mayInterruptIfRunning) {
         return promise.cancel(mayInterruptIfRunning);
     }
-    
+
+    @Override
+    public boolean hasListeners() {
+        try {
+            return listenersField.get(promise) != null;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "RedissonPromise [promise=" + promise + "]";
+    }
+
 }

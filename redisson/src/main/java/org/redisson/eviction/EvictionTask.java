@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,10 @@ abstract class EvictionTask implements Runnable {
                 }
 
                 Integer size = future.getNow();
+                if (size == -1) {
+                    schedule();
+                    return;
+                }
 
                 if (sizeHistory.size() == 2) {
                     if (sizeHistory.peekFirst() > sizeHistory.peekLast()

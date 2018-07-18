@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
@@ -66,10 +67,18 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
     }
     
-    class RedissonInputStream extends InputStream {
+    public class RedissonInputStream extends InputStream {
 
         private int index;
         private int mark;
+        
+        public void seek(long pos) {
+            if (pos >= 0 && pos < size()) {
+                index = (int) pos;
+            } else {
+                throw new IllegalStateException("size is " + size() + " but pos is " + pos);
+            }
+        }
         
         @Override
         public long skip(long n) throws IOException {
@@ -251,7 +260,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     @Override
     public RFuture<Void> setAsync(byte[] value) {
         if (value.length > 512*1024*1024) {
-            RPromise<Void> result = newPromise();
+            RPromise<Void> result = new RedissonPromise<Void>();
             int chunkSize = 10*1024*1024;
             write(value, result, chunkSize, 0);
             return result;

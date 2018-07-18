@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,8 +16,10 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.protocol.ScoredEntry;
@@ -45,16 +47,119 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
+    /**
+     * Removes and returns first available tail element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element, or {@code null} if all sorted sets are empty 
+     */
+    V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    
+    /**
+     * Removes and returns first available head element of <b>any</b> sorted set,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined sorted sets <b>including</b> this one.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param queueNames - names of queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, or {@code null} if all sorted sets are empty 
+     */
+    V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+        
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    V pollFirst(long timeout, TimeUnit unit);
+
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    V pollLast(long timeout, TimeUnit unit);
+    
+    /**
+     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     *
+     * @param count - elements amount
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
+    Collection<V> pollFirst(int count);
+
+    /**
+     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     * 
+     * @param count - elements amount
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
+    Collection<V> pollLast(int count);
+    
+    /**
+     * Removes and returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element, 
+     *         or {@code null} if this sorted set is empty
+     */
     V pollFirst();
 
+    /**
+     * Removes and returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     V pollLast();
 
+    /**
+     * Returns the head element or {@code null} if this sorted set is empty.
+     *
+     * @return the head element or {@code null} if this sorted set is empty
+     */
     V first();
 
+    /**
+     * Returns the tail element or {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     V last();
-    
+
+    /**
+     * Returns score of the tail element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     Double firstScore();
-    
+
+    /**
+     * Returns score of the head element or returns {@code null} if this sorted set is empty.
+     *
+     * @return the tail element or {@code null} if this sorted set is empty
+     */
     Double lastScore();
 
     Long addAll(Map<V, Double> objects);
@@ -79,6 +184,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Integer revRank(V o);
 
+    /**
+     * Returns score of element or <code>null</code> if it doesn't exist.
+     * 
+     * @param o - element
+     * @return score
+     */
     Double getScore(V o);
 
     /**
@@ -119,9 +230,48 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     boolean tryAdd(double score, V object);
 
+    /**
+     * Returns size of this set.
+     * 
+     * @return size
+     */
     int size();
 
+    /**
+     * Returns <code>true</code> if this set is empty
+     * 
+     * @return <code>true</code> if empty
+     */
     boolean isEmpty();
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(int count);
+    
+    /**
+     * Returns an iterator over elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return iterator
+     */
+    Iterator<V> iterator(String pattern, int count);
 
     boolean contains(Object o);
 

@@ -1,8 +1,8 @@
 package org.redisson;
 
 import java.io.IOException;
+
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.redisson.api.RedissonClient;
@@ -18,14 +18,18 @@ public abstract class BaseTest {
         if (!RedissonRuntimeEnvironment.isTravis) {
             RedisRunner.startDefaultRedisServerInstance();
             defaultRedisson = createInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            defaultRedisson.shutdown();
-            RedisRunner.shutDownDefaultRedisServerInstance();
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    defaultRedisson.shutdown();
+                    try {
+                        RedisRunner.shutDownDefaultRedisServerInstance();
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                }
+            });
         }
     }
 

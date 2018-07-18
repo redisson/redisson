@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -97,7 +97,14 @@ public class CommandData<T, R> implements QueueCommand {
     }
     
     public boolean isBlockingCommand() {
-        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName());
+        return RedisCommands.BLOCKING_COMMANDS.contains(command.getName()) 
+                || RedisCommands.XREAD_BLOCKING_SINGLE == command
+                    || RedisCommands.XREAD_BLOCKING == command;
+    }
+
+    @Override
+    public boolean isExecuted() {
+        return promise.isDone();
     }
 
 }

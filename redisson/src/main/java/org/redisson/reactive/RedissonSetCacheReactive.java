@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,23 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetCache;
+import org.redisson.ScanIterator;
 import org.redisson.api.RFuture;
+import org.redisson.api.RSetCacheAsync;
 import org.redisson.api.RSetCacheReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.eviction.EvictionScheduler;
 
@@ -58,21 +60,35 @@ import reactor.fn.Supplier;
  */
 public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive implements RSetCacheReactive<V> {
 
-    private final RedissonSetCache<V> instance;
+    private final RSetCacheAsync<V> instance;
     
     public RedissonSetCacheReactive(EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
+        this(commandExecutor, name, new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null));
+    }
+    
+    public RedissonSetCacheReactive(CommandReactiveExecutor commandExecutor, String name, RSetCacheAsync<V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     public RedissonSetCacheReactive(Codec codec, EvictionScheduler evictionScheduler, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
+        this(codec, commandExecutor, name, new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null));
     }
 
+    public RedissonSetCacheReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RSetCacheAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
+    }
+
+    
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.ZCARD_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -85,11 +101,11 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         });
     }
 
-    Publisher<ListScanResult<ScanObjectEntry>> scanIterator(final InetSocketAddress client, final long startPos) {
-        return reactive(new Supplier<RFuture<ListScanResult<ScanObjectEntry>>>() {
+    Publisher<ListScanResult<Object>> scanIterator(final RedisClient client, final long startPos) {
+        return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
             @Override
-            public RFuture<ListScanResult<ScanObjectEntry>> get() {
-                return instance.scanIteratorAsync(getName(), client, startPos, null);
+            public RFuture<ListScanResult<Object>> get() {
+                return ((ScanIterator)instance).scanIteratorAsync(getName(), client, startPos, null, 10);
             }
         });
     }
@@ -98,7 +114,7 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
                 return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
             }
         };
@@ -127,6 +143,16 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
                 Arrays.<Object>asList(getName()), System.currentTimeMillis(), timeoutDate, encode(value));
     }
 
+    @Override
+    public Publisher<Set<V>> readAll() {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
+    
     @Override
     public Publisher<Boolean> remove(final Object o) {
         return reactive(new Supplier<RFuture<Boolean>>() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,6 +63,13 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
      */
     long get();
 
+    /**
+     * Gets and deletes object
+     * 
+     * @return the current value
+     */
+    long getAndDelete();
+    
     /**
      * Atomically adds the given value to the current value.
      *

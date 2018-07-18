@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonReference;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RLiveObjectService;
@@ -32,7 +33,7 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
@@ -103,15 +104,16 @@ public class RedissonObjectFactory {
 
     public static <T> T fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getType();
-        CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
+        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         if (type != null) {
             if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
-                RLiveObjectService liveObjectService = redisson.getLiveObjectService();
+                RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
                 REntity anno = ClassUtils.getAnnotation(type, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
-                return (T) liveObjectService.get(type, ns.resolveId(rr.getKeyName()));
+                Object id = ns.resolveId(rr.getKeyName());
+                return (T) liveObjectService.createLiveObject(type, id);
             }
             List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
             for (Class<?> iType : interfaces) {
@@ -133,7 +135,7 @@ public class RedissonObjectFactory {
     
     public static <T> T fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();
-        CodecProvider codecProvider = redisson.getConfig().getCodecProvider();
+        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         /**
          * Live Object from reference in reactive client is not supported yet.
          */
@@ -158,12 +160,12 @@ public class RedissonObjectFactory {
         
         if (object instanceof RObject && !(object instanceof RLiveObject)) {
             RObject rObject = ((RObject) object);
-            config.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
+            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
             return new RedissonReference(object.getClass(), ((RObject) object).getName(), ((RObject) object).getCodec());
         }
         if (object instanceof RObjectReactive && !(object instanceof RLiveObject)) {
             RObjectReactive rObject = ((RObjectReactive) object);
-            config.getCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
+            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
             return new RedissonReference(object.getClass(), ((RObjectReactive) object).getName(), ((RObjectReactive) object).getCodec());
         }
         
@@ -173,7 +175,7 @@ public class RedissonObjectFactory {
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(config.getCodecProvider().getCodec(anno, (Class) rEntity));
+                        .newInstance(config.getReferenceCodecProvider().getCodec(anno, (Class) rEntity));
                 String name = Introspectior
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();

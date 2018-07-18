@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,14 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class BitsSizeReplayConvertor extends SingleConvertor<Integer> {
+public class BitsSizeReplayConvertor extends SingleConvertor<Long> {
 
     @Override
-    public Integer convert(Object obj) {
+    public Long convert(Object obj) {
         if (obj == null) {
             return null;
         }
-        int val = ((Long) obj).intValue();
-        return val * 8;
+        return ((Long) obj) * 8;
     }
 
 }

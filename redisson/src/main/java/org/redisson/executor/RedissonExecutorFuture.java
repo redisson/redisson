@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.redisson.executor;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
+import org.redisson.remote.RequestId;
 
 /**
  * 
@@ -27,16 +28,20 @@ import org.redisson.misc.RPromise;
  */
 public class RedissonExecutorFuture<V> extends PromiseDelegator<V> implements RExecutorFuture<V> {
 
-    private final String taskId;
+    private final RequestId taskId;
     
-    public RedissonExecutorFuture(RPromise<V> promise, String taskId) {
+    public RedissonExecutorFuture(RemotePromise<V> promise) {
+        this(promise, promise.getRequestId());
+    }
+    
+    public RedissonExecutorFuture(RPromise<V> promise, RequestId taskId) {
         super(promise);
         this.taskId = taskId;
     }
 
     @Override
     public String getTaskId() {
-        return taskId;
+        return taskId.toString();
     }
 
 }

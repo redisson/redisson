@@ -7,6 +7,11 @@ import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -28,10 +33,69 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 public class JCacheTest extends BaseTest {
+
+    @Test
+    public void testGetAll() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        cfg.useSingleServer().setTimeout(300000);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        cache.put("1", "2");
+        cache.put("3", "4");
+        
+        Map<String, String> entries = cache.getAll(new HashSet<String>(Arrays.asList("1", "3", "7")));
+        Map<String, String> expected = new HashMap<String, String>();
+        expected.put("1", "2");
+        expected.put("3", "4");
+        assertThat(entries).isEqualTo(expected);
+        
+        cache.close();
+        runner.stop();
+    }
+    
+    @Test
+    public void testJson() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        cfg.setCodec(new JsonJacksonMapCodec(String.class, LocalDateTime.class, objectMapper));
+        
+        Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        LocalDateTime t = LocalDateTime.now();
+        cache.put("1", t);
+        Assert.assertEquals(t, cache.get("1"));
+        
+        cache.close();
+        runner.stop();
+    }
 
     @Test
     public void testRedissonConfig() throws InterruptedException, IllegalArgumentException, URISyntaxException, IOException {
@@ -50,6 +114,16 @@ public class JCacheTest extends BaseTest {
         
         cache.put("1", "2");
         Assert.assertEquals("2", cache.get("1"));
+        
+        cache.put("key", "value");
+        String result = cache.getAndRemove("key");
+
+        Assert.assertEquals("value", result);
+        Assert.assertNull(cache.get("key"));
+
+        cache.put("key", "value");
+        cache.remove("key");
+        Assert.assertNull(cache.get("key"));
         
         cache.close();
         runner.stop();

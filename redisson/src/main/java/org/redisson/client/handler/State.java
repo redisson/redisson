@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,6 @@ public class State {
 
     private int level = -1;
     private List<StateLevel> levels;
-    private DecoderState decoderStateCopy;
     private final boolean makeCheckpoint;
 
     public State(boolean makeCheckpoint) {
@@ -41,12 +40,20 @@ public class State {
 
     public void resetLevel() {
         level = -1;
+        levels.clear();
     }
     public int decLevel() {
         return --level;
     }
     public int incLevel() {
         return ++level;
+    }
+    
+    public StateLevel getLastLevel() {
+        if (levels == null || levels.isEmpty()) {
+            return null;
+        }
+        return levels.get(level);
     }
     
     public void addLevel(StateLevel stateLevel) {
@@ -76,17 +83,10 @@ public class State {
         this.decoderState = decoderState;
     }
 
-    public DecoderState getDecoderStateCopy() {
-        return decoderStateCopy;
-    }
-    public void setDecoderStateCopy(DecoderState decoderStateCopy) {
-        this.decoderStateCopy = decoderStateCopy;
-    }
-
     @Override
     public String toString() {
         return "State [batchIndex=" + batchIndex + ", decoderState=" + decoderState + ", level=" + level + ", levels="
-                + levels + ", decoderStateCopy=" + decoderStateCopy + "]";
+                + levels + "]";
     }
 
     

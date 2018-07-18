@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,10 @@
  */
 package org.redisson.misc;
 
-import java.nio.ByteBuffer;
-
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.util.CharsetUtil;
-import net.openhft.hashing.LongHashFunction;
 
 /**
  * 
@@ -31,18 +27,17 @@ import net.openhft.hashing.LongHashFunction;
  */
 public class Hash {
 
+    private static final long[] KEY = {0x9e3779b97f4a7c15L, 0xf39cc0605cedc834L, 0x1082276bf3a27251L, 0xf86c6a11d0c18e95L};
+
     private Hash() {
     }
-
-   
-    public static byte[] hash(ByteBuf objectState) {
-        ByteBuffer b = objectState.internalNioBuffer(objectState.readerIndex(), objectState.readableBytes());
-        long h1 = LongHashFunction.farmUo().hashBytes(b);
-        long h2 = LongHashFunction.xx().hashBytes(b);
+    
+    public static byte[] hash128toArray(ByteBuf objectState) {
+        long[] hash = hash128(objectState);
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
         try {
-            buf.writeLong(h1).writeLong(h2);
+            buf.writeLong(hash[0]).writeLong(hash[1]);
             byte[] dst = new byte[buf.readableBytes()];
             buf.readBytes(dst);
             return dst;
@@ -50,16 +45,41 @@ public class Hash {
             buf.release();
         }
     }
+    
+    public static long hash64(ByteBuf objectState) {
+        HighwayHash h = calcHash(objectState);
+        return h.finalize64();
+    }
+    
+    public static long[] hash128(ByteBuf objectState) {
+        HighwayHash h = calcHash(objectState);
+        return h.finalize128();
+    }
 
+    protected static HighwayHash calcHash(ByteBuf objectState) {
+        HighwayHash h = new HighwayHash(KEY);
+        int i;
+        int length = objectState.readableBytes();
+        int offset = objectState.readerIndex();
+        byte[] data = new byte[32];
+        for (i = 0; i + 32 <= length; i += 32) {
+            objectState.getBytes(offset  + i, data);
+            h.updatePacket(data, 0);
+        }
+        if ((length & 31) != 0) {
+            data = new byte[length & 31];
+            objectState.getBytes(offset  + i, data);
+            h.updateRemainder(data, 0, length & 31);
+        }
+        return h;
+    }
 
-    public static String hashToBase64(ByteBuf objectState) {
-        ByteBuffer bf = objectState.internalNioBuffer(objectState.readerIndex(), objectState.readableBytes());
-        long h1 = LongHashFunction.farmUo().hashBytes(bf);
-        long h2 = LongHashFunction.xx().hashBytes(bf);
+    public static String hash128toBase64(ByteBuf objectState) {
+        long[] hash = hash128(objectState);
 
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
         try {
-            buf.writeLong(h1).writeLong(h2);
+            buf.writeLong(hash[0]).writeLong(hash[1]);
             ByteBuf b = Base64.encode(buf);
             try {
                 String s = b.toString(CharsetUtil.UTF_8);

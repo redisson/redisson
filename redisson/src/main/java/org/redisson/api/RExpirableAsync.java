@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,9 +64,11 @@ public interface RExpirableAsync extends RObjectAsync {
     RFuture<Boolean> clearExpireAsync();
 
     /**
-     * Get remaining time to live of object in seconds.
+     * Remaining time to live of Redisson object that has a timeout 
      *
-     * @return <code>-1</code> if object does not exist or time in seconds
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
      */
     RFuture<Long> remainTimeToLiveAsync();
 

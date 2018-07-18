@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,14 +66,6 @@ public class RedissonQueue<V> extends RedissonList<V> implements RQueue<V> {
             throw new NoSuchElementException();
         }
         return value;
-    }
-    
-    protected long toSeconds(long timeout, TimeUnit unit) {
-        long seconds = unit.toSeconds(timeout);
-        if (timeout != 0 && seconds == 0) {
-            seconds = 1;
-        }
-        return seconds;
     }
     
     @Override

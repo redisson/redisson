@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,20 @@ package org.redisson.executor;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonExecutorService;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.remote.RemoteServiceRequest;
+import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
+
+import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -38,28 +39,18 @@ import org.redisson.remote.ResponseEntry;
  */
 public class ScheduledTasksService extends TasksService {
 
-    private String requestId;
-    private String schedulerQueueName;
-    private String schedulerChannelName;
+    private RequestId requestId;
     
     public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, redisson, name, commandExecutor, redissonId, responses);
     }
     
-    public void setRequestId(String requestId) {
+    public void setRequestId(RequestId requestId) {
         this.requestId = requestId;
     }
     
-    public void setSchedulerChannelName(String schedulerChannelName) {
-        this.schedulerChannelName = schedulerChannelName;
-    }
-    
-    public void setSchedulerQueueName(String scheduledQueueName) {
-        this.schedulerQueueName = scheduledQueueName;
-    }
-    
     @Override
-    protected RFuture<Boolean> addAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
+    protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         int requestIndex = 0;
         if ("scheduleCallable".equals(request.getMethodName())
                 || "scheduleRunnable".equals(request.getMethodName())) {
@@ -74,29 +65,19 @@ public class ScheduledTasksService extends TasksService {
         request.getArgs()[requestIndex] = request.getId();
         Long startTime = (Long)request.getArgs()[3];
         
-        if (requestId != null) {
-            return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                    // check if executor service not in shutdown state and previous task exists
-                    "if redis.call('exists', KEYS[2]) == 0 and redis.call('hexists', KEYS[5], ARGV[2]) == 1 then "
-                        + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
-                        + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
-                        + "redis.call('incr', KEYS[1]);"
-                        // if new task added to queue head then publish its startTime 
-                        // to all scheduler workers 
-                        + "local v = redis.call('zrange', KEYS[3], 0, 0); "
-                        + "if v[1] == ARGV[2] then "
-                           + "redis.call('publish', KEYS[4], ARGV[1]); "
-                        + "end "
-                        + "return 1;"
-                    + "end;"
-                    + "return 0;", 
-                    Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
-                    startTime, request.getId(), encode(request));
-        }
-        
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
+                    + "local retryInterval = redis.call('get', KEYS[6]); "
+                    + "if retryInterval ~= false then "
+                        + "local time = tonumber(ARGV[4]) + tonumber(retryInterval);"
+                        + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
+                    + "elseif tonumber(ARGV[5]) > 0 then "
+                        + "redis.call('set', KEYS[6], ARGV[5]);"
+                        + "local time = tonumber(ARGV[4]) + tonumber(ARGV[5]);"
+                        + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
+                    + "end; "
+
                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
                     + "redis.call('hset', KEYS[5], ARGV[2], ARGV[3]);"
                     + "redis.call('incr', KEYS[1]);"
@@ -109,55 +90,29 @@ public class ScheduledTasksService extends TasksService {
                     + "return 1;"
                 + "end;"
                 + "return 0;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName),
-                startTime, request.getId(), encode(request));
+                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName, tasksRetryIntervalName),
+                startTime, request.getId(), encode(request), System.currentTimeMillis(), tasksRetryInterval);
     }
     
     @Override
-    protected void awaitResultAsync(final RemoteInvocationOptions optionsCopy, final RemotePromise<Object> result,
-            final RemoteServiceRequest request) {
-        if (!optionsCopy.isResultExpected()) {
-            return;
-        }
-        
-        Long startTime = 0L;
-        if (request != null && request.getArgs() != null && request.getArgs().length > 3) {
-            startTime = (Long)request.getArgs()[3];
-        }
-        long delay = startTime - System.currentTimeMillis();
-        if (delay > 0) {
-            commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                @Override
-                public void run() {
-                    ScheduledTasksService.super.awaitResultAsync(optionsCopy, result, request);
-                }
-            }, (long)(delay - delay*0.10), TimeUnit.MILLISECONDS);
-        } else {
-            super.awaitResultAsync(optionsCopy, result, request);
-        }
-    }
-
-    @Override
-    protected RFuture<Boolean> removeAsync(RBlockingQueue<RemoteServiceRequest> requestQueue, RemoteServiceRequest request) {
-        return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+        return commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                    // remove from scheduler queue
-                    "if redis.call('zrem', KEYS[2], ARGV[1]) > 0 then "
-                      + "redis.call('hdel', KEYS[6], ARGV[1]); "
-                      + "if redis.call('decr', KEYS[3]) == 0 then "
-                         + "redis.call('del', KEYS[3]);"
-                         + "if redis.call('get', KEYS[4]) == ARGV[2] then "
-                            + "redis.call('set', KEYS[4], ARGV[3]);"
-                            + "redis.call('publish', KEYS[5], ARGV[3]);"
-                         + "end;"
-                      + "end;"
+                    "if redis.call('exists', KEYS[3]) == 0 then "
                       + "return 1;"
                   + "end;"
+                      
                   + "local task = redis.call('hget', KEYS[6], ARGV[1]); "
-                   // remove from executor queue
-                  + "if task ~= false and redis.call('lrem', KEYS[1], 1, task) > 0 then "
-                      + "redis.call('hdel', KEYS[6], ARGV[1]); "
+                  + "redis.call('hdel', KEYS[6], ARGV[1]); "
+                  
+                  + "redis.call('zrem', KEYS[2], 'ff' .. ARGV[1]); "
+                  + "local removedScheduled = redis.call('zrem', KEYS[2], ARGV[1]); "
+                  + "local removed = redis.call('lrem', KEYS[1], 1, ARGV[1]); "
+
+                  // remove from executor queue
+                  + "if task ~= false and (removed > 0 or removedScheduled > 0) then "
                       + "if redis.call('decr', KEYS[3]) == 0 then "
-                         + "redis.call('del', KEYS[3]);"
+                         + "redis.call('del', KEYS[3], KEYS[7]);"
                          + "if redis.call('get', KEYS[4]) == ARGV[2] then "
                             + "redis.call('set', KEYS[4], ARGV[3]);"
                             + "redis.call('publish', KEYS[5], ARGV[3]);"
@@ -165,17 +120,22 @@ public class ScheduledTasksService extends TasksService {
                       + "end;"
                       + "return 1;"
                   + "end;"
-                   // delete scheduled task
-                  + "redis.call('hdel', KEYS[6], ARGV[1]); "
+                  + "if task == false then "
+                      + "return 1; "
+                  + "end;"
                   + "return 0;",
-              Arrays.<Object>asList(requestQueue.getName(), schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName), 
-              request.getId(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+              Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName, tasksRetryIntervalName), 
+              taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
     
     @Override
-    protected String generateRequestId() {
+    protected RequestId generateRequestId() {
         if (requestId == null) {
-            return super.generateRequestId();
+            byte[] id = new byte[17];
+            // TODO JDK UPGRADE replace to native ThreadLocalRandom
+            PlatformDependent.threadLocalRandom().nextBytes(id);
+            id[0] = 1;
+            return new RequestId(id);
         }
         return requestId;
     }    

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,10 +46,9 @@ public class RedissonCache implements Cache {
     private final AtomicLong misses = new AtomicLong();
 
     public RedissonCache(RMapCache<Object, Object> mapCache, CacheConfig config, boolean allowNullValues) {
+        this(mapCache, allowNullValues);
         this.mapCache = mapCache;
-        this.map = mapCache;
         this.config = config;
-        this.allowNullValues = allowNullValues;
     }
 
     public RedissonCache(RMap<Object, Object> map, boolean allowNullValues) {
@@ -97,11 +96,7 @@ public class RedissonCache implements Cache {
     @Override
     public void put(Object key, Object value) {
         if (!allowNullValues && value == null) {
-            if (mapCache != null) {
-                mapCache.remove(key);
-            } else {
-                map.remove(key);
-            }
+            map.remove(key);
             return;
         }
         
@@ -116,11 +111,7 @@ public class RedissonCache implements Cache {
     public ValueWrapper putIfAbsent(Object key, Object value) {
         Object prevValue;
         if (!allowNullValues && value == null) {
-            if (mapCache != null) {
-                prevValue = mapCache.get(key);
-            } else {
-                prevValue = map.get(key);
-            }
+            prevValue = map.get(key);
         } else {
             value = toStoreValue(value);
             if (mapCache != null) {
@@ -164,15 +155,16 @@ public class RedissonCache implements Cache {
                 if (value == null) {
                     try {
                         value = toStoreValue(valueLoader.call());
-                    } catch (Exception ex) {
+                    } catch (Throwable ex) {
+                        RuntimeException exception;
                         try {
                             Class<?> c = Class.forName("org.springframework.cache.Cache$ValueRetrievalException");
                             Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
-                            RuntimeException exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex.getCause());
-                            throw exception;                
+                            exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex);
                         } catch (Exception e) {
                             throw new IllegalStateException(e);
                         }
+                        throw exception;
                     }
                     put(key, value);
                 }

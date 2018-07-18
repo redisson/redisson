@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -120,9 +120,11 @@ public interface RLiveObjectService {
      * @param <K> Key type
      * @param entityClass - object class
      * @param id - object id
+     * 
+     * @return <code>true</code> if entity was deleted successfully, <code>false</code> otherwise 
      */
-    <T, K> void delete(Class<T> entityClass, K id);
-
+    <T, K> boolean delete(Class<T> entityClass, K id);
+    
     /**
      * To cast the instance to RLiveObject instance.
      * 
@@ -162,7 +164,7 @@ public interface RLiveObjectService {
     <T> boolean isLiveObject(T instance);
     
     /**
-     * Returns true if the RLiveObject does not yet exist in redis. Also true if
+     * Returns true if the RLiveObject already exists in redis. It will return false if
      * the passed object is not a RLiveObject.
      * 
      * @param <T> type of instance

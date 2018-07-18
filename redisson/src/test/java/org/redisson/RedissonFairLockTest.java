@@ -244,7 +244,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         Assert.assertTrue(latch.await(1, TimeUnit.SECONDS));
         RLock lock = redisson.getFairLock("lock");
         
-        await().atMost(redisson.getConfig().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
+        await().atMost(redisson.getConfig().getLockWatchdogTimeout() + 1000, TimeUnit.MILLISECONDS).until(() -> !lock.isLocked());
     }
 
     @Test

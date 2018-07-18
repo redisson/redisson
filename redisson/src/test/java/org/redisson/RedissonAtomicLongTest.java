@@ -1,11 +1,30 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RAtomicLong;
 
 public class RedissonAtomicLongTest extends BaseTest {
 
+    @Test
+    public void testGetZero() {
+        RAtomicLong ad2 = redisson.getAtomicLong("test");
+        assertThat(ad2.get()).isZero();
+    }
+    
+    @Test
+    public void testGetAndDelete() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        al.set(10);
+        assertThat(al.getAndDelete()).isEqualTo(10);
+        assertThat(al.isExists()).isFalse();
+
+        RAtomicLong ad2 = redisson.getAtomicLong("test2");
+        assertThat(ad2.getAndDelete()).isZero();
+    }
+    
     @Test
     public void testCompareAndSetZero() {
         RAtomicLong al = redisson.getAtomicLong("test");

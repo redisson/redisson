@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,14 +35,26 @@ public interface RKeys extends RKeysAsync {
     boolean move(String name, int database);
     
     /**
-     * Transfer an object from source Redis instance to destination Redis instance
+     * Transfer object from source Redis instance to destination Redis instance
      *
      * @param name of object
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      */
-    void migrate(String name, String host, int port, int database);
+    void migrate(String name, String host, int port, int database, long timeout);
+    
+    /**
+     * Copy object from source Redis instance to destination Redis instance
+     *
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     */
+    void copy(String name, String host, int port, int database, long timeout);
     
     /**
      * Set a timeout for object. After the timeout has expired,
@@ -173,12 +185,22 @@ public interface RKeys extends RKeysAsync {
     Iterable<String> getKeysByPattern(String pattern, int count);
     
     /**
-     * Get all keys using iterator. Keys traversing with SCAN operation
+     * Get all keys using iterator. Keys traversing with SCAN operation. 
+     * Each SCAN operation loads up to <code>10</code> keys per request. 
      *
      * @return Iterable object
      */
     Iterable<String> getKeys();
 
+    /**
+     * Get all keys using iterator. Keys traversing with SCAN operation.
+     * Each SCAN operation loads up to <code>count</code> keys per request.
+     *
+     * @param count - keys loaded per request to Redis
+     * @return Iterable object
+     */
+    Iterable<String> getKeys(int count);
+    
     /**
      * Get random key
      *
@@ -186,17 +208,10 @@ public interface RKeys extends RKeysAsync {
      */
     String randomKey();
 
-    /**
-     * Find keys by key search pattern at once using KEYS command.
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern - match pattern
-     * @return collection of keys
+    /*
+     * Use getKeysByPattern method instead
      */
+    @Deprecated
     Collection<String> findKeysByPattern(String pattern);
 
     /**

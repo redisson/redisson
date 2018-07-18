@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -40,8 +39,8 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonWriteLock extends RedissonLock implements RLock {
 
-    protected RedissonWriteLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
-        super(commandExecutor, name, id);
+    protected RedissonWriteLock(CommandAsyncExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override

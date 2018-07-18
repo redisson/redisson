@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,15 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
-import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -42,9 +38,13 @@ import reactor.rx.subscription.ReactiveSubscription;
 public class RedissonMapReactiveIterator<K, V, M> {
 
     private final MapReactive<K, V> map;
+    private final String pattern;
+    private final int count;
 
-    public RedissonMapReactiveIterator(MapReactive<K, V> map) {
+    public RedissonMapReactiveIterator(MapReactive<K, V> map, String pattern, int count) {
         this.map = map;
+        this.pattern = pattern;
+        this.count = count;
     }
 
     public Publisher<M> stream() {
@@ -54,9 +54,8 @@ public class RedissonMapReactiveIterator<K, V, M> {
             public void subscribe(final Subscriber<? super M> t) {
                 t.onSubscribe(new ReactiveSubscription<M>(this, t) {
 
-                    private Map<ByteBuf, ByteBuf> firstValues;
-                    private long iterPos = 0;
-                    private InetSocketAddress client;
+                    private long nextIterPos = 0;
+                    private RedisClient client;
 
                     private long currentIndex;
 
@@ -66,47 +65,27 @@ public class RedissonMapReactiveIterator<K, V, M> {
                         nextValues();
                     }
 
-                    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-                        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
-                        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-                            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
-                        }
-                        return result;
-                    }
-
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, iterPos).subscribe(new Subscriber<MapScanResult<ScanObjectEntry, ScanObjectEntry>>() {
+                        map.scanIteratorReactive(client, nextIterPos, pattern, count).subscribe(new Subscriber<MapScanResult<Object, Object>>() {
 
                             @Override
                             public void onSubscribe(Subscription s) {
                                 s.request(Long.MAX_VALUE);
                             }
                             
-                            private void free(Map<ByteBuf, ByteBuf> map) {
-                                if (map == null) {
-                                    return;
-                                }
-                                for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-                                    entry.getKey().release();
-                                    entry.getValue().release();
-                                }
-                            }
-
                             @Override
-                            public void onNext(MapScanResult<ScanObjectEntry, ScanObjectEntry> res) {
-                                client = res.getRedisClient();
-                                if (iterPos == 0 && firstValues == null) {
-                                    firstValues = convert(res.getMap());
-                                } else if (convert(res.getMap()).equals(firstValues)) {
-                                    free(firstValues);
-                                    m.onComplete();
-                                    currentIndex = 0;
+                            public void onNext(MapScanResult<Object, Object> res) {
+                                if (currentIndex == 0) {
+                                    client = null;
+                                    nextIterPos = 0;
                                     return;
                                 }
 
-                                iterPos = res.getPos();
-                                for (Entry<ScanObjectEntry, ScanObjectEntry> entry : res.getMap().entrySet()) {
+                                client = res.getRedisClient();
+                                nextIterPos = res.getPos();
+
+                                for (Entry<Object, Object> entry : res.getMap().entrySet()) {
                                     M val = getValue(entry);
                                     m.onNext(val);
                                     currentIndex--;
@@ -114,6 +93,11 @@ public class RedissonMapReactiveIterator<K, V, M> {
                                         m.onComplete();
                                         return;
                                     }
+                                }
+                                
+                                if (res.getPos() == 0) {
+                                    currentIndex = 0;
+                                    m.onComplete();
                                 }
                             }
 
@@ -138,12 +122,12 @@ public class RedissonMapReactiveIterator<K, V, M> {
     }
 
 
-    M getValue(final Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey().getObj(), (V)entry.getValue().getObj()) {
+    M getValue(final Entry<Object, Object> entry) {
+        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey(), (V)entry.getValue()) {
 
             @Override
             public V setValue(V value) {
-                Publisher<V> publisher = map.put((K) entry.getKey().getObj(), value);
+                Publisher<V> publisher = map.put((K) entry.getKey(), value);
                 return ((Stream<V>)publisher).next().poll();
             }
 

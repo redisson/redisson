@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,53 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
 import org.redisson.config.Config;
-import org.redisson.liveobject.provider.ResolverProvider;
 
 /**
  * Main Redisson interface for access
  * to all redisson objects with sync/async interface.
+ * 
+ * @see RedissonReactiveClient
  *
  * @author Nikita Koksharov
  *
  */
 public interface RedissonClient {
 
+    /**
+     * Returns stream instance by <code>name</code>
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name of stream
+     * @return RStream object
+     */
+    <K, V> RStream<K, V> getStream(String name);
+    
+    /**
+     * Returns stream instance by <code>name</code>
+     * using provided <code>codec</code> for entries.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of stream
+     * @param codec - codec for entry
+     * @return RStream object
+     */
+    <K, V> RStream<K, V> getStream(String name, Codec codec);
+    
+    /**
+     * Returns rate limiter instance by <code>name</code>
+     * 
+     * @param name of rate limiter
+     * @return RateLimiter object
+     */
+    RRateLimiter getRateLimiter(String name);
+    
     /**
      * Returns binary stream holder instance by <code>name</code>
      * 
@@ -613,6 +647,50 @@ public interface RedissonClient {
     <V> RPriorityQueue<V> getPriorityQueue(String name, Codec codec);
 
     /**
+     * Returns unbounded priority blocking queue instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityBlockingQueue<V> getPriorityBlockingQueue(String name);
+    
+    /**
+     * Returns unbounded priority blocking queue instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityBlockingQueue<V> getPriorityBlockingQueue(String name, Codec codec);
+
+    /**
+     * Returns unbounded priority blocking deque instance by name.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name of object
+     * @return Queue object
+     */
+    <V> RPriorityBlockingDeque<V> getPriorityBlockingDeque(String name);
+    
+    /**
+     * Returns unbounded priority blocking deque instance by name
+     * using provided codec for queue objects.
+     * It uses comparator to sort objects.
+     *
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Queue object
+     */
+    <V> RPriorityBlockingDeque<V> getPriorityBlockingDeque(String name, Codec codec);
+    
+    /**
      * Returns priority unbounded deque instance by name.
      * It uses comparator to sort objects.
      *
@@ -731,6 +809,22 @@ public interface RedissonClient {
     RAtomicDouble getAtomicDouble(String name);
 
     /**
+     * Returns LongAdder instances by name.
+     * 
+     * @param name - name of object
+     * @return LongAdder object
+     */
+    RLongAdder getLongAdder(String name);
+
+    /**
+     * Returns DoubleAdder instances by name.
+     * 
+     * @param name - name of object
+     * @return LongAdder object
+     */
+    RDoubleAdder getDoubleAdder(String name);
+    
+    /**
      * Returns countDownLatch instance by name.
      *
      * @param name - name of object
@@ -782,6 +876,15 @@ public interface RedissonClient {
     RScheduledExecutorService getExecutorService(String name);
 
     /**
+     * Returns ScheduledExecutorService by name
+     * 
+     * @param name - name of object
+     * @param options - options for executor
+     * @return ScheduledExecutorService object
+     */
+    RScheduledExecutorService getExecutorService(String name, ExecutorOptions options);
+    
+    /**
      * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization
      * 
@@ -806,6 +909,17 @@ public interface RedissonClient {
      * @since 2.8.2
      */
     RScheduledExecutorService getExecutorService(String name, Codec codec);
+
+    /**
+     * Returns ScheduledExecutorService by name 
+     * using provided codec for task, response and request serialization
+     * 
+     * @param name - name of object
+     * @param codec - codec for task, response and request
+     * @param options - options for executor
+     * @return ScheduledExecutorService object
+     */
+    RScheduledExecutorService getExecutorService(String name, Codec codec, ExecutorOptions options);
     
     /**
      * Returns object for remote operations prefixed with the default name (redisson_remote_service)
@@ -842,15 +956,31 @@ public interface RedissonClient {
     RRemoteService getRemoteService(String name, Codec codec);
 
     /**
-     * Return batch object which executes group of
-     * command in pipeline.
-     *
+     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 
+     * @param options - transaction configuration
+     * @return Transaction object
+     */
+    RTransaction createTransaction(TransactionOptions options);
+
+    /**
+     * Creates batch object which could be executed later 
+     * with collected group of commands in pipeline mode.
+     * <p>
      * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
      *
+     * @param options - batch configuration
      * @return Batch object
      */
-    RBatch createBatch();
+    RBatch createBatch(BatchOptions options);
 
+    /*
+     * Use #createBatch(BatchOptions)
+     * 
+     */
+    @Deprecated
+    RBatch createBatch();
+    
     /**
      * Returns interface with methods for Redis keys.
      * Each of Redis/Redisson object associated with own key
@@ -870,12 +1000,12 @@ public interface RedissonClient {
     /**
      * Shutdown Redisson instance but <b>NOT</b> Redis server
      * 
-     * This equates to invoke shutdown(2, 15, TimeUnit.SECONDS);
+     * This equates to invoke shutdown(0, 2, TimeUnit.SECONDS);
      */
     void shutdown();
     
     /**
-     * Shuts down Redisson instance <b>NOT</b> Redis server
+     * Shuts down Redisson instance but <b>NOT</b> Redis server
      * 
      * Shutdown ensures that no tasks are submitted for <i>'the quiet period'</i>
      * (usually a couple seconds) before it shuts itself down.  If a task is submitted during the quiet period,
@@ -898,21 +1028,6 @@ public interface RedissonClient {
     Config getConfig();
 
     /**
-     * Returns the CodecProvider instance
-     * 
-     * @return CodecProvider object
-     */
-    public CodecProvider getCodecProvider();
-    
-    /**
-     * Returns the ResolverProvider instance
-     * 
-     * @return ResolverProvider object
-     */
-    public ResolverProvider getResolverProvider();
-
-    
-    /**
      * Get Redis nodes group for server operations
      *
      * @return NodesGroup object
@@ -929,7 +1044,7 @@ public interface RedissonClient {
     /**
      * Returns {@code true} if this Redisson instance has been shut down.
      *
-     * @return code true} if this Redisson instance has been shut down overwise <code>false</code>
+     * @return {@code true} if this Redisson instance has been shut down overwise <code>false</code>
      */
     boolean isShutdown();
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,15 +35,29 @@ public interface RKeysAsync {
     RFuture<Boolean> moveAsync(String name, int database);
     
     /**
-     * Transfer an object from source Redis instance to destination Redis instance
+     * Transfer object from source Redis instance to destination Redis instance
      *
      * @param name of object
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void 
      */
-    RFuture<Void> migrateAsync(String name, String host, int port, int database);
+    RFuture<Void> migrateAsync(String name, String host, int port, int database, long timeout);
+    
+    /**
+     * Copy object from source Redis instance to destination Redis instance
+     * in async mode
+     *
+     * @param name of object
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
+     */
+    RFuture<Void> copyAsync(String name, String host, int port, int database, long timeout);
     
     /**
      * Set a timeout for object. After the timeout has expired,
@@ -144,17 +158,10 @@ public interface RKeysAsync {
      */
     RFuture<String> randomKeyAsync();
 
-    /**
-     * Find keys by key search pattern in async mode
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern - match pattern
-     * @return collections of keys
+    /*
+     * Use getKeysByPattern method instead
      */
+    @Deprecated
     RFuture<Collection<String>> findKeysByPatternAsync(String pattern);
 
     /**

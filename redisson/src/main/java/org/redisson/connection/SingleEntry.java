@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.Set;
 
 import org.redisson.api.RFuture;
@@ -36,7 +36,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, InetSocketAddress addr) {
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, URI addr) {
         return super.connectionWriteOp(command);
     }
 

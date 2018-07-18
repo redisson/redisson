@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,9 +15,9 @@
  */
 package org.redisson;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicDoubleAsync;
 import org.redisson.api.RAtomicLongAsync;
@@ -42,6 +42,7 @@ import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScriptAsync;
 import org.redisson.api.RSetAsync;
 import org.redisson.api.RSetCacheAsync;
+import org.redisson.api.RStreamAsync;
 import org.redisson.api.RTopicAsync;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandBatchService;
@@ -58,20 +59,12 @@ public class RedissonBatch implements RBatch {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandBatchService executorService;
-    private final UUID id;
+    private final BatchOptions options;
 
-    private long timeout;
-    private int retryAttempts;
-    private long retryInterval;
-
-    private int syncSlaves;
-    private long syncTimeout;
-    private boolean skipResult;
-
-    protected RedissonBatch(UUID id, EvictionScheduler evictionScheduler, ConnectionManager connectionManager) {
-        this.executorService = new CommandBatchService(connectionManager);
+    public RedissonBatch(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
+        this.executorService = new CommandBatchService(connectionManager, options);
         this.evictionScheduler = evictionScheduler;
-        this.id = id;
+        this.options = options;
     }
 
     @Override
@@ -236,73 +229,68 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public RBatch syncSlaves(int slaves, long timeout, TimeUnit unit) {
-        this.syncSlaves = slaves;
-        this.syncTimeout = unit.toMillis(timeout);
+        options.syncSlaves(slaves, timeout, unit);
+        return this;
+    }
+    
+    @Override
+    public RBatch atomic() {
+        options.atomic();
         return this;
     }
     
     @Override
     public RBatch skipResult() {
-        this.skipResult = true;
+        options.skipResult();
         return this;
     }
     
     @Override
     public RBatch retryAttempts(int retryAttempts) {
-        this.retryAttempts = retryAttempts;
+        options.retryAttempts(retryAttempts);
         return this;
     }
     
     @Override
     public RBatch retryInterval(long retryInterval, TimeUnit unit) {
-        this.retryInterval = unit.toMillis(retryInterval);
+        options.retryInterval(retryInterval, unit);
         return this;
     }
     
     @Override
     public RBatch timeout(long timeout, TimeUnit unit) {
-        this.timeout = unit.toMillis(timeout);
+        options.responseTimeout(timeout, unit);
         return this;
     }
     
     @Override
     public BatchResult<?> execute() {
-        return executorService.execute(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
+        return executorService.execute(BatchOptions.defaults());
     }
 
     @Override
-    public void executeSkipResult() {
-        executorService.execute(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
-    }
-    
-    @Override
-    public RFuture<Void> executeSkipResultAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, true, timeout, retryAttempts, retryInterval);
-    }
-    
-    @Override
     public RFuture<BatchResult<?>> executeAsync() {
-        return executorService.executeAsync(syncSlaves, syncTimeout, skipResult, timeout, retryAttempts, retryInterval);
+        return executorService.executeAsync(BatchOptions.defaults());
     }
     
     @Override
     public <K, V> RMultimapAsync<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimap<K, V>(id, executorService, name);
+        return new RedissonSetMultimap<K, V>(executorService, name);
     }
 
     @Override
     public <K, V> RMultimapAsync<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimap<K, V>(id, codec, executorService, name);
+        return new RedissonSetMultimap<K, V>(codec, executorService, name);
     }
 
     @Override
     public <K, V> RMultimapAsync<K, V> getListMultimap(String name) {
-        return new RedissonListMultimap<K, V>(id, executorService, name);
+        return new RedissonListMultimap<K, V>(executorService, name);
     }
 
     @Override
     public <K, V> RMultimapAsync<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimap<K, V>(id, codec, executorService, name);
+        return new RedissonListMultimap<K, V>(codec, executorService, name);
     }
 
     @Override
@@ -317,26 +305,36 @@ public class RedissonBatch implements RBatch {
     
     @Override
     public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name) {
-        return new RedissonSetMultimapCache<K, V>(id, evictionScheduler, executorService, name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, executorService, name);
     }
     
     @Override
     public <K, V> RMultimapCacheAsync<K, V> getSetMultimapCache(String name, Codec codec) {
-        return new RedissonSetMultimapCache<K, V>(id, evictionScheduler, codec, executorService, name);
+        return new RedissonSetMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
     }
 
     @Override
     public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name) {
-        return new RedissonListMultimapCache<K, V>(id, evictionScheduler, executorService, name);
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, executorService, name);
     }
     
     @Override
     public <K, V> RMultimapCacheAsync<K, V> getListMultimapCache(String name, Codec codec) {
-        return new RedissonListMultimapCache<K, V>(id, evictionScheduler, codec, executorService, name);
+        return new RedissonListMultimapCache<K, V>(evictionScheduler, codec, executorService, name);
     }
 
     protected void enableRedissonReferenceSupport(Redisson redisson) {
         this.executorService.enableRedissonReferenceSupport(redisson);
+    }
+
+    @Override
+    public <K, V> RStreamAsync<K, V> getStream(String name) {
+        return new RedissonStream<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RStreamAsync<K, V> getStream(String name, Codec codec) {  
+        return new RedissonStream<K, V>(codec, executorService, name);
     }
 
 }

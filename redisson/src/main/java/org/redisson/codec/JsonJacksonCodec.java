@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,11 @@ package org.redisson.codec;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.core.JsonGenerator.Feature;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.MapperFeature;
@@ -54,7 +56,7 @@ import io.netty.buffer.ByteBufOutputStream;
  * @author Nikita Koksharov
  *
  */
-public class JsonJacksonCodec implements Codec {
+public class JsonJacksonCodec extends BaseCodec {
 
     public static final JsonJacksonCodec INSTANCE = new JsonJacksonCodec();
 
@@ -64,7 +66,7 @@ public class JsonJacksonCodec implements Codec {
         
     }
     
-    private final ObjectMapper mapObjectMapper;
+    protected final ObjectMapper mapObjectMapper;
 
     private final Encoder encoder = new Encoder() {
         @Override
@@ -72,11 +74,14 @@ public class JsonJacksonCodec implements Codec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapObjectMapper.writeValue(os, in);
+                mapObjectMapper.writeValue((OutputStream)os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();
                 throw e;
+            } catch (Exception e) {
+                out.release();
+                throw new IOException(e);
             }
         }
     };
@@ -103,9 +108,9 @@ public class JsonJacksonCodec implements Codec {
     }
 
     public JsonJacksonCodec(ObjectMapper mapObjectMapper) {
-        this.mapObjectMapper = mapObjectMapper;
-        init(mapObjectMapper);
-        initTypeInclusion(mapObjectMapper);
+        this.mapObjectMapper = mapObjectMapper.copy();
+        init(this.mapObjectMapper);
+        initTypeInclusion(this.mapObjectMapper);
     }
 
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
@@ -151,38 +156,18 @@ public class JsonJacksonCodec implements Codec {
     }
 
     protected void init(ObjectMapper objectMapper) {
-        objectMapper.registerModule(new DefenceModule());
-        
         objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setVisibilityChecker(objectMapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY).withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(SerializationFeature.WRITE_BIGDECIMAL_AS_PLAIN, true);
-        objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        objectMapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        objectMapper.setVisibility(objectMapper.getSerializationConfig()
+                                                    .getDefaultVisibilityChecker()
+                                                        .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                                                        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                                        .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                                                        .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapper.enable(Feature.WRITE_BIGDECIMAL_AS_PLAIN);
+        objectMapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.addMixIn(Throwable.class, ThrowableMixIn.class);
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return decoder;
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return encoder;
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return decoder;
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return encoder;
     }
 
     @Override
@@ -193,6 +178,15 @@ public class JsonJacksonCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
+    }
+    
+    @Override
+    public ClassLoader getClassLoader() {
+        if (mapObjectMapper.getTypeFactory().getClassLoader() != null) {
+            return mapObjectMapper.getTypeFactory().getClassLoader();
+        }
+
+        return super.getClassLoader();
     }
 
     public ObjectMapper getObjectMapper() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,27 @@ public class StateLevel {
 
     private long size;
     private List<Object> parts;
+    private long lastListSize;
+    private List<Object> lastList;
 
     public StateLevel(long size, List<Object> parts) {
         super();
         this.size = size;
         this.parts = parts;
+    }
+
+    public long getLastListSize() {
+        return lastListSize;
+    }
+    public void setLastListSize(long lastListSize) {
+        this.lastListSize = lastListSize;
+    }
+
+    public List<Object> getLastList() {
+        return lastList;
+    }
+    public void setLastList(List<Object> lastList) {
+        this.lastList = lastList;
     }
 
     public long getSize() {

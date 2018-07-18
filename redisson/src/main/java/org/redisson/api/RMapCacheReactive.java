@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,24 @@ import org.reactivestreams.Publisher;
  */
 public interface RMapCacheReactive<K, V> extends RMapReactive<K, V> {
 
+    /**
+     * Sets max size of the map.
+     * Superfluous elements are evicted using LRU algorithm.
+     * 
+     * @param maxSize - max size
+     * @return void
+     */
+    Publisher<Void> setMaxSize(int maxSize);
+    
+    /**
+     * Tries to set max size of the map. 
+     * Superfluous elements are evicted using LRU algorithm. 
+     *
+     * @param maxSize - max size
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    Publisher<Boolean> trySetMaxSize(int maxSize);
+    
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
@@ -205,5 +223,14 @@ public interface RMapCacheReactive<K, V> extends RMapReactive<K, V> {
      */
     @Override
     Publisher<Integer> size();
+    
+    /**
+     * Remaining time to live of map entry associated with a <code>key</code>. 
+     *
+     * @return time in milliseconds
+     *          -2 if the key does not exist.
+     *          -1 if the key exists but has no associated expire.
+     */
+    Publisher<Long> remainTimeToLive(K key);
 
 }

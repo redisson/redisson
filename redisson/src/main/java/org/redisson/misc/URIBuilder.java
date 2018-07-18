@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,10 @@
  */
 package org.redisson.misc;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.net.InetSocketAddress;
 import java.net.URI;
 
 /**
@@ -22,19 +26,51 @@ import java.net.URI;
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class URIBuilder {
-    
+
     public static URI create(String uri) {
         URI u = URI.create(uri);
-        //Let's assuming most of the time it is OK.
+        // Let's assuming most of the time it is OK.
         if (u.getHost() != null) {
             return u;
         }
-        String s = uri.substring(0, uri.lastIndexOf(":"))
-                .replaceFirst("redis://", "")
-                .replaceFirst("rediss://", "");
-        //Assuming this is an IPv6 format, other situations will be handled by
-        //Netty at a later stage.
+        String s = uri.substring(0, uri.lastIndexOf(":")).replaceFirst("redis://", "").replaceFirst("rediss://", "");
+        // Assuming this is an IPv6 format, other situations will be handled by
+        // Netty at a later stage.
         return URI.create(uri.replace(s, "[" + s + "]"));
     }
     
+    public static void patchUriObject() {
+        try {
+            patchUriField(35184372088832L, "L_DASH");
+            patchUriField(2147483648L, "H_DASH");
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
+    private static void patchUriField(Long maskValue, String fieldName)
+            throws IOException {
+        try {
+            Field field = URI.class.getDeclaredField(fieldName);
+            
+            Field modifiers = Field.class.getDeclaredField("modifiers");
+            modifiers.setAccessible(true);
+            modifiers.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            
+            field.setAccessible(true);
+            field.setLong(null, maskValue);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+    
+    public static boolean compare(InetSocketAddress entryAddr, URI addr) {
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
+                || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
+                && entryAddr.getPort() == addr.getPort()) {
+            return true;
+        }
+        return false;
+    }
+
 }

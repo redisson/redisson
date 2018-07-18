@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -50,16 +50,16 @@ public class LiveObjectInterceptor {
     }
 
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
+    private final ReferenceCodecProvider codecProvider;
     private final Class<?> originalClass;
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
     private final Class<? extends Codec> codecClass;
 
-    public LiveObjectInterceptor(RedissonClient redisson, CodecProvider codecProvider, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(RedissonClient redisson, Class<?> entityClass, String idFieldName) {
         this.redisson = redisson;
-        this.codecProvider = codecProvider;
+        this.codecProvider = redisson.getConfig().getReferenceCodecProvider();
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
         REntity anno = (REntity) ClassUtils.getAnnotation(entityClass, REntity.class);

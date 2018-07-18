@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,34 +15,38 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractMap;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.netty.buffer.ByteBuf;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ * @param <M> map type
+ */
 abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
-    private Map<ByteBuf, ByteBuf> firstKeys;
-    private Iterator<Map.Entry<ScanObjectEntry, ScanObjectEntry>> keysIter;
+    private Iterator<Map.Entry<Object, Object>> keysIter;
     protected long keysIterPos = 0;
 
     private K currentKey;
     private Iterator<V> valuesIter;
     protected long valuesIterPos = 0;
 
-    protected InetSocketAddress client;
+    protected RedisClient client;
 
     private boolean finished;
+    private boolean keysFinished;
     private boolean removeExecuted;
     protected V entry;
 
@@ -61,65 +65,43 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     @Override
     public boolean hasNext() {
+        if (valuesIter != null && valuesIter.hasNext()) {
+            return true;
+        }
         if (finished) {
             return false;
         }
 
-        if (valuesIter != null && valuesIter.hasNext()) {
-            return true;
-        }
-
-        if (keysIter == null || !keysIter.hasNext()) {
-            MapScanResult<ScanObjectEntry, ScanObjectEntry> res = map.scanIterator(client, keysIterPos);
-            client = res.getRedisClient();
-            if (keysIterPos == 0 && firstKeys == null) {
-                firstKeys = convert(res.getMap());
-            } else {
-                Map<ByteBuf, ByteBuf> newValues = convert(res.getMap());
-                if (newValues.equals(firstKeys)) {
-                    finished = true;
-                    free(firstKeys);
-                    free(newValues);
-                    firstKeys = null;
-                    return false;
-                }
-                free(newValues);
-            }
-            keysIter = res.getMap().entrySet().iterator();
-            keysIterPos = res.getPos();
-        }
-
         while (true) {
-            if (keysIter.hasNext()) {
-                Entry<ScanObjectEntry, ScanObjectEntry> e = keysIter.next();
-                currentKey = (K) e.getKey().getObj();
-                String name = e.getValue().getObj().toString();
+            if (!keysFinished && (keysIter == null || !keysIter.hasNext())) {
+                MapScanResult<Object, Object> res = map.scanIterator(client, keysIterPos);
+                client = res.getRedisClient();
+                keysIter = res.getMap().entrySet().iterator();
+                keysIterPos = res.getPos();
+                
+                if (res.getPos() == 0) {
+                    keysFinished = true;
+                }
+            }
+            
+            while (keysIter.hasNext()) {
+                Entry<Object, Object> e = keysIter.next();
+                currentKey = (K) e.getKey();
+                String name = e.getValue().toString();
                 valuesIter = getIterator(name);
                 if (valuesIter.hasNext()) {
                     return true;
                 }
-            } else {
+            }
+            
+            if (keysIterPos == 0) {
+                finished = true;
                 return false;
             }
         }
     }
 
     protected abstract Iterator<V> getIterator(String name);
-
-    private void free(Map<ByteBuf, ByteBuf> map) {
-        for (Entry<ByteBuf, ByteBuf> entry : map.entrySet()) {
-            entry.getKey().release();
-            entry.getValue().release();
-        }
-    }
-
-    private Map<ByteBuf, ByteBuf> convert(Map<ScanObjectEntry, ScanObjectEntry> map) {
-        Map<ByteBuf, ByteBuf> result = new HashMap<ByteBuf, ByteBuf>(map.size());
-        for (Entry<ScanObjectEntry, ScanObjectEntry> entry : map.entrySet()) {
-            result.put(entry.getKey().getBuf(), entry.getValue().getBuf());
-        }
-        return result;
-    }
 
     @Override
     public M next() {
@@ -149,10 +131,10 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
         if (removeExecuted) {
             throw new IllegalStateException("Element been already deleted");
         }
+        if (valuesIter == null || entry == null) {
+            throw new IllegalStateException();
+        }
 
-        // lazy init iterator
-        hasNext();
-        keysIter.remove();
         map.remove(currentKey, entry);
         removeExecuted = true;
     }

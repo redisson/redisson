@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,37 +17,39 @@ package org.redisson;
 
 import java.util.Map.Entry;
 
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.client.RedisClient;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
  * @param <M> loaded value type
  */
-public class RedissonMapIterator<K, V, M> extends RedissonBaseMapIterator<K, V, M> {
+public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
-    private final RedissonMap<K, V> map;
+    private final RedissonMap map;
     private final String pattern;
+    private final int count;
 
-    public RedissonMapIterator(RedissonMap<K, V> map, String pattern) {
+    public RedissonMapIterator(RedissonMap map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
+        this.count = count;
     }
 
-    protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
-        return map.scanIterator(map.getName(), client, nextIterPos, pattern);
+    @Override
+    protected Object put(Entry<Object, Object> entry, Object value) {
+        return map.put(entry.getKey(), value);
     }
 
-    protected void removeKey() {
-        map.fastRemove((K)entry.getKey().getObj());
+    @Override
+    protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
+        return map.scanIterator(map.getName(), client, nextIterPos, pattern, count);
     }
 
-    protected V put(Entry<ScanObjectEntry, ScanObjectEntry> entry, V value) {
-        return map.put((K) entry.getKey().getObj(), value);
+    @Override
+    protected void remove(Entry<Object, Object> value) {
+        map.fastRemove(value.getKey());
     }
 
 }

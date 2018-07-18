@@ -1,5 +1,7 @@
 package org.redisson.tomcat;
 
+import java.nio.file.Paths;
+
 import org.apache.catalina.Engine;
 import org.apache.catalina.Host;
 import org.apache.catalina.LifecycleException;
@@ -56,7 +58,8 @@ public class TomcatServer {
         localHost.setAutoDeploy(false);
 
         StandardContext rootContext = (StandardContext) server.createContext(contextPath, "webapp");
-        rootContext.setDefaultWebXml("web.xml");
+        String s = Paths.get("").toAbsolutePath().resolve("src/test/webapp/META-INF/context.xml").toString();
+        rootContext.setDefaultContextXml(s);
         localHost.addChild(rootContext);
 
         Engine engine = server.createEngine();

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 
@@ -40,8 +39,8 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonReadLock extends RedissonLock implements RLock {
 
-    public RedissonReadLock(CommandAsyncExecutor commandExecutor, String name, UUID id) {
-        super(commandExecutor, name, id);
+    public RedissonReadLock(CommandAsyncExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
 
     @Override
@@ -87,6 +86,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     @Override
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
+        String keyPrefix = timeoutPrefix.split(":" + getLockName(threadId))[0];
+
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
                 "if (mode == false) then " +
@@ -129,7 +130,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "redis.call('del', KEYS[1]); " +
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                 "return 1; ",
-                Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, timeoutPrefix.split(":")[0]), 
+                Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, keyPrefix), 
                 LockPubSub.unlockMessage, getLockName(threadId));
     }
     

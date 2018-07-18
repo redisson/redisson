@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,12 +53,10 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
 
-    private volatile boolean isInactive;
-    
     private final ChannelFutureListener listener = new ChannelFutureListener() {
         @Override
         public void operationComplete(ChannelFuture future) throws Exception {
-            if (!future.isSuccess() && !isInactive) {
+            if (!future.isSuccess() && future.channel().isActive()) {
                 sendNextCommand(future.channel());
             }
         }
@@ -72,7 +70,6 @@ public class CommandsQueue extends ChannelDuplexHandler {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        isInactive = true;
         while (true) {
             QueueCommandHolder command = queue.poll();
             if (command == null) {

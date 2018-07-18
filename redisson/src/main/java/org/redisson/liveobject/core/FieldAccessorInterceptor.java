@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,7 +56,7 @@ public class FieldAccessorInterceptor {
                 }
             }
         }
-        throw new NoSuchMethodException(method.getName() + " called with wrong signature");
+        throw new NoSuchMethodException(method.getName() + " has wrong signature");
 
     }
 }

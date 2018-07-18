@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -23,7 +22,6 @@ import org.redisson.RedissonLock;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLockAsync;
 import org.redisson.api.RLockReactive;
-import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.Supplier;
@@ -37,13 +35,13 @@ public class RedissonLockReactive extends RedissonExpirableReactive implements R
 
     private final RLockAsync instance;
     
-    public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name, UUID id) {
-        super(connectionManager, name);
-        instance = createLock(connectionManager, name, id);
+    public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name) {
+        this(connectionManager, name, new RedissonLock(connectionManager, name));
     }
 
-    protected RLockAsync createLock(CommandAsyncExecutor connectionManager, String name, UUID id) {
-        return new RedissonLock(commandExecutor, name, id);
+    public RedissonLockReactive(CommandReactiveExecutor connectionManager, String name, RLockAsync instance) {
+        super(connectionManager, name, instance);
+        this.instance = instance;
     }
     
     @Override

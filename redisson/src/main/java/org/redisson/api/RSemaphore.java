@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -96,7 +96,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      *
      * <p>Acquires a permits, if all are available and returns immediately,
      * with the value {@code true},
-     * reducing the number of available permits by given number of permitss.
+     * reducing the number of available permits by given number of permits.
      *
      * <p>If no permits are available then this method will return
      * immediately with the value {@code false}.

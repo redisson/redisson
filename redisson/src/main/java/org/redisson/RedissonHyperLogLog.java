@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,11 +34,11 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperLogLog<V> {
 
-    protected RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonHyperLogLog(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
 
-    protected RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonHyperLogLog(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
     }
 
@@ -77,7 +77,7 @@ public class RedissonHyperLogLog<V> extends RedissonExpirable implements RHyperL
         List<Object> args = new ArrayList<Object>(objects.size() + 1);
         args.add(getName());
         encode(args, objects);
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, getName(), args.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.PFADD, args.toArray());
     }
 
     @Override

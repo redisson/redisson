@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 
 /**
- * RLocalCachedMap options object. Used to specify RLocalCachedMap settings.
+ * Configuration for LocalCachedMap object.
  * 
  * @author Nikita Koksharov
  *
@@ -65,12 +65,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         NONE,
         
         /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change.
+         * Invalidate cache entry across all LocalCachedMap instances on map entry change. Broadcasts map entry hash (16 bytes) to all instances.
          */
         INVALIDATE,
         
         /**
-         * Update cache entry across all LocalCachedMap instances on map entry change.
+         * Update cache entry across all LocalCachedMap instances on map entry change. Broadcasts full map entry state (Key and Value objects) to all instances.
          */
         UPDATE
         

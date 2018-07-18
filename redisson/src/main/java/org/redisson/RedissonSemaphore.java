@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.SemaphorePubSub;
 
 import io.netty.util.Timeout;
@@ -101,7 +102,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     
     @Override
     public RFuture<Void> acquireAsync(final int permits) {
-        final RPromise<Void> result = newPromise();
+        final RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
         tryAcquireFuture.addListener(new FutureListener<Boolean>() {
             @Override
@@ -179,45 +180,41 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 // waiting for message
                 final long current = System.currentTimeMillis();
                 final RedissonLockEntry entry = getEntry();
-                synchronized (entry) {
-                    if (entry.getLatch().tryAcquire()) {
-                        tryAcquireAsync(time, permits, subscribeFuture, result);
-                    } else {
-                        final AtomicBoolean executed = new AtomicBoolean();
-                        final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-                        final Runnable listener = new Runnable() {
-                            @Override
-                            public void run() {
-                                executed.set(true);
-                                if (futureRef.get() != null && !futureRef.get().cancel()) {
-                                    entry.getLatch().release();
-                                    return;
-                                }
-                                long elapsed = System.currentTimeMillis() - current;
-                                time.addAndGet(-elapsed);
-
-                                tryAcquireAsync(time, permits, subscribeFuture, result);
+                if (entry.getLatch().tryAcquire()) {
+                    tryAcquireAsync(time, permits, subscribeFuture, result);
+                } else {
+                    final AtomicBoolean executed = new AtomicBoolean();
+                    final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+                    final Runnable listener = new Runnable() {
+                        @Override
+                        public void run() {
+                            executed.set(true);
+                            if (futureRef.get() != null && !futureRef.get().cancel()) {
+                                entry.getLatch().release();
+                                return;
                             }
-                        };
-                        entry.addListener(listener);
+                            long elapsed = System.currentTimeMillis() - current;
+                            time.addAndGet(-elapsed);
 
-                        long t = time.get();
-                        if (!executed.get()) {
-                            Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                                @Override
-                                public void run(Timeout timeout) throws Exception {
-                                    synchronized (entry) {
-                                        if (entry.removeListener(listener)) {
-                                            long elapsed = System.currentTimeMillis() - current;
-                                            time.addAndGet(-elapsed);
-                                            
-                                            tryAcquireAsync(time, permits, subscribeFuture, result);
-                                        }
-                                    }
-                                }
-                            }, t, TimeUnit.MILLISECONDS);
-                            futureRef.set(scheduledFuture);
+                            tryAcquireAsync(time, permits, subscribeFuture, result);
                         }
+                    };
+                    entry.addListener(listener);
+
+                    long t = time.get();
+                    if (!executed.get()) {
+                        Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                            @Override
+                            public void run(Timeout timeout) throws Exception {
+                                if (entry.removeListener(listener)) {
+                                    long elapsed = System.currentTimeMillis() - current;
+                                    time.addAndGet(-elapsed);
+                                    
+                                    tryAcquireAsync(time, permits, subscribeFuture, result);
+                                }
+                            }
+                        }, t, TimeUnit.MILLISECONDS);
+                        futureRef.set(scheduledFuture);
                     }
                 }
             }
@@ -250,18 +247,16 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                 }
                 
                 final RedissonLockEntry entry = getEntry();
-                synchronized (entry) {
-                    if (entry.getLatch().tryAcquire(permits)) {
-                        acquireAsync(permits, subscribeFuture, result);
-                    } else {
-                        Runnable listener = new Runnable() {
-                            @Override
-                            public void run() {
-                                acquireAsync(permits, subscribeFuture, result);
-                            }
-                        };
-                        entry.addListener(listener);
-                    }
+                if (entry.getLatch().tryAcquire(permits)) {
+                    acquireAsync(permits, subscribeFuture, result);
+                } else {
+                    Runnable listener = new Runnable() {
+                        @Override
+                        public void run() {
+                            acquireAsync(permits, subscribeFuture, result);
+                        }
+                    };
+                    entry.addListener(listener);
                 }
             }
         });
@@ -286,6 +281,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Boolean> tryAcquireAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return RedissonPromise.newSucceededFuture(true);
         }
 
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
@@ -358,7 +356,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public RFuture<Boolean> tryAcquireAsync(final int permits, long waitTime, TimeUnit unit) {
-        final RPromise<Boolean> result = newPromise();
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
         final long current = System.currentTimeMillis();
         RFuture<Boolean> tryAcquireFuture = tryAcquireAsync(permits);
@@ -436,11 +434,11 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     private RFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager());
+        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
     }
 
     private void unsubscribe(RFuture<RedissonLockEntry> future) {
-        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager());
+        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
     }
 
     @Override
@@ -467,6 +465,9 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public RFuture<Void> releaseAsync(int permits) {
         if (permits < 0) {
             throw new IllegalArgumentException("Permits amount can't be negative");
+        }
+        if (permits == 0) {
+            return RedissonPromise.newSucceededFuture(null);
         }
 
         return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,

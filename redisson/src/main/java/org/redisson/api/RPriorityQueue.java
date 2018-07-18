@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,8 @@ public interface RPriorityQueue<V> extends Queue<V>, RObject {
     Comparator<? super V> comparator();
     
     List<V> readAll();
+    
+    V pollLastAndOfferFirstTo(String dequeName);
     
     /**
      * Sets new comparator only if current set is empty

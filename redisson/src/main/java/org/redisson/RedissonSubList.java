@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,6 +39,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.RedissonPromise;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -61,7 +62,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
 
     public RFuture<Integer> sizeAsync() {
         if (size != -1) {
-            return newSucceededFuture(size);
+            return RedissonPromise.newSucceededFuture(size);
         }
         return commandExecutor.readAsync(getName(), codec, new RedisStrictCommand<Integer>("LLEN", new IntegerReplayConvertor() {
             @Override
@@ -112,7 +113,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         return addAllAsync(toIndex.get() - fromIndex, c);
@@ -123,7 +124,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         checkIndex(index);
 
         if (coll.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         if (index == 0) { // prepend elements to list

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -35,6 +34,7 @@ import io.netty.util.internal.PlatformDependent;
 public class MapCacheEventCodec implements Codec {
 
     private final Codec codec;
+    private final boolean isWindows;
     
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
@@ -56,9 +56,10 @@ public class MapCacheEventCodec implements Codec {
         }
     };
 
-    public MapCacheEventCodec(Codec codec) {
+    public MapCacheEventCodec(Codec codec, boolean isWindows) {
         super();
         this.codec = codec;
+        this.isWindows = isWindows;
     }
 
     @Override
@@ -93,7 +94,7 @@ public class MapCacheEventCodec implements Codec {
 
     private Object decode(ByteBuf buf, State state, Decoder<?> decoder) throws IOException {
         int keyLen;
-        if (PlatformDependent.isWindows()) {
+        if (isWindows) {
             keyLen = buf.readIntLE();
         } else {
             keyLen = (int) buf.readLongLE();
@@ -101,6 +102,11 @@ public class MapCacheEventCodec implements Codec {
         ByteBuf keyBuf = buf.readSlice(keyLen);
         Object key = decoder.decode(keyBuf, state);
         return key;
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        return getClass().getClassLoader();
     }
 
 }

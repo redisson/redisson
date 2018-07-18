@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,13 @@
 package org.redisson.connection;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
@@ -35,7 +31,6 @@ import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReplicatedServersConfig;
-import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,8 +54,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private AtomicReference<URI> currentMaster = new AtomicReference<URI>();
 
-    private final Map<URI, RedisConnection> nodeConnections = new HashMap<URI, RedisConnection>();
-
     private ScheduledFuture<?> monitorFuture;
 
     private enum Role {
@@ -68,14 +61,14 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         slave
     }
 
-    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config) {
-        super(config);
+    public ReplicatedConnectionManager(ReplicatedServersConfig cfg, Config config, UUID id) {
+        super(config, id);
 
         this.config = create(cfg);
         initTimer(this.config);
 
         for (URI addr : cfg.getNodeAddresses()) {
-            RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
+            RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
             if (connection == null) {
@@ -114,37 +107,6 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         return res;
     }
     
-    private RFuture<RedisConnection> connect(BaseMasterSlaveServersConfig<?> cfg, final URI addr) {
-        RedisConnection connection = nodeConnections.get(addr);
-        if (connection != null) {
-            return newSucceededFuture(connection);
-        }
-
-        RedisClient client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts());
-        final RPromise<RedisConnection> result = newPromise();
-        RFuture<RedisConnection> future = client.connectAsync();
-        future.addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-
-                RedisConnection connection = future.getNow();
-                if (connection.isActive()) {
-                    nodeConnections.put(addr, connection);
-                    result.trySuccess(connection);
-                } else {
-                    connection.closeAsync();
-                    result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
-                }
-            }
-        });
-
-        return result;
-    }
-
     private void scheduleMasterChangeCheck(final ReplicatedServersConfig cfg) {
         monitorFuture = group.schedule(new Runnable() {
             @Override
@@ -158,7 +120,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                         return;
                     }
 
-                    RFuture<RedisConnection> connectionFuture = connect(cfg, addr);
+                    RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
                     connectionFuture.addListener(new FutureListener<RedisConnection>() {
                         @Override
                         public void operationComplete(Future<RedisConnection> future) throws Exception {
@@ -174,7 +136,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                 return;
                             }
                             
-                            RedisConnection connection = future.getNow();
+                            final RedisConnection connection = future.getNow();
                             RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
                             result.addListener(new FutureListener<Map<String, String>>() {
                                 @Override
@@ -182,6 +144,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                         throws Exception {
                                     if (!future.isSuccess()) {
                                         log.error(future.cause().getMessage(), future.cause());
+                                        closeNodeConnection(connection);
                                         if (count.decrementAndGet() == 0) {
                                             scheduleMasterChangeCheck(cfg);
                                         }
@@ -214,15 +177,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     public void shutdown() {
         monitorFuture.cancel(true);
         
-        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
-        for (RedisConnection connection : nodeConnections.values()) {
-            RFuture<Void> future = connection.getRedisClient().shutdownAsync();
-            futures.add(future);
-        }
-        
-        for (RFuture<Void> future : futures) {
-            future.syncUninterruptibly();
-        }
+        closeNodeConnections();
         super.shutdown();
     }
 }

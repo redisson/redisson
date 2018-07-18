@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -53,7 +54,6 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
-import org.redisson.codec.CodecProvider;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
@@ -65,9 +65,9 @@ import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.provider.ResolverProvider;
 import org.redisson.liveobject.resolver.Resolver;
 
+import io.netty.util.internal.PlatformDependent;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
@@ -81,18 +81,15 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
+    private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
-    private final CodecProvider codecProvider;
-    private final ResolverProvider resolverProvider;
     private final RedissonObjectBuilder objectBuilder;
 
-    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CodecProvider codecProvider, ResolverProvider resolverProvider) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache) {
         this.redisson = redisson;
         this.classCache = classCache;
-        this.codecProvider = codecProvider;
-        this.resolverProvider = resolverProvider;
-        this.objectBuilder = new RedissonObjectBuilder(redisson, codecProvider);
+        this.objectBuilder = new RedissonObjectBuilder(redisson);
     }
 
     //TODO: Add ttl renewal functionality
@@ -114,12 +111,31 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
-        Resolver resolver = resolverProvider.getResolver(entityClass,
-                annotation.generator(), annotation);
+        Resolver resolver = getResolver(entityClass, annotation.generator(), annotation);
         Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
         return id;
     }
+    
+    private Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
+        if (!providerCache.containsKey(resolverClass)) {
+            try {
+                providerCache.putIfAbsent(resolverClass, resolverClass.newInstance());
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        return providerCache.get(resolverClass);
+    }
 
+    public <T, K> T createLiveObject(Class<T> entityClass, K id) {
+        try {
+            return instantiateLiveObject(getProxyClass(entityClass), id);
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
+        }
+    }
+    
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
@@ -266,7 +282,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         
         RCascade annotation = ClassUtils.getAnnotation(clazz, fieldName, RCascade.class);
         if (annotation != null) {
-            throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object field");
+            throw new IllegalArgumentException("RCascade annotation couldn't be defined for non-Redisson object '" + clazz + "' and field '" + fieldName + "'");
         }
     }
 
@@ -478,8 +494,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T, K> void delete(Class<T> entityClass, K id) {
-        asLiveObject(get(entityClass, id)).delete();
+    public <T, K> boolean delete(Class<T> entityClass, K id) {
+        T entity = get(entityClass, id);
+        if (entity == null) {
+            return false;
+        }
+        return asLiveObject(entity).delete();
     }
 
     @Override
@@ -632,7 +652,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .withBinders(FieldProxy.Binder
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class))
-                        .to(new LiveObjectInterceptor(redisson, codecProvider, entityClass,
+                        .to(new LiveObjectInterceptor(redisson, entityClass,
                                 getRIdFieldName(entityClass))))
 //                .intercept(MethodDelegation.to(
 //                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
@@ -679,7 +699,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .intercept(MethodDelegation.to(
                                 new AccessorInterceptor(redisson, objectBuilder)))
                 
-                .make().load(getClass().getClassLoader(),
+                .make().load(entityClass.getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
         classCache.putIfAbsent(entityClass, proxied);

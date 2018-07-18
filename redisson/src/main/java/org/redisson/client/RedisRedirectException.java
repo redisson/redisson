@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 package org.redisson.client;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
+
 import org.redisson.misc.URIBuilder;
 
 /**
@@ -42,10 +42,6 @@ public class RedisRedirectException extends RedisException {
 
     public URI getUrl() {
         return url;
-    }
-
-    public InetSocketAddress getAddr() {
-        return new InetSocketAddress(url.getHost(), url.getPort());
     }
 
 }

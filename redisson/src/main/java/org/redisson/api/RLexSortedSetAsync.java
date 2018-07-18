@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,18 @@ public interface RLexSortedSetAsync extends RCollectionAsync<String> {
     RFuture<Collection<String>> rangeHeadAsync(String toElement, boolean toInclusive, int offset, int count);
 
     RFuture<Collection<String>> rangeAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    
+    RFuture<Collection<String>> rangeTailReversedAsync(String fromElement, boolean fromInclusive);
+
+    RFuture<Collection<String>> rangeHeadReversedAsync(String toElement, boolean toInclusive);
+
+    RFuture<Collection<String>> rangeReversedAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+
+    RFuture<Collection<String>> rangeTailReversedAsync(String fromElement, boolean fromInclusive, int offset, int count);
+    
+    RFuture<Collection<String>> rangeHeadReversedAsync(String toElement, boolean toInclusive, int offset, int count);
+
+    RFuture<Collection<String>> rangeReversedAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
     RFuture<Integer> countAsync(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 

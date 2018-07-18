@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,12 @@ package org.redisson.client;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
 public interface RedisPubSubListener<V> extends MessageListener<V> {
 
     boolean onStatus(PubSubType type, String channel);

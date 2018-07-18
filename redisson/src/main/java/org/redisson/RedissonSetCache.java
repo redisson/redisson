@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,21 +25,19 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.Hash;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -123,26 +120,29 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), encode(o));
     }
 
-    public ListScanResult<ScanObjectEntry> scanIterator(String name, InetSocketAddress client, long startPos, String pattern) {
-        RFuture<ListScanResult<ScanObjectEntry>> f = scanIteratorAsync(name, client, startPos, pattern);
+    @Override
+    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
+        RFuture<ListScanResult<Object>> f = scanIteratorAsync(name, client, startPos, pattern, count);
         return get(f);
     }
 
-    public RFuture<ListScanResult<ScanObjectEntry>> scanIteratorAsync(String name, InetSocketAddress client, long startPos, String pattern) {
+    @Override
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(startPos);
         params.add(System.currentTimeMillis());
         if (pattern != null) {
             params.add(pattern);
         }
+        params.add(count);
         
-        return commandExecutor.evalReadAsync(client, name, new ScanCodec(codec), RedisCommands.EVAL_ZSCAN,
+        return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_ZSCAN,
                   "local result = {}; "
                 + "local res; "
-                + "if (#ARGV == 3) then "
-                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'match', ARGV[3]); "
+                + "if (#ARGV == 4) then "
+                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'match', ARGV[3], 'count', ARGV[4]); "
                 + "else "
-                  + " res = redis.call('zscan', KEYS[1], ARGV[1]); "
+                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'count', ARGV[3]); "
                 + "end;"
                 + "for i, value in ipairs(res[2]) do "
                     + "if i % 2 == 0 then "
@@ -156,17 +156,27 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     }
 
     @Override
-    public Iterator<V> iterator(final String pattern) {
+    public Iterator<V> iterator(int count) {
+        return iterator(null, count);
+    }
+    
+    @Override
+    public Iterator<V> iterator(String pattern) {
+        return iterator(pattern, 10);
+    }
+    
+    @Override
+    public Iterator<V> iterator(final String pattern, final int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
-            ListScanResult<ScanObjectEntry> iterator(InetSocketAddress client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos, pattern);
+            protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
+                return scanIterator(getName(), client, nextIterPos, pattern, count);
             }
 
             @Override
-            void remove(V value) {
-                RedissonSetCache.this.remove(value);
+            protected void remove(Object value) {
+                RedissonSetCache.this.remove((V)value);
             }
             
         };
@@ -258,7 +268,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(true);
+            return RedissonPromise.newSucceededFuture(true);
         }
         
         List<Object> params = new ArrayList<Object>(c.size() + 1);
@@ -288,7 +298,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         long score = 92233720368547758L - System.currentTimeMillis();
@@ -333,7 +343,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         if (c.isEmpty()) {
-            return newSucceededFuture(false);
+            return RedissonPromise.newSucceededFuture(false);
         }
         
         List<Object> params = new ArrayList<Object>(c.size()+1);
@@ -351,6 +361,21 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public void clear() {
         delete();
+    }
+
+    private String getLockName(Object value) {
+        ByteBuf state = encode(value);
+        try {
+            return suffixName(getName(value), Hash.hash128toBase64(state) + ":lock");
+        } finally {
+            state.release();
+        }
+    }
+    
+    @Override
+    public RLock getLock(V value) {
+        String lockName = getLockName(value);
+        return new RedissonLock(commandExecutor, lockName);
     }
 
 }

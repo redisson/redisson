@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,11 @@ public class RedissonRedLock extends RedissonMultiLock {
         return locks.size()/2 + 1;
     }
 
+    @Override
+    protected long calcLockWaitTime(long remainTime) {
+        return Math.max(remainTime / locks.size(), 1);
+    }
+    
     @Override
     public void unlock() {
         unlockInner(locks);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,36 @@
 package org.redisson.api;
 
 /**
+ * Live Object cascade type.
  * 
  * @author Nikita Koksharov
  *
  */
 public enum RCascadeType {
 
+    /**
+     * Includes all cascade types.
+     */
     ALL,
+    
+    /**
+     * Cascade persist operation during {@link RLiveObjectService#persist} method invocation. 
+     */
     PERSIST,
+    
+    /**
+     * Cascade detach operation during {@link RLiveObjectService#detach} method invocation. 
+     */
     DETACH,
+    
+    /**
+     * Cascade merge operation during {@link RLiveObjectService#merge} method invocation. 
+     */
     MERGE,
+    
+    /**
+     * Cascade delete operation during {@link RLiveObjectService#delete} method invocation. 
+     */
     DELETE
     
     

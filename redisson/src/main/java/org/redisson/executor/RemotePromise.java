@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.executor;
 
 import org.redisson.api.RFuture;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.remote.RequestId;
 
 /**
  * 
@@ -25,15 +26,15 @@ import org.redisson.misc.RedissonPromise;
  */
 public class RemotePromise<T> extends RedissonPromise<T> {
 
-    private String requestId;
+    private final RequestId requestId;
     private RFuture<Boolean> addFuture;
     
-    public RemotePromise(String requestId) {
+    public RemotePromise(RequestId requestId) {
         super();
         this.requestId = requestId;
     }
     
-    public String getRequestId() {
+    public RequestId getRequestId() {
         return requestId;
     }
     

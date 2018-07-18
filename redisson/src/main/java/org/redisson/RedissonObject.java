@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,10 +23,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.buffer.ByteBuf;
@@ -57,30 +58,30 @@ public abstract class RedissonObject implements RObject {
         return commandExecutor.await(future, timeout, timeoutUnit);
     }
     
-    protected String prefixName(String prefix, String name) {
+    public static String prefixName(String prefix, String name) {
         if (name.contains("{")) {
             return prefix + ":" + name;
         }
         return prefix + ":{" + name + "}";
     }
     
-    protected String suffixName(String name, String suffix) {
+    public static String suffixName(String name, String suffix) {
         if (name.contains("{")) {
             return name + ":" + suffix;
         }
         return "{" + name + "}:" + suffix;
     }
 
-    protected <V> V get(RFuture<V> future) {
+    protected final <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }
-
-    protected <V> RPromise<V> newPromise() {
-        return commandExecutor.getConnectionManager().newPromise();
-    }
-
-    protected <V> RFuture<V> newSucceededFuture(V result) {
-        return commandExecutor.getConnectionManager().newSucceededFuture(result);
+    
+    protected final long toSeconds(long timeout, TimeUnit unit) {
+        long seconds = unit.toSeconds(timeout);
+        if (timeout != 0 && seconds == 0) {
+            seconds = 1;
+        }
+        return seconds;
     }
 
     @Override
@@ -103,15 +104,25 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
-    public void migrate(String host, int port, int database) {
-        get(migrateAsync(host, port, database));
+    public void migrate(String host, int port, int database, long timeout) {
+        get(migrateAsync(host, port, database, timeout));
     }
 
     @Override
-    public RFuture<Void> migrateAsync(String host, int port, int database) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database);
+    public RFuture<Void> migrateAsync(String host, int port, int database, long timeout) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database, timeout);
+    }
+    
+    @Override
+    public void copy(String host, int port, int database, long timeout) {
+        get(copyAsync(host, port, database, timeout));
     }
 
+    @Override
+    public RFuture<Void> copyAsync(String host, int port, int database, long timeout) {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database, timeout, "COPY");
+    }
+    
     @Override
     public boolean move(int database) {
         return get(moveAsync(database));
@@ -203,7 +214,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    protected ByteBuf encode(Object value) {
+    public ByteBuf encode(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -218,7 +229,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
     
-    protected ByteBuf encodeMapKey(Object value) {
+    public ByteBuf encodeMapKey(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -233,7 +244,7 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
-    protected ByteBuf encodeMapValue(Object value) {
+    public ByteBuf encodeMapValue(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
             RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
             if (reference != null) {
@@ -248,4 +259,64 @@ public abstract class RedissonObject implements RObject {
         }
     }
 
+    @Override
+    public byte[] dump() {
+        return get(dumpAsync());
+    }
+    
+    @Override
+    public RFuture<byte[]> dumpAsync() {
+        return commandExecutor.readAsync(getName(), ByteArrayCodec.INSTANCE, RedisCommands.DUMP, getName());
+    }
+    
+    @Override
+    public void restore(byte[] state) {
+        get(restoreAsync(state));
+    }
+    
+    @Override
+    public RFuture<Void> restoreAsync(byte[] state) {
+        return restoreAsync(state, 0, null);
+    }
+    
+    @Override
+    public void restore(byte[] state, long timeToLive, TimeUnit timeUnit) {
+        get(restoreAsync(state, timeToLive, timeUnit));
+    }
+    
+    @Override
+    public RFuture<Void> restoreAsync(byte[] state, long timeToLive, TimeUnit timeUnit) {
+        long ttl = 0;
+        if (timeToLive > 0) {
+            ttl = timeUnit.toMillis(timeToLive);
+        }
+        
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RESTORE, getName(), ttl, state);
+    }
+
+    @Override
+    public void restoreAndReplace(byte[] state, long timeToLive, TimeUnit timeUnit) {
+        get(restoreAndReplaceAsync(state, timeToLive, timeUnit));
+    }
+    
+    @Override
+    public RFuture<Void> restoreAndReplaceAsync(byte[] state, long timeToLive, TimeUnit timeUnit) {
+        long ttl = 0;
+        if (timeToLive > 0) {
+            ttl = timeUnit.toMillis(timeToLive);
+        }
+        
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RESTORE, getName(), ttl, state, "REPLACE");
+    }
+    
+    @Override
+    public void restoreAndReplace(byte[] state) {
+        get(restoreAndReplaceAsync(state));
+    }
+    
+    @Override
+    public RFuture<Void> restoreAndReplaceAsync(byte[] state) {
+        return restoreAndReplaceAsync(state, 0, null);
+    }
+    
 }

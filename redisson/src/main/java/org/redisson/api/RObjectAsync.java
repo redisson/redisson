@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Base interface for all Redisson objects
  *
@@ -24,6 +26,49 @@ package org.redisson.api;
 public interface RObjectAsync {
 
     /**
+     * Restores object using its state returned by {@link #dumpAsync()} method.
+     * 
+     * @param state - state of object
+     * @return void
+     */
+    RFuture<Void> restoreAsync(byte[] state);
+    
+    /**
+     * Restores object using its state returned by {@link #dumpAsync()} method and set time to live for it.
+     * 
+     * @param state - state of object
+     * @param timeToLive - time to live of the object
+     * @param timeUnit - time unit
+     * @return void
+     */
+    RFuture<Void> restoreAsync(byte[] state, long timeToLive, TimeUnit timeUnit);
+    
+    /**
+     * Restores and replaces object if it already exists.
+     * 
+     * @param state - state of the object
+     * @return void
+     */
+    RFuture<Void> restoreAndReplaceAsync(byte[] state);
+    
+    /**
+     * Restores and replaces object if it already exists and set time to live for it.
+     * 
+     * @param state - state of the object
+     * @param timeToLive - time to live of the object
+     * @param timeUnit - time unit
+     * @return void
+     */
+    RFuture<Void> restoreAndReplaceAsync(byte[] state, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Returns dump of object
+     * 
+     * @return dump
+     */
+    RFuture<byte[]> dumpAsync();
+    
+    /**
      * Update the last access time of an object in async mode. 
      * 
      * @return <code>true</code> if object was touched else <code>false</code>
@@ -31,16 +76,29 @@ public interface RObjectAsync {
     RFuture<Boolean> touchAsync();
     
     /**
-     * Transfer an object from source Redis instance to destination Redis instance
+     * Transfer object from source Redis instance to destination Redis instance
      * in async mode
      *
      * @param host - destination host
      * @param port - destination port
      * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    RFuture<Void> migrateAsync(String host, int port, int database);
+    RFuture<Void> migrateAsync(String host, int port, int database, long timeout);
 
+    /**
+     * Copy object from source Redis instance to destination Redis instance
+     * in async mode
+     *
+     * @param host - destination host
+     * @param port - destination port
+     * @param database - destination database
+     * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
+     */
+    RFuture<Void> copyAsync(String host, int port, int database, long timeout);
+    
     /**
      * Move object to another database in async mode
      *

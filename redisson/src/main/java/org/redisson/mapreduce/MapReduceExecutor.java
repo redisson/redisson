@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,7 @@ import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
 
 import io.netty.util.concurrent.Future;
@@ -94,7 +95,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     
     @Override
     public RFuture<Map<KOut, VOut>> executeAsync() {
-        final RPromise<Map<KOut, VOut>> promise = connectionManager.newPromise();
+        final RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
         final RFuture<Void> future = executeMapperAsync(resultMapName, null);
         addCancelHandling(promise, future);
         future.addListener(new FutureListener<Void>() {

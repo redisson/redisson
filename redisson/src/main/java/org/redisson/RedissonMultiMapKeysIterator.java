@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,28 +17,34 @@ package org.redisson;
 
 import java.util.Map.Entry;
 
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.client.RedisClient;
 
-public class RedissonMultiMapKeysIterator<K, V, M> extends RedissonBaseMapIterator<K, V, M> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <V> value type
+ */
+public class RedissonMultiMapKeysIterator<V> extends RedissonBaseMapIterator<V> {
 
-    private final RedissonMultimap<K, V> map;
+    private final RedissonMultimap map;
 
-    public RedissonMultiMapKeysIterator(RedissonMultimap<K, V> map) {
+    public RedissonMultiMapKeysIterator(RedissonMultimap map) {
         this.map = map;
     }
+    @Override
+    protected Object put(Entry<Object, Object> entry, Object value) {
+        return map.put(entry.getKey(), value);
+    }
 
-    protected MapScanResult<ScanObjectEntry, ScanObjectEntry> iterator() {
+    @Override
+    protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
         return map.scanIterator(client, nextIterPos);
     }
 
-    protected void removeKey() {
-        map.fastRemove((K)entry.getKey().getObj());
-    }
-
-    protected V put(Entry<ScanObjectEntry, ScanObjectEntry> entry, V value) {
-        map.put((K) entry.getKey().getObj(), value);
-        return null;
+    @Override
+    protected void remove(Entry<Object, Object> value) {
+        map.fastRemove(value.getKey());
     }
 
 }

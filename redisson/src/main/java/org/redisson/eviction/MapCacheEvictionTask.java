@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -56,9 +56,10 @@ public class MapCacheEvictionTask extends EvictionTask {
     
     @Override
     RFuture<Integer> execute() {
+        int latchExpireTime = Math.min(delay, 30);
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "if redis.call('setnx', KEYS[6], ARGV[4]) == 0 then "
-                 + "return 0;"
+                 + "return -1;"
               + "end;"
               + "redis.call('expire', KEYS[6], ARGV[3]); "
                +"local expiredKeys1 = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "
@@ -99,7 +100,7 @@ public class MapCacheEvictionTask extends EvictionTask {
               + "end; "
               + "return #expiredKeys1 + #expiredKeys2;",
               Arrays.<Object>asList(name, timeoutSetName, maxIdleSetName, expiredChannelName, lastAccessTimeSetName, executeTaskOnceLatchName), 
-              System.currentTimeMillis(), keysLimit, delay, 1);
+              System.currentTimeMillis(), keysLimit, latchExpireTime, 1);
     }
     
 }

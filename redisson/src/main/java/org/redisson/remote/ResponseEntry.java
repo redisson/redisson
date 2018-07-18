@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +15,13 @@
  */
 package org.redisson.remote;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.misc.RPromise;
-
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -33,58 +30,31 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class ResponseEntry {
 
-    public static class Key {
+    public static class Result {
         
-        private final long id0;
-        private final long id1;
+        private final RPromise<? extends RRemoteServiceResponse> promise;
+        private final ScheduledFuture<?> scheduledFuture;
         
-        public Key(String id) {
-            byte[] buf = ByteBufUtil.decodeHexDump(id);
-            ByteBuf b = Unpooled.wrappedBuffer(buf);
-            try {
-                id0 = b.readLong();
-                id1 = b.readLong();
-            } finally {
-                b.release();
-            }
+        public Result(RPromise<? extends RRemoteServiceResponse> promise, ScheduledFuture<?> scheduledFuture) {
+            super();
+            this.promise = promise;
+            this.scheduledFuture = scheduledFuture;
         }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + (int) (id0 ^ (id0 >>> 32));
-            result = prime * result + (int) (id1 ^ (id1 >>> 32));
-            return result;
+        
+        public <T extends RRemoteServiceResponse> RPromise<T> getPromise() {
+            return (RPromise<T>) promise;
         }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Key other = (Key) obj;
-            if (id0 != other.id0)
-                return false;
-            if (id1 != other.id1)
-                return false;
-            return true;
+        
+        public ScheduledFuture<?> getScheduledFuture() {
+            return scheduledFuture;
         }
         
     }
     
-    private final ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> responses = PlatformDependent.newConcurrentHashMap();
-    private final ConcurrentMap<Key, ScheduledFuture<?>> timeouts = PlatformDependent.newConcurrentHashMap();
+    private final Map<RequestId, List<Result>> responses = new HashMap<RequestId, List<Result>>();
     private final AtomicBoolean started = new AtomicBoolean(); 
     
-    public ConcurrentMap<Key, ScheduledFuture<?>> getTimeouts() {
-        return timeouts;
-    }
-    
-    public ConcurrentMap<Key, RPromise<? extends RRemoteServiceResponse>> getResponses() {
+    public Map<RequestId, List<Result>> getResponses() {
         return responses;
     }
     

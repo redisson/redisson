@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -40,18 +39,23 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
 
     private final RedissonMultimapCache<K> baseCache;
     
-    RedissonListMultimapCache(UUID id, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
-        super(id, connectionManager, name);
-        evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+    public RedissonListMultimapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
+        super(connectionManager, name);
+        if (evictionScheduler != null) {
+            evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
+        }
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
-    RedissonListMultimapCache(UUID id, EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(id, codec, connectionManager, name);
-        evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
-        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName());
+    public RedissonListMultimapCache(EvictionScheduler evictionScheduler, Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
+        if (evictionScheduler != null) {
+            evictionScheduler.scheduleCleanMultimap(name, getTimeoutSetName());
+        }
+        baseCache = new RedissonMultimapCache<K>(connectionManager, this, getTimeoutSetName(), prefix);
     }
 
+    @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -76,10 +80,10 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     }
     
     String getTimeoutSetName() {
-        return "redisson_list_multimap_ttl{" + getName() + "}";
+        return suffixName(getName(), "redisson_list_multimap_ttl");
     }
 
-
+    @Override
     public RFuture<Boolean> containsValueAsync(Object value) {
         ByteBuf valueState = encodeMapValue(value);
 
@@ -93,7 +97,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                           + "expireDate = tonumber(expireDateScore) "
                       + "end; "
                       + "if expireDate > tonumber(ARGV[2]) then " +
-                            "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                            "local name = ARGV[3] .. v; " +
                       
                             "local items = redis.call('lrange', name, 0, -1) " +
                             "for i=1,#items do " +
@@ -106,9 +110,11 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), valueState, System.currentTimeMillis());
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), 
+                valueState, System.currentTimeMillis(), prefix);
     }
 
+    @Override
     public RFuture<Boolean> containsEntryAsync(Object key, Object value) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -130,7 +136,8 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
                   "end; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState, valueState);
+                Arrays.<Object>asList(valuesName, getTimeoutSetName()), 
+                System.currentTimeMillis(), keyState, valueState);
     }
 
     @Override
@@ -142,6 +149,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
         return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);
     }
 
+    @Override
     public RFuture<Collection<V>> getAllAsync(K key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
@@ -160,12 +168,13 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
             Arrays.<Object>asList(valuesName, getTimeoutSetName()), System.currentTimeMillis(), keyState);
     }
 
+    @Override
     public RFuture<Collection<V>> removeAllAsync(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         String keyHash = hash(keyState);
 
         String valuesName = getValuesName(keyHash);
-        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_SET,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "redis.call('hdel', KEYS[1], ARGV[1]); " +
                 "local members = redis.call('lrange', KEYS[2], 0, -1); " +
                 "redis.call('del', KEYS[2]); " +

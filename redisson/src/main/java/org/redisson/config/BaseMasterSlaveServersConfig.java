@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,17 +34,21 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
      */
-    private int slaveConnectionMinimumIdleSize = 10;
+    private int slaveConnectionMinimumIdleSize = 32;
 
     /**
      * Redis 'slave' node maximum connection pool size for <b>each</b> slave node
      */
     private int slaveConnectionPoolSize = 64;
 
+    private int failedSlaveReconnectionInterval = 3000;
+    
+    private int failedSlaveCheckInterval = 60000;
+    
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
      */
-    private int masterConnectionMinimumIdleSize = 10;
+    private int masterConnectionMinimumIdleSize = 32;
 
     /**
      * Redis 'master' node maximum connection pool size
@@ -53,7 +57,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private ReadMode readMode = ReadMode.SLAVE;
     
-    private SubscriptionMode subscriptionMode = SubscriptionMode.SLAVE;
+    private SubscriptionMode subscriptionMode = SubscriptionMode.MASTER;
     
     /**
      * Redis 'slave' node minimum idle subscription (pub/sub) connection amount for <b>each</b> slave node
@@ -82,6 +86,8 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
         setReadMode(config.getReadMode());
         setSubscriptionMode(config.getSubscriptionMode());
         setDnsMonitoringInterval(config.getDnsMonitoringInterval());
+        setFailedSlaveCheckInterval(config.getFailedSlaveCheckInterval());
+        setFailedSlaveReconnectionInterval(config.getFailedSlaveReconnectionInterval());
     }
 
     /**
@@ -100,6 +106,47 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getSlaveConnectionPoolSize() {
         return slaveConnectionPoolSize;
+    }
+    
+    /**
+     * Interval of Redis Slave reconnection attempt when
+     * it was excluded from internal list of available servers.
+     * <p>
+     * On every such timeout event Redisson tries
+     * to connect to disconnected Redis server.
+     * <p>
+     * Default is 3000
+     *
+     * @param failedSlavesReconnectionTimeout - retry timeout in milliseconds
+     * @return config
+     */
+
+    public T setFailedSlaveReconnectionInterval(int failedSlavesReconnectionTimeout) {
+        this.failedSlaveReconnectionInterval = failedSlavesReconnectionTimeout;
+        return (T) this;
+    }
+
+    public int getFailedSlaveReconnectionInterval() {
+        return failedSlaveReconnectionInterval;
+    }
+
+    
+    /**
+     * Redis Slave node failing to execute commands is excluded from the internal list of available nodes
+     * when the time interval from the moment of first Redis command execution failure
+     * on this server reaches <code>slaveFailsInterval</code> value.
+     * <p>
+     * Default is <code>60000</code>
+     *
+     * @param slaveFailsInterval - time interval in milliseconds
+     * @return config
+     */
+    public T setFailedSlaveCheckInterval(int slaveFailsInterval) {
+        this.failedSlaveCheckInterval = slaveFailsInterval;
+        return (T) this;
+    }
+    public int getFailedSlaveCheckInterval() {
+        return failedSlaveCheckInterval;
     }
 
     /**
@@ -267,7 +314,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     /**
      * Set node type used for subscription operation.
      * <p>
-     * Default is <code>SLAVE</code>
+     * Default is <code>MASTER</code>
      *
      * @param subscriptionMode param
      * @return config

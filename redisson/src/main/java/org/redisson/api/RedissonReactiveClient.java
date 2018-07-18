@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.CodecProvider;
+import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 
 /**
@@ -37,6 +37,15 @@ public interface RedissonReactiveClient {
      * @return Semaphore object
      */
     RSemaphoreReactive getSemaphore(String name);
+    
+    /**
+     * Returns semaphore instance by name.
+     * Supports lease time parameter for each acquired permit.
+     * 
+     * @param name - name of object
+     * @return PermitExpirableSemaphore object
+     */
+    RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name);
     
     /**
      * Returns readWriteLock instance by name.
@@ -470,6 +479,14 @@ public interface RedissonReactiveClient {
     RAtomicLongReactive getAtomicLong(String name);
 
     /**
+     * Returns "atomic double" instance by name.
+     *
+     * @param name of the "atomic double"
+     * @return AtomicLong object
+     */
+    RAtomicDoubleReactive getAtomicDouble(String name);
+
+    /**
      * Returns bitSet instance by name.
      *
      * @param name - name of object
@@ -485,13 +502,28 @@ public interface RedissonReactiveClient {
     RScriptReactive getScript();
 
     /**
+     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 
+     * @param options - transaction configuration
+     * @return Transaction object
+     */
+    RTransactionReactive createTransaction(TransactionOptions options);
+    
+    /**
      * Return batch object which executes group of
      * command in pipeline.
      *
      * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
      *
+     * @param options - batch configuration
      * @return Batch object
      */
+    RBatchReactive createBatch(BatchOptions options);
+
+    /*
+     * Use createBatch(BatchOptions)
+     */
+    @Deprecated
     RBatchReactive createBatch();
 
     /**
@@ -521,7 +553,7 @@ public interface RedissonReactiveClient {
      * 
      * @return CodecProvider object
      */
-    CodecProvider getCodecProvider();
+    ReferenceCodecProvider getCodecProvider();
     
     /**
      * Get Redis nodes group for server operations

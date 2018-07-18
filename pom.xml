@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>2.10.6-SNAPSHOT</version>
+    <version>2.12.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
@@ -129,6 +129,17 @@
         </profile>
     </profiles>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>4.1.27.Final</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
   <build>
       <directory>target</directory>

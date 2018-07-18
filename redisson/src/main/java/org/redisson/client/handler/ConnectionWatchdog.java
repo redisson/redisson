@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
@@ -109,7 +109,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
         log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
 
         try {
-            bootstrap.connect().addListener(new ChannelFutureListener() {
+            bootstrap.connect(connection.getRedisClient().getAddr()).addListener(new ChannelFutureListener() {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
@@ -119,21 +119,26 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
                     if (future.isSuccess()) {
                         final Channel channel = future.channel();
-
-                        RedisConnection c = RedisConnection.getFrom(channel);
-                        c.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
-                            @Override
-                            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                                if (future.isSuccess()) {
-                                    refresh(connection, channel);
-                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
-                                } else {
-                                    log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
+                        if (channel.localAddress().equals(channel.remoteAddress())) {
+                            channel.close();
+                            log.error("local address and remote address are the same! connected to: {}, localAddress: {} remoteAddress: {}", 
+                                    connection.getRedisClient().getAddr(), channel.localAddress(), channel.remoteAddress());
+                        } else {
+                            RedisConnection c = RedisConnection.getFrom(channel);
+                            c.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
+                                @Override
+                                public void operationComplete(Future<RedisConnection> future) throws Exception {
+                                    if (future.isSuccess()) {
+                                        refresh(connection, channel);
+                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                    } else {
+                                        log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
+                                    }
+                                    
                                 }
-                                
-                            }
-                        });
-                        return;
+                            });
+                            return;
+                        }
                     }
 
                     reconnect(connection, nextAttempt);

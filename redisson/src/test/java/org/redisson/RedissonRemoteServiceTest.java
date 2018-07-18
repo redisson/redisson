@@ -5,10 +5,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,6 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.api.RRemoteService;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RRemoteAsync;
@@ -213,6 +218,38 @@ public class RedissonRemoteServiceTest extends BaseTest {
         }
         
     }
+
+    @Test
+    public void testConcurrentInvocations() {
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        RRemoteService remoteService = redisson.getRemoteService();
+        remoteService.register(RemoteInterface.class, new RemoteImpl());
+        RemoteInterface service = redisson.getRemoteService().get(RemoteInterface.class);
+
+        List<Future<?>> futures = new ArrayList<>();
+
+        int iterations = 1000;
+        AtomicBoolean bool = new AtomicBoolean();
+        for (int i = 0; i < iterations; i++) {
+            futures.add(executorService.submit(() -> {
+                try {
+                    if (ThreadLocalRandom.current().nextBoolean()) {
+                        service.resultMethod(1L);
+                    } else {
+                        service.methodOverload();
+                    }
+                } catch (Exception e) {
+                    bool.set(true);
+                }
+            }));
+        }
+
+        while (!futures.stream().allMatch(Future::isDone)) {}
+
+        assertThat(bool.get()).isFalse();
+        remoteService.deregister(RemoteInterface.class);
+    }
+
     
     @Test
     public void testCancelAsync() throws InterruptedException {
@@ -387,7 +424,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             r2.shutdown();
         }
     }
-    
+
     @Test
     public void testInvocations() {
         RedissonClient r1 = createInstance();
@@ -414,6 +451,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
             assertThat(e.getCause().getMessage()).isEqualTo("/ by zero");
         }
         
+        assertThat(r1.getKeys().count()).isZero();
         r1.shutdown();
         r2.shutdown();
     }

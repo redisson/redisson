@@ -65,8 +65,9 @@ public class RedissonBitSetTest extends BaseTest {
     @Test
     public void testSet() {
         RBitSet bs = redisson.getBitSet("testbitset");
-        bs.set(3);
-        bs.set(5);
+        assertThat(bs.set(3)).isFalse();
+        assertThat(bs.set(5)).isFalse();
+        assertThat(bs.set(5)).isTrue();
         assertThat(bs.toString()).isEqualTo("{3, 5}");
 
         BitSet bs1 = new BitSet();

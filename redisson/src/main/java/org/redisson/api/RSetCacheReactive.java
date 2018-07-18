@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -39,4 +40,11 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
     @Override
     Publisher<Integer> size();
 
+    /**
+     * Read all elements at once
+     *
+     * @return values
+     */
+    Publisher<Set<V>> readAll();
+    
 }

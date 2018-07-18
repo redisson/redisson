@@ -277,7 +277,7 @@ public class RedisRunner {
             try (PrintWriter printer = new PrintWriter(new FileWriter(confFile))) {
                 args.stream().forEach((arg) -> {
                     if (arg.contains("--")) {
-                        printer.println(arg.replace("--", "\n\r"));
+                        printer.println(arg.replace("--", ""));
                     }
                 });
             }
@@ -431,7 +431,7 @@ public class RedisRunner {
     public RedisRunner nosave() {
         this.nosave = true;
         options.remove(REDIS_OPTIONS.SAVE);
-        addConfigOption(REDIS_OPTIONS.SAVE, "''");
+//        addConfigOption(REDIS_OPTIONS.SAVE, "''");
         return this;
     }
 
@@ -472,7 +472,9 @@ public class RedisRunner {
         this.randomDir = true;
         options.remove(REDIS_OPTIONS.DIR);
         makeRandomDefaultDir();
-        addConfigOption(REDIS_OPTIONS.DIR, defaultDir);
+        
+        
+        addConfigOption(REDIS_OPTIONS.DIR, "\"" + defaultDir + "\"");
         return this;
     }
 
@@ -868,6 +870,9 @@ public class RedisRunner {
             System.out.println("REDIS RUNNER: Making directory " + f.getAbsolutePath());
             f.mkdirs();
             this.defaultDir = f.getAbsolutePath();
+            if (RedissonRuntimeEnvironment.isWindows) {
+                defaultDir = defaultDir.replace("\\", "\\\\");
+            }
         }
     }
 

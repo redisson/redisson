@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,11 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      * Database index used for Redis connection
      */
     private int database = 0;
+    
+    /**
+     * Sentinel scan interval in milliseconds
+     */
+    private int scanInterval = 1000;
 
     public SentinelServersConfig() {
     }
@@ -44,6 +49,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setSentinelAddresses(config.getSentinelAddresses());
         setMasterName(config.getMasterName());
         setDatabase(config.getDatabase());
+        setScanInterval(config.getScanInterval());
     }
 
     /**
@@ -94,4 +100,18 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         return database;
     }
 
+    public int getScanInterval() {
+        return scanInterval;
+    }
+    /**
+     * Sentinel scan interval in milliseconds
+     *
+     * @param scanInterval in milliseconds
+     * @return config
+     */
+    public SentinelServersConfig setScanInterval(int scanInterval) {
+        this.scanInterval = scanInterval;
+        return this;
+    }
+    
 }

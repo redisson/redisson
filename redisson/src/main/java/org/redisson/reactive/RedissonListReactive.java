@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListAsync;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -51,21 +52,31 @@ import reactor.rx.subscription.ReactiveSubscription;
  */
 public class RedissonListReactive<V> extends RedissonExpirableReactive implements RListReactive<V> {
 
-    private final RedissonList<V> instance;
+    private final RListAsync<V> instance;
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonList<V>(commandExecutor, name, null);
+        super(commandExecutor, name, new RedissonList<V>(commandExecutor, name, null));
+        this.instance = (RListAsync<V>) super.instance;
     }
 
     public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonList<V>(codec, commandExecutor, name, null);
+        super(codec, commandExecutor, name, new RedissonList<V>(codec, commandExecutor, name, null));
+        this.instance = (RListAsync<V>) super.instance;
+    }
+    
+    public RedissonListReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RListAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = (RListAsync<V>) super.instance;
     }
 
     @Override
     public Publisher<Integer> size() {
-        return commandExecutor.readReactive(getName(), codec, RedisCommands.LLEN_INT, getName());
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sizeAsync();
+            }
+        });
     }
 
     @Override
@@ -142,7 +153,67 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
 
         };
     }
+    
+    @Override
+    public Publisher<Void> trim(final int fromIndex, final int toIndex) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.trimAsync(fromIndex, toIndex);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Void> fastRemove(final long index) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.fastRemoveAsync(index);
+            }
+        });
+    }
 
+    @Override
+    public Publisher<List<V>> readAll() {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return instance.readAllAsync();
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Integer> addBefore(final V elementToFind, final V element) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addBeforeAsync(elementToFind, element);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<Integer> addAfter(final V elementToFind, final V element) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addAfterAsync(elementToFind, element);
+            }
+        });
+    }
+    
+    @Override
+    public Publisher<List<V>> get(final int ...indexes) {
+        return reactive(new Supplier<RFuture<List<V>>>() {
+            @Override
+            public RFuture<List<V>> get() {
+                return instance.getAsync(indexes);
+            }
+        });
+    }
+    
     @Override
     public Publisher<Integer> add(V e) {
         return commandExecutor.writeReactive(getName(), codec, RPUSH, getName(), encode(e));
@@ -299,7 +370,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         return reactive(new Supplier<RFuture<Long>>() {
             @Override
             public RFuture<Long> get() {
-                return instance.indexOfAsync(o, new LongReplayConvertor());
+                return ((RedissonList)instance).indexOfAsync(o, new LongReplayConvertor());
             }
         });
     }
@@ -309,7 +380,7 @@ public class RedissonListReactive<V> extends RedissonExpirableReactive implement
         return reactive(new Supplier<RFuture<Long>>() {
             @Override
             public RFuture<Long> get() {
-                return instance.lastIndexOfAsync(o, new LongReplayConvertor());
+                return ((RedissonList)instance).lastIndexOfAsync(o, new LongReplayConvertor());
             }
         });
     }

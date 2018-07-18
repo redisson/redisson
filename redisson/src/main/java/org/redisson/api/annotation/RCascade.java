@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.lang.annotation.Target;
 import org.redisson.api.RCascadeType;
 
 /**
+ * Specifies that the defined cascade types are applied to the object/objects contained in Live Object field.
  * 
  * @author Nikita Koksharov
  *
@@ -31,6 +32,11 @@ import org.redisson.api.RCascadeType;
 @Target({ElementType.FIELD})
 public @interface RCascade {
 
+    /**
+     * List of applied cascade types.
+     * 
+     * @return value
+     */
     RCascadeType[] value();
     
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,11 +26,9 @@ import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMapAsync;
 import org.redisson.api.RMapReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.MapScanCodec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.BiFunction;
@@ -54,13 +51,21 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
     private final RMapAsync<K, V> instance;
 
     public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        this(commandExecutor, name, options, new RedissonMap<K, V>(commandExecutor, name, null, options));
+    }
+    
+    public RedissonMapReactive(CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapAsync<K, V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        this(codec, commandExecutor, name, options, new RedissonMap<K, V>(codec, commandExecutor, name, null, options));
+    }
+    
+    public RedissonMapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, MapOptions<K, V> options, RMapAsync<K, V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     @Override
@@ -284,31 +289,81 @@ public class RedissonMapReactive<K, V> extends RedissonExpirableReactive impleme
         });
     }
 
-    public Publisher<MapScanResult<ScanObjectEntry, ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), new MapScanCodec(codec), RedisCommands.HSCAN, getName(), startPos);
+    @Override
+    public Publisher<MapScanResult<Object, Object>> scanIteratorReactive(final RedisClient client, final long startPos, final String pattern, final int count) {
+        return reactive(new Supplier<RFuture<MapScanResult<Object, Object>>>() {
+            @Override
+            public RFuture<MapScanResult<Object, Object>> get() {
+                return ((RedissonMap<K, V>)instance).scanIteratorAsync(getName(), client, startPos, pattern, count);
+            }
+        });
     }
 
     @Override
     public Publisher<Map.Entry<K, V>> entryIterator() {
-        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this).stream();
+        return entryIterator(null);
+    }
+    
+    @Override
+    public Publisher<Entry<K, V>> entryIterator(int count) {
+        return entryIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<Entry<K, V>> entryIterator(String pattern) {
+        return entryIterator(pattern, 10);
+    }
+    
+    public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this, pattern, count).stream();
     }
 
     @Override
     public Publisher<V> valueIterator() {
-        return new RedissonMapReactiveIterator<K, V, V>(this) {
+        return valueIterator(null);
+    }
+
+    @Override
+    public Publisher<V> valueIterator(String pattern) {
+        return valueIterator(pattern, 10);
+    }
+
+    @Override
+    public Publisher<V> valueIterator(int count) {
+        return valueIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<V> valueIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, V>(this, pattern, count) {
             @Override
-            V getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (V) entry.getValue().getObj();
+            V getValue(Entry<Object, Object> entry) {
+                return (V) entry.getValue();
             }
         }.stream();
     }
 
     @Override
     public Publisher<K> keyIterator() {
-        return new RedissonMapReactiveIterator<K, V, K>(this) {
+        return keyIterator(null);
+    }
+
+    @Override
+    public Publisher<K> keyIterator(String pattern) {
+        return keyIterator(pattern, 10);
+    }
+
+    @Override
+    public Publisher<K> keyIterator(int count) {
+        return keyIterator(null, count);
+    }
+    
+    @Override
+    public Publisher<K> keyIterator(String pattern, int count) {
+        return new RedissonMapReactiveIterator<K, V, K>(this, pattern, count) {
             @Override
-            K getValue(Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                return (K) entry.getKey().getObj();
+            K getValue(Entry<Object, Object> entry) {
+                return (K) entry.getKey();
             }
         }.stream();
     }

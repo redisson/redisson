@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -50,12 +49,12 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
     private static final RedisStrictCommand<Boolean> SCARD_VALUE = new RedisStrictCommand<Boolean>("SCARD", new BooleanAmountReplayConvertor());
     private static final RedisCommand<Boolean> SISMEMBER_VALUE = new RedisCommand<Boolean>("SISMEMBER", new BooleanReplayConvertor());
 
-    public RedissonSetMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
-        super(id, connectionManager, name);
+    public RedissonSetMultimap(CommandAsyncExecutor connectionManager, String name) {
+        super(connectionManager, name);
     }
 
-    public RedissonSetMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(id, codec, connectionManager, name);
+    public RedissonSetMultimap(Codec codec, CommandAsyncExecutor connectionManager, String name) {
+        super(codec, connectionManager, name);
     }
 
     @Override
@@ -65,12 +64,13 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "local size = 0; " +
                 "for i, v in ipairs(keys) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                        "local name = ARGV[1] .. v; " +
                         "size = size + redis.call('scard', name); " +
                     "end;" +
                 "end; " +
                 "return size; ",
-                Arrays.<Object>asList(getName()));
+                Arrays.<Object>asList(getName()),
+                prefix);
     }
 
     @Override
@@ -90,14 +90,15 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 "local keys = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(keys) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " +
+                        "local name = ARGV[2] .. v; " +
                         "if redis.call('sismember', name, ARGV[1]) == 1 then "
                             + "return 1; " +
                         "end;" +
                     "end;" +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName()), valueState);
+                Arrays.<Object>asList(getName()), 
+                valueState, prefix);
     }
 
     @Override
@@ -165,6 +166,30 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
         final String setName = getValuesName(keyHash);
 
         return new RedissonSet<V>(codec, commandExecutor, setName, null) {
+            
+            @Override
+            public RFuture<Boolean> addAsync(V value) {
+                return RedissonSetMultimap.this.putAsync(key, value);
+            }
+            
+            @Override
+            public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
+                return RedissonSetMultimap.this.putAllAsync(key, c);
+            }
+            
+            @Override
+            public RFuture<Boolean> removeAsync(Object value) {
+                return RedissonSetMultimap.this.removeAsync(key, value);
+            }
+            
+            @Override
+            public RFuture<Boolean> removeAllAsync(Collection<?> c) {
+                ByteBuf keyState = encodeMapKey(key);
+                return commandExecutor.evalWriteAsync(RedissonSetMultimap.this.getName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
+                        "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                        "return redis.call('del', KEYS[2]); ",
+                    Arrays.<Object>asList(RedissonSetMultimap.this.getName(), setName), keyState);
+            }
             
             @Override
             public RFuture<Boolean> deleteAsync() {

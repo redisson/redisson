@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package org.redisson.client.codec;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -40,7 +41,6 @@ import io.netty.buffer.ByteBufOutputStream;
  */
 public class JsonJacksonMapCodec extends JsonJacksonCodec {
     
-    private final ObjectMapper mapper;
     private Class<?> keyClass;
     private Class<?> valueClass;
     private TypeReference<?> keyTypeReference;
@@ -52,7 +52,7 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapper.writeValue(os, in);
+                mapObjectMapper.writeValue((OutputStream)os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();
@@ -65,9 +65,9 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             if (valueClass != null) {
-                return mapper.readValue((InputStream)new ByteBufInputStream(buf), valueClass);
+                return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueClass);
             }
-            return mapper.readValue((InputStream)new ByteBufInputStream(buf), valueTypeReference);
+            return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueTypeReference);
         }
     };
     
@@ -75,27 +75,39 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             if (keyClass != null) {
-                return mapper.readValue((InputStream)new ByteBufInputStream(buf), keyClass);
+                return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), keyClass);
             }
-            return mapper.readValue((InputStream)new ByteBufInputStream(buf), keyTypeReference);
+            return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), keyTypeReference);
         }
     };
 
     public JsonJacksonMapCodec(Class<?> keyClass, Class<?> valueClass) {
-        this(null, null, keyClass, valueClass);
+        this(null, null, keyClass, valueClass, new ObjectMapper());
+    }
+    
+    public JsonJacksonMapCodec(Class<?> keyClass, Class<?> valueClass, ObjectMapper mapper) {
+        this(null, null, keyClass, valueClass, mapper);
     }
     
     public JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference) {
-        this(keyTypeReference, valueTypeReference, null, null);
+        this(keyTypeReference, valueTypeReference, null, null, new ObjectMapper());
+    }
+    
+    public JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference, ObjectMapper mapper) {
+        this(keyTypeReference, valueTypeReference, null, null, mapper);
     }
 
-    JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference, Class<?> keyClass, Class<?> valueClass) {
+    JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference, Class<?> keyClass, Class<?> valueClass, ObjectMapper mapper) {
+        super(mapper);
         this.keyTypeReference = keyTypeReference;
         this.valueTypeReference = valueTypeReference;
         this.keyClass = keyClass;
         this.valueClass = valueClass;
-        this.mapper = new ObjectMapper();
-        init(this.mapper);
+    }
+    
+    @Override
+    protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
+        // avoid type inclusion
     }
 
     @Override

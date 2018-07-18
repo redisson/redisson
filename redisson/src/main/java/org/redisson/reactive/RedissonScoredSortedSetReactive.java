@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Map;
 
@@ -25,12 +24,11 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.ScanCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.fn.Supplier;
@@ -46,13 +44,21 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
     private final RScoredSortedSetAsync<V> instance;
     
     public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
-        instance = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
+        this(commandExecutor, name, new RedissonScoredSortedSet<V>(commandExecutor, name, null));
     }
 
+    public RedissonScoredSortedSetReactive(CommandReactiveExecutor commandExecutor, String name, RScoredSortedSetAsync<V> instance) {
+        super(commandExecutor, name, instance);
+        this.instance = instance;
+    }
+    
     public RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
-        instance = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
+        this(codec, commandExecutor, name, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null));
+    }
+
+    public RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RScoredSortedSetAsync<V> instance) {
+        super(codec, commandExecutor, name, instance);
+        this.instance = instance;
     }
 
     @Override
@@ -175,15 +181,15 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         });
     }
 
-    private Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), new ScanCodec(codec), RedisCommands.ZSCAN, getName(), startPos);
+    private Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long startPos) {
+        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
     }
 
     @Override
     public Publisher<V> iterator() {
         return new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos) {
+            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
                 return RedissonScoredSortedSetReactive.this.scanIteratorReactive(client, nextIterPos);
             }
         };

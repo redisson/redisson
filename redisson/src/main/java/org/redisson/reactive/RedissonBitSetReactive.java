@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import java.util.BitSet;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonBitSet;
+import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.BitSetCodec;
@@ -35,11 +36,15 @@ import reactor.rx.Streams;
  */
 public class RedissonBitSetReactive extends RedissonExpirableReactive implements RBitSetReactive {
 
-    private final RedissonBitSet instance;
+    private final RBitSetAsync instance;
     
     public RedissonBitSetReactive(CommandReactiveExecutor connectionManager, String name) {
-        super(connectionManager, name);
-        this.instance = new RedissonBitSet(connectionManager, name);
+        this(connectionManager, name, new RedissonBitSet(connectionManager, name));
+    }
+
+    public RedissonBitSetReactive(CommandReactiveExecutor connectionManager, String name, RBitSetAsync instance) {
+        super(connectionManager, name, instance);
+        this.instance = instance;
     }
 
     public Publisher<Boolean> get(final long bitIndex) {
@@ -51,10 +56,10 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
         });
     }
 
-    public Publisher<Void> set(final long bitIndex, final boolean value) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> set(final long bitIndex, final boolean value) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.setAsync(bitIndex, value);
             }
         });
@@ -134,20 +139,20 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Integer> size() {
-        return reactive(new Supplier<RFuture<Integer>>() {
+    public Publisher<Long> size() {
+        return reactive(new Supplier<RFuture<Long>>() {
             @Override
-            public RFuture<Integer> get() {
+            public RFuture<Long> get() {
                 return instance.sizeAsync();
             }
         });
     }
 
     @Override
-    public Publisher<Void> set(final long bitIndex) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> set(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.setAsync(bitIndex);
             }
         });
@@ -164,10 +169,10 @@ public class RedissonBitSetReactive extends RedissonExpirableReactive implements
     }
 
     @Override
-    public Publisher<Void> clear(final long bitIndex) {
-        return reactive(new Supplier<RFuture<Void>>() {
+    public Publisher<Boolean> clear(final long bitIndex) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
             @Override
-            public RFuture<Void> get() {
+            public RFuture<Boolean> get() {
                 return instance.clearAsync(bitIndex);
             }
         });

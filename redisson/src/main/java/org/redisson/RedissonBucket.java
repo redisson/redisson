@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,6 +100,20 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public RFuture<V> getAsync() {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.GET, getName());
+    }
+    
+    @Override
+    public V getAndDelete() {
+        return get(getAndDeleteAsync());
+    }
+    
+    @Override
+    public RFuture<V> getAndDeleteAsync() {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+                   "local currValue = redis.call('get', KEYS[1]); "
+                 + "redis.call('del', KEYS[1]); "
+                 + "return currValue; ",
+                Collections.<Object>singletonList(getName()));
     }
     
     @Override

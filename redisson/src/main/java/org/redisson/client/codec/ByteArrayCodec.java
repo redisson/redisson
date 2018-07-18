@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import io.netty.buffer.ByteBufAllocator;
  * @author Nikita Koksharov
  *
  */
-public class ByteArrayCodec implements Codec {
+public class ByteArrayCodec extends BaseCodec {
 
     public static final ByteArrayCodec INSTANCE = new ByteArrayCodec();
 
@@ -60,26 +60,6 @@ public class ByteArrayCodec implements Codec {
     @Override
     public Encoder getValueEncoder() {
         return encoder;
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        return getValueEncoder();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        return getValueDecoder();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        return getValueEncoder();
     }
 
 }

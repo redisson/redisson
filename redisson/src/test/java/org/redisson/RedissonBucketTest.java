@@ -2,16 +2,65 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
 
 public class RedissonBucketTest extends BaseTest {
 
+    @Test
+    public void testDumpAndRestore() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+        
+        byte[] state = al.dump();
+        al.delete();
+        
+        al.restore(state);
+        assertThat(al.get()).isEqualTo(1234);
+        
+        RBucket<Integer> bucket = redisson.getBucket("test2");
+        bucket.set(300);
+        bucket.restoreAndReplace(state);
+        assertThat(bucket.get()).isEqualTo(1234);
+    }
+    
+    @Test
+    public void testDumpAndRestoreTTL() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+        
+        byte[] state = al.dump();
+        al.delete();
+        
+        al.restore(state, 10, TimeUnit.SECONDS);
+        assertThat(al.get()).isEqualTo(1234);
+        assertThat(al.remainTimeToLive()).isBetween(9500L, 10000L);
+        
+        RBucket<Integer> bucket = redisson.getBucket("test2");
+        bucket.set(300);
+        bucket.restoreAndReplace(state, 10, TimeUnit.SECONDS);
+        assertThat(bucket.get()).isEqualTo(1234);
+    }
+    
+    @Test
+    public void testGetAndDelete() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(10);
+        assertThat(al.getAndDelete()).isEqualTo(10);
+        assertThat(al.isExists()).isFalse();
+        assertThat(al.getAndDelete()).isNull();
+    }
+    
     @Test
     public void testSize() {
         RBucket<String> bucket = redisson.getBucket("testCompareAndSet");
@@ -102,6 +151,54 @@ public class RedissonBucketTest extends BaseTest {
         RBucket<String> newBucket = redisson.getBucket("test1");
         Assert.assertEquals("someValue", newBucket.get());
         Assert.assertFalse(newBucket.renamenx("test2"));
+    }
+    
+    @Test
+    public void testMigrate() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisProcess runner = new RedisRunner()
+                .appendonly(true)
+                .randomDir()
+                .randomPort()
+                .run();
+        
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        
+        bucket.migrate(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        RedissonClient r = Redisson.create(config);
+        
+        RBucket<String> bucket2 = r.getBucket("test");
+        assertThat(bucket2.get()).isEqualTo("someValue");
+        assertThat(bucket.isExists()).isFalse();
+        
+        runner.stop();
+    }
+
+    @Test
+    public void testCopy() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisProcess runner = new RedisRunner()
+                .appendonly(true)
+                .randomDir()
+                .randomPort()
+                .run();
+        
+        RBucket<String> bucket = redisson.getBucket("test");
+        bucket.set("someValue");
+        
+        bucket.copy(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
+        
+        Config config = new Config();
+        config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
+        RedissonClient r = Redisson.create(config);
+        
+        RBucket<String> bucket2 = r.getBucket("test");
+        assertThat(bucket2.get()).isEqualTo("someValue");
+        assertThat(bucket.get()).isEqualTo("someValue");
+        
+        runner.stop();
     }
 
     @Test

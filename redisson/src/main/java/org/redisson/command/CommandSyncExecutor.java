@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import java.net.InetSocketAddress;
 import java.util.List;
 
 import org.redisson.api.RFuture;
@@ -32,12 +31,6 @@ public interface CommandSyncExecutor {
 
     <V> V get(RFuture<V> future);
 
-    <T, R> R write(Integer slot, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> R write(String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> R write(String key, RedisCommand<T> command, Object ... params);
-
     <T, R> R read(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params);
@@ -45,10 +38,6 @@ public interface CommandSyncExecutor {
     <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 
     <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
-    <T, R> R read(InetSocketAddress client, String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> R read(InetSocketAddress client, String key, RedisCommand<T> command, Object ... params);
 
     <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
 

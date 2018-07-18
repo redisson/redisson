@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
     
     V get();
 
+    V getAndDelete();
+    
     boolean trySet(V value);
 
     boolean trySet(V value, long timeToLive, TimeUnit timeUnit);

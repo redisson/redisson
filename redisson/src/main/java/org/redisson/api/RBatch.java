@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,9 @@ import org.redisson.client.codec.Codec;
 /**
  * Interface for using pipeline feature.
  * <p>
- * All method invocations on objects
- * from this interface are batched to separate queue and could be executed later
+ * All method invocations on objects got through this interface 
+ * are batched to separate queue and could be executed later
  * with <code>execute()</code> or <code>executeAsync()</code> methods.
- * <p>
- * Please be aware, atomicity <b>is not</b> guaranteed.
  *
  *
  * @author Nikita Koksharov
@@ -35,6 +33,28 @@ import org.redisson.client.codec.Codec;
  */
 public interface RBatch {
 
+    /**
+     * Returns stream instance by <code>name</code>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name of stream
+     * @return RStream object
+     */
+    <K, V> RStreamAsync<K, V> getStream(String name);
+    
+    /**
+     * Returns stream instance by <code>name</code>
+     * using provided <code>codec</code> for entries.
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of stream
+     * @param codec - codec for entry
+     * @return RStream object
+     */
+    <K, V> RStreamAsync<K, V> getStream(String name, Codec codec);
+    
     /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 
@@ -359,6 +379,12 @@ public interface RBatch {
      */
     RLexSortedSetAsync getLexSortedSet(String name);
 
+    /**
+     * Returns bitSet instance by name.
+     *
+     * @param name - name of object
+     * @return BitSet object
+     */
     RBitSetAsync getBitSet(String name);
 
     /**
@@ -399,79 +425,39 @@ public interface RBatch {
     RFuture<BatchResult<?>> executeAsync();
 
     /*
-     * Use {@link #skipResult()}
+     * Use BatchOptions#atomic
      */
     @Deprecated
-    void executeSkipResult();
+    RBatch atomic();
+    
+    /*
+     * Use BatchOptions#skipResult
+     */
+    @Deprecated
+    RBatch skipResult();
 
     /*
-     * Use {@link #skipResult()}
+     * Use BatchOptions#syncSlaves
      */
     @Deprecated
-    RFuture<Void> executeSkipResultAsync();
-    
-    /**
-     * Inform Redis not to send reply for this batch.
-     * Such approach saves response bandwidth.
-     * <p>
-     * NOTE: Redis 3.2+ required
-     * 
-     * @return self instance
-     */
-    RBatch skipResult();
-    
-    /**
-     * Synchronize write operations execution across defined amount 
-     * of Redis slave nodes within defined timeout.
-     * <p>
-     * NOTE: Redis 3.0+ required
-     * 
-     * @param slaves amount to sync
-     * @param timeout for sync operation
-     * @param unit value
-     * @return self instance
-     */
     RBatch syncSlaves(int slaves, long timeout, TimeUnit unit);
     
-    /**
-     * Defines timeout for Redis response. 
-     * Starts to countdown when Redis command has been successfully sent.
-     * <p>
-     * <code>0</code> value means use <code>Config.setTimeout</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param timeout value
-     * @param unit value
-     * @return self instance
+    /*
+     * Use BatchOptions#responseTimeout
      */
+    @Deprecated
     RBatch timeout(long timeout, TimeUnit unit);
 
-    /**
-     * Defines time interval for each attempt to send Redis commands batch 
-     * if it hasn't been sent already.
-     * <p>
-     * <code>0</code> value means use <code>Config.setRetryInterval</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param retryInterval value
-     * @param unit value
-     * @return self instance
+    /*
+     * Use BatchOptions#retryInterval
      */
+    @Deprecated
     RBatch retryInterval(long retryInterval, TimeUnit unit);
 
-    /**
-     * Defines attempts amount to re-send Redis commands batch
-     * if it hasn't been sent already.
-     * <p>
-     * <code>0</code> value means use <code>Config.setRetryAttempts</code> value instead.
-     * <p>
-     * Default is <code>0</code>
-     * 
-     * @param retryAttempts value
-     * @return self instance
+    /*
+     * Use BatchOptions#retryAttempts
      */
+    @Deprecated
     RBatch retryAttempts(int retryAttempts);
     
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * Copyright (C) 2011 The Guava Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License
+ * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied. See the License for the specific language governing permissions and limitations under
+ * the License.
+ */
 package org.redisson;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RBitSetAsync;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
@@ -34,14 +49,12 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.command.CommandBatchService;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
-import net.openhft.hashing.LongHashFunction;
 
 /**
- * Bloom filter based on 64-bit hash derived from 128-bit hash (xxHash 64-bit + FarmHash 64-bit).
- *
- * Code parts from Guava BloomFilter
+ * Bloom filter based on Highway 128-bit hash.
  *
  * @author Nikita Koksharov
  *
@@ -49,21 +62,22 @@ import net.openhft.hashing.LongHashFunction;
  */
 public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomFilter<T> {
 
-    private static final long MAX_SIZE = Integer.MAX_VALUE*2L;
-
     private volatile long size;
     private volatile int hashIterations;
 
     private final CommandExecutor commandExecutor;
+    private final String configName;
 
     protected RedissonBloomFilter(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
+        this.configName = suffixName(getName(), "config");
     }
 
     protected RedissonBloomFilter(Codec codec, CommandExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
         this.commandExecutor = commandExecutor;
+        this.configName = suffixName(getName(), "config");
     }
 
     private int optimalNumOfHashFunctions(long n, long m) {
@@ -80,9 +94,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     private long[] hash(Object object) {
         ByteBuf state = encode(object);
         try {
-            long hash1 = LongHashFunction.xx().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-            long hash2 = LongHashFunction.farmUo().hashBytes(state.internalNioBuffer(state.readerIndex(), state.readableBytes()));
-            return new long[] {hash1, hash2};
+            return Hash.hash128(state);
         } finally {
             state.release();
         }
@@ -104,14 +116,15 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
-                executorService.writeAsync(getName(), codec, RedisCommands.SETBIT, getName(), indexes[i], 1);
+                bs.setAsync(indexes[i]);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute();
 
                 for (Boolean val : result.subList(1, result.size()-1)) {
-                    if (val) {
+                    if (!val) {
                         return true;
                     }
                 }
@@ -154,8 +167,9 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
+            RBitSetAsync bs = createBitSet(executorService);
             for (int i = 0; i < indexes.length; i++) {
-                executorService.readAsync(getName(), codec, RedisCommands.GETBIT, getName(), indexes[i]);
+                bs.getAsync(indexes[i]);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute();
@@ -175,35 +189,40 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         }
     }
 
+    protected RBitSetAsync createBitSet(CommandBatchService executorService) {
+        return new RedissonBitSet(executorService, getName());
+    }
+
     private void addConfigCheck(int hashIterations, long size, CommandBatchService executorService) {
-        executorService.evalReadAsync(getConfigName(), codec, RedisCommands.EVAL_VOID,
+        executorService.evalReadAsync(configName, codec, RedisCommands.EVAL_VOID,
                 "local size = redis.call('hget', KEYS[1], 'size');" +
                         "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
                         "assert(size == ARGV[1] and hashIterations == ARGV[2], 'Bloom filter config has been changed')",
-                        Arrays.<Object>asList(getConfigName()), size, hashIterations);
+                        Arrays.<Object>asList(configName), size, hashIterations);
     }
 
     @Override
-    public int count() {
+    public long count() {
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        RFuture<Map<String, String>> configFuture = executorService.readAsync(getConfigName(), StringCodec.INSTANCE,
-                new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
-        RFuture<Long> cardinalityFuture = executorService.readAsync(getName(), codec, RedisCommands.BITCOUNT, getName());
+        RFuture<Map<String, String>> configFuture = executorService.readAsync(configName, StringCodec.INSTANCE,
+                new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), configName);
+        RBitSetAsync bs = createBitSet(executorService);
+        RFuture<Long> cardinalityFuture = bs.cardinalityAsync();
         executorService.execute();
 
         readConfig(configFuture.getNow());
 
-        return (int) (-size / ((double) hashIterations) * Math.log(1 - cardinalityFuture.getNow() / ((double) size)));
+        return Math.round(-size / ((double) hashIterations) * Math.log(1 - cardinalityFuture.getNow() / ((double) size)));
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getConfigName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), configName);
     }
 
     private void readConfig() {
-        RFuture<Map<String, String>> future = commandExecutor.readAsync(getConfigName(), StringCodec.INSTANCE,
-                new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), getConfigName());
+        RFuture<Map<String, String>> future = commandExecutor.readAsync(configName, StringCodec.INSTANCE,
+                new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), configName);
         Map<String, String> config = commandExecutor.get(future);
 
         readConfig(config);
@@ -218,6 +237,10 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         hashIterations = Integer.valueOf(config.get("hashIterations"));
     }
 
+    protected long getMaxSize() {
+        return Integer.MAX_VALUE*2L;
+    }
+    
     @Override
     public boolean tryInit(long expectedInsertions, double falseProbability) {
         if (falseProbability > 1) {
@@ -231,19 +254,19 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         if (size == 0) {
             throw new IllegalArgumentException("Bloom filter calculated size is " + size);
         }
-        if (size > MAX_SIZE) {
-            throw new IllegalArgumentException("Bloom filter size can't be greater than " + MAX_SIZE + ". But calculated size is " + size);
+        if (size > getMaxSize()) {
+            throw new IllegalArgumentException("Bloom filter size can't be greater than " + getMaxSize() + ". But calculated size is " + size);
         }
         hashIterations = optimalNumOfHashFunctions(expectedInsertions, size);
 
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-        executorService.evalReadAsync(getConfigName(), codec, RedisCommands.EVAL_VOID,
+        executorService.evalReadAsync(configName, codec, RedisCommands.EVAL_VOID,
                 "local size = redis.call('hget', KEYS[1], 'size');" +
                         "local hashIterations = redis.call('hget', KEYS[1], 'hashIterations');" +
                         "assert(size == false and hashIterations == false, 'Bloom filter config has been changed')",
-                        Arrays.<Object>asList(getConfigName()), size, hashIterations);
-        executorService.writeAsync(getConfigName(), StringCodec.INSTANCE,
-                                                new RedisCommand<Void>("HMSET", new VoidReplayConvertor()), getConfigName(),
+                        Arrays.<Object>asList(configName), size, hashIterations);
+        executorService.writeAsync(configName, StringCodec.INSTANCE,
+                                                new RedisCommand<Void>("HMSET", new VoidReplayConvertor()), configName,
                 "size", size, "hashIterations", hashIterations,
                 "expectedInsertions", expectedInsertions, "falseProbability", BigDecimal.valueOf(falseProbability).toPlainString());
         try {
@@ -259,31 +282,53 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return true;
     }
 
-    private String getConfigName() {
-        return "{" + getName() + "}" + "__config";
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return redis.call('pexpire', KEYS[2], ARGV[1]); ",
+                Arrays.<Object>asList(getName(), configName),
+                timeUnit.toMillis(timeToLive));
     }
 
     @Override
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('pexpireat', KEYS[1], ARGV[1]); " +
+                        "return redis.call('pexpireat', KEYS[2], ARGV[1]); ",
+                Arrays.<Object>asList(getName(), configName),
+                timestamp);
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('persist', KEYS[1]); " +
+                        "return redis.call('persist', KEYS[2]); ",
+                Arrays.<Object>asList(getName(), configName));
+    }
+    
+    @Override
     public long getExpectedInsertions() {
-        Long result = commandExecutor.read(getConfigName(), LongCodec.INSTANCE, RedisCommands.HGET, getConfigName(), "expectedInsertions");
+        Long result = commandExecutor.read(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "expectedInsertions");
         return check(result);
     }
 
     @Override
     public double getFalseProbability() {
-        Double result = commandExecutor.read(getConfigName(), DoubleCodec.INSTANCE, RedisCommands.HGET, getConfigName(), "falseProbability");
+        Double result = commandExecutor.read(configName, DoubleCodec.INSTANCE, RedisCommands.HGET, configName, "falseProbability");
         return check(result);
     }
 
     @Override
     public long getSize() {
-        Long result = commandExecutor.read(getConfigName(), LongCodec.INSTANCE, RedisCommands.HGET, getConfigName(), "size");
+        Long result = commandExecutor.read(configName, LongCodec.INSTANCE, RedisCommands.HGET, configName, "size");
         return check(result);
     }
 
     @Override
     public int getHashIterations() {
-        Integer result = commandExecutor.read(getConfigName(), IntegerCodec.INSTANCE, RedisCommands.HGET, getConfigName(), "hashIterations");
+        Integer result = commandExecutor.read(configName, IntegerCodec.INSTANCE, RedisCommands.HGET, configName, "hashIterations");
         return check(result);
     }
 

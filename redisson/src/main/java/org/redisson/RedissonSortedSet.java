@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.SortedSet;
 
 import org.redisson.api.RBucket;
@@ -40,6 +39,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -119,7 +119,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.getList(getName());
+        list = (RedissonList<V>) redisson.getList(getName(), codec);
 
         loadComparator();
     }
@@ -254,7 +254,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
     }
 
     public RFuture<Boolean> addAsync(final V value) {
-        final RPromise<Boolean> promise = newPromise();
+        final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             public void run() {
                 try {
@@ -270,7 +270,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public RFuture<Boolean> removeAsync(final Object value) {
-        final RPromise<Boolean> promise = newPromise();
+        final RPromise<Boolean> promise = new RedissonPromise<Boolean>();
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.InetSocketAddress;
 import java.util.AbstractCollection;
 import java.util.AbstractSet;
 import java.util.ArrayList;
@@ -26,24 +25,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.MapScanCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -55,46 +54,46 @@ import io.netty.buffer.ByteBuf;
  */
 public abstract class RedissonMultimap<K, V> extends RedissonExpirable implements RMultimap<K, V> {
 
-    private final UUID id;
+    final String prefix;
     
-    RedissonMultimap(UUID id, CommandAsyncExecutor connectionManager, String name) {
-        super(connectionManager, name);
-        this.id = id;
+    RedissonMultimap(CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(commandAsyncExecutor, name);
+        prefix = suffixName(getName(), "");
     }
 
-    RedissonMultimap(UUID id, Codec codec, CommandAsyncExecutor connectionManager, String name) {
-        super(codec, connectionManager, name);
-        this.id = id;
+    RedissonMultimap(Codec codec, CommandAsyncExecutor commandAsyncExecutor, String name) {
+        super(codec, commandAsyncExecutor, name);
+        prefix = suffixName(getName(), "");
     }
 
     @Override
     public RLock getLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonLock((CommandExecutor)commandExecutor, lockName, id);
+        return new RedissonLock((CommandExecutor)commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
         String lockName = getLockName(key);
-        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName, id);
+        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName);
     }
     
     private String getLockName(Object key) {
         ByteBuf keyState = encodeMapKey(key);
         try {
-            return suffixName(getName(), Hash.hashToBase64(keyState) + ":key");
+            return suffixName(getName(), Hash.hash128toBase64(keyState) + ":key");
         } finally {
             keyState.release();
         }
     }
     
     protected String hash(ByteBuf objectState) {
-        return Hash.hashToBase64(objectState);
+        return Hash.hash128toBase64(objectState);
     }
 
     protected String hashAndRelease(ByteBuf objectState) {
         try {
-            return Hash.hashToBase64(objectState);
+            return Hash.hash128toBase64(objectState);
         } finally {
             objectState.release();
         }
@@ -137,7 +136,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     String getValuesName(String hash) {
-        return "{" + getName() + "}:" + hash;
+        return suffixName(getName(), hash);
     }
 
     @Override
@@ -203,7 +202,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     @Override
     public RFuture<Long> fastRemoveAsync(K ... keys) {
         if (keys == null || keys.length == 0) {
-            return newSucceededFuture(0L);
+            return RedissonPromise.newSucceededFuture(0L);
         }
 
         List<Object> mapKeys = new ArrayList<Object>(keys.length);
@@ -237,7 +236,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "local keys = {KEYS[1]}; " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "local name = ARGV[1] .. v; " + 
                         "table.insert(keys, name); " +
                     "end;" +
                 "end; " +
@@ -247,7 +246,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                     + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
                 + "end; "
                 + "return n;",
-                Arrays.<Object>asList(getName()));
+                Arrays.<Object>asList(getName()), prefix);
     }
 
     @Override
@@ -256,12 +255,13 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "local name = ARGV[2] .. v; " + 
                         "redis.call('pexpire', name, ARGV[1]); " +
                     "end;" +
                 "end; " +
                 "return redis.call('pexpire', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName()), timeUnit.toMillis(timeToLive));
+                Arrays.<Object>asList(getName()), 
+                timeUnit.toMillis(timeToLive), prefix);
     }
 
     @Override
@@ -270,12 +270,13 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "local name = ARGV[2] .. v; " + 
                         "redis.call('pexpireat', name, ARGV[1]); " +
                     "end;" +
                 "end; " +
                 "return redis.call('pexpireat', KEYS[1], ARGV[1]); ",
-                Arrays.<Object>asList(getName()), timestamp);
+                Arrays.<Object>asList(getName()), 
+                timestamp, prefix);
     }
 
     @Override
@@ -284,12 +285,13 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 "local entries = redis.call('hgetall', KEYS[1]); " +
                 "for i, v in ipairs(entries) do " +
                     "if i % 2 == 0 then " +
-                        "local name = '{' .. KEYS[1] .. '}:' .. v; " + 
+                        "local name = ARGV[1] .. v; " + 
                         "redis.call('persist', name); " +
                     "end;" +
                 "end; " +
                 "return redis.call('persist', KEYS[1]); ",
-                Arrays.<Object>asList(getName()));
+                Arrays.<Object>asList(getName()),
+                prefix);
     }
     
     @Override
@@ -298,8 +300,8 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
     
     
-    MapScanResult<ScanObjectEntry, ScanObjectEntry> scanIterator(InetSocketAddress client, long startPos) {
-        RFuture<MapScanResult<ScanObjectEntry, ScanObjectEntry>> f = commandExecutor.readAsync(client, getName(), new MapScanCodec(codec, StringCodec.INSTANCE), RedisCommands.HSCAN, getName(), startPos);
+    MapScanResult<Object, Object> scanIterator(RedisClient client, long startPos) {
+        RFuture<MapScanResult<Object, Object>> f = commandExecutor.readAsync(client, getName(), new CompositeCodec(codec, StringCodec.INSTANCE, codec), RedisCommands.HSCAN, getName(), startPos);
         return get(f);
     }
 
@@ -311,10 +313,10 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMultiMapKeysIterator<K, V, K>(RedissonMultimap.this) {
+            return new RedissonMultiMapKeysIterator<K>(RedissonMultimap.this) {
                 @Override
-                protected K getValue(java.util.Map.Entry<ScanObjectEntry, ScanObjectEntry> entry) {
-                    return (K) entry.getKey().getObj();
+                protected K getValue(java.util.Map.Entry<Object, Object> entry) {
+                    return (K) entry.getKey();
                 }
             };
         }

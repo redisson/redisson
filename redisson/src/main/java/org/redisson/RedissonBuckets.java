@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,13 +28,19 @@ import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DelegateDecoderCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.misc.RedissonPromise;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonBuckets implements RBuckets {
 
     private final Codec codec;
@@ -54,8 +60,8 @@ public class RedissonBuckets implements RBuckets {
 
     @Override
     public <V> List<RBucket<V>> find(String pattern) {
-        Collection<String> keys = commandExecutor.get(commandExecutor.<List<String>, String>readAllAsync(RedisCommands.KEYS, pattern));
-        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>(keys.size());
+        Iterable<String> keys = redisson.getKeys().getKeysByPattern(pattern);
+        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>();
         for (String key : keys) {
             if(key == null) {
                 continue;
@@ -67,38 +73,36 @@ public class RedissonBuckets implements RBuckets {
 
     @Override
     public <V> Map<String, V> get(String... keys) {
-        if (keys.length == 0) {
-            return Collections.emptyMap();
-        }
-
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
-        RFuture<Map<String, V>> future = commandExecutor.readAsync(keys[0], new DelegateDecoderCodec(codec), command, keys);
+        RFuture<Map<String, V>> future = getAsync(keys);
         return commandExecutor.get(future);
     }
 
     @Override
     public boolean trySet(Map<String, ?> buckets) {
-        if (buckets.isEmpty()) {
-            return false;
-        }
-
-        List<Object> params = new ArrayList<Object>(buckets.size());
-        for (Entry<String, ?> entry : buckets.entrySet()) {
-            params.add(entry.getKey());
-            try {
-                params.add(codec.getValueEncoder().encode(entry.getValue()));
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e);
-            }
-        }
-
-        return commandExecutor.write(params.get(0).toString(), RedisCommands.MSETNX, params.toArray());
+        RFuture<Boolean> future = trySetAsync(buckets);
+        return commandExecutor.get(future);
     }
 
     @Override
     public void set(Map<String, ?> buckets) {
+        commandExecutor.get(setAsync(buckets));
+    }
+
+    @Override
+    public <V> RFuture<Map<String, V>> getAsync(String... keys) {
+        if (keys.length == 0) {
+            Map<String, V> emptyMap = Collections.emptyMap();
+            return RedissonPromise.<Map<String, V>>newSucceededFuture(emptyMap);
+        }
+
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
+        return commandExecutor.readAsync(keys[0], new CompositeCodec(StringCodec.INSTANCE, codec, codec), command, keys);
+    }
+
+    @Override
+    public RFuture<Boolean> trySetAsync(Map<String, ?> buckets) {
         if (buckets.isEmpty()) {
-            return;
+            return RedissonPromise.newSucceededFuture(false);
         }
 
         List<Object> params = new ArrayList<Object>(buckets.size());
@@ -111,7 +115,26 @@ public class RedissonBuckets implements RBuckets {
             }
         }
 
-        commandExecutor.write(params.get(0).toString(), RedisCommands.MSET, params.toArray());
+        return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSETNX, params.toArray());
+    }
+
+    @Override
+    public RFuture<Void> setAsync(Map<String, ?> buckets) {
+        if (buckets.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(null);
+        }
+
+        List<Object> params = new ArrayList<Object>(buckets.size());
+        for (Entry<String, ?> entry : buckets.entrySet()) {
+            params.add(entry.getKey());
+            try {
+                params.add(codec.getValueEncoder().encode(entry.getValue()));
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e);
+            }
+        }
+
+        return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSET, params.toArray());
     }
 
 }

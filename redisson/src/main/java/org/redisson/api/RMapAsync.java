@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import java.util.Set;
 public interface RMapAsync<K, V> extends RExpirableAsync {
 
     /**
-     * Loads all map entries to this Redis map.
+     * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.
      * 
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.  
      * @param parallelism - parallelism level, used to increase speed of process execution
@@ -44,7 +44,7 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism);
     
     /**
-     * Loads map entries whose keys are listed in defined <code>keys</code> parameter.
+     * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
      * 
      * @param keys - map keys
      * @param replaceExistingValues - <code>true</code> if existed values should be replaced, <code>false</code> otherwise.
@@ -123,6 +123,21 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Boolean> fastPutAsync(K key, V value);
 
+    /**
+     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * <p>
+     * Works faster than <code>{@link RMap#replaceAsync(Object, Object)}</code> but not returning
+     * the previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key exists and value was updated.
+     *         <code>false</code> if key doesn't exists and value wasn't updated.
+     */
+    RFuture<Boolean> fastReplaceAsync(K key, V value);
+    
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
      * only if there is no any association with specified<code>key</code>.

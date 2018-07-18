@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,19 +15,16 @@
  */
 package org.redisson.reactive;
 
-import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMultimap;
 import org.redisson.api.RMultimapReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.command.CommandReactiveExecutor;
-import org.redisson.misc.Hash;
 
-import io.netty.buffer.ByteBuf;
 import reactor.fn.Supplier;
 
 /**
@@ -39,15 +36,15 @@ import reactor.fn.Supplier;
  */
 abstract class RedissonBaseMultimapReactive<K, V> extends RedissonExpirableReactive implements RMultimapReactive<K, V> {
 
-    private final RMultimap<K, V> instance;
+    protected final RMultimap<K, V> instance;
     
     public RedissonBaseMultimapReactive(RMultimap<K, V> instance, CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name);
+        super(commandExecutor, name, instance);
         this.instance = instance;
     }
 
     public RedissonBaseMultimapReactive(RMultimap<K, V> instance, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
-        super(codec, commandExecutor, name);
+        super(codec, commandExecutor, name, instance);
         this.instance = instance;
     }
 
@@ -150,31 +147,45 @@ abstract class RedissonBaseMultimapReactive<K, V> extends RedissonExpirableReact
             }
         });
     }
-
-    protected String hash(ByteBuf objectState) {
-        return Hash.hashToBase64(objectState);
-    }
     
-    protected String hashAndRelease(ByteBuf objectState) {
-        try {
-            return Hash.hashToBase64(objectState);
-        } finally {
-            objectState.release();
-        }
+    @Override
+    public Publisher<Boolean> delete() {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.deleteAsync();
+            }
+        });
     }
 
-    String getValuesName(String hash) {
-        return "{" + getName() + "}:" + hash;
+    @Override
+    public Publisher<Boolean> expire(final long timeToLive, final TimeUnit timeUnit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.expireAsync(timeToLive, timeUnit);
+            }
+        });
     }
-    
-    protected <T> Publisher<T> fastRemove(List<Object> mapKeys, List<Object> listKeys, RedisCommand<T> evalCommandType) {
-        return commandExecutor.evalWriteReactive(getName(), codec, evalCommandType,
-                    "local res = redis.call('hdel', KEYS[1], unpack(ARGV)); " +
-                    "if res > 0 then " +
-                        "redis.call('del', unpack(KEYS, 2, #KEYS)); " +
-                    "end; " +
-                    "return res; ",
-                    listKeys, mapKeys.toArray());
+
+    @Override
+    public Publisher<Boolean> expireAt(final long timestamp) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.expireAtAsync(timestamp);
+            }
+        });
     }
-    
+
+    @Override
+    public Publisher<Boolean> clearExpire() {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.clearExpireAsync();
+            }
+        });
+    }
+
 }

@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Nikita Koksharov
+ * Copyright 2018 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,12 @@
  */
 package org.redisson.reactive;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
+import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ScanObjectEntry;
 
-import io.netty.buffer.ByteBuf;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -41,10 +36,8 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
     public void subscribe(final Subscriber<? super V> t) {
         t.onSubscribe(new ReactiveSubscription<V>(this, t) {
 
-            private List<ByteBuf> firstValues;
-            private List<ByteBuf> lastValues;
             private long nextIterPos;
-            private InetSocketAddress client;
+            private RedisClient client;
 
             private boolean finished;
 
@@ -53,15 +46,9 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                 nextValues();
             }
 
-            private void handle(List<ScanObjectEntry> vals) {
-                for (ScanObjectEntry val : vals) {
-                    onNext((V)val.getObj());
-                }
-            }
-
             protected void nextValues() {
                 final ReactiveSubscription<V> m = this;
-                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<ScanObjectEntry>>() {
+                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<Object>>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
@@ -69,66 +56,21 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                     }
 
                     @Override
-                    public void onNext(ListScanResult<ScanObjectEntry> res) {
+                    public void onNext(ListScanResult<Object> res) {
                         if (finished) {
-                            free(firstValues);
-                            free(lastValues);
-
                             client = null;
-                            firstValues = null;
-                            lastValues = null;
                             nextIterPos = 0;
                             return;
                         }
 
-                        long prevIterPos = nextIterPos;
-                        if (lastValues != null) {
-                            free(lastValues);
-                        }
-                        
-                        lastValues = convert(res.getValues());
                         client = res.getRedisClient();
-                        
-                        if (nextIterPos == 0 && firstValues == null) {
-                            firstValues = lastValues;
-                            lastValues = null;
-                            if (firstValues.isEmpty()) {
-                                client = null;
-                                firstValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                            }
-                        } else { 
-                            if (firstValues.isEmpty()) {
-                                firstValues = lastValues;
-                                lastValues = null;
-                                if (firstValues.isEmpty()) {
-                                    if (res.getPos() == 0) {
-                                        finished = true;
-                                        m.onComplete();
-                                        return;
-                                    }
-                                }
-                            } else if (lastValues.removeAll(firstValues)) {
-                                free(firstValues);
-                                free(lastValues);
-
-                                client = null;
-                                firstValues = null;
-                                lastValues = null;
-                                nextIterPos = 0;
-                                prevIterPos = -1;
-                                finished = true;
-                                m.onComplete();
-                                return;
-                            }
-                        }
-
-                        handle(res.getValues());
-
                         nextIterPos = res.getPos();
                         
-                        if (prevIterPos == nextIterPos) {
+                        for (Object val : res.getValues()) {
+                            m.onNext((V)val);
+                        }
+
+                        if (res.getPos() == 0) {
                             finished = true;
                             m.onComplete();
                         }
@@ -151,23 +93,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
         });
     }
     
-    private void free(List<ByteBuf> list) {
-        if (list == null) {
-            return;
-        }
-        for (ByteBuf byteBuf : list) {
-            byteBuf.release();
-        }
-    }
-    
-    private List<ByteBuf> convert(List<ScanObjectEntry> list) {
-        List<ByteBuf> result = new ArrayList<ByteBuf>(list.size());
-        for (ScanObjectEntry entry : list) {
-            result.add(entry.getBuf());
-        }
-        return result;
-    }
-
-    protected abstract Publisher<ListScanResult<ScanObjectEntry>> scanIteratorReactive(InetSocketAddress client, long nextIterPos);
+    protected abstract Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos);
 
 }
