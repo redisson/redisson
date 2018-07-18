@@ -31,6 +31,34 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns geospatial items holder instance by <code>name</code>.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Geo object
+     */
+    <V> RGeoReactive<V> getGeo(String name);
+    
+    /**
+     * Returns geospatial items holder instance by <code>name</code>
+     * using provided codec for geospatial members.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for value
+     * @return Geo object
+     */
+    <V> RGeoReactive<V> getGeo(String name, Codec codec);
+    
+    /**
+     * Returns rate limiter instance by <code>name</code>
+     * 
+     * @param name of rate limiter
+     * @return RateLimiter object
+     */
+    RRateLimiterReactive getRateLimiter(String name);
+    
+    /**
      * Returns semaphore instance by name
      *
      * @param name - name of object
@@ -54,6 +82,16 @@ public interface RedissonReactiveClient {
      * @return Lock object
      */
     RReadWriteLockReactive getReadWriteLock(String name);
+    
+    /**
+     * Returns lock instance by name.
+     * <p>
+     * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * 
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getFairLock(String name);
     
     /**
      * Returns lock instance by name.

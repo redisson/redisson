@@ -16,8 +16,11 @@
 package org.redisson.reactive;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonScoredSortedSet;
@@ -25,9 +28,9 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.api.SortOrder;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveExecutor;
@@ -182,18 +185,23 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
         });
     }
 
-    private Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long startPos) {
-        return commandExecutor.readReactive(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos);
+    private Publisher<V> scanIteratorReactive(final String pattern, final int count) {
+        return Flux.create(new SetReactiveIterator<V>() {
+            @Override
+            protected Publisher<ListScanResult<Object>> scanIteratorReactive(final RedisClient client, final long nextIterPos) {
+                return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
+                    @Override
+                    public RFuture<ListScanResult<Object>> get() {
+                        return ((RedissonScoredSortedSet<V>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+                    }
+                });
+            }
+        });
     }
 
     @Override
     public Publisher<V> iterator() {
-        return Flux.create(new SetReactiveIterator<V>() {
-            @Override
-            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
-                return RedissonScoredSortedSetReactive.this.scanIteratorReactive(client, nextIterPos);
-            }
-        });
+        return scanIteratorReactive(null, 10);
     }
 
     @Override
@@ -457,6 +465,293 @@ public class RedissonScoredSortedSetReactive<V> extends RedissonExpirableReactiv
             @Override
             public RFuture<Collection<ScoredEntry<V>>> get() {
                 return instance.entryRangeReversedAsync(startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<V> pollLastFromAny(final long timeout, final TimeUnit unit, final String... queueNames) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastFromAnyAsync(timeout, unit, queueNames);
+}
+        });
+    }
+
+    @Override
+    public Publisher<V> pollFirstFromAny(final long timeout, final TimeUnit unit, final String... queueNames) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollFirstFromAnyAsync(timeout, unit, queueNames);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<V> pollFirst(final long timeout, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollFirstAsync(timeout, unit);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<V> pollLast(final long timeout, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastAsync(timeout, unit);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> pollFirst(final int count) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.pollFirstAsync(count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Collection<V>> pollLast(final int count) {
+        return reactive(new Supplier<RFuture<Collection<V>>>() {
+            @Override
+            public RFuture<Collection<V>> get() {
+                return instance.pollLastAsync(count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Double> firstScore() {
+        return reactive(new Supplier<RFuture<Double>>() {
+            @Override
+            public RFuture<Double> get() {
+                return instance.firstScoreAsync();
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Double> lastScore() {
+        return reactive(new Supplier<RFuture<Double>>() {
+            @Override
+            public RFuture<Double> get() {
+                return instance.lastScoreAsync();
+            }
+        });
+    }
+
+    @Override
+    public Publisher<V> iterator(String pattern) {
+        return scanIteratorReactive(pattern, 10);
+    }
+
+    @Override
+    public Publisher<V> iterator(int count) {
+        return scanIteratorReactive(null, count);
+    }
+
+    @Override
+    public Publisher<V> iterator(String pattern, int count) {
+        return scanIteratorReactive(pattern, count);
+    }
+
+    @Override
+    public Publisher<Integer> revRank(final V o) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.revRankAsync(o);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Long> addAll(final Map<V, Double> objects) {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.addAllAsync(objects);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> addAndGetRank(final double score, final V object) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addAndGetRankAsync(score, object);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> addAndGetRevRank(final double score, final V object) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addAndGetRevRankAsync(score, object);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Boolean> tryAdd(final double score, final V object) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.tryAddAsync(score, object);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> addScoreAndGetRevRank(final V object, final Number value) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addScoreAndGetRevRankAsync(object, value);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> addScoreAndGetRank(final V object, final Number value) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.addScoreAndGetRankAsync(object, value);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Set<V>> readSorted(final SortOrder order) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readSortAsync(order);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Set<V>> readSorted(final SortOrder order, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readSortAsync(order, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Set<V>> readSorted(final String byPattern, final SortOrder order) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readSortAsync(byPattern, order);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Set<V>> readSorted(final String byPattern, final SortOrder order, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Set<V>>>() {
+            @Override
+            public RFuture<Set<V>> get() {
+                return instance.readSortAsync(byPattern, order, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public <T> Publisher<Collection<T>> readSorted(final String byPattern, final List<String> getPatterns, final SortOrder order) {
+        return reactive(new Supplier<RFuture<Collection<T>>>() {
+            @Override
+            public RFuture<Collection<T>> get() {
+                return instance.readSortAsync(byPattern, getPatterns, order);
+            }
+        });
+    }
+
+    @Override
+    public <T> Publisher<Collection<T>> readSorted(final String byPattern, final List<String> getPatterns, final SortOrder order,
+            final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Collection<T>>>() {
+            @Override
+            public RFuture<Collection<T>> get() {
+                return instance.readSortAsync(byPattern, getPatterns, order, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final SortOrder order) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, order);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final SortOrder order, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, order, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final String byPattern, final SortOrder order) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, byPattern, order);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final String byPattern, final SortOrder order, final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, byPattern, order, offset, count);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final String byPattern, final List<String> getPatterns, final SortOrder order) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, byPattern, getPatterns, order);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> sortTo(final String destName, final String byPattern, final List<String> getPatterns, final SortOrder order,
+            final int offset, final int count) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.sortToAsync(destName, byPattern, getPatterns, order, offset, count);
             }
         });
     }
