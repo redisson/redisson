@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -29,7 +30,7 @@ import org.redisson.client.protocol.ScoredEntry;
  *
  * @param <V> value type
  */
-public interface RScoredSortedSetReactive<V> extends RExpirableReactive {
+public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortableReactive<Set<V>> {
 
     /**
      * Removes and returns first available tail element of <b>any</b> sorted set,
