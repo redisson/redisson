@@ -96,7 +96,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         sync(b1.set(new MyObject()));
         RSetReactive<Object> s1 = reactive.getSet("s1");
         assertTrue(sync(s1.add(b1)) == 1);
-
+        assertTrue(codec == b1.getCodec());
 
         Config config1 = new Config();
         config1.setCodec(codec);
