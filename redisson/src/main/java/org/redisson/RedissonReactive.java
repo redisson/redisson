@@ -31,6 +31,7 @@ import org.redisson.api.RBitSetReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
+import org.redisson.api.RGeoReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeys;
 import org.redisson.api.RKeysReactive;
@@ -70,6 +71,7 @@ import org.redisson.reactive.RedissonBitSetReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonDequeReactive;
+import org.redisson.reactive.RedissonGeoReactive;
 import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
@@ -120,6 +122,16 @@ public class RedissonReactive implements RedissonReactiveClient {
         codecProvider = config.getReferenceCodecProvider();
     }
 
+    @Override
+    public <V> RGeoReactive<V> getGeo(String name) {
+        return new RedissonGeoReactive<V>(commandExecutor, name);
+    }
+    
+    @Override
+    public <V> RGeoReactive<V> getGeo(String name, Codec codec) {
+        return new RedissonGeoReactive<V>(codec, commandExecutor, name);
+    }
+    
     @Override
     public RLockReactive getFairLock(String name) {
         return new RedissonLockReactive(commandExecutor, name, new RedissonFairLock(commandExecutor, name));
