@@ -121,6 +121,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RLockReactive getFairLock(String name) {
+        return new RedissonLockReactive(commandExecutor, name, new RedissonFairLock(commandExecutor, name));
+    }
+    
+    @Override
     public RRateLimiterReactive getRateLimiter(String name) {
         return new RedissonRateLimiterReactive(commandExecutor, name);
     }

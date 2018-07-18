@@ -66,6 +66,16 @@ public interface RedissonReactiveClient {
     /**
      * Returns lock instance by name.
      * <p>
+     * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * 
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getFairLock(String name);
+    
+    /**
+     * Returns lock instance by name.
+     * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
      *
      * @param name - name of object

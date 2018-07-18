@@ -24,7 +24,7 @@ import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
 
 /**
@@ -40,11 +40,11 @@ import org.redisson.pubsub.LockPubSub;
 public class RedissonFairLock extends RedissonLock implements RLock {
 
     private final long threadWaitTime = 5000;
-    private final CommandExecutor commandExecutor;
+    private final CommandAsyncExecutor commandExecutor;
     private final String threadsQueueName;
     private final String timeoutSetName;
 
-    protected RedissonFairLock(CommandExecutor commandExecutor, String name) {
+    protected RedissonFairLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         threadsQueueName = prefixName("redisson_lock_queue", name);
