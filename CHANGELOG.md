@@ -4,6 +4,16 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
+### 19-Jul-2018 - versions 2.12.4 and 3.7.4 released
+Feature - `RScoredSortedSetReactive`, `RSetReactive`, `RListReactive` objects implement `RSortableReactive` interface  
+Feature - `RGeoReactive` object added  
+Feature - reactive version of FairLock added  
+Feature - `RRateLimiterReactive` object added  
+Improvement - RObjectReactive and RScoredSortedSetReactive interfaces synced with `RObjectAsync` and `RScoredSortedSetAsync`
+Fixed - readonly command shouldn't be executed on master node used as slave  
+Fixed - connection is closed per command execution for master node used as slave in `readMode=MASTER_SLAVE`  
+Fixed - `RLiveObjectService` should use entityClass's classloader  
+
 ### 16-Jul-2018 - versions 2.12.4 and 3.7.4 released
 Feature - dump and restore methods added to `RObject` interface  
 Fixed - Redis response hangs if `RLiveObject` stored as nested object  
