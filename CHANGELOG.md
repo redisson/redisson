@@ -4,7 +4,7 @@ Redisson Releases History
 
 Try __[Redisson PRO](https://redisson.pro)__ version.
 
-### 19-Jul-2018 - versions 2.12.4 and 3.7.4 released
+### 19-Jul-2018 - versions 2.12.5 and 3.7.5 released
 Feature - `RScoredSortedSetReactive`, `RSetReactive`, `RListReactive` objects implement `RSortableReactive` interface  
 Feature - `RGeoReactive` object added  
 Feature - reactive version of FairLock added  
