@@ -109,7 +109,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final Config config;
     protected final ReferenceCodecProvider codecProvider;
 
-    protected final UUID id = UUID.randomUUID();
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected RedissonReactive(Config config) {
@@ -220,22 +219,22 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
-        return new RedissonListMultimapReactive<K, V>(id, commandExecutor, name);
+        return new RedissonListMultimapReactive<K, V>(commandExecutor, name);
     }
 
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimapReactive<K, V>(id, codec, commandExecutor, name);
+        return new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name);
     }
 
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimapReactive<K, V>(id, commandExecutor, name);
+        return new RedissonSetMultimapReactive<K, V>(commandExecutor, name);
     }
 
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimapReactive<K, V>(id, codec, commandExecutor, name);
+        return new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name);
     }
 
     @Override

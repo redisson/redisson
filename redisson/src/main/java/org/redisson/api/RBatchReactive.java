@@ -34,6 +34,48 @@ import org.redisson.client.codec.Codec;
 public interface RBatchReactive {
 
     /**
+     * Returns geospatial items holder instance by <code>name</code>.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return Geo object
+     */
+    <V> RGeoReactive<V> getGeo(String name);
+    
+    /**
+     * Returns geospatial items holder instance by <code>name</code>
+     * using provided codec for geospatial members.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for value
+     * @return Geo object
+     */
+    <V> RGeoReactive<V> getGeo(String name, Codec codec);
+    
+    /**
+     * Returns Set based Multimap instance by name.
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return SetMultimap object
+     */
+    <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name);
+
+    /**
+     * Returns Set based Multimap instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return SetMultimap object
+     */
+    <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
      * Supports value eviction with a given TTL value.
@@ -123,6 +165,28 @@ public interface RBatchReactive {
     <V> RListReactive<V> getList(String name, Codec codec);
 
     /**
+     * Returns List based MultiMap instance by name.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return ListMultimap object
+     */
+    <K, V> RListMultimapReactive<K, V> getListMultimap(String name);
+
+    /**
+     * Returns List based MultiMap instance by name
+     * using provided codec for both map keys and values.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return ListMultimap object
+     */
+    <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec);
+    
+    /**
      * Returns map instance by name.
      *
      * @param <K> type of key
@@ -197,6 +261,14 @@ public interface RBatchReactive {
      */
     RAtomicLongReactive getAtomicLongReactive(String name);
 
+    /**
+     * Returns atomicDouble instance by name.
+     *
+     * @param name - name of object
+     * @return AtomicDouble object
+     */
+    RAtomicDoubleReactive getAtomicDouble(String name);
+    
     /**
      * Returns Redis Sorted Set instance by name
      * 

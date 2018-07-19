@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.Set;
-import java.util.UUID;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetMultimap;
@@ -39,11 +38,11 @@ import reactor.fn.Supplier;
  */
 public class RedissonSetMultimapReactive<K, V> extends RedissonBaseMultimapReactive<K, V> implements RSetMultimapReactive<K, V> {
 
-    public RedissonSetMultimapReactive(UUID id, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonSetMultimapReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(new RedissonSetMultimap<K, V>(commandExecutor, name), commandExecutor, name);
     }
 
-    public RedissonSetMultimapReactive(UUID id, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonSetMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(new RedissonSetMultimap<K, V>(codec, commandExecutor, name), codec, commandExecutor, name);
     }
 
