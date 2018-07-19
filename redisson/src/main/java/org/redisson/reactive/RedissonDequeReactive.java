@@ -16,12 +16,14 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonDeque;
+import org.redisson.api.RDequeAsync;
 import org.redisson.api.RDequeReactive;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.command.CommandReactiveExecutor;
+
+import reactor.fn.Supplier;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -32,34 +34,56 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implements RDequeReactive<V> {
 
-    private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
-
+    private final RDequeAsync<V> instance;
+    
     public RedissonDequeReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonDeque<V>(commandExecutor, name, null);
     }
 
     public RedissonDequeReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonDeque<V>(codec, commandExecutor, name, null);
     }
 
     @Override
-    public Publisher<Void> addFirst(V e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH_VOID, getName(), encode(e));
+    public Publisher<Void> addFirst(final V e) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.addFirstAsync(e);
+            }
+        });
     }
 
     @Override
-    public Publisher<Void> addLast(V e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPUSH_VOID, getName(), encode(e));
+    public Publisher<Void> addLast(final V e) {
+        return reactive(new Supplier<RFuture<Void>>() {
+            @Override
+            public RFuture<Void> get() {
+                return instance.addLastAsync(e);
+            }
+        });
     }
 
     @Override
     public Publisher<V> getLast() {
-        return commandExecutor.readReactive(getName(), codec, LRANGE_SINGLE, getName(), -1, -1);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.getLastAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<Boolean> offerFirst(V e) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPUSH_BOOLEAN, getName(), encode(e));
+    public Publisher<Boolean> offerFirst(final V e) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.offerFirstAsync(e);
+            }
+        });
     }
 
     @Override
@@ -84,7 +108,12 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<V> pollLast() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPOP, getName());
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastAsync();
+            }
+        });
     }
 
     @Override
@@ -109,7 +138,12 @@ public class RedissonDequeReactive<V> extends RedissonQueueReactive<V> implement
 
     @Override
     public Publisher<V> removeLast() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPOP, getName());
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.removeLastAsync();
+            }
+        });
     }
 
     @Override

@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNode;
@@ -28,6 +27,7 @@ import org.redisson.api.RAtomicDoubleReactive;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
@@ -68,6 +68,7 @@ import org.redisson.reactive.RedissonAtomicDoubleReactive;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
+import org.redisson.reactive.RedissonBlockingDequeReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonDequeReactive;
@@ -439,5 +440,15 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public RTransactionReactive createTransaction(TransactionOptions options) {
         return new RedissonTransactionReactive(commandExecutor, options);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDequeReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDequeReactive<V>(codec, commandExecutor, name);
     }
 }

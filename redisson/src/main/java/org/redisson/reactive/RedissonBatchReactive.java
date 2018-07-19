@@ -24,6 +24,7 @@ import org.redisson.api.RAtomicDoubleReactive;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
@@ -295,6 +296,16 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
         return new RedissonAtomicDoubleReactive(executorService, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDequeReactive<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDequeReactive<V>(codec, executorService, name);
     }
 
 }

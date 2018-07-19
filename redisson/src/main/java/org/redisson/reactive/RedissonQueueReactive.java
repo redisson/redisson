@@ -16,10 +16,14 @@
 package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonQueue;
+import org.redisson.api.RFuture;
+import org.redisson.api.RQueueAsync;
 import org.redisson.api.RQueueReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
+
+import reactor.fn.Supplier;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Queue}
@@ -30,12 +34,16 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonQueueReactive<V> extends RedissonListReactive<V> implements RQueueReactive<V> {
 
+    private final RQueueAsync<V> instance;
+    
     public RedissonQueueReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonQueue<V>(commandExecutor, name, null);
     }
 
     public RedissonQueueReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonQueue<V>(codec, commandExecutor, name, null);
     }
 
     @Override
@@ -45,7 +53,12 @@ public class RedissonQueueReactive<V> extends RedissonListReactive<V> implements
 
     @Override
     public Publisher<V> poll() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.LPOP, getName());
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollAsync();
+            }
+        });
     }
 
     @Override
@@ -54,8 +67,13 @@ public class RedissonQueueReactive<V> extends RedissonListReactive<V> implements
     }
 
     @Override
-    public Publisher<V> pollLastAndOfferFirstTo(String queueName) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.RPOPLPUSH, getName(), queueName);
+    public Publisher<V> pollLastAndOfferFirstTo(final String queueName) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastAndOfferFirstToAsync(queueName);
+            }
+        });
     }
 
 }
