@@ -55,6 +55,8 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.ScoredEntry;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -102,6 +104,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
         if (redisson != null) {
             this.redisson = redisson;
+            enableRedissonReferenceSupport(redisson.getConfig());
             this.redissonReactive = null;
         }
         return this;
@@ -111,9 +114,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
         if (redissonReactive != null) {
             this.redissonReactive = redissonReactive;
+            enableRedissonReferenceSupport(redissonReactive.getConfig());
             this.redisson = null;
         }
         return this;
+    }
+
+    private void enableRedissonReferenceSupport(Config config) {
+        Codec codec = config.getCodec();
+        ReferenceCodecProvider codecProvider = config.getReferenceCodecProvider();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     @Override

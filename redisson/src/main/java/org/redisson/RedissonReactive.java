@@ -108,14 +108,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
     protected final ReferenceCodecProvider codecProvider;
-    
+
     protected final UUID id = UUID.randomUUID();
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
-    
+
     protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
-        
+
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
@@ -146,17 +146,17 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RSemaphoreReactive getSemaphore(String name) {
         return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
     }
-    
+
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
-        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);        
+        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);
     }
-    
+
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
         return new RedissonReadWriteLockReactive(commandExecutor, name);
     }
-    
+
     @Override
     public RLockReactive getLock(String name) {
         return new RedissonLockReactive(commandExecutor, name);
@@ -196,8 +196,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
-    
-    
+
+
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLogReactive<V>(commandExecutor, name);
@@ -222,7 +222,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
         return new RedissonListMultimapReactive<K, V>(id, commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
         return new RedissonListMultimapReactive<K, V>(id, codec, commandExecutor, name);
@@ -232,12 +232,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
         return new RedissonSetMultimapReactive<K, V>(id, commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
         return new RedissonSetMultimapReactive<K, V>(id, codec, commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         return new RedissonMapReactive<K, V>(commandExecutor, name, null);
@@ -337,7 +337,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RAtomicLongReactive getAtomicLong(String name) {
         return new RedissonAtomicLongReactive(commandExecutor, name);
     }
-    
+
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
         return new RedissonAtomicDoubleReactive(commandExecutor, name);
@@ -352,7 +352,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RScriptReactive getScript() {
         return new RedissonScriptReactive(commandExecutor);
     }
-    
+
     @Override
     public RBatchReactive createBatch(BatchOptions options) {
         RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, options);
@@ -381,7 +381,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public ReferenceCodecProvider getCodecProvider() {
         return codecProvider;
     }
-    
+
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
@@ -442,4 +442,3 @@ public class RedissonReactive implements RedissonReactiveClient {
         return new RedissonTransactionReactive(commandExecutor, options);
     }
 }
-
