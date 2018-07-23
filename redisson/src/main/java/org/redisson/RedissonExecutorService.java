@@ -815,7 +815,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
         long startTime = startDate.getTime();
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression(), executorId, null);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression().getCronExpression(),cronSchedule.getExpression().getTimeZone().getID(), executorId, null);
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {

@@ -40,6 +40,7 @@ import org.redisson.remote.ResponseEntry;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -118,12 +119,14 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
     
     @Override
-    public void schedule(String className, byte[] classBody, byte[] state, long startTime, CronExpression cronExpression, String executorId, String requestId) {
-        Date nextStartDate = cronExpression.getNextValidTimeAfter(new Date());
+    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String timezone, String executorId, String requestId) {
+        CronExpression expression = new CronExpression(cronExpression);
+        expression.setTimeZone(TimeZone.getTimeZone(timezone));
+        Date nextStartDate = expression.getNextValidTimeAfter(new Date());
         RFuture<Void> future = null;
         if (nextStartDate != null) {
             RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(executorId, requestId);
-            future = service.schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, executorId, requestId);
+            future = service.schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, timezone, executorId, requestId);
         }
         try {
             executeRunnable(className, classBody, state, requestId);
