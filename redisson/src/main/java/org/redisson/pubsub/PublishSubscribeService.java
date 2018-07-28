@@ -109,7 +109,7 @@ public class PublishSubscribeService {
                     @Override
                     public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
                         if (!future.isSuccess()) {
-                            subscribe(type, codec, channelName, promise, listeners);
+                            promise.tryFailure(future.cause());
                             return;
                         }
                         
