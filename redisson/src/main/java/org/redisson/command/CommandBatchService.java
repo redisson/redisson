@@ -143,6 +143,10 @@ public class CommandBatchService extends CommandAsyncService {
         super(connectionManager);
         this.options = options;
     }
+    
+    public BatchOptions getOptions() {
+        return options;
+    }
 
     public void add(RFuture<?> future, List<CommandBatchService> services) {
         nestedServices.put(future, services);
@@ -214,16 +218,28 @@ public class CommandBatchService extends CommandAsyncService {
     }
     
     @Override
-    protected <R> void handleSuccess(RPromise<R> promise, RedisCommand<?> command, R res) {
+    protected <V, R> void handleSuccess(final AsyncDetails<V, R> details, RPromise<R> promise, RedisCommand<?> command, R res) {
         if (RedisCommands.EXEC.getName().equals(command.getName())) {
-            super.handleSuccess(promise, command, res);
+            super.handleSuccess(details, promise, command, res);
+            return;
+        }
+        if (RedisCommands.DISCARD.getName().equals(command.getName())) {
+            super.handleSuccess(details, promise, command, null);
+            if (executed.compareAndSet(false, true)) {
+                details.getConnectionFuture().getNow().forceFastReconnectAsync().addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        CommandBatchService.super.releaseConnection(details.getSource(), details.getConnectionFuture(), details.isReadOnlyMode(), details.getAttemptPromise(), details);
+                    }
+                });
+            }
             return;
         }
 
         if (isRedisBasedQueue()) {
             BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-            super.handleSuccess(sentPromise, command, null);
+            super.handleSuccess(details, sentPromise, command, null);
             semaphore.release();
         }
     }

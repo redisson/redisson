@@ -33,8 +33,11 @@ import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
-import io.netty.util.concurrent.Future;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubConnectionEntry {
 
     private final AtomicInteger subscribedChannelsAmount;

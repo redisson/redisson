@@ -68,6 +68,8 @@ public interface ConnectionManager {
     IdleConnectionWatcher getConnectionWatcher();
 
     int calcSlot(String key);
+    
+    int calcSlot(byte[] key);
 
     MasterSlaveServersConfig getConfig();
 
