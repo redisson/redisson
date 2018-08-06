@@ -128,8 +128,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
-        return false;
-//        return redisson != null || redissonReactive != null;
+        return redisson != null || redissonReactive != null;
     }
 
     @Override
