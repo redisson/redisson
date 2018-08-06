@@ -58,6 +58,7 @@ import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -2308,7 +2309,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
             int listenerId = topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.REMOVED, msg.get(0), msg.get(1));
                     try {
                         if (filter == null || filter.evaluate(event)) {
@@ -2331,7 +2332,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
             int listenerId = topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.CREATED, msg.get(0), msg.get(1));
                     try {
                         if (filter == null || filter.evaluate(event)) {
@@ -2354,7 +2355,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
             int listenerId = topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1));
                     try {
                         if (filter == null || filter.evaluate(event)) {
@@ -2374,7 +2375,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, false));
             int listenerId = topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.EXPIRED, msg.get(0), msg.get(1));
                     if (filter == null || filter.evaluate(event)) {
                         List<CacheEntryEvent<? extends K, ? extends V>> events = Collections.<CacheEntryEvent<? extends K, ? extends V>>singletonList(event);

@@ -13,29 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.listener;
+package org.redisson.spring.data.connection;
 
-import java.util.EventListener;
+import java.util.List;
 
-import org.redisson.client.ChannelName;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
- * Listener for Redis messages published via RTopic Redisson object
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <M> message
- *
- * @see org.redisson.api.RTopic
  */
-public interface MessageListener<M> extends EventListener {
 
-    /**
-     * Invokes on every message in topic
-     *
-     * @param channel of topic
-     * @param msg topic message
-     */
-    void onMessage(CharSequence channel, M msg);
+public class TimeObjectDecoder implements MultiDecoder<Long> {
 
+    @Override
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return null;
+    }
+
+    @Override
+    public Long decode(List<Object> parts, State state) {
+        return ((Long)parts.get(0)) * 1000L + ((Long)parts.get(1)) / 1000L;
+    }
+    
 }

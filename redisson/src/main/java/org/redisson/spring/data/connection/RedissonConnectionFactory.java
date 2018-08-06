@@ -36,16 +36,33 @@ import org.springframework.data.redis.connection.RedisSentinelConnection;
  */
 public class RedissonConnectionFactory implements RedisConnectionFactory, InitializingBean, DisposableBean {
 
-    private static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
+    public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
     private Config config;
     private RedissonClient redisson;
     
+    /**
+     * Creates factory with default Redisson configuration
+     */
+    public RedissonConnectionFactory() {
+        this(Redisson.create());
+    }
+    
+    /**
+     * Creates factory with defined Redisson instance
+     * 
+     * @param redisson - Redisson instance
+     */
     public RedissonConnectionFactory(RedissonClient redisson) {
         this.redisson = redisson;
     }
     
+    /**
+     * Creates factory with defined Redisson config
+     * 
+     * @param config - Redisson config
+     */
     public RedissonConnectionFactory(Config config) {
         super();
         this.config = config;
@@ -75,8 +92,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public RedisClusterConnection getClusterConnection() {
-        // TODO Auto-generated method stub
-        return null;
+        return new RedissonClusterConnection(redisson);
     }
 
     @Override

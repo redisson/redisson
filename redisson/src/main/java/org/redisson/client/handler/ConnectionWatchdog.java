@@ -19,6 +19,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.Codec;
@@ -152,10 +153,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
     private void reattachPubSub(RedisConnection connection) {
         if (connection instanceof RedisPubSubConnection) {
             RedisPubSubConnection conn = (RedisPubSubConnection) connection;
-            for (Entry<String, Codec> entry : conn.getChannels().entrySet()) {
+            for (Entry<ChannelName, Codec> entry : conn.getChannels().entrySet()) {
                 conn.subscribe(entry.getValue(), entry.getKey());
             }
-            for (Entry<String, Codec> entry : conn.getPatternChannels().entrySet()) {
+            for (Entry<ChannelName, Codec> entry : conn.getPatternChannels().entrySet()) {
                 conn.psubscribe(entry.getValue(), entry.getKey());
             }
         }

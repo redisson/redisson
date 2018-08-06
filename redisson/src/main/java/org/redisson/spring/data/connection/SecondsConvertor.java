@@ -27,15 +27,17 @@ import org.redisson.client.protocol.convertor.SingleConvertor;
 public class SecondsConvertor extends SingleConvertor<Long> {
 
     private final TimeUnit unit;
+    private final TimeUnit source;
     
-    public SecondsConvertor(TimeUnit unit) {
+    public SecondsConvertor(TimeUnit unit, TimeUnit source) {
         super();
         this.unit = unit;
+        this.source = source;
     }
 
     @Override
     public Long convert(Object obj) {
-        return unit.convert((Long)obj, TimeUnit.SECONDS);
+        return unit.convert((Long)obj, source);
     }
 
 }

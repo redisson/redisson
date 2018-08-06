@@ -15,18 +15,25 @@
  */
 package org.redisson.client.handler;
 
+import org.redisson.client.ChannelName;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class PubSubKey {
 
-    private final String channel;
+    private final ChannelName channel;
     private final String operation;
     
-    public PubSubKey(String channel, String operation) {
+    public PubSubKey(ChannelName channel, String operation) {
         super();
         this.channel = channel;
         this.operation = operation;
     }
     
-    public String getChannel() {
+    public ChannelName getChannel() {
         return channel;
     }
     

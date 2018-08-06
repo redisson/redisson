@@ -52,6 +52,7 @@ import org.redisson.cache.LocalCachedMapDisable;
 import org.redisson.cache.LocalCachedMapDisabledKey;
 import org.redisson.cache.LocalCachedMapEnable;
 import org.redisson.cache.LocalCachedMessageCodec;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -372,7 +373,7 @@ public class RedissonTransaction implements RTransaction {
             topics.add(topic);
             topic.addListener(new MessageListener<Object>() {
                 @Override
-                public void onMessage(String channel, Object msg) {
+                public void onMessage(CharSequence channel, Object msg) {
                     AtomicInteger counter = entry.getValue().getCounter();
                     if (counter.decrementAndGet() == 0) {
                         latch.countDown();
@@ -477,7 +478,7 @@ public class RedissonTransaction implements RTransaction {
                     topics.add(topic);
                     RFuture<Integer> topicFuture = topic.addListenerAsync(new MessageListener<Object>() {
                         @Override
-                        public void onMessage(String channel, Object msg) {
+                        public void onMessage(CharSequence channel, Object msg) {
                             AtomicInteger counter = entry.getValue().getCounter();
                             if (counter.decrementAndGet() == 0) {
                                 listener.decCounter();

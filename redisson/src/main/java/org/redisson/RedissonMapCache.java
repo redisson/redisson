@@ -36,6 +36,7 @@ import org.redisson.api.map.event.EntryExpiredListener;
 import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.api.map.event.MapEntryListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -1787,7 +1788,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             RTopic<List<Object>> topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K)msg.get(0), (V)msg.get(1), null);
                     ((EntryRemovedListener<K, V>) listener).onRemoved(event);
                 }
@@ -1798,7 +1799,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             RTopic<List<Object>> topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K)msg.get(0), (V)msg.get(1), null);
                     ((EntryCreatedListener<K, V>) listener).onCreated(event);
                 }
@@ -1809,7 +1810,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             RTopic<List<Object>> topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K)msg.get(0), (V)msg.get(1), (V)msg.get(2));
                     ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
                 }
@@ -1820,7 +1821,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             RTopic<List<Object>> topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, isWindows));
             return topic.addListener(new MessageListener<List<Object>>() {
                 @Override
-                public void onMessage(String channel, List<Object> msg) {
+                public void onMessage(CharSequence channel, List<Object> msg) {
                     EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K)msg.get(0), (V)msg.get(1), null);
                     ((EntryExpiredListener<K, V>) listener).onExpired(event);
                 }

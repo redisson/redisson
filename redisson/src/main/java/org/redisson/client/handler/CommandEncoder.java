@@ -31,6 +31,7 @@
  */
 package org.redisson.client.handler;
 
+import org.redisson.client.ChannelName;
 import org.redisson.client.protocol.CommandData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +120,12 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
         }
         if (in instanceof ByteBuf) {
             return (ByteBuf) in;
+        }
+        if (in instanceof ChannelName) {
+            byte[] payload = ((ChannelName)in).getName();
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(payload.length);
+            out.writeBytes(payload);
+            return out;
         }
 
         String payload = in.toString();

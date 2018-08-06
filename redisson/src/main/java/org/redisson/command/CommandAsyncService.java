@@ -128,7 +128,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
-        return redisson != null || redissonReactive != null;
+        return false;
+//        return redisson != null || redissonReactive != null;
     }
 
     @Override
@@ -225,16 +226,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    @Override
     public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
         List<R> results = new ArrayList<R>();
-        return readAllAsync(command, results, params);
+        return readAllAsync(results, command, params);
     }
-
+    
     @Override
-    public <R extends Collection<Object>, T> RFuture<R> readAllAsync(RedisCommand<T> command, final R results,
-            Object... params) {
-        final RPromise<R> mainPromise = createPromise();
+    public <T, R> RFuture<Collection<R>> readAllAsync(final Collection<R> results, RedisCommand<T> command, Object... params) {
+        final RPromise<Collection<R>> mainPromise = createPromise();
         final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
         FutureListener<Object> listener = new FutureListener<Object>() {
@@ -252,7 +251,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     }
                 } else {
                     synchronized (results) {
-                        results.add(result);
+                        results.add((R) result);
                     }
                 }
 
@@ -272,16 +271,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
-    public <T, R> RFuture<R> readRandomAsync(RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
         final RPromise<R> mainPromise = createPromise();
         final List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
         Collections.shuffle(nodes);
 
-        retryReadRandomAsync(command, mainPromise, nodes, params);
+        retryReadRandomAsync(codec, command, mainPromise, nodes, params);
         return mainPromise;
     }
 
-    private <R, T> void retryReadRandomAsync(final RedisCommand<T> command, final RPromise<R> mainPromise,
+    private <R, T> void retryReadRandomAsync(final Codec codec, final RedisCommand<T> command, final RPromise<R> mainPromise,
             final List<MasterSlaveEntry> nodes, final Object... params) {
         final RPromise<R> attemptPromise = new RedissonPromise<R>();
         attemptPromise.addListener(new FutureListener<R>() {
@@ -292,7 +291,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         if (nodes.isEmpty()) {
                             mainPromise.trySuccess(null);
                         } else {
-                            retryReadRandomAsync(command, mainPromise, nodes, params);
+                            retryReadRandomAsync(codec, command, mainPromise, nodes, params);
                         }
                     } else {
                         mainPromise.trySuccess(future.getNow());
@@ -304,7 +303,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
 
         MasterSlaveEntry entry = nodes.remove(0);
-        async(true, new NodeSource(entry), StringCodec.INSTANCE, command, params, attemptPromise, 0, false, null);
+        async(true, new NodeSource(entry), codec, command, params, attemptPromise, 0, false, null);
     }
 
     @Override

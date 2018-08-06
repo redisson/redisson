@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubConnection;
+import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
@@ -52,7 +54,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe"));
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<String, PubSubEntry> entries = new HashMap<String, PubSubEntry>();
+    private final Map<ChannelName, PubSubEntry> entries = new HashMap<ChannelName, PubSubEntry>();
     private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();
 
     private final ExecutorService executor;
@@ -63,7 +65,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         this.keepOrder = keepOrder;
     }
 
-    public void addPubSubCommand(String channel, CommandData<Object, Object> data) {
+    public void addPubSubCommand(ChannelName channel, CommandData<Object, Object> data) {
         String operation = data.getCommand().getName().toLowerCase();
         commands.put(new PubSubKey(channel, operation), data);
     }
@@ -108,7 +110,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             checkpoint();
 
             final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
-            String channelName = ((Message) result).getChannel();
+            ChannelName channelName = ((Message) result).getChannel();
             if (result instanceof PubSubStatusMessage) {
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
                 PubSubKey key = new PubSubKey(channelName, operation);
@@ -202,7 +204,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         }
         String command = parts.get(0).toString();
         if (MESSAGES.contains(command)) {
-            String channelName = parts.get(1).toString();
+            ChannelName channelName = new ChannelName((byte[]) parts.get(1));
             PubSubKey key = new PubSubKey(channelName, command);
             CommandData<Object, Object> commandData = commands.get(key);
             if (commandData == null) {
@@ -210,11 +212,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
             return commandData.getCommand().getReplayMultiDecoder();
         } else if (command.equals("message")) {
-            String channelName = (String) parts.get(1);
-            return entries.get(channelName).getDecoder();
+            byte[] channelName = (byte[]) parts.get(1);
+            return entries.get(new ChannelName(channelName)).getDecoder();
         } else if (command.equals("pmessage")) {
-            String patternName = (String) parts.get(1);
-            return entries.get(patternName).getDecoder();
+            byte[] patternName = (byte[]) parts.get(1);
+            return entries.get(new ChannelName(patternName)).getDecoder();
         } else if (command.equals("pong")) {
             return new ListObjectDecoder<Object>(0);
         }
@@ -228,13 +230,20 @@ public class CommandPubSubDecoder extends CommandDecoder {
             if (data != null && parts.size() == 1 && "pong".equals(parts.get(0))) {
                 return data.getCodec().getValueDecoder();
             }
+            if (parts.size() == 1) {
+                return ByteArrayCodec.INSTANCE.getValueDecoder();
+            }
+            if (parts.size() == 2 && "pmessage".equals(parts.get(0))) {
+                return ByteArrayCodec.INSTANCE.getValueDecoder();
+            }
+            
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
-                String channelName = (String) parts.get(1);
-                return entries.get(channelName).getDecoder().getDecoder(parts.size(), state());
+                byte[] channelName = (byte[]) parts.get(1);
+                return entries.get(new ChannelName(channelName)).getDecoder().getDecoder(parts.size(), state());
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
-                String patternName = (String) parts.get(1);
-                return entries.get(patternName).getDecoder().getDecoder(parts.size(), state());
+                byte[] patternName = (byte[]) parts.get(1);
+                return entries.get(new ChannelName(patternName)).getDecoder().getDecoder(parts.size(), state());
             }
         }
         

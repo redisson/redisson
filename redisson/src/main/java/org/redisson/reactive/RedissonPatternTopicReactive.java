@@ -25,15 +25,16 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RPatternTopicReactive;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import io.netty.util.concurrent.Future;
@@ -52,6 +53,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     final PublishSubscribeService subscribeService;
     final CommandReactiveExecutor commandExecutor;
     private final String name;
+    private final ChannelName channelName;
     private final Codec codec;
 
     public RedissonPatternTopicReactive(CommandReactiveExecutor commandExecutor, String name) {
@@ -61,6 +63,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     public RedissonPatternTopicReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
+        this.channelName = new ChannelName(name);
         this.codec = codec;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
@@ -91,7 +94,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
     }
 
     private void addListener(final RedisPubSubListener<M> pubSubListener, final RPromise<Integer> promise) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(name, codec, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         future.addListener(new FutureListener<PubSubConnectionEntry>() {
             @Override
             public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
@@ -115,18 +118,18 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
 
     @Override
     public void removeListener(int listenerId) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
 
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
             return;
         }
         
-        entry.removeListener(name, listenerId);
-        if (!entry.hasListeners(name)) {
-            subscribeService.punsubscribe(name, semaphore);
+        entry.removeListener(channelName, listenerId);
+        if (!entry.hasListeners(channelName)) {
+            subscribeService.punsubscribe(channelName, semaphore);
         } else {
             semaphore.release();
         }

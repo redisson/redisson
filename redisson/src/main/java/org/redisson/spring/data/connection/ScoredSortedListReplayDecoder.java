@@ -13,32 +13,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.pubsub;
+package org.redisson.spring.data.connection;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.client.ChannelName;
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.springframework.data.redis.connection.DefaultTuple;
+import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class PubSubStatusDecoder implements MultiDecoder<Object> {
+public class ScoredSortedListReplayDecoder implements MultiDecoder<List<Tuple>> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum % 2 != 0) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
+        }
         return null;
     }
     
     @Override
-    public PubSubStatusMessage decode(List<Object> parts, State state) {
-        PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase());
-        ChannelName name = new ChannelName((byte[])parts.get(1));
-        return new PubSubStatusMessage(type, name);
+    public List<Tuple> decode(List<Object> parts, State state) {
+        List<Tuple> result = new ArrayList<Tuple>();
+        for (int i = 0; i < parts.size(); i += 2) {
+            result.add(new DefaultTuple((byte[])parts.get(i), ((Number)parts.get(i+1)).doubleValue()));
+        }
+        return result;
     }
 
 }

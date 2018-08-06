@@ -17,7 +17,6 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
-import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 

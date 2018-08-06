@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.pubsub;
+package org.redisson.spring.data.connection;
 
 import java.util.List;
 
-import org.redisson.client.ChannelName;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
@@ -26,19 +25,36 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  * 
  * @author Nikita Koksharov
  *
+ * @param <T> type
  */
-public class PubSubStatusDecoder implements MultiDecoder<Object> {
+public class ObjectListReplayDecoder2<T> implements MultiDecoder<List<T>> {
+
+    private final Decoder<Object> decoder;
+    
+    public ObjectListReplayDecoder2() {
+        this(null);
+    }
+    
+    public ObjectListReplayDecoder2(Decoder<Object> decoder) {
+        super();
+        this.decoder = decoder;
+    }
+
+    @Override
+    public List<T> decode(List<Object> parts, State state) {
+        for (int i = 0; i < parts.size(); i++) {
+            Object object = parts.get(i);
+            if (object instanceof List) {
+                if (((List) object).isEmpty()) {
+                    parts.set(i, null);
+                }
+            }
+        }
+        return (List<T>) parts;
+    }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
+        return decoder;
     }
-    
-    @Override
-    public PubSubStatusMessage decode(List<Object> parts, State state) {
-        PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase());
-        ChannelName name = new ChannelName((byte[])parts.get(1));
-        return new PubSubStatusMessage(type, name);
-    }
-
 }

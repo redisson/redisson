@@ -675,7 +675,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private int indexOf(byte[] array, byte element) {
-        for (int i = 0; i < array.length + 1; ++i) {
+        for (int i = 0; i < array.length; ++i) {
             if (array[i] == element) {
                 return i;
             }

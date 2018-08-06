@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.api.RFuture;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -90,22 +91,22 @@ public class RedisClientTest {
         pubSubConnection.addListener(new RedisPubSubListener<Object>() {
 
             @Override
-            public boolean onStatus(PubSubType type, String channel) {
+            public boolean onStatus(PubSubType type, CharSequence channel) {
                 assertThat(type).isEqualTo(PubSubType.SUBSCRIBE);
-                assertThat(Arrays.asList("test1", "test2").contains(channel)).isTrue();
+                assertThat(Arrays.asList("test1", "test2").contains(channel.toString())).isTrue();
                 latch.countDown();
                 return true;
             }
 
             @Override
-            public void onMessage(String channel, Object message) {
+            public void onMessage(CharSequence channel, Object message) {
             }
 
             @Override
-            public void onPatternMessage(String pattern, String channel, Object message) {
+            public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
             }
         });
-        pubSubConnection.subscribe(StringCodec.INSTANCE, "test1", "test2");
+        pubSubConnection.subscribe(StringCodec.INSTANCE, new ChannelName("test1"), new ChannelName("test2"));
 
         latch.await(10, TimeUnit.SECONDS);
     }

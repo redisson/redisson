@@ -53,6 +53,7 @@ import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -303,7 +304,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         remoteService.register(RemoteExecutorService.class, service, workers, executor);
         workersGroupListenerId = workersTopic.addListener(new MessageListener<String>() {
             @Override
-            public void onMessage(String channel, String id) {
+            public void onMessage(CharSequence channel, String id) {
                 redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(workers);
                 redisson.getSemaphore(workersSemaphoreName + ":" + id).release();
             }
@@ -474,7 +475,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         final CountDownLatch latch = new CountDownLatch(1);
         MessageListener<Integer> listener = new MessageListener<Integer>() {
             @Override
-            public void onMessage(String channel, Integer msg) {
+            public void onMessage(CharSequence channel, Integer msg) {
                 if (msg == TERMINATED_STATE) {
                     latch.countDown();
                 }

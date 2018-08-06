@@ -13,29 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api.listener;
+package org.redisson.spring.data.connection;
 
-import java.util.EventListener;
+import org.redisson.client.protocol.convertor.SingleConvertor;
 
-import org.redisson.client.ChannelName;
+import io.netty.util.CharsetUtil;
 
 /**
- * Listener for Redis messages published via RTopic Redisson object
- *
+ * 
  * @author Nikita Koksharov
  *
- * @param <M> message
- *
- * @see org.redisson.api.RTopic
  */
-public interface MessageListener<M> extends EventListener {
+public class BinaryConvertor extends SingleConvertor<Object> {
 
-    /**
-     * Invokes on every message in topic
-     *
-     * @param channel of topic
-     * @param msg topic message
-     */
-    void onMessage(CharSequence channel, M msg);
+    @Override
+    public Object convert(Object obj) {
+        if (obj instanceof String) {
+            return ((String) obj).getBytes(CharsetUtil.UTF_8);
+        }
+        return obj;
+    }
 
 }

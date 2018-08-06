@@ -87,9 +87,9 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
-    <R extends Collection<Object>, T> RFuture<R> readAllAsync(RedisCommand<T> command, R results, Object... params);
-    
     <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params);
+    
+    <T, R> RFuture<Collection<R>> readAllAsync(Collection<R> results, RedisCommand<T> command, Object ... params);
 
     <R, T> RFuture<R> writeAllAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... params);
     
@@ -101,6 +101,6 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
     
-    <T, R> RFuture<R> readRandomAsync(RedisCommand<T> command, Object ... params);
+    <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object ... params);
 
 }

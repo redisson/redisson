@@ -21,10 +21,10 @@ import org.redisson.client.RedisRedirectException;
 import org.redisson.client.RedisTimeoutException;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.dao.QueryTimeoutException;
 import org.springframework.data.redis.ClusterRedirectException;
 import org.springframework.data.redis.RedisConnectionFailureException;
-import org.springframework.data.redis.RedisSystemException;
 
 /**
  * Converts Redisson exceptions to Spring compatible
@@ -43,8 +43,9 @@ public class RedissonExceptionConverter implements Converter<Exception, DataAcce
             RedisRedirectException ex = (RedisRedirectException) source;
             return new ClusterRedirectException(ex.getSlot(), ex.getUrl().getHost(), ex.getUrl().getPort(), source);
         }
+
         if (source instanceof RedisException) {
-            return new RedisSystemException(source.getMessage(), source);
+            return new InvalidDataAccessApiUsageException(source.getMessage(), source);
         }
         
         if (source instanceof DataAccessException) {

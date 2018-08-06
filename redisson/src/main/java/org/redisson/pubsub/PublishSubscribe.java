@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.redisson.PubSubEntry;
 import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.pubsub.PubSubType;
-import org.redisson.connection.ConnectionManager;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
@@ -41,7 +41,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
     private final ConcurrentMap<String, E> entries = PlatformDependent.newConcurrentHashMap();
 
     public void unsubscribe(final E entry, final String entryName, final String channelName, final PublishSubscribeService subscribeService) {
-        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(new ChannelName(channelName));
         semaphore.acquire(new Runnable() {
             @Override
             public void run() {
@@ -51,7 +51,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     if (!removed) {
                         throw new IllegalStateException();
                     }
-                    subscribeService.unsubscribe(channelName, semaphore);
+                    subscribeService.unsubscribe(new ChannelName(channelName), semaphore);
                 } else {
                     semaphore.release();
                 }
@@ -66,7 +66,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
 
     public RFuture<E> subscribe(final String entryName, final String channelName, final PublishSubscribeService subscribeService) {
         final AtomicReference<Runnable> listenerHolder = new AtomicReference<Runnable>();
-        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(new ChannelName(channelName));
         final RPromise<E> newPromise = new RedissonPromise<E>() {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
@@ -115,8 +115,8 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
         RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
             @Override
-            public void onMessage(String channel, Object message) {
-                if (!channelName.equals(channel)) {
+            public void onMessage(CharSequence channel, Object message) {
+                if (!channelName.equals(channel.toString())) {
                     return;
                 }
 
@@ -124,8 +124,8 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
             }
 
             @Override
-            public boolean onStatus(PubSubType type, String channel) {
-                if (!channelName.equals(channel)) {
+            public boolean onStatus(PubSubType type, CharSequence channel) {
+                if (!channelName.equals(channel.toString())) {
                     return false;
                 }
 
