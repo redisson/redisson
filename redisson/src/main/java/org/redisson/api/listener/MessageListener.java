@@ -17,8 +17,6 @@ package org.redisson.api.listener;
 
 import java.util.EventListener;
 
-import org.redisson.client.ChannelName;
-
 /**
  * Listener for Redis messages published via RTopic Redisson object
  *
