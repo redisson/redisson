@@ -327,7 +327,10 @@ public class CommandBatchService extends CommandAsyncService {
                     ChannelFuture future = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands())));
                     details.setWriteFuture(future);
                 } else {
-                    ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
+                    RPromise<Void> main = new RedissonPromise<Void>();
+                    List<CommandData<?, ?>> list = new LinkedList<CommandData<?, ?>>();
+                    list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
+                    ChannelFuture future = connection.send(new CommandsData(main, list, true));
                     details.setWriteFuture(future);
                 }
             }
@@ -408,7 +411,9 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         if (commands.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(null);
+            executed.set(true);
+            BatchResult<Object> result = new BatchResult<Object>(Collections.emptyList(), 0);
+            return (RFuture<R>) RedissonPromise.newSucceededFuture(result);
         }
         
         if (this.options == null) {

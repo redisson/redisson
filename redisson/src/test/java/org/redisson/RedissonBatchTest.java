@@ -96,6 +96,14 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(set.getScore("abc")).isEqualTo(1d);
         RBucket<String> bucket = redisson.getBucket("test");
         assertThat(bucket.get()).isEqualTo("1");
+        
+        RBatch batch2 = redisson.createBatch(batchOptions);
+        RFuture<Double> b2f1 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
+        RFuture<Double> b2f2 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
+        batch2.execute();
+        
+        assertThat(b2f1.get()).isEqualTo(1d);
+        assertThat(b2f2.get()).isEqualTo(2d);
     }
     
     @Test
