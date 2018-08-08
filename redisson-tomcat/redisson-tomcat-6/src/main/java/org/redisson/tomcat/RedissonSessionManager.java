@@ -212,7 +212,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             updatesTopic.addListener(new MessageListener<AttributeMessage>() {
                 
                 @Override
-                public void onMessage(String channel, AttributeMessage msg) {
+                public void onMessage(CharSequence channel, AttributeMessage msg) {
                     try {
                         // TODO make it thread-safe
                         RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
