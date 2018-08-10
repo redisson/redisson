@@ -18,6 +18,7 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -535,6 +536,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         MasterSlaveServersConfig res = super.create(cfg);
         res.setDatabase(((SentinelServersConfig)cfg).getDatabase());
         return res;
+    }
+    
+    public Collection<RedisClient> getSentinels() {
+        return sentinels.values();
     }
 
     @Override

@@ -102,5 +102,7 @@ public interface CommandAsyncExecutor {
     <T, R> RFuture<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
     
     <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object ... params);
+    
+    <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
 
 }

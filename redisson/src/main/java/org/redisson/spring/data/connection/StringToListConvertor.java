@@ -13,31 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.spring.data.connection;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Time;
-import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.redisson.client.protocol.convertor.SingleConvertor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-
-public class TimeObjectDecoder implements MultiDecoder<Time> {
-
-    @Override
-    public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
-    }
+public class StringToListConvertor extends SingleConvertor<List<String>> {
 
     @Override
-    public Time decode(List<Object> parts, State state) {
-        return new Time(((Long)parts.get(0)).intValue(), ((Long)parts.get(1)).intValue());
+    public List<String> convert(Object obj) {
+        String value = (String) obj;
+        List<String> result = new ArrayList<String>();
+        for (String entry : value.split("\r\n|\n")) {
+            result.add(entry);
+        }
+        return result;
     }
-    
+
 }

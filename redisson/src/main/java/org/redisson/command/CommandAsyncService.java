@@ -271,14 +271,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
-        final RPromise<R> mainPromise = createPromise();
-        final List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
+        RPromise<R> mainPromise = createPromise();
+        List<MasterSlaveEntry> nodes = new ArrayList<MasterSlaveEntry>(connectionManager.getEntrySet());
         Collections.shuffle(nodes);
 
         retryReadRandomAsync(codec, command, mainPromise, nodes, params);
         return mainPromise;
     }
 
+    @Override
+    public <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
+        RPromise<R> mainPromise = createPromise();
+        retryReadRandomAsync(codec, command, mainPromise, Collections.singletonList(entry), params);
+        return mainPromise;
+    }
+    
     private <R, T> void retryReadRandomAsync(final Codec codec, final RedisCommand<T> command, final RPromise<R> mainPromise,
             final List<MasterSlaveEntry> nodes, final Object... params) {
         final RPromise<R> attemptPromise = new RedissonPromise<R>();

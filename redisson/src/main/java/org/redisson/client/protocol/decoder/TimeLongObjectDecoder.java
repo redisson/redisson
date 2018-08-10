@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.spring.data.connection;
+package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  *
  */
 
-public class TimeObjectDecoder implements MultiDecoder<Long> {
+public class TimeLongObjectDecoder implements MultiDecoder<Long> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {

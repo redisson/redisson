@@ -110,9 +110,9 @@ import io.netty.util.concurrent.FutureListener;
 public class RedissonConnection extends AbstractRedisConnection {
 
     private boolean closed;
-    private final Redisson redisson;
+    protected final Redisson redisson;
     
-    private CommandAsyncService executorService;
+    CommandAsyncService executorService;
     private RedissonSubscription subscription;
     
     public RedissonConnection(RedissonClient redisson) {
@@ -223,7 +223,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return ReflectionUtils.invokeMethod(method, this, Arrays.asList(args).toArray());
     }
     
-    private <V> V syncFuture(RFuture<V> future) {
+    <V> V syncFuture(RFuture<V> future) {
         try {
             return executorService.get(future);
         } catch (Exception ex) {
@@ -813,7 +813,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     private final List<Integer> indexToRemove = new ArrayList<Integer>();
     private int index = -1;
     
-    private <T> T write(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
+    <T> T write(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
         RFuture<T> f = executorService.writeAsync(key, codec, command, params);
         indexCommand(command);
         return sync(f);
@@ -828,7 +828,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
     }
     
-    private <T> T read(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
+    <T> T read(byte[] key, Codec codec, RedisCommand<?> command, Object... params) {
         RFuture<T> f = executorService.readAsync(key, codec, command, params);
         indexCommand(command);
         return sync(f);
@@ -1703,25 +1703,19 @@ public class RedissonConnection extends AbstractRedisConnection {
         throw new UnsupportedOperationException();
     }
 
-    private static final RedisStrictCommand<Void> BGREWRITEAOF = new RedisStrictCommand<Void>("BGREWRITEAOF", new VoidReplayConvertor());
-
     @Override
     public void bgReWriteAof() {
-        write(null, StringCodec.INSTANCE, BGREWRITEAOF);
+        write(null, StringCodec.INSTANCE, RedisCommands.BGREWRITEAOF);
     }
     
-    private static final RedisStrictCommand<Void> BGSAVE = new RedisStrictCommand<Void>("BGSAVE", new VoidReplayConvertor());
-
     @Override
     public void bgSave() {
-        write(null, StringCodec.INSTANCE, BGSAVE);
+        write(null, StringCodec.INSTANCE, RedisCommands.BGSAVE);
     }
     
-    private static final RedisStrictCommand<Long> LASTSAVE = new RedisStrictCommand<Long>("LASTSAVE");
-
     @Override
     public Long lastSave() {
-        return write(null, StringCodec.INSTANCE, LASTSAVE);
+        return write(null, StringCodec.INSTANCE, RedisCommands.LASTSAVE);
     }
     
     private static final RedisStrictCommand<Void> SAVE = new RedisStrictCommand<Void>("SAVE", new VoidReplayConvertor());
@@ -1804,7 +1798,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         throw new UnsupportedOperationException();
     }
 
-    private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeObjectDecoder());
+    private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());
     
     @Override
     public Long time() {

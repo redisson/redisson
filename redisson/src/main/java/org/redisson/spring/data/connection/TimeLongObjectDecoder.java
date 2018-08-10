@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.spring.data.connection;
 
 import java.util.List;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Time;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
@@ -27,8 +26,7 @@ import org.redisson.client.protocol.decoder.MultiDecoder;
  * @author Nikita Koksharov
  *
  */
-
-public class TimeObjectDecoder implements MultiDecoder<Time> {
+public class TimeLongObjectDecoder implements MultiDecoder<Long> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
@@ -36,8 +34,8 @@ public class TimeObjectDecoder implements MultiDecoder<Time> {
     }
 
     @Override
-    public Time decode(List<Object> parts, State state) {
-        return new Time(((Long)parts.get(0)).intValue(), ((Long)parts.get(1)).intValue());
+    public Long decode(List<Object> parts, State state) {
+        return ((Long)parts.get(0)) * 1000L + ((Long)parts.get(1)) / 1000L;
     }
     
 }

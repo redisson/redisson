@@ -15,12 +15,18 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.RedisClient;
+import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
+import org.redisson.connection.SentinelConnectionManager;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
 import org.springframework.data.redis.PassThroughExceptionTranslationStrategy;
 import org.springframework.data.redis.connection.RedisClusterConnection;
@@ -36,6 +42,8 @@ import org.springframework.data.redis.connection.RedisSentinelConnection;
  */
 public class RedissonConnectionFactory implements RedisConnectionFactory, InitializingBean, DisposableBean {
 
+    private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
+    
     public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
@@ -92,6 +100,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public RedisClusterConnection getClusterConnection() {
+        if (!redisson.getConfig().isClusterConfig()) {
+            throw new InvalidDataAccessResourceUsageException("Redisson is not in Cluster mode");
+        }
         return new RedissonClusterConnection(redisson);
     }
 
@@ -102,8 +113,25 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public RedisSentinelConnection getSentinelConnection() {
-        // TODO Auto-generated method stub
-        return null;
+        if (!redisson.getConfig().isSentinelConfig()) {
+            throw new InvalidDataAccessResourceUsageException("Redisson is not in Sentinel mode");
+        }
+        
+        SentinelConnectionManager manager = ((SentinelConnectionManager)((Redisson)redisson).getConnectionManager());
+        for (RedisClient client : manager.getSentinels()) {
+            org.redisson.client.RedisConnection connection = client.connect();
+            try {
+                String res = connection.sync(RedisCommands.PING);
+                if ("pong".equalsIgnoreCase(res)) {
+                    return new RedissonSentinelConnection(connection);
+                }
+            } catch (Exception e) {
+                log.warn("Can't connect to " + client, e);
+                connection.closeAsync();
+            }
+        }
+        
+        throw new InvalidDataAccessResourceUsageException("Sentinels are not found");
     }
 
 }
