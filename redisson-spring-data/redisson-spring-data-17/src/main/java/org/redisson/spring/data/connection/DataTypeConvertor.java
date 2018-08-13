@@ -15,26 +15,20 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.springframework.data.redis.connection.DataType;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StringToListConvertor extends SingleConvertor<List<String>> {
+public class DataTypeConvertor extends SingleConvertor<DataType> {
 
     @Override
-    public List<String> convert(Object obj) {
-        String value = (String) obj;
-        List<String> result = new ArrayList<String>();
-        for (String entry : value.split("\r\n|\n")) {
-            result.add(entry);
-        }
-        return result;
+    public DataType convert(Object obj) {
+        String val = obj.toString();
+        return DataType.fromCode(val);
     }
 
 }

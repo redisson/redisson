@@ -8,16 +8,16 @@
         <relativePath>../</relativePath>
     </parent>
 
-    <artifactId>redisson-tomcat</artifactId>
+    <artifactId>redisson-spring-data</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Tomcat</name>
+    <name>Redisson/Spring Data Redis integration</name>
 
     <modules>
-        <module>redisson-tomcat-6</module>
-        <module>redisson-tomcat-7</module>
-        <module>redisson-tomcat-8</module>
-        <module>redisson-tomcat-9</module>
+        <module>redisson-spring-data-16</module>
+        <module>redisson-spring-data-17</module>
+        <module>redisson-spring-data-18</module>
+        <module>redisson-spring-data-20</module>
     </modules>
 
     <build>
@@ -40,17 +40,39 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>fluent-hc</artifactId>
-            <version>4.5.2</version>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>3.10.0</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>3.1.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
+
+      	<dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>[3.1,5.0)</version>
+            <scope>test</scope>
+      	</dependency>
+
+      	<dependency>
+      	    <groupId>org.mockito</groupId>
+      	    <artifactId>mockito-core</artifactId>
+      	    <version>1.10.19</version>
+      	    <scope>test</scope>
+      	</dependency>
     </dependencies>
 
 </project>

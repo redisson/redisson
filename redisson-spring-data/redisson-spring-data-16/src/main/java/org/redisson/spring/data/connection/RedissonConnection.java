@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -56,16 +55,14 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.CodecDecoder;
-import org.redisson.client.protocol.decoder.GeoDistanceDecoder;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.LongMultiDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
@@ -73,16 +70,10 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
-import org.springframework.data.geo.Circle;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.GeoResults;
-import org.springframework.data.geo.Metric;
-import org.springframework.data.geo.Point;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.AbstractRedisConnection;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.connection.RedisNode;
 import org.springframework.data.redis.connection.RedisPipelineException;
 import org.springframework.data.redis.connection.RedisSubscribedConnectionException;
 import org.springframework.data.redis.connection.ReturnType;
@@ -93,7 +84,6 @@ import org.springframework.data.redis.core.KeyBoundCursor;
 import org.springframework.data.redis.core.ScanCursor;
 import org.springframework.data.redis.core.ScanIteration;
 import org.springframework.data.redis.core.ScanOptions;
-import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
@@ -461,18 +451,8 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public Long ttl(byte[] key, TimeUnit timeUnit) {
-        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("TTL", new SecondsConvertor(timeUnit, TimeUnit.SECONDS)), key);
-    }
-
-    @Override
     public Long pTtl(byte[] key) {
         return read(key, StringCodec.INSTANCE, RedisCommands.PTTL, key);
-    }
-
-    @Override
-    public Long pTtl(byte[] key, TimeUnit timeUnit) {
-        return read(key, StringCodec.INSTANCE, new RedisStrictCommand<Long>("PTTL", new SecondsConvertor(timeUnit, TimeUnit.MILLISECONDS)), key);
     }
 
     @Override
@@ -590,33 +570,6 @@ public class RedissonConnection extends AbstractRedisConnection {
     @Override
     public void set(byte[] key, byte[] value) {
         write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value);
-    }
-
-    @Override
-    public void set(byte[] key, byte[] value, Expiration expiration, SetOption option) {
-        if (expiration == null) {
-            set(key, value);
-        } else if (expiration.isPersistent()) {
-            if (option == null || option == SetOption.UPSERT) {
-                set(key, value);
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "XX");
-            }
-        } else {
-            if (option == null || option == SetOption.UPSERT) {
-                write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds());
-            }
-            if (option == SetOption.SET_IF_ABSENT) {
-                write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "NX");
-            }
-            if (option == SetOption.SET_IF_PRESENT) {
-                write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "XX");
-            }
-        }
     }
 
     @Override
@@ -1836,16 +1789,6 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     @Override
-    public void migrate(byte[] key, RedisNode target, int dbIndex, MigrateOption option) {
-        migrate(key, target, dbIndex, option, Long.MAX_VALUE);
-    }
-
-    @Override
-    public void migrate(byte[] key, RedisNode target, int dbIndex, MigrateOption option, long timeout) {
-        write(key, StringCodec.INSTANCE, RedisCommands.MIGRATE, target.getHost(), target.getPort(), key, dbIndex, timeout);
-    }
-
-    @Override
     public void scriptFlush() {
         if (isQueueing() || isPipelined()) {
             throw new UnsupportedOperationException();
@@ -1974,164 +1917,6 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(null, ByteArrayCodec.INSTANCE, c, params.toArray());
     }
 
-    @Override
-    public Long geoAdd(byte[] key, Point point, byte[] member) {
-        return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, key, point.getX(), point.getY(), member);
-    }
-
-    @Override
-    public Long geoAdd(byte[] key, GeoLocation<byte[]> location) {
-        return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, key, location.getPoint().getX(), location.getPoint().getY(), location.getName());
-    }
-
-    @Override
-    public Long geoAdd(byte[] key, Map<byte[], Point> memberCoordinateMap) {
-        List<Object> params = new ArrayList<Object>(memberCoordinateMap.size()*3 + 1);
-        params.add(key);
-        for (Entry<byte[], Point> entry : memberCoordinateMap.entrySet()) {
-            params.add(entry.getValue().getX());
-            params.add(entry.getValue().getY());
-            params.add(entry.getKey());
-        }
-        return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
-    }
-
-    @Override
-    public Long geoAdd(byte[] key, Iterable<GeoLocation<byte[]>> locations) {
-        List<Object> params = new ArrayList<Object>();
-        params.add(key);
-        for (GeoLocation<byte[]> location : locations) {
-            params.add(location.getPoint().getX());
-            params.add(location.getPoint().getY());
-            params.add(location.getName());
-        }
-        return write(key, StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
-    }
-
-    @Override
-    public Distance geoDist(byte[] key, byte[] member1, byte[] member2) {
-        return geoDist(key, member1, member2, DistanceUnit.METERS);
-    }
-
-    @Override
-    public Distance geoDist(byte[] key, byte[] member1, byte[] member2, Metric metric) {
-        return read(key, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), key, member1, member2, metric.getAbbreviation());
-    }
-
-    private static final RedisCommand<List<Object>> GEOHASH = new RedisCommand<List<Object>>("GEOHASH", new ObjectListReplayDecoder<Object>());
-
-    @Override
-    public List<String> geoHash(byte[] key, byte[]... members) {
-        List<Object> params = new ArrayList<Object>(members.length + 1);
-        params.add(key);
-        for (byte[] member : members) {
-            params.add(member);
-        }
-        return read(key, StringCodec.INSTANCE, GEOHASH, params.toArray());
-    }
-
-    @Override
-    public List<Point> geoPos(byte[] key, byte[]... members) {
-        List<Object> params = new ArrayList<Object>(members.length + 1);
-        params.add(key);
-        params.addAll(Arrays.asList(members));
-        
-        MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder(new PointDecoder(), new ObjectListReplayDecoder2(ListMultiDecoder.RESET));
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
-        return read(key, StringCodec.INSTANCE, command, params.toArray());
-    }
-
-    private String convert(double longitude) {
-        return BigDecimal.valueOf(longitude).toPlainString();
-    }
-
-    private final MultiDecoder<GeoResults<GeoLocation<byte[]>>> postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new PointDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoResultsDecoder());
-    
-    @Override
-    public GeoResults<GeoLocation<byte[]>> geoRadius(byte[] key, Circle within) {
-        RedisCommand<GeoResults<GeoLocation<byte[]>>> command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", new GeoResultsDecoder());
-        return read(key, ByteArrayCodec.INSTANCE, command, key, 
-                        convert(within.getCenter().getX()), convert(within.getCenter().getY()), 
-                        within.getRadius().getValue(), within.getRadius().getMetric().getAbbreviation());
-    }
-    
-    @Override
-    public GeoResults<GeoLocation<byte[]>> geoRadius(byte[] key, Circle within, GeoRadiusCommandArgs args) {
-        List<Object> params = new ArrayList<Object>();
-        params.add(key);
-        params.add(convert(within.getCenter().getX()));
-        params.add(convert(within.getCenter().getY()));
-        params.add(within.getRadius().getValue());
-        params.add(within.getRadius().getMetric().getAbbreviation());
-        
-        RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
-        if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", postitionDecoder);
-            params.add("WITHCOORD");
-        } else {
-            MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new GeoResultsDecoder(within.getRadius().getMetric()));
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", distanceDecoder);
-            params.add("WITHDIST");
-        }
-        
-        if (args.getLimit() != null) {
-            params.add("COUNT");
-            params.add(args.getLimit());
-        }
-        if (args.getSortDirection() != null) {
-            params.add(args.getSortDirection().name());
-        }
-        
-        return read(key, ByteArrayCodec.INSTANCE, command, params.toArray());
-    }
-
-    @Override
-    public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, double radius) {
-        return geoRadiusByMember(key, member, new Distance(radius, DistanceUnit.METERS));
-    }
-
-    private static final RedisCommand<GeoResults<GeoLocation<byte[]>>> GEORADIUSBYMEMBER = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", new GeoResultsDecoder());
-    
-    @Override
-    public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius) {
-        return read(key, ByteArrayCodec.INSTANCE, GEORADIUSBYMEMBER, key, member, radius.getValue(), radius.getMetric().getAbbreviation());
-    }
-
-    @Override
-    public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius,
-            GeoRadiusCommandArgs args) {
-        List<Object> params = new ArrayList<Object>();
-        params.add(key);
-        params.add(member);
-        params.add(radius.getValue());
-        params.add(radius.getMetric().getAbbreviation());
-        
-        RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
-        if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", postitionDecoder);
-            params.add("WITHCOORD");
-        } else {
-            MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new GeoResultsDecoder(radius.getMetric()));
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", distanceDecoder);
-            params.add("WITHDIST");
-        }
-        
-        if (args.getLimit() != null) {
-            params.add("COUNT");
-            params.add(args.getLimit());
-        }
-        if (args.getSortDirection() != null) {
-            params.add(args.getSortDirection().name());
-        }
-        
-        return read(key, ByteArrayCodec.INSTANCE, command, params.toArray());
-    }
-
-    @Override
-    public Long geoRemove(byte[] key, byte[]... members) {
-        return zRem(key, members);
-    }
-    
     private static final RedisCommand<Long> PFADD = new RedisCommand<Long>("PFADD");
 
     @Override

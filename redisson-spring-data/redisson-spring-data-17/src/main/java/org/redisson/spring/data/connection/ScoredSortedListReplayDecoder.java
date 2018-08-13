@@ -15,27 +15,38 @@
  */
 package org.redisson.spring.data.connection;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.springframework.data.redis.connection.DefaultTuple;
+import org.springframework.data.redis.connection.RedisZSetCommands.Tuple;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class TimeLongObjectDecoder implements MultiDecoder<Long> {
+public class ScoredSortedListReplayDecoder implements MultiDecoder<List<Tuple>> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum % 2 != 0) {
+            return DoubleCodec.INSTANCE.getValueDecoder();
+        }
         return null;
     }
-
-    @Override
-    public Long decode(List<Object> parts, State state) {
-        return ((Long)parts.get(0)) * 1000L + ((Long)parts.get(1)) / 1000L;
-    }
     
+    @Override
+    public List<Tuple> decode(List<Object> parts, State state) {
+        List<Tuple> result = new ArrayList<Tuple>();
+        for (int i = 0; i < parts.size(); i += 2) {
+            result.add(new DefaultTuple((byte[])parts.get(i), ((Number)parts.get(i+1)).doubleValue()));
+        }
+        return result;
+    }
+
 }

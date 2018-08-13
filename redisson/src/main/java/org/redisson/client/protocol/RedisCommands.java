@@ -37,6 +37,7 @@ import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.client.protocol.convertor.LongReplayConvertor;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
+import org.redisson.client.protocol.convertor.StringToListConvertor;
 import org.redisson.client.protocol.convertor.TimeObjectDecoder;
 import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.TypeConvertor;
@@ -68,10 +69,9 @@ import org.redisson.client.protocol.decoder.StringDataDecoder;
 import org.redisson.client.protocol.decoder.StringListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.client.protocol.decoder.StringReplayDecoder;
+import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
-import org.redisson.spring.data.connection.StringToListConvertor;
-import org.redisson.spring.data.connection.TimeLongObjectDecoder;
 
 /**
  * 
