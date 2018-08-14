@@ -8,7 +8,7 @@ Supports Spring Data Redis 1.6.x, 1.7.x, 1.8.x, 2.0.x
 Usage
 ===
 
-**1** Add `redisson-spring-data` dependency into your project:
+### 1.  Add `redisson-spring-data` dependency into your project:
 
 1. __For JDK 1.8+__  
 
@@ -71,7 +71,7 @@ Usage
      ```  
 
 
-**2** Register `RedissonConnectionFactory` in Spring context
+### 2. Register `RedissonConnectionFactory` in Spring context
 
 ```java   
  @Configuration
