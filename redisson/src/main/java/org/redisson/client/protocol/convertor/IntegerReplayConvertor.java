@@ -15,12 +15,26 @@
  */
 package org.redisson.client.protocol.convertor;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class IntegerReplayConvertor extends SingleConvertor<Integer> {
+
+    private Integer nullValue;
+    
+    public IntegerReplayConvertor() {
+    }
+    
+    public IntegerReplayConvertor(Integer nullValue) {
+        this.nullValue = nullValue;
+    }
 
     @Override
     public Integer convert(Object obj) {
         if (obj == null) {
-            return null;
+            return nullValue;
         }
         return ((Long) obj).intValue();
     }

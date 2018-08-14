@@ -20,25 +20,24 @@ import org.redisson.api.RObject;
 import org.redisson.api.RSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class MoveOperation extends TransactionalOperation {
+public class MoveOperation extends SetOperation {
 
     private String destinationName;
     private Object value;
     private long threadId;
     
-    public MoveOperation(RObject set, String destinationName, long threadId, Object value) {
-        this(set.getName(), set.getCodec(), destinationName, threadId, value);
+    public MoveOperation(RObject set, String destinationName, long threadId, Object value, String transactionId) {
+        this(set.getName(), set.getCodec(), destinationName, threadId, value, transactionId);
     }
     
-    public MoveOperation(String name, Codec codec, String destinationName, long threadId, Object value) {
-        super(name, codec);
+    public MoveOperation(String name, Codec codec, String destinationName, long threadId, Object value, String transactionId) {
+        super(name, codec, transactionId);
         this.destinationName = destinationName;
         this.value = value;
         this.threadId = threadId;
@@ -49,16 +48,18 @@ public class MoveOperation extends TransactionalOperation {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
         RSet<Object> destinationSet = new RedissonSet<Object>(codec, commandExecutor, destinationName, null);
         set.moveAsync(destinationSet.getName(), value);
-        destinationSet.getLock(value).unlockAsync(threadId);
-        set.getLock(value).unlockAsync(threadId);
+
+        getLock(destinationSet, commandExecutor, value).unlockAsync(threadId);
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
         RSet<Object> destinationSet = new RedissonSet<Object>(codec, commandExecutor, destinationName, null);
-        destinationSet.getLock(value).unlockAsync(threadId);
-        set.getLock(value).unlockAsync(threadId);
+        
+        getLock(destinationSet, commandExecutor, value).unlockAsync(threadId);
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
     
     public String getDestinationName() {

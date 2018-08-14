@@ -13,27 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.transaction.operation.map;
+package org.redisson.transaction;
 
-import org.redisson.api.RMap;
+import org.redisson.RedissonLock;
+import org.redisson.command.CommandAsyncExecutor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class MapFastPutIfAbsentOperation extends MapOperation {
+public class RedissonTransactionalLock extends RedissonLock {
 
-    public MapFastPutIfAbsentOperation() {
+    private final String transactionId;
+    
+    public RedissonTransactionalLock(CommandAsyncExecutor commandExecutor, String name, String transactionId) {
+        super(commandExecutor, name);
+        this.transactionId = transactionId;
     }
     
-    public MapFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
-    }
-
     @Override
-    public void commit(RMap<Object, Object> map) {
-        map.fastPutIfAbsentAsync(key, value);
+    protected String getLockName(long threadId) {
+        return super.getLockName(threadId) + ":" + transactionId;
     }
     
 }

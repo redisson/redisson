@@ -27,8 +27,8 @@ public class MapPutIfAbsentOperation extends MapOperation {
     public MapPutIfAbsentOperation() {
     }
     
-    public MapPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value) {
-        super(map, key, value);
+    public MapPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
+        super(map, key, value, transactionId);
     }
     
     @Override

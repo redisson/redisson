@@ -22,29 +22,28 @@ import org.redisson.api.RObject;
 import org.redisson.api.RSetCache;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class AddCacheOperation extends TransactionalOperation {
+public class AddCacheOperation extends SetOperation {
 
     private Object value;
     private long ttl;
     private TimeUnit timeUnit;
     
-    public AddCacheOperation(RObject set, Object value) {
-        this(set, value, 0, null);
+    public AddCacheOperation(RObject set, Object value, String transactionId) {
+        this(set, value, 0, null, transactionId);
     }
     
-    public AddCacheOperation(RObject set, Object value, long ttl, TimeUnit timeUnit) {
-        this(set.getName(), set.getCodec(), value, ttl, timeUnit);
+    public AddCacheOperation(RObject set, Object value, long ttl, TimeUnit timeUnit, String transactionId) {
+        this(set.getName(), set.getCodec(), value, ttl, timeUnit, transactionId);
     }
 
-    public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit) {
-        super(name, codec);
+    public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit, String transactionId) {
+        super(name, codec, transactionId);
         this.value = value;
         this.timeUnit = timeUnit;
         this.ttl = ttl;
@@ -58,13 +57,13 @@ public class AddCacheOperation extends TransactionalOperation {
         } else {
             set.addAsync(value);
         }
-        set.getLock(value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync();
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
-        set.getLock(value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync();
     }
 
     public Object getValue() {

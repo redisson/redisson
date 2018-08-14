@@ -49,7 +49,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
     }
 
     @Override
-    String getLockName(long threadId) {
+    protected String getLockName(long threadId) {
         return super.getLockName(threadId) + ":write";
     }
     

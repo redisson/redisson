@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.map.MapCacheFastPutIfAbsentOperation;
 import org.redisson.transaction.operation.map.MapCacheFastPutOperation;
@@ -35,26 +36,26 @@ import org.redisson.transaction.operation.map.MapCachePutOperation;
  */
 public class BaseTransactionalMapCache<K, V> extends BaseTransactionalMap<K, V> {
 
-    public BaseTransactionalMapCache(long timeout, List<TransactionalOperation> operations, RMap<K, V> map) {
-        super(timeout, operations, map);
+    public BaseTransactionalMapCache(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations, RMap<K, V> map, String transactionId) {
+        super(commandExecutor, timeout, operations, map, transactionId);
     }
     
     public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        return putIfAbsentOperationAsync(key, value, new MapCachePutIfAbsentOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+        return putIfAbsentOperationAsync(key, value, new MapCachePutIfAbsentOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId));
     }
     
     public RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        return fastPutOperationAsync(key, value, new MapCacheFastPutOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+        return fastPutOperationAsync(key, value, new MapCacheFastPutOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId));
     }
     
     public RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
         return putOperationAsync(key, value, new MapCachePutOperation(map, key, value, 
-                ttlTimeout, TimeUnit.MILLISECONDS, maxIdleTimeout, TimeUnit.MILLISECONDS));
+                ttlTimeout, TimeUnit.MILLISECONDS, maxIdleTimeout, TimeUnit.MILLISECONDS, transactionId));
     }
     
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         return fastPutIfAbsentOperationAsync(key, value, new MapCacheFastPutIfAbsentOperation(map, key, value, 
-                ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+                ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId));
     }
     
 }

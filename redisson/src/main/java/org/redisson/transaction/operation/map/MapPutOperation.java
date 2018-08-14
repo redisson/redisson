@@ -27,8 +27,8 @@ public class MapPutOperation extends MapOperation {
     public MapPutOperation() {
     }
     
-    public MapPutOperation(RMap<?, ?> map, Object key, Object value) {
-        super(map, key, value);
+    public MapPutOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
+        super(map, key, value, transactionId);
     }
 
     @Override

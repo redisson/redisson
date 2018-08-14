@@ -97,13 +97,17 @@ public class BaseTransactionalMap<K, V> {
     final List<TransactionalOperation> operations;
     final Map<HashValue, MapEntry> state = new HashMap<HashValue, MapEntry>();
     final RMap<K, V> map;
+    final CommandAsyncExecutor commandExecutor;
+    final String transactionId;
     Boolean deleted;
     
-    public BaseTransactionalMap(long timeout, List<TransactionalOperation> operations, RMap<K, V> map) {
+    public BaseTransactionalMap(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations, RMap<K, V> map, String transactionId) {
         super();
         this.timeout = timeout;
         this.operations = operations;
         this.map = map;
+        this.commandExecutor = commandExecutor;
+        this.transactionId = transactionId;
     }
 
     HashValue toKeyHash(Object key) {
@@ -260,7 +264,7 @@ public class BaseTransactionalMap<K, V> {
                     }
                     BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
 
-                    operations.add(new MapAddAndGetOperation(map, key, value));
+                    operations.add(new MapAddAndGetOperation(map, key, value, transactionId));
                     state.put(keyHash, new MapEntry(key, res));
                     if (deleted != null) {
                         deleted = false;
@@ -281,7 +285,7 @@ public class BaseTransactionalMap<K, V> {
                         BigDecimal currentValue = new BigDecimal(future.getNow().toString());
                         BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
                         
-                        operations.add(new MapAddAndGetOperation(map, key, value));
+                        operations.add(new MapAddAndGetOperation(map, key, value, transactionId));
                         state.put(keyHash, new MapEntry(key, res));
                         if (deleted != null) {
                             deleted = false;
@@ -298,7 +302,7 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
-        return putIfAbsentOperationAsync(key, value, new MapPutIfAbsentOperation(map, key, value));
+        return putIfAbsentOperationAsync(key, value, new MapPutIfAbsentOperation(map, key, value, transactionId));
     }
 
     protected RFuture<V> putIfAbsentOperationAsync(final K key, final V value, final MapOperation mapOperation) {
@@ -347,7 +351,7 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected final RFuture<V> putOperationAsync(K key, V value) {
-        return putOperationAsync(key, value, new MapPutOperation(map, key, value));
+        return putOperationAsync(key, value, new MapPutOperation(map, key, value, transactionId));
     }
 
     protected RFuture<V> putOperationAsync(final K key, final V value, final MapOperation operation) {
@@ -394,7 +398,7 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
-        return fastPutIfAbsentOperationAsync(key, value, new MapFastPutIfAbsentOperation(map, key, value));
+        return fastPutIfAbsentOperationAsync(key, value, new MapFastPutIfAbsentOperation(map, key, value, transactionId));
     }
 
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(final K key, final V value, final MapOperation mapOperation) {
@@ -443,7 +447,7 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
-        return fastPutOperationAsync(key, value, new MapFastPutOperation(map, key, value));
+        return fastPutOperationAsync(key, value, new MapFastPutOperation(map, key, value, transactionId));
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(final K key, final V value, final MapOperation operation) {
@@ -504,7 +508,7 @@ public class BaseTransactionalMap<K, V> {
                     HashValue keyHash = toKeyHash(key);
                     MapEntry currentValue = state.get(keyHash);
                     if (currentValue != null && currentValue != MapEntry.NULL) {
-                        operations.add(new MapFastRemoveOperation(map, key));
+                        operations.add(new MapFastRemoveOperation(map, key, transactionId));
                         state.put(keyHash, MapEntry.NULL);
 
                         counter.incrementAndGet();
@@ -523,7 +527,7 @@ public class BaseTransactionalMap<K, V> {
                         
                         for (K key : future.getNow().keySet()) {
                             HashValue keyHash = toKeyHash(key);
-                            operations.add(new MapFastRemoveOperation(map, key));
+                            operations.add(new MapFastRemoveOperation(map, key, transactionId));
                             counter.incrementAndGet();
                             state.put(keyHash, MapEntry.NULL);
                         }
@@ -720,7 +724,7 @@ public class BaseTransactionalMap<K, V> {
                 final HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
-                    operations.add(new MapRemoveOperation(map, key));
+                    operations.add(new MapRemoveOperation(map, key, transactionId));
                     if (entry == MapEntry.NULL) {
                         result.trySuccess(null);
                     } else {
@@ -737,7 +741,7 @@ public class BaseTransactionalMap<K, V> {
                             result.tryFailure(future.cause());
                             return;
                         }
-                        operations.add(new MapRemoveOperation(map, key));
+                        operations.add(new MapRemoveOperation(map, key, transactionId));
                         if (future.getNow() != null) {
                             state.put(keyHash, MapEntry.NULL);
                         }
@@ -763,7 +767,7 @@ public class BaseTransactionalMap<K, V> {
                         return;
                     }
                     
-                    operations.add(new MapRemoveOperation(map, key, value));
+                    operations.add(new MapRemoveOperation(map, key, value, transactionId));
                     if (isEqual(entry.getValue(), value)) {
                         state.put(keyHash, MapEntry.NULL);
                         result.trySuccess(true);
@@ -781,7 +785,7 @@ public class BaseTransactionalMap<K, V> {
                             result.tryFailure(future.cause());
                             return;
                         }
-                        operations.add(new MapRemoveOperation(map, key, value));
+                        operations.add(new MapRemoveOperation(map, key, value, transactionId));
                         boolean res = isEqual(future.getNow(), value);
                         if (res) {
                             state.put(keyHash, MapEntry.NULL);
@@ -812,7 +816,7 @@ public class BaseTransactionalMap<K, V> {
             @Override
             public void run() {
                 for (Entry<? extends K, ? extends V> entry : entries.entrySet()) {
-                    operations.add(new MapPutOperation(map, entry.getKey(), entry.getValue()));
+                    operations.add(new MapPutOperation(map, entry.getKey(), entry.getValue(), transactionId));
                     HashValue keyHash = toKeyHash(entry.getKey());
                     state.put(keyHash, new MapEntry(entry.getKey(), entry.getValue()));
                 }
@@ -840,7 +844,7 @@ public class BaseTransactionalMap<K, V> {
                         return;
                     }
                     
-                    operations.add(new MapReplaceOperation(map, key, newValue, oldValue));
+                    operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId));
                     if (isEqual(entry.getValue(), oldValue)) {
                         state.put(keyHash, new MapEntry(key, newValue));
                         result.trySuccess(true);
@@ -859,7 +863,7 @@ public class BaseTransactionalMap<K, V> {
                             return;
                         }
                         
-                        operations.add(new MapReplaceOperation(map, key, newValue, oldValue));
+                        operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId));
                         boolean res = isEqual(future.getNow(), oldValue);
                         if (res) {
                             state.put(keyHash, new MapEntry(key, newValue));
@@ -879,7 +883,7 @@ public class BaseTransactionalMap<K, V> {
             public void run() {
                 final HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
-                operations.add(new MapReplaceOperation(map, key, value));
+                operations.add(new MapReplaceOperation(map, key, value, transactionId));
                 if (entry != null) {
                     if (entry == MapEntry.NULL) {
                         result.trySuccess(null);
@@ -899,7 +903,7 @@ public class BaseTransactionalMap<K, V> {
                             return;
                         }
                         
-                        operations.add(new MapReplaceOperation(map, key, value));
+                        operations.add(new MapReplaceOperation(map, key, value, transactionId));
                         if (future.getNow() != null) {
                             state.put(keyHash, new MapEntry(key, value));
                         }
@@ -912,8 +916,13 @@ public class BaseTransactionalMap<K, V> {
     }
     
     protected <R> void executeLocked(final RPromise<R> promise, K key, final Runnable runnable) {
-        RLock lock = map.getLock(key);
+        RLock lock = getLock(key);
         executeLocked(promise, runnable, lock);
+    }
+
+    protected RLock getLock(K key) {
+        String lockName = ((RedissonMap<K, V>) map).getLockName(key, "lock");
+        return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
     protected <R> void executeLocked(final RPromise<R> promise, final Runnable runnable, RLock lock) {
@@ -932,7 +941,7 @@ public class BaseTransactionalMap<K, V> {
     protected <R> void executeLocked(final RPromise<R> promise, final Runnable runnable, Collection<K> keys) {
         List<RLock> locks = new ArrayList<RLock>(keys.size());
         for (K key : keys) {
-            RLock lock = map.getLock(key);
+            RLock lock = getLock(key);
             locks.add(lock);
         }
         final RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[locks.size()]));

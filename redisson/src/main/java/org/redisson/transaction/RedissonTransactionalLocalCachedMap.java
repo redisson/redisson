@@ -33,8 +33,8 @@ import org.redisson.transaction.operation.TransactionalOperation;
 public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransactionalMap<K, V> implements RLocalCachedMap<K, V> {
 
     public RedissonTransactionalLocalCachedMap(CommandAsyncExecutor commandExecutor,  
-            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, RLocalCachedMap<K, V> innerMap) {
-        super(commandExecutor, operations, timeout, executed, innerMap);
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, RLocalCachedMap<K, V> innerMap, String transactionId) {
+        super(commandExecutor, operations, timeout, executed, innerMap, transactionId);
     }
 
     @Override

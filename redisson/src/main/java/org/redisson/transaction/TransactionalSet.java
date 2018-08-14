@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.redisson.RedissonSet;
+import org.redisson.api.RCollectionAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSet;
@@ -39,11 +40,13 @@ import org.redisson.transaction.operation.set.RemoveOperation;
 public class TransactionalSet<V> extends BaseTransactionalSet<V> {
 
     private final RSet<V> set;
+    private final String transactionId;
     
     public TransactionalSet(CommandAsyncExecutor commandExecutor, long timeout, List<TransactionalOperation> operations,
-            RSet<V> set) {
+            RSet<V> set, String transactionId) {
         super(commandExecutor, timeout, operations, set);
         this.set = set;
+        this.transactionId = transactionId;
     }
 
     @Override
@@ -59,22 +62,23 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
     
     @Override
     protected TransactionalOperation createAddOperation(final V value) {
-        return new AddOperation(set, value);
+        return new AddOperation(set, value, transactionId);
     }
     
     @Override
     protected MoveOperation createMoveOperation(final String destination, final V value, final long threadId) {
-        return new MoveOperation(set, destination, threadId, value);
+        return new MoveOperation(set, destination, threadId, value, transactionId);
     }
 
     @Override
-    protected RLock getLock(V value) {
-        return set.getLock(value);
-    }
-    
-    @Override
     protected TransactionalOperation createRemoveOperation(final Object value) {
-        return new RemoveOperation(set, value);
+        return new RemoveOperation(set, value, transactionId);
+    }
+
+    @Override
+    protected RLock getLock(RCollectionAsync<V> set, V value) {
+        String lockName = ((RedissonSet<V>)set).getLockName(value);
+        return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     
 }

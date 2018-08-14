@@ -17,9 +17,11 @@ package org.redisson.transaction.operation.map;
 
 import org.redisson.RedissonMap;
 import org.redisson.RedissonMapCache;
+import org.redisson.api.RLock;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
@@ -33,20 +35,22 @@ public abstract class MapOperation extends TransactionalOperation {
     Object value;
     Object oldValue;
     RMap<?, ?> map;
+    String transactionId;
     
     public MapOperation() {
     }
     
-    public MapOperation(RMap<?, ?> map, Object key, Object value) {
-        this(map, key, value, null);
+    public MapOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
+        this(map, key, value, null, transactionId);
     }
     
-    public MapOperation(RMap<?, ?> map, Object key, Object value, Object oldValue) {
+    public MapOperation(RMap<?, ?> map, Object key, Object value, Object oldValue, String transactionId) {
         super(map.getName(), map.getCodec());
         this.map = map;
         this.key = key;
         this.value = value;
         this.oldValue = oldValue;
+        this.transactionId = transactionId;
     }
 
     public Object getKey() {
@@ -61,7 +65,7 @@ public abstract class MapOperation extends TransactionalOperation {
     public final void commit(CommandAsyncExecutor commandExecutor) {
         RMap<Object, Object> map = getMap(commandExecutor);
         commit(map);
-        map.getLock(key).unlockAsync();
+        getLock(map, commandExecutor, key).unlockAsync();
     }
 
     protected RMap<Object, Object> getMap(CommandAsyncExecutor commandExecutor) {
@@ -74,9 +78,14 @@ public abstract class MapOperation extends TransactionalOperation {
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RMap<Object, Object> map = getMap(commandExecutor);
-        map.getLock(key).unlockAsync();
+        getLock(map, commandExecutor, key).unlockAsync();
     }
 
+    protected RLock getLock(RMap<?, ?> map, CommandAsyncExecutor commandExecutor, Object key) {
+        String lockName = ((RedissonMap<?, ?>) map).getLockName(key, "lock");
+        return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
+    }
+    
     protected abstract void commit(RMap<Object, Object> map);
 
     public Object getValue() {

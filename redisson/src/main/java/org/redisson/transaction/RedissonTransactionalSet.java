@@ -44,19 +44,19 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
     private final AtomicBoolean executed;
     
     public RedissonTransactionalSet(CommandAsyncExecutor commandExecutor,
-            String name, List<TransactionalOperation> operations, long timeout, AtomicBoolean executed) {
+            String name, List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
         super(commandExecutor, name, null);
         this.executed = executed;
         RedissonSet<V> innerSet = new RedissonSet<V>(commandExecutor, name, null);
-        this.transactionalSet = new TransactionalSet<V>(commandExecutor, timeout, operations, innerSet);
+        this.transactionalSet = new TransactionalSet<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
     
     public RedissonTransactionalSet(Codec codec, CommandAsyncExecutor commandExecutor,
-            String name, List<TransactionalOperation> operations, long timeout, AtomicBoolean executed) {
+            String name, List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
         super(codec, commandExecutor, name, null);
         this.executed = executed;
         RedissonSet<V> innerSet = new RedissonSet<V>(codec, commandExecutor, name, null);
-        this.transactionalSet = new TransactionalSet<V>(commandExecutor, timeout, operations, innerSet);
+        this.transactionalSet = new TransactionalSet<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
     
     @Override
