@@ -58,7 +58,6 @@ import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -826,7 +825,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                   "redis.call('zrem', KEYS[2], unpack(ARGV)); "
                 + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), params);
+                Arrays.<Object>asList(getName(), getTimeoutSetName()), params.toArray());
     }
 
     private List<Object> getAndPutValueLocked(K key, V value) {
