@@ -26,6 +26,11 @@ import java.util.concurrent.TimeUnit;
 
 public interface RLockAsync extends RExpirableAsync {
 
+    /**
+     * Unlocks lock independently of state
+     *
+     * @return <code>true</code> if unlocked otherwise <code>false</code>
+     */
     RFuture<Boolean> forceUnlockAsync();
     
     RFuture<Void> unlockAsync();
@@ -38,6 +43,23 @@ public interface RLockAsync extends RExpirableAsync {
 
     RFuture<Void> lockAsync(long threadId);
     
+    /**
+     * Acquires the lock.
+     *
+     * <p>If the lock is not available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until the
+     * lock has been acquired.
+     *
+     * If the lock is acquired, it is held until <code>unlock</code> is invoked,
+     * or until leaseTime milliseconds have passed
+     * since the lock was granted - whichever comes first.
+     *
+     * @param leaseTime the maximum time to hold the lock after granting it,
+     *        before automatically releasing it if it hasn't already been released by invoking <code>unlock</code>.
+     *        If leaseTime is -1, hold the lock until explicitly unlocked.
+     * @param unit the time unit of the {@code leaseTime} argument
+     * @return void
+     */
     RFuture<Void> lockAsync(long leaseTime, TimeUnit unit);
     
     RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long threadId);
@@ -49,5 +71,12 @@ public interface RLockAsync extends RExpirableAsync {
     RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
 
     RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+    
+    /**
+     * Number of holds on this lock by the current thread
+     *
+     * @return holds or <code>0</code> if this lock is not held by current thread
+     */
+    RFuture<Integer> getHoldCountAsync();
     
 }

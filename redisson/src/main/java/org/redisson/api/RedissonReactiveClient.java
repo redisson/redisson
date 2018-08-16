@@ -489,6 +489,26 @@ public interface RedissonReactiveClient {
     <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
 
     /**
+     * Returns unbounded blocking deque instance by name.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return BlockingDeque object
+     */
+    <V> RBlockingDequeReactive<V> getBlockingDeque(String name);
+
+    /**
+     * Returns unbounded blocking deque instance by name
+     * using provided codec for deque objects.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - deque objects codec
+     * @return BlockingDeque object
+     */
+    <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec);
+    
+    /**
      * Returns deque instance by name.
      * 
      * @param <V> type of values

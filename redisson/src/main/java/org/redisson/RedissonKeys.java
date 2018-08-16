@@ -186,7 +186,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<String> randomKeyAsync() {
-        return commandExecutor.readRandomAsync(RedisCommands.RANDOM_KEY);
+        return commandExecutor.readRandomAsync(StringCodec.INSTANCE, RedisCommands.RANDOM_KEY);
     }
 
     @Override

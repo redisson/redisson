@@ -363,7 +363,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         delete();
     }
 
-    private String getLockName(Object value) {
+    public String getLockName(Object value) {
         ByteBuf state = encode(value);
         try {
             return suffixName(getName(value), Hash.hash128toBase64(state) + ":lock");

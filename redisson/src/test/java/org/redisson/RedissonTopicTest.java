@@ -200,7 +200,7 @@ public class RedissonTopicTest {
             AtomicInteger stringMessageReceived = new AtomicInteger();
             int listenerId = stringTopic.addListener(new MessageListener<String>() {
                 @Override
-                public void onMessage(String channel, String msg) {
+                public void onMessage(CharSequence channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");
                     stringMessageReceived.incrementAndGet();
                 }
@@ -208,7 +208,7 @@ public class RedissonTopicTest {
             RPatternTopic<String> patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
             int patternListenerId = patternTopic.addListener(new PatternMessageListener<String>() {
                 @Override
-                public void onMessage(String pattern, String channel, String msg) {
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");
                     stringMessageReceived.incrementAndGet();
                 }
@@ -233,7 +233,7 @@ public class RedissonTopicTest {
         AtomicBoolean stringMessageReceived = new AtomicBoolean();
         stringTopic.addListener(new MessageListener<String>() {
             @Override
-            public void onMessage(String channel, String msg) {
+            public void onMessage(CharSequence channel, String msg) {
                 assertThat(msg).isEqualTo("testmsg");
                 stringMessageReceived.set(true);
             }
@@ -245,7 +245,7 @@ public class RedissonTopicTest {
         longTopic.addListener(new MessageListener<Long>() {
 
             @Override
-            public void onMessage(String channel, Long msg) {
+            public void onMessage(CharSequence channel, Long msg) {
                 assertThat(msg).isEqualTo(1L);
                 longMessageReceived.set(true);
             }
@@ -344,7 +344,7 @@ public class RedissonTopicTest {
             Assert.fail();
         });
         topic1.addListener((channel, msg) -> {
-            Assert.assertEquals("topic1", channel);
+            Assert.assertEquals("topic1", channel.toString());
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
@@ -381,7 +381,7 @@ public class RedissonTopicTest {
         RTopic<Message> topic1 = redisson.getTopic("topic1");
         MessageListener listener = new MessageListener() {
             @Override
-            public void onMessage(String channel, Object msg) {
+            public void onMessage(CharSequence channel, Object msg) {
                 Assert.fail();
             }
         };
@@ -531,7 +531,7 @@ public class RedissonTopicTest {
         });
         topic.addListener(new MessageListener<Integer>() {
             @Override
-            public void onMessage(String channel, Integer msg) {
+            public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);
             }
         });
@@ -634,7 +634,7 @@ public class RedissonTopicTest {
         });
         topic.addListener(new MessageListener<Integer>() {
             @Override
-            public void onMessage(String channel, Integer msg) {
+            public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);
             }
         });
@@ -765,7 +765,7 @@ public class RedissonTopicTest {
         });
         topic.addListener(new MessageListener<Integer>() {
             @Override
-            public void onMessage(String channel, Integer msg) {
+            public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);
             }
         });

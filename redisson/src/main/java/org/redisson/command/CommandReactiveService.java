@@ -24,6 +24,7 @@ import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
@@ -84,7 +85,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         return reactive(new Supplier<RFuture<R>>() {
             @Override
             public RFuture<R> get() {
-                return readRandomAsync(command, params);
+                return readRandomAsync(StringCodec.INSTANCE, command, params);
             };
         });
     }

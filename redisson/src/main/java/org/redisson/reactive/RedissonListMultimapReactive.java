@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
@@ -38,11 +37,11 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonListMultimapReactive<K, V> extends RedissonBaseMultimapReactive<K, V> implements RListMultimapReactive<K, V> {
 
-    public RedissonListMultimapReactive(UUID id, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonListMultimapReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(new RedissonListMultimap<K, V>(commandExecutor, name), commandExecutor, name);
     }
 
-    public RedissonListMultimapReactive(UUID id, Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonListMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(new RedissonListMultimap<K, V>(codec, commandExecutor, name), codec, commandExecutor, name);
     }
 

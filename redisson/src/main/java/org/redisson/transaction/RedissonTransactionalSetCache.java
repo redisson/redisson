@@ -43,19 +43,19 @@ public class RedissonTransactionalSetCache<V> extends RedissonSetCache<V> {
     private final AtomicBoolean executed;
     
     public RedissonTransactionalSetCache(CommandAsyncExecutor commandExecutor, String name,
-            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed) {
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
         super(null, commandExecutor, name, null);
         this.executed = executed;
         RedissonSetCache<V> innerSet = new RedissonSetCache<V>(null, commandExecutor, name, null);
-        this.transactionalSet = new TransactionalSetCache<V>(commandExecutor, timeout, operations, innerSet);
+        this.transactionalSet = new TransactionalSetCache<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
     
     public RedissonTransactionalSetCache(Codec codec, CommandAsyncExecutor commandExecutor, String name,
-            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed) {
+            List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
         super(null, commandExecutor, name, null);
         this.executed = executed;
         RedissonSetCache<V> innerSet = new RedissonSetCache<V>(codec, null, commandExecutor, name, null);
-        this.transactionalSet = new TransactionalSetCache<V>(commandExecutor, timeout, operations, innerSet);
+        this.transactionalSet = new TransactionalSetCache<V>(commandExecutor, timeout, operations, innerSet, transactionId);
     }
 
 

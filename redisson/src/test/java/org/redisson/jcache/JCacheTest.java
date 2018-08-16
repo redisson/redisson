@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -43,6 +44,37 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class JCacheTest extends BaseTest {
 
     @Test
+    public void testRemoveAll() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        cache.put("1", "2");
+        cache.put("3", "4");
+        cache.put("4", "4");
+        cache.put("5", "5");
+        
+        Set<? extends String> keys = new HashSet<String>(Arrays.asList("1", "3", "4", "5"));
+        cache.removeAll(keys);
+        assertThat(cache.containsKey("1")).isFalse();
+        assertThat(cache.containsKey("3")).isFalse();
+        assertThat(cache.containsKey("4")).isFalse();
+        assertThat(cache.containsKey("5")).isFalse();
+        
+        cache.close();
+        runner.stop();
+    }
+    
+    @Test
     public void testGetAll() throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
@@ -52,7 +84,6 @@ public class JCacheTest extends BaseTest {
         
         URL configUrl = getClass().getResource("redisson-jcache.json");
         Config cfg = Config.fromJSON(configUrl);
-        cfg.useSingleServer().setTimeout(300000);
         
         Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()

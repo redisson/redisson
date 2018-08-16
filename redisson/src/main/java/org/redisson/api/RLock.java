@@ -87,8 +87,9 @@ public interface RLock extends Lock, RExpirable, RLockAsync {
     /**
      * Unlocks lock independently of state
      *
+     * @return <code>true</code> if unlocked otherwise <code>false</code>
      */
-    void forceUnlock();
+    boolean forceUnlock();
 
     /**
      * Checks if this lock locked by any thread

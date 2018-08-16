@@ -22,13 +22,14 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.connection.PubSubConnectionEntry;
 import org.redisson.pubsub.AsyncSemaphore;
+import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
 /**
@@ -43,6 +44,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     final PublishSubscribeService subscribeService;
     final CommandExecutor commandExecutor;
     private final String name;
+    private final ChannelName channelName;
     private final Codec codec;
 
     protected RedissonPatternTopic(CommandExecutor commandExecutor, String name) {
@@ -52,6 +54,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     protected RedissonPatternTopic(Codec codec, CommandExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
+        this.channelName = new ChannelName(name);
         this.codec = codec;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
@@ -68,7 +71,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(name, codec, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
@@ -83,18 +86,18 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     
     @Override
     public void removeListener(int listenerId) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
 
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
             return;
         }
         
-        entry.removeListener(name, listenerId);
-        if (!entry.hasListeners(name)) {
-            subscribeService.punsubscribe(name, semaphore);
+        entry.removeListener(channelName, listenerId);
+        if (!entry.hasListeners(channelName)) {
+            subscribeService.punsubscribe(channelName, semaphore);
         } else {
             semaphore.release();
         }
@@ -102,18 +105,18 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     
     @Override
     public void removeAllListeners() {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
         
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
             return;
         }
 
-        entry.removeAllListeners(name);
-        if (!entry.hasListeners(name)) {
-            subscribeService.punsubscribe(name, semaphore);
+        entry.removeAllListeners(channelName);
+        if (!entry.hasListeners(channelName)) {
+            subscribeService.punsubscribe(channelName, semaphore);
         } else {
             semaphore.release();
         }
@@ -121,18 +124,18 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     @Override
     public void removeListener(PatternMessageListener<M> listener) {
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(name);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
         
-        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(name);
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
             return;
         }
 
-        entry.removeListener(name, listener);
-        if (!entry.hasListeners(name)) {
-            subscribeService.punsubscribe(name, semaphore);
+        entry.removeListener(channelName, listener);
+        if (!entry.hasListeners(channelName)) {
+            subscribeService.punsubscribe(channelName, semaphore);
         } else {
             semaphore.release();
         }

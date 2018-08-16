@@ -23,6 +23,7 @@ import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
@@ -134,7 +135,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         listenerId = topic.addListener(new MessageListener<Long>() {
             
             @Override
-            public void onMessage(String channel, Long msg) {
+            public void onMessage(CharSequence channel, Long msg) {
                 if (msg == SUM_MSG) {
                     RFuture<T> addAndGetFuture = addAndGetAsync();
                     addAndGetFuture.addListener(new FutureListener<T>() {

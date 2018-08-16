@@ -15,19 +15,17 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonBlockingQueue;
+import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RBlockingQueueReactive;
+import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandReactiveExecutor;
-import org.redisson.connection.decoder.ListDrainToDecoder;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.BlockingQueue}.
@@ -39,12 +37,16 @@ import org.redisson.connection.decoder.ListDrainToDecoder;
  */
 public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> implements RBlockingQueueReactive<V> {
 
+    private final RBlockingQueueAsync<V> instance;
+    
     public RedissonBlockingQueueReactive(CommandReactiveExecutor commandExecutor, String name) {
         super(commandExecutor, name);
+        instance = new RedissonBlockingQueue<V>(commandExecutor, name, null);
     }
 
     public RedissonBlockingQueueReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         super(codec, commandExecutor, name);
+        instance = new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
     }
 
     @Override
@@ -54,56 +56,61 @@ public class RedissonBlockingQueueReactive<V> extends RedissonQueueReactive<V> i
 
     @Override
     public Publisher<V> take() {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), 0);
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.takeAsync();
+            }
+        });
     }
 
     @Override
-    public Publisher<V> poll(long timeout, TimeUnit unit) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, getName(), unit.toSeconds(timeout));
-    }
-
-    /*
-     * (non-Javadoc)
-     * @see org.redisson.core.RBlockingQueueAsync#pollFromAnyAsync(long, java.util.concurrent.TimeUnit, java.lang.String[])
-     */
-    @Override
-    public Publisher<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames) {
-        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
-        params.add(getName());
-        for (Object name : queueNames) {
-            params.add(name);
-        }
-        params.add(unit.toSeconds(timeout));
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
+    public Publisher<V> poll(final long timeout, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollAsync(timeout, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) {
-        return commandExecutor.writeReactive(getName(), codec, RedisCommands.BRPOPLPUSH, getName(), queueName, unit.toSeconds(timeout));
+    public Publisher<V> pollFromAny(final long timeout, final TimeUnit unit, final String ... queueNames) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollFromAnyAsync(timeout, unit, queueNames);
+            }
+        });
     }
 
     @Override
-    public Publisher<Integer> drainTo(Collection<? super V> c) {
-        if (c == null) {
-            throw new NullPointerException();
-        }
-
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
-              "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
-              "redis.call('ltrim', KEYS[1], -1, 0); " +
-              "return vals", Collections.<Object>singletonList(getName()));
+    public Publisher<V> pollLastAndOfferFirstTo(final String queueName, final long timeout, final TimeUnit unit) {
+        return reactive(new Supplier<RFuture<V>>() {
+            @Override
+            public RFuture<V> get() {
+                return instance.pollLastAndOfferFirstToAsync(queueName, timeout, unit);
+            }
+        });
     }
 
     @Override
-    public Publisher<Integer> drainTo(Collection<? super V> c, int maxElements) {
-        if (c == null) {
-            throw new NullPointerException();
-        }
-        return commandExecutor.evalWriteReactive(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
-                "local elemNum = math.min(ARGV[1], redis.call('llen', KEYS[1])) - 1;" +
-                        "local vals = redis.call('lrange', KEYS[1], 0, elemNum); " +
-                        "redis.call('ltrim', KEYS[1], elemNum + 1, -1); " +
-                        "return vals",
-                Collections.<Object>singletonList(getName()), maxElements);
+    public Publisher<Integer> drainTo(final Collection<? super V> c) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.drainToAsync(c);
+            }
+        });
+    }
+
+    @Override
+    public Publisher<Integer> drainTo(final Collection<? super V> c, final int maxElements) {
+        return reactive(new Supplier<RFuture<Integer>>() {
+            @Override
+            public RFuture<Integer> get() {
+                return instance.drainToAsync(c, maxElements);
+            }
+        });
     }
 }

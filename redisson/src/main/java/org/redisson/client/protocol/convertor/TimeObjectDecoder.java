@@ -32,7 +32,6 @@ public class TimeObjectDecoder implements MultiDecoder<Time> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        // TODO Auto-generated method stub
         return null;
     }
 

@@ -61,6 +61,8 @@ public interface CommandAsyncExecutor {
     
     <T, R> RFuture<R> readAsync(RedisClient client, String name, Codec codec, RedisCommand<T> command, Object ... params);
     
+    <T, R> RFuture<R> readAsync(RedisClient client, byte[] key, Codec codec, RedisCommand<T> command, Object... params);
+    
     <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> RFuture<R> evalWriteAllAsync(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
@@ -79,12 +81,18 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> evalWriteAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
     
+    <T, R> RFuture<R> readAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params);
+    
     <T, R> RFuture<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object ... params);
+    
+    <T, R> RFuture<Collection<R>> readAllAsync(Collection<R> results, RedisCommand<T> command, Object ... params);
 
+    <R, T> RFuture<R> writeAllAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, Object... params);
+    
     <T> RFuture<Void> writeAllAsync(RedisCommand<T> command, Object ... params);
 
     <T, R> RFuture<R> writeAsync(String key, RedisCommand<T> command, Object ... params);
@@ -93,6 +101,8 @@ public interface CommandAsyncExecutor {
 
     <T, R> RFuture<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
     
-    <T, R> RFuture<R> readRandomAsync(RedisCommand<T> command, Object ... params);
+    <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object ... params);
+    
+    <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
 
 }

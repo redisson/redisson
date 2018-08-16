@@ -36,16 +36,16 @@ public class MapCachePutIfAbsentOperation extends MapOperation {
     }
     
     public MapCachePutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, 
-            long ttl, TimeUnit unit, long maxIdleTime, TimeUnit maxIdleUnit) {
-        this(map, key, value);
+            long ttl, TimeUnit unit, long maxIdleTime, TimeUnit maxIdleUnit, String transactionId) {
+        this(map, key, value, transactionId);
         this.ttl = ttl;
         this.unit = unit;
         this.maxIdleTime = maxIdleTime;
         this.maxIdleUnit = maxIdleUnit;
     }
     
-    public MapCachePutIfAbsentOperation(RMap<?, ?> map, Object key, Object value) {
-        super(map, key, value);
+    public MapCachePutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
+        super(map, key, value, transactionId);
     }
 
     @Override

@@ -21,16 +21,20 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
+import org.redisson.api.RAtomicDoubleReactive;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
 import org.redisson.api.RFuture;
+import org.redisson.api.RGeoReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
+import org.redisson.api.RListMultimapReactive;
 import org.redisson.api.RListReactive;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
@@ -38,6 +42,7 @@ import org.redisson.api.RQueueReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSetCacheReactive;
+import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -258,6 +263,51 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
         this.executorService.enableRedissonReferenceSupport(redissonReactive);
+    }
+
+    @Override
+    public <V> RGeoReactive<V> getGeo(String name) {
+        return new RedissonGeoReactive<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RGeoReactive<V> getGeo(String name, Codec codec) {
+        return new RedissonGeoReactive<V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
+        return new RedissonSetMultimapReactive<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
+        return new RedissonSetMultimapReactive<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
+        return new RedissonListMultimapReactive<K, V>(executorService, name);
+    }
+
+    @Override
+    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
+        return new RedissonListMultimapReactive<K, V>(codec, executorService, name);
+    }
+
+    @Override
+    public RAtomicDoubleReactive getAtomicDouble(String name) {
+        return new RedissonAtomicDoubleReactive(executorService, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDequeReactive<V>(executorService, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDequeReactive<V>(codec, executorService, name);
     }
 
 }

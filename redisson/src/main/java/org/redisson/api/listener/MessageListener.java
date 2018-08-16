@@ -34,6 +34,6 @@ public interface MessageListener<M> extends EventListener {
      * @param channel of topic
      * @param msg topic message
      */
-    void onMessage(String channel, M msg);
+    void onMessage(CharSequence channel, M msg);
 
 }

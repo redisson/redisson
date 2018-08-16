@@ -413,6 +413,10 @@ public class Config {
     public boolean isClusterConfig() {
         return clusterServersConfig != null;
     }
+    
+    public boolean isSentinelConfig() {
+        return sentinelServersConfig != null;
+    }
 
     public int getThreads() {
         return threads;

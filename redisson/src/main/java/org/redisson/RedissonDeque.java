@@ -39,7 +39,7 @@ public class RedissonDeque<V> extends RedissonQueue<V> implements RDeque<V> {
     private static final RedisCommand<Object> LRANGE_SINGLE = new RedisCommand<Object>("LRANGE", new ListFirstObjectDecoder());
 
 
-    protected RedissonDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
     }
 

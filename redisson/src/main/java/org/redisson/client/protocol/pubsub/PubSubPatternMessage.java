@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+import org.redisson.client.ChannelName;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -22,22 +24,23 @@ package org.redisson.client.protocol.pubsub;
  */
 public class PubSubPatternMessage implements Message {
 
-    private final String pattern;
-    private final String channel;
+    private final ChannelName pattern;
+    private final ChannelName channel;
     private final Object value;
 
-    public PubSubPatternMessage(String pattern, String channel, Object value) {
+    public PubSubPatternMessage(ChannelName pattern, ChannelName channel, Object value) {
         super();
         this.pattern = pattern;
         this.channel = channel;
         this.value = value;
     }
 
-    public String getPattern() {
+    public ChannelName getPattern() {
         return pattern;
     }
 
-    public String getChannel() {
+    @Override
+    public ChannelName getChannel() {
         return channel;
     }
 

@@ -114,7 +114,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
     
-    private String getLockName(Object key, String suffix) {
+    public String getLockName(Object key, String suffix) {
         ByteBuf keyState = encodeMapKey(key);
         try {
             return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);

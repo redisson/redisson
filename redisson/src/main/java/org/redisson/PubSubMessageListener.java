@@ -16,6 +16,7 @@
 package org.redisson;
 
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
@@ -70,23 +71,23 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     }
 
     @Override
-    public void onMessage(String channel, Object message) {
+    public void onMessage(CharSequence channel, Object message) {
         // could be subscribed to multiple channels
-        if (name.equals(channel)) {
+        if (name.equals(channel.toString())) {
             listener.onMessage(channel, (V)message);
         }
     }
 
     @Override
-    public void onPatternMessage(String pattern, String channel, Object message) {
+    public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
         // could be subscribed to multiple channels
-        if (name.equals(pattern)) {
+        if (name.equals(pattern.toString())) {
             listener.onMessage(channel, (V)message);
         }
     }
 
     @Override
-    public boolean onStatus(PubSubType type, String channel) {
+    public boolean onStatus(PubSubType type, CharSequence channel) {
         return false;
     }
 

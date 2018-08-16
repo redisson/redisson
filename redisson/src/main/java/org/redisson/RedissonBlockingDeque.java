@@ -39,12 +39,12 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     private final RedissonBlockingQueue<V> blockingQueue;
 
-    protected RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonBlockingDeque(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<V>(commandExecutor, name, redisson);
     }
 
-    protected RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonBlockingDeque(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
         blockingQueue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, redisson);
     }

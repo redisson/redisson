@@ -84,6 +84,8 @@ public class RedissonTransaction implements RTransaction {
     private Set<String> localCaches = new HashSet<String>();
     private final long startTime = System.currentTimeMillis();
     
+    private final String id = generateId();
+    
     public RedissonTransaction(CommandAsyncExecutor commandExecutor, TransactionOptions options) {
         super();
         this.options = options;
@@ -105,77 +107,77 @@ public class RedissonTransaction implements RTransaction {
 
         localCaches.add(fromInstance.getName());
         return new RedissonTransactionalLocalCachedMap<K, V>(commandExecutor,
-                operations, options.getTimeout(), executed, fromInstance);
+                operations, options.getTimeout(), executed, fromInstance, id);
     }
     
     @Override
     public <V> RBucket<V> getBucket(String name) {
         checkState();
         
-        return new RedissonTransactionalBucket<V>(commandExecutor, name, operations, executed);
+        return new RedissonTransactionalBucket<V>(commandExecutor, name, operations, executed, id);
     }
     
     @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         checkState();
 
-        return new RedissonTransactionalBucket<V>(codec, commandExecutor, name, operations, executed);
+        return new RedissonTransactionalBucket<V>(codec, commandExecutor, name, operations, executed, id);
     }
 
     @Override
     public <V> RSet<V> getSet(String name) {
         checkState();
         
-        return new RedissonTransactionalSet<V>(commandExecutor, name, operations, options.getTimeout(), executed);        
+        return new RedissonTransactionalSet<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);        
     }
     
     @Override
     public <V> RSet<V> getSet(String name, Codec codec) {
         checkState();
         
-        return new RedissonTransactionalSet<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalSet<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
     
     @Override
     public <V> RSetCache<V> getSetCache(String name) {
         checkState();
         
-        return new RedissonTransactionalSetCache<V>(commandExecutor, name, operations, options.getTimeout(), executed);        
+        return new RedissonTransactionalSetCache<V>(commandExecutor, name, operations, options.getTimeout(), executed, id);        
     }
     
     @Override
     public <V> RSetCache<V> getSetCache(String name, Codec codec) {
         checkState();
         
-        return new RedissonTransactionalSetCache<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalSetCache<V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
         checkState();
         
-        return new RedissonTransactionalMap<K, V>(commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalMap<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name, Codec codec) {
         checkState();
         
-        return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalMap<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name) {
         checkState();
         
-        return new RedissonTransactionalMapCache<K, V>(commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalMapCache<K, V>(commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
 
     @Override
     public <K, V> RMapCache<K, V> getMapCache(String name, Codec codec) {
         checkState();
         
-        return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed);
+        return new RedissonTransactionalMapCache<K, V>(codec, commandExecutor, name, operations, options.getTimeout(), executed, id);
     }
     
     @Override
@@ -372,7 +374,7 @@ public class RedissonTransaction implements RTransaction {
             topics.add(topic);
             topic.addListener(new MessageListener<Object>() {
                 @Override
-                public void onMessage(String channel, Object msg) {
+                public void onMessage(CharSequence channel, Object msg) {
                     AtomicInteger counter = entry.getValue().getCounter();
                     if (counter.decrementAndGet() == 0) {
                         latch.countDown();
@@ -477,7 +479,7 @@ public class RedissonTransaction implements RTransaction {
                     topics.add(topic);
                     RFuture<Integer> topicFuture = topic.addListenerAsync(new MessageListener<Object>() {
                         @Override
-                        public void onMessage(String channel, Object msg) {
+                        public void onMessage(CharSequence channel, Object msg) {
                             AtomicInteger counter = entry.getValue().getCounter();
                             if (counter.decrementAndGet() == 0) {
                                 listener.decCounter();

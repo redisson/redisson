@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNode;
@@ -28,6 +27,7 @@ import org.redisson.api.RAtomicDoubleReactive;
 import org.redisson.api.RAtomicLongReactive;
 import org.redisson.api.RBatchReactive;
 import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
@@ -68,6 +68,7 @@ import org.redisson.reactive.RedissonAtomicDoubleReactive;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
 import org.redisson.reactive.RedissonBitSetReactive;
+import org.redisson.reactive.RedissonBlockingDequeReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonDequeReactive;
@@ -108,14 +109,13 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
     protected final ReferenceCodecProvider codecProvider;
-    
-    protected final UUID id = UUID.randomUUID();
+
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
-    
+
     protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
-        
+
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
@@ -146,17 +146,17 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RSemaphoreReactive getSemaphore(String name) {
         return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
     }
-    
+
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
-        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);        
+        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);
     }
-    
+
     @Override
     public RReadWriteLockReactive getReadWriteLock(String name) {
         return new RedissonReadWriteLockReactive(commandExecutor, name);
     }
-    
+
     @Override
     public RLockReactive getLock(String name) {
         return new RedissonLockReactive(commandExecutor, name);
@@ -196,8 +196,8 @@ public class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
-    
-    
+
+
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return new RedissonHyperLogLogReactive<V>(commandExecutor, name);
@@ -220,24 +220,24 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
-        return new RedissonListMultimapReactive<K, V>(id, commandExecutor, name);
+        return new RedissonListMultimapReactive<K, V>(commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimapReactive<K, V>(id, codec, commandExecutor, name);
+        return new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name);
     }
 
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimapReactive<K, V>(id, commandExecutor, name);
+        return new RedissonSetMultimapReactive<K, V>(commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimapReactive<K, V>(id, codec, commandExecutor, name);
+        return new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name);
     }
-    
+
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
         return new RedissonMapReactive<K, V>(commandExecutor, name, null);
@@ -337,7 +337,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RAtomicLongReactive getAtomicLong(String name) {
         return new RedissonAtomicLongReactive(commandExecutor, name);
     }
-    
+
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
         return new RedissonAtomicDoubleReactive(commandExecutor, name);
@@ -381,7 +381,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     public ReferenceCodecProvider getCodecProvider() {
         return codecProvider;
     }
-    
+
     @Override
     public NodesGroup<Node> getNodesGroup() {
         return new RedisNodes<Node>(connectionManager);
@@ -441,5 +441,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RTransactionReactive createTransaction(TransactionOptions options) {
         return new RedissonTransactionReactive(commandExecutor, options);
     }
-}
 
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
+        return new RedissonBlockingDequeReactive<V>(commandExecutor, name);
+    }
+
+    @Override
+    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
+        return new RedissonBlockingDequeReactive<V>(codec, commandExecutor, name);
+    }
+}

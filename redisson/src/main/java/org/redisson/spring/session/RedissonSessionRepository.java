@@ -30,6 +30,7 @@ import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.PatternMessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.StringCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,13 +248,13 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
     }
     
     @Override
-    public void onMessage(String pattern, String channel, String body) {
-        if (createdTopic.getPatternNames().contains(pattern)) {
+    public void onMessage(CharSequence pattern, CharSequence channel, String body) {
+        if (createdTopic.getPatternNames().contains(pattern.toString())) {
             RedissonSession session = findById(body);
             if (session != null) {
                 publishEvent(new SessionCreatedEvent(this, session));
             }
-        } else if (deletedTopic.getPatternNames().contains(pattern)) {
+        } else if (deletedTopic.getPatternNames().contains(pattern.toString())) {
             if (!body.contains(":")) {
                 return;
             }
@@ -264,7 +265,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 session.clearPrincipal();
             }
             publishEvent(new SessionDeletedEvent(this, session));
-        } else if (expiredTopic.getPatternNames().contains(pattern)) {
+        } else if (expiredTopic.getPatternNames().contains(pattern.toString())) {
             if (!body.contains(":")) {
                 return;
             }

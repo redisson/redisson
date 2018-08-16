@@ -20,8 +20,8 @@ Usage
 	         configPath="${catalina.base}/redisson.conf" readMode="MEMORY" updateMode="DEFAULT"/>
    ```
    `readMode` - read attributes mode. Two modes are available:
-   * `MEMORY` - read attributes stored in local Tomcat Session. Default mode.
-   * `REDIS` - read directly from Redis.  
+   * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events. Default mode.
+   * `REDIS` - stores attributes into Redis only.  
 
    `updateMode` - attributes update mode. Two modes are available:
    * `DEFAULT` - session attributes are stored into Redis only through setAttribute method. Default mode.
@@ -33,25 +33,25 @@ Usage
 **2** Copy two jars into `TOMCAT_BASE/lib` directory:
   
 1. __For JDK 1.8+__  
-      [redisson-all-3.7.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.7.4&e=jar)
+      [redisson-all-3.7.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.7.5&e=jar)
   
       for Tomcat 6.x  
-      [redisson-tomcat-6-3.7.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=3.7.4&e=jar)  
+      [redisson-tomcat-6-3.7.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=3.7.5&e=jar)  
       for Tomcat 7.x  
-      [redisson-tomcat-7-3.7.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.7.4&e=jar)  
+      [redisson-tomcat-7-3.7.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.7.5&e=jar)  
       for Tomcat 8.x  
-      [redisson-tomcat-8-3.7.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.7.4&e=jar)  
+      [redisson-tomcat-8-3.7.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.7.5&e=jar)  
       for Tomcat 9.x  
-      [redisson-tomcat-9-3.7.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.7.4&e=jar)  
+      [redisson-tomcat-9-3.7.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.7.5&e=jar)  
   
 2. __For JDK 1.6+__  
-      [redisson-all-2.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.12.4&e=jar)
+      [redisson-all-2.12.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.12.5&e=jar)
   
       for Tomcat 6.x  
-      [redisson-tomcat-6-2.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=2.12.4&e=jar)  
+      [redisson-tomcat-6-2.12.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-6&v=2.12.5&e=jar)  
       for Tomcat 7.x  
-      [redisson-tomcat-7-2.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=2.12.4&e=jar)  
+      [redisson-tomcat-7-2.12.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=2.12.5&e=jar)  
       for Tomcat 8.x  
-      [redisson-tomcat-8-2.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=2.12.4&e=jar)  
+      [redisson-tomcat-8-2.12.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=2.12.5&e=jar)  
 
 

@@ -4,29 +4,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
+
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Test;
-import org.redisson.api.LocalCachedMapOptions;
-import org.redisson.api.RBatch;
-import org.redisson.api.RBatchReactive;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBucketAsync;
-import org.redisson.api.RBucketReactive;
-import org.redisson.api.RDelayedQueue;
-import org.redisson.api.RGeo;
-import org.redisson.api.RList;
-import org.redisson.api.RListMultimap;
-import org.redisson.api.RLiveObject;
-import org.redisson.api.RLiveObjectService;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RPriorityQueue;
-import org.redisson.api.RQueue;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RSet;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetMultimap;
+import org.redisson.api.*;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.config.Config;
 
 /**
  *
@@ -232,5 +217,53 @@ public class RedissonReferenceTest extends BaseTest {
         b2.set(map);
         assertNotEquals(1, redisson.getKeys().count());
         assertEquals(3, redisson.getKeys().count());
+    }
+
+
+    @Test
+    public void shouldUseDefaultCodec() throws Exception {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+        objectMapper.configure(DeserializationFeature.UNWRAP_ROOT_VALUE, false);
+        JsonJacksonCodec codec = new JsonJacksonCodec(objectMapper);
+
+        Config config = new Config();
+        config.setCodec(codec);
+        config.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redissonClient = Redisson.create(config);
+        RBucket<Object> b1 = redissonClient.getBucket("b1");
+        b1.set(new MyObject());
+        RSet<Object> s1 = redissonClient.getSet("s1");
+        assertTrue(s1.add(b1));
+        assertTrue(codec == b1.getCodec());
+
+        Config config1 = new Config();
+        config1.setCodec(codec);
+        config1.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonClient redissonClient1 = Redisson.create(config1);
+
+        RSet<RBucket> s2 = redissonClient1.getSet("s1");
+        RBucket<MyObject> b2 = s2.iterator(1).next();
+        assertTrue(codec == b2.getCodec());
+        assertTrue(b2.get() instanceof MyObject);
+        redissonClient.shutdown();
+        redissonClient1.shutdown();
+    }
+
+    public static class MyObject {
+
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
     }
 }

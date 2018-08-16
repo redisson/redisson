@@ -471,6 +471,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return singleSlotRange.getStartSlot();
     }
 
+    @Override
+    public int calcSlot(byte[] key) {
+        return singleSlotRange.getStartSlot();
+    }
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {

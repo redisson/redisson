@@ -27,8 +27,8 @@ public class MapFastRemoveOperation extends MapOperation {
     public MapFastRemoveOperation() {
     }
     
-    public MapFastRemoveOperation(RMap<?, ?> map, Object key) {
-        super(map, key, null);
+    public MapFastRemoveOperation(RMap<?, ?> map, Object key, String transactionId) {
+        super(map, key, null, transactionId);
     }
     
     @Override

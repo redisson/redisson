@@ -92,7 +92,7 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(entry.getLatitude());
             params.add(encode(entry.getMember()));
         }
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEOADD_ENTRIES, params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
     }
 
     @Override
