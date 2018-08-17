@@ -22,6 +22,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.connection.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,7 @@ public abstract class QueueTransferTask {
         
         messageListenerId = schedulerTopic.addListener(new MessageListener<Long>() {
             @Override
-            public void onMessage(String channel, Long startTime) {
+            public void onMessage(CharSequence channel, Long startTime) {
                 scheduleTask(startTime);
             }
         });

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.regex.Pattern;
 
+import org.redisson.client.ChannelName;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
@@ -107,7 +108,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
             if (!pubSubOps.isEmpty()) {
                 for (CommandData<Object, Object> cd : pubSubOps) {
                     for (Object channel : cd.getParams()) {
-                        ch.pipeline().get(CommandPubSubDecoder.class).addPubSubCommand(channel.toString(), cd);
+                        ch.pipeline().get(CommandPubSubDecoder.class).addPubSubCommand((ChannelName) channel, cd);
                     }
                 }
             } else {

@@ -1,4 +1,8 @@
-﻿### Expected behavior
+<!--
+Please consider to take commercial 24x7 support included in PRO version https://redisson.pro
+-->
+
+### Expected behavior
 
 ### Actual behavior
 

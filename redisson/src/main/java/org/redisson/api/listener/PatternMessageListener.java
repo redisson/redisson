@@ -17,6 +17,8 @@ package org.redisson.api.listener;
 
 import java.util.EventListener;
 
+import org.redisson.client.ChannelName;
+
 /**
  * Listener for Redis messages published via RTopic Redisson object
  *
@@ -35,6 +37,6 @@ public interface PatternMessageListener<M> extends EventListener {
      * @param channel of topic
      * @param msg topic message
      */
-    void onMessage(String pattern, String channel, M msg);
+    void onMessage(CharSequence pattern, CharSequence channel, M msg);
 
 }

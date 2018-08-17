@@ -26,7 +26,7 @@ public interface RScript extends RScriptAsync {
     enum Mode {READ_ONLY, READ_WRITE}
 
     enum ReturnType {
-        BOOLEAN(RedisCommands.EVAL_BOOLEAN),
+        BOOLEAN(RedisCommands.EVAL_BOOLEAN_SAFE),
         INTEGER(RedisCommands.EVAL_LONG),
         MULTI(RedisCommands.EVAL_LIST),
         STATUS(RedisCommands.EVAL_STRING),

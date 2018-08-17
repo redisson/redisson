@@ -28,7 +28,7 @@ import org.reactivestreams.Publisher;
  * @param <V> the type of elements held in this collection
  */
 // TODO add sublist support
-public interface RListReactive<V> extends RCollectionReactive<V> {
+public interface RListReactive<V> extends RCollectionReactive<V>, RSortableReactive<List<V>> {
 
     /**
      * Loads elements by specified <code>indexes</code>

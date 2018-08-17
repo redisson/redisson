@@ -107,14 +107,13 @@ public class RedissonTopicPatternTest {
             Assert.fail();
         });
         topic1.addListener((pattern, channel, msg) -> {
-            Assert.assertEquals("topic1.*", pattern);
-            Assert.assertEquals("topic1.t3", channel);
+            Assert.assertTrue(pattern.equals("topic1.*"));
+            Assert.assertTrue(channel.equals("topic1.t3"));
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
         topic1.removeListener(listenerId);
 
-//        topic1 = redisson.getPatternTopic("topic1.*");
         redisson.getTopic("topic1.t3").publish(new Message("123"));
 
         Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
@@ -139,8 +138,8 @@ public class RedissonTopicPatternTest {
         RedissonClient redisson2 = BaseTest.createInstance();
         RPatternTopic<Message> topic2 = redisson2.getPatternTopic("topic.*");
         topic2.addListener((pattern, channel, msg) -> {
-            Assert.assertEquals("topic.*", pattern);
-            Assert.assertEquals("topic.t1", channel);
+            Assert.assertTrue(pattern.equals("topic.*"));
+            Assert.assertTrue(channel.equals("topic.t1"));
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
@@ -148,7 +147,7 @@ public class RedissonTopicPatternTest {
         RTopic<Message> topic3 = redisson2.getTopic("topic.t1");
         topic3.publish(new Message("123"));
 
-        messageRecieved.await();
+        Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
 
         redisson1.shutdown();
         redisson2.shutdown();
@@ -284,7 +283,7 @@ public class RedissonTopicPatternTest {
         RPatternTopic<Integer> topic = redisson.getPatternTopic("topic*");
         topic.addListener(new PatternMessageListener<Integer>() {
             @Override
-            public void onMessage(String pattern, String channel, Integer msg) {
+            public void onMessage(CharSequence pattern, CharSequence channel, Integer msg) {
                 if (msg == 1) {
                     executed.set(true);
                 }

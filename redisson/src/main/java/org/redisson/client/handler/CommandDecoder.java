@@ -214,11 +214,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 checkpoint();
                 state().setBatchIndex(i);
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
+                boolean skipConvertor = commandBatch.isQueued();
                 if (!commandBatch.isAtomic()
                         || RedisCommands.EXEC.getName().equals(cmd.getName())
                         || RedisCommands.WAIT.getName().equals(cmd.getName())) {
                     commandData = (CommandData<Object, Object>) commandBatch.getCommands().get(i);
                     if (RedisCommands.EXEC.getName().equals(cmd.getName())) {
+                        skipConvertor = false;
                         if (commandBatch.getAttachedCommands() != null) {
                             commandsData.set(commandBatch.getAttachedCommands());
                         } else {
@@ -228,7 +230,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 
                 try {
-                    decode(in, commandData, null, ctx.channel(), commandBatch.isQueued());
+                    decode(in, commandData, null, ctx.channel(), skipConvertor);
                 } finally {
                     if (commandData != null && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())) {
                         commandsData.remove();

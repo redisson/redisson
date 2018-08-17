@@ -38,6 +38,7 @@ import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -158,7 +159,7 @@ public abstract class LocalCacheListener {
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
             syncListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
                 @Override
-                public void onMessage(String channel, Object msg) {
+                public void onMessage(CharSequence channel, Object msg) {
                     if (msg instanceof LocalCachedMapDisable) {
                         LocalCachedMapDisable m = (LocalCachedMapDisable) msg;
                         String requestId = m.getRequestId();

@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.Iterator;
 import java.util.Set;
 
 import org.reactivestreams.Publisher;
@@ -27,7 +26,7 @@ import org.reactivestreams.Publisher;
  *
  * @param <V> value
  */
-public interface RSetReactive<V> extends RCollectionReactive<V> {
+public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReactive<Set<V>> {
 
     /**
      * Returns an iterator over elements in this set.

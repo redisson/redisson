@@ -20,23 +20,22 @@ import org.redisson.api.RObject;
 import org.redisson.api.RSet;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RemoveOperation extends TransactionalOperation {
+public class RemoveOperation extends SetOperation {
 
     private Object value;
     
-    public RemoveOperation(RObject set, Object value) {
-        this(set.getName(), set.getCodec(), value);
+    public RemoveOperation(RObject set, Object value, String transactionId) {
+        this(set.getName(), set.getCodec(), value, transactionId);
     }
     
-    public RemoveOperation(String name, Codec codec, Object value) {
-        super(name, codec);
+    public RemoveOperation(String name, Codec codec, Object value, String transactionId) {
+        super(name, codec, transactionId);
         this.value = value;
     }
 
@@ -44,13 +43,13 @@ public class RemoveOperation extends TransactionalOperation {
     public void commit(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
         set.removeAsync(value);
-        set.getLock(value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync();
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSet<Object> set = new RedissonSet<Object>(codec, commandExecutor, name, null);
-        set.getLock(value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync();
     }
 
     public Object getValue() {

@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+import org.redisson.client.ChannelName;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -23,15 +25,16 @@ package org.redisson.client.protocol.pubsub;
 public class PubSubStatusMessage implements Message {
 
     private final PubSubType type;
-    private final String channel;
+    private final ChannelName channel;
 
-    public PubSubStatusMessage(PubSubType type, String channel) {
+    public PubSubStatusMessage(PubSubType type, ChannelName channel) {
         super();
         this.type = type;
         this.channel = channel;
     }
 
-    public String getChannel() {
+    @Override
+    public ChannelName getChannel() {
         return channel;
     }
 

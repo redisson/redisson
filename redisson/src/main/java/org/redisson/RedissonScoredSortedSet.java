@@ -393,12 +393,17 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     private ListScanResult<Object> scanIterator(RedisClient client, long startPos, String pattern, int count) {
+        RFuture<ListScanResult<Object>> f = scanIteratorAsync(client, startPos, pattern, count);
+        return get(f);
+    }
+    
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count) {
         if (pattern == null) {
             RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos, "COUNT", count);
-            return get(f);
+            return f;
         }
         RFuture<ListScanResult<Object>> f = commandExecutor.readAsync(client, getName(), codec, RedisCommands.ZSCAN, getName(), startPos, "MATCH", pattern, "COUNT", count);
-        return get(f);
+        return f;
     }
 
     @Override

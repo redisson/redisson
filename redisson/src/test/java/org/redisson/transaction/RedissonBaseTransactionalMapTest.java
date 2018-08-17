@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.BaseTest;
 import org.redisson.api.RMap;
@@ -19,6 +20,30 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
     protected abstract RMap<String, String> getMap();
     
     protected abstract RMap<String, String> getTransactionalMap(RTransaction transaction);
+    
+    @Test(expected = TransactionTimeoutException.class)
+    public void testParallel(){
+        RMap<Integer, String> m = redisson.getMap("test");
+        m.put(1, "test");
+        
+        RTransaction transaction1 = redisson.createTransaction(TransactionOptions.defaults().timeout(10, TimeUnit.SECONDS));
+        RMap<Integer, String> map1 = transaction1.getMap("put_test");
+        map1.remove(1);
+
+        RTransaction transaction2 = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<Integer, String> map2 = transaction2.getMap("put_test");
+        map2.put(1,"aryan");
+        
+        try {
+            transaction2.commit();
+            Assert.fail();
+        } catch (TransactionTimeoutException e) {
+            // skip
+        }
+        
+        transaction1.commit();
+        assertThat(m.size()).isZero();
+    }
     
     @Test
     public void testFastPut() throws InterruptedException {

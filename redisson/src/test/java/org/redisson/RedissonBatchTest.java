@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +26,7 @@ import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RBatch;
+import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 import org.redisson.api.RMapAsync;
@@ -81,14 +83,27 @@ public class RedissonBatchTest extends BaseTest {
     }
 
     @Test
-    public void testConvertor() {
+    public void testConvertor() throws InterruptedException, ExecutionException {
         RBatch batch = redisson.createBatch(batchOptions);
 
-        batch.getScoredSortedSet("myZKey").addScoreAsync("abc", 1d);
+        RFuture<Double> f1 = batch.getScoredSortedSet("myZKey").addScoreAsync("abc", 1d);
+        RFuture<Void> f2 = batch.getBucket("test").setAsync("1");
         batch.execute();
+        assertThat(f1.get()).isEqualTo(1d);
+        assertThat(f2.get()).isNull();
         
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("myZKey");
         assertThat(set.getScore("abc")).isEqualTo(1d);
+        RBucket<String> bucket = redisson.getBucket("test");
+        assertThat(bucket.get()).isEqualTo("1");
+        
+        RBatch batch2 = redisson.createBatch(batchOptions);
+        RFuture<Double> b2f1 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
+        RFuture<Double> b2f2 = batch2.getScoredSortedSet("myZKey2").addScoreAsync("abc", 1d);
+        batch2.execute();
+        
+        assertThat(b2f1.get()).isEqualTo(1d);
+        assertThat(b2f2.get()).isEqualTo(2d);
     }
     
     @Test

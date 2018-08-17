@@ -15,6 +15,11 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public enum PubSubType {
 
     SUBSCRIBE, PSUBSCRIBE, PUNSUBSCRIBE, UNSUBSCRIBE

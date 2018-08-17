@@ -25,6 +25,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,10 @@ public class ClientConnectionsEntry {
             connectionManager.getConnectionWatcher().add(subscribePoolMinSize, subscribePoolMaxSize, freeSubscribeConnections, freeSubscribeConnectionsCounter);
         }
         connectionManager.getConnectionWatcher().add(poolMinSize, poolMaxSize, freeConnections, freeConnectionsCounter);
+    }
+    
+    public boolean isMasterForRead() {
+        return getFreezeReason() == FreezeReason.SYSTEM && getConfig().getReadMode() == ReadMode.MASTER_SLAVE;
     }
     
     public void setNodeType(NodeType nodeType) {

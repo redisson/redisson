@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol.pubsub;
 
+import org.redisson.client.ChannelName;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -22,6 +24,6 @@ package org.redisson.client.protocol.pubsub;
  */
 public interface Message {
 
-    String getChannel();
+    ChannelName getChannel();
     
 }

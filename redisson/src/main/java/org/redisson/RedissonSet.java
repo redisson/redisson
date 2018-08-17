@@ -553,7 +553,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
     }
 
-    private String getLockName(Object value) {
+    public String getLockName(Object value) {
         ByteBuf state = encode(value);
         try {
             return suffixName(getName(value), Hash.hash128toBase64(state) + ":lock");

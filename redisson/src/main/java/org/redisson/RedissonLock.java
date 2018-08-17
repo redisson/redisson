@@ -28,8 +28,11 @@ import java.util.concurrent.locks.Condition;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -81,7 +84,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return prefixName("redisson_lock__channel", getName());
     }
 
-    String getLockName(long threadId) {
+    protected String getLockName(long threadId) {
         return id + ":" + threadId;
     }
 
@@ -389,8 +392,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     @Override
-    public void forceUnlock() {
-        get(forceUnlockAsync());
+    public boolean forceUnlock() {
+        return get(forceUnlockAsync());
     }
 
     @Override
@@ -422,14 +425,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(future);
     }
 
+    private static final RedisCommand<Integer> HGET = new RedisCommand<Integer>("HGET", ValueType.MAP_VALUE, new IntegerReplayConvertor(0));
+    
+    public RFuture<Integer> getHoldCountAsync() {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, HGET, getName(), getLockName(Thread.currentThread().getId()));
+    }
+    
     @Override
     public int getHoldCount() {
-        RFuture<Long> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HGET, getName(), getLockName(Thread.currentThread().getId()));
-        Long res = get(future);
-        if (res == null) {
-            return 0;
-        }
-        return res.intValue();
+        return get(getHoldCountAsync());
     }
 
     @Override

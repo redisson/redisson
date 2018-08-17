@@ -290,6 +290,15 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isZero();
     }
 
+    @Test
+    public void testPerformance() throws InterruptedException {
+        RExecutorService e = redisson.getExecutorService("test");
+        for (int i = 0; i < 5000; i++) {
+            e.execute(new RunnableTask());        
+        }
+        e.shutdown();
+        assertThat(e.awaitTermination(900, TimeUnit.MILLISECONDS)).isTrue();
+    }
     
     @Test
     public void testShutdown() throws InterruptedException {

@@ -18,6 +18,7 @@ package org.redisson.cluster;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -61,6 +62,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.resolver.AddressResolver;
+import io.netty.util.CharsetUtil;
 import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -672,6 +674,31 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return configEndpointHostName;
     }
 
+    private int indexOf(byte[] array, byte element) {
+        for (int i = 0; i < array.length; ++i) {
+            if (array[i] == element) {
+                return i;
+            }
+        }
+        return -1;
+    }  
+    
+    @Override
+    public int calcSlot(byte[] key) {
+        if (key == null) {
+            return 0;
+        }
+
+        int start = indexOf(key, (byte)'{');
+        if (start != -1) {
+            int end = indexOf(key, (byte)'}');
+            key = Arrays.copyOfRange(key, start+1, end);
+        }
+        
+        int result = CRC16.crc16(key) % MAX_SLOT;
+        return result;
+    }
+    
     @Override
     public int calcSlot(String key) {
         if (key == null) {

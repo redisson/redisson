@@ -34,12 +34,16 @@ import reactor.fn.Supplier;
  */
 abstract class RedissonExpirableReactive extends RedissonObjectReactive implements RExpirableReactive {
 
+    protected final RExpirableAsync instance;
+    
     RedissonExpirableReactive(CommandReactiveExecutor connectionManager, String name, RExpirableAsync instance) {
         super(connectionManager, name, instance);
+        this.instance = instance;
     }
 
     RedissonExpirableReactive(Codec codec, CommandReactiveExecutor connectionManager, String name, RExpirableAsync instance) {
         super(codec, connectionManager, name, instance);
+        this.instance = instance;
     }
 
     @Override

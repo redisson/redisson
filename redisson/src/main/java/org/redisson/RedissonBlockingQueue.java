@@ -41,11 +41,11 @@ import org.redisson.connection.decoder.ListDrainToDecoder;
  */
 public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlockingQueue<V> {
 
-    protected RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonBlockingQueue(CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
     }
 
-    protected RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
+    public RedissonBlockingQueue(Codec codec, CommandAsyncExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
     }
 

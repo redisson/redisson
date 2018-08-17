@@ -45,6 +45,7 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
 import org.redisson.misc.URIBuilder;
+import org.redisson.pubsub.PubSubConnectionEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -343,7 +344,7 @@ public class MasterSlaveEntry {
     }
     
     private RFuture<Void> addSlave(URI address, final boolean freezed, final NodeType nodeType) {
-        RedisClient client = connectionManager.createClient(NodeType.SLAVE, address, sslHostname);
+        RedisClient client = connectionManager.createClient(nodeType, address, sslHostname);
         return addSlave(client, freezed, nodeType);
     }
 

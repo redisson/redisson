@@ -127,6 +127,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return providerCache.get(resolverClass);
     }
 
+    public <T, K> T createLiveObject(Class<T> entityClass, K id) {
+        try {
+            return instantiateLiveObject(getProxyClass(entityClass), id);
+        } catch (Exception ex) {
+            unregisterClass(entityClass);
+            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
+        }
+    }
+    
     @Override
     public <T, K> T get(Class<T> entityClass, K id) {
         try {
@@ -519,7 +528,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public void registerClass(Class cls) {
+    public void registerClass(Class<?> cls) {
         if (!classCache.containsKey(cls)) {
             validateClass(cls);
             registerClassInternal(cls);
@@ -527,12 +536,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public void unregisterClass(Class cls) {
+    public void unregisterClass(Class<?> cls) {
         classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
     }
 
     @Override
-    public boolean isClassRegistered(Class cls) {
+    public boolean isClassRegistered(Class<?> cls) {
         return classCache.containsKey(cls) || classCache.containsValue(cls);
     }
 
@@ -543,7 +552,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .copy();
     }
 
-    private String getRIdFieldName(Class cls) {
+    private String getRIdFieldName(Class<?> cls) {
         return Introspectior.getFieldsWithAnnotation(cls, RId.class)
                 .getOnly()
                 .getName();
@@ -690,7 +699,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .intercept(MethodDelegation.to(
                                 new AccessorInterceptor(redisson, objectBuilder)))
                 
-                .make().load(getClass().getClassLoader(),
+                .make().load(entityClass.getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
         classCache.putIfAbsent(entityClass, proxied);
