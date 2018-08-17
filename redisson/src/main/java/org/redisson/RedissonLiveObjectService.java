@@ -528,7 +528,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public void registerClass(Class cls) {
+    public void registerClass(Class<?> cls) {
         if (!classCache.containsKey(cls)) {
             validateClass(cls);
             registerClassInternal(cls);
@@ -536,12 +536,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public void unregisterClass(Class cls) {
+    public void unregisterClass(Class<?> cls) {
         classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
     }
 
     @Override
-    public boolean isClassRegistered(Class cls) {
+    public boolean isClassRegistered(Class<?> cls) {
         return classCache.containsKey(cls) || classCache.containsValue(cls);
     }
 
@@ -552,7 +552,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .copy();
     }
 
-    private String getRIdFieldName(Class cls) {
+    private String getRIdFieldName(Class<?> cls) {
         return Introspectior.getFieldsWithAnnotation(cls, RId.class)
                 .getOnly()
                 .getName();
