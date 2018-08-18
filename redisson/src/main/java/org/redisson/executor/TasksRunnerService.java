@@ -36,6 +36,8 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.misc.Hash;
+import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
@@ -55,7 +57,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private final Map<String, Codec> codecs = new LRUCacheMap<String, Codec>(500, 0, 0);
+    private final Map<HashValue, Codec> codecs = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
     
     private final Codec codec;
     private final String name;
@@ -248,14 +250,16 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @SuppressWarnings("unchecked")
     private <T> T decode(String className, byte[] classBody, ByteBuf buf) throws IOException {
+        ByteBuf classBodyBuf = ByteBufAllocator.DEFAULT.buffer(classBody.length);
         try {
-            Codec classLoaderCodec = codecs.get(className);
+            HashValue hash = new HashValue(Hash.hash128(classBodyBuf));
+            Codec classLoaderCodec = codecs.get(hash);
             if (classLoaderCodec == null) {
                 RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
                 cl.loadClass(className, classBody);
                 
                 classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
-                codecs.put(className, classLoaderCodec);
+                codecs.put(hash, classLoaderCodec);
             }
             
             T task = (T) classLoaderCodec.getValueDecoder().decode(buf, null);
@@ -263,8 +267,9 @@ public class TasksRunnerService implements RemoteExecutorService {
             return task;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
+        } finally {
+            classBodyBuf.release();
         }
-
     }
 
     @Override
