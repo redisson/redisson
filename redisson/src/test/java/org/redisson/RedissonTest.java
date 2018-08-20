@@ -355,7 +355,7 @@ public class RedissonTest {
         
         Thread.sleep(15000);
         
-        latch.await();
+        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
         int errors = 0;
         int success = 0;
@@ -388,7 +388,7 @@ public class RedissonTest {
         slave2.stop();
     }
 
-//    @Test
+    @Test
     public void testFailoverInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
         RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
@@ -441,38 +441,37 @@ public class RedissonTest {
         t.start();
         t.join(1000);
 
-        Set<InetSocketAddress> addresses = new HashSet<>();
+        Set<InetSocketAddress> oldMasters = new HashSet<>();
         Collection<ClusterNode> masterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
         for (ClusterNode clusterNode : masterNodes) {
-            addresses.add(clusterNode.getAddr());
+            oldMasters.add(clusterNode.getAddr());
         }
         
         master.stop();
         System.out.println("master " + master.getRedisServerAddressAndPort() + " has been stopped!");
         
-        Thread.sleep(TimeUnit.SECONDS.toMillis(80));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(90));
         
         RedisProcess newMaster = null;
         Collection<ClusterNode> newMasterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
         for (ClusterNode clusterNode : newMasterNodes) {
-            if (!addresses.contains(clusterNode.getAddr())) {
+            if (!oldMasters.contains(clusterNode.getAddr())) {
                 newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
                 break;
             }
-            System.out.println("new-master: " + clusterNode.getAddr());
         }
-                
-        Thread.sleep(50000);
+        
+        assertThat(newMaster).isNotNull();
+        
+        Thread.sleep(30000);
         
         newMaster.stop();
 
         System.out.println("new master " + newMaster.getRedisServerAddressAndPort() + " has been stopped!");
         
-        Thread.sleep(TimeUnit.SECONDS.toMillis(70));
-        
-        Thread.sleep(60000);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(80));
 
-        latch.await();
+        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
 
         int errors = 0;
         int success = 0;
