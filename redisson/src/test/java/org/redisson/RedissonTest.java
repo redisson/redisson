@@ -52,6 +52,8 @@ import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
+import org.redisson.config.ReadMode;
+import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
@@ -386,6 +388,73 @@ public class RedissonTest {
         master.stop();
         slave1.stop();
         slave2.stop();
+    }
+    
+    @Test
+    public void testFailoverWithoutErrorsInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .setRetryAttempts(30)
+        .setReadMode(ReadMode.MASTER)
+        .setSubscriptionMode(SubscriptionMode.MASTER)
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+       
+        RedisProcess master = process.getNodes().stream().filter(x -> x.getRedisServerPort() == master1.getPort()).findFirst().get();
+        
+        List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
+
+        Set<InetSocketAddress> oldMasters = new HashSet<>();
+        Collection<ClusterNode> masterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
+        for (ClusterNode clusterNode : masterNodes) {
+            oldMasters.add(clusterNode.getAddr());
+        }
+        
+        master.stop();
+
+        for (int j = 0; j < 2000; j++) {
+            RFuture<?> f2 = redisson.getBucket("" + j).setAsync("");
+            futures.add(f2);
+        }
+        
+        System.out.println("master " + master.getRedisServerAddressAndPort() + " has been stopped!");
+        
+        Thread.sleep(TimeUnit.SECONDS.toMillis(20));
+        
+        RedisProcess newMaster = null;
+        Collection<ClusterNode> newMasterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
+        for (ClusterNode clusterNode : newMasterNodes) {
+            if (!oldMasters.contains(clusterNode.getAddr())) {
+                newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
+                break;
+            }
+        }
+        
+        assertThat(newMaster).isNotNull();
+        
+        for (RFuture<?> rFuture : futures) {
+            rFuture.awaitUninterruptibly();
+            if (!rFuture.isSuccess()) {
+                Assert.fail();
+            }
+        }
+        
+        redisson.shutdown();
+        process.shutdown();
     }
 
     @Test
