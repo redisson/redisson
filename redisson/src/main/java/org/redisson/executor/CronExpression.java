@@ -111,9 +111,9 @@ public final class CronExpression implements Serializable, Cloneable {
     public static final int MAX_YEAR = Calendar.getInstance().get(Calendar.YEAR) + 100;
 
     /**
-     * Constructs a new <CODE>CronExpression</CODE> based on the specified 
+     * Constructs a new <CODE>CronExpression</CODE> based on the specified
      * parameter.
-     * 
+     *
      * @param cronExpression String representation of the cron expression the
      *                       new object should represent
      */
@@ -121,9 +121,9 @@ public final class CronExpression implements Serializable, Cloneable {
         if (cronExpression == null) {
             throw new IllegalArgumentException("cronExpression cannot be null");
         }
-        
+
         this.cronExpression = cronExpression.toUpperCase(Locale.US);
-        
+
         try {
             buildExpression(this.cronExpression);
         } catch (ParseException e) {

@@ -37,7 +37,7 @@ public interface RemoteExecutorServiceAsync {
     RFuture<Void> scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period, String executorId, String requestId);
     
     RFuture<Void> scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay, String executorId, String requestId);
-    
-    RFuture<Void> schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId);
+
+    RFuture<Void> schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String timezone, String executorId, String requestId);
     
 }
