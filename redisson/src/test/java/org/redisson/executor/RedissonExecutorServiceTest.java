@@ -297,7 +297,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
             e.execute(new RunnableTask());        
         }
         e.shutdown();
-        assertThat(e.awaitTermination(900, TimeUnit.MILLISECONDS)).isTrue();
+        assertThat(e.awaitTermination(1000, TimeUnit.MILLISECONDS)).isTrue();
     }
     
     @Test
