@@ -32,21 +32,24 @@
 
 package org.redisson.executor;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.io.Serializable;
 import java.text.ParseException;
-import java.util.*;
-
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.StringTokenizer;
+import java.util.TimeZone;
+import java.util.TreeSet;
 
 /**
  * @author Sharada Jambula, James House
  * @author Contributions from Mads Henderson
  * @author Refactoring from CronTrigger to CronExpression by Aaron Craven
  */
-@JsonAutoDetect(creatorVisibility = ANY, fieldVisibility = ANY)
 public final class CronExpression implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 12423409423L;
@@ -114,7 +117,7 @@ public final class CronExpression implements Serializable, Cloneable {
      * @param cronExpression String representation of the cron expression the
      *                       new object should represent
      */
-    public CronExpression(@JsonProperty("cronExpression") String cronExpression) {
+    public CronExpression(String cronExpression) {
         if (cronExpression == null) {
             throw new IllegalArgumentException("cronExpression cannot be null");
         }
