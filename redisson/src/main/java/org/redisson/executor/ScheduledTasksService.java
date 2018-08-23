@@ -26,6 +26,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
@@ -51,19 +52,8 @@ public class ScheduledTasksService extends TasksService {
     
     @Override
     protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
-        int requestIndex = 0;
-        if ("scheduleCallable".equals(request.getMethodName())
-                || "scheduleRunnable".equals(request.getMethodName())) {
-            requestIndex = 4;
-        }
-        if ("scheduleAtFixedRate".equals(request.getMethodName())
-                || "scheduleWithFixedDelay".equals(request.getMethodName())
-                    || "schedule".equals(request.getMethodName())) {
-            requestIndex = 6;
-        }
-
-        request.getArgs()[requestIndex] = request.getId();
-        Long startTime = (Long)request.getArgs()[3];
+        ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
+        params.setRequestId(request.getId());
         
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
@@ -91,7 +81,7 @@ public class ScheduledTasksService extends TasksService {
                 + "end;"
                 + "return 0;", 
                 Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName, tasksRetryIntervalName),
-                startTime, request.getId(), encode(request), System.currentTimeMillis(), tasksRetryInterval);
+                params.getStartTime(), request.getId(), encode(request), System.currentTimeMillis(), tasksRetryInterval);
     }
     
     @Override

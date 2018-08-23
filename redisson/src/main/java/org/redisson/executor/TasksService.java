@@ -30,6 +30,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RemoteServiceCancelRequest;
@@ -125,7 +126,9 @@ public class TasksService extends BaseRemoteService {
     }
     
     protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
-        request.getArgs()[3] = request.getId();
+        TaskParameters params = (TaskParameters) request.getArgs()[0];
+        params.setRequestId(request.getId());
+
         long retryStartTime = 0;
         if (tasksRetryInterval > 0) {
             retryStartTime = System.currentTimeMillis() + tasksRetryInterval;

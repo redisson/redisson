@@ -15,16 +15,11 @@
  */
 package org.redisson.executor;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -42,19 +37,23 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
+import org.redisson.executor.params.ScheduledAtFixedRateParameters;
+import org.redisson.executor.params.ScheduledCronExpressionParameters;
+import org.redisson.executor.params.ScheduledParameters;
+import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
+import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.TimeZone;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Executor service runs Callable and Runnable tasks.
@@ -119,11 +118,12 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     @Override
-    public void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period, String executorId, String requestId) {
-        long newStartTime = System.currentTimeMillis() + period;
-        RFuture<Void> future = asyncScheduledServiceAtFixed(executorId, requestId).scheduleAtFixedRate(className, classBody, state, newStartTime, period, executorId, requestId);
+    public void scheduleAtFixedRate(ScheduledAtFixedRateParameters params) {
+        long newStartTime = System.currentTimeMillis() + params.getPeriod();
+        params.setStartTime(newStartTime);
+        RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
         try {
-            executeRunnable(className, classBody, state, requestId);
+            executeRunnable(params);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             future.cancel(true);
@@ -132,17 +132,18 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
     
     @Override
-    public void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String timezone, String executorId, String requestId) {
-        CronExpression expression = new CronExpression(cronExpression);
-        expression.setTimeZone(TimeZone.getTimeZone(timezone));
+    public void schedule(ScheduledCronExpressionParameters params) {
+        CronExpression expression = new CronExpression(params.getCronExpression());
+        expression.setTimeZone(TimeZone.getTimeZone(params.getTimezone()));
         Date nextStartDate = expression.getNextValidTimeAfter(new Date());
         RFuture<Void> future = null;
         if (nextStartDate != null) {
-            RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(executorId, requestId);
-            future = service.schedule(className, classBody, state, nextStartDate.getTime(), cronExpression, timezone, executorId, requestId);
+            RemoteExecutorServiceAsync service = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId());
+            params.setStartTime(nextStartDate.getTime());
+            future = service.schedule(params);
         }
         try {
-            executeRunnable(className, classBody, state, requestId);
+            executeRunnable(params);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             if (future != null) {
@@ -173,31 +174,32 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
     
     @Override
-    public void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay, String executorId, String requestId) {
-        executeRunnable(className, classBody, state, requestId);
-        long newStartTime = System.currentTimeMillis() + delay;
-        asyncScheduledServiceAtFixed(executorId, requestId).scheduleWithFixedDelay(className, classBody, state, newStartTime, delay, executorId, requestId);
+    public void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params) {
+        executeRunnable(params);
+        long newStartTime = System.currentTimeMillis() + params.getDelay();
+        params.setStartTime(newStartTime);
+        asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleWithFixedDelay(params);
     }
     
     @Override
-    public Object scheduleCallable(String className, byte[] classBody, byte[] state, long startTime, String requestId) {
-        return executeCallable(className, classBody, state, requestId);
+    public Object scheduleCallable(ScheduledParameters params) {
+        return executeCallable(params);
     }
     
     @Override
-    public void scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime, String requestId) {
-        executeRunnable(className, classBody, state, requestId);
+    public void scheduleRunnable(ScheduledParameters params) {
+        executeRunnable(params);
     }
     
     @Override
-    public Object executeCallable(String className, byte[] classBody, byte[] state, String requestId) {
-        renewRetryTime(requestId);
+    public Object executeCallable(TaskParameters params) {
+        renewRetryTime(params.getRequestId());
         
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(params.getState().length);
         try {
-            buf.writeBytes(state);
+            buf.writeBytes(params.getState());
             
-            Callable<?> callable = decode(className, classBody, buf);
+            Callable<?> callable = decode(params.getClassName(), params.getClassBody(), buf);
             return callable.call();
         } catch (RedissonShutdownException e) {
             return null;
@@ -208,7 +210,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             throw new IllegalArgumentException(e);
         } finally {
             buf.release();
-            finish(requestId);
+            finish(params.getRequestId());
         }
     }
 
@@ -282,16 +284,16 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     @Override
-    public void executeRunnable(String className, byte[] classBody, byte[] state, String requestId) {
-        if (requestId != null && requestId.startsWith("00")) {
-            renewRetryTime(requestId);
+    public void executeRunnable(TaskParameters params) {
+        if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
+            renewRetryTime(params.getRequestId());
         }
 
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(state.length);
+        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer(params.getState().length);
         try {
-            buf.writeBytes(state);
+            buf.writeBytes(params.getState());
             
-            Runnable runnable = decode(className, classBody, buf);
+            Runnable runnable = decode(params.getClassName(), params.getClassBody(), buf);
             runnable.run();
         } catch (RedissonShutdownException e) {
             // skip
@@ -301,7 +303,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             throw new IllegalArgumentException(e);
         } finally {
             buf.release();
-            finish(requestId);
+            finish(params.getRequestId());
         }
     }
 
