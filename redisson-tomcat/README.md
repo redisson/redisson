@@ -13,7 +13,7 @@ Current implementation differs from any other Redis based Tomcat Session Manager
 Usage
 ===
 
-**1** Add `RedissonSessionManager` into `context.xml`
+**1** Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
@@ -22,10 +22,33 @@ Usage
    `readMode` - read attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events. Default mode.
    * `REDIS` - stores attributes into Redis only.  
+   <br/>
 
    `updateMode` - attributes update mode. Two modes are available:
    * `DEFAULT` - session attributes are stored into Redis only through setAttribute method. Default mode.
    * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
+   <br/>
+
+   `sharedSession` - share single session across multiple deployed applications. Works only in `readMode=REDIS`.
+   * `false` - don't share single session. Default mode.  
+   * `true` - share single session. <i>This option available only in [Redisson PRO](http://redisson.pro) edition.</i>  
+   
+   Requires to set `crossContext` setting in `tomcat/conf/context.xml`
+   ```xml
+   <Context crossContext="true">
+   ...   
+   </Context>
+   ```	    
+   Cookie path should be the same for all applications and defined in `web.xml`
+   ```xml
+   <session-config>
+      <cookie-config>
+         <path>/</path>
+      </cookie-config>
+      ...
+   </session-config>
+   ```
+   <br/>
 
    `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 

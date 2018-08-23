@@ -53,7 +53,6 @@ import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -71,6 +70,11 @@ import org.redisson.executor.ScheduledTasksService;
 import org.redisson.executor.TasksBatchService;
 import org.redisson.executor.TasksRunnerService;
 import org.redisson.executor.TasksService;
+import org.redisson.executor.params.ScheduledAtFixedRateParameters;
+import org.redisson.executor.params.ScheduledCronExpressionParameters;
+import org.redisson.executor.params.ScheduledParameters;
+import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
+import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
@@ -316,7 +320,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
-        RemotePromise<Void> promise = (RemotePromise<Void>)asyncServiceWithoutResult.executeRunnable(task.getClass().getName(), classBody, state, null);
+        RemotePromise<Void> promise = (RemotePromise<Void>)asyncServiceWithoutResult.executeRunnable(new TaskParameters(task.getClass().getName(), classBody, state));
         syncExecute(promise);
     }
     
@@ -332,7 +336,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             check(task);
             byte[] classBody = getClassBody(task);
             byte[] state = encode(task);
-            asyncServiceWithoutResult.executeRunnable(task.getClass().getName(), classBody, state, null);
+            asyncServiceWithoutResult.executeRunnable(new TaskParameters(task.getClass().getName(), classBody, state));
         }
         
         List<Boolean> result = (List<Boolean>) executorRemoteService.executeAdd();
@@ -505,7 +509,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
-        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(task.getClass().getName(), classBody, state, null);
+        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(new TaskParameters(task.getClass().getName(), classBody, state));
         addListener(result);
         return createFuture(result);
     }
@@ -523,7 +527,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             check(task);
             byte[] classBody = getClassBody(task);
             byte[] state = encode(task);
-            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(task.getClass().getName(), classBody, state, null);
+            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(new TaskParameters(task.getClass().getName(), classBody, state));
             RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise);
             result.add(executorFuture);
         }
@@ -549,7 +553,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             check(task);
             byte[] classBody = getClassBody(task);
             byte[] state = encode(task);
-            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(task.getClass().getName(), classBody, state, null);
+            RemotePromise<?> promise = (RemotePromise<?>)asyncService.executeCallable(new TaskParameters(task.getClass().getName(), classBody, state));
             RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise);
             result.add(executorFuture);
         }
@@ -651,7 +655,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             check(task);
             byte[] classBody = getClassBody(task);
             byte[] state = encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(task.getClass().getName(), classBody, state, null);
+            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(new TaskParameters(task.getClass().getName(), classBody, state));
             RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise);
             result.add(executorFuture);
         }
@@ -677,7 +681,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             check(task);
             byte[] classBody = getClassBody(task);
             byte[] state = encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(task.getClass().getName(), classBody, state, null);
+            RemotePromise<Void> promise = (RemotePromise<Void>)asyncService.executeRunnable(new TaskParameters(task.getClass().getName(), classBody, state));
             RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise);
             result.add(executorFuture);
         }
@@ -721,7 +725,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         check(task);
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(task.getClass().getName(), classBody, state, null);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(new TaskParameters(task.getClass().getName(), classBody, state));
         addListener(result);
         return createFuture(result);
     }
@@ -790,7 +794,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledService.scheduleRunnable(task.getClass().getName(), classBody, state, startTime, null);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledService.scheduleRunnable(new ScheduledParameters(task.getClass().getName(), classBody, state, startTime));
         addListener(result);
         
         return createFuture(result, startTime);
@@ -811,7 +815,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        RemotePromise<V> result = (RemotePromise<V>) asyncScheduledService.scheduleCallable(task.getClass().getName(), classBody, state, startTime, null);
+        RemotePromise<V> result = (RemotePromise<V>) asyncScheduledService.scheduleCallable(new ScheduledParameters(task.getClass().getName(), classBody, state, startTime));
         addListener(result);
         return createFuture(result, startTime);
     }
@@ -831,7 +835,14 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(initialDelay);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.scheduleAtFixedRate(task.getClass().getName(), classBody, state, startTime, unit.toMillis(period), executorId, null);
+        ScheduledAtFixedRateParameters params = new ScheduledAtFixedRateParameters();
+        params.setClassName(task.getClass().getName());
+        params.setClassBody(classBody);
+        params.setState(state);
+        params.setStartTime(startTime);
+        params.setPeriod(unit.toMillis(period));
+        params.setExecutorId(executorId);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.scheduleAtFixedRate(params);
         addListener(result);
         return createFuture(result, startTime);
     }
@@ -855,7 +866,16 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new IllegalArgumentException("Wrong cron expression! Unable to calculate start date");
         }
         long startTime = startDate.getTime();
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(task.getClass().getName(), classBody, state, startTime, cronSchedule.getExpression().getCronExpression(), executorId, null);
+        
+        ScheduledCronExpressionParameters params = new ScheduledCronExpressionParameters();
+        params.setClassName(task.getClass().getName());
+        params.setClassBody(classBody);
+        params.setState(state);
+        params.setStartTime(startTime);
+        params.setCronExpression(cronSchedule.getExpression().getCronExpression());
+        params.setTimezone(cronSchedule.getExpression().getTimeZone().getID());
+        params.setExecutorId(executorId);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.schedule(params);
         addListener(result);
         RedissonScheduledFuture<Void> f = new RedissonScheduledFuture<Void>(result, startTime) {
             public long getDelay(TimeUnit unit) {
@@ -881,7 +901,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         byte[] classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(initialDelay);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.scheduleWithFixedDelay(task.getClass().getName(), classBody, state, startTime, unit.toMillis(delay), executorId, null);
+        
+        ScheduledWithFixedDelayParameters params = new ScheduledWithFixedDelayParameters();
+        params.setClassName(task.getClass().getName());
+        params.setClassBody(classBody);
+        params.setState(state);
+        params.setStartTime(startTime);
+        params.setDelay(unit.toMillis(delay));
+        params.setExecutorId(executorId);
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledServiceAtFixed.scheduleWithFixedDelay(params);
         addListener(result);
         return createFuture(result, startTime);
     }

@@ -242,7 +242,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
 
         if (addr != null) {
-            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getRetryInterval() * cfg.getRetryAttempts(), sslHostname);
+            client = createClient(NodeType.MASTER, addr, cfg.getConnectTimeout(), cfg.getTimeout(), sslHostname);
         }
         final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
         RFuture<RedisConnection> future = client.connectAsync();

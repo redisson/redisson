@@ -15,6 +15,12 @@
  */
 package org.redisson.executor;
 
+import org.redisson.executor.params.ScheduledAtFixedRateParameters;
+import org.redisson.executor.params.ScheduledCronExpressionParameters;
+import org.redisson.executor.params.ScheduledParameters;
+import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
+import org.redisson.executor.params.TaskParameters;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -22,18 +28,18 @@ package org.redisson.executor;
  */
 public interface RemoteExecutorService {
 
-    Object executeCallable(String className, byte[] classBody, byte[] state, String requestId);
+    Object executeCallable(TaskParameters params);
  
-    void executeRunnable(String className, byte[] classBody, byte[] state, String requestId);
+    void executeRunnable(TaskParameters params);
     
-    Object scheduleCallable(String className, byte[] classBody, byte[] state, long startTime, String requestId);
+    Object scheduleCallable(ScheduledParameters params);
     
-    void scheduleRunnable(String className, byte[] classBody, byte[] state, long startTime, String requestId);
+    void scheduleRunnable(ScheduledParameters params);
     
-    void scheduleAtFixedRate(String className, byte[] classBody, byte[] state, long startTime, long period, String executorId, String requestId);
+    void scheduleAtFixedRate(ScheduledAtFixedRateParameters params);
     
-    void scheduleWithFixedDelay(String className, byte[] classBody, byte[] state, long startTime, long delay, String executorId, String requestId);
-    
-    void schedule(String className, byte[] classBody, byte[] state, long startTime, String cronExpression, String executorId, String requestId);
+    void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params);
+
+    void schedule(ScheduledCronExpressionParameters params);
     
 }
