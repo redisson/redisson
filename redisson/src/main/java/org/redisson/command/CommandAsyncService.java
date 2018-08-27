@@ -582,7 +582,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         details.setException(new RedisTimeoutException("Unable to get connection! "
                                     + "Node source: " + source
                                     + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
-                                    + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
+                                    + " after " + details.getAttempt() + " retry attempts"));
                     }
                     connectionManager.getShutdownLatch().release();
                 } else {
