@@ -19,13 +19,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class CompositeIterable<T> implements Iterable<T>, Iterator<T> {
+public class CompositeIterable<T> implements Iterable<T> {
 
     private List<Iterable<T>> iterablesList;
     private Iterable<T>[] iterables;
-
-    private Iterator<Iterator<T>> listIterator;
-    private Iterator<T> currentIterator;
 
     public CompositeIterable(List<Iterable<T>> iterables) {
         this.iterablesList = iterables;
@@ -52,35 +49,7 @@ public class CompositeIterable<T> implements Iterable<T>, Iterator<T> {
                 iterators.add(iterable.iterator());
             }
         }
-        listIterator = iterators.iterator();
-        currentIterator = null;
-        return this;
+        Iterator<Iterator<T>>  listIterator = iterators.iterator();
+        return new CompositeIterator<T>(listIterator);
     }
-
-    @Override
-    public boolean hasNext() {
-        if (currentIterator == null || !currentIterator.hasNext()) {
-            while (listIterator.hasNext()) {
-                Iterator<T> iterator = listIterator.next();
-                if (iterator.hasNext()) {
-                    currentIterator = iterator;
-                    return true;
-                }
-            }
-            return false;
-        }
-        return currentIterator.hasNext();
-    }
-
-    @Override
-    public T next() {
-        hasNext();
-        return currentIterator.next();
-    }
-
-    @Override
-    public void remove() {
-        currentIterator.remove();
-    }
-
 }

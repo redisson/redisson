@@ -29,9 +29,11 @@ Usage
    * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
    <br/>
 
-   `sharedSession` - share single session across multiple deployed applications. Works only in `readMode=REDIS`.
+   `sharedSession` - share session across multiple deployed applications. Appropriate for migration EAR based application with multiple WARs. Works only in `readMode=REDIS`.  
+   <i>This option available only in [Redisson PRO](http://redisson.pro) edition.</i>  
+   
    * `false` - don't share single session. Default mode.  
-   * `true` - share single session. <i>This option available only in [Redisson PRO](http://redisson.pro) edition.</i>  
+   * `true` - share single session.
    
    Requires to set `crossContext` setting in `tomcat/conf/context.xml`
    ```xml
