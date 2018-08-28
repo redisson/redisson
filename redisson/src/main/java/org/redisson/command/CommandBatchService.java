@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
@@ -55,9 +54,7 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.misc.CountableListener;
-import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 
@@ -176,14 +173,6 @@ public class CommandBatchService extends CommandAsyncService {
             Object[] batchParams = null;
             if (!isRedisBasedQueue()) {
                 batchParams = params;
-                if (isRedissonReferenceSupportEnabled()) {
-                    for (int i = 0; i < batchParams.length; i++) {
-                        RedissonReference reference = RedissonObjectFactory.toReference(connectionManager.getCfg(), batchParams[i]);
-                        if (reference != null) {
-                            batchParams[i] = reference;
-                        }
-                    }
-                }
             }
             BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, batchParams, index.incrementAndGet());
             entry.getCommands().add(commandData);

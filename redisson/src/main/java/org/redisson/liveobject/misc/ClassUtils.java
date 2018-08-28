@@ -45,8 +45,6 @@
 
 package org.redisson.liveobject.misc;
 
-import org.redisson.api.RObject;
-
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -54,6 +52,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+
+import org.redisson.api.RObject;
+import org.redisson.cache.LRUCacheMap;
 
 /**
  *
@@ -107,7 +109,7 @@ public class ClassUtils {
     }
 
     public static Field getDeclaredField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        for (Class c : getClassHierarchy(clazz)) {
+        for (Class<?> c : getClassHierarchy(clazz)) {
             for (Field field : c.getDeclaredFields()) {
                 if (field.getName().equals(fieldName)) {
                     return field;
@@ -116,14 +118,26 @@ public class ClassUtils {
         }
         throw new NoSuchFieldException("No such field: " + fieldName);
     }
+    
+    private static final Map<Class<?>, Boolean> annotatedClasses = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
 
     public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
-        for (Class<?> c : getClassHierarchy(clazz)) {
-            if (c.isAnnotationPresent(annotation)) {
-                return true;
-            }
+        if (clazz.getName().startsWith("java.")) {
+            return false;
         }
-        return false;
+        
+        Boolean isAnnotated = annotatedClasses.get(clazz);
+        if (isAnnotated == null) {
+            for (Class<?> c : getClassHierarchy(clazz)) {
+                if (c.isAnnotationPresent(annotation)) {
+                    annotatedClasses.put(clazz, true);
+                    return true;
+                }
+            }
+            annotatedClasses.put(clazz, false);
+            return false;
+        }
+        return isAnnotated;
     }
 
     private static Iterable<Class<?>> getClassHierarchy(Class<?> clazz) {
@@ -132,7 +146,7 @@ public class ClassUtils {
             return Collections.<Class<?>>singleton(clazz);
         }
         List<Class<?>> classes = new ArrayList<Class<?>>();
-        for (Class c = clazz; c != null; c = c.getSuperclass()) {
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
             classes.add(c);
         }
         return classes;
