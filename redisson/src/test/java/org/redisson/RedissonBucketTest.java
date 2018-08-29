@@ -219,6 +219,11 @@ public class RedissonBucketTest extends BaseTest {
         String value = "somevalue";
         bucket.set(value);
         Assert.assertEquals(value, bucket.get());
+        
+        bucket.set(null);
+        bucket.set(null, 1, TimeUnit.DAYS);
+        
+        assertThat(bucket.isExists()).isFalse();
     }
 
     @Test
