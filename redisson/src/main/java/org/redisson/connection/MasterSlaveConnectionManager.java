@@ -315,16 +315,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             minTimeout = 100;
         }
         
-        timer = new HashedWheelTimer(Executors.defaultThreadFactory(), minTimeout, TimeUnit.MILLISECONDS, 1024);
-        
-        // to avoid assertion error during timer.stop invocation
-        try {
-            Field leakField = HashedWheelTimer.class.getDeclaredField("leak");
-            leakField.setAccessible(true);
-            leakField.set(timer, null);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        timer = new HashedWheelTimer(Executors.defaultThreadFactory(), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
         
         connectionWatcher = new IdleConnectionWatcher(this, config);
         subscribeService = new PublishSubscribeService(this, config);
