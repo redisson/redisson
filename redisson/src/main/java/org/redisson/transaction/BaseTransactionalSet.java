@@ -28,12 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonSet;
-import org.redisson.api.RCollectionAsync;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RObject;
-import org.redisson.api.RSet;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
@@ -498,7 +493,11 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         throw new UnsupportedOperationException();
     }
-    
+
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        throw new UnsupportedOperationException();
+    }
+
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         throw new UnsupportedOperationException();
     }

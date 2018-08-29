@@ -15,10 +15,7 @@
  */
 package org.redisson.transaction;
 
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -202,7 +199,12 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         checkState();
         return transactionalSet.readSortAsync(byPattern, getPatterns, order, offset, count);
     }
-    
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return transactionalSet.readSortAsync(byPattern, getPatterns, order, offset, count, alpha);
+    }
+
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         checkState();

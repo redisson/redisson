@@ -23,10 +23,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RSet;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -603,9 +600,19 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return set.readSort(byPattern, getPatterns, order, offset, count, alpha);
+    }
+
+    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.readSortAsync(byPattern, getPatterns, order, offset, count);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return set.readSortAsync(byPattern, getPatterns, order, offset, count, alpha);
     }
 
     @Override

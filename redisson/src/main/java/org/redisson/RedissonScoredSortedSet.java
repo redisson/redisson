@@ -27,10 +27,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.RFuture;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -888,7 +885,17 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count, alpha));
+    }
+
+    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return readSortAsync(byPattern, getPatterns, order, offset, count, false);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
         List<Object> params = new ArrayList<Object>();
         params.add(getName());
         if (byPattern != null) {
@@ -904,15 +911,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         if (count != -1) {
             params.add(count);
         }
-        for (String pattern : getPatterns) {
-            params.add("GET");
-            params.add(pattern);
+        if (getPatterns != null) {
+            for (String pattern : getPatterns) {
+                params.add("GET");
+                params.add(pattern);
+            }
         }
-        params.add(order);
-        
+        if (alpha) {
+            params.add("ALPHA");
+        }
+        if (order != null) {
+            params.add(order);
+        }
+
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, params.toArray());
     }
-    
+
     @Override
     public int sortTo(String destName, SortOrder order) {
         return get(sortToAsync(destName, order));

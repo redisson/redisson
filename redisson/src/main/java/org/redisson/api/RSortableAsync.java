@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -89,6 +90,20 @@ public interface RSortableAsync<V> {
     <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
+	 * Read data in sorted view
+	 *
+	 * @param <T> object type
+	 * @param byPattern that is used to generate the keys that are used for sorting
+	 * @param getPatterns that is used to load values by keys in sorted view
+	 * @param order for sorted data
+	 * @param offset of sorted data
+	 * @param count of sorted data
+	 * @param alpha that indicates whether to sort
+	 * @return sorted collection
+	 */
+	<T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha);
+
+    /**
      * Sort data and store to <code>destName</code> list
      * 
      * @param destName list object destination 
@@ -153,5 +168,4 @@ public interface RSortableAsync<V> {
      * @return length of sorted data
      */
     RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
-    
 }

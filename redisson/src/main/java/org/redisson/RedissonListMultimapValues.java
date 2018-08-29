@@ -742,9 +742,20 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return list.readSort(byPattern, getPatterns, order, offset, count, alpha);
+    }
+
+    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset,
             int count) {
         return list.readSortAsync(byPattern, getPatterns, order, offset, count);
+    }
+
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
+        return list.readSortAsync(byPattern, getPatterns, order, offset, count, alpha);
     }
 
     @Override
