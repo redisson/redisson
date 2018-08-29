@@ -18,10 +18,8 @@ package org.redisson.connection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.api.NodeType;
@@ -32,7 +30,6 @@ import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.cluster.ClusterConnectionManager;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
@@ -66,11 +63,12 @@ public class MasterSlaveEntry {
     LoadBalancerManager slaveBalancer;
     ClientConnectionsEntry masterEntry;
 
+    int references;
+    
     final MasterSlaveServersConfig config;
     final ConnectionManager connectionManager;
 
     final MasterConnectionPool writeConnectionPool;
-    final Set<Integer> slots = new HashSet<Integer>();
     
     final MasterPubSubConnectionPool pubSubConnectionPool;
 
@@ -78,12 +76,7 @@ public class MasterSlaveEntry {
     
     String sslHostname;
     
-    public MasterSlaveEntry(Set<ClusterSlotRange> slotRanges, ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        for (ClusterSlotRange clusterSlotRange : slotRanges) {
-            for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
-                slots.add(i);
-            }
-        }
+    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         this.connectionManager = connectionManager;
         this.config = config;
 
@@ -524,17 +517,17 @@ public class MasterSlaveEntry {
         }
         slaveBalancer.returnConnection(connection);
     }
-
-    public void addSlotRange(Integer range) {
-        slots.add(range);
+    
+    public void incReference() {
+        references++;
     }
-
-    public void removeSlotRange(Integer range) {
-        slots.remove(range);
+    
+    public int decReference() {
+        return --references;
     }
-
-    public Set<Integer> getSlotRanges() {
-        return slots;
+    
+    public int getReferences() {
+        return references;
     }
 
     @Override

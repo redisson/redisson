@@ -62,7 +62,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.resolver.AddressResolver;
-import io.netty.util.CharsetUtil;
 import io.netty.util.NetUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -234,11 +233,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         final MasterSlaveEntry e;
                         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
                         if (config.checkSkipSlavesInit()) {
-                            e = new SingleEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
+                            e = new SingleEntry(ClusterConnectionManager.this, config);
                         } else {
                             config.setSlaveAddresses(partition.getSlaveAddresses());
 
-                            e = new MasterSlaveEntry(partition.getSlotRanges(), ClusterConnectionManager.this, config);
+                            e = new MasterSlaveEntry(ClusterConnectionManager.this, config);
 
                             List<RFuture<Void>> fs = e.initSlaveBalancer(partition.getFailedSlaveAddresses());
                             futures.addAll(fs);
@@ -596,7 +595,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
         for (Integer slot : removedSlots) {
             MasterSlaveEntry entry = removeEntry(slot);
-            if (entry.getSlotRanges().isEmpty()) {
+            if (entry.getReferences() == 0) {
                 entry.shutdownAsync();
                 log.info("{} master and slaves for it removed", entry.getClient().getAddr());
             }
@@ -633,9 +632,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
         for (ClusterPartition currentPartition : getLastPartitions()) {
             for (ClusterPartition newPartition : newPartitions) {
-                if (!currentPartition.getNodeId().equals(newPartition.getNodeId()) 
-                        // skip master change case
-                        || !currentPartition.getMasterAddress().equals(newPartition.getMasterAddress())) {
+                if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
                     continue;
                 }
                 
