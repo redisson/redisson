@@ -71,4 +71,8 @@ public class EvictionScheduler {
         }
     }
 
+    public void remove(String name) {
+        tasks.remove(name);
+    }
+    
 }

@@ -16,7 +16,9 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetCache;
-import org.redisson.codec.MsgPackJacksonCodec;
+import org.redisson.eviction.EvictionScheduler;
+
+import mockit.Deencapsulation;
 
 public class RedissonSetCacheTest extends BaseTest {
 
@@ -35,6 +37,17 @@ public class RedissonSetCacheTest extends BaseTest {
     }
     
     @Test
+    public void testDestroy() {
+        RSetCache<String> cache = redisson.getSetCache("test");
+        
+        EvictionScheduler evictionScheduler = ((Redisson)redisson).getEvictionScheduler();
+        Map<?, ?> map = Deencapsulation.getField(evictionScheduler, "tasks");
+        assertThat(map.isEmpty()).isFalse();
+        cache.destroy();
+        assertThat(map.isEmpty()).isTrue();
+    }
+    
+    @Test
     public void testRemoveAll() {
         RSetCache<Integer> set = redisson.getSetCache("set");
         set.add(1);
@@ -44,6 +57,7 @@ public class RedissonSetCacheTest extends BaseTest {
         assertThat(set.removeAll(Arrays.asList(1, 3))).isTrue();
         assertThat(set.removeAll(Arrays.asList(1, 3))).isFalse();
         assertThat(set).containsOnly(2);
+        set.destroy();
     }
     
     @Test
@@ -53,12 +67,14 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(1, 1, TimeUnit.SECONDS);
         assertThat(set.delete()).isTrue();
         assertThat(set.delete()).isFalse();
+        set.destroy();
     }
 
     @Test
     public void testEmptyReadAll() {
         RSetCache<Integer> set = redisson.getSetCache("set");
         assertThat(set.readAll()).isEmpty();
+        set.destroy();
     }
     
     @Test
@@ -72,6 +88,7 @@ public class RedissonSetCacheTest extends BaseTest {
         map.remove(0);
         set.add(map);
         set.iterator().next();
+        set.destroy();
     }
     
     @Test
@@ -81,6 +98,7 @@ public class RedissonSetCacheTest extends BaseTest {
         RSetCache<SimpleBean> set = redisson.getSetCache("simple");
         assertThat(set.add(sb)).isTrue();
         Assert.assertEquals(sb.getLng(), set.iterator().next().getLng());
+        set.destroy();
     }
 
     @Test
@@ -95,6 +113,7 @@ public class RedissonSetCacheTest extends BaseTest {
         assertThat(set).doesNotContain("123");
         
         assertThat(set.add("123", 1, TimeUnit.SECONDS)).isTrue();
+        set.destroy();
 
     }
 
@@ -106,6 +125,7 @@ public class RedissonSetCacheTest extends BaseTest {
         assertThat(set.add("123", 3, TimeUnit.SECONDS)).isFalse();
         Thread.sleep(2000);
         assertThat(set.contains("123")).isTrue();
+        set.destroy();
     }
     
     @Test
@@ -120,6 +140,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         Assert.assertFalse(set.contains("4341"));
+        set.destroy();
     }
     
     @Test
@@ -136,6 +157,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         assertThat(set.contains("123")).isTrue();
+        set.destroy();
     }
 
 
@@ -154,6 +176,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(300);
 
         assertThat(set.contains("123")).isTrue();
+        set.destroy();
     }
 
     @Test
@@ -174,6 +197,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Assert.assertFalse(set.contains(3));
         assertThat(set).containsOnly(7);
         Assert.assertEquals(1, set.size());
+        set.destroy();
     }
 
     @Test
@@ -207,6 +231,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertFalse(set.contains("4"));
         Assert.assertFalse(set.contains("5"));
+        set.destroy();
     }
 
     @Test
@@ -222,6 +247,7 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
         checkIterator(set, setCopy);
+        set.destroy();
     }
 
     private void checkIterator(Set<Long> set, Set<Long> setCopy) {
@@ -247,6 +273,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(500);
         assertThat(set).containsOnly(1, 2);
         Assert.assertEquals(2, set.size());
+        set.destroy();
     }
 
     @Test
@@ -266,6 +293,7 @@ public class RedissonSetCacheTest extends BaseTest {
         }
         Assert.assertEquals(10000, cnt);
         Assert.assertEquals(0, set.size());
+        set.destroy();
     }
 
     @Test
@@ -278,6 +306,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Assert.assertTrue(set.containsAll(Collections.emptyList()));
         Assert.assertTrue(set.containsAll(Arrays.asList(30, 11)));
         Assert.assertFalse(set.containsAll(Arrays.asList(30, 711, 11)));
+        set.destroy();
     }
 
     @Test
@@ -295,6 +324,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
         String[] strs = set.toArray(new String[0]);
         assertThat(strs).containsOnly("1", "4", "5", "3");
+        set.destroy();
     }
 
     @Test
@@ -312,6 +342,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Assert.assertFalse(set.contains(new TestObject("2", "3")));
         Assert.assertTrue(set.contains(new TestObject("1", "2")));
         Assert.assertFalse(set.contains(new TestObject("1", "9")));
+        set.destroy();
     }
 
     @Test
@@ -325,6 +356,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(new TestObject("5", "6"));
 
         Assert.assertEquals(4, set.size());
+        set.destroy();
     }
 
     @Test
@@ -339,6 +371,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(5);
 
         Assert.assertEquals(5, set.size());
+        set.destroy();
     }
 
     @Test
@@ -347,6 +380,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(1, 1, TimeUnit.SECONDS);
         Thread.sleep(1005);
         assertThat(set.readAll()).isEmpty();
+        set.destroy();
     }
     
     @Test
@@ -359,6 +393,7 @@ public class RedissonSetCacheTest extends BaseTest {
         set.add(5);
 
         assertThat(set.readAll()).containsOnly(1, 2, 3, 4, 5);
+        set.destroy();
     }
 
     @Test
@@ -372,6 +407,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertTrue(set.retainAll(Collections.<Integer>emptyList()));
         Assert.assertEquals(0, set.size());
+        set.destroy();
     }
 
     @Test
@@ -382,6 +418,7 @@ public class RedissonSetCacheTest extends BaseTest {
 
         Assert.assertFalse(set.retainAll(Arrays.asList(1, 2))); // nothing changed
         assertThat(set).containsOnly(1, 2);
+        set.destroy();
     }
 
     @Test
@@ -396,6 +433,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(1000);
 
         assertThat(cache).contains("0", "2", "3");
+        cache.destroy();
     }
 
     @Test
@@ -408,6 +446,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(500);
 
         Assert.assertEquals(0, cache.size());
+        cache.destroy();
     }
 
     @Test
@@ -420,6 +459,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(500);
 
         Assert.assertEquals(0, cache.size());
+        cache.destroy();
     }
 
     @Test
@@ -434,6 +474,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(500);
 
         Assert.assertEquals(1, cache.size());
+        cache.destroy();
     }
 
     @Test
@@ -446,6 +487,7 @@ public class RedissonSetCacheTest extends BaseTest {
         Thread.sleep(11000);
 
         Assert.assertEquals(0, cache.size());
+        cache.destroy();
 
     }
 

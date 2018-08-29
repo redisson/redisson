@@ -38,7 +38,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
  *
  * @param <V> value
  */
-public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V> {
+public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V>, RDestroyable {
 
     /**
      * Returns lock instance associated with <code>value</code>
