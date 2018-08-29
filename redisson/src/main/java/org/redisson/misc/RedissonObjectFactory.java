@@ -25,7 +25,6 @@ import java.util.Map;
 import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonReference;
 import org.redisson.api.RLiveObject;
-import org.redisson.api.RLiveObjectService;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
 import org.redisson.api.RedissonClient;

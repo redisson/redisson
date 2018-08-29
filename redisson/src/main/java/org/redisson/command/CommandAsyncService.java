@@ -47,7 +47,6 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -534,22 +533,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
 
         final AsyncDetails<V, R> details = AsyncDetails.acquire();
-        if (isRedissonReferenceSupportEnabled()) {
-            try {
-                for (int i = 0; i < params.length; i++) {
-                    RedissonReference reference = RedissonObjectFactory.toReference(getConnectionManager().getCfg(), params[i]);
-                    if (reference != null) {
-                        params[i] = reference;
-                    }
-                }
-            } catch (Exception e) {
-                connectionManager.getShutdownLatch().release();
-                free(params);
-                mainPromise.tryFailure(e);
-                return;
-            }
-        }
-
         final RFuture<RedisConnection> connectionFuture = getConnection(readOnlyMode, source, command);
 
         final RPromise<R> attemptPromise = new RedissonPromise<R>();
@@ -953,7 +936,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             mainPromise.trySuccess(res);
         }
     }
-
+    
     protected <T> T tryHandleReference(T o) {
         boolean hasConversion = false;
         if (o instanceof List) {
@@ -1008,47 +991,23 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             return o;
         } else if (o instanceof Map) {
-            Map<Object, Object> map, r = (Map<Object, Object>) o;
-            boolean useNewMap = o instanceof LinkedHashMap;
-            try {
-                map = (Map) o.getClass().getConstructor().newInstance();
-            } catch (Exception e) {
-                map = new LinkedHashMap();
-            }
+            Map<Object, Object> r = (Map<Object, Object>) o;
             for (Map.Entry<Object, Object> e : r.entrySet()) {
-                Map.Entry<Object, Object> ref = tryHandleReference0(e);
-                //Not testing for ref changes because r.put(ref.getKey(), ref.getValue())
-                //below needs to fail on the first iteration to be able to
-                //perform fall back if failure happens.
-                //
-                //Assuming the failure reason is systematic such as put method
-                //is not supported or implemented, and not an occasional issue 
-                //like only one element fails.
-                if (useNewMap) {
-                    map.put(ref.getKey(), ref.getValue());
-                } else {
-                    try {
-                        r.put(ref.getKey(), ref.getValue());
-                        if (e.getKey() != ref.getKey()) {
-                            map.put(e.getKey(), e.getValue());
-                        }
-                    } catch (Exception ex) {
-                        //r is not supporting put operation. fall back to use
-                        //a new map.
-                        useNewMap = true;
-                        map.put(ref.getKey(), ref.getValue());
+                if (e.getKey() instanceof RedissonReference
+                        || e.getValue() instanceof RedissonReference) {
+                    Object key = e.getKey();
+                    Object value = e.getValue();
+                    if (e.getKey() instanceof RedissonReference) {
+                        key = fromReference(e.getKey());
+                        r.remove(e.getKey());
                     }
+                    if (e.getValue() instanceof RedissonReference) {
+                        value = fromReference(e.getValue());
+                    }
+                    r.put(key, value);
                 }
-                hasConversion |= ref != e;
             }
 
-            if (!hasConversion) {
-                return o;
-            } else if (useNewMap) {
-                return (T) map;
-            } else if (!map.isEmpty()) {
-                r.keySet().removeAll(map.keySet());
-            }
             return o;
         } else if (o instanceof ListScanResult) {
             tryHandleReference(((ListScanResult) o).getValues());
