@@ -269,7 +269,12 @@ public class RedissonSession extends StandardSession {
         }
 
         for (Entry<String, Object> entry : attrs.entrySet()) {
-            super.setAttribute(entry.getKey(), entry.getValue(), false);
+            if(!super.isValid) {
+        		super.setValid(true);
+        		super.setAttribute(entry.getKey(), entry.getValue(), false);
+        	}
+        	else
+        		super.setAttribute(entry.getKey(), entry.getValue(), false);
         }
     }
     
