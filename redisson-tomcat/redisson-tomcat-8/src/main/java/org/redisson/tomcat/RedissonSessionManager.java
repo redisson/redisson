@@ -147,7 +147,9 @@ public class RedissonSessionManager extends ManagerBase {
                 
                 if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
                     log.info("Session " + id + " can't be found");
-                    return null;
+                    attrs = getMap(id).readAllMap();
+                     if(attrs.isEmpty())
+                    	 return null;
                 }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
