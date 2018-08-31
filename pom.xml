@@ -60,6 +60,7 @@
         <module>redisson-all</module>
         <module>redisson-tomcat</module>
         <module>redisson-spring-data</module>
+        <module>redisson-spring-boot-starter</module>
     </modules>
 
     <profiles>
