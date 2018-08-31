@@ -3,7 +3,7 @@ Spring Boot Starter
 
 Integrates Redisson with Spring Boot library.
 
-Supports Spring Data Redis 1.3.x, 1.4.x, 1.5.x, 2.0.x
+Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x
 
 Usage
 ===

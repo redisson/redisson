@@ -31,13 +31,13 @@ Usage
 
      ```java
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.8.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-16:3.8.0'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.8.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-17:3.8.0'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.8.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-18:3.8.0'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.8.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-20:3.8.0'
      ```  
 
 2. __For JDK 1.6+__  
@@ -61,13 +61,13 @@ Usage
 
      ```java
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:2.13.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-16:2.13.0'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:2.13.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-17:2.13.0'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:2.13.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-18:2.13.0'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:2.13.0.RELEASE'
+     compile 'org.redisson:redisson-spring-data-20:2.13.0'
      ```  
 
 
