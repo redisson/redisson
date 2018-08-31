@@ -26,7 +26,6 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.RedissonLiveObjectServiceTest.TestEnum.MyEnum;
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RCascadeType;
@@ -1548,15 +1547,15 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         String id = "1";
         TestEnum entry = new TestEnum();
         entry.setId(id);
-        entry.setMyEnum1(MyEnum.A);
+        entry.setMyEnum1(TestEnum.MyEnum.A);
         entry = liveObjectService.persist(entry);
 
         TestEnum liveEntry = liveObjectService.get(TestEnum.class, id);
-        assertThat(liveEntry.getMyEnum1()).isEqualTo(MyEnum.A);
+        assertThat(liveEntry.getMyEnum1()).isEqualTo(TestEnum.MyEnum.A);
         assertThat(liveEntry.getMyEnum2()).isNull();
         
-        entry.setMyEnum2(MyEnum.B);
-        assertThat(liveEntry.getMyEnum2()).isEqualTo(MyEnum.B);
+        entry.setMyEnum2(TestEnum.MyEnum.B);
+        assertThat(liveEntry.getMyEnum2()).isEqualTo(TestEnum.MyEnum.B);
     }
     
     @Test
