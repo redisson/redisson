@@ -24,9 +24,18 @@ import static org.redisson.client.protocol.RedisCommands.LRANGE;
 import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
 import static org.redisson.client.protocol.RedisCommands.RPUSH_BOOLEAN;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 
-import org.redisson.api.*;
+import org.redisson.api.RFuture;
+import org.redisson.api.RList;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;

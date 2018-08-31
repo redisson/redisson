@@ -2,12 +2,18 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
 
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RList;
-import org.redisson.api.RSortableAsync;
 import org.redisson.api.SortOrder;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.IntegerCodec;
