@@ -63,7 +63,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private final Map<HashValue, Codec> codecs = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
+    private static final Map<HashValue, Codec> codecs = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
     
     private final Codec codec;
     private final String name;
@@ -323,10 +323,12 @@ public class TasksRunnerService implements RemoteExecutorService {
              + "if scheduled == false then "
                  + "redis.call('hdel', KEYS[4], ARGV[3]); "
              + "end;" +
+               
                "redis.call('zrem', KEYS[5], 'ff' .. ARGV[3]);" +
                "if redis.call('decr', KEYS[1]) == 0 then "
-                + "redis.call('del', KEYS[1], KEYS[6]);"
+                + "redis.call('del', KEYS[1]);"
                 + "if redis.call('get', KEYS[2]) == ARGV[1] then "
+                    + "redis.call('del', KEYS[6]);"
                     + "redis.call('set', KEYS[2], ARGV[2]);"
                     + "redis.call('publish', KEYS[3], ARGV[2]);"
                 + "end;"

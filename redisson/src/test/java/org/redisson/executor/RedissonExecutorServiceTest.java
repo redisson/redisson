@@ -161,6 +161,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Thread.sleep(16000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
         
+        executor.delete();
         redisson.getKeys().delete("counter");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
@@ -188,6 +189,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(executor.cancelTask(futureAsync.getTaskId())).isTrue();
         assertThat(redisson.<Long>getBucket("executed2").get()).isBetween(1000L, Long.MAX_VALUE);
         
+        executor.delete();
         redisson.getKeys().delete("executed1", "executed2");
         assertThat(redisson.getKeys().count()).isZero();
     }
@@ -354,6 +356,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         s4.get();
         assertThat(redisson.getAtomicLong("runnableCounter").get()).isEqualTo(100L);
         
+        redisson.getExecutorService("test").delete();
         redisson.getKeys().delete("runnableCounter", "counter");
         assertThat(redisson.getKeys().count()).isZero();
     }

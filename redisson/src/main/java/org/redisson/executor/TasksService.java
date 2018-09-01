@@ -167,8 +167,9 @@ public class TasksService extends BaseRemoteService {
                // remove from executor queue
               + "if task ~= false and redis.call('exists', KEYS[3]) == 1 and redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                   + "if redis.call('decr', KEYS[3]) == 0 then "
-                     + "redis.call('del', KEYS[3], KEYS[7]);"
+                     + "redis.call('del', KEYS[3]);"
                      + "if redis.call('get', KEYS[4]) == ARGV[2] then "
+                        + "redis.call('del', KEYS[7]);"
                         + "redis.call('set', KEYS[4], ARGV[3]);"
                         + "redis.call('publish', KEYS[5], ARGV[3]);"
                      + "end;"

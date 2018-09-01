@@ -430,7 +430,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public RFuture<Boolean> deleteAsync() {
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Long> deleteFuture = redisson.getKeys().deleteAsync(
-                requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName);
+                requestQueueName, statusName, tasksCounterName, schedulerQueueName, tasksName, tasksRetryIntervalName);
         deleteFuture.addListener(new FutureListener<Long>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<Long> future) throws Exception {
