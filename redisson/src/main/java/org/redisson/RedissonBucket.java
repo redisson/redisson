@@ -148,7 +148,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit) {
         if (value == null) {
-            throw new IllegalArgumentException("Value can't be null");
+            return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
         }
 
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.PSETEX, getName(), timeUnit.toMillis(timeToLive), encode(value));

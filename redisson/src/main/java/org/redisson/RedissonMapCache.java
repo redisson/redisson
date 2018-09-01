@@ -36,7 +36,6 @@ import org.redisson.api.map.event.EntryExpiredListener;
 import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.api.map.event.MapEntryListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -82,12 +81,15 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCache<K, V> {
 
+    private EvictionScheduler evictionScheduler;
+    
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
                             String name, RedissonClient redisson, MapOptions<K, V> options) {
         super(commandExecutor, name, redisson, options);
         if (evictionScheduler != null) {
             evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
         }
+        this.evictionScheduler = evictionScheduler;
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
@@ -96,6 +98,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         if (evictionScheduler != null) {
             evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
         }
+        this.evictionScheduler = evictionScheduler;
     }
 
     @Override
@@ -2026,5 +2029,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                     "return result;",
                 Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName()),
                 System.currentTimeMillis());
+    }
+
+    @Override
+    public void destroy() {
+        if (evictionScheduler != null) {
+            evictionScheduler.remove(getName());
+        }
     }
 }

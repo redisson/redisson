@@ -37,7 +37,7 @@ import org.redisson.api.map.event.MapEntryListener;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V> {
+public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDestroyable {
 
     /**
      * Sets max size of the map.

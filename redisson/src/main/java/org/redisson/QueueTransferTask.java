@@ -22,7 +22,6 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.connection.ConnectionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,7 +106,7 @@ public abstract class QueueTransferTask {
 
     private void scheduleTask(final Long startTime) {
         TimeoutTask oldTimeout = lastTimeout.get();
-        if (startTime == null || (oldTimeout != null && oldTimeout.getStartTime() < startTime)) {
+        if (startTime == null) {
             return;
         }
         

@@ -420,9 +420,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config,
-            HashSet<ClusterSlotRange> slots) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(slots, this, config);
+    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config) {
+        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
         List<RFuture<Void>> fs = entry.initSlaveBalancer(disconnectedSlaves);
         for (RFuture<Void> future : fs) {
             future.syncUninterruptibly();

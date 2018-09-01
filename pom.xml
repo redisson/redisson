@@ -60,6 +60,7 @@
         <module>redisson-all</module>
         <module>redisson-tomcat</module>
         <module>redisson-spring-data</module>
+        <module>redisson-spring-boot-starter</module>
     </modules>
 
     <profiles>
@@ -135,7 +136,7 @@
             <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-bom</artifactId>
-                <version>4.1.28.Final</version>
+                <version>4.1.29.Final</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

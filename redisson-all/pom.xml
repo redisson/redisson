@@ -194,7 +194,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>2.4.3</version>
+                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <id>shade-artifacts</id>
@@ -212,21 +212,19 @@
 	    </plugin>
 
             <plugin>
-         	<groupId>org.apache.maven.plugins</groupId>
          	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.0.0</version>
-                <executions>
-                  <execution>
-                    <phase>package</phase>
-                    <goals>
-                      <goal>jar</goal>
-                    </goals>
-                  </execution>
-                </executions>
+         	<executions>
+                   <execution>
+                     <id>attach-javadocs</id>
+                     <goals>
+                         <goal>jar</goal>
+                     </goals>
+                   </execution>
+         	</executions>
                 <configuration>
                   <includeDependencySources>true</includeDependencySources>
                   <dependencySourceIncludes>
-                      <dependencySourceInclude>org.redisson:*</dependencySourceInclude>
+                      <dependencySourceInclude>org.redisson:*,org.springframework.transaction:*</dependencySourceInclude>
                   </dependencySourceIncludes>
                 </configuration>
             </plugin>

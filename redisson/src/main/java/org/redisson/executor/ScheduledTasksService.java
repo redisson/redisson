@@ -60,11 +60,11 @@ public class ScheduledTasksService extends TasksService {
                 "if redis.call('exists', KEYS[2]) == 0 then "
                     + "local retryInterval = redis.call('get', KEYS[6]); "
                     + "if retryInterval ~= false then "
-                        + "local time = tonumber(ARGV[4]) + tonumber(retryInterval);"
+                        + "local time = tonumber(ARGV[1]) + tonumber(retryInterval);"
                         + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
-                    + "elseif tonumber(ARGV[5]) > 0 then "
-                        + "redis.call('set', KEYS[6], ARGV[5]);"
-                        + "local time = tonumber(ARGV[4]) + tonumber(ARGV[5]);"
+                    + "elseif tonumber(ARGV[4]) > 0 then "
+                        + "redis.call('set', KEYS[6], ARGV[4]);"
+                        + "local time = tonumber(ARGV[1]) + tonumber(ARGV[4]);"
                         + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
                     + "end; "
 
@@ -81,7 +81,7 @@ public class ScheduledTasksService extends TasksService {
                 + "end;"
                 + "return 0;", 
                 Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName, tasksRetryIntervalName),
-                params.getStartTime(), request.getId(), encode(request), System.currentTimeMillis(), tasksRetryInterval);
+                params.getStartTime(), request.getId(), encode(request), tasksRetryInterval);
     }
     
     @Override
@@ -102,8 +102,9 @@ public class ScheduledTasksService extends TasksService {
                   // remove from executor queue
                   + "if task ~= false and (removed > 0 or removedScheduled > 0) then "
                       + "if redis.call('decr', KEYS[3]) == 0 then "
-                         + "redis.call('del', KEYS[3], KEYS[7]);"
+                         + "redis.call('del', KEYS[3]);"
                          + "if redis.call('get', KEYS[4]) == ARGV[2] then "
+                            + "redis.call('del', KEYS[7]);"
                             + "redis.call('set', KEYS[4], ARGV[3]);"
                             + "redis.call('publish', KEYS[5], ARGV[3]);"
                          + "end;"
