@@ -212,7 +212,7 @@ public abstract class BaseRemoteService {
                 
                 final RPromise<RRemoteServiceResponse> responseFuture;
                 if (optionsCopy.isResultExpected()) {
-                    responseFuture = pollResponse(optionsCopy.getExecutionTimeoutInMillis(), requestId, false);
+                    responseFuture = pollResultResponse(optionsCopy.getExecutionTimeoutInMillis(), requestId, request);
                 } else {
                     responseFuture = null;
                 }
@@ -360,6 +360,11 @@ public abstract class BaseRemoteService {
         });
     }
 
+    protected <T extends RRemoteServiceResponse> RPromise<T> pollResultResponse(long timeout,
+            RequestId requestId, RemoteServiceRequest request) {
+        return pollResponse(timeout, requestId, false);
+    }
+    
     private <T extends RRemoteServiceResponse> RPromise<T> pollResponse(final long timeout,
             final RequestId requestId, boolean insertFirst) {
         final RPromise<T> responseFuture = new RedissonPromise<T>();
@@ -540,7 +545,7 @@ public abstract class BaseRemoteService {
                 
                 final RPromise<RRemoteServiceResponse> responseFuture;
                 if (optionsCopy.isResultExpected()) {
-                    responseFuture = pollResponse(optionsCopy.getExecutionTimeoutInMillis(), requestId, false);
+                    responseFuture = pollResultResponse(optionsCopy.getExecutionTimeoutInMillis(), requestId, request);
                 } else {
                     responseFuture = null;
                 }
