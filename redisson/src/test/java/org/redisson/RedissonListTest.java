@@ -143,24 +143,15 @@ public class RedissonListTest extends BaseTest {
     }
 
     @Test
-    public void testSortAlpha(){
-        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
-        list.add("1");
-        list.add("3");
-        list.add("12");
-
-        assertThat(list.readSort(null, null, SortOrder.ASC, -1, -1, true))
-                .containsExactly("1", "12", "3");
-    }
-
-    @Test
     public void testSortOrderAlpha(){
         RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
         list.add("1");
         list.add("3");
         list.add("12");
 
-        assertThat(list.readSort(null, null, SortOrder.DESC, -1, -1, true))
+        assertThat(list.readSortAlpha( SortOrder.ASC))
+                .containsExactly("1", "12", "3");
+        assertThat(list.readSortAlpha( SortOrder.DESC))
                 .containsExactly("3", "12", "1");
     }
 
@@ -171,9 +162,9 @@ public class RedissonListTest extends BaseTest {
         list.add("3");
         list.add("12");
 
-        assertThat(list.readSort(null, null, SortOrder.DESC, 0, 2, true))
+        assertThat(list.readSortAlpha(SortOrder.DESC, 0, 2))
                 .containsExactly("3", "12");
-        assertThat(list.readSort(null, null, SortOrder.DESC, 1, 2, true))
+        assertThat(list.readSortAlpha(SortOrder.DESC, 1, 2))
                 .containsExactly("12", "1");
     }
 
@@ -189,11 +180,11 @@ public class RedissonListTest extends BaseTest {
         redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
 
         Collection<Integer> descSort = list
-                .readSort("test*", null, SortOrder.DESC,-1, -1, true);
+                .readSortAlpha("test*", SortOrder.DESC);
         assertThat(descSort).containsExactly(2, 1, 3);
 
         Collection<Integer> ascSort = list
-                .readSort("test*", null, SortOrder.ASC, -1, -1, true);
+                .readSortAlpha("test*", SortOrder.ASC);
         assertThat(ascSort).containsExactly(3, 1, 2);
     }
 
@@ -209,11 +200,11 @@ public class RedissonListTest extends BaseTest {
         redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
 
         Collection<Integer> descSort = list
-                .readSort("test*", null, SortOrder.DESC,1, 2, true);
+                .readSortAlpha("test*", SortOrder.DESC,1, 2);
         assertThat(descSort).containsExactly(1, 3);
 
         Collection<Integer> ascSort = list
-                .readSort("test*", null, SortOrder.ASC,1, 2, true);
+                .readSortAlpha("test*", SortOrder.ASC,1, 2);
         assertThat(ascSort).containsExactly(1, 2);
     }
 
@@ -233,11 +224,11 @@ public class RedissonListTest extends BaseTest {
         redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
 
         Collection<String> descSort = list
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.DESC,-1, -1, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC);
         assertThat(descSort).containsExactly("obj2", "obj1", "obj3");
 
         Collection<String> ascSort = list
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.ASC,-1, -1, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC);
         assertThat(ascSort).containsExactly("obj3", "obj1", "obj2");
     }
 
@@ -257,11 +248,11 @@ public class RedissonListTest extends BaseTest {
         redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
 
         Collection<String> descSort = list
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.DESC,1,  2, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC,1,  2);
         assertThat(descSort).containsExactly("obj1", "obj3");
 
         Collection<String> ascSort = list
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.ASC,1,  2, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC,1,  2);
         assertThat(ascSort).containsExactly("obj1", "obj2");
     }
 

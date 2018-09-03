@@ -603,19 +603,69 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
 
     @Override
-    public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
-        return set.readSort(byPattern, getPatterns, order, offset, count, alpha);
-    }
-
-    @Override
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order,
             int offset, int count) {
         return set.readSortAsync(byPattern, getPatterns, order, offset, count);
     }
 
     @Override
-    public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha) {
-        return set.readSortAsync(byPattern, getPatterns, order, offset, count, alpha);
+    public Set<V> readSortAlpha(SortOrder order) {
+        return set.readSortAlpha(order);
+    }
+
+    @Override
+    public Set<V> readSortAlpha(SortOrder order, int offset, int count) {
+        return set.readSortAlpha(order, offset, count);
+    }
+
+    @Override
+    public Set<V> readSortAlpha(String byPattern, SortOrder order) {
+        return set.readSortAlpha(byPattern, order);
+    }
+
+    @Override
+    public Set<V> readSortAlpha(String byPattern, SortOrder order, int offset, int count) {
+        return set.readSortAlpha(byPattern, order, offset, count);
+    }
+
+    @Override
+    public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.readSortAlpha(byPattern, getPatterns, order);
+    }
+
+    @Override
+    public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return set.readSortAlpha(byPattern, getPatterns, order, offset, count);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order) {
+        return set.readSortAlphaAsync(order);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
+        return set.readSortAlphaAsync(order, offset, count);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order) {
+        return set.readSortAlphaAsync(byPattern, order);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
+        return set.readSortAlphaAsync(byPattern, order, offset, count);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
+        return set.readSortAlphaAsync(byPattern, getPatterns, order);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return set.readSortAlphaAsync(byPattern, getPatterns, order, offset, count);
     }
 
     @Override

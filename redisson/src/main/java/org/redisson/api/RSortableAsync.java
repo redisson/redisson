@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -90,7 +89,56 @@ public interface RSortableAsync<V> {
     <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
-	 * Read data in sorted view
+     * Read data in sorted view lexicographically
+     *
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    RFuture<V> readSortAlphaAsync(SortOrder order);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param order for sorted data
+     * @param offset of sorted data
+     * @param count of sorted data
+     * @return sorted collection lexicographically
+     */
+    RFuture<V> readSortAlphaAsync(SortOrder order, int offset, int count);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    RFuture<V> readSortAlphaAsync(String byPattern, SortOrder order);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param order for sorted data
+     * @param offset of sorted data
+     * @param count of sorted data
+     * @return sorted collection lexicographically
+     */
+    RFuture<V> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param <T> object type
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param getPatterns that is used to load values by keys in sorted view
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order);
+
+    /**
+	 * Read data in sorted view lexicographically
 	 *
 	 * @param <T> object type
 	 * @param byPattern that is used to generate the keys that are used for sorting
@@ -98,10 +146,9 @@ public interface RSortableAsync<V> {
 	 * @param order for sorted data
 	 * @param offset of sorted data
 	 * @param count of sorted data
-	 * @param alpha that indicates whether to sort
-	 * @return sorted collection
+	 * @return sorted collection lexicographically
 	 */
-	<T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count, boolean alpha);
+	<T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -168,4 +215,5 @@ public interface RSortableAsync<V> {
      * @return length of sorted data
      */
     RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+
 }

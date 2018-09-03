@@ -175,37 +175,28 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
-    public void testSortAlpha(){
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("list", StringCodec.INSTANCE);
-        set.add(10,1);
-        set.add(9,3);
-        set.add(8,12);
-
-        assertThat(set.readSort(null, null, SortOrder.ASC, -1, -1, true))
-                .containsExactly("1", "12", "3");
-    }
-
-    @Test
     public void testSortOrderAlpha(){
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("list", StringCodec.INSTANCE);
-        set.add(10,1);
-        set.add(9,3);
-        set.add(8,12);
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("list", StringCodec.INSTANCE);
+        set.add(10,"1");
+        set.add(9,"3");
+        set.add(8,"12");
 
-        assertThat(set.readSort(null, null, SortOrder.DESC, -1, -1, true))
+        assertThat(set.readSortAlpha(SortOrder.ASC))
+                .containsExactly("1", "12", "3");
+        assertThat(set.readSortAlpha(SortOrder.DESC))
                 .containsExactly("3", "12", "1");
     }
 
     @Test
     public void testSortOrderLimitAlpha(){
-        RScoredSortedSet<Integer> set = redisson.getScoredSortedSet("list", StringCodec.INSTANCE);
-        set.add(10,1);
-        set.add(9,3);
-        set.add(8,12);
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("list", StringCodec.INSTANCE);
+        set.add(10,"1");
+        set.add(9,"3");
+        set.add(8,"12");
 
-        assertThat(set.readSort(null, null, SortOrder.DESC, 0, 2, true))
+        assertThat(set.readSortAlpha(SortOrder.DESC, 0, 2))
                 .containsExactly("3", "12");
-        assertThat(set.readSort(null, null, SortOrder.DESC, 1, 2, true))
+        assertThat(set.readSortAlpha(SortOrder.DESC, 1, 2))
                 .containsExactly("12", "1");
     }
 
@@ -221,11 +212,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
 
         Collection<Integer> descSort = set
-                .readSort("test*", null, SortOrder.DESC,-1, -1, true);
+                .readSortAlpha("test*", SortOrder.DESC);
         assertThat(descSort).containsExactly(2, 1, 3);
 
         Collection<Integer> ascSort = set
-                .readSort("test*", null, SortOrder.ASC, -1, -1, true);
+                .readSortAlpha("test*", SortOrder.ASC);
         assertThat(ascSort).containsExactly(3, 1, 2);
     }
 
@@ -241,11 +232,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
 
         Collection<Integer> descSort = set
-                .readSort("test*", null, SortOrder.DESC,1, 2, true);
+                .readSortAlpha("test*", SortOrder.DESC,1,2);
         assertThat(descSort).containsExactly(1, 3);
 
         Collection<Integer> ascSort = set
-                .readSort("test*", null, SortOrder.ASC,1, 2, true);
+                .readSortAlpha("test*", SortOrder.ASC,1,2);
         assertThat(ascSort).containsExactly(1, 2);
     }
 
@@ -265,11 +256,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
 
         Collection<String> descSort = set
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.DESC,-1, -1, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC);
         assertThat(descSort).containsExactly("obj2", "obj1", "obj3");
 
         Collection<String> ascSort = set
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.ASC,-1, -1, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC);
         assertThat(ascSort).containsExactly("obj3", "obj1", "obj2");
     }
 
@@ -289,11 +280,11 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
 
         Collection<String> descSort = set
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.DESC,1,  2, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC,1,2);
         assertThat(descSort).containsExactly("obj1", "obj3");
 
         Collection<String> ascSort = set
-                .readSort("test*", Arrays.asList("tester*"), SortOrder.ASC,1,  2, true);
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC,1, 2);
         assertThat(ascSort).containsExactly("obj1", "obj2");
     }
 
