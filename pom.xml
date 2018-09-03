@@ -144,7 +144,7 @@
       <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
       <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
-      <pluginManagement>
+
         <plugins>	
 
        	<plugin>
@@ -216,7 +216,6 @@
                 </configuration>
             </plugin>
         </plugins>
-      </pluginManagement>
   </build>
 
 </project>
