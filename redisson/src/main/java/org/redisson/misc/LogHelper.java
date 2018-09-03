@@ -43,8 +43,6 @@ public class LogHelper {
             return toArrayString(object);
         } else if (object instanceof Collection) {
             return toCollectionString((Collection<?>) object);
-        } else if (object instanceof ByteBuf) {
-            return ((ByteBuf) object).toString(CharsetUtil.UTF_8);
         } else if (object instanceof CommandData) {
             CommandData cd = (CommandData)object;
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
