@@ -8,6 +8,7 @@ Try __[Redisson PRO](https://redisson.pro)__ version.
 Feature - Spring Data Redis integration. Please refer to [documentation](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) for more details  
 Feature - Spring Boot Starter implementation. Please refer to [documentation](https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter#spring-boot-starter) for more details  
 Feature - `RBlockingDequeReactive` object added  
+Feature - `sharedSession` setting for Tomcat Session Manager. Appropriate solution for migration of EAR based application with multiple WARs hosted previously on JBoss, WebLogic. Please refer to [documentation](https://github.com/redisson/redisson/tree/master/redisson-tomcat) for more details  
 Improvement - Redis request/response handling performance improvement  
 Improvement - CompositeIterator decoupled from CompositeIterable (thanks to Pepe-Lu)  
 Fixed - task scheduled with time more than 1 hour is not executed  
