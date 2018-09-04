@@ -59,6 +59,7 @@ spring.redis.sentinel.nodes=
 
 # Redisson settings
 
+#path to redisson.yaml or redisson.json
 spring.redis.redisson.config=classpath:redisson.yaml
 ```
 
