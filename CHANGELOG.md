@@ -20,7 +20,7 @@ Fixed - `RExecutorService` task execution performance regression
 Fixed - locking in multiple parallel transactions created with the same thread  
 Fixed - `JCache.removeAll` doesn't work  
 Fixed - Batch in `ExecutionMode.REDIS_WRITE_ATOMIC` and `ExecutionMode.REDIS_READ_ATOMIC` returns `QUEUED` instead of real result  
-Fixed - tasks scheduled with cron expression don't work in different timezones (thanks to Arpit Agrawal) 
+Fixed - tasks scheduled with cron expression don't work in different timezones (thanks to Arpit Agrawal)  
 Fixed - global config codec is not registered in codec cache for reference objects (thanks to Rui Gu)  
 
 ### 19-Jul-2018 - versions 2.12.5 and 3.7.5 released
