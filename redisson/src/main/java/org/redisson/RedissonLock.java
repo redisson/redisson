@@ -251,6 +251,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
                   "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                   "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                  "return nil; " +
                   "return redis.call('pttl', KEYS[1]);",
                     Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
     }
