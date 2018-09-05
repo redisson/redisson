@@ -20,6 +20,7 @@
         <maven.test.skip>true</maven.test.skip>
         <source.version>1.8</source.version>
         <test.source.version>1.8</test.source.version>
+        <release.version>7</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -144,6 +145,7 @@
       <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
       <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+
         <plugins>	
 
        	<plugin>
@@ -177,6 +179,7 @@
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
+                    <release>${release.version}</release>
                     <optimize>true</optimize>
                     <showDeprecations>true</showDeprecations>
                 </configuration>
@@ -215,7 +218,6 @@
                 </configuration>
             </plugin>
         </plugins>
-
   </build>
 
 </project>

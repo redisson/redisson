@@ -45,6 +45,7 @@ import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
 import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
 import org.redisson.client.protocol.decoder.ListMultiDecoder;
+import org.redisson.client.protocol.decoder.ListObjectDecoder;
 import org.redisson.client.protocol.decoder.ListResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
@@ -58,7 +59,6 @@ import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapJoinDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.ListObjectDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetPolledObjectDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
@@ -261,7 +261,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Void> AUTH = new RedisStrictCommand<Void>("AUTH", new VoidReplayConvertor());
     RedisStrictCommand<Void> SELECT = new RedisStrictCommand<Void>("SELECT", new VoidReplayConvertor());
-    RedisStrictCommand<Boolean> CLIENT_SETNAME = new RedisStrictCommand<Boolean>("CLIENT", "SETNAME", new BooleanReplayConvertor());
+    RedisStrictCommand<Void> CLIENT_SETNAME = new RedisStrictCommand<Void>("CLIENT", "SETNAME", new VoidReplayConvertor());
     RedisStrictCommand<String> CLIENT_GETNAME = new RedisStrictCommand<String>("CLIENT", "GETNAME", new StringDataDecoder());
     RedisStrictCommand<Void> FLUSHDB = new RedisStrictCommand<Void>("FLUSHDB", new VoidReplayConvertor());
     RedisStrictCommand<Void> FLUSHALL = new RedisStrictCommand<Void>("FLUSHALL", new VoidReplayConvertor());

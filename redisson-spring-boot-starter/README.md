@@ -42,5 +42,25 @@ Usage
      compile 'org.redisson:redisson-spring-boot-starter:2.13.0'
      ```  
 
+### 2. Add settings into `application.settings` file
 
-### 2. Get access to Redisson through spring bean with `RedissonClient` interface
+```properties
+# common spring boot settings
+
+spring.redis.database=
+spring.redis.host=
+spring.redis.port=
+spring.redis.password=
+spring.redis.ssl=
+spring.redis.timeout=
+spring.redis.cluster.nodes=
+spring.redis.sentinel.master=
+spring.redis.sentinel.nodes=
+
+# Redisson settings
+
+#path to redisson.yaml or redisson.json
+spring.redis.redisson.config=classpath:redisson.yaml
+```
+
+### 3. Get access to Redisson through spring bean with `RedissonClient` interface
