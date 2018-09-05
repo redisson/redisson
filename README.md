@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.7.5  | 19.07.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
-| 2.12.5 | 19.07.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
+| 3.8.0  | 03.09.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
+| 2.13.0 | 03.09.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
 
 
 Features
@@ -40,6 +40,8 @@ Features
 * [Spring Framework](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks#141-spring-framework)
 * [Spring Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#142-spring-cache) implementation
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-transaction-manager) implementation
+* [Spring Data Redis](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-data-redis) integration
+* [Spring Boot Starter](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#149-spring-boot-starter) implementation
 * [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-hibernate-cache) implementation
 * [Transactions API](https://github.com/redisson/redisson/wiki/10.-Additional-features#104-transactions)
 * [XA Transaction API](https://github.com/redisson/redisson/wiki/10.-additional-features/#105-xa-transactions) implementation
@@ -106,23 +108,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.7.5</version>
+       <version>3.8.0</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.12.5</version>
+       <version>2.13.0</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.7.5'  
+    compile 'org.redisson:redisson:3.8.0'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.12.5'
+    compile 'org.redisson:redisson:2.13.0'
 
 #### Java
 
@@ -147,11 +149,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.7.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.7.5&e=jar),
-[Redisson node 3.7.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.7.5&e=jar)  
+[Redisson 3.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.8.0&e=jar),
+[Redisson node 3.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.8.0&e=jar)  
 
-[Redisson 2.12.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.12.5&e=jar),
-[Redisson node 2.12.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.12.5&e=jar)  
+[Redisson 2.13.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.13.0&e=jar),
+[Redisson node 2.13.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.13.0&e=jar)  
 
 FAQs
 ===============================
