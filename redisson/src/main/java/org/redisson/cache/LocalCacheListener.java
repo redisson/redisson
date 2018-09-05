@@ -19,9 +19,9 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonListMultimapCache;
@@ -38,7 +38,6 @@ import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
@@ -64,7 +63,7 @@ public abstract class LocalCacheListener {
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
     
-    private Map<CacheKey, String> disabledKeys = new ConcurrentHashMap<CacheKey, String>();
+    private ConcurrentMap<CacheKey, String> disabledKeys = new ConcurrentHashMap<CacheKey, String>();
     
     private static final Logger log = LoggerFactory.getLogger(LocalCacheListener.class);
     

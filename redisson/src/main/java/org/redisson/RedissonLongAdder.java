@@ -15,12 +15,13 @@
  */
 package org.redisson;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLongAdder;
 import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.LongAdder;
 
 /**
  * 
@@ -30,7 +31,7 @@ import org.redisson.misc.LongAdder;
 public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongAdder {
 
     private final RAtomicLong atomicLong;
-    private final LongAdder counter = new LongAdder();
+    private final AtomicLong counter = new AtomicLong();
     
     public RedissonLongAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name, redisson);
@@ -40,12 +41,12 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
 
     @Override
     protected void doReset() {
-        counter.reset();
+        counter.set(0);
     }
     
     @Override
     protected RFuture<Long> addAndGetAsync() {
-        return atomicLong.getAndAddAsync(counter.sum());
+        return atomicLong.getAndAddAsync(counter.get());
     }
     
     @Override
@@ -55,7 +56,7 @@ public class RedissonLongAdder extends RedissonBaseAdder<Long> implements RLongA
 
     @Override
     public void add(long x) {
-        counter.add(x);
+        counter.addAndGet(x);
     }
 
     @Override

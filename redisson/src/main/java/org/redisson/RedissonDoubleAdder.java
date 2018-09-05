@@ -20,7 +20,6 @@ import org.redisson.api.RDoubleAdder;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.DoubleAdder;
 
 /**
  * 
@@ -29,7 +28,7 @@ import org.redisson.misc.DoubleAdder;
  */
 public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RDoubleAdder {
 
-    private final DoubleAdder counter = new DoubleAdder();
+    private double counter;
     private final RAtomicDouble atomicDouble;
     
     public RedissonDoubleAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
@@ -39,13 +38,13 @@ public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RD
     }
 
     @Override
-    protected void doReset() {
-        counter.reset();
+    protected synchronized void doReset() {
+        counter = 0;
     }
     
     @Override
-    protected RFuture<Double> addAndGetAsync() {
-        return atomicDouble.getAndAddAsync(counter.sum());
+    protected synchronized RFuture<Double> addAndGetAsync() {
+        return atomicDouble.getAndAddAsync(counter);
     }
     
     @Override
@@ -54,8 +53,8 @@ public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RD
     }
 
     @Override
-    public void add(double x) {
-        counter.add(x);
+    public synchronized void add(double x) {
+        counter += x;
     }
     
     @Override
