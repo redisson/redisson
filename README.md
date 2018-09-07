@@ -77,19 +77,21 @@ Used by
 [![Baidu](https://redisson.org/assets/logos/client2.png "Baidu")](http://baidu.com/) &nbsp;&nbsp;&nbsp;
 [![Infor](https://redisson.org/assets/logos/client4.png "Infor")](http://www.infor.com/) &nbsp;&nbsp;&nbsp;
 [![Crimson Hexagon](https://redisson.org/assets/logos/client7.png "Crimson Hexagon")](https://www.crimsonhexagon.com/) &nbsp;&nbsp;&nbsp;
-[![ContaAzul](https://redisson.org/assets/logos/client18.png "ContaAzul")](https://contaazul.com/)  
+[![ContaAzul](https://redisson.org/assets/logos/client18.png "ContaAzul")](https://contaazul.com/)&nbsp;&nbsp;&nbsp;
+[![马蜂窝](https://redisson.org/assets/logos/client33.png "马蜂窝")](http://www.mafengwo.cn/)  
 
 [![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/)&nbsp;&nbsp;&nbsp;
 [![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
 [![NAB](https://redisson.org/assets/logos/client11.png "NAB")](https://www.nab.com.au/)&nbsp;&nbsp;&nbsp;
 [![RCI](https://redisson.org/assets/logos/client30.png "RCI")](https://www.rci.com/)&nbsp;&nbsp;&nbsp;
-[![Juniper](https://redisson.org/assets/logos/client31.png "Juniper")](https://www.juniper.net/)  
+[![Juniper](https://redisson.org/assets/logos/client31.png "Juniper")](https://www.juniper.net/)&nbsp;&nbsp;&nbsp;
+[![火币](https://redisson.org/assets/logos/client32.png "火币")](https://www.huobi.com/)&nbsp;&nbsp;&nbsp;
 
 [![Alibaba](https://redisson.org/assets/logos/client19.png "Alibaba")](http://www.alibaba-inc.com)&nbsp;&nbsp;&nbsp;
 [![Flipkart](https://redisson.org/assets/logos/client21.png "Flipkart")](https://www.flipkart.com/)&nbsp;&nbsp;&nbsp;
 [![Invaluable](https://redisson.org/assets/logos/client13.png "Invaluable")](http://www.invaluable.com/)&nbsp;&nbsp;&nbsp;
 [![BBK](https://redisson.org/assets/logos/client22.png "BBK")](http://www.gdbbk.com/)  
-[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)&nbsp;&nbsp;&nbsp;
+[![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
 
 
 Success stories
