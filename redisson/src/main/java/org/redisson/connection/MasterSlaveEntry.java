@@ -196,9 +196,13 @@ public class MasterSlaveEntry {
         
         entry.reset();
         
-        closeConnections(entry);
+        for (RedisConnection connection : entry.getAllConnections()) {
+            connection.closeAsync();
+            reattachBlockingQueue(connection);
+        }
         
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
+            connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);
         }
         entry.getAllSubscribeConnections().clear();
@@ -206,32 +210,6 @@ public class MasterSlaveEntry {
         return true;
     }
 
-    private void closeConnections(ClientConnectionsEntry entry) {
-        // close all connections
-        while (true) {
-            final RedisConnection connection = entry.pollConnection();
-            if (connection == null) {
-                break;
-            }
-           
-            connection.closeAsync().addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    reattachBlockingQueue(connection);
-                }
-            });
-        }
-
-        // close all pub/sub connections
-        while (true) {
-            RedisPubSubConnection connection = entry.pollSubscribeConnection();
-            if (connection == null) {
-                break;
-            }
-            connection.closeAsync();
-        }
-    }
-    
     private void reattachBlockingQueue(RedisConnection connection) {
         final CommandData<?, ?> commandData = connection.getCurrentCommand();
 
@@ -251,7 +229,7 @@ public class MasterSlaveEntry {
                 }
 
                 final RedisConnection newConnection = future.getNow();
-                    
+                
                 final FutureListener<Object> listener = new FutureListener<Object>() {
                     @Override
                     public void operationComplete(Future<Object> future) throws Exception {
