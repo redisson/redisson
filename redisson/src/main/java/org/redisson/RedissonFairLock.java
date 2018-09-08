@@ -262,7 +262,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal();
+        cancelExpirationRenewal(null);
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // remove stale threads
                 "while true do "
