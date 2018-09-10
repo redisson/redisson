@@ -141,7 +141,121 @@ public class RedissonListTest extends BaseTest {
         Collection<String> ascSort = list.readSort("test*", Arrays.asList("tester*"), SortOrder.ASC, 1, 2);
         assertThat(ascSort).containsExactly("obj2", "obj3");
     }
-    
+
+    @Test
+    public void testSortOrderAlpha(){
+        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
+        list.add("1");
+        list.add("3");
+        list.add("12");
+
+        assertThat(list.readSortAlpha( SortOrder.ASC))
+                .containsExactly("1", "12", "3");
+        assertThat(list.readSortAlpha( SortOrder.DESC))
+                .containsExactly("3", "12", "1");
+    }
+
+    @Test
+    public void testSortOrderLimitAlpha(){
+        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
+        list.add("1");
+        list.add("3");
+        list.add("12");
+
+        assertThat(list.readSortAlpha(SortOrder.DESC, 0, 2))
+                .containsExactly("3", "12");
+        assertThat(list.readSortAlpha(SortOrder.DESC, 1, 2))
+                .containsExactly("12", "1");
+    }
+
+    @Test
+    public void testSortOrderByPatternAlpha(){
+        RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
+        list.add(1);
+        list.add(2);
+        list.add(3);
+
+        redisson.getBucket("test1", IntegerCodec.INSTANCE).set(12);
+        redisson.getBucket("test2", IntegerCodec.INSTANCE).set(3);
+        redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
+
+        Collection<Integer> descSort = list
+                .readSortAlpha("test*", SortOrder.DESC);
+        assertThat(descSort).containsExactly(2, 1, 3);
+
+        Collection<Integer> ascSort = list
+                .readSortAlpha("test*", SortOrder.ASC);
+        assertThat(ascSort).containsExactly(3, 1, 2);
+    }
+
+    @Test
+    public void testSortOrderByPatternAlphaLimit(){
+        RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
+        list.add(1);
+        list.add(2);
+        list.add(3);
+
+        redisson.getBucket("test1", IntegerCodec.INSTANCE).set(12);
+        redisson.getBucket("test2", IntegerCodec.INSTANCE).set(3);
+        redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
+
+        Collection<Integer> descSort = list
+                .readSortAlpha("test*", SortOrder.DESC,1, 2);
+        assertThat(descSort).containsExactly(1, 3);
+
+        Collection<Integer> ascSort = list
+                .readSortAlpha("test*", SortOrder.ASC,1, 2);
+        assertThat(ascSort).containsExactly(1, 2);
+    }
+
+    @Test
+    public void testSortOrderByPatternGetAlpha() {
+        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
+        list.add("1");
+        list.add("2");
+        list.add("3");
+
+        redisson.getBucket("test1", IntegerCodec.INSTANCE).set(12);
+        redisson.getBucket("test2", IntegerCodec.INSTANCE).set(3);
+        redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
+
+        redisson.getBucket("tester1", StringCodec.INSTANCE).set("obj1");
+        redisson.getBucket("tester2", StringCodec.INSTANCE).set("obj2");
+        redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
+
+        Collection<String> descSort = list
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC);
+        assertThat(descSort).containsExactly("obj2", "obj1", "obj3");
+
+        Collection<String> ascSort = list
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC);
+        assertThat(ascSort).containsExactly("obj3", "obj1", "obj2");
+    }
+
+    @Test
+    public void testSortOrderByPatternGetAlphaLimit() {
+        RList<String> list = redisson.getList("list", StringCodec.INSTANCE);
+        list.add("1");
+        list.add("2");
+        list.add("3");
+
+        redisson.getBucket("test1", IntegerCodec.INSTANCE).set(12);
+        redisson.getBucket("test2", IntegerCodec.INSTANCE).set(3);
+        redisson.getBucket("test3", IntegerCodec.INSTANCE).set(1);
+
+        redisson.getBucket("tester1", StringCodec.INSTANCE).set("obj1");
+        redisson.getBucket("tester2", StringCodec.INSTANCE).set("obj2");
+        redisson.getBucket("tester3", StringCodec.INSTANCE).set("obj3");
+
+        Collection<String> descSort = list
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.DESC,1,  2);
+        assertThat(descSort).containsExactly("obj1", "obj3");
+
+        Collection<String> ascSort = list
+                .readSortAlpha("test*", Arrays.asList("tester*"), SortOrder.ASC,1,  2);
+        assertThat(ascSort).containsExactly("obj1", "obj2");
+    }
+
     @Test
     public void testSortTo() {
         RList<String> list = redisson.getList("list", IntegerCodec.INSTANCE);

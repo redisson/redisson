@@ -494,11 +494,35 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     public RFuture<Set<V>> readSortAsync(String byPattern, SortOrder order) {
         throw new UnsupportedOperationException();
     }
-    
+
     public <T> RFuture<Collection<T>> readSortAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         throw new UnsupportedOperationException();
     }
-    
+
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order) {
+        throw new UnsupportedOperationException();
+    }
+
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
+        throw new UnsupportedOperationException();
+    }
+
+    public RFuture<Set<V>>  readSortAlphaAsync(String byPattern, SortOrder order) {
+        throw new UnsupportedOperationException();
+    }
+
+    public RFuture<Set<V>>  readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
+        throw new UnsupportedOperationException();
+    }
+
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        throw new UnsupportedOperationException();
+    }
+
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         throw new UnsupportedOperationException();
     }

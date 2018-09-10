@@ -87,7 +87,69 @@ public interface RSortable<V> extends RSortableAsync<V> {
      * @return sorted collection
      */
     <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
-    
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    V readSortAlpha(SortOrder order);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param order for sorted data
+     * @param offset of sorted data
+     * @param count of sorted data
+     * @return sorted collection lexicographically
+     */
+    V readSortAlpha(SortOrder order, int offset, int count);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    V readSortAlpha(String byPattern, SortOrder order);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param order for sorted data
+     * @param offset of sorted data
+     * @param count of sorted data
+     * @return sorted collection lexicographically
+     */
+    V readSortAlpha(String byPattern, SortOrder order, int offset, int count);
+
+    /**
+     * Read data in sorted view lexicographically
+     *
+     * @param <T> object type
+     * @param byPattern that is used to generate the keys that are used for sorting
+     * @param getPatterns that is used to load values by keys in sorted view
+     * @param order for sorted data
+     * @return sorted collection lexicographically
+     */
+    <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order);
+
+    /**
+	 * Read data in sorted view lexicographically
+	 *
+	 * @param <T> object type
+	 * @param byPattern that is used to generate the keys that are used for sorting
+	 * @param getPatterns that is used to load values by keys in sorted view
+	 * @param order for sorted data
+	 * @param offset of sorted data
+	 * @param count of sorted data
+	 * @return sorted collection lexicographically
+	 */
+    <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+
     /**
      * Sort data and store to <code>destName</code> list
      * 
