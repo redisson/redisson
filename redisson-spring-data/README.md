@@ -79,17 +79,12 @@ Usage
     
     @Bean
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
-        return new RedissonTransactionManager(redisson);
+        return new RedissonConnectionFactory(redisson);
     }
     
-    @Bean
+    @Bean(destroyMethod = "shutdown")
     public RedissonClient redisson() {
         return BaseTest.createInstance();
-    }
-    
-    @PreDestroy
-    public void destroy() {
-        redisson().shutdown();
     }
  }
 ```
