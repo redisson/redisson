@@ -231,13 +231,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void run(Timeout timeout) throws Exception {
                 
-                RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                            "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                            "return 1; " +
-                        "end; " +
-                        "return 0;",
-                          Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+                RFuture<Boolean> future = renewExpirationAsync(threadId);
                 
                 future.addListener(new FutureListener<Boolean>() {
                     @Override
@@ -255,6 +249,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     }
                 });
             }
+
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
         if (expirationRenewalMap.putIfAbsent(getEntryName(), new ExpirationEntry(threadId, task)) != null) {
@@ -262,9 +257,21 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
     }
 
+    protected RFuture<Boolean> renewExpirationAsync(long threadId) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                    "return 1; " +
+                "end; " +
+                "return 0;",
+            Collections.<Object>singletonList(getName()), 
+            internalLockLeaseTime, getLockName(threadId));
+    }
+
     void cancelExpirationRenewal(Long threadId) {
-        ExpirationEntry task = expirationRenewalMap.remove(getEntryName());
+        ExpirationEntry task = expirationRenewalMap.get(getEntryName());
         if (task != null && (threadId == null || task.getThreadId() == threadId)) {
+            expirationRenewalMap.remove(getEntryName());
             task.getTimeout().cancel();
         }
     }

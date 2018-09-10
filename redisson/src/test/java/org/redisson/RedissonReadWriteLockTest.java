@@ -31,6 +31,37 @@ import org.redisson.config.Config;
 public class RedissonReadWriteLockTest extends BaseConcurrentTest {
 
     @Test
+    public void testReadLockExpirationRenewal() throws InterruptedException {
+        int threadCount = 50;
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount/5);
+
+        AtomicInteger exceptions = new AtomicInteger();
+        for (int i=0; i<threadCount; i++) {
+            executorService.submit(()-> {
+                try {
+                    RReadWriteLock rw1 = redisson.getReadWriteLock("mytestlock");
+                    RLock readLock = rw1.readLock();
+                    readLock.lock();
+                    try {
+                        Thread.sleep(redisson.getConfig().getLockWatchdogTimeout() + 5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    readLock.unlock();
+                } catch (Exception e) {
+                    exceptions.incrementAndGet();
+                    e.printStackTrace();
+                }
+            });
+        }
+                
+        executorService.shutdown();
+        assertThat(executorService.awaitTermination(180, TimeUnit.SECONDS)).isTrue();
+        assertThat(exceptions.get()).isZero();
+    }
+    
+    @Test
     public void testName() throws InterruptedException, ExecutionException, TimeoutException {
         ExecutorService service = Executors.newFixedThreadPool(10);
         RReadWriteLock rwlock = redisson.getReadWriteLock("{test}:abc:key");
