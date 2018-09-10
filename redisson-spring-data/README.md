@@ -83,8 +83,10 @@ Usage
     }
     
     @Bean(destroyMethod = "shutdown")
-    public RedissonClient redisson() {
-        return BaseTest.createInstance();
+    public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
+        Config config = Config.fromYAML(configFile.getInputStream());
+        return Redisson.create(config);
     }
+    
  }
 ```
