@@ -18,13 +18,11 @@ package org.redisson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.redisson.api.RBucket;
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
@@ -45,30 +43,15 @@ public class RedissonBuckets implements RBuckets {
 
     private final Codec codec;
     private final CommandExecutor commandExecutor;
-    private final Redisson redisson;
     
-    public RedissonBuckets(Redisson redisson, CommandExecutor commandExecutor) {
-        this(redisson, commandExecutor.getConnectionManager().getCodec(), commandExecutor);
+    public RedissonBuckets(CommandExecutor commandExecutor) {
+        this(commandExecutor.getConnectionManager().getCodec(), commandExecutor);
     }
     
-    public RedissonBuckets(Redisson redisson, Codec codec, CommandExecutor commandExecutor) {
+    public RedissonBuckets(Codec codec, CommandExecutor commandExecutor) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
-        this.redisson = redisson;
-    }
-
-    @Override
-    public <V> List<RBucket<V>> find(String pattern) {
-        Iterable<String> keys = redisson.getKeys().getKeysByPattern(pattern);
-        List<RBucket<V>> buckets = new ArrayList<RBucket<V>>();
-        for (String key : keys) {
-            if(key == null) {
-                continue;
-            }
-            buckets.add(redisson.<V>getBucket(key, codec));
-        }
-        return buckets;
     }
 
     @Override

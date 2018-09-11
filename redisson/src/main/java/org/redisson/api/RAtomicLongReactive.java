@@ -18,30 +18,96 @@ package org.redisson.api;
 import org.reactivestreams.Publisher;
 
 /**
- * 
+ * Distributed reactive implementation of {@link java.util.concurrent.atomic.AtomicLong}
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RAtomicLongReactive extends RExpirableReactive {
 
+    /**
+     * Atomically sets the value to the given updated value
+     * only if the current value {@code ==} the expected value.
+     *
+     * @param expect the expected value
+     * @param update the new value
+     * @return true if successful; or false if the actual value
+     *         was not equal to the expected value.
+     */
     Publisher<Boolean> compareAndSet(long expect, long update);
 
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the updated value
+     */
     Publisher<Long> addAndGet(long delta);
 
+    /**
+     * Atomically decrements the current value by one.
+     *
+     * @return the updated value
+     */
     Publisher<Long> decrementAndGet();
 
+    /**
+     * Returns current value.
+     *
+     * @return the current value
+     */
     Publisher<Long> get();
 
+    /**
+     * Returns and deletes object
+     * 
+     * @return the current value
+     */
+    Publisher<Long> getAndDelete();
+    
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the old value before the add
+     */
     Publisher<Long> getAndAdd(long delta);
 
+    /**
+     * Atomically sets the given value and returns the old value.
+     *
+     * @param newValue the new value
+     * @return the old value
+     */
     Publisher<Long> getAndSet(long newValue);
 
+    /**
+     * Atomically increments the current value by one.
+     *
+     * @return the updated value
+     */
     Publisher<Long> incrementAndGet();
 
+    /**
+     * Atomically increments the current value by one.
+     *
+     * @return the old value
+     */
     Publisher<Long> getAndIncrement();
 
+    /**
+     * Atomically decrements by one the current value.
+     *
+     * @return the previous value
+     */
     Publisher<Long> getAndDecrement();
 
+    /**
+     * Atomically sets the given value.
+     *
+     * @param newValue the new value
+     * @return void
+     */
     Publisher<Void> set(long newValue);
 
 }

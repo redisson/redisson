@@ -146,11 +146,14 @@ public interface RTransactionReactive {
     
     /**
      * Commits all changes made on this transaction.
+     * 
+     * @return void
      */
     Publisher<Void> commit();
     
     /**
      * Rollback all changes made on this transaction.
+     * @return void
      */
     Publisher<Void> rollback();
 

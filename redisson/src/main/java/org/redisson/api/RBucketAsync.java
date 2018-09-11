@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Async object functions
+ * Async implementation of object holder. Max size of object is 512MB
  *
  * @author Nikita Koksharov
  *
@@ -33,20 +33,76 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      */
     RFuture<Long> sizeAsync();
     
+    /**
+     * Retrieves element stored in the holder.
+     * 
+     * @return element
+     */
     RFuture<V> getAsync();
     
+    /**
+     * Retrieves element in the holder and removes it.
+     * 
+     * @return element
+     */
     RFuture<V> getAndDeleteAsync();
 
+    /**
+     * Tries to set element atomically into empty holder.
+     * 
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
     RFuture<Boolean> trySetAsync(V value);
 
+    /**
+     * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
     RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Atomically sets the value to the given updated value
+     * only if serialized state of the current value equals 
+     * to serialized state of the expected value.
+     *
+     * @param expect the expected value
+     * @param update the new value
+     * @return {@code true} if successful; or {@code false} if the actual value
+     *         was not equal to the expected value.
+     */
     RFuture<Boolean> compareAndSetAsync(V expect, V update);
 
+    /**
+     * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
+     * 
+     * @param newValue - value to set
+     * @return previous value
+     */
     RFuture<V> getAndSetAsync(V newValue);
 
+    /**
+     * Stores element into the holder. 
+     * 
+     * @param value - value to set
+     * @return void
+     */
     RFuture<Void> setAsync(V value);
 
+    /**
+     * Stores element into the holder with defined <code>timeToLive</code> interval.
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return void
+     */
     RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
 
 }

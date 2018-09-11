@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * {@link BlockingQueue} backed by Redis
+ * Distributed implementation of {@link BlockingQueue}
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
@@ -29,9 +29,9 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
     /**
      * Retrieves and removes first available head element of <b>any</b> queue,
      * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue own.
+     * in any of defined queues <b>including</b> queue itself.
      *
-     * @param queueNames - names of queue
+     * @param queueNames - queue names. Queue name itself is always included
      * @param timeout how long to wait before giving up, in units of
      *        {@code unit}
      * @param unit a {@code TimeUnit} determining how to interpret the
@@ -42,8 +42,32 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      */
     V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
 
+    /**
+     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueName - names of destination queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     * @throws InterruptedException if interrupted while waiting
+     */
     V pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit) throws InterruptedException;
-    
+
+    /**
+     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
+     * waiting if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueName - names of destination queue
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     * @throws InterruptedException if interrupted while waiting
+     */
     V takeLastAndOfferFirstTo(String queueName) throws InterruptedException;
 
 }

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
- * {@link BlockingQueue} backed by Redis
+ * Distributed reactive implementation of {@link BlockingQueue}
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
@@ -44,16 +44,104 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      */
     Publisher<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames);
 
+    /**
+     * Removes at most the given number of available elements from
+     * this queue and adds them to the given collection in async mode.  A failure
+     * encountered while attempting to add elements to
+     * collection {@code c} may result in elements being in neither,
+     * either or both collections when the associated exception is
+     * thrown.  Attempts to drain a queue to itself result in
+     * {@code IllegalArgumentException}. Further, the behavior of
+     * this operation is undefined if the specified collection is
+     * modified while the operation is in progress.
+     *
+     * @param c the collection to transfer elements into
+     * @param maxElements the maximum number of elements to transfer
+     * @return the number of elements transferred
+     * @throws UnsupportedOperationException if addition of elements
+     *         is not supported by the specified collection
+     * @throws ClassCastException if the class of an element of this queue
+     *         prevents it from being added to the specified collection
+     * @throws NullPointerException if the specified collection is null
+     * @throws IllegalArgumentException if the specified collection is this
+     *         queue, or some property of an element of this queue prevents
+     *         it from being added to the specified collection
+     */
     Publisher<Integer> drainTo(Collection<? super V> c, int maxElements);
 
+    /**
+     * Removes all available elements from this queue and adds them
+     * to the given collection in async mode.  This operation may be more
+     * efficient than repeatedly polling this queue.  A failure
+     * encountered while attempting to add elements to
+     * collection {@code c} may result in elements being in neither,
+     * either or both collections when the associated exception is
+     * thrown.  Attempts to drain a queue to itself result in
+     * {@code IllegalArgumentException}. Further, the behavior of
+     * this operation is undefined if the specified collection is
+     * modified while the operation is in progress.
+     *
+     * @param c the collection to transfer elements into
+     * @return the number of elements transferred
+     * @throws UnsupportedOperationException if addition of elements
+     *         is not supported by the specified collection
+     * @throws ClassCastException if the class of an element of this queue
+     *         prevents it from being added to the specified collection
+     * @throws NullPointerException if the specified collection is null
+     * @throws IllegalArgumentException if the specified collection is this
+     *         queue, or some property of an element of this queue prevents
+     *         it from being added to the specified collection
+     */
     Publisher<Integer> drainTo(Collection<? super V> c);
 
+    /**
+     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
+     * waiting up to the specified wait time if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueName - names of destination queue
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
     Publisher<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit);
 
+    /**
+     * Retrieves and removes the head of this queue in async mode, waiting up to the
+     * specified wait time if necessary for an element to become available.
+     *
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the head of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
     Publisher<V> poll(long timeout, TimeUnit unit);
 
+    /**
+     * Retrieves and removes the head of this queue in async mode, waiting if necessary
+     * until an element becomes available.
+     *
+     * @return the head of this queue
+     */
     Publisher<V> take();
 
+    /**
+     * Inserts the specified element into this queue in async mode, waiting if necessary
+     * for space to become available.
+     *
+     * @param e the element to add
+     * @throws ClassCastException if the class of the specified element
+     *         prevents it from being added to this queue
+     * @throws NullPointerException if the specified element is null
+     * @throws IllegalArgumentException if some property of the specified
+     *         element prevents it from being added to this queue
+     * @return void
+     */
     Publisher<Integer> put(V e);
 
 }

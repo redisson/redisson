@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.atomic.AtomicLong}
+ * Distributed implementation of {@link java.util.concurrent.atomic.AtomicLong}
  *
  * @author Nikita Koksharov
  *
@@ -57,7 +57,7 @@ public interface RAtomicLong extends RExpirable, RAtomicLongAsync {
     long decrementAndGet();
 
     /**
-     * Gets the current value.
+     * Returns current value.
      *
      * @return the current value
      */

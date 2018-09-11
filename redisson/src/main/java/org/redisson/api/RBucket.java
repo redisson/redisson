@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Any object holder. Max size of object is 512MB
+ * Object holder. Max size of object is 512MB
  *
  * @author Nikita Koksharov
  *
@@ -27,26 +27,80 @@ import java.util.concurrent.TimeUnit;
 public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
 
     /**
-     * Returns size of object in bytes
+     * Returns size of object in bytes.
      * 
      * @return object size
      */
     long size();
     
+    /**
+     * Retrieves element stored in the holder.
+     * 
+     * @return element
+     */
     V get();
 
+    /**
+     * Retrieves element in the holder and removes it.
+     * 
+     * @return element
+     */
     V getAndDelete();
-    
+
+    /**
+     * Tries to set element atomically into empty holder.
+     * 
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
     boolean trySet(V value);
 
+    /**
+     * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return {@code true} if successful, or {@code false} if
+     *         element was already set
+     */
     boolean trySet(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Atomically sets the value to the given updated value
+     * only if serialized state of the current value equals 
+     * to serialized state of the expected value.
+     *
+     * @param expect the expected value
+     * @param update the new value
+     * @return {@code true} if successful; or {@code false} if the actual value
+     *         was not equal to the expected value.
+     */
     boolean compareAndSet(V expect, V update);
 
+    /**
+     * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
+     * 
+     * @param newValue - value to set
+     * @return previous value
+     */
     V getAndSet(V newValue);
 
+    /**
+     * Stores element into the holder. 
+     * 
+     * @param value - value to set
+     */
     void set(V value);
 
+    /**
+     * Stores element into the holder with defined <code>timeToLive</code> interval.
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     */
     void set(V value, long timeToLive, TimeUnit timeUnit);
 
 }

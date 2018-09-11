@@ -16,37 +16,96 @@
 package org.redisson.api;
 
 /**
- * 
+ * Distributed async implementation of {@link java.util.concurrent.atomic.AtomicLong}
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RAtomicLongAsync extends RExpirableAsync {
 
+    /**
+     * Atomically sets the value to the given updated value
+     * only if the current value {@code ==} the expected value.
+     *
+     * @param expect the expected value
+     * @param update the new value
+     * @return true if successful; or false if the actual value
+     *         was not equal to the expected value.
+     */
     RFuture<Boolean> compareAndSetAsync(long expect, long update);
 
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the updated value
+     */
     RFuture<Long> addAndGetAsync(long delta);
 
+    /**
+     * Atomically decrements the current value by one.
+     *
+     * @return the updated value
+     */
     RFuture<Long> decrementAndGetAsync();
 
+    /**
+     * Returns current value.
+     *
+     * @return the current value
+     */
     RFuture<Long> getAsync();
     
     /**
-     * Gets and deletes object
+     * Returns and deletes object
      * 
      * @return the current value
      */
     RFuture<Long> getAndDeleteAsync();
 
+    /**
+     * Atomically adds the given value to the current value.
+     *
+     * @param delta the value to add
+     * @return the old value before the add
+     */
     RFuture<Long> getAndAddAsync(long delta);
 
+    /**
+     * Atomically sets the given value and returns the old value.
+     *
+     * @param newValue the new value
+     * @return the old value
+     */
     RFuture<Long> getAndSetAsync(long newValue);
 
+    /**
+     * Atomically increments the current value by one.
+     *
+     * @return the updated value
+     */
     RFuture<Long> incrementAndGetAsync();
 
+    /**
+     * Atomically increments the current value by one.
+     *
+     * @return the old value
+     */
     RFuture<Long> getAndIncrementAsync();
 
+    /**
+     * Atomically decrements by one the current value.
+     *
+     * @return the previous value
+     */
     RFuture<Long> getAndDecrementAsync();
 
+    /**
+     * Atomically sets the given value.
+     *
+     * @param newValue the new value
+     * @return void
+     */
     RFuture<Void> setAsync(long newValue);
 
 }

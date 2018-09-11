@@ -88,6 +88,15 @@ public class RedissonAtomicLongReactive extends RedissonExpirableReactive implem
         });
     }
 
+    @Override
+    public Publisher<Long> getAndDelete() {
+        return reactive(new Supplier<RFuture<Long>>() {
+            @Override
+            public RFuture<Long> get() {
+                return instance.getAndDeleteAsync();
+            }
+        });
+    }
 
     @Override
     public Publisher<Long> getAndSet(final long newValue) {

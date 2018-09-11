@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Map;
 
 /**
+ * Operations over multiple Bucket objects.
  * 
  * @author Nikita Koksharov
  *
@@ -48,6 +49,7 @@ public interface RBucketsAsync {
      * Saves objects mapped by Redis key.
      *
      * @param buckets - map of buckets
+     * @return void
      */
     RFuture<Void> setAsync(Map<String, ?> buckets);
     

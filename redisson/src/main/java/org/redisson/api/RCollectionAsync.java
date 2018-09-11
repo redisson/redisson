@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 
 /**
+ * Common async interface for collection object
  * 
  * @author Nikita Koksharov
  *
@@ -27,9 +28,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
      * Retains only the elements in this collection that are contained in the
-     * specified collection (optional operation).  In other words, removes from
-     * this collection all of its elements that are not contained in the
-     * specified collection.
+     * specified collection (optional operation).
      *
      * @param c collection containing elements to be retained in this collection
      * @return <tt>true</tt> if this collection changed as a result of the call
@@ -38,61 +37,65 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
      * Removes all of this collection's elements that are also contained in the
-     * specified collection (optional operation).  After this call returns,
-     * this collection will contain no elements in common with the specified
-     * collection.
+     * specified collection (optional operation).
      *
      * @param c collection containing elements to be removed from this collection
-     * @return <tt>true</tt> if this collection changed as a result of the
+     * @return <code>true</code> if this collection changed as a result of the
      *         call
      */
     RFuture<Boolean> removeAllAsync(Collection<?> c);
 
     /**
-     * Returns <tt>true</tt> if this collection contains the specified element.
-     * More formally, returns <tt>true</tt> if and only if this collection
-     * contains at least one element <tt>e</tt> such that
-     * <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>.
+     * Returns <code>true</code> if this collection contains encoded state of the specified element.
      *
      * @param o element whose presence in this collection is to be tested
-     * @return <tt>true</tt> if this collection contains the specified
-     *         element
+     * @return <code>true</code> if this collection contains the specified
+     *         element and <code>false</code> otherwise
      */
     RFuture<Boolean> containsAsync(Object o);
 
     /**
-     * Returns <tt>true</tt> if this collection contains all of the elements
+     * Returns <code>true</code> if this collection contains all of the elements
      * in the specified collection.
      *
      * @param  c collection to be checked for containment in this collection
-     * @return <tt>true</tt> if this collection contains all of the elements
+     * @return <code>true</code> if this collection contains all of the elements
      *         in the specified collection
      */
     RFuture<Boolean> containsAllAsync(Collection<?> c);
 
     /**
      * Removes a single instance of the specified element from this
-     * collection, if it is present (optional operation).  More formally,
-     * removes an element <tt>e</tt> such that
-     * <tt>(o==null&nbsp;?&nbsp;e==null&nbsp;:&nbsp;o.equals(e))</tt>, if
-     * this collection contains one or more such elements.  Returns
-     * <tt>true</tt> if this collection contained the specified element (or
-     * equivalently, if this collection changed as a result of the call).
+     * collection, if it is present (optional operation).
      *
      * @param o element to be removed from this collection, if present
-     * @return <tt>true</tt> if an element was removed as a result of this call
+     * @return <code>true</code> if an element was removed as a result of this call
      */
     RFuture<Boolean> removeAsync(Object o);
 
     /**
-     * Returns the number of elements in this collection.
+     * Returns number of elements in this collection.
      *
      * @return size of collection
      */
     RFuture<Integer> sizeAsync();
 
+    /**
+     * Adds element into this collection.
+     * 
+     * @param e - element to add
+     * @return <code>true</code> if an element was added 
+     *          and <code>false</code> if it is already present
+     */
     RFuture<Boolean> addAsync(V e);
 
+    /**
+     * Adds all elements contained in the specified collection
+     * 
+     * @param c - collection of elements to add
+     * @return <code>true</code> if at least one element was added 
+     *          and <code>false</code> if all elements are already present
+     */
     RFuture<Boolean> addAllAsync(Collection<? extends V> c);
 
 }
