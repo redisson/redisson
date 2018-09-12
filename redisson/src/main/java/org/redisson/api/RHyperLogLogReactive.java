@@ -20,21 +20,54 @@ import java.util.Collection;
 import org.reactivestreams.Publisher;
 
 /**
+ * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.
+ * Reactive interface.
  * 
  * @author Nikita Koksharov
  *
- * @param <V>
+ * @param <V> type of stored values
  */
 public interface RHyperLogLogReactive<V> extends RExpirableReactive {
 
+    /**
+     * Adds element into this structure.
+     * 
+     * @param obj - element to add
+     * @return <code>true</code> if object has been added 
+     *          or <code>false</code> if it was already added
+     */
     Publisher<Boolean> add(V obj);
 
+    /**
+     * Adds all elements contained in <code>objects</code> collection into this structure
+     * 
+     * @param objects - elements to add
+     * @return <code>true</code> if at least one object has been added 
+     *          or <code>false</code> if all were already added
+     */
     Publisher<Boolean> addAll(Collection<V> objects);
 
+    /**
+     * Returns approximated number of unique elements added into this structure.
+     * 
+     * @return approximated number of unique elements added into this structure
+     */
     Publisher<Long> count();
 
+    /**
+     * Returns approximated number of unique elements 
+     * added into this instances and other instances defined through <code>otherLogNames</code>.
+     * 
+     * @param otherLogNames - name of instances
+     * @return
+     */
     Publisher<Long> countWith(String ... otherLogNames);
 
+    /**
+     * Merges multiple instances into this instance.
+     * 
+     * @param otherLogNames - name of instances
+     */
     Publisher<Void> mergeWith(String ... otherLogNames);
 
 }

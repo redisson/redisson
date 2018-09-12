@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
+ * Distributed async implementation of {@link java.util.concurrent.CountDownLatch}
  *
  * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
  * count can be set via {@link #trySetCountAsync} method.

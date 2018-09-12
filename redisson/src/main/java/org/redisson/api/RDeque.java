@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Deque;
 
 /**
- * {@link java.util.Deque} backed by Redis
+ * Distributed implementation of {@link java.util.Deque}
  *
  * @author Nikita Koksharov
  *

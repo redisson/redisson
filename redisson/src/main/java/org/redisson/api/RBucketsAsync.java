@@ -41,7 +41,7 @@ public interface RBucketsAsync {
      * don't set none of them.
      *
      * @param buckets - map of buckets
-     * @return <code>true</code> if object has been set overwise <code>false</code>
+     * @return <code>true</code> if object has been set otherwise <code>false</code>
      */
     RFuture<Boolean> trySetAsync(Map<String, ?> buckets);
 

@@ -18,6 +18,7 @@ package org.redisson.api;
 import org.redisson.RedissonNode;
 
 /**
+ * Node initializer callback interface.
  * 
  * @author Nikita Koksharov
  *

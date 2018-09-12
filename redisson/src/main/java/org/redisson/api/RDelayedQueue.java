@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Distributed implementation of delayed queue.
  * 
  * @author Nikita Koksharov
  *

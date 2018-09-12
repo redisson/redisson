@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.Callable;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.ExecutorService}
+ * Distributed async implementation of {@link java.util.concurrent.ExecutorService}
  * 
  * @author Nikita Koksharov
  *

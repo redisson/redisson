@@ -19,7 +19,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Redis based implementation of {@link java.util.concurrent.ExecutorService}
+ * Distributed implementation of {@link java.util.concurrent.ExecutorService}
  * 
  * @author Nikita Koksharov
  *

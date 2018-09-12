@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 /**
+ * Future object for submitted task
  * 
  * @author Nikita Koksharov
  *

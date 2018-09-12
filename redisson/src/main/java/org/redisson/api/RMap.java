@@ -25,7 +25,7 @@ import org.redisson.api.map.MapWriter;
 import org.redisson.api.mapreduce.RMapReduce;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
+ * Distributed implementation of {@link java.util.concurrent.ConcurrentMap}
  * and {@link java.util.Map}
  *
  * This map doesn't allow to store <code>null</code> as key or value.
