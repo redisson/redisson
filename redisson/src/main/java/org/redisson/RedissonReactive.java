@@ -52,6 +52,7 @@ import org.redisson.api.RSemaphoreReactive;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
+import org.redisson.api.RStreamReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
@@ -92,6 +93,7 @@ import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
+import org.redisson.reactive.RedissonStreamReactive;
 import org.redisson.reactive.RedissonTopicReactive;
 import org.redisson.reactive.RedissonTransactionReactive;
 
@@ -120,6 +122,16 @@ public class RedissonReactive implements RedissonReactiveClient {
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
         codecProvider = config.getReferenceCodecProvider();
+    }
+    
+    @Override
+    public <K, V> RStreamReactive<K, V> getStream(String name) {
+        return new RedissonStreamReactive<K, V>(commandExecutor, name);
+    }
+
+    @Override
+    public <K, V> RStreamReactive<K, V> getStream(String name, Codec codec) {
+        return new RedissonStreamReactive<K, V>(codec, commandExecutor, name);
     }
 
     @Override
