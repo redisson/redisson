@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.PendingEntry;
+import org.redisson.api.PendingResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RStream;
 import org.redisson.api.StreamId;
@@ -58,6 +60,169 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         if (value == null) {
             throw new NullPointerException("value can't be null");
         }
+    }
+    
+    @Override
+    public void createGroup(String groupName) {
+        get(createGroupAsync(groupName));
+    }
+    
+    @Override
+    public RFuture<Void> createGroupAsync(String groupName) {
+        return createGroupAsync(groupName, StreamId.NEWEST);
+    }
+    
+    @Override
+    public void createGroup(String groupName, StreamId id) {
+        get(createGroupAsync(groupName, id));
+    }
+    
+    @Override
+    public RFuture<Void> createGroupAsync(String groupName, StreamId id) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id);
+    }
+    
+    @Override
+    public RFuture<Long> ackAsync(String groupName, StreamId... ids) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(getName());
+        params.add(groupName);
+        for (StreamId id : ids) {
+            params.add(id);
+        }
+        
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
+    }
+
+    @Override
+    public Long ack(String groupName, StreamId... id) {
+        return get(ackAsync(groupName, id));
+    }
+
+    @Override
+    public RFuture<PendingResult> listPendingAsync(String groupName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+    }
+
+    @Override
+    public PendingResult listPending(String groupName) {
+        return get(listPendingAsync(groupName));
+    }
+
+    @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamId startId, StreamId endId, int count,
+            String consumerName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count, consumerName);
+    }
+
+    @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamId startId, StreamId endId, int count) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count);
+    }
+
+    @Override
+    public List<PendingEntry> listPending(String groupName, StreamId startId, StreamId endId, int count) {
+        return get(listPendingAsync(groupName, startId, endId, count));
+    }
+
+    @Override
+    public List<PendingEntry> listPending(String groupName, StreamId startId, StreamId endId, int count,
+            String consumerName) {
+        return get(listPendingAsync(groupName, startId, endId, count, consumerName));
+    }
+
+    @Override
+    public RFuture<Map<StreamId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime,
+            TimeUnit idleTimeUnit, StreamId... ids) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(getName());
+        params.add(groupName);
+        params.add(consumerName);
+        params.add(idleTimeUnit.toMillis(idleTime));
+        
+        for (StreamId id : ids) {
+            params.add(id.toString());
+        }
+
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.XCLAIM, params.toArray());
+    }
+
+    @Override
+    public Map<StreamId, Map<K, V>> claimPending(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
+            StreamId... ids) {
+        return get(claimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
+    }
+
+    @Override
+    public RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamId... ids) {
+        return readGroupAsync(groupName, consumerName, 0, ids);
+    }
+
+    @Override
+    public RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamId... ids) {
+        return readGroupAsync(groupName, consumerName, count, 0, null, ids);
+    }
+
+    @Override
+    public RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit,
+            StreamId... ids) {
+        return readGroupAsync(groupName, consumerName, 0, timeout, unit, ids);
+    }
+
+    @Override
+    public RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit,
+            StreamId... ids) {
+        List<Object> params = new ArrayList<Object>();
+        params.add("GROUP");
+        params.add(groupName);
+        params.add(consumerName);
+        
+        if (count > 0) {
+            params.add("COUNT");
+            params.add(count);
+        }
+        
+        if (timeout > 0) {
+            params.add("BLOCK");
+            params.add(toSeconds(timeout, unit)*1000);
+        }
+        
+        params.add("STREAMS");
+        params.add(getName());
+
+        if (ids.length == 0) {
+            params.add(">");
+        }
+        
+        for (StreamId id : ids) {
+            params.add(id.toString());
+        }
+
+        if (timeout > 0) {
+            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+        }
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+    }
+
+    @Override
+    public Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, StreamId... ids) {
+        return get(readGroupAsync(groupName, consumerName, ids));
+    }
+
+    @Override
+    public Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, int count, StreamId... ids) {
+        return get(readGroupAsync(groupName, consumerName, count, ids));
+    }
+
+    @Override
+    public Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId... ids) {
+        return get(readGroupAsync(groupName, consumerName, timeout, unit, ids));
+    }
+
+    @Override
+    public Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit,
+            StreamId... ids) {
+        return get(readGroupAsync(groupName, consumerName, count, timeout, unit, ids));
     }
 
     @Override

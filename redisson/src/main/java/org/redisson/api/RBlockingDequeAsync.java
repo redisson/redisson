@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Async interface for {@link BlockingDeque} backed by Redis
+ * Distributed async implementation of {@link BlockingDeque}
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection
@@ -56,15 +56,57 @@ public interface RBlockingDequeAsync<V> extends RDequeAsync<V>, RBlockingQueueAs
      */
     RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
 
+    /**
+     * Adds value to the head of queue.
+     * 
+     * @param e value
+     * @return void
+     */
     RFuture<Void> putFirstAsync(V e);
 
+    /**
+     * Adds value to the tail of queue.
+     * 
+     * @param e value
+     * @return void
+     */
     RFuture<Void> putLastAsync(V e);
 
+    /**
+     * Retrieves and removes value at the tail of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
+     * 
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the element at the head of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
     RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
-
+    
+    /**
+     * Retrieves and removes value at the tail of queue. Waits for an element become available.
+     * 
+     * @return the tail element of this queue
+     */
     RFuture<V> takeLastAsync();
 
+    /**
+     * Retrieves and removes value at the head of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
+     * 
+     * @param timeout how long to wait before giving up, in units of
+     *        {@code unit}
+     * @param unit a {@code TimeUnit} determining how to interpret the
+     *        {@code timeout} parameter
+     * @return the element at the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
+    /**
+     * Retrieves and removes value at the head of queue. Waits for an element become available.
+     * 
+     * @return the head element of this queue
+     */
     RFuture<V> takeFirstAsync();
 }

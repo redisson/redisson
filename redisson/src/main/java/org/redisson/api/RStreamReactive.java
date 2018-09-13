@@ -19,8 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.reactivestreams.Publisher;
+
 /**
- * Async interface for Redis Stream object.
+ * Reactive interface for Redis Stream object.
  * <p>
  * Requires <b>Redis 5.0.0 and higher.</b>
  * 
@@ -29,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * @param <K> key type
  * @param <V> value type
  */
-public interface RStreamAsync<K, V> extends RExpirableAsync {
+public interface RStreamReactive<K, V> extends RExpirableReactive {
 
     /**
      * Creates consumer group by name.
@@ -37,7 +39,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param groupName - name of group
      * @return void
      */
-    RFuture<Void> createGroupAsync(String groupName);
+    Publisher<Void> createGroup(String groupName);
     
     /**
      * Creates consumer group by name and stream id. 
@@ -46,10 +48,9 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * {@link StreamId#NEWEST} is used for messages arrived since the moment of group creating
      * 
      * @param groupName - name of group
-     * @param id - stream id
      * @return void
      */
-    RFuture<Void> createGroupAsync(String groupName, StreamId id);
+    Publisher<Void> createGroup(String groupName, StreamId id);
     
     /**
      * Marks pending messages by group name and stream <code>ids</code> as correctly processed.
@@ -58,7 +59,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - stream ids
      * @return marked messages amount
      */
-    RFuture<Long> ackAsync(String groupName, StreamId... ids);
+    Publisher<Long> ack(String groupName, StreamId... ids);
     
     /**
      * Returns pending messages by group name
@@ -66,7 +67,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param groupName - name of group
      * @return result object
      */
-    RFuture<PendingResult> listPendingAsync(String groupName);
+    Publisher<PendingResult> listPending(String groupName);
 
     /**
      * Returns list of pending messages by group name.
@@ -81,7 +82,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
-    RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamId startId, StreamId endId, int count);
+    Publisher<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count);
     
     /**
      * Returns list of pending messages by group name and consumer name.
@@ -97,7 +98,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param count - amount of messages
      * @return list
      */
-    RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamId startId, StreamId endId, int count, String consumerName);
+    Publisher<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count, String consumerName);
     
     /**
      * Transfers ownership of pending messages by id to a new consumer 
@@ -110,62 +111,55 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - stream ids
      * @return
      */
-    RFuture<Map<StreamId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
      * @param count - stream data size limit
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamId ... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
      * Wait for stream data availability for specified <code>timeout</code> interval.
      * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
      * Wait for stream data availability for specified <code>timeout</code> interval.
      * 
-     * @param groupName - name of group
-     * @param consumerName - name of consumer
      * @param count - stream data size limit
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamId ... ids);
 
+    
     /**
      * Returns number of entries in stream
      * 
      * @return size of stream
      */
-    RFuture<Long> sizeAsync();
+    Publisher<Long> size();
 
     /**
      * Appends a new entry and returns generated Stream ID
@@ -174,7 +168,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param value - value of entry
      * @return Stream ID
      */
-    RFuture<StreamId> addAsync(K key, V value);
+    Publisher<StreamId> add(K key, V value);
     
     /**
      * Appends a new entry by specified Stream ID
@@ -184,7 +178,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param value - value of entry
      * @return void
      */
-    RFuture<Void> addAsync(StreamId id, K key, V value);
+    Publisher<Void> add(StreamId id, K key, V value);
     
     /**
      * Appends a new entry and returns generated Stream ID.
@@ -197,7 +191,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return Stream ID
      */
-    RFuture<StreamId> addAsync(K key, V value, int trimLen, boolean trimStrict);
+    Publisher<StreamId> add(K key, V value, int trimLen, boolean trimStrict);
 
     /**
      * Appends a new entry by specified Stream ID.
@@ -211,7 +205,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return void
      */
-    RFuture<Void> addAsync(StreamId id, K key, V value, int trimLen, boolean trimStrict);
+    Publisher<Void> add(StreamId id, K key, V value, int trimLen, boolean trimStrict);
     
     /**
      * Appends new entries and returns generated Stream ID
@@ -219,7 +213,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param entries - entries to add
      * @return Stream ID
      */
-    RFuture<StreamId> addAllAsync(Map<K, V> entries);
+    Publisher<StreamId> addAll(Map<K, V> entries);
     
     /**
      * Appends new entries by specified Stream ID
@@ -228,7 +222,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param entries - entries to add
      * @return void
      */
-    RFuture<Void> addAllAsync(StreamId id, Map<K, V> entries);
+    Publisher<Void> addAll(StreamId id, Map<K, V> entries);
     
     /**
      * Appends new entries and returns generated Stream ID.
@@ -240,7 +234,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return Stream ID
      */
-    RFuture<StreamId> addAllAsync(Map<K, V> entries, int trimLen, boolean trimStrict);
+    Publisher<StreamId> addAll(Map<K, V> entries, int trimLen, boolean trimStrict);
 
     /**
      * Appends new entries by specified Stream ID.
@@ -253,7 +247,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return void
      */
-    RFuture<Void> addAllAsync(StreamId id, Map<K, V> entries, int trimLen, boolean trimStrict);
+    Publisher<Void> addAll(StreamId id, Map<K, V> entries, int trimLen, boolean trimStrict);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -261,7 +255,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readAsync(StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> read(StreamId ... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -270,7 +264,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readAsync(int count, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> read(int count, StreamId ... ids);
 
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -281,7 +275,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId ... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -293,7 +287,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamId ... ids);
+    Publisher<Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId ... ids);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -303,7 +297,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String name2, StreamId id2);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -315,7 +309,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -324,7 +318,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(StreamId id, Map<String, StreamId> nameToId);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -335,7 +329,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String name2, StreamId id2);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -348,7 +342,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -358,7 +352,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, StreamId id, Map<String, StreamId> nameToId);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -371,7 +365,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -386,7 +380,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -398,7 +392,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -412,7 +406,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -428,7 +422,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -441,7 +435,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    RFuture<Map<String, Map<StreamId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
+    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
     
     /**
      * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
@@ -450,7 +444,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> rangeAsync(StreamId startId, StreamId endId);
+    Publisher<Map<StreamId, Map<K, V>>> range(StreamId startId, StreamId endId);
 
     /**
      * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
@@ -460,7 +454,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> rangeAsync(int count, StreamId startId, StreamId endId);
+    Publisher<Map<StreamId, Map<K, V>>> range(int count, StreamId startId, StreamId endId);
     
     /**
      * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
@@ -469,7 +463,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> rangeReversedAsync(StreamId startId, StreamId endId);
+    Publisher<Map<StreamId, Map<K, V>>> rangeReversed(StreamId startId, StreamId endId);
     
     /**
      * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
@@ -479,6 +473,6 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamId, Map<K, V>>> rangeReversedAsync(int count, StreamId startId, StreamId endId);
+    Publisher<Map<StreamId, Map<K, V>>> rangeReversed(int count, StreamId startId, StreamId endId);
     
 }

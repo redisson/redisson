@@ -46,6 +46,7 @@ public class ClientConnectionsEntry {
     private final Queue<RedisPubSubConnection> freeSubscribeConnections = new ConcurrentLinkedQueue<RedisPubSubConnection>();
     private final AsyncSemaphore freeSubscribeConnectionsCounter;
 
+    private final Queue<RedisConnection> allConnections = new ConcurrentLinkedQueue<RedisConnection>();
     private final Queue<RedisConnection> freeConnections = new ConcurrentLinkedQueue<RedisConnection>();
     private final AsyncSemaphore freeConnectionsCounter;
 
@@ -167,6 +168,8 @@ public class ClientConnectionsEntry {
                 RedisConnection conn = future.getNow();
                 onConnect(conn);
                 log.debug("new connection created: {}", conn);
+                
+                allConnections.add(conn);
             }
         });
         return future;
@@ -214,6 +217,10 @@ public class ClientConnectionsEntry {
             }
         });
         return future;
+    }
+    
+    public Queue<RedisConnection> getAllConnections() {
+        return allConnections;
     }
 
     public Queue<RedisPubSubConnection> getAllSubscribeConnections() {

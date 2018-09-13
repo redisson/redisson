@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.BlockingQueue;
 
 /**
- * Bounded {@link BlockingQueue} backed by Redis
+ * Distributed implementation of bounded {@link BlockingQueue}
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection

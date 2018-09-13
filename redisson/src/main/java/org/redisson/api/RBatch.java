@@ -21,7 +21,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 
 /**
- * Interface for using pipeline feature.
+ * Interface for using Redis pipeline feature.
  * <p>
  * All method invocations on objects got through this interface 
  * are batched to separate queue and could be executed later

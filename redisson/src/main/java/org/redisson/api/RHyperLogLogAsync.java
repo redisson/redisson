@@ -23,18 +23,49 @@ import java.util.Collection;
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> type of stored values
  */
 public interface RHyperLogLogAsync<V> extends RExpirableAsync {
 
+    /**
+     * Adds element into this structure.
+     * 
+     * @param obj - element to add
+     * @return <code>true</code> if object has been added 
+     *          or <code>false</code> if it was already added
+     */
     RFuture<Boolean> addAsync(V obj);
 
+    /**
+     * Adds all elements contained in <code>objects</code> collection into this structure
+     * 
+     * @param objects - elements to add
+     * @return <code>true</code> if at least one object has been added 
+     *          or <code>false</code> if all were already added
+     */
     RFuture<Boolean> addAllAsync(Collection<V> objects);
 
+    /**
+     * Returns approximated number of unique elements added into this structure.
+     * 
+     * @return approximated number of unique elements added into this structure
+     */
     RFuture<Long> countAsync();
 
+    /**
+     * Returns approximated number of unique elements 
+     * added into this instances and other instances defined through <code>otherLogNames</code>.
+     * 
+     * @param otherLogNames - name of instances
+     * @return
+     */
     RFuture<Long> countWithAsync(String ... otherLogNames);
 
+    /**
+     * Merges multiple instances into this instance.
+     * 
+     * @param otherLogNames - name of instances
+     */
     RFuture<Void> mergeWithAsync(String ... otherLogNames);
 
 }

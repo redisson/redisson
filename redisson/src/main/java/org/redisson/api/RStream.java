@@ -15,12 +15,12 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Redis Stream implementation.
+ * Interface for Redis Stream object.
  * <p>
  * Requires <b>Redis 5.0.0 and higher.</b>
  * 
@@ -31,6 +31,133 @@ import java.util.concurrent.TimeUnit;
  */
 public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
+    /**
+     * Creates consumer group by name.
+     * 
+     * @param groupName - name of group
+     */
+    void createGroup(String groupName);
+
+    /**
+     * Creates consumer group by name and stream id. 
+     * Only new messages after defined stream <code>id</code> will be available for consumers of this group. 
+     * <p>
+     * {@link StreamId#NEWEST} is used for messages arrived since the moment of group creating
+     * 
+     * @param groupName - name of group
+     * @param id - stream id
+     */
+    void createGroup(String groupName, StreamId id);
+    
+    /**
+     * Marks pending messages by group name and stream <code>ids</code> as correctly processed.
+     * 
+     * @param groupName - name of group
+     * @param ids - stream ids
+     * @return marked messages amount
+     */
+    Long ack(String groupName, StreamId... ids);
+    
+    /**
+     * Returns pending messages by group name
+     * 
+     * @param groupName - name of group
+     * @return result object
+     */
+    PendingResult listPending(String groupName);
+    
+    /**
+     * Returns list of pending messages by group name.
+     * Limited by start stream id and end stream id and count.
+     * <p>
+     * {@link StreamId#MAX} is used as max stream id
+     * {@link StreamId#MIN} is used as min stream id
+     * 
+     * @param groupName - name of group
+     * @param startId - start stream id
+     * @param endId - end stream id
+     * @param count - amount of messages
+     * @return list
+     */
+    List<PendingEntry> listPending(String groupName, StreamId startId, StreamId endId, int count);
+
+    /**
+     * Returns list of pending messages by group name and consumer name.
+     * Limited by start stream id and end stream id and count.
+     * <p>
+     * {@link StreamId#MAX} is used as max stream id
+     * {@link StreamId#MIN} is used as min stream id
+     * 
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start stream id
+     * @param endId - end stream id
+     * @param count - amount of messages
+     * @return list
+     */
+    List<PendingEntry> listPending(String groupName, StreamId startId, StreamId endId, int count, String consumerName);
+
+    /**
+     * Transfers ownership of pending messages by id to a new consumer 
+     * by name if idle time of messages is greater than defined value. 
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param ids - stream ids
+     * @return
+     */
+    Map<StreamId, Map<K, V>> claimPending(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
+    
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param ids - collection of Stream IDs
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, StreamId ... ids);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param ids - collection of Stream IDs
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, int count, StreamId ... ids);
+    
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
+     * Wait for stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param ids - collection of Stream IDs
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId ... ids);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
+     * Wait for stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param ids - collection of Stream IDs
+     * @return stream data mapped by Stream ID
+     */
+    Map<StreamId, Map<K, V>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamId ... ids);
+    
     /**
      * Returns number of entries in stream
      * 

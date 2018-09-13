@@ -16,6 +16,8 @@
 package org.redisson.api;
 
 /**
+ * All objects that implement this interface 
+ * should be destroyed via {@link #destroy()} method.
  * 
  * @author Nikita Koksharov
  *

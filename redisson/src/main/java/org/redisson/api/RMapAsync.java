@@ -25,7 +25,9 @@ import org.redisson.api.map.MapWriter;
 import java.util.Set;
 
 /**
- * Async map functions
+ * Distributed async implementation of {@link Map}.
+ * 
+ * This map doesn't allow to store <code>null</code> as key or value.
  *
  * @author Nikita Koksharov
  *
@@ -86,12 +88,27 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
+    /**
+     * Atomically adds the given <code>delta</code> to the current value
+     * by mapped <code>key</code>.
+     *
+     * Works only for <b>numeric</b> values!
+     *
+     * @param key - map key
+     * @param value - delta the value to add
+     * @return the updated value
+     */
     RFuture<V> addAndGetAsync(K key, Number value);
 
     RFuture<Boolean> containsValueAsync(Object value);
 
     RFuture<Boolean> containsKeyAsync(Object key);
 
+    /**
+     * Returns size of this map
+     * 
+     * @return size
+     */
     RFuture<Integer> sizeAsync();
 
     /**

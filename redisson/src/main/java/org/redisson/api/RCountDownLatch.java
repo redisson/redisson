@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Distributed alternative to the {@link java.util.concurrent.CountDownLatch}
+ * Distributed implementation of {@link java.util.concurrent.CountDownLatch}
  *
  * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
  * count can be set via {@link #trySetCount} method.

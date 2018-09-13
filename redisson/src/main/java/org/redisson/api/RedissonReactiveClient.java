@@ -31,6 +31,32 @@ import org.redisson.config.Config;
 public interface RedissonReactiveClient {
 
     /**
+     * Returns stream instance by <code>name</code>
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name of stream
+     * @return RStream object
+     */
+    <K, V> RStreamReactive<K, V> getStream(String name);
+    
+    /**
+     * Returns stream instance by <code>name</code>
+     * using provided <code>codec</code> for entries.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     * 
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of stream
+     * @param codec - codec for entry
+     * @return RStream object
+     */
+    <K, V> RStreamReactive<K, V> getStream(String name, Codec codec);
+    
+    /**
      * Returns geospatial items holder instance by <code>name</code>.
      * 
      * @param <V> type of value

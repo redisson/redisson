@@ -235,12 +235,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RBuckets getBuckets() {
-        return new RedissonBuckets(this, connectionManager.getCommandExecutor());
+        return new RedissonBuckets(connectionManager.getCommandExecutor());
     }
 
     @Override
     public RBuckets getBuckets(Codec codec) {
-        return new RedissonBuckets(this, codec, connectionManager.getCommandExecutor());
+        return new RedissonBuckets(codec, connectionManager.getCommandExecutor());
     }
 
     @Override

@@ -129,6 +129,16 @@ public class RedissonAtomicDoubleReactive extends RedissonExpirableReactive impl
             }
         });
     }
+    
+    @Override
+    public Publisher<Double> getAndDelete() {
+        return reactive(new Supplier<RFuture<Double>>() {
+            @Override
+            public RFuture<Double> get() {
+                return instance.getAndDeleteAsync();
+            }
+        });
+    }
 
     public String toString() {
         return instance.toString();

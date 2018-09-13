@@ -4,15 +4,138 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.api.PendingEntry;
+import org.redisson.api.PendingResult;
 import org.redisson.api.RStream;
 import org.redisson.api.StreamId;
 
 public class RedissonStreamTest extends BaseTest {
 
+    @Test
+    public void testClaim() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamId id1 = stream.add("1", "1");
+        StreamId id2 = stream.add("2", "2");
+        
+        Map<StreamId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+        
+        StreamId id3 = stream.add("3", "33");
+        StreamId id4 = stream.add("4", "44");
+        
+        Map<StreamId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+        
+        Map<StreamId, Map<String, String>> res = stream.claimPending("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
+        assertThat(res.size()).isEqualTo(2);
+        assertThat(res.keySet()).containsExactly(id3, id4);
+        for (Map<String, String> map : res.values()) {
+            assertThat(map.keySet()).containsAnyOf("3", "4");
+            assertThat(map.values()).containsAnyOf("33", "44");
+        }
+    }
+    
+    @Test
+    public void testPending() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamId id1 = stream.add("1", "1");
+        StreamId id2 = stream.add("2", "2");
+        
+        Map<StreamId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+        
+        StreamId id3 = stream.add("3", "3");
+        StreamId id4 = stream.add("4", "4");
+        
+        Map<StreamId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+        
+        PendingResult pi = stream.listPending("testGroup");
+        assertThat(pi.getLowestId()).isEqualTo(id1);
+        assertThat(pi.getHighestId()).isEqualTo(id4);
+        assertThat(pi.getTotal()).isEqualTo(4);
+        assertThat(pi.getConsumerNames().keySet()).containsExactly("consumer1", "consumer2");
+        
+        List<PendingEntry> list = stream.listPending("testGroup", StreamId.MIN, StreamId.MAX, 10);
+        assertThat(list.size()).isEqualTo(4);
+        for (PendingEntry pendingEntry : list) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
+            assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+        
+        List<PendingEntry> list2 = stream.listPending("testGroup", StreamId.MIN, StreamId.MAX, 10, "consumer1");
+        assertThat(list2.size()).isEqualTo(2);
+        for (PendingEntry pendingEntry : list2) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2);
+            assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+    }
+    
+    @Test
+    public void testAck() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamId id1 = stream.add("1", "1");
+        StreamId id2 = stream.add("2", "2");
+        
+        Map<StreamId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+
+        assertThat(stream.ack("testGroup", id1, id2)).isEqualTo(2);
+    }
+    
+    @Test
+    public void testReadGroup() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamId id0 = stream.add("0", "0");
+        
+        stream.createGroup("testGroup", id0);
+        
+        stream.add("1", "1");
+        stream.add("2", "2");
+        stream.add("3", "3");
+        
+        Map<StreamId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
+        assertThat(s.size()).isEqualTo(3);
+
+        stream.add("1", "1");
+        stream.add("2", "2");
+        stream.add("3", "3");
+        
+        Map<StreamId, Map<String, String>> s1 = stream.readGroup("testGroup", "consumer1", 1);
+        assertThat(s1.size()).isEqualTo(1);
+        
+        StreamId id = stream.add("1", "1");
+        stream.add("2", "2");
+        stream.add("3", "3");
+        
+        Map<StreamId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer1", id);
+        assertThat(s2.size()).isEqualTo(2);
+    }
+    
     @Test
     public void testRangeReversed() {
         RStream<String, String> stream = redisson.getStream("test");

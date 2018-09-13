@@ -21,7 +21,7 @@ import java.util.Map;
 import org.reactivestreams.Publisher;
 
 /**
- * Geospatial items holder.
+ * Geospatial items holder. Reactive interface.
  * 
  * @author Nikita Koksharov
  *

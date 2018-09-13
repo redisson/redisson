@@ -19,7 +19,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Bounded {@link BlockingQueue} backed by Redis
+ * Distributed async implementation of bounded {@link BlockingQueue}
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection

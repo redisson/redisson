@@ -27,11 +27,12 @@ import java.util.concurrent.locks.Condition;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
@@ -58,12 +59,34 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class RedissonLock extends RedissonExpirable implements RLock {
 
+    public static class ExpirationEntry {
+        
+        private long threadId;
+        private Timeout timeout;
+        
+        public ExpirationEntry(long threadId, Timeout timeout) {
+            super();
+            this.threadId = threadId;
+            this.timeout = timeout;
+        }
+        
+        public long getThreadId() {
+            return threadId;
+        }
+        
+        public Timeout getTimeout() {
+            return timeout;
+        }
+        
+    }
+    
     private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
-    private static final ConcurrentMap<String, Timeout> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<String, ExpirationEntry> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime;
 
     final UUID id;
+    final String entryName;
 
     protected static final LockPubSub PUBSUB = new LockPubSub();
 
@@ -74,10 +97,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         this.commandExecutor = commandExecutor;
         this.id = commandExecutor.getConnectionManager().getId();
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.entryName = id + ":" + name;
     }
 
     protected String getEntryName() {
-        return id + ":" + getName();
+        return entryName;
     }
 
     String getChannelName() {
@@ -207,13 +231,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void run(Timeout timeout) throws Exception {
                 
-                RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                            "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                            "return 1; " +
-                        "end; " +
-                        "return 0;",
-                          Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+                RFuture<Boolean> future = renewExpirationAsync(threadId);
                 
                 future.addListener(new FutureListener<Boolean>() {
                     @Override
@@ -231,17 +249,30 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     }
                 });
             }
+
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
-        if (expirationRenewalMap.putIfAbsent(getEntryName(), task) != null) {
+        if (expirationRenewalMap.putIfAbsent(getEntryName(), new ExpirationEntry(threadId, task)) != null) {
             task.cancel();
         }
     }
 
-    void cancelExpirationRenewal() {
-        Timeout task = expirationRenewalMap.remove(getEntryName());
-        if (task != null) {
-            task.cancel();
+    protected RFuture<Boolean> renewExpirationAsync(long threadId) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                    "return 1; " +
+                "end; " +
+                "return 0;",
+            Collections.<Object>singletonList(getName()), 
+            internalLockLeaseTime, getLockName(threadId));
+    }
+
+    void cancelExpirationRenewal(Long threadId) {
+        ExpirationEntry task = expirationRenewalMap.get(getEntryName());
+        if (task != null && (threadId == null || task.getThreadId() == threadId)) {
+            expirationRenewalMap.remove(getEntryName());
+            task.getTimeout().cancel();
         }
     }
 
@@ -365,15 +396,16 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public void unlock() {
-        Boolean opStatus = get(unlockInnerAsync(Thread.currentThread().getId()));
-        if (opStatus == null) {
-            throw new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
-                    + id + " thread-id: " + Thread.currentThread().getId());
+        try {
+            get(unlockAsync(Thread.currentThread().getId()));
+        } catch (RedisException e) {
+            if (e.getCause() instanceof IllegalMonitorStateException) {
+                throw (IllegalMonitorStateException)e.getCause();
+            } else {
+                throw e;
+            }
         }
-        if (opStatus) {
-            cancelExpirationRenewal();
-        }
-
+        
 //        Future<Void> future = unlockAsync();
 //        future.awaitUninterruptibly();
 //        if (future.isSuccess()) {
@@ -398,7 +430,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
-        cancelExpirationRenewal();
+        cancelExpirationRenewal(null);
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                 + "redis.call('publish', KEYS[2], ARGV[1]); "
@@ -479,6 +511,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             @Override
             public void operationComplete(Future<Boolean> future) throws Exception {
                 if (!future.isSuccess()) {
+                    cancelExpirationRenewal(threadId);
                     result.tryFailure(future.cause());
                     return;
                 }
@@ -491,7 +524,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     return;
                 }
                 if (opStatus) {
-                    cancelExpirationRenewal();
+                    cancelExpirationRenewal(null);
                 }
                 result.trySuccess(null);
             }

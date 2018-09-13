@@ -202,7 +202,37 @@ public class RedissonTransactionalSet<V> extends RedissonSet<V> {
         checkState();
         return transactionalSet.readSortAsync(byPattern, getPatterns, order, offset, count);
     }
-    
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order) {
+        return transactionalSet.readSortAlphaAsync(order);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(SortOrder order, int offset, int count) {
+        return transactionalSet.readSortAlphaAsync(order, offset, count);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order) {
+        return transactionalSet.readSortAlphaAsync(byPattern, order);
+    }
+
+    @Override
+    public RFuture<Set<V>> readSortAlphaAsync(String byPattern, SortOrder order, int offset, int count) {
+        return transactionalSet.readSortAlphaAsync(byPattern, order, offset, count);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order) {
+        return transactionalSet.readSortAlphaAsync(byPattern, getPatterns, order);
+    }
+
+    @Override
+    public <T> RFuture<Collection<T>> readSortAlphaAsync(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
+        return transactionalSet.readSortAlphaAsync(byPattern, getPatterns, order, offset, count);
+    }
+
     @Override
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
         checkState();

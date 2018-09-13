@@ -22,18 +22,49 @@ import java.util.Collection;
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> type of stored values 
  */
 public interface RHyperLogLog<V> extends RExpirable, RHyperLogLogAsync<V> {
 
+    /**
+     * Adds element into this structure.
+     * 
+     * @param obj - element to add
+     * @return <code>true</code> if object has been added 
+     *          or <code>false</code> if it was already added
+     */
     boolean add(V obj);
 
+    /**
+     * Adds all elements contained in <code>objects</code> collection into this structure
+     * 
+     * @param objects - elements to add
+     * @return <code>true</code> if at least one object has been added 
+     *          or <code>false</code> if all were already added
+     */
     boolean addAll(Collection<V> objects);
 
+    /**
+     * Returns approximated number of unique elements added into this structure.
+     * 
+     * @return approximated number of unique elements added into this structure
+     */
     long count();
 
+    /**
+     * Returns approximated number of unique elements 
+     * added into this instances and other instances defined through <code>otherLogNames</code>.
+     * 
+     * @param otherLogNames - name of instances
+     * @return
+     */
     long countWith(String ... otherLogNames);
 
+    /**
+     * Merges multiple instances into this instance.
+     * 
+     * @param otherLogNames - name of instances
+     */
     void mergeWith(String ... otherLogNames);
 
 }

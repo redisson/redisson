@@ -28,9 +28,6 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.pubsub.LockPubSub;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * Lock will be removed automatically if client disconnects.
  *
@@ -86,7 +83,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     @Override
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
         String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
-        String keyPrefix = timeoutPrefix.split(":" + getLockName(threadId))[0];
+        String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
 
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local mode = redis.call('hget', KEYS[1], 'mode'); " +
@@ -104,6 +101,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     "redis.call('hdel', KEYS[1], ARGV[2]); " + 
                 "end;" +
                 "redis.call('del', KEYS[3] .. ':' .. (counter+1)); " +
+                
                 "if (redis.call('hlen', KEYS[1]) > 1) then " +
                     "local maxRemainTime = -3; " + 
                     "local keys = redis.call('hkeys', KEYS[1]); " + 
@@ -133,6 +131,39 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, keyPrefix), 
                 LockPubSub.unlockMessage, getLockName(threadId));
     }
+
+    protected String getKeyPrefix(long threadId, String timeoutPrefix) {
+        return timeoutPrefix.split(":" + getLockName(threadId))[0];
+    }
+    
+    @Override
+    protected RFuture<Boolean> renewExpirationAsync(long threadId) {
+        String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);
+        String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);
+        
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local counter = redis.call('hget', KEYS[1], ARGV[2]); " +
+                "if (counter ~= false) then " +
+                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                    
+                    "if (redis.call('hlen', KEYS[1]) > 1) then " +
+                        "local keys = redis.call('hkeys', KEYS[1]); " + 
+                        "for n, key in ipairs(keys) do " + 
+                            "counter = tonumber(redis.call('hget', KEYS[1], key)); " + 
+                            "if type(counter) == 'number' then " + 
+                                "for i=counter, 1, -1 do " + 
+                                    "redis.call('pexpire', KEYS[2] .. ':' .. key .. ':rwlock_timeout:' .. i, ARGV[1]); " + 
+                                "end; " + 
+                            "end; " + 
+                        "end; " +
+                    "end; " +
+                    
+                    "return 1; " +
+                "end; " +
+                "return 0;",
+            Arrays.<Object>asList(getName(), keyPrefix), 
+            internalLockLeaseTime, getLockName(threadId));
+    }
     
     @Override
     public Condition newCondition() {
@@ -141,7 +172,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
 
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
-        RFuture<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        cancelExpirationRenewal(null);
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hget', KEYS[1], 'mode') == 'read') then " +
                     "redis.call('del', KEYS[1]); " +
                     "redis.call('publish', KEYS[2], ARGV[1]); " +
@@ -149,17 +181,6 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "end; " +
                 "return 0; ",
                 Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
-
-          result.addListener(new FutureListener<Boolean>() {
-              @Override
-              public void operationComplete(Future<Boolean> future) throws Exception {
-                  if (future.isSuccess() && future.getNow()) {
-                      cancelExpirationRenewal();
-                  }
-              }
-          });
-
-          return result;
     }
 
     @Override

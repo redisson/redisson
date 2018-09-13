@@ -79,17 +79,14 @@ Usage
     
     @Bean
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
-        return new RedissonTransactionManager(redisson);
+        return new RedissonConnectionFactory(redisson);
     }
     
-    @Bean
-    public RedissonClient redisson() {
-        return BaseTest.createInstance();
+    @Bean(destroyMethod = "shutdown")
+    public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
+        Config config = Config.fromYAML(configFile.getInputStream());
+        return Redisson.create(config);
     }
     
-    @PreDestroy
-    public void destroy() {
-        redisson().shutdown();
-    }
  }
 ```

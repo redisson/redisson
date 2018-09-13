@@ -18,12 +18,18 @@ package org.redisson.api;
 import java.util.List;
 
 /**
+ * Future object for submitted tasks in a batch
  * 
  * @author Nikita Koksharov
  *
  */
 public interface RExecutorBatchFuture extends RFuture<Void> {
 
+    /**
+     * Returns list of Future objects. Each Future object represents submitted task.
+     * 
+     * @return list
+     */
     List<RExecutorFuture<?>> getTaskFutures();
     
 }

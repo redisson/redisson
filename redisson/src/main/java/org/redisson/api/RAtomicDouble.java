@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Distributed alternative to the AtomicDouble
+ * Distributed implementation to the AtomicDouble
  *
  * @author Nikita Koksharov
  *
@@ -57,14 +57,14 @@ public interface RAtomicDouble extends RExpirable, RAtomicDoubleAsync {
     double decrementAndGet();
 
     /**
-     * Gets the current value.
+     * Returns current value.
      *
-     * @return the current value
+     * @return current value
      */
     double get();
     
     /**
-     * Gets and deletes object
+     * Returns and deletes object
      * 
      * @return the current value
      */

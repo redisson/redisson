@@ -21,8 +21,8 @@ import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 
 /**
- * Interface for using pipeline feature.
- *
+ * Interface for using Redis pipeline feature.
+ * <p>
  * All method invocations on objects
  * from this interface are batched to separate queue and could be executed later
  * with <code>execute()</code> method.

@@ -15,22 +15,16 @@
  */
 package org.redisson.api;
 
-import java.util.List;
 import java.util.Map;
 
 /**
+ * Operations over multiple Bucket objects.
  * 
  * @author Nikita Koksharov
  *
  */
 public interface RBuckets extends RBucketsAsync {
 
-    /*
-     * Use RKeys.findKeysByPattern method instead
-     */
-    @Deprecated
-    <V> List<RBucket<V>> find(String pattern);
-    
     /**
      * Returns Redis object mapped by key. Result Map is not contains
      * key-value entry for null values.
