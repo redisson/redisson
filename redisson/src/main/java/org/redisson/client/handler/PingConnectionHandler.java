@@ -28,6 +28,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -45,7 +47,15 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        sendPing(ctx);
+        RedisConnection connection = RedisConnection.getFrom(ctx.channel());
+        connection.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
+            @Override
+            public void operationComplete(Future<RedisConnection> future) throws Exception {
+                if (future.isSuccess()) {
+                    sendPing(ctx);
+                }
+            }
+        });
         ctx.fireChannelActive();
     }
 
