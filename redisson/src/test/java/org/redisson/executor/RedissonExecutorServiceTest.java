@@ -374,6 +374,25 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isZero();
     }
     
+    @Test
+    public void testInvokeAll() throws InterruptedException {
+        RExecutorService e = redisson.getExecutorService("test");
+        List<Future<String>> futures = e.invokeAll(Arrays.asList(new CallableTask(), new CallableTask()));
+        for (Future<String> future : futures) {
+            assertThat(future.isDone());
+        }
+        e.shutdown();
+    }
+
+    @Test
+    public void testInvokeAny() throws InterruptedException, ExecutionException {
+        RExecutorService e = redisson.getExecutorService("test");
+        Object res = e.invokeAny(Arrays.asList((Callable<Object>)(Object)new CallableTask(), new DelayedTask(20000, "counter")));
+        assertThat(res).isEqualTo(CallableTask.RESULT);
+        e.shutdown();
+    }
+
+    
     @Test(expected = RejectedExecutionException.class)
     public void testEmptyRejectSubmitRunnable() throws InterruptedException, ExecutionException {
         RExecutorService e = redisson.getExecutorService("test");
