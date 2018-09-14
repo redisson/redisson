@@ -25,11 +25,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -929,77 +927,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return commandExecutor.get(scheduledFuture);
         
     }
-
-    private <T> T doInvokeAny(Collection<? extends Callable<T>> tasks,
-                            boolean timed, long millis) throws InterruptedException, ExecutionException, TimeoutException {
-        if (tasks == null) {
-            throw new NullPointerException();
-        }
-
-        int ntasks = tasks.size();
-        if (ntasks == 0) {
-            throw new IllegalArgumentException();
-        }
-
-        List<Future<T>> futures = new ArrayList<Future<T>>(ntasks);
-
-        try {
-            ExecutionException ee = null;
-            long lastTime = timed ? System.currentTimeMillis() : 0;
-            Iterator<? extends Callable<T>> it = tasks.iterator();
-
-            // Start one task for sure; the rest incrementally
-            futures.add(submit(it.next()));
-            --ntasks;
-            int active = 1;
-
-            for (;;) {
-                Future<T> f = poll(futures);
-                if (f == null) {
-                    if (ntasks > 0) {
-                        --ntasks;
-                        futures.add(submit(it.next()));
-                        ++active;
-                    }
-                    else if (active == 0)
-                        break;
-                    else if (timed) {
-                        f = poll(futures, millis, TimeUnit.MILLISECONDS);
-                        if (f == null)
-                            throw new TimeoutException();
-                        long now = System.currentTimeMillis();
-                        millis -= now - lastTime;
-                        lastTime = now;
-                    }
-                    else
-                        f = poll(futures, -1, null);
-                }
-                if (f != null) {
-                    --active;
-                    try {
-                        return f.get();
-                    } catch (ExecutionException eex) {
-                        ee = eex;
-                    } catch (RuntimeException rex) {
-                        ee = new ExecutionException(rex);
-                    }
-                }
-            }
-
-            if (ee == null)
-                ee = new ExecutionException("No tasks were finised", null);
-            throw ee;
-
-        } finally {
-            for (Future<T> f : futures) {
-                f.cancel(true);
-            }
-        }
-    }
     
-    private <T> Future<T> poll(List<Future<T>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException {
+    private <T> io.netty.util.concurrent.Future<T> poll(List<RExecutorFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException {
         final CountDownLatch latch = new CountDownLatch(1);
-        final AtomicReference<Future<T>> result = new AtomicReference<Future<T>>();
+        final AtomicReference<io.netty.util.concurrent.Future<T>> result = new AtomicReference<io.netty.util.concurrent.Future<T>>();
         FutureListener<T> listener = new FutureListener<T>() {
             @Override
             public void operationComplete(io.netty.util.concurrent.Future<T> future) throws Exception {
@@ -1007,7 +938,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 result.compareAndSet(null, future);
             }
         };
-        for (Future<T> future : futures) {
+        for (Future<?> future : futures) {
             RFuture<T> f = (RFuture<T>) future;
             f.addListener(listener);
         }
@@ -1018,7 +949,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             latch.await(timeout, timeUnit);
         }
         
-        for (Future<T> future : futures) {
+        for (Future<?> future : futures) {
             RFuture<T> f = (RFuture<T>) future;
             f.removeListener(listener);
         }
@@ -1026,20 +957,11 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         return result.get();
     }
     
-    private <T> Future<T> poll(List<Future<T>> futures) {
-        for (Future<T> future : futures) {
-            if (future.isDone()) {
-                return future;
-            }
-        }
-        return null;
-    }
-
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
         throws InterruptedException, ExecutionException {
         try {
-            return doInvokeAny(tasks, false, 0);
+            return invokeAny(tasks, -1, null);
         } catch (TimeoutException cannotHappen) {
             return null;
         }
@@ -1048,8 +970,20 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public <T> T invokeAny(Collection<? extends Callable<T>> tasks,
                            long timeout, TimeUnit unit)
-        throws InterruptedException, ExecutionException, TimeoutException {
-        return doInvokeAny(tasks, true, unit.toMillis(timeout));
+                                   throws InterruptedException, ExecutionException, TimeoutException {
+        if (tasks == null) {
+            throw new NullPointerException();
+        }
+        
+        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
+        io.netty.util.concurrent.Future<T> result = poll(future.getTaskFutures(), timeout, unit);
+        if (result == null) {
+            throw new TimeoutException();
+        }
+        for (RExecutorFuture<?> f : future.getTaskFutures()) {
+            f.cancel(true);
+        }
+        return result.getNow();
     }
 
     @Override
@@ -1058,29 +992,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
         
-        List<Future<T>> futures = new ArrayList<Future<T>>(tasks.size());
-        boolean done = false;
-        try {
-            for (Callable<T> t : tasks) {
-                Future<T> future = submit(t);
-                futures.add(future);
-            }
-            for (Future<T> f : futures) {
-                if (!f.isDone()) {
-                    try {
-                        f.get();
-                    } catch (CancellationException ignore) {
-                    } catch (ExecutionException ignore) {
-                    }
-                }
-            }
-            done = true;
-            return futures;
-        } finally {
-            if (!done)
-                for (Future<T> f : futures)
-                    f.cancel(true);
-        }
+        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
+        future.await();
+        List<?> futures = future.getTaskFutures();
+        return (List<Future<T>>)futures;
     }
 
     @Override
@@ -1090,55 +1005,10 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
         
-        long millis = unit.toMillis(timeout);
-        List<Future<T>> futures = new ArrayList<Future<T>>(tasks.size());
-        boolean done = false;
-        
-        try {
-            long lastTime = System.currentTimeMillis();
-
-            for (Callable<T> task : tasks) {
-                Future<T> future = submit(task);
-                futures.add(future);
-                
-                long now = System.currentTimeMillis();
-                millis -= now - lastTime;
-                lastTime = now;
-                if (millis <= 0) {
-                    int remainFutures = tasks.size() - futures.size();
-                    for (int i = 0; i < remainFutures; i++) {
-                        RPromise<T> cancelledFuture = new RedissonPromise<T>();
-                        cancelledFuture.cancel(true);
-                        futures.add(cancelledFuture);
-                        
-                    }
-                    return futures;
-                }
-            }
-
-            for (Future<T> f : futures) {
-                if (!f.isDone()) {
-                    if (millis <= 0)
-                        return futures;
-                    try {
-                        f.get(millis, TimeUnit.MILLISECONDS);
-                    } catch (CancellationException ignore) {
-                    } catch (ExecutionException ignore) {
-                    } catch (TimeoutException toe) {
-                        return futures;
-                    }
-                    long now = System.currentTimeMillis();
-                    millis -= now - lastTime;
-                    lastTime = now;
-                }
-            }
-            done = true;
-            return futures;
-        } finally {
-            if (!done)
-                for (Future<T> f : futures)
-                    f.cancel(true);
-        }
+        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
+        future.await(timeout, unit);
+        List<?> futures = future.getTaskFutures();
+        return (List<Future<T>>)futures;
     }
 
 }
