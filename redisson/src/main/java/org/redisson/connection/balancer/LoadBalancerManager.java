@@ -155,7 +155,9 @@ public class LoadBalancerManager {
     }
 
     public ClientConnectionsEntry freeze(ClientConnectionsEntry connectionEntry, FreezeReason freezeReason) {
-        if (connectionEntry == null) {
+        if (connectionEntry == null || (connectionEntry.isFailed() 
+                && connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
+                    && freezeReason == FreezeReason.RECONNECT)) {
             return null;
         }
 

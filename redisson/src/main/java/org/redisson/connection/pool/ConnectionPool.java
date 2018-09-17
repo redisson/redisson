@@ -197,8 +197,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public RFuture<T> get(RedisCommand<?> command, ClientConnectionsEntry entry) {
-        return acquireConnection(command, entry);
-    }
+            return acquireConnection(command, entry);
+        }
 
     public static abstract class AcquireCallback<T> implements Runnable, FutureListener<T> {
         
@@ -207,28 +207,29 @@ abstract class ConnectionPool<T extends RedisConnection> {
     protected final RFuture<T> acquireConnection(RedisCommand<?> command, final ClientConnectionsEntry entry) {
         final RPromise<T> result = new RedissonPromise<T>();
 
-        AcquireCallback<T> callback = new AcquireCallback<T>() {
-            @Override
-            public void run() {
-                result.removeListener(this);
-                connectTo(entry, result);
-            }
+            AcquireCallback<T> callback = new AcquireCallback<T>() {
+                    @Override
+                    public void run() {
+                        result.removeListener(this);
+                        connectTo(entry, result);
+                    }
+                
+                @Override
+                public void operationComplete(Future<T> future) throws Exception {
+                    entry.removeConnection(this);
+                }
+            };
             
-            @Override
-            public void operationComplete(Future<T> future) throws Exception {
-                entry.removeConnection(this);
-            }
-        };
+            result.addListener(callback);
+            acquireConnection(entry, callback);
         
-        result.addListener(callback);
-        acquireConnection(entry, callback);
-        
-        return result;
-    }
+            return result;
+        }
 
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
-        if (entry.getNodeType() == NodeType.SLAVE) {
-            return !entry.isFailed();
+        if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
+            checkForReconnect(entry, null);
+            return false;
         }
         return true;
     }
@@ -248,6 +249,11 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
         T conn = poll(entry);
         if (conn != null) {
+            if (!conn.isActive()) {
+                promiseFailure(entry, promise, conn);
+                return;
+            } 
+            
             connectedSuccessful(entry, promise, conn);
             return;
         }
@@ -321,10 +327,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
     private void checkForReconnect(ClientConnectionsEntry entry, Throwable cause) {
         if (masterSlaveEntry.slaveDown(entry, FreezeReason.RECONNECT)) {
             log.error("slave " + entry.getClient().getAddr() + " has been disconnected after " 
-                        + config.getFailedSlaveCheckInterval() + " time interval since moment of first failed connection", cause);
+                        + config.getFailedSlaveCheckInterval() + " ms interval since moment of the first failed connection", cause);
             scheduleCheck(entry);
+            }
         }
-    }
 
     private void scheduleCheck(final ClientConnectionsEntry entry) {
 
@@ -380,9 +386,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                         promise.addListener(new FutureListener<Void>() {
                                             @Override
                                             public void operationComplete(Future<Void> future) throws Exception {
-                                                masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT);
-                                                log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                            }
+                                                    masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT);
+                                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                                        }
                                         });
                                         initConnections(entry, promise, false);
                                     } else {
