@@ -46,7 +46,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         connection.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
             @Override
