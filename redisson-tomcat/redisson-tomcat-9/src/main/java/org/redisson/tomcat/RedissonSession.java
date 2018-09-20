@@ -90,7 +90,7 @@ public class RedissonSession extends StandardSession {
     public void delete() {
         map.delete();
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributesClearMessage(getId()));
+            topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
         map = null;
     }
@@ -134,7 +134,7 @@ public class RedissonSession extends StandardSession {
         for (Entry<String, Object> entry : newMap.entrySet()) {
             map.put(entry.getKey(), entry.getValue());
         }
-        return new AttributesPutAllMessage(getId(), map);
+        return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map);
     }
     
     @Override
@@ -152,7 +152,7 @@ public class RedissonSession extends StandardSession {
     private void fastPut(String name, Object value) {
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributeUpdateMessage(getId(), name, value));
+            topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value));
         }
     }
     
@@ -212,7 +212,7 @@ public class RedissonSession extends StandardSession {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
             if (readMode == ReadMode.MEMORY) {
-                topic.publish(new AttributeRemoveMessage(getId(), name));
+                topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), name));
             }
         }
     }
