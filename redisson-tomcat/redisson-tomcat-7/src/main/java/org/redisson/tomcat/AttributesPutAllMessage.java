@@ -1,11 +1,18 @@
-// Copyright (c) 2018. Engie-Electrabel. All rights reserved.
-//
-// Engie-Electrabel n.v./s.a., Simon Bolivarlaan 34 Boulevard Simón Bolivar, BTW BE 0403.107.701 - 1000 Brussel/Bruxelles, Belgium.
-//
-// Proprietary Notice:
-// This software is the confidential and proprietary information of Engie-Electrabel s.a./n.v. and/or its licensors.
-// You shall not disclose this Confidential Information to any third parties and any use thereof shall be subject to the terms and conditions of use, as agreed upon with Engie-Electrabel in writing.
-//
+/**
+ * Copyright 2018 Nikita Koksharov
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.redisson.tomcat;
 
 import java.util.Map;
