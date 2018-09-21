@@ -50,7 +50,7 @@ public interface RExpirableAsync extends RObjectAsync {
      * Set an expire date for object in async mode. When expire date comes
      * the key will automatically be deleted.
      *
-     * @param timestamp - expire date in seconds (Unix timestamp)
+     * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
     RFuture<Boolean> expireAtAsync(long timestamp);
