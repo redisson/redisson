@@ -172,7 +172,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
     }
     
     @Test
-    public void testRemainingCapacity() {
+    public void testRemainingCapacity() throws InterruptedException {
         RBoundedBlockingQueue<Integer> queue1 = redisson.getBoundedBlockingQueue("bounded-queue:testRemainingCapacity");
         assertThat(queue1.trySetCapacity(3)).isTrue();
         assertThat(queue1.remainingCapacity()).isEqualTo(3);
@@ -182,6 +182,13 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue1.remainingCapacity()).isEqualTo(1);
         assertThat(queue1.add(3)).isTrue();
         assertThat(queue1.remainingCapacity()).isEqualTo(0);
+        
+        RBoundedBlockingQueue<Integer> queue2 = redisson.getBoundedBlockingQueue("bounded-queue:testRemainingCapacityEmpty");
+        assertThat(queue2.trySetCapacity(3)).isTrue();
+        for (int i = 0; i < 5; i++) {
+            queue2.poll(1, TimeUnit.SECONDS);
+            assertThat(queue2.remainingCapacity()).isEqualTo(3);
+        }
     }
     
     @Test
