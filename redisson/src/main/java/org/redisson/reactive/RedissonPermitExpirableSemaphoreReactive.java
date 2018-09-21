@@ -147,5 +147,15 @@ public class RedissonPermitExpirableSemaphoreReactive extends RedissonExpirableR
             }
         });
     }
+
+    @Override
+    public Publisher<Boolean> updateLeaseTime(String permitId, long leaseTime, TimeUnit unit) {
+        return reactive(new Supplier<RFuture<Boolean>>() {
+            @Override
+            public RFuture<Boolean> get() {
+                return instance.updateLeaseTimeAsync(permitId, leaseTime, unit);
+            }
+        });
+    }
     
 }
