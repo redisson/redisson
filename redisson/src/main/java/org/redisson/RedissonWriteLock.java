@@ -107,7 +107,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                 "end; "
                 + "return nil;",
         Arrays.<Object>asList(getName(), getChannelName()), 
-        LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
+        LockPubSub.readUnlockMessage, internalLockLeaseTime, getLockName(threadId));
     }
     
     @Override
@@ -125,7 +125,7 @@ public class RedissonWriteLock extends RedissonLock implements RLock {
                   "return 1; " +
               "end; " +
               "return 0; ",
-              Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
+              Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.readUnlockMessage);
     }
 
     @Override

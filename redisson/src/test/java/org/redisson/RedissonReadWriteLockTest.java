@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -231,6 +232,31 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         assertThat(writeLock.isLocked()).isFalse();
     }
 
+    @Test
+    public void testWriteRead() throws InterruptedException {
+        RReadWriteLock readWriteLock = redisson.getReadWriteLock("TEST");
+        readWriteLock.writeLock().lock();
+
+        int threads = 20;
+        CountDownLatch ref = new CountDownLatch(threads);
+        for (int i = 0; i < threads; i++) {
+            Thread t1 = new Thread(() -> {
+                readWriteLock.readLock().lock();
+                try {
+                    Thread.sleep(800);
+                } catch (InterruptedException e) {
+                }
+                readWriteLock.readLock().unlock();
+                ref.countDown();
+            });
+            t1.start();
+            t1.join(100);
+        }
+        
+        readWriteLock.writeLock().unlock();
+        
+        assertThat(ref.await(1, TimeUnit.SECONDS)).isTrue();
+    }
     
     @Test
     public void testWriteReadReentrancy() throws InterruptedException {
