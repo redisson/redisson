@@ -155,7 +155,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * will not wait at all.
      * 
      * @param waitTime the maximum time to wait for a permit
-     * @param leaseTime permit lease time
+     * @param leaseTime permit lease time, use -1 to make it permanent
      * @param unit the time unit of the {@code timeout} argument
      * @return permit id if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
@@ -220,5 +220,15 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * @param permits - number of permits to add/remove
      */
     void addPermits(int permits);
+ 
+    /**
+     * Overrides and updates lease time for defined permit id.
+     * 
+     * @param permitId - permit id
+     * @param leaseTime - permit lease time, use -1 to make it permanent
+     * @param unit - the time unit of the {@code timeout} argument
+     * @return <code>true</code> if permits has been updated successfully, otherwise <code>false</code>.
+     */
+    boolean updateLeaseTime(String permitId, long leaseTime, TimeUnit unit);
     
 }
