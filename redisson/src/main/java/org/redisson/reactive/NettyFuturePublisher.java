@@ -46,20 +46,24 @@ public class NettyFuturePublisher<T> extends Stream<T> {
 
                 @Override
                 protected void onRequest(long n) {
-                    supplier.get().addListener(new FutureListener<T>() {
-                        @Override
-                        public void operationComplete(Future<T> future) throws Exception {
-                            if (!future.isSuccess()) {
-                                onError(future.cause());
-                                return;
+                    try {
+                        supplier.get().addListener(new FutureListener<T>() {
+                            @Override
+                            public void operationComplete(Future<T> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    onError(future.cause());
+                                    return;
+                                }
+                                
+                                if (future.getNow() != null) {
+                                    onNext(future.getNow());
+                                }
+                                onComplete();
                             }
-                            
-                            if (future.getNow() != null) {
-                                onNext(future.getNow());
-                            }
-                            onComplete();
-                        }
-                    });
+                        });
+                    } catch (Exception e) {
+                        onError(e);
+                    }
                 }
             });
         } catch (Throwable throwable) {

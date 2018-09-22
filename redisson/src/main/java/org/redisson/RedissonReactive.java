@@ -66,30 +66,21 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.ReactiveProxyBuilder;
-import org.redisson.reactive.RedissonAtomicDoubleReactive;
-import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
-import org.redisson.reactive.RedissonBitSetReactive;
 import org.redisson.reactive.RedissonBlockingDequeReactive;
 import org.redisson.reactive.RedissonBlockingQueueReactive;
-import org.redisson.reactive.RedissonBucketReactive;
 import org.redisson.reactive.RedissonDequeReactive;
 import org.redisson.reactive.RedissonGeoReactive;
-import org.redisson.reactive.RedissonHyperLogLogReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListMultimapReactive;
 import org.redisson.reactive.RedissonListReactive;
-import org.redisson.reactive.RedissonLockReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
-import org.redisson.reactive.RedissonPermitExpirableSemaphoreReactive;
 import org.redisson.reactive.RedissonQueueReactive;
-import org.redisson.reactive.RedissonRateLimiterReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
-import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
@@ -145,22 +136,22 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     @Override
     public RLockReactive getFairLock(String name) {
-        return new RedissonLockReactive(commandExecutor, name, new RedissonFairLock(commandExecutor, name));
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFairLock(commandExecutor, name), RLockReactive.class);
     }
     
     @Override
     public RRateLimiterReactive getRateLimiter(String name) {
-        return new RedissonRateLimiterReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonRateLimiter(commandExecutor, name), RRateLimiterReactive.class);
     }
     
     @Override
     public RSemaphoreReactive getSemaphore(String name) {
-        return new RedissonSemaphoreReactive(commandExecutor, name, semaphorePubSub);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name, semaphorePubSub), RSemaphoreReactive.class);
     }
 
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
-        return new RedissonPermitExpirableSemaphoreReactive(commandExecutor, name, semaphorePubSub);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub), RPermitExpirableSemaphoreReactive.class);
     }
 
     @Override
@@ -170,7 +161,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RLockReactive getLock(String name) {
-        return new RedissonLockReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockReactive.class);
     }
 
     @Override
@@ -185,12 +176,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RBucketReactive<V> getBucket(String name) {
-        return new RedissonBucketReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBucket<V>(commandExecutor, name), RBucketReactive.class);
     }
 
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
-        return new RedissonBucketReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBucket<V>(codec, commandExecutor, name), RBucketReactive.class);
     }
 
     @Override
@@ -211,12 +202,12 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
-        return new RedissonHyperLogLogReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);
     }
 
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec) {
-        return new RedissonHyperLogLogReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(codec, commandExecutor, name), RHyperLogLogReactive.class);
     }
 
     @Override
@@ -346,17 +337,17 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RAtomicLongReactive getAtomicLong(String name) {
-        return new RedissonAtomicLongReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongReactive.class);
     }
 
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
-        return new RedissonAtomicDoubleReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleReactive.class);
     }
 
     @Override
     public RBitSetReactive getBitSet(String name) {
-        return new RedissonBitSetReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetReactive.class);
     }
 
     @Override

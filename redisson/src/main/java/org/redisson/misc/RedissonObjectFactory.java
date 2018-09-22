@@ -114,14 +114,13 @@ public class RedissonObjectFactory {
                 Object id = ns.resolveId(rr.getKeyName());
                 return (T) liveObjectService.createLiveObject(type, id);
             }
-            List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
-            for (Class<?> iType : interfaces) {
-                if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                    Method builder = builders.get(iType).get(isDefaultCodec(rr));
-                    return (T) (isDefaultCodec(rr)
-                            ? builder.invoke(redisson, rr.getKeyName())
-                            : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
-                }
+            
+            RedissonObjectBuilder b = builders.get(type);
+            if (b != null) {
+                Method builder = b.get(isDefaultCodec(rr));
+                return (T) (isDefaultCodec(rr)
+                        ? builder.invoke(redisson, rr.getKeyName())
+                                : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
             }
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + rr.getTypeName() + " with codec type of " + rr.getCodecName());
@@ -139,14 +138,12 @@ public class RedissonObjectFactory {
          * Live Object from reference in reactive client is not supported yet.
          */
         if (type != null) {
-            List<Class<?>> interfaces = Arrays.asList(type.getInterfaces());
-            for (Class<?> iType : interfaces) {
-                if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                    Method builder = builders.get(iType).get(isDefaultCodec(rr));
+            RedissonObjectBuilder b = builders.get(type);
+            if (b != null) {
+                    Method builder = b.get(isDefaultCodec(rr));
                     return (T) (isDefaultCodec(rr)
                             ? builder.invoke(redisson, rr.getKeyName())
                             : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
-                }
             }
         }
         throw new ClassNotFoundException("No RObjectReactive is found to match class type of " + rr.getReactiveTypeName()+ " with codec type of " + rr.getCodecName());
@@ -158,14 +155,18 @@ public class RedissonObjectFactory {
         }
         
         if (object instanceof RObject && !(object instanceof RLiveObject)) {
+            Class<?> clazz = object.getClass().getInterfaces()[0];
+            
             RObject rObject = ((RObject) object);
-            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
-            return new RedissonReference(object.getClass(), ((RObject) object).getName(), ((RObject) object).getCodec());
+            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
         if (object instanceof RObjectReactive && !(object instanceof RLiveObject)) {
+            Class<?> clazz = object.getClass().getInterfaces()[0];
+
             RObjectReactive rObject = ((RObjectReactive) object);
-            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), (Class) rObject.getClass(), rObject.getName(), rObject.getCodec());
-            return new RedissonReference(object.getClass(), ((RObjectReactive) object).getName(), ((RObjectReactive) object).getCodec());
+            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
         
         try {
@@ -179,6 +180,7 @@ public class RedissonObjectFactory {
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();
                 Class<?> type = ClassUtils.getDeclaredField(rEntity, name).getType();
+                
                 return new RedissonReference(rEntity,
                         ns.getName(rEntity, type, name, ((RLiveObject) object).getLiveObjectId()));
             }

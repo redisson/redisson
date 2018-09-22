@@ -94,19 +94,6 @@ public class RedissonBitSetReactiveTest extends BaseReactiveTest {
     }
 
     @Test
-    public void testAsBitSet() {
-        RBitSetReactive bs = redisson.getBitSet("testbitset");
-        sync(bs.set(3, true));
-        sync(bs.set(41, true));
-        Assert.assertEquals(48, sync(bs.size()).intValue());
-
-        BitSet bitset = sync(bs.asBitSet());
-        Assert.assertTrue(bitset.get(3));
-        Assert.assertTrue(bitset.get(41));
-        Assert.assertEquals(2, bitset.cardinality());
-    }
-
-    @Test
     public void testAnd() {
         RBitSetReactive bs1 = redisson.getBitSet("testbitset1");
         sync(bs1.set(3, 5));

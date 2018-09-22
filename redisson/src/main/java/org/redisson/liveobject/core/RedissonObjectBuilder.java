@@ -84,7 +84,7 @@ public class RedissonObjectBuilder {
 
     public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         Codec codec = ar.getCodec();
-        codecProvider.registerCodec((Class) codec.getClass(), ar, codec);
+        codecProvider.registerCodec((Class) codec.getClass(), codec);
         liveMap.fastPut(fieldName,
                 new RedissonReference(ar.getClass(), ar.getName(), codec));
     }

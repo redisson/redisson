@@ -22,7 +22,6 @@ import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.reactive.NettyFuturePublisher;
 
 import reactor.fn.Supplier;
@@ -48,16 +47,6 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
             @Override
             public RFuture<R> get() {
                 return writeAsync(key, codec, command, params);
-            };
-        });
-    }
-
-    @Override
-    public <T, R> Publisher<R> writeReactive(final MasterSlaveEntry entry, final Codec codec, final RedisCommand<T> command, final Object ... params) {
-        return reactive(new Supplier<RFuture<R>>() {
-            @Override
-            public RFuture<R> get() {
-                return writeAsync(entry, codec, command, params);
             };
         });
     }
