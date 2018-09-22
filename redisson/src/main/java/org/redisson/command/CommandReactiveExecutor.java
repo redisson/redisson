@@ -33,8 +33,6 @@ public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier);
 
-    <T, R> Publisher<R> writeReactive(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
-
     <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
     <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);

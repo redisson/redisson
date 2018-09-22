@@ -37,12 +37,12 @@ public class RedissonReadWriteLockReactive extends RedissonExpirableReactive imp
 
     @Override
     public RLockReactive readLock() {
-        return new RedissonLockReactive(commandExecutor, getName(), instance.readLock());
+        return ReactiveProxyBuilder.create(commandExecutor, instance.readLock(), RLockReactive.class);
     }
 
     @Override
     public RLockReactive writeLock() {
-        return new RedissonLockReactive(commandExecutor, getName(), instance.writeLock());
+        return ReactiveProxyBuilder.create(commandExecutor, instance.writeLock(), RLockReactive.class);
     }
 
     

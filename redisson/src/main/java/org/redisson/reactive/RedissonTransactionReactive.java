@@ -48,12 +48,12 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public <V> RBucketReactive<V> getBucket(String name) {
-        return new RedissonBucketReactive<V>(executorService, name, transaction.<V>getBucket(name));
+        return ReactiveProxyBuilder.create(executorService, transaction.<V>getBucket(name), RBucketReactive.class);
     }
 
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
-        return new RedissonBucketReactive<V>(codec, executorService, name, transaction.<V>getBucket(name, codec));
+        return ReactiveProxyBuilder.create(executorService, transaction.<V>getBucket(name, codec), RBucketReactive.class);
     }
 
     @Override

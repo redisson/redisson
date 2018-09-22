@@ -95,45 +95,4 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         codecCache.putIfAbsent(cls, codec);
     }
 
-    @Override
-    public <T extends Codec> void registerCodec(REntity anno, Class<?> cls, T codec) {
-        if (!cls.isAnnotationPresent(anno.getClass())) {
-            throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
-        }
-        registerCodec((Class<Codec>) anno.codec(), codec);
-    }
-
-    @Override
-    public <T extends Codec, K extends RObject> void registerCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, T codec) {
-        try {
-            if (!cls.getField(fieldName).isAnnotationPresent(anno.getClass())) {
-                throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");
-            }
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-        if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
-        }
-        registerCodec((Class<Codec>) anno.codec(), codec);
-    }
-    
-    @Override
-    public <T extends Codec, K extends RObject> void registerCodec(Class<T> codecClass, Class<K> rObjectClass, T codec) {
-        if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot register an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
-        }
-        registerCodec((Class<Codec>) codecClass, codec);
-    }
-    
-    @Override
-    public <T extends Codec, K extends RObject> void registerCodec(Class<T> codecClass, Class<K> rObjectClass, String name, T codec) {
-        registerCodec(codecClass, rObjectClass, codec);
-    }
-
-    @Override
-    public <T extends Codec> void registerCodec(Class<T> codecClass, RObject rObject, T codec) {
-        registerCodec(codecClass, rObject.getClass(), rObject.getName(), codec);
-    }
-
 }

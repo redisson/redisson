@@ -27,8 +27,6 @@ import org.reactivestreams.Publisher;
  */
 public interface RBitSetReactive extends RExpirableReactive {
 
-    Publisher<BitSet> asBitSet();
-
     Publisher<byte[]> toByteArray();
 
     /**

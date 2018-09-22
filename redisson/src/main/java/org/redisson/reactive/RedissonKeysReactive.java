@@ -30,12 +30,15 @@ import org.redisson.RedissonKeys;
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeysReactive;
 import org.redisson.api.RType;
+import org.redisson.client.RedisClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -90,19 +93,14 @@ public class RedissonKeysReactive implements RKeysReactive {
         return getKeysByPattern(null, count);
     }
 
-    private Publisher<ListScanResult<String>> scanIterator(MasterSlaveEntry entry, long startPos, String pattern, int count) {
-        if (pattern == null) {
-            return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT", count);
-        }
-        return commandExecutor.writeReactive(entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
-    }
-
     private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
         return Flux.create(new Consumer<FluxSink<String>>() {
             
             @Override
             public void accept(FluxSink<String> emitter) {
                 emitter.onRequest(new LongConsumer() {
+                    
+                    private RedisClient client;
                     private List<String> firstValues;
                     private long nextIterPos;
                     
@@ -115,18 +113,19 @@ public class RedissonKeysReactive implements RKeysReactive {
                     }
                     
                     protected void nextValues(FluxSink<String> emitter) {
-                        scanIterator(entry, nextIterPos, pattern, count).subscribe(new Subscriber<ListScanResult<String>>() {
+                        instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).addListener(new FutureListener<ListScanResult<Object>>() {
 
                             @Override
-                            public void onSubscribe(Subscription s) {
-                                s.request(Long.MAX_VALUE);
-                            }
-
-                            @Override
-                            public void onNext(ListScanResult<String> res) {
+                            public void operationComplete(Future<ListScanResult<Object>> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    emitter.error(future.cause());
+                                    return;
+                                }
+                                
+                                ListScanResult<Object> res = future.get();
                                 long prevIterPos = nextIterPos;
                                 if (nextIterPos == 0 && firstValues == null) {
-                                    firstValues = res.getValues();
+                                    firstValues = (List<String>)(Object)res.getValues();
                                 } else if (res.getValues().equals(firstValues)) {
                                     emitter.complete();
                                     currentIndex = 0;
@@ -137,8 +136,8 @@ public class RedissonKeysReactive implements RKeysReactive {
                                 if (prevIterPos == nextIterPos) {
                                     nextIterPos = -1;
                                 }
-                                for (String val : res.getValues()) {
-                                    emitter.next(val);
+                                for (Object val : res.getValues()) {
+                                    emitter.next((String)val);
                                     currentIndex--;
                                     if (currentIndex == 0) {
                                         emitter.complete();
@@ -149,20 +148,13 @@ public class RedissonKeysReactive implements RKeysReactive {
                                     emitter.complete();
                                     currentIndex = 0;
                                 }
-                            }
-
-                            @Override
-                            public void onError(Throwable error) {
-                                emitter.error(error);
-                            }
-
-                            @Override
-                            public void onComplete() {
+                                
                                 if (currentIndex == 0) {
                                     return;
                                 }
                                 nextValues(emitter);
                             }
+                            
                         });
                     }
 

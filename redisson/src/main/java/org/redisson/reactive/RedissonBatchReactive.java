@@ -19,7 +19,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonAtomicDouble;
+import org.redisson.RedissonAtomicLong;
+import org.redisson.RedissonBitSet;
+import org.redisson.RedissonBucket;
+import org.redisson.RedissonHyperLogLog;
 import org.redisson.RedissonScript;
+import org.redisson.RedissonStream;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicDoubleReactive;
@@ -45,6 +51,7 @@ import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
+import org.redisson.api.RStreamReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
@@ -73,23 +80,33 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
+    public <K, V> RStreamReactive<K, V> getStream(String name) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonStream<K, V>(executorService, name), RStreamReactive.class);
+    }
+
+    @Override
+    public <K, V> RStreamReactive<K, V> getStream(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonStream<K, V>(codec, executorService, name), RStreamReactive.class);
+    }
+    
+    @Override
     public <V> RBucketReactive<V> getBucket(String name) {
-        return new RedissonBucketReactive<V>(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonBucket<V>(executorService, name), RBucketReactive.class);
     }
 
     @Override
     public <V> RBucketReactive<V> getBucket(String name, Codec codec) {
-        return new RedissonBucketReactive<V>(codec, executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonBucket<V>(codec, executorService, name), RBucketReactive.class);
     }
 
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
-        return new RedissonHyperLogLogReactive<V>(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonHyperLogLog<V>(executorService, name), RHyperLogLogReactive.class);
     }
 
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec) {
-        return new RedissonHyperLogLogReactive<V>(codec, executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonHyperLogLog<V>(codec, executorService, name), RHyperLogLogReactive.class);
     }
 
     @Override
@@ -174,7 +191,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public RAtomicLongReactive getAtomicLongReactive(String name) {
-        return new RedissonAtomicLongReactive(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonAtomicLong(executorService, name), RAtomicLongReactive.class);
     }
 
     @Override
@@ -204,7 +221,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public RBitSetReactive getBitSet(String name) {
-        return new RedissonBitSetReactive(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonBitSet(executorService, name), RBitSetReactive.class);
     }
 
     @Override
@@ -298,7 +315,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public RAtomicDoubleReactive getAtomicDouble(String name) {
-        return new RedissonAtomicDoubleReactive(executorService, name);
+        return ReactiveProxyBuilder.create(executorService, new RedissonAtomicDouble(executorService, name), RAtomicDoubleReactive.class);
     }
 
     @Override

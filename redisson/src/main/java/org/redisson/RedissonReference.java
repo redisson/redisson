@@ -16,26 +16,41 @@
 package org.redisson;
 
 import java.io.Serializable;
-import org.redisson.client.codec.Codec;
+
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RAtomicLongReactive;
+import org.redisson.api.RBitSet;
+import org.redisson.api.RBitSetReactive;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RBlockingQueueReactive;
+import org.redisson.api.RBucket;
+import org.redisson.api.RBucketReactive;
+import org.redisson.api.RDeque;
+import org.redisson.api.RDequeReactive;
+import org.redisson.api.RHyperLogLog;
+import org.redisson.api.RHyperLogLogReactive;
+import org.redisson.api.RLexSortedSet;
+import org.redisson.api.RLexSortedSetReactive;
+import org.redisson.api.RList;
+import org.redisson.api.RListReactive;
+import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
+import org.redisson.api.RMapCacheReactive;
+import org.redisson.api.RMapReactive;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
+import org.redisson.api.RQueue;
+import org.redisson.api.RQueueReactive;
+import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RScoredSortedSetReactive;
+import org.redisson.api.RSet;
+import org.redisson.api.RSetCache;
+import org.redisson.api.RSetCacheReactive;
+import org.redisson.api.RSetReactive;
 import org.redisson.api.annotation.REntity;
+import org.redisson.client.codec.Codec;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.misc.BiHashMap;
-import org.redisson.reactive.RedissonAtomicLongReactive;
-import org.redisson.reactive.RedissonBitSetReactive;
-import org.redisson.reactive.RedissonBlockingQueueReactive;
-import org.redisson.reactive.RedissonBucketReactive;
-import org.redisson.reactive.RedissonDequeReactive;
-import org.redisson.reactive.RedissonHyperLogLogReactive;
-import org.redisson.reactive.RedissonLexSortedSetReactive;
-import org.redisson.reactive.RedissonListReactive;
-import org.redisson.reactive.RedissonMapCacheReactive;
-import org.redisson.reactive.RedissonMapReactive;
-import org.redisson.reactive.RedissonQueueReactive;
-import org.redisson.reactive.RedissonScoredSortedSetReactive;
-import org.redisson.reactive.RedissonSetCacheReactive;
-import org.redisson.reactive.RedissonSetReactive;
 
 /**
  *
@@ -46,20 +61,20 @@ public class RedissonReference implements Serializable {
     private static final BiHashMap<String, String> reactiveMap = new BiHashMap<String, String>();
 
     static {
-        reactiveMap.put(RedissonAtomicLongReactive.class.getName(),         RedissonAtomicLong.class.getName());
-        reactiveMap.put(RedissonBitSetReactive.class.getName(),             RedissonBitSet.class.getName());
-        reactiveMap.put(RedissonBlockingQueueReactive.class.getName(),      RedissonBlockingQueue.class.getName());
-        reactiveMap.put(RedissonBucketReactive.class.getName(),             RedissonBucket.class.getName());
-        reactiveMap.put(RedissonDequeReactive.class.getName(),              RedissonDeque.class.getName());
-        reactiveMap.put(RedissonHyperLogLogReactive.class.getName(),        RedissonHyperLogLog.class.getName());
-        reactiveMap.put(RedissonLexSortedSetReactive.class.getName(),       RedissonLexSortedSet.class.getName());
-        reactiveMap.put(RedissonListReactive.class.getName(),               RedissonList.class.getName());
-        reactiveMap.put(RedissonMapCacheReactive.class.getName(),           RedissonMapCache.class.getName());
-        reactiveMap.put(RedissonMapReactive.class.getName(),                RedissonMap.class.getName());
-        reactiveMap.put(RedissonQueueReactive.class.getName(),              RedissonQueue.class.getName());
-        reactiveMap.put(RedissonScoredSortedSetReactive.class.getName(),    RedissonScoredSortedSet.class.getName());
-        reactiveMap.put(RedissonSetCacheReactive.class.getName(),           RedissonSetCache.class.getName());
-        reactiveMap.put(RedissonSetReactive.class.getName(),                RedissonSet.class.getName());
+        reactiveMap.put(RAtomicLongReactive.class.getName(),         RAtomicLong.class.getName());
+        reactiveMap.put(RBitSetReactive.class.getName(),             RBitSet.class.getName());
+        reactiveMap.put(RBlockingQueueReactive.class.getName(),      RBlockingQueue.class.getName());
+        reactiveMap.put(RBucketReactive.class.getName(),             RBucket.class.getName());
+        reactiveMap.put(RDequeReactive.class.getName(),              RDeque.class.getName());
+        reactiveMap.put(RHyperLogLogReactive.class.getName(),        RHyperLogLog.class.getName());
+        reactiveMap.put(RLexSortedSetReactive.class.getName(),       RLexSortedSet.class.getName());
+        reactiveMap.put(RListReactive.class.getName(),               RList.class.getName());
+        reactiveMap.put(RMapCacheReactive.class.getName(),           RMapCache.class.getName());
+        reactiveMap.put(RMapReactive.class.getName(),                RMap.class.getName());
+        reactiveMap.put(RQueueReactive.class.getName(),              RQueue.class.getName());
+        reactiveMap.put(RScoredSortedSetReactive.class.getName(),    RScoredSortedSet.class.getName());
+        reactiveMap.put(RSetCacheReactive.class.getName(),           RSetCache.class.getName());
+        reactiveMap.put(RSetReactive.class.getName(),                RSet.class.getName());
 
         reactiveMap.makeImmutable();
     }
@@ -73,11 +88,11 @@ public class RedissonReference implements Serializable {
     public RedissonReference() {
     }
 
-    public RedissonReference(Class type, String keyName) {
+    public RedissonReference(Class<?> type, String keyName) {
         this(type, keyName, null);
     }
 
-    public RedissonReference(Class type, String keyName, Codec codec) {
+    public RedissonReference(Class<?> type, String keyName, Codec codec) {
         if (!ClassUtils.isAnnotationPresent(type, REntity.class) && !RObject.class.isAssignableFrom(type) && !RObjectReactive.class.isAssignableFrom(type)) {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
@@ -131,7 +146,8 @@ public class RedissonReference implements Serializable {
      * @param type the type to set
      */
     public void setType(Class<?> type) {
-        if (!ClassUtils.isAnnotationPresent(type, REntity.class) && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
+        if (!ClassUtils.isAnnotationPresent(type, REntity.class) 
+                && (!RObject.class.isAssignableFrom(type) || !RObjectReactive.class.isAssignableFrom(type))) {
             throw new IllegalArgumentException("Class reference has to be a type of either RObject or RLiveObject or RObjectReactive");
         }
         this.type = type.getName();
