@@ -22,6 +22,11 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
 import org.redisson.client.codec.Codec;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RScriptReactive {
 
     Publisher<Void> scriptFlush();

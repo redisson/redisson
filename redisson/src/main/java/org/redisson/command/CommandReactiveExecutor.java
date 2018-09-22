@@ -15,13 +15,10 @@
  */
 package org.redisson.command;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.reactivestreams.Publisher;
-import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.MasterSlaveEntry;
@@ -37,29 +34,11 @@ public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier);
 
-    <T, R> Publisher<R> evalWriteAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, String script, List<Object> keys, Object ... params);
-
-    <T, R> Publisher<Collection<R>> readAllReactive(RedisCommand<T> command, Object ... params);
-
-    <T, R> Publisher<R> readRandomReactive(RedisCommand<T> command, Object ... params);
-
     <T, R> Publisher<R> writeReactive(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T> Publisher<Void> writeAllReactive(RedisCommand<T> command, Object ... params);
-
-    <R, T> Publisher<R> writeAllReactive(RedisCommand<T> command, SlotCallback<T, R> callback, Object ... params);
-
-    <T, R> Publisher<R> readReactive(RedisClient client, String name, Codec codec, RedisCommand<T> command, Object ... params);
 
     <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
 
-    <T, R> Publisher<R> evalReadReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params);
-
-    <T, R> Publisher<R> writeReactive(String key, RedisCommand<T> command, Object ... params);
-
     <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> Publisher<R> readReactive(String key, RedisCommand<T> command, Object ... params);
 
     <T, R> Publisher<R> readReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
 

@@ -21,6 +21,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RScript extends RScriptAsync {
 
     enum Mode {READ_ONLY, READ_WRITE}
