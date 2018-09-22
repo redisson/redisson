@@ -21,6 +21,11 @@ import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
 import org.redisson.client.codec.Codec;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RScriptAsync {
 
     RFuture<Void> scriptFlushAsync();
@@ -29,6 +34,8 @@ public interface RScriptAsync {
 
     <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
+    <R> RFuture<R> evalShaAsync(String key, Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    
     <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType);
 
     <R> RFuture<R> evalShaAsync(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
@@ -44,8 +51,12 @@ public interface RScriptAsync {
     <R> RFuture<R> evalAsync(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
     RFuture<String> scriptLoadAsync(String luaScript);
+    
+    RFuture<String> scriptLoadAsync(String key, String luaScript);
 
     RFuture<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+    
+    RFuture<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests);
 
     RFuture<Void> scriptKillAsync();
 

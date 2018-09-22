@@ -152,6 +152,10 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
                     return;
                 }
                 
+                if (future.getNow() == null) {
+                    result.trySuccess(takeFuture.getNow());
+                    return;
+                }
                 createSemaphore(null).releaseAsync().addListener(new FutureListener<Void>() {
                     @Override
                     public void operationComplete(Future<Void> future) throws Exception {

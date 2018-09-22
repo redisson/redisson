@@ -1,13 +1,13 @@
 Redisson: Redis based In-Memory Data Grid for Java.<br/> State of the Art Redis client
 ====
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.7.4) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.8.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.8.0  | 03.09.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
-| 2.13.0 | 03.09.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
+| 3.8.1  | 18.09.2018 | 1.8, 1.9, 1.10+ | Yes | 3.1.x |
+| 2.13.1 | 18.09.2018 | 1.6, 1.7, 1.8, 1.9, 1.10, Android | No | 2.0.8 |
 
 
 Features
@@ -83,7 +83,6 @@ Used by
 [![Datorama](https://redisson.org/assets/logos/client8.png "Datorama")](https://datorama.com/)&nbsp;&nbsp;&nbsp;
 [![Ticketmaster](https://redisson.org/assets/logos/client14.png "Ticketmaster")](http://www.ticketmaster.com/)&nbsp;&nbsp;&nbsp;
 [![NAB](https://redisson.org/assets/logos/client11.png "NAB")](https://www.nab.com.au/)&nbsp;&nbsp;&nbsp;
-[![RCI](https://redisson.org/assets/logos/client30.png "RCI")](https://www.rci.com/)&nbsp;&nbsp;&nbsp;
 [![Juniper](https://redisson.org/assets/logos/client31.png "Juniper")](https://www.juniper.net/)&nbsp;&nbsp;&nbsp;
 [![火币](https://redisson.org/assets/logos/client32.png "火币")](https://www.huobi.com/)&nbsp;&nbsp;&nbsp;
 
@@ -110,23 +109,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.8.0</version>
+       <version>3.8.1</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.13.0</version>
+       <version>2.13.1</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.8.0'  
+    compile 'org.redisson:redisson:3.8.1'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.13.0'
+    compile 'org.redisson:redisson:2.13.1'
 
 #### Java
 
@@ -151,11 +150,11 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 Downloads
 ===============================
    
-[Redisson 3.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.8.0&e=jar),
-[Redisson node 3.8.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.8.0&e=jar)  
+[Redisson 3.8.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.8.1&e=jar),
+[Redisson node 3.8.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.8.1&e=jar)  
 
-[Redisson 2.13.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.13.0&e=jar),
-[Redisson node 2.13.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.13.0&e=jar)  
+[Redisson 2.13.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.13.1&e=jar),
+[Redisson node 2.13.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.13.1&e=jar)  
 
 FAQs
 ===============================

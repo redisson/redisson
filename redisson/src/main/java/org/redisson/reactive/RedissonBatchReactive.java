@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonScript;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RAtomicDoubleReactive;
@@ -208,7 +209,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public RScriptReactive getScript() {
-        return new RedissonScriptReactive(executorService);
+        return ReactiveProxyBuilder.create(executorService, new RedissonScript(executorService), RScriptReactive.class);
     }
 
     @Override

@@ -2,7 +2,18 @@ Redisson Releases History
 ================================
 ### Please Note: trunk is current development branch.
 
-Try __[Redisson PRO](https://redisson.pro)__ version.
+Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
+
+### 18-Sep-2018 - versions 2.13.1 and 3.8.1 released
+Feature - __RStream__ object added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-Distributed-collections#720-stream) for more details  
+Fixed - `failedSlaveCheckInterval` setting is not applied under some conditions  
+Fixed - `spring.factories` and `spring.provides` files added to Spring Boot module  
+Fixed - `pingConnectionInterval` setting affects re-connection process with password enabled setting  
+Fixed - Lock watchdog does not monitor read locks  
+Fixed - Lock expiration renewal should be canceled if unlock method failed to execute  
+Fixed - `BlockingQueue.take` method doesn't work properly after failover  
+Fixed - Avoid to create connection per `RRemoteService/RScheduledExecutorService` worker  
+Fixed - backward JDK 8 compatibility  
 
 ### 03-Sep-2018 - versions 2.13.0 and 3.8.0 released
 Feature - __Spring Data Redis__ integration. Please refer to [documentation](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) for more details  

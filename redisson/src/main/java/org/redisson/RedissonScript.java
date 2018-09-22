@@ -32,11 +32,16 @@ import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.buffer.ByteBuf;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class RedissonScript implements RScript {
 
     private final CommandAsyncExecutor commandExecutor;
 
-    protected RedissonScript(CommandAsyncExecutor commandExecutor) {
+    public RedissonScript(CommandAsyncExecutor commandExecutor) {
         this.commandExecutor = commandExecutor;
     }
 

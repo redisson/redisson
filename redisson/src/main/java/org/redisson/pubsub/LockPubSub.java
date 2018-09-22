@@ -26,6 +26,7 @@ import org.redisson.misc.RPromise;
 public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
 
     public static final Long unlockMessage = 0L;
+    public static final Long readUnlockMessage = 1L;
 
     @Override
     protected RedissonLockEntry createEntry(RPromise<RedissonLockEntry> newPromise) {
@@ -41,6 +42,16 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
             }
 
             value.getLatch().release();
+        } else if (message.equals(readUnlockMessage)) {
+            while (true) {
+                Runnable runnableToExecute = value.getListeners().poll();
+                if (runnableToExecute == null) {
+                    break;
+                }
+                runnableToExecute.run();
+            }
+
+            value.getLatch().release(value.getLatch().getQueueLength());
         }
     }
 

@@ -65,6 +65,7 @@ import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.pubsub.SemaphorePubSub;
+import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.reactive.RedissonAtomicDoubleReactive;
 import org.redisson.reactive.RedissonAtomicLongReactive;
 import org.redisson.reactive.RedissonBatchReactive;
@@ -88,12 +89,10 @@ import org.redisson.reactive.RedissonQueueReactive;
 import org.redisson.reactive.RedissonRateLimiterReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
-import org.redisson.reactive.RedissonScriptReactive;
 import org.redisson.reactive.RedissonSemaphoreReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
-import org.redisson.reactive.RedissonStreamReactive;
 import org.redisson.reactive.RedissonTopicReactive;
 import org.redisson.reactive.RedissonTransactionReactive;
 
@@ -126,12 +125,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name) {
-        return new RedissonStreamReactive<K, V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamReactive.class);
     }
 
     @Override
     public <K, V> RStreamReactive<K, V> getStream(String name, Codec codec) {
-        return new RedissonStreamReactive<K, V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(codec, commandExecutor, name), RStreamReactive.class);
     }
 
     @Override
@@ -362,7 +361,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RScriptReactive getScript() {
-        return new RedissonScriptReactive(commandExecutor);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptReactive.class);
     }
 
     @Override
