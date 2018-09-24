@@ -15,12 +15,13 @@
  */
 package org.redisson.reactive;
 
-import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -48,21 +49,21 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
 
             protected void nextValues() {
                 final ReactiveSubscription<V> m = this;
-                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<Object>>() {
-
+                scanIterator(client, nextIterPos).addListener(new FutureListener<ListScanResult<Object>>() {
                     @Override
-                    public void onSubscribe(Subscription s) {
-                        s.request(Long.MAX_VALUE);
-                    }
-
-                    @Override
-                    public void onNext(ListScanResult<Object> res) {
+                    public void operationComplete(Future<ListScanResult<Object>> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            m.onError(future.cause());
+                            return;
+                        }
+                        
                         if (finished) {
                             client = null;
                             nextIterPos = 0;
                             return;
                         }
 
+                        ListScanResult<Object> res = future.getNow();
                         client = res.getRedisClient();
                         nextIterPos = res.getPos();
                         
@@ -74,15 +75,7 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
                             finished = true;
                             m.onComplete();
                         }
-                    }
-
-                    @Override
-                    public void onError(Throwable error) {
-                        m.onError(error);
-                    }
-
-                    @Override
-                    public void onComplete() {
+                        
                         if (finished) {
                             return;
                         }
@@ -93,6 +86,6 @@ public abstract class SetReactiveIterator<V> extends Stream<V> {
         });
     }
     
-    protected abstract Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos);
+    protected abstract RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
 
 }

@@ -86,6 +86,7 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(pattern, 10);
     }
     
+    @Override
     public Iterable<String> getKeysByPattern(final String pattern, final int count) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
         for (final MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {

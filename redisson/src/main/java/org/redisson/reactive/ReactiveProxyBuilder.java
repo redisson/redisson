@@ -35,17 +35,34 @@ public class ReactiveProxyBuilder {
 
     private static final ConcurrentMap<Method, Method> methodsMapping = new ConcurrentHashMap<Method, Method>();
     
-    public static <T> T create(final CommandReactiveExecutor commandExecutor, final Object instance, final Class<T> clazz) {
+    public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Class<T> clazz) {
+        return create(commandExecutor, instance, null, clazz);
+    }
+    
+    public static <T> T create(final CommandReactiveExecutor commandExecutor, final Object instance, final Object implementation, final Class<T> clazz) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, final Object[] args) throws Throwable {
                 Method instanceMethod = methodsMapping.get(method);
                 if (instanceMethod == null) {
-                    try {
-                        instanceMethod = instance.getClass().getMethod(method.getName() + "Async", method.getParameterTypes());
-                    } catch (NoSuchMethodException e) {
-                        instanceMethod = instance.getClass().getMethod(method.getName(), method.getParameterTypes());
+                    if (implementation != null) {
+                        try {
+                            instanceMethod = implementation.getClass().getMethod(method.getName(), method.getParameterTypes());
+                        } catch (NoSuchMethodException e) {
+                            try {
+                                instanceMethod = instance.getClass().getMethod(method.getName() + "Async", method.getParameterTypes());
+                            } catch (Exception e2) {
+                                instanceMethod = instance.getClass().getMethod(method.getName(), method.getParameterTypes());
+                            }
+                        }
+                    } else {
+                        try {
+                            instanceMethod = instance.getClass().getMethod(method.getName() + "Async", method.getParameterTypes());
+                        } catch (NoSuchMethodException e) {
+                            instanceMethod = instance.getClass().getMethod(method.getName(), method.getParameterTypes());
+                        }
                     }
+                    
                     methodsMapping.put(method, instanceMethod);
                 }
                 
@@ -61,6 +78,10 @@ public class ReactiveProxyBuilder {
                             }
                         }
                     });
+                }
+                
+                if (instanceMethod.getDeclaringClass() == implementation.getClass()) {
+                    return instanceMethod.invoke(implementation, args);
                 }
                 
                 return instanceMethod.invoke(instance, args);

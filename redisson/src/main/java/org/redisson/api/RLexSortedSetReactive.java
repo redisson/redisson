@@ -19,6 +19,11 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>, RCollectionReactive<String> {
 
     Publisher<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
@@ -44,7 +49,5 @@ public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>,
     Publisher<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
     Publisher<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
-
-    Publisher<Collection<String>> range(int startIndex, int endIndex);
 
 }

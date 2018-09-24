@@ -1,8 +1,8 @@
 package org.redisson;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.Arrays;
-import java.util.Iterator;
-import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Assert;
 import org.junit.Test;

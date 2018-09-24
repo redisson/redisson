@@ -16,27 +16,6 @@ import reactor.rx.Promise;
 public class RedissonListReactiveTest extends BaseReactiveTest {
 
     @Test
-    public void testEquals() {
-        RListReactive<String> list1 = redisson.getList("list1");
-        sync(list1.add("1"));
-        sync(list1.add("2"));
-        sync(list1.add("3"));
-
-        RListReactive<String> list2 = redisson.getList("list2");
-        sync(list2.add("1"));
-        sync(list2.add("2"));
-        sync(list2.add("3"));
-
-        RListReactive<String> list3 = redisson.getList("list3");
-        sync(list3.add("0"));
-        sync(list3.add("2"));
-        sync(list3.add("3"));
-
-        Assert.assertEquals(list1, list2);
-        Assert.assertNotEquals(list1, list3);
-    }
-
-    @Test
     public void testHashCode() throws InterruptedException {
         RListReactive<String> list = redisson.getList("list");
         sync(list.add("a"));

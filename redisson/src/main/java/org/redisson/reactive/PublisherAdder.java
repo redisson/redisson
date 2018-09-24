@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
-import org.redisson.api.RCollectionReactive;
 
 import reactor.rx.Promise;
 import reactor.rx.Promises;
@@ -31,14 +30,10 @@ import reactor.rx.action.support.DefaultSubscriber;
  *
  * @param <V> value type
  */
-public class PublisherAdder<V> {
+public abstract class PublisherAdder<V> {
 
-    private final RCollectionReactive<V> destination;
-
-    public PublisherAdder(RCollectionReactive<V> destination) {
-        this.destination = destination;
-    }
-
+    public abstract Publisher<Integer> add(Object o);
+    
     public Integer sum(Integer first, Integer second) {
         return first + second;
     }
@@ -62,7 +57,7 @@ public class PublisherAdder<V> {
             @Override
             public void onNext(V o) {
                 values.getAndIncrement();
-                destination.add(o).subscribe(new DefaultSubscriber<Integer>() {
+                add(o).subscribe(new DefaultSubscriber<Integer>() {
 
                     @Override
                     public void onSubscribe(Subscription s) {
