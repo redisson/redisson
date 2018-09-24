@@ -15,7 +15,7 @@
  */
 package org.redisson.reactive;
 
-import org.reactivestreams.Publisher;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
@@ -28,8 +28,8 @@ import org.redisson.client.protocol.decoder.MapScanResult;
  */
 interface MapReactive<K, V> {
 
-    Publisher<MapScanResult<Object, Object>> scanIteratorReactive(RedisClient client, long startPos, String pattern, int count);
+    RFuture<MapScanResult<Object, Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count);
     
-    Publisher<V> put(K key, V value);
+    V putSync(K key, V value);
     
 }

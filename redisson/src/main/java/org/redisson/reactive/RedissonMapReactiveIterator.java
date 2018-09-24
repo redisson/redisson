@@ -20,10 +20,11 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import reactor.rx.Stream;
 import reactor.rx.subscription.ReactiveSubscription;
 
@@ -67,56 +68,50 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorReactive(client, nextIterPos, pattern, count).subscribe(new Subscriber<MapScanResult<Object, Object>>() {
+                        map.scanIteratorAsync(client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
 
                             @Override
-                            public void onSubscribe(Subscription s) {
-                                s.request(Long.MAX_VALUE);
-                            }
-                            
-                            @Override
-                            public void onNext(MapScanResult<Object, Object> res) {
-                                if (currentIndex == 0) {
-                                    client = null;
-                                    nextIterPos = 0;
-                                    return;
-                                }
-
-                                client = res.getRedisClient();
-                                nextIterPos = res.getPos();
-
-                                for (Entry<Object, Object> entry : res.getMap().entrySet()) {
-                                    M val = getValue(entry);
-                                    m.onNext(val);
-                                    currentIndex--;
-                                    if (currentIndex == 0) {
-                                        m.onComplete();
+                            public void operationComplete(Future<MapScanResult<Object, Object>> future)
+                                    throws Exception {
+                                    if (!future.isSuccess()) {
+                                        m.onError(future.cause());
                                         return;
                                     }
+    
+                                    if (currentIndex == 0) {
+                                        client = null;
+                                        nextIterPos = 0;
+                                        return;
+                                    }
+    
+                                    MapScanResult<Object, Object> res = future.get();
+                                    client = res.getRedisClient();
+                                    nextIterPos = res.getPos();
+    
+                                    for (Entry<Object, Object> entry : res.getMap().entrySet()) {
+                                        M val = getValue(entry);
+                                        m.onNext(val);
+                                        currentIndex--;
+                                        if (currentIndex == 0) {
+                                            m.onComplete();
+                                            return;
+                                        }
+                                    }
+                                    
+                                    if (res.getPos() == 0) {
+                                        currentIndex = 0;
+                                        m.onComplete();
+                                    }
+    
+                                    if (currentIndex == 0) {
+                                        return;
+                                    }
+                                    nextValues();
                                 }
-                                
-                                if (res.getPos() == 0) {
-                                    currentIndex = 0;
-                                    m.onComplete();
-                                }
-                            }
-
-                            @Override
-                            public void onError(Throwable error) {
-                                m.onError(error);
-                            }
-
-                            @Override
-                            public void onComplete() {
-                                if (currentIndex == 0) {
-                                    return;
-                                }
-                                nextValues();
-                            }
                         });
                     }
                 });
-            }
+            };
 
         };
     }
@@ -127,8 +122,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
             @Override
             public V setValue(V value) {
-                Publisher<V> publisher = map.put((K) entry.getKey(), value);
-                return ((Stream<V>)publisher).next().poll();
+                return map.putSync((K) entry.getKey(), value);
             }
 
         };
