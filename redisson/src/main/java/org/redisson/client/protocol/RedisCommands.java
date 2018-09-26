@@ -82,6 +82,8 @@ import org.redisson.cluster.ClusterNodeInfo;
  */
 public interface RedisCommands {
 
+    RedisStrictCommand<Void> DEBUG = new RedisStrictCommand<Void>("DEBUG");
+    
     RedisStrictCommand<Long> GEOADD = new RedisStrictCommand<Long>("GEOADD");
     RedisCommand<Double> GEODIST = new RedisCommand<Double>("GEODIST", new DoubleReplayConvertor());
     RedisCommand<List<Object>> GEORADIUS = new RedisCommand<List<Object>>("GEORADIUS", new ObjectListReplayDecoder<Object>());
