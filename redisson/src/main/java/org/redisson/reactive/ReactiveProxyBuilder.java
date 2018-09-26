@@ -80,7 +80,8 @@ public class ReactiveProxyBuilder {
                     });
                 }
                 
-                if (instanceMethod.getDeclaringClass() == implementation.getClass()) {
+                if (implementation != null 
+                        && instanceMethod.getDeclaringClass() == implementation.getClass()) {
                     return instanceMethod.invoke(implementation, args);
                 }
                 
