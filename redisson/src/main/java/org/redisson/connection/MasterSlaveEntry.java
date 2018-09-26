@@ -131,28 +131,28 @@ public class MasterSlaveEntry {
                     return;
                 }
                 
-                masterEntry = new ClientConnectionsEntry(
-                        client, 
-                        config.getMasterConnectionMinimumIdleSize(), 
-                        config.getMasterConnectionPoolSize(),
-                        config.getSubscriptionConnectionMinimumIdleSize(),
-                        config.getSubscriptionConnectionPoolSize(), 
-                        connectionManager, 
+        masterEntry = new ClientConnectionsEntry(
+                client, 
+                config.getMasterConnectionMinimumIdleSize(), 
+                config.getMasterConnectionPoolSize(),
+                config.getSubscriptionConnectionMinimumIdleSize(),
+                config.getSubscriptionConnectionPoolSize(), 
+                connectionManager, 
                                 NodeType.MASTER);
-                
+        
                 int counter = 1;
                 if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
                     counter++;
                 }
                 
                 CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client, counter);
-                RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-                writeFuture.addListener(listener);
-                
-                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-                    RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-                    pubSubFuture.addListener(listener);
-                }
+        RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+        writeFuture.addListener(listener);
+        
+        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+            RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+            pubSubFuture.addListener(listener);
+        }
             }
         });
         
@@ -200,6 +200,7 @@ public class MasterSlaveEntry {
             connection.closeAsync();
             reattachBlockingQueue(connection);
         }
+        entry.getAllConnections().clear();
         
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
             connection.closeAsync();
@@ -229,7 +230,7 @@ public class MasterSlaveEntry {
                 }
 
                 final RedisConnection newConnection = future.getNow();
-                
+                    
                 final FutureListener<Object> listener = new FutureListener<Object>() {
                     @Override
                     public void operationComplete(Future<Object> future) throws Exception {
@@ -289,7 +290,7 @@ public class MasterSlaveEntry {
                 if (!future.isSuccess()) {
                     result.tryFailure(future.cause());
                     return;
-                }
+    }
 
                 ClientConnectionsEntry entry = new ClientConnectionsEntry(client,
                         config.getSlaveConnectionMinimumIdleSize(),
@@ -321,6 +322,10 @@ public class MasterSlaveEntry {
 
     public Collection<ClientConnectionsEntry> getAllEntries() {
         return slaveBalancer.getEntries();
+    }
+    
+    public ClientConnectionsEntry getEntry(RedisClient redisClient) {
+        return slaveBalancer.getEntry(redisClient);
     }
     
     public RedisClient getClient() {
@@ -495,15 +500,15 @@ public class MasterSlaveEntry {
         }
         slaveBalancer.returnConnection(connection);
     }
-    
+
     public void incReference() {
         references++;
     }
-    
+
     public int decReference() {
         return --references;
     }
-    
+
     public int getReferences() {
         return references;
     }

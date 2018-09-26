@@ -218,7 +218,7 @@ public class LoadBalancerManager {
         return null;
     }
 
-    private ClientConnectionsEntry getEntry(RedisClient redisClient) {
+    public ClientConnectionsEntry getEntry(RedisClient redisClient) {
         return client2Entry.get(redisClient);
     }
 

@@ -225,12 +225,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         
             return result;
         }
-
+        
     protected boolean tryAcquireConnection(ClientConnectionsEntry entry) {
         if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
             checkForReconnect(entry, null);
             return false;
-        }
+    }
         return true;
     }
 
@@ -283,9 +283,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, RPromise<T> promise, T conn) {
-        if (entry.getNodeType() == NodeType.SLAVE) {
-            entry.resetFirstFail();
-        }
         if (!promise.trySuccess(conn)) {
             releaseConnection(entry, conn);
             releaseConnection(entry);
@@ -296,8 +293,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
-                checkForReconnect(entry, cause);
-            }
+            checkForReconnect(entry, cause);
+        }
         }
 
         releaseConnection(entry);
@@ -309,11 +306,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE) {
             entry.trySetupFistFail();
             if (entry.isFailed()) {
-                conn.closeAsync();
-                checkForReconnect(entry, null);
+            conn.closeAsync();
+            entry.getAllConnections().remove(conn);
+            checkForReconnect(entry, null);
             } else {
-                releaseConnection(entry, conn);
-            }
+            releaseConnection(entry, conn);
+        }
         } else {
             releaseConnection(entry, conn);
         }
@@ -427,6 +425,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     public void returnConnection(ClientConnectionsEntry entry, T connection) {
         if (entry.isFreezed() && !entry.isMasterForRead()) {
             connection.closeAsync();
+            entry.getAllConnections().remove(connection);
         } else {
             releaseConnection(entry, connection);
         }
