@@ -35,7 +35,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     /**
      * Redis cluster scan interval in milliseconds
      */
-    private int scanInterval = 1000;
+    private int scanInterval = 5000;
 
     public ClusterServersConfig() {
     }
@@ -70,6 +70,8 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     }
     /**
      * Redis cluster scan interval in milliseconds
+     * <p>
+     * Default is <code>5000</code>
      *
      * @param scanInterval in milliseconds
      * @return config
