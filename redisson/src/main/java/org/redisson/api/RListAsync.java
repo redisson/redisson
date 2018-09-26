@@ -84,7 +84,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<
 
     /**
      * Trim list and remains elements only in specified range
-     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     * <code>fromIndex</code>, inclusive, and <code>toIndex</code>, inclusive.
      *
      * @param fromIndex - from index
      * @param toIndex - to index
