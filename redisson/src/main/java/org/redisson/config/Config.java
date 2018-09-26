@@ -96,10 +96,6 @@ public class Config {
 
     public Config() {
     }
-    
-    static {
-        URIBuilder.patchUriObject();
-    }
 
     public Config(Config oldConf) {
         setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());

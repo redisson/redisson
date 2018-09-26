@@ -28,6 +28,10 @@ import java.net.URI;
 public class URIBuilder {
 
     public static URI create(String uri) {
+        if (uri.contains("_")) {
+            // No harm calling this multiple times
+            patchUriObject();
+        }
         URI u = URI.create(uri);
         // Let's assuming most of the time it is OK.
         if (u.getHost() != null) {
