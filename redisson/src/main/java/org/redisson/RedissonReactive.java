@@ -263,12 +263,16 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RSetReactive<V> getSet(String name) {
-        return new RedissonSetReactive<V>(commandExecutor, name);
+        RedissonSet<V> set = new RedissonSet<V>(commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetReactive<V>(commandExecutor, set), RSetReactive.class);
     }
 
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
-        return new RedissonSetReactive<V>(codec, commandExecutor, name);
+        RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetReactive<V>(commandExecutor, set), RSetReactive.class);
     }
 
     @Override

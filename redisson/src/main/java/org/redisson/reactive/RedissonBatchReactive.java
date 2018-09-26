@@ -36,6 +36,7 @@ import org.redisson.RedissonMapCache;
 import org.redisson.RedissonQueue;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonScript;
+import org.redisson.RedissonSet;
 import org.redisson.RedissonSetMultimap;
 import org.redisson.RedissonStream;
 import org.redisson.api.BatchOptions;
@@ -164,12 +165,16 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <V> RSetReactive<V> getSet(String name) {
-        return new RedissonSetReactive<V>(executorService, name);
+        RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetReactive<V>(executorService, set), RSetReactive.class);
     }
 
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
-        return new RedissonSetReactive<V>(codec, executorService, name);
+        RedissonSet<V> set = new RedissonSet<V>(codec, executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetReactive<V>(executorService, set), RSetReactive.class);
     }
 
     @Override
