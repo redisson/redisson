@@ -39,6 +39,7 @@ import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListMultimapReactive;
 import org.redisson.api.RListReactive;
 import org.redisson.api.RLockReactive;
+import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RPatternTopicReactive;
@@ -58,6 +59,7 @@ import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
@@ -67,10 +69,6 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.reactive.RedissonBatchReactive;
-import org.redisson.reactive.RedissonBlockingDequeReactive;
-import org.redisson.reactive.RedissonBlockingQueueReactive;
-import org.redisson.reactive.RedissonDequeReactive;
-import org.redisson.reactive.RedissonGeoReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListMultimapReactive;
@@ -78,7 +76,6 @@ import org.redisson.reactive.RedissonListReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
 import org.redisson.reactive.RedissonPatternTopicReactive;
-import org.redisson.reactive.RedissonQueueReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
@@ -126,12 +123,14 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RGeoReactive<V> getGeo(String name) {
-        return new RedissonGeoReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 
+                new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RGeoReactive.class);
     }
     
     @Override
     public <V> RGeoReactive<V> getGeo(String name, Codec codec) {
-        return new RedissonGeoReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(codec, commandExecutor, name, null), 
+                new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RGeoReactive.class);
     }
     
     @Override
@@ -166,12 +165,16 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, null);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, null);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
 
     @Override
@@ -198,8 +201,6 @@ public class RedissonReactive implements RedissonReactiveClient {
         return buckets;
     }
 
-
-
     @Override
     public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);
@@ -212,42 +213,52 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RListReactive<V> getList(String name) {
-        return new RedissonListReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(commandExecutor, name, null), 
+                new RedissonListReactive<V>(commandExecutor, name), RListReactive.class);
     }
 
     @Override
     public <V> RListReactive<V> getList(String name, Codec codec) {
-        return new RedissonListReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(codec, commandExecutor, name, null), 
+                new RedissonListReactive<V>(codec, commandExecutor, name), RListReactive.class);
     }
 
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
-        return new RedissonListMultimapReactive<K, V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(commandExecutor, name), 
+                new RedissonListMultimapReactive<K, V>(commandExecutor, name), RListMultimapReactive.class);
     }
 
     @Override
     public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
-        return new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(codec, commandExecutor, name), 
+                new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name), RListMultimapReactive.class);
     }
 
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
-        return new RedissonSetMultimapReactive<K, V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
+                new RedissonSetMultimapReactive<K, V>(commandExecutor, name), RSetMultimapReactive.class);
     }
 
     @Override
     public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
-        return new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
+                new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name), RSetMultimapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        return new RedissonMapReactive<K, V>(commandExecutor, name, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapReactive<K, V>(map), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapReactive<K, V>(map), RMapReactive.class);
     }
 
     @Override
@@ -262,17 +273,21 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name) {
-        return new RedissonScoredSortedSetReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(commandExecutor, name, null), 
+                new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RScoredSortedSetReactive.class);
     }
 
     @Override
     public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec) {
-        return new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null), 
+                new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RScoredSortedSetReactive.class);
     }
 
     @Override
     public RLexSortedSetReactive getLexSortedSet(String name) {
-        return new RedissonLexSortedSetReactive(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonLexSortedSet(commandExecutor, name, null), 
+                new RedissonLexSortedSetReactive(commandExecutor, new RedissonScoredSortedSetReactive<String>(StringCodec.INSTANCE, commandExecutor, name)), 
+                RLexSortedSetReactive.class);
     }
 
     @Override
@@ -297,32 +312,38 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RQueueReactive<V> getQueue(String name) {
-        return new RedissonQueueReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(commandExecutor, name, null), 
+                new RedissonListReactive<V>(commandExecutor, name), RQueueReactive.class);
     }
 
     @Override
     public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
-        return new RedissonQueueReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
+                new RedissonListReactive<V>(codec,commandExecutor, name), RQueueReactive.class);
     }
 
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
-        return new RedissonBlockingQueueReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(commandExecutor, name, null), 
+                new RedissonListReactive<V>(commandExecutor, name), RBlockingQueueReactive.class);
     }
 
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
-        return new RedissonBlockingQueueReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(codec, commandExecutor, name, null), 
+                new RedissonListReactive<V>(codec, commandExecutor, name), RBlockingQueueReactive.class);
     }
 
     @Override
     public <V> RDequeReactive<V> getDeque(String name) {
-        return new RedissonDequeReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(commandExecutor, name, null), 
+                new RedissonListReactive<V>(commandExecutor, name), RDequeReactive.class);
     }
 
     @Override
     public <V> RDequeReactive<V> getDeque(String name, Codec codec) {
-        return new RedissonDequeReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(codec, commandExecutor, name, null), 
+                new RedissonListReactive<V>(codec, commandExecutor, name), RDequeReactive.class);
     }
 
     @Override
@@ -371,7 +392,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RKeysReactive getKeys() {
-        return new RedissonKeysReactive(commandExecutor);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonKeys(commandExecutor), new RedissonKeysReactive(commandExecutor), RKeysReactive.class);
     }
 
     @Override
@@ -418,25 +439,33 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, codec, commandExecutor, name, options);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
 
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, MapOptions<K, V> options) {
-        return new RedissonMapCacheReactive<K, V>(evictionScheduler, commandExecutor, name, options);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
 
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, MapOptions<K, V> options) {
-        return new RedissonMapReactive<K, V>(commandExecutor, name, options);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapReactive<K, V>(map), RMapReactive.class);
     }
 
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
-        return new RedissonMapReactive<K, V>(codec, commandExecutor, name, options);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        return ReactiveProxyBuilder.create(commandExecutor, map, 
+                new RedissonMapReactive<K, V>(map), RMapReactive.class);
     }
 
     @Override
@@ -446,11 +475,13 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
-        return new RedissonBlockingDequeReactive<V>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingDeque<V>(commandExecutor, name, null), 
+                new RedissonListReactive<V>(commandExecutor, name), RBlockingDequeReactive.class);
     }
 
     @Override
     public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
-        return new RedissonBlockingDequeReactive<V>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingDeque<V>(codec, commandExecutor, name, null), 
+                new RedissonListReactive<V>(codec, commandExecutor, name), RBlockingDequeReactive.class);
     }
 }

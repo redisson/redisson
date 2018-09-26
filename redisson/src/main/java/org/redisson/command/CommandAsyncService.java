@@ -33,6 +33,7 @@ import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
 import org.redisson.SlotCallback;
+import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
@@ -57,6 +58,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -697,8 +699,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException(
-                    "Unable to send command! Node source: " + details.getSource() + ", connection: " + future.channel() + 
-                    ", command: " + details.getCommand() + ", params: " + LogHelper.toString(details.getParams()), future.cause()));
+                    "Unable to send command! Node source: " + details.getSource() + ", connection: " + connection + 
+                    ", command: " + details.getCommand() + ", command params: " + LogHelper.toString(details.getParams())
+                    + " after " + details.getAttempt() + " retry attempts", future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                 if (!details.getAttemptPromise().tryFailure(details.getException())) {
                     log.error(details.getException().getMessage());
@@ -743,6 +746,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         TimerTask timeoutTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                MasterSlaveEntry entry = connectionManager.getEntry(connection.getRedisClient());
+                ClientConnectionsEntry ee = entry.getEntry(connection.getRedisClient());
+                if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
+                    ee.trySetupFistFail();
+                }
+                
                 details.getAttemptPromise().tryFailure(
                         new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
                                 + " with params: " + LogHelper.toString(details.getParams()) + " channel: " + connection.getChannel()));
@@ -897,6 +906,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             
             free(details.getParams());
+            
+            if (!(future.cause() instanceof RedisTimeoutException)) {
+                MasterSlaveEntry entry = connectionManager.getEntry(details.getConnectionFuture().getNow().getRedisClient());
+                ClientConnectionsEntry ee = entry.getEntry(details.getConnectionFuture().getNow().getRedisClient());
+                if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
+                    ee.resetFirstFail();
+                }
+            }
             
             if (future.isSuccess()) {
                 R res = future.getNow();

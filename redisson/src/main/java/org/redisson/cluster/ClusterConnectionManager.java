@@ -363,12 +363,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 RedisConnection connection = future.getNow();
-                updateClusterState(cfg, connection, iterator, uri);
+                updateClusterState(cfg, connection, iterator, uri, lastException);
             }
         });
     }
 
-    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, final Iterator<URI> iterator, final URI uri) {
+    private void updateClusterState(final ClusterServersConfig cfg, final RedisConnection connection, 
+            final Iterator<URI> iterator, final URI uri, final AtomicReference<Throwable> lastException) {
         RFuture<List<ClusterNodeInfo>> future = connection.async(clusterNodesCommand);
         future.addListener(new FutureListener<List<ClusterNodeInfo>>() {
             @Override
@@ -376,8 +377,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (!future.isSuccess()) {
                     log.error("Can't execute CLUSTER_NODES with " + connection.getRedisClient().getAddr(), future.cause());
                     closeNodeConnection(connection);
+                    lastException.set(future.cause());
                     getShutdownLatch().release();
-                    scheduleClusterChangeCheck(cfg, iterator);
+                    checkClusterState(cfg, iterator, lastException);
                     return;
                 }
 

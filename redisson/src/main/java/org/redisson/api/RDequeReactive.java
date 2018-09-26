@@ -114,7 +114,7 @@ public interface RDequeReactive<V> extends RQueueReactive<V> {
      * @param e - element to add
      * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
      */
-    Publisher<Integer> offerLast(V e);
+    Publisher<Boolean> offerLast(V e);
 
     /**
      * Returns element at the tail of this deque 

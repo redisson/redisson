@@ -102,21 +102,12 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
         });
     }
 
-    Publisher<ListScanResult<Object>> scanIterator(final RedisClient client, final long startPos) {
-        return reactive(new Supplier<RFuture<ListScanResult<Object>>>() {
-            @Override
-            public RFuture<ListScanResult<Object>> get() {
-                return ((ScanIterator)instance).scanIteratorAsync(getName(), client, startPos, null, 10);
-            }
-        });
-    }
-
     @Override
     public Publisher<V> iterator() {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
-                return RedissonSetCacheReactive.this.scanIterator(client, nextIterPos);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((ScanIterator)instance).scanIteratorAsync(getName(), client, nextIterPos, null, 10);
             }
         });
     }
@@ -214,7 +205,12 @@ public class RedissonSetCacheReactive<V> extends RedissonExpirableReactive imple
 
     @Override
     public Publisher<Integer> addAll(Publisher<? extends V> c) {
-        return new PublisherAdder<V>(this).addAll(c);
+        return new PublisherAdder<V>() {
+            @Override
+            public Publisher<Integer> add(Object o) {
+                return RedissonSetCacheReactive.this.add((V)o);
+            }
+        }.addAll(c);
     }
 
 }

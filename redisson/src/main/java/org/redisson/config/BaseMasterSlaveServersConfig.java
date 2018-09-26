@@ -43,7 +43,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     private int failedSlaveReconnectionInterval = 3000;
     
-    private int failedSlaveCheckInterval = 60000;
+    private int failedSlaveCheckInterval = 180000;
     
     /**
      * Redis 'master' node minimum idle connection amount for <b>each</b> slave node
@@ -136,7 +136,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      * when the time interval from the moment of first Redis command execution failure
      * on this server reaches <code>slaveFailsInterval</code> value.
      * <p>
-     * Default is <code>60000</code>
+     * Default is <code>180000</code>
      *
      * @param slaveFailsInterval - time interval in milliseconds
      * @return config

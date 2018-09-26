@@ -196,7 +196,7 @@ public abstract class RedissonObject implements RObject {
         return result;
     }
     
-    protected void encode(Collection<Object> params, Collection<?> values) {
+    public void encode(Collection<Object> params, Collection<?> values) {
         for (Object object : values) {
             params.add(encode(object));
         }

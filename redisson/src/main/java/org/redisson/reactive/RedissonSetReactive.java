@@ -68,7 +68,12 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
 
     @Override
     public Publisher<Integer> addAll(Publisher<? extends V> c) {
-        return new PublisherAdder<V>(this).addAll(c);
+        return new PublisherAdder<Object>() {
+            @Override
+            public Publisher<Integer> add(Object e) {
+                return RedissonSetReactive.this.add((V)e);
+            }
+        }.addAll(c);
     }
 
     @Override
@@ -271,8 +276,8 @@ public class RedissonSetReactive<V> extends RedissonExpirableReactive implements
     public Publisher<V> iterator(final String pattern, final int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos) {
-                return RedissonSetReactive.this.scanIteratorReactive(client, nextIterPos, pattern, count);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((RedissonSet)instance).scanIteratorAsync(getName(), client, nextIterPos, pattern, count);
             }
         });
     }

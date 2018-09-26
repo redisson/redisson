@@ -142,6 +142,6 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      *         element prevents it from being added to this queue
      * @return void
      */
-    Publisher<Integer> put(V e);
+    Publisher<Void> put(V e);
 
 }

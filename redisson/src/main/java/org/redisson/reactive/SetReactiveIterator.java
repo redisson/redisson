@@ -21,10 +21,12 @@ import java.util.function.LongConsumer;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.FluxSink;
 
 /**
@@ -57,21 +59,21 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
             }
             
             protected void nextValues(FluxSink<V> emitter) {
-                scanIteratorReactive(client, nextIterPos).subscribe(new Subscriber<ListScanResult<Object>>() {
-
+                scanIterator(client, nextIterPos).addListener(new FutureListener<ListScanResult<Object>>() {
                     @Override
-                    public void onSubscribe(Subscription s) {
-                        s.request(Long.MAX_VALUE);
-                    }
-
-                    @Override
-                    public void onNext(ListScanResult<Object> res) {
+                    public void operationComplete(Future<ListScanResult<Object>> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            emitter.error(future.cause());
+                            return;
+                        }
+                        
                         if (finished) {
                             client = null;
                             nextIterPos = 0;
                             return;
                         }
 
+                        ListScanResult<Object> res = future.getNow();
                         client = res.getRedisClient();
                         nextIterPos = res.getPos();
 
@@ -90,15 +92,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
                             finished = true;
                             emitter.complete();
                         }
-                    }
-                                
-                    @Override
-                    public void onError(Throwable error) {
-                        emitter.error(error);
-                    }
-
-                    @Override
-                    public void onComplete() {
+                        
                         if (finished || completed) {
                             return;
                         }
@@ -108,11 +102,11 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
             }
         });
     }
-
+    
     protected boolean tryAgain() {
         return false;
     }
-
-    protected abstract Publisher<ListScanResult<Object>> scanIteratorReactive(RedisClient client, long nextIterPos);
+    
+    protected abstract RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos);
 
 }

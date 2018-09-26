@@ -40,7 +40,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * specified collection (optional operation).
      *
      * @param c collection containing elements to be retained in this collection
-     * @return <tt>true</tt> if this collection changed as a result of the call
+     * @return <code>true</code> if this collection changed as a result of the call
      */
     Publisher<Boolean> retainAll(Collection<?> c);
 

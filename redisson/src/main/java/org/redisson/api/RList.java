@@ -85,7 +85,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
 
     /**
      * Trim list and remains elements only in specified range
-     * <tt>fromIndex</tt>, inclusive, and <tt>toIndex</tt>, inclusive.
+     * <code>fromIndex</code>, inclusive, and <code>toIndex</code>, inclusive.
      *
      * @param fromIndex - from index
      * @param toIndex - to index
