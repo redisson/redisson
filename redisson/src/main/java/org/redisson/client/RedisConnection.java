@@ -33,6 +33,7 @@ import org.redisson.misc.RedissonPromise;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -222,7 +223,16 @@ public class RedisConnection implements RedisCommands {
                 scheduledFuture.cancel(false);
             }
         });
-        send(new CommandData<T, R>(promise, encoder, command, params));
+        
+        ChannelFuture writeFuture = send(new CommandData<T, R>(promise, encoder, command, params));
+        writeFuture.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    promise.tryFailure(future.cause());
+                }
+            }
+        });
         return promise;
     }
 
@@ -253,7 +263,15 @@ public class RedisConnection implements RedisCommands {
         if (command != null && command.isBlockingCommand()) {
             channel.close();
         } else {
-            async(RedisCommands.QUIT);
+            RFuture<Void> f = async(RedisCommands.QUIT);
+            f.addListener(new FutureListener<Void>() {
+                @Override
+                public void operationComplete(Future<Void> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        channel.close();
+                    }
+                }
+            });
         }
     }
     
