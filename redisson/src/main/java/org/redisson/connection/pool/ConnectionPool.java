@@ -73,7 +73,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
         promise.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
-                entries.add(entry);
+                if (future.isSuccess()) {
+                    entries.add(entry);
+                }
             }
         });
         initConnections(entry, promise, true);
@@ -119,13 +121,34 @@ abstract class ConnectionPool<T extends RedisConnection> {
                     public void operationComplete(Future<T> future) throws Exception {
                         if (future.isSuccess()) {
                             T conn = future.getNow();
-
-                            releaseConnection(entry, conn);
+                            if (!initPromise.isDone()) {
+                                releaseConnection(entry, conn);
+                            } else {
+                                conn.closeAsync();
+                            }
                         }
 
                         releaseConnection(entry);
 
                         if (!future.isSuccess()) {
+                            if (initPromise.isDone()) {
+                                return;
+                            }
+                            
+                            for (RedisConnection connection : entry.getAllConnections()) {
+                                if (!connection.isClosed()) {
+                                    connection.closeAsync();
+                                }
+                            }
+                            entry.getAllConnections().clear();
+                            
+                            for (RedisConnection connection : entry.getAllSubscribeConnections()) {
+                                if (!connection.isClosed()) {
+                                    connection.closeAsync();
+                                }
+                            }
+                            entry.getAllSubscribeConnections().clear();
+                            
                             int totalInitializedConnections = minimumIdleSize - initializedConnections.get();
                             String errorMsg;
                             if (totalInitializedConnections == 0) {
@@ -141,9 +164,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
                         int value = initializedConnections.decrementAndGet();
                         if (value == 0) {
-                            log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
-                            if (!initPromise.trySuccess(null)) {
-                                throw new IllegalStateException();
+                            if (initPromise.trySuccess(null)) {
+                                log.info("{} connections initialized for {}", minimumIdleSize, entry.getClient().getAddr());
                             }
                         } else if (value > 0 && !initPromise.isDone()) {
                             if (requests.incrementAndGet() <= minimumIdleSize) {

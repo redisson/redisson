@@ -506,11 +506,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected final void changeMaster(int slot, URI address) {
         final MasterSlaveEntry entry = getEntry(slot);
-        client2entry.remove(entry.getClient());
+        final RedisClient oldClient = entry.getClient();
         entry.changeMaster(address).addListener(new FutureListener<RedisClient>() {
             @Override
             public void operationComplete(Future<RedisClient> future) throws Exception {
                 if (future.isSuccess()) {
+                    client2entry.remove(oldClient);
                     client2entry.put(entry.getClient(), entry);
                 }
             }
