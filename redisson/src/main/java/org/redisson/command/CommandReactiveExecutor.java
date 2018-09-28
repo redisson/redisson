@@ -22,7 +22,6 @@ import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.connection.MasterSlaveEntry;
 
 /**
  *

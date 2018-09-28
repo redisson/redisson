@@ -127,18 +127,19 @@ public class MasterSlaveEntry {
             @Override
             public void operationComplete(Future<InetSocketAddress> future) throws Exception {
                 if (!future.isSuccess()) {
+                    client.shutdownAsync();
                     result.tryFailure(future.cause());
                     return;
                 }
                 
-        masterEntry = new ClientConnectionsEntry(
-                client, 
-                config.getMasterConnectionMinimumIdleSize(), 
-                config.getMasterConnectionPoolSize(),
-                config.getSubscriptionConnectionMinimumIdleSize(),
-                config.getSubscriptionConnectionPoolSize(), 
-                connectionManager, 
-                                NodeType.MASTER);
+                masterEntry = new ClientConnectionsEntry(
+                        client, 
+                        config.getMasterConnectionMinimumIdleSize(), 
+                        config.getMasterConnectionPoolSize(),
+                        config.getSubscriptionConnectionMinimumIdleSize(),
+                        config.getSubscriptionConnectionPoolSize(), 
+                        connectionManager, 
+                                        NodeType.MASTER);
         
                 int counter = 1;
                 if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
@@ -146,13 +147,13 @@ public class MasterSlaveEntry {
                 }
                 
                 CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client, counter);
-        RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
-        writeFuture.addListener(listener);
-        
-        if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
-            RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
-            pubSubFuture.addListener(listener);
-        }
+                RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
+                writeFuture.addListener(listener);
+                
+                if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
+                    RFuture<Void> pubSubFuture = pubSubConnectionPool.add(masterEntry);
+                    pubSubFuture.addListener(listener);
+                }
             }
         });
         
@@ -304,6 +305,14 @@ public class MasterSlaveEntry {
                     }
                 }
                 RFuture<Void> addFuture = slaveBalancer.add(entry);
+                addFuture.addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            client.shutdownAsync();
+                        }
+                    }
+                });
                 addFuture.addListener(new TransferListener<Void>(result));
             }
         });
