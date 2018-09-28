@@ -747,9 +747,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             @Override
             public void run(Timeout timeout) throws Exception {
                 MasterSlaveEntry entry = connectionManager.getEntry(connection.getRedisClient());
-                ClientConnectionsEntry ee = entry.getEntry(connection.getRedisClient());
-                if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
-                    ee.trySetupFistFail();
+                if (entry != null) {
+                    ClientConnectionsEntry ee = entry.getEntry(connection.getRedisClient());
+                    if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
+                        ee.trySetupFistFail();
+                    }
                 }
                 
                 details.getAttemptPromise().tryFailure(
@@ -907,11 +909,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             
             free(details.getParams());
             
-            if (!(future.cause() instanceof RedisTimeoutException)) {
+            if (!(future.cause() instanceof RedisTimeoutException) && details.getConnectionFuture().getNow() != null) {
                 MasterSlaveEntry entry = connectionManager.getEntry(details.getConnectionFuture().getNow().getRedisClient());
-                ClientConnectionsEntry ee = entry.getEntry(details.getConnectionFuture().getNow().getRedisClient());
-                if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
-                    ee.resetFirstFail();
+                if (entry != null) {
+                    ClientConnectionsEntry ee = entry.getEntry(details.getConnectionFuture().getNow().getRedisClient());
+                    if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
+                        ee.resetFirstFail();
+                    }
                 }
             }
             
