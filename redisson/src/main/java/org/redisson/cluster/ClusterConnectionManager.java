@@ -507,7 +507,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         Set<ClusterPartition> lastPartitions = getLastPartitions();
         for (final ClusterPartition newPart : newPartitions) {
             boolean masterFound = false;
-            for (ClusterPartition currentPart : lastPartitions) {
+            for (final ClusterPartition currentPart : lastPartitions) {
                 if (!newPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                     continue;
                 }
@@ -521,11 +521,19 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     // does partition has a new master?
                     if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                         URI newUri = newMasterPart.getMasterAddress();
-                        URI oldUri = currentPart.getMasterAddress();
+                        final URI oldUri = currentPart.getMasterAddress();
                         
-                        changeMaster(slot, newUri);
+                        RFuture<RedisClient> future = changeMaster(slot, newUri);
+                        future.addListener(new FutureListener<RedisClient>() {
+                            @Override
+                            public void operationComplete(Future<RedisClient> future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    currentPart.setMasterAddress(oldUri);
+                                }
+                            }
+                        });
                         
-                        currentPart.setMasterAddress(newMasterPart.getMasterAddress());
+                        currentPart.setMasterAddress(newUri);
                     }
                 }
                 break;

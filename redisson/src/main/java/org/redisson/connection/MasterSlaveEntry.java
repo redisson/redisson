@@ -422,7 +422,7 @@ public class MasterSlaveEntry {
             @Override
             public void operationComplete(Future<RedisClient> future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("Can't change master to: {}", address);
+                    log.error("Unable to change master from: " + oldMaster.getClient().getAddr() + " to: " + address, future.cause());
                     return;
                 }
 
