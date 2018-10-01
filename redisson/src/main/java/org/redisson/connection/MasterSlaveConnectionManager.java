@@ -504,10 +504,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return slot2entry.get(slot);
     }
     
-    protected final void changeMaster(int slot, URI address) {
+    protected final RFuture<RedisClient> changeMaster(int slot, URI address) {
         final MasterSlaveEntry entry = getEntry(slot);
         final RedisClient oldClient = entry.getClient();
-        entry.changeMaster(address).addListener(new FutureListener<RedisClient>() {
+        RFuture<RedisClient> future = entry.changeMaster(address);
+        future.addListener(new FutureListener<RedisClient>() {
             @Override
             public void operationComplete(Future<RedisClient> future) throws Exception {
                 if (future.isSuccess()) {
@@ -516,6 +517,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
                 }
             }
         });
+        return future;
     }
     
     protected final void addEntry(Integer slot, MasterSlaveEntry entry) {

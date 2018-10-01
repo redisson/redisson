@@ -78,7 +78,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
             }
             
             command.getChannelPromise().tryFailure(
-                    new WriteRedisConnectionException("Can't write command: " + command.getCommand() + " to channel: " + ctx.channel()));
+                    new WriteRedisConnectionException("Channel has been closed! Can't write command: " + command.getCommand() + " to channel: " + ctx.channel()));
         }
         
         super.channelInactive(ctx);
