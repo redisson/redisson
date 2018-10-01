@@ -23,6 +23,7 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheReactive;
 import org.redisson.api.RMapReactive;
 import org.redisson.api.RSet;
+import org.redisson.api.RSetCache;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.RTransaction;
@@ -103,12 +104,16 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
-        return new RedissonSetCacheReactive<V>(executorService, name, transaction.<V>getSetCache(name));
+        RSetCache<V> set = transaction.<V>getSetCache(name);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
-        return new RedissonSetCacheReactive<V>(codec, executorService, name, transaction.<V>getSetCache(name, codec));
+        RSetCache<V> set = transaction.<V>getSetCache(name, codec);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
     }
 
     @Override

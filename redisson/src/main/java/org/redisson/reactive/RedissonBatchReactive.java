@@ -37,6 +37,7 @@ import org.redisson.RedissonQueue;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonScript;
 import org.redisson.RedissonSet;
+import org.redisson.RedissonSetCache;
 import org.redisson.RedissonSetMultimap;
 import org.redisson.RedissonStream;
 import org.redisson.api.BatchOptions;
@@ -62,6 +63,7 @@ import org.redisson.api.RMapReactive;
 import org.redisson.api.RQueueReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RSetCache;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
@@ -230,12 +232,16 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
-        return new RedissonSetCacheReactive<V>(evictionScheduler, executorService, name);
+        RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
-        return new RedissonSetCacheReactive<V>(codec, evictionScheduler, executorService, name);
+        RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
     }
 
     @Override
