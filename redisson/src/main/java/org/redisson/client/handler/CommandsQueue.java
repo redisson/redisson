@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.regex.Pattern;
 
 import org.redisson.client.ChannelName;
+import org.redisson.client.RedisConnectionException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.QueueCommand;
@@ -79,6 +80,10 @@ public class CommandsQueue extends ChannelDuplexHandler {
             
             command.getChannelPromise().tryFailure(
                     new WriteRedisConnectionException("Channel has been closed! Can't write command: " + command.getCommand() + " to channel: " + ctx.channel()));
+            
+            if (command.getChannelPromise().isSuccess()) {
+                command.getCommand().tryFailure(new RedisConnectionException("Command succesfully sent, but channel " + ctx.channel() + " has been closed!"));
+            }
         }
         
         super.channelInactive(ctx);

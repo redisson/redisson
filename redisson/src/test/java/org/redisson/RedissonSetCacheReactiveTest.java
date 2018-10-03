@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetCacheReactive;
-import org.redisson.codec.MsgPackJacksonCodec;
 
 public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
 

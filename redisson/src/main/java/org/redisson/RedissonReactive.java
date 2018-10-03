@@ -50,6 +50,7 @@ import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSemaphoreReactive;
+import org.redisson.api.RSetCache;
 import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetMultimapReactive;
 import org.redisson.api.RSetReactive;
@@ -352,12 +353,16 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
-        return new RedissonSetCacheReactive<V>(evictionScheduler, commandExecutor, name);
+        RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetCacheReactive<V>(commandExecutor, set), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
-        return new RedissonSetCacheReactive<V>(codec, evictionScheduler, commandExecutor, name);
+        RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetCacheReactive<V>(commandExecutor, set), RSetCacheReactive.class);
     }
 
     @Override
