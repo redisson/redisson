@@ -54,6 +54,8 @@ import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.concurrent.Future;
@@ -70,6 +72,8 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     final AtomicInteger writeBehindCurrentThreads = new AtomicInteger();
     final Queue<Runnable> writeBehindTasks;
     final RedissonClient redisson;
@@ -739,7 +743,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync(options.getLoader().loadAllKeys(), replaceExistingValues, parallelism, null);
+        Iterable<K> keys;
+        try {
+            keys = options.getLoader().loadAllKeys();
+        } catch (Exception e) {
+            log.error("Unable to load keys for map " + getName(), e);
+            return RedissonPromise.newFailedFuture(e);
+        }
+        return loadAllAsync(keys, replaceExistingValues, parallelism, null);
     }
     
     @Override
@@ -763,22 +774,27 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
  
         final RPromise<Void> result = new RedissonPromise<Void>();
         final AtomicInteger counter = new AtomicInteger();
-        final Iterator<? extends K> iter = keys.iterator();
-        for (int i = 0; i < parallelism; i++) {
-            if (!iter.hasNext()) {
-                if (counter.get() == 0) {
-                    result.trySuccess(null);
+        try {
+            final Iterator<? extends K> iter = keys.iterator();
+            for (int i = 0; i < parallelism; i++) {
+                if (!iter.hasNext()) {
+                    if (counter.get() == 0) {
+                        result.trySuccess(null);
+                    }
+                    break;
                 }
-                break;
+                
+                counter.incrementAndGet();
+                K key = iter.next();
+                if (replaceExistingValues) {
+                    loadValue(result, counter, iter, key, loadedEntires);
+                } else {
+                    checkAndLoadValue(result, counter, iter, key, loadedEntires);
+                }
             }
-            
-            counter.incrementAndGet();
-            K key = iter.next();
-            if (replaceExistingValues) {
-                loadValue(result, counter, iter, key, loadedEntires);
-            } else {
-                checkAndLoadValue(result, counter, iter, key, loadedEntires);
-            }
+        } catch (Exception e) {
+            log.error("Unable to load keys for map " + getName(), e);
+            return RedissonPromise.newFailedFuture(e);
         }
         
         return result;
@@ -1288,9 +1304,16 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
             @Override
             public void run() {
-                final V value = options.getLoader().load(key);
-                if (value == null) {
-                    unlock(result, lock, threadId, value);
+                final V value;
+                try {
+                    value = options.getLoader().load(key);
+                    if (value == null) {
+                        unlock(result, lock, threadId, value);
+                        return;
+                    }
+                } catch (Exception e) {
+                    log.error("Unable to load value by key " + key + " for map " + getName(), e);
+                    unlock(result, lock, threadId, null);
                     return;
                 }
                     
