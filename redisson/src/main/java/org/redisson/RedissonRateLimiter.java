@@ -169,7 +169,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                         public void run() {
                             promise.trySuccess(false);
                         }
-                    }, remains, TimeUnit.SECONDS);
+                    }, remains, TimeUnit.MILLISECONDS);
                 } else {
                     final long start = System.currentTimeMillis();
                     commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
@@ -183,7 +183,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                             
                             tryAcquireAsync(permits, promise, remains - elapsed);
                         }
-                    }, delay, TimeUnit.SECONDS);
+                    }, delay, TimeUnit.MILLISECONDS);
                 }
             }
         });
