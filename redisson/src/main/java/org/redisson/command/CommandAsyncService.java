@@ -44,6 +44,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisRedirectException;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
@@ -755,7 +756,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
                 
                 details.getAttemptPromise().tryFailure(
-                        new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
+                        new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
                                 + " with params: " + LogHelper.toString(details.getParams()) + " channel: " + connection.getChannel()));
             }
         };
