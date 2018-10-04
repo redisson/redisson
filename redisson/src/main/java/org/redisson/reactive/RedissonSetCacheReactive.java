@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSetCache;
@@ -35,20 +34,6 @@ import io.netty.buffer.ByteBuf;
 import reactor.rx.Streams;
 
 /**
- * <p>Set-based cache with ability to set TTL for each entry via
- * {@link #add(Object, long, TimeUnit)} method.
- * And therefore has an complex lua-scripts inside.
- * Uses map(value_hash, value) to tie with sorted set which contains expiration record for every value with TTL.
- * </p>
- *
- * <p>Current Redis implementation doesn't have set entry eviction functionality.
- * Thus values are checked for TTL expiration during any value read operation.
- * If entry expired then it doesn't returns and clean task runs hronous.
- * Clean task deletes removes 100 expired entries at once.
- * In addition there is {@link org.redisson.eviction.EvictionScheduler}. This scheduler
- * deletes expired entries in time interval between 5 seconds to 2 hours.</p>
- *
- * <p>If eviction is not required then it's better to use {@link org.redisson.api.RSet}.</p>
  *
  * @author Nikita Koksharov
  *
