@@ -44,6 +44,7 @@ import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
 import org.redisson.client.RedisRedirectException;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
@@ -746,16 +747,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         TimerTask timeoutTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                MasterSlaveEntry entry = connectionManager.getEntry(connection.getRedisClient());
-                if (entry != null) {
-                    ClientConnectionsEntry ee = entry.getEntry(connection.getRedisClient());
-                    if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
-                        ee.trySetupFistFail();
-                    }
-                }
-                
                 details.getAttemptPromise().tryFailure(
-                        new RedisTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
+                        new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured for command: " + details.getCommand()
                                 + " with params: " + LogHelper.toString(details.getParams()) + " channel: " + connection.getChannel()));
             }
         };
@@ -908,16 +901,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             
             free(details.getParams());
-            
-            if (!(future.cause() instanceof RedisTimeoutException) && details.getConnectionFuture().getNow() != null) {
-                MasterSlaveEntry entry = connectionManager.getEntry(details.getConnectionFuture().getNow().getRedisClient());
-                if (entry != null) {
-                    ClientConnectionsEntry ee = entry.getEntry(details.getConnectionFuture().getNow().getRedisClient());
-                    if (ee != null && ee.getNodeType() == NodeType.SLAVE) {
-                        ee.resetFirstFail();
-                    }
-                }
-            }
             
             if (future.isSuccess()) {
                 R res = future.getNow();

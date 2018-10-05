@@ -271,11 +271,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
         T conn = poll(entry);
         if (conn != null) {
-            if (!conn.isActive()) {
-                promiseFailure(entry, promise, conn);
-                return;
-            } 
-            
+            if (!conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
+                entry.trySetupFistFail();
+            }
+
             connectedSuccessful(entry, promise, conn);
             return;
         }
@@ -305,6 +304,10 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     private void connectedSuccessful(ClientConnectionsEntry entry, RPromise<T> promise, T conn) {
+        if (conn.isActive() && entry.getNodeType() == NodeType.SLAVE) {
+            entry.resetFirstFail();
+        }
+
         if (!promise.trySuccess(conn)) {
             releaseConnection(entry, conn);
             releaseConnection(entry);

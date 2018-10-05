@@ -104,7 +104,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         RBucketReactive<Object> b1 = reactive.getBucket("b1");
         sync(b1.set(new MyObject()));
         RSetReactive<Object> s1 = reactive.getSet("s1");
-        assertTrue(sync(s1.add(b1)) == 1);
+        assertTrue(sync(s1.add(b1)));
         assertTrue(codec == b1.getCodec());
 
         Config config1 = new Config();

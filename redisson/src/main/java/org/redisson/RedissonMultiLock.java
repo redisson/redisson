@@ -28,6 +28,8 @@ import java.util.concurrent.locks.Lock;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.client.RedisConnectionClosedException;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
@@ -234,6 +236,12 @@ public class RedissonMultiLock implements Lock {
                     long awaitTime = Math.min(lockWaitTime, remainTime);
                     lockAcquired = lock.tryLock(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS);
                 }
+            } catch (RedisConnectionClosedException e) {
+                unlockInner(Arrays.asList(lock));
+                lockAcquired = false;
+            } catch (RedisResponseTimeoutException e) {
+                unlockInner(Arrays.asList(lock));
+                lockAcquired = false;
             } catch (Exception e) {
                 lockAcquired = false;
             }
@@ -311,6 +319,11 @@ public class RedissonMultiLock implements Lock {
                 boolean lockAcquired = false;
                 if (future.getNow() != null) {
                     lockAcquired = future.getNow();
+                }
+
+                if (future.cause() instanceof RedisConnectionClosedException
+                        || future.cause() instanceof RedisResponseTimeoutException) {
+                    unlockInnerAsync(Arrays.asList(lock), threadId);
                 }
                 
                 if (lockAcquired) {

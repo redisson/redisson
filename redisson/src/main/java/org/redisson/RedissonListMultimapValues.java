@@ -187,6 +187,11 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     public RFuture<Boolean> addAsync(V e) {
         return list.addAsync(e);
     }
+    
+    @Override
+    public RFuture<Boolean> addAsync(int index, V element) {
+        return list.addAsync(index, element);
+    }
 
     @Override
     public boolean remove(Object o) {
@@ -198,7 +203,8 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
         return removeAsync(o, 1);
     }
 
-    protected RFuture<Boolean> removeAsync(Object o, int count) {
+    @Override
+    public RFuture<Boolean> removeAsync(Object o, int count) {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDate = 92233720368547758; " +
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); "
@@ -213,7 +219,8 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
          System.currentTimeMillis(), count, encodeMapKey(key), encodeMapValue(o));
     }
 
-    protected boolean remove(Object o, int count) {
+    @Override
+    public boolean remove(Object o, int count) {
         return get(removeAsync(o, count));
     }
 
@@ -438,7 +445,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
     
     @Override
-    public RFuture<V> removeAsync(long index) {
+    public RFuture<V> removeAsync(int index) {
         return list.removeAsync(index);
     }
 
@@ -448,7 +455,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
     
     @Override
-    public RFuture<Void> fastRemoveAsync(long index) {
+    public RFuture<Void> fastRemoveAsync(int index) {
         return list.fastRemoveAsync(index);
     }
     

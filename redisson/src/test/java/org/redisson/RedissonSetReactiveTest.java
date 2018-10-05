@@ -39,7 +39,7 @@ public class RedissonSetReactiveTest extends BaseReactiveTest {
         sync(list.add(5));
 
         RSetReactive<Integer> list2 = redisson.getSet("set2");
-        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+        Assert.assertEquals(true, sync(list2.addAll(list.iterator())));
         Assert.assertEquals(5, sync(list2.size()).intValue());
     }
 

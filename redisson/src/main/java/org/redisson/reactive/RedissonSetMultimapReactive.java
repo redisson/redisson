@@ -45,7 +45,7 @@ public class RedissonSetMultimapReactive<K, V> {
     public RSetReactive<V> get(K key) {
         RSet<V> set = ((RSetMultimap<K, V>)instance).get(key);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetReactive<V>(commandExecutor, set), RSetReactive.class);
+                new RedissonSetReactive<V>(set), RSetReactive.class);
     }
 
             }

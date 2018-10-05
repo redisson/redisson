@@ -96,7 +96,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if an element was added 
      *          and <code>false</code> if it is already present
      */
-    Publisher<Integer> add(V e);
+    Publisher<Boolean> add(V e);
 
     /**
      * Adds all elements contained in the specified collection
@@ -105,7 +105,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Publisher<Integer> addAll(Publisher<? extends V> c);
+    Publisher<Boolean> addAll(Publisher<? extends V> c);
     
     /**
      * Adds all elements contained in the specified collection
@@ -114,6 +114,6 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Publisher<Integer> addAll(Collection<? extends V> c);
+    Publisher<Boolean> addAll(Collection<? extends V> c);
 
 }

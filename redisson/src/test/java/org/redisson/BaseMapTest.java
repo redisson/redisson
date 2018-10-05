@@ -1228,6 +1228,19 @@ public abstract class BaseMapTest extends BaseTest {
             }
         };
     }
+
+    @Test
+    public void testMapLoaderGetWithException() {
+        Map<String, String> cache = new HashMap<String, String>() {
+            @Override
+            public String get(Object key) {
+                throw new RuntimeException();
+            };
+        };
+        
+        RMap<String, String> map = getLoaderTestMap("test", cache);
+        assertThat(map.get("1")).isNull();
+    }
     
     @Test
     public void testMapLoaderGet() {

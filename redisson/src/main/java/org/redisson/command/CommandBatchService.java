@@ -39,6 +39,7 @@ import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
+import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
@@ -827,7 +828,7 @@ public class CommandBatchService extends CommandAsyncService {
             @Override
             public void run(Timeout timeout) throws Exception {
                 attemptPromise.tryFailure(
-                        new RedisTimeoutException("Redis server response timeout during command batch execution. Channel: " + connection.getChannel()));
+                        new RedisResponseTimeoutException("Redis server response timeout during command batch execution. Channel: " + connection.getChannel()));
             }
         };
         

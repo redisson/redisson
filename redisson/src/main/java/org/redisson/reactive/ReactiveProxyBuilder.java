@@ -68,6 +68,7 @@ public class ReactiveProxyBuilder {
                 final Method mm = instanceMethod;
                 if (instanceMethod.getName().endsWith("Async")) {
                     return commandExecutor.reactive(new Supplier<RFuture<Object>>() {
+                        @SuppressWarnings("unchecked")
                         @Override
                         public RFuture<Object> get() {
                             try {

@@ -15,13 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.api.RFuture;
@@ -63,8 +56,8 @@ public class RedissonScoredSortedSetReactive<V>  {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                        return ((RedissonScoredSortedSet<V>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
-                    }
+                return ((RedissonScoredSortedSet<V>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            }
         });
     }
 

@@ -171,14 +171,14 @@ public class RedissonBatchReactive implements RBatchReactive {
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetReactive<V>(executorService, set), RSetReactive.class);
+                new RedissonSetReactive<V>(set), RSetReactive.class);
     }
 
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetReactive<V>(executorService, set), RSetReactive.class);
+                new RedissonSetReactive<V>(set), RSetReactive.class);
     }
 
     @Override
@@ -236,14 +236,14 @@ public class RedissonBatchReactive implements RBatchReactive {
     public <V> RSetCacheReactive<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, executorService, name, null);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheReactive<V>(executorService, set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
     }
 
     @Override
@@ -260,8 +260,9 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public RLexSortedSetReactive getLexSortedSet(String name) {
-        return ReactiveProxyBuilder.create(executorService, new RedissonLexSortedSet(executorService, name, null), 
-                new RedissonLexSortedSetReactive(executorService, new RedissonScoredSortedSetReactive<String>(StringCodec.INSTANCE, executorService, name)), 
+        RedissonLexSortedSet set = new RedissonLexSortedSet(executorService, name, null);
+        return ReactiveProxyBuilder.create(executorService, set, 
+                new RedissonLexSortedSetReactive(set), 
                 RLexSortedSetReactive.class);
     }
 

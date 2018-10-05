@@ -99,4 +99,6 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      */
     void fastRemove(int index);
     
+    boolean remove(Object o, int count);
+    
 }

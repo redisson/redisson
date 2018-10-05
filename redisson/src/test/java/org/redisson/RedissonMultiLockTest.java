@@ -102,10 +102,6 @@ public class RedissonMultiLockTest {
         assertThat(redis3.stop()).isEqualTo(0);
     }
 
-    private RedissonClient createClient(String host) {
-        return createClient(null, host);
-    }
-
     private RedissonClient createClient(NioEventLoopGroup group, String host) {
         Config config1 = new Config();
         config1.useSingleServer().setAddress(host);
