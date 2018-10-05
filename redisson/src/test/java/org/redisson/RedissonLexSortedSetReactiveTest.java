@@ -18,28 +18,28 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
     @Test
     public void testAddAllReactive() {
         RLexSortedSetReactive list = redisson.getLexSortedSet("set");
-        Assert.assertTrue(sync(list.add("1")) == 1);
-        Assert.assertTrue(sync(list.add("2"))  == 1);
-        Assert.assertTrue(sync(list.add("3")) == 1);
-        Assert.assertTrue(sync(list.add("4")) == 1);
-        Assert.assertTrue(sync(list.add("5")) == 1);
+        Assert.assertTrue(sync(list.add("1")));
+        Assert.assertTrue(sync(list.add("2")));
+        Assert.assertTrue(sync(list.add("3")));
+        Assert.assertTrue(sync(list.add("4")));
+        Assert.assertTrue(sync(list.add("5")));
 
         RLexSortedSetReactive list2 = redisson.getLexSortedSet("set2");
-        Assert.assertEquals(5, sync(list2.addAll(list.iterator())).intValue());
+        Assert.assertEquals(true, sync(list2.addAll(list.iterator())));
         Assert.assertEquals(5, sync(list2.size()).intValue());
     }
 
     @Test
     public void testRemoveLexRangeTail() {
         RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
-        Assert.assertTrue(sync(set.add("a")) == 1);
-        Assert.assertFalse(sync(set.add("a")) == 1);
-        Assert.assertTrue(sync(set.add("b"))  == 1);
-        Assert.assertTrue(sync(set.add("c")) == 1);
-        Assert.assertTrue(sync(set.add("d")) == 1);
-        Assert.assertTrue(sync(set.add("e")) == 1);
-        Assert.assertTrue(sync(set.add("f")) == 1);
-        Assert.assertTrue(sync(set.add("g")) == 1);
+        Assert.assertTrue(sync(set.add("a")));
+        Assert.assertFalse(sync(set.add("a")));
+        Assert.assertTrue(sync(set.add("b")));
+        Assert.assertTrue(sync(set.add("c")));
+        Assert.assertTrue(sync(set.add("d")));
+        Assert.assertTrue(sync(set.add("e")));
+        Assert.assertTrue(sync(set.add("f")));
+        Assert.assertTrue(sync(set.add("g")));
 
         Assert.assertEquals(0, sync(set.removeRangeTail("z", false)).intValue());
 
@@ -86,14 +86,14 @@ public class RedissonLexSortedSetReactiveTest extends BaseReactiveTest {
     @Test
     public void testLexRangeTail() {
         RLexSortedSetReactive set = redisson.getLexSortedSet("simple");
-        Assert.assertTrue(sync(set.add("a")) == 1);
-        Assert.assertFalse(sync(set.add("a")) == 1);
-        Assert.assertTrue(sync(set.add("b")) == 1);
-        Assert.assertTrue(sync(set.add("c")) == 1);
-        Assert.assertTrue(sync(set.add("d")) == 1);
-        Assert.assertTrue(sync(set.add("e")) == 1);
-        Assert.assertTrue(sync(set.add("f")) == 1);
-        Assert.assertTrue(sync(set.add("g")) == 1);
+        Assert.assertTrue(sync(set.add("a")));
+        Assert.assertFalse(sync(set.add("a")));
+        Assert.assertTrue(sync(set.add("b")));
+        Assert.assertTrue(sync(set.add("c")));
+        Assert.assertTrue(sync(set.add("d")));
+        Assert.assertTrue(sync(set.add("e")));
+        Assert.assertTrue(sync(set.add("f")));
+        Assert.assertTrue(sync(set.add("g")));
 
         assertThat(sync(set.rangeTail("c", false))).containsExactly("d", "e", "f", "g");
         assertThat(sync(set.rangeTail("c", true))).containsExactly("c", "d", "e", "f", "g");

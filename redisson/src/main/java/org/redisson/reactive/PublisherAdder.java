@@ -19,7 +19,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscription;
+import org.redisson.api.RFuture;
 
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import reactor.rx.Promise;
 import reactor.rx.Promises;
 import reactor.rx.action.support.DefaultSubscriber;
@@ -32,21 +35,17 @@ import reactor.rx.action.support.DefaultSubscriber;
  */
 public abstract class PublisherAdder<V> {
 
-    public abstract Publisher<Integer> add(Object o);
+    public abstract RFuture<Boolean> add(Object o);
     
-    public Integer sum(Integer first, Integer second) {
-        return first + second;
-    }
-
-    public Publisher<Integer> addAll(Publisher<? extends V> c) {
-        final Promise<Integer> promise = Promises.prepare();
+    public Publisher<Boolean> addAll(Publisher<? extends V> c) {
+        final Promise<Boolean> promise = Promises.prepare();
 
         c.subscribe(new DefaultSubscriber<V>() {
 
             volatile boolean completed;
             AtomicLong values = new AtomicLong();
             Subscription s;
-            Integer lastSize = 0;
+            Boolean lastSize = false;
 
             @Override
             public void onSubscribe(Subscription s) {
@@ -57,21 +56,17 @@ public abstract class PublisherAdder<V> {
             @Override
             public void onNext(V o) {
                 values.getAndIncrement();
-                add(o).subscribe(new DefaultSubscriber<Integer>() {
-
+                add(o).addListener(new FutureListener<Boolean>() {
                     @Override
-                    public void onSubscribe(Subscription s) {
-                        s.request(1);
-                    }
-
-                    @Override
-                    public void onError(Throwable t) {
-                        promise.onError(t);
-                    }
-
-                    @Override
-                    public void onNext(Integer o) {
-                        lastSize = sum(lastSize, o);
+                    public void operationComplete(Future<Boolean> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            promise.onError(future.cause());
+                            return;
+                        }
+                        
+                        if (future.getNow()) {
+                            lastSize = true;
+                        }
                         s.request(1);
                         if (values.decrementAndGet() == 0 && completed) {
                             promise.onNext(lastSize);

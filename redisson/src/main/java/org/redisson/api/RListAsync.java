@@ -54,6 +54,8 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<
      */
     RFuture<Integer> addBeforeAsync(V elementToFind, V element);
     
+    RFuture<Boolean> addAsync(int index, V element);
+    
     RFuture<Boolean> addAllAsync(int index, Collection<? extends V> coll);
 
     RFuture<Integer> lastIndexOfAsync(Object o);
@@ -92,8 +94,10 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<
      */
     RFuture<Void> trimAsync(int fromIndex, int toIndex);
 
-    RFuture<Void> fastRemoveAsync(long index);
+    RFuture<Void> fastRemoveAsync(int index);
 
-    RFuture<V> removeAsync(long index);
+    RFuture<V> removeAsync(int index);
+    
+    RFuture<Boolean> removeAsync(Object o, int count);
     
 }

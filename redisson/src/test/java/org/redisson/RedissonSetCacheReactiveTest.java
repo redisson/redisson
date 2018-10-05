@@ -189,14 +189,14 @@ public class RedissonSetCacheReactiveTest extends BaseReactiveTest {
     @Test
     public void testSize() {
         RSetCacheReactive<Integer> set = redisson.getSetCache("set");
-        Assert.assertEquals(1, sync(set.add(1)).intValue());
-        Assert.assertEquals(1, sync(set.add(2)).intValue());
-        Assert.assertEquals(1, sync(set.add(3)).intValue());
-        Assert.assertEquals(0, sync(set.add(3)).intValue());
-        Assert.assertEquals(0, sync(set.add(3)).intValue());
-        Assert.assertEquals(1, sync(set.add(4)).intValue());
-        Assert.assertEquals(1, sync(set.add(5)).intValue());
-        Assert.assertEquals(0, sync(set.add(5)).intValue());
+        Assert.assertEquals(true, sync(set.add(1)));
+        Assert.assertEquals(true, sync(set.add(2)));
+        Assert.assertEquals(true, sync(set.add(3)));
+        Assert.assertEquals(false, sync(set.add(3)));
+        Assert.assertEquals(false, sync(set.add(3)));
+        Assert.assertEquals(true, sync(set.add(4)));
+        Assert.assertEquals(true, sync(set.add(5)));
+        Assert.assertEquals(false, sync(set.add(5)));
 
         Assert.assertEquals(5, sync(set.size()).intValue());
     }

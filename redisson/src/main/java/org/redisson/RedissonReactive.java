@@ -60,7 +60,6 @@ import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.command.CommandReactiveService;
 import org.redisson.config.Config;
@@ -266,14 +265,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <V> RSetReactive<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetReactive<V>(commandExecutor, set), RSetReactive.class);
+                new RedissonSetReactive<V>(set), RSetReactive.class);
     }
 
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetReactive<V>(commandExecutor, set), RSetReactive.class);
+                new RedissonSetReactive<V>(set), RSetReactive.class);
     }
 
     @Override
@@ -290,8 +289,9 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RLexSortedSetReactive getLexSortedSet(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonLexSortedSet(commandExecutor, name, null), 
-                new RedissonLexSortedSetReactive(commandExecutor, new RedissonScoredSortedSetReactive<String>(StringCodec.INSTANCE, commandExecutor, name)), 
+        RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, set, 
+                new RedissonLexSortedSetReactive(set), 
                 RLexSortedSetReactive.class);
     }
 
@@ -355,14 +355,14 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <V> RSetCacheReactive<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetCacheReactive<V>(commandExecutor, set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetCacheReactive<V>(commandExecutor, set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
     }
 
     @Override

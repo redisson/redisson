@@ -15,14 +15,12 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import org.reactivestreams.Publisher;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandReactiveExecutor;
+import org.redisson.RedissonScoredSortedSet;
+import org.redisson.api.RFuture;
+import org.redisson.api.RLexSortedSet;
+import org.redisson.client.RedisClient;
+import org.redisson.client.protocol.decoder.ListScanResult;
 
 /**
  * 
@@ -31,51 +29,48 @@ import org.redisson.command.CommandReactiveExecutor;
  */
 public class RedissonLexSortedSetReactive {
 
-    private final RedissonScoredSortedSetReactive<String> instance;
-    private final CommandReactiveExecutor commandExecutor;
+    private final RLexSortedSet instance;
     
-    public RedissonLexSortedSetReactive(CommandReactiveExecutor commandExecutor, RedissonScoredSortedSetReactive<String> instance) {
-        this.commandExecutor = commandExecutor;
+    public RedissonLexSortedSetReactive(RLexSortedSet instance) {
         this.instance = instance;
     }
 
-    public Publisher<Integer> addAll(Publisher<? extends String> c) {
+    public Publisher<Boolean> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>() {
             @Override
-            public Publisher<Integer> add(Object e) {
-                return RedissonLexSortedSetReactive.this.add(e);
+            public RFuture<Boolean> add(Object e) {
+                return instance.addAsync((String)e);
             }
         }.addAll(c);
     }
     
+    private Publisher<String> scanIteratorReactive(final String pattern, final int count) {
+        return new SetReactiveIterator<String>() {
+            @Override
+            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
+                return ((RedissonScoredSortedSet<String>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            }
+        };
+    }
+
+    public String getName() {
+        return ((RedissonScoredSortedSet)instance).getName();
+    }
+    
     public Publisher<String> iterator() {
-        return instance.iterator();
+        return scanIteratorReactive(null, 10);
     }
 
     public Publisher<String> iterator(String pattern) {
-        return instance.iterator(pattern);
+        return scanIteratorReactive(pattern, 10);
     }
 
     public Publisher<String> iterator(int count) {
-        return instance.iterator(count);
+        return scanIteratorReactive(null, count);
     }
 
     public Publisher<String> iterator(String pattern, int count) {
-        return instance.iterator(pattern, count);
-    }
-
-    public Publisher<Integer> add(Object e) {
-        return commandExecutor.writeReactive(instance.getName(), StringCodec.INSTANCE, RedisCommands.ZADD_INT, instance.getName(), 0, e);
-    }
-
-    public Publisher<Integer> addAll(Collection<? extends String> c) {
-        List<Object> params = new ArrayList<Object>(2*c.size());
-        params.add(instance.getName());
-        for (Object param : c) {
-            params.add(0);
-            params.add(param);
-        }
-        return commandExecutor.writeReactive(instance.getName(), StringCodec.INSTANCE, RedisCommands.ZADD_INT, params.toArray());
+        return scanIteratorReactive(pattern, count);
     }
 
 }
