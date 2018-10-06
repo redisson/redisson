@@ -92,7 +92,7 @@ Used by
 [![BBK](https://redisson.org/assets/logos/client22.png "BBK")](http://www.gdbbk.com/)  
 [![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
 
-<sub><i>Logos, product names and all other trademarks displayed on this page belong to their respective holders and used for identification purposes only. These trademark holders are not affiliated with Redisson and don't sponsor or endrose it.</i></sub>
+<sub><i>Logos, product names and all other trademarks displayed on this page belong to their respective holders and used for identification purposes only. Use of these trademarks, names and brands does not imply endorsement.</i></sub>
 
 Success stories
 ================================
