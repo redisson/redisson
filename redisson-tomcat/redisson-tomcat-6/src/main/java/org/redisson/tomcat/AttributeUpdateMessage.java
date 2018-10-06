@@ -34,6 +34,12 @@ public class AttributeUpdateMessage extends AttributeMessage {
         this.value = value;
     }
 
+    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value) {
+        super(nodeId, sessionId);
+        this.name = name;
+        this.value = value;
+    }
+
     public String getName() {
         return name;
     }

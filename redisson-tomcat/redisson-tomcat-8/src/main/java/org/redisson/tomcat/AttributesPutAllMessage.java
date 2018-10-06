@@ -33,7 +33,12 @@ public class AttributesPutAllMessage extends AttributeMessage {
         super(sessionId);
         this.attrs = attrs;
     }
-    
+
+    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs) {
+        super(nodeId, sessionId);
+        this.attrs = attrs;
+    }
+
     public Map<String, Object> getAttrs() {
         return attrs;
     }

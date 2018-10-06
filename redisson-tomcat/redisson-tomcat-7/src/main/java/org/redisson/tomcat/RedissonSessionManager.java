@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
 
@@ -58,6 +59,10 @@ public class RedissonSessionManager extends ManagerBase {
     private UpdateMode updateMode = UpdateMode.DEFAULT;
 
     private String keyPrefix = "";
+
+    private final String nodeId = UUID.randomUUID().toString();
+
+    public String getNodeId() { return nodeId; }
 
     public String getUpdateMode() {
         return updateMode.toString();
@@ -205,7 +210,7 @@ public class RedissonSessionManager extends ManagerBase {
                     try {
                         // TODO make it thread-safe
                         RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
-                        if (session != null) {
+                        if (session != null && !msg.getNodeId().equals(nodeId)) {
                             if (msg instanceof AttributeRemoveMessage) {
                                 session.superRemoveAttributeInternal(((AttributeRemoveMessage)msg).getName(), true);
                             }
