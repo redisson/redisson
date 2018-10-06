@@ -29,4 +29,8 @@ public class AttributesClearMessage extends AttributeMessage {
         super(sessionId);
     }
 
+    public AttributesClearMessage(String nodeId, String sessionId) {
+        super(nodeId, sessionId);
+    }
+
 }
