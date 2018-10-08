@@ -92,14 +92,14 @@ Used by
 [![BBK](https://redisson.org/assets/logos/client22.png "BBK")](http://www.gdbbk.com/)  
 [![SULAKE](https://redisson.org/assets/logos/client17.png "SULAKE")](http://www.sulake.com/)
 
-<sub><i>Logos, product names and all other trademarks displayed on this page belong to their respective holders and used for identification purposes only. Use of these trademarks, names and brands does not imply endorsement.</i></sub>
+<sub>Logos, product names and all other trademarks displayed on this page belong to their respective holders and used for identification purposes only. Use of these trademarks, names and brands does not imply endorsement.</sub>
 
 Success stories
 ================================
 
 ## [Moving from Hazelcast to Redis  /  Datorama](https://engineering.datorama.com/moving-from-hazelcast-to-redis-b90a0769d1cb)  
 ## [Distributed Locking with Redis (Migration from Hazelcast)  /  ContaAzul](https://carlosbecker.com/posts/distributed-locks-redis/)  
-## [Migrating from Coherence to Redis  /  RCI](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
+## [Migrating from Coherence to Redis](https://www.youtube.com/watch?v=JF5R2ucKTEg)  
 
 
 Quick start
