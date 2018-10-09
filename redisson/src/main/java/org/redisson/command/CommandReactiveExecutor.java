@@ -15,12 +15,8 @@
  */
 package org.redisson.command;
 
-import java.util.List;
-
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 
 import reactor.fn.Supplier;
 
@@ -32,11 +28,5 @@ import reactor.fn.Supplier;
 public interface CommandReactiveExecutor extends CommandAsyncExecutor {
 
     <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier);
-
-    <T, R> Publisher<R> evalWriteReactive(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params);
-
-    <T, R> Publisher<R> writeReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
-
-    <T, R> Publisher<R> readReactive(String key, Codec codec, RedisCommand<T> command, Object ... params);
 
 }

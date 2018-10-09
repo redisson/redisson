@@ -30,7 +30,7 @@ import java.util.concurrent.locks.Lock;
  * @author Nikita Koksharov
  *
  */
-public interface RReadWriteLockReactive extends RExpirableReactive {
+public interface RReadWriteLockReactive {
 
     /**
      * Returns the lock used for reading.

@@ -31,13 +31,14 @@ import java.util.concurrent.locks.ReadWriteLock;
  * @author Nikita Koksharov
  *
  */
-public interface RReadWriteLock extends ReadWriteLock, RExpirable {
+public interface RReadWriteLock extends ReadWriteLock {
 
     /**
      * Returns the lock used for reading.
      *
      * @return the lock used for reading
      */
+    @Override
     RLock readLock();
 
     /**
@@ -45,6 +46,7 @@ public interface RReadWriteLock extends ReadWriteLock, RExpirable {
      *
      * @return the lock used for writing
      */
+    @Override
     RLock writeLock();
 
 }
