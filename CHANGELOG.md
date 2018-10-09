@@ -4,6 +4,20 @@ Redisson Releases History
 
 Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 06-Oct-2018 - versions 2.13.2 and 3.8.2 released
+Feature - `RPermitExpirableSemaphore.updateLeaseTime` method added  
+Improvements - cluster state check  
+Fixed - DNS resolver fails to find valid DNS record  
+Fixed - MultiLock should attempt to release locks if request was sent successfully  
+Fixed - `RRateLimiter.tryAcquire` with timeout blocks forever  
+Fixed - CommandAsyncService blocks indefinitely if MapLoader's methods throw exception  
+Fixed - RedisConnection is not closed if QUIT command wasn't sent successfully  
+Fixed - Spring Boot resource encoding  
+Fixed - failed Redis slaves handling  
+Fixed - read locks aren't acquire lock at the same moment when write released  
+Fixed - empty RBoundedBlockingQueue's capacity increases when using poll method  
+Fixed - tomcat session replication in IN_MEMORY mode (thanks to Yasin Koyuncu)  
+
 ### 18-Sep-2018 - versions 2.13.1 and 3.8.1 released
 Feature - __RStream__ object added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-Distributed-collections#720-stream) for more details  
 Fixed - `failedSlaveCheckInterval` setting is not applied under some conditions  
