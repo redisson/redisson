@@ -71,7 +71,6 @@ import org.redisson.api.RStreamReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.command.CommandReactiveBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
@@ -281,7 +280,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Publisher<BatchResult<?>> execute() {
-        return new NettyFuturePublisher<BatchResult<?>>(new Supplier<RFuture<BatchResult<?>>>() {
+        return executorService.superReactive(new Supplier<RFuture<BatchResult<?>>>() {
             @Override
             public RFuture<BatchResult<?>> get() {
                 return executorService.executeAsync(options);

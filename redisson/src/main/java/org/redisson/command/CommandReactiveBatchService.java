@@ -57,6 +57,10 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         return publisher;
     }
     
+    public <R> Publisher<R> superReactive(Supplier<RFuture<R>> supplier) {
+        return super.reactive(supplier);
+    }
+    
     @Override
     protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect, RFuture<RedisConnection> connFuture) {

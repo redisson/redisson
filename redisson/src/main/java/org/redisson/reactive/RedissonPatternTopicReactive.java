@@ -70,7 +70,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
 
     @Override
     public Publisher<Integer> addListener(final PatternStatusListener listener) {
-        return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
+        return commandExecutor.reactive(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
                 RPromise<Integer> promise = new RedissonPromise<Integer>();
@@ -82,7 +82,7 @@ public class RedissonPatternTopicReactive<M> implements RPatternTopicReactive<M>
 
     @Override
     public Publisher<Integer> addListener(final PatternMessageListener<M> listener) {
-        return new NettyFuturePublisher<Integer>(new Supplier<RFuture<Integer>>() {
+        return commandExecutor.reactive(new Supplier<RFuture<Integer>>() {
             @Override
             public RFuture<Integer> get() {
                 RPromise<Integer> promise = new RedissonPromise<Integer>();

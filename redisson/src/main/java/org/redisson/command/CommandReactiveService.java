@@ -33,6 +33,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         super(connectionManager);
     }
 
+    @Override
     public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
         return new NettyFuturePublisher<R>(supplier);
     }

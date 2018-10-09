@@ -118,7 +118,7 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public Publisher<Void> commit() {
-        return new NettyFuturePublisher<Void>(new Supplier<RFuture<Void>>() {
+        return executorService.reactive(new Supplier<RFuture<Void>>() {
             @Override
             public RFuture<Void> get() {
                 return transaction.commitAsync();
@@ -128,7 +128,7 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public Publisher<Void> rollback() {
-        return new NettyFuturePublisher<Void>(new Supplier<RFuture<Void>>() {
+        return executorService.reactive(new Supplier<RFuture<Void>>() {
             @Override
             public RFuture<Void> get() {
                 return transaction.rollbackAsync();
