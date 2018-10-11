@@ -23,7 +23,7 @@ import org.redisson.config.Config;
 
 /**
  * Main Redisson interface for access
- * to all redisson objects with reactive interface.
+ * to all redisson objects with Reactive interface.
  *
  * @author Nikita Koksharov
  *

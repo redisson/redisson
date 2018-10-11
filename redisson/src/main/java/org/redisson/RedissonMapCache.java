@@ -1216,6 +1216,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return get(scanIteratorAsync(name, client, startPos, pattern, count));
     }
 
+    @Override
     public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(final String name, RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());

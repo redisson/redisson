@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.command;
+package org.redisson.rx;
 
 import java.util.Queue;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.reactivestreams.Publisher;
@@ -27,12 +28,13 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.misc.RPromise;
-import org.redisson.reactive.NettyFuturePublisher;
 
-import reactor.fn.Supplier;
+import io.reactivex.Flowable;
 import reactor.rx.action.support.DefaultSubscriber;
 
 /**
@@ -40,25 +42,25 @@ import reactor.rx.action.support.DefaultSubscriber;
  * @author Nikita Koksharov
  *
  */
-public class CommandReactiveBatchService extends CommandReactiveService {
+public class CommandRxBatchService extends CommandRxService {
 
     private final CommandBatchService batchService;
     private final Queue<Publisher<?>> publishers = new ConcurrentLinkedQueue<Publisher<?>>();
 
-    public CommandReactiveBatchService(ConnectionManager connectionManager) {
+    public CommandRxBatchService(ConnectionManager connectionManager) {
         super(connectionManager);
         batchService = new CommandBatchService(connectionManager);
     }
 
     @Override
-    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
-        NettyFuturePublisher<R> publisher = new NettyFuturePublisher<R>(supplier);
-        publishers.add(publisher);
-        return publisher;
+    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
+        Flowable<R> flowable = super.flowable(supplier);
+        publishers.add(flowable);
+        return flowable;
     }
     
-    public <R> Publisher<R> superReactive(Supplier<RFuture<R>> supplier) {
-        return super.reactive(supplier);
+    public <R> Flowable<R> superReactive(Callable<RFuture<R>> supplier) {
+        return super.flowable(supplier);
     }
     
     @Override

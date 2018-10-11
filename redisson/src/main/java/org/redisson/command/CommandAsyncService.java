@@ -521,7 +521,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
     
-    protected <V, R> void async(final boolean readOnlyMode, final NodeSource source, final Codec codec,
+    public <V, R> void async(final boolean readOnlyMode, final NodeSource source, final Codec codec,
             final RedisCommand<V> command, final Object[] params, final RPromise<R> mainPromise, final int attempt, 
             final boolean ignoreRedirect, final RFuture<RedisConnection> connFuture) {
         if (mainPromise.isCancelled()) {
