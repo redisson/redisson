@@ -77,6 +77,11 @@
             <artifactId>reactor-core</artifactId>
             <version>3.2.0.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>io.reactivex.rxjava2</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>2.1.13</version>
+        </dependency>
 
         <dependency>
             <groupId>org.assertj</groupId>
@@ -169,6 +174,13 @@
             <groupId>org.msgpack</groupId>
             <artifactId>jackson-dataformat-msgpack</artifactId>
             <version>0.8.16</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <version>1.1.7.2</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>

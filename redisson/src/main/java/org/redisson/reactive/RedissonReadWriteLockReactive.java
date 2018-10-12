@@ -26,13 +26,14 @@ import org.redisson.command.CommandReactiveExecutor;
  * @author Nikita Koksharov
  *
  */
-public class RedissonReadWriteLockReactive extends RedissonExpirableReactive implements RReadWriteLockReactive {
+public class RedissonReadWriteLockReactive implements RReadWriteLockReactive {
 
     private final RReadWriteLock instance;
+    private final CommandReactiveExecutor commandExecutor;
     
     public RedissonReadWriteLockReactive(CommandReactiveExecutor commandExecutor, String name) {
-        super(commandExecutor, name, new RedissonReadWriteLock(commandExecutor, name));
-        this.instance = (RReadWriteLock) super.instance;
+        this.commandExecutor = commandExecutor;
+        this.instance = new RedissonReadWriteLock(commandExecutor, name);
     }
 
     @Override

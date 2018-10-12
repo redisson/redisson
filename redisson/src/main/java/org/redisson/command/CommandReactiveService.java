@@ -20,8 +20,6 @@ import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 
 import reactor.core.publisher.Flux;
@@ -55,35 +53,4 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         });
     }
 
-    @Override
-    public <T, R> Publisher<R> writeReactive(final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
-        return reactive(new Supplier<RFuture<R>>() {
-            @Override
-            public RFuture<R> get() {
-                return writeAsync(key, codec, command, params);
-            };
-        });
     }
-
-    @Override
-    public <T, R> Publisher<R> readReactive(final String key, final Codec codec, final RedisCommand<T> command, final Object ... params) {
-        return reactive(new Supplier<RFuture<R>>() {
-            @Override
-            public RFuture<R> get() {
-                return readAsync(key, codec, command, params);
-            };
-        });
-    }
-
-    @Override
-    public <T, R> Publisher<R> evalWriteReactive(final String key, final Codec codec, final RedisCommand<T> evalCommandType,
-            final String script, final List<Object> keys, final Object... params) {
-        return reactive(new Supplier<RFuture<R>>() {
-            @Override
-            public RFuture<R> get() {
-                return evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-            };
-        });
-    }
-
-            }   

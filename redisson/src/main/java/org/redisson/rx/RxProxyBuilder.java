@@ -13,24 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.reactive;
+package org.redisson.rx;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Supplier;
 
 import org.redisson.api.RFuture;
-import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class ReactiveProxyBuilder {
+public class RxProxyBuilder {
 
     private static class CacheKey {
         
@@ -78,11 +77,11 @@ public class ReactiveProxyBuilder {
     
     private static final ConcurrentMap<CacheKey, Method> methodsMapping = new ConcurrentHashMap<CacheKey, Method>();
     
-    public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Class<T> clazz) {
+    public static <T> T create(CommandRxExecutor commandExecutor, Object instance, Class<T> clazz) {
         return create(commandExecutor, instance, null, clazz);
     }
     
-    public static <T> T create(final CommandReactiveExecutor commandExecutor, final Object instance, final Object implementation, final Class<T> clazz) {
+    public static <T> T create(final CommandRxExecutor commandExecutor, final Object instance, final Object implementation, final Class<T> clazz) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, final Object[] args) throws Throwable {
@@ -109,13 +108,12 @@ public class ReactiveProxyBuilder {
                     
                     methodsMapping.put(key, instanceMethod);
                 }
-                
                 final Method mm = instanceMethod;
                 if (instanceMethod.getName().endsWith("Async")) {
-                    return commandExecutor.reactive(new Supplier<RFuture<Object>>() {
+                    return commandExecutor.flowable(new Callable<RFuture<Object>>() {
                         @SuppressWarnings("unchecked")
                         @Override
-                        public RFuture<Object> get() {
+                        public RFuture<Object> call() {
                             try {
                                 return (RFuture<Object>) mm.invoke(instance, args);
                             } catch (Exception e) {

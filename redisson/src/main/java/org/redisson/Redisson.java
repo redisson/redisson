@@ -77,6 +77,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
@@ -166,21 +167,44 @@ public class Redisson implements RedissonClient {
     }
 
     /**
-     * Create reactive Redisson instance with default config
+     * Create Reactive Redisson instance with default config
+     *
+     * @return Redisson instance
+     */
+    public static RedissonReactiveClient createRx() {
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        return createReactive(config);
+    }
+
+    /**
+     * Create Reactive Redisson instance with provided config
+     *
+     * @param config for Redisson
+     * @return Redisson instance
+     */
+    public static RedissonRxClient createRx(Config config) {
+        RedissonRx react = new RedissonRx(config);
+//        if (config.isReferenceEnabled()) {
+//            react.enableRedissonReferenceSupport();
+//        }
+        return react;
+    }
+
+    
+    /**
+     * Create Reactive Redisson instance with default config
      *
      * @return Redisson instance
      */
     public static RedissonReactiveClient createReactive() {
         Config config = new Config();
         config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-//        config.useMasterSlaveConnection().setMasterAddress("127.0.0.1:6379").addSlaveAddress("127.0.0.1:6389").addSlaveAddress("127.0.0.1:6399");
-//        config.useSentinelConnection().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26389", "127.0.0.1:26379");
-//        config.useClusterServers().addNodeAddress("127.0.0.1:7000");
         return createReactive(config);
     }
 
     /**
-     * Create reactive Redisson instance with provided config
+     * Create Reactive Redisson instance with provided config
      *
      * @param config for Redisson
      * @return Redisson instance

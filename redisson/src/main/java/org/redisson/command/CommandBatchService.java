@@ -152,7 +152,7 @@ public class CommandBatchService extends CommandAsyncService {
     }
     
     @Override
-    protected <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
+    public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect, RFuture<RedisConnection> connFuture) {
         if (executed.get()) {
             throw new IllegalStateException("Batch already has been executed!");
