@@ -62,9 +62,10 @@ public class SnappyCodecV2 extends BaseCodec {
         
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
+            int size = buf.readableBytes();
             SnappyInputStream input = new SnappyInputStream(new ByteBufInputStream(buf));
-            ByteBuf bf = ByteBufAllocator.DEFAULT.buffer(buf.readableBytes());
-            bf.writeBytes(input, buf.readableBytes());
+            ByteBuf bf = ByteBufAllocator.DEFAULT.buffer(size);
+            bf.writeBytes(input, size);
             try {
                 return innerCodec.getValueDecoder().decode(bf, state);
             } finally {
