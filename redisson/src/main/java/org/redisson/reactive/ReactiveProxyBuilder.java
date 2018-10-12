@@ -33,7 +33,51 @@ import reactor.fn.Supplier;
  */
 public class ReactiveProxyBuilder {
 
-    private static final ConcurrentMap<Method, Method> methodsMapping = new ConcurrentHashMap<Method, Method>();
+    private static class CacheKey {
+        
+        Method method;
+        Class<?> instanceClass;
+        
+        public CacheKey(Method method, Class<?> instanceClass) {
+            super();
+            this.method = method;
+            this.instanceClass = instanceClass;
+        }
+
+        @Override
+        public int hashCode() {
+            final int prime = 31;
+            int result = 1;
+            result = prime * result + ((instanceClass == null) ? 0 : instanceClass.hashCode());
+            result = prime * result + ((method == null) ? 0 : method.hashCode());
+            return result;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            CacheKey other = (CacheKey) obj;
+            if (instanceClass == null) {
+                if (other.instanceClass != null)
+                    return false;
+            } else if (!instanceClass.equals(other.instanceClass))
+                return false;
+            if (method == null) {
+                if (other.method != null)
+                    return false;
+            } else if (!method.equals(other.method))
+                return false;
+            return true;
+        }
+        
+    }
+    
+    private static final ConcurrentMap<CacheKey, Method> methodsMapping = new ConcurrentHashMap<CacheKey, Method>();
     
     public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Class<T> clazz) {
         return create(commandExecutor, instance, null, clazz);
@@ -43,7 +87,8 @@ public class ReactiveProxyBuilder {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, final Object[] args) throws Throwable {
-                Method instanceMethod = methodsMapping.get(method);
+                CacheKey key = new CacheKey(method, instance.getClass());
+                Method instanceMethod = methodsMapping.get(key);
                 if (instanceMethod == null) {
                     if (implementation != null) {
                         try {
@@ -63,7 +108,7 @@ public class ReactiveProxyBuilder {
                         }
                     }
                     
-                    methodsMapping.put(method, instanceMethod);
+                    methodsMapping.put(key, instanceMethod);
                 }
                 
                 final Method mm = instanceMethod;
