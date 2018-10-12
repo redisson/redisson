@@ -12,6 +12,7 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
 import org.redisson.api.RCollectionRx;
+import org.redisson.api.RScoredSortedSetRx;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 
@@ -42,9 +43,9 @@ public abstract class BaseRxTest {
         sync(redisson.getKeys().flushall());
     }
 
-//    public static <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
-//        return Streams.create(list.iterator()).toList().poll();
-//    }
+    public static <V> Iterable<V> sync(RScoredSortedSetRx<V> list) {
+        return list.iterator().toList().blockingGet();
+    }
 
     public static <V> Iterable<V> sync(RCollectionRx<V> list) {
         return list.iterator().toList().blockingGet();

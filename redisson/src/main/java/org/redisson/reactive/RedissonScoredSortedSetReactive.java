@@ -60,7 +60,7 @@ public class RedissonScoredSortedSetReactive<V>  {
     }
 
     public String getName() {
-        return ((RedissonScoredSortedSet)instance).getName();
+        return ((RedissonScoredSortedSet<V>)instance).getName();
     }
     
     public Publisher<V> iterator() {
