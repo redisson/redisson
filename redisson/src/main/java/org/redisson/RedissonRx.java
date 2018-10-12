@@ -19,11 +19,29 @@ import org.redisson.api.ClusterNode;
 import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RAtomicDoubleRx;
+import org.redisson.api.RAtomicLongRx;
+import org.redisson.api.RBitSetRx;
 import org.redisson.api.RBucketRx;
+import org.redisson.api.RGeoRx;
+import org.redisson.api.RHyperLogLogRx;
 import org.redisson.api.RKeysRx;
+import org.redisson.api.RListMultimapRx;
+import org.redisson.api.RListRx;
+import org.redisson.api.RLockRx;
 import org.redisson.api.RMapCacheRx;
 import org.redisson.api.RMapRx;
+import org.redisson.api.RPermitExpirableSemaphoreRx;
+import org.redisson.api.RRateLimiterRx;
+import org.redisson.api.RReadWriteLockRx;
+import org.redisson.api.RScoredSortedSetRx;
+import org.redisson.api.RScriptRx;
+import org.redisson.api.RSemaphoreRx;
+import org.redisson.api.RSetCache;
+import org.redisson.api.RSetCacheRx;
+import org.redisson.api.RSetMultimapRx;
 import org.redisson.api.RSetRx;
+import org.redisson.api.RStreamRx;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.ReferenceCodecProvider;
@@ -35,8 +53,14 @@ import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.rx.CommandRxExecutor;
 import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RedissonKeysRx;
+import org.redisson.rx.RedissonListMultimapRx;
+import org.redisson.rx.RedissonListRx;
 import org.redisson.rx.RedissonMapCacheRx;
 import org.redisson.rx.RedissonMapRx;
+import org.redisson.rx.RedissonReadWriteLockRx;
+import org.redisson.rx.RedissonScoredSortedSetRx;
+import org.redisson.rx.RedissonSetCacheRx;
+import org.redisson.rx.RedissonSetMultimapRx;
 import org.redisson.rx.RedissonSetRx;
 import org.redisson.rx.RxProxyBuilder;
 
@@ -67,58 +91,60 @@ public class RedissonRx implements RedissonRxClient {
         codecProvider = config.getReferenceCodecProvider();
     }
     
-//    @Override
-//    public <K, V> RStreamReactive<K, V> getStream(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamReactive.class);
-//    }
-//
-//    @Override
-//    public <K, V> RStreamReactive<K, V> getStream(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(codec, commandExecutor, name), RStreamReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RGeoReactive<V> getGeo(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 
-//                new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RGeoReactive.class);
-//    }
-//    
-//    @Override
-//    public <V> RGeoReactive<V> getGeo(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonGeo<V>(codec, commandExecutor, name, null), 
-//                new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RGeoReactive.class);
-//    }
-//    
-//    @Override
-//    public RLockReactive getFairLock(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonFairLock(commandExecutor, name), RLockReactive.class);
-//    }
-//    
-//    @Override
-//    public RRateLimiterReactive getRateLimiter(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonRateLimiter(commandExecutor, name), RRateLimiterReactive.class);
-//    }
-//    
-//    @Override
-//    public RSemaphoreReactive getSemaphore(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name, semaphorePubSub), RSemaphoreReactive.class);
-//    }
-//
-//    @Override
-//    public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub), RPermitExpirableSemaphoreReactive.class);
-//    }
-//
-//    @Override
-//    public RReadWriteLockReactive getReadWriteLock(String name) {
-//        return new RedissonReadWriteLockReactive(commandExecutor, name);
-//    }
-//
-//    @Override
-//    public RLockReactive getLock(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockReactive.class);
-//    }
-//
+    @Override
+    public <K, V> RStreamRx<K, V> getStream(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(commandExecutor, name), RStreamRx.class);
+    }
+
+    @Override
+    public <K, V> RStreamRx<K, V> getStream(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonStream<K, V>(codec, commandExecutor, name), RStreamRx.class);
+    }
+
+    @Override
+    public <V> RGeoRx<V> getGeo(String name) {
+        RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, new RedissonGeo<V>(commandExecutor, name, null), 
+                new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
+    }
+    
+    @Override
+    public <V> RGeoRx<V> getGeo(String name, Codec codec) {
+        RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, new RedissonGeo<V>(codec, commandExecutor, name, null), 
+                new RedissonScoredSortedSetRx<V>(set), RGeoRx.class);
+    }
+    
+    @Override
+    public RLockRx getFairLock(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonFairLock(commandExecutor, name), RLockRx.class);
+    }
+    
+    @Override
+    public RRateLimiterRx getRateLimiter(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonRateLimiter(commandExecutor, name), RRateLimiterRx.class);
+    }
+    
+    @Override
+    public RSemaphoreRx getSemaphore(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name, semaphorePubSub), RSemaphoreRx.class);
+    }
+
+    @Override
+    public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub), RPermitExpirableSemaphoreRx.class);
+    }
+
+    @Override
+    public RReadWriteLockRx getReadWriteLock(String name) {
+        return new RedissonReadWriteLockRx(commandExecutor, name);
+    }
+
+    @Override
+    public RLockRx getLock(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockRx.class);
+    }
+
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
         RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null);
@@ -143,65 +169,53 @@ public class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonBucket<V>(codec, commandExecutor, name), RBucketRx.class);
     }
 
-//    @Override
-//    public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
-//        RKeys redissonKeys = new RedissonKeys(commandExecutor);
-//        Iterable<String> keys = redissonKeys.getKeysByPattern(pattern);
-//
-//        List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>();
-//        for (Object key : keys) {
-//            if(key != null) {
-//                buckets.add(this.<V>getBucket(key.toString()));
-//            }
-//        }
-//        return buckets;
-//    }
-//
-//    @Override
-//    public <V> RHyperLogLogReactive<V> getHyperLogLog(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(codec, commandExecutor, name), RHyperLogLogReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RListReactive<V> getList(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(commandExecutor, name, null), 
-//                new RedissonListReactive<V>(commandExecutor, name), RListReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RListReactive<V> getList(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(codec, commandExecutor, name, null), 
-//                new RedissonListReactive<V>(codec, commandExecutor, name), RListReactive.class);
-//    }
-//
-//    @Override
-//    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(commandExecutor, name), 
-//                new RedissonListMultimapReactive<K, V>(commandExecutor, name), RListMultimapReactive.class);
-//    }
-//
-//    @Override
-//    public <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(codec, commandExecutor, name), 
-//                new RedissonListMultimapReactive<K, V>(codec, commandExecutor, name), RListMultimapReactive.class);
-//    }
-//
-//    @Override
-//    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
-//                new RedissonSetMultimapReactive<K, V>(commandExecutor, name), RSetMultimapReactive.class);
-//    }
-//
-//    @Override
-//    public <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
-//                new RedissonSetMultimapReactive<K, V>(codec, commandExecutor, name), RSetMultimapReactive.class);
-//    }
+    @Override
+    public <V> RHyperLogLogRx<V> getHyperLogLog(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogRx.class);
+    }
+
+    @Override
+    public <V> RHyperLogLogRx<V> getHyperLogLog(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(codec, commandExecutor, name), RHyperLogLogRx.class);
+    }
+
+    @Override
+    public <V> RListRx<V> getList(String name) {
+        RedissonList<V> list = new RedissonList<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, list, 
+                new RedissonListRx<V>(list), RListRx.class);
+    }
+
+    @Override
+    public <V> RListRx<V> getList(String name, Codec codec) {
+        RedissonList<V> list = new RedissonList<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, list, 
+                new RedissonListRx<V>(list), RListRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapRx<K, V> getListMultimap(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(commandExecutor, name), 
+                new RedissonListMultimapRx<K, V>(commandExecutor, name), RListMultimapRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(codec, commandExecutor, name), 
+                new RedissonListMultimapRx<K, V>(codec, commandExecutor, name), RListMultimapRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
+                new RedissonSetMultimapRx<K, V>(commandExecutor, name), RSetMultimapRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
+                new RedissonSetMultimapRx<K, V>(codec, commandExecutor, name), RSetMultimapRx.class);
+    }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name) {
@@ -231,18 +245,20 @@ public class RedissonRx implements RedissonRxClient {
                 new RedissonSetRx<V>(set), RSetRx.class);
     }
 
-//    @Override
-//    public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(commandExecutor, name, null), 
-//                new RedissonScoredSortedSetReactive<V>(commandExecutor, name), RScoredSortedSetReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null), 
-//                new RedissonScoredSortedSetReactive<V>(codec, commandExecutor, name), RScoredSortedSetReactive.class);
-//    }
-//
+    @Override
+    public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name) {
+        RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set, 
+                new RedissonScoredSortedSetRx<V>(set), RScoredSortedSetRx.class);
+    }
+
+    @Override
+    public <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec) {
+        RedissonScoredSortedSet<V> set = new RedissonScoredSortedSet<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set, 
+                new RedissonScoredSortedSetRx<V>(set), RScoredSortedSetRx.class);
+    }
+
 //    @Override
 //    public RLexSortedSetReactive getLexSortedSet(String name) {
 //        RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
@@ -306,41 +322,41 @@ public class RedissonRx implements RedissonRxClient {
 //        return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(codec, commandExecutor, name, null), 
 //                new RedissonListReactive<V>(codec, commandExecutor, name), RDequeReactive.class);
 //    }
-//
-//    @Override
-//    public <V> RSetCacheReactive<V> getSetCache(String name) {
-//        RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
-//        return ReactiveProxyBuilder.create(commandExecutor, set, 
-//                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
-//        RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
-//        return ReactiveProxyBuilder.create(commandExecutor, set, 
-//                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
-//    }
-//
-//    @Override
-//    public RAtomicLongReactive getAtomicLong(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongReactive.class);
-//    }
-//
-//    @Override
-//    public RAtomicDoubleReactive getAtomicDouble(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleReactive.class);
-//    }
-//
-//    @Override
-//    public RBitSetReactive getBitSet(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetReactive.class);
-//    }
-//
-//    @Override
-//    public RScriptReactive getScript() {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptReactive.class);
-//    }
-//
+
+    @Override
+    public <V> RSetCacheRx<V> getSetCache(String name) {
+        RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+    }
+
+    @Override
+    public <V> RSetCacheRx<V> getSetCache(String name, Codec codec) {
+        RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set, 
+                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+    }
+
+    @Override
+    public RAtomicLongRx getAtomicLong(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonAtomicLong(commandExecutor, name), RAtomicLongRx.class);
+    }
+
+    @Override
+    public RAtomicDoubleRx getAtomicDouble(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleRx.class);
+    }
+
+    @Override
+    public RBitSetRx getBitSet(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBitSet(commandExecutor, name), RBitSetRx.class);
+    }
+
+    @Override
+    public RScriptRx getScript() {
+        return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptRx.class);
+    }
+
 //    @Override
 //    public RBatchReactive createBatch(BatchOptions options) {
 //        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, options);

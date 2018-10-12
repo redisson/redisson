@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.List;
 
-import io.reactivex.Single;
+import io.reactivex.Flowable;
 
 /**
  * 
@@ -34,7 +34,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    Single<V> readSorted(SortOrder order);
+    Flowable<V> readSorted(SortOrder order);
 
     /**
      * Read data in sorted view
@@ -44,7 +44,7 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    Single<V> readSorted(SortOrder order, int offset, int count);
+    Flowable<V> readSorted(SortOrder order, int offset, int count);
 
     /**
      * Read data in sorted view
@@ -53,7 +53,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    Single<V> readSorted(String byPattern, SortOrder order);
+    Flowable<V> readSorted(String byPattern, SortOrder order);
 
     /**
      * Read data in sorted view
@@ -64,7 +64,7 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    Single<V> readSorted(String byPattern, SortOrder order, int offset, int count);
+    Flowable<V> readSorted(String byPattern, SortOrder order, int offset, int count);
 
     /**
      * Read data in sorted view
@@ -75,7 +75,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    <T> Single<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order);
+    <T> Flowable<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
      * Read data in sorted view
@@ -88,7 +88,7 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    <T> Single<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+    <T> Flowable<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -97,7 +97,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, SortOrder order);
+    Flowable<Integer> sortTo(String destName, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -108,7 +108,7 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, SortOrder order, int offset, int count);
+    Flowable<Integer> sortTo(String destName, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -118,7 +118,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, String byPattern, SortOrder order);
+    Flowable<Integer> sortTo(String destName, String byPattern, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -130,7 +130,7 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, String byPattern, SortOrder order, int offset, int count);
+    Flowable<Integer> sortTo(String destName, String byPattern, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -141,7 +141,7 @@ public interface RSortableRx<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order);
+    Flowable<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -154,6 +154,6 @@ public interface RSortableRx<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Single<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+    Flowable<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
     
 }
