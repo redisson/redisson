@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
+ * Reactive interface for Semaphore object
  * 
  * @author Nikita Koksharov
  *

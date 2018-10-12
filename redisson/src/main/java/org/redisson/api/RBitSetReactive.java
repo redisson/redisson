@@ -20,7 +20,7 @@ import java.util.BitSet;
 import org.reactivestreams.Publisher;
 
 /**
- * Vector of bits that grows as needed.
+ * Reactive interface for BitSet object
  *
  * @author Nikita Koksharov
  *

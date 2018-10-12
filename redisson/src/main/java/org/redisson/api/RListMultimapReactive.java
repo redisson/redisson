@@ -20,6 +20,7 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 
 /**
+ * Reactive interface for List based Multimap object
  * 
  * @author Nikita Koksharov
  *

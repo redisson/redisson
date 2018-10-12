@@ -20,6 +20,7 @@ import java.util.Set;
 import org.reactivestreams.Publisher;
 
 /**
+ * Reactive interface for Multimap object
  * 
  * @author Nikita Koksharov
  *

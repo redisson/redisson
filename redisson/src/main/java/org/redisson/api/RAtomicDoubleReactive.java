@@ -18,7 +18,7 @@ package org.redisson.api;
 import org.reactivestreams.Publisher;
 
 /**
- * Distributed implementation to the AtomicDouble
+ * Reactive interface for AtomicDouble object
  *
  * @author Nikita Koksharov
  *
