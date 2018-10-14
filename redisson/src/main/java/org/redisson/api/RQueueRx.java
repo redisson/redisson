@@ -15,23 +15,23 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
+import io.reactivex.Flowable;
 
 /**
- * Reactive interface for Queue object
+ * RxJava2 interface for Queue object
  *
  * @author Nikita Koksharov
  *
  * @param <V> the type of elements held in this collection
  */
-public interface RQueueReactive<V> extends RCollectionReactive<V> {
+public interface RQueueRx<V> extends RCollectionRx<V> {
 
-    Publisher<V> peek();
+    Flowable<V> peek();
 
-    Publisher<V> poll();
+    Flowable<V> poll();
 
-    Publisher<Boolean> offer(V e);
+    Flowable<Boolean> offer(V e);
 
-    Publisher<V> pollLastAndOfferFirstTo(String queueName);
+    Flowable<V> pollLastAndOfferFirstTo(String queueName);
 
 }

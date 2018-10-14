@@ -32,6 +32,7 @@ import org.redisson.api.RLockRx;
 import org.redisson.api.RMapCacheRx;
 import org.redisson.api.RMapRx;
 import org.redisson.api.RPermitExpirableSemaphoreRx;
+import org.redisson.api.RQueueRx;
 import org.redisson.api.RRateLimiterRx;
 import org.redisson.api.RReadWriteLockRx;
 import org.redisson.api.RScoredSortedSetRx;
@@ -286,19 +287,19 @@ public class RedissonRx implements RedissonRxClient {
 //    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
 //        return new RedissonPatternTopicReactive<M>(codec, commandExecutor, pattern);
 //    }
-//
-//    @Override
-//    public <V> RQueueReactive<V> getQueue(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(commandExecutor, name, null), 
-//                new RedissonListReactive<V>(commandExecutor, name), RQueueReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
-//                new RedissonListReactive<V>(codec,commandExecutor, name), RQueueReactive.class);
-//    }
-//
+
+    @Override
+    public <V> RQueueRx<V> getQueue(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(commandExecutor, name, null), 
+                new RedissonListRx<V>(new RedissonList<V>(commandExecutor, name, null)), RQueueRx.class);
+    }
+
+    @Override
+    public <V> RQueueRx<V> getQueue(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
+                new RedissonListRx<V>(new RedissonList<V>(codec,commandExecutor, name, null)), RQueueRx.class);
+    }
+
 //    @Override
 //    public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
 //        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(commandExecutor, name, null), 
