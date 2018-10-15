@@ -66,6 +66,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.StringListReplayDecoder;
 import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
@@ -1778,14 +1779,17 @@ public class RedissonConnection extends AbstractRedisConnection {
         sync(f);
     }
 
+    private static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new PropertiesDecoder());
+    private static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new PropertiesDecoder());
+    
     @Override
     public Properties info() {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, INFO_DEFAULT);
     }
 
     @Override
     public Properties info(String section) {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, INFO, section);
     }
 
     @Override
@@ -1798,19 +1802,21 @@ public class RedissonConnection extends AbstractRedisConnection {
         throw new UnsupportedOperationException();
     }
 
+    private static final RedisStrictCommand<Properties> CONFIG_GET = new RedisStrictCommand<Properties>("CONFIG", "GET", new PropertiesDecoder());
+    
     @Override
     public Properties getConfig(String pattern) {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
     }
 
     @Override
     public void setConfig(String param, String value) {
-        throw new UnsupportedOperationException();
+        write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, param, value);
     }
 
     @Override
     public void resetConfigStats() {
-        throw new UnsupportedOperationException();
+        write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
     }
 
     private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());

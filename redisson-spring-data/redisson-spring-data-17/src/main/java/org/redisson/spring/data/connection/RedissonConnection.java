@@ -1745,14 +1745,17 @@ public class RedissonConnection extends AbstractRedisConnection {
         sync(f);
     }
 
+    private static final RedisStrictCommand<Properties> INFO_DEFAULT = new RedisStrictCommand<Properties>("INFO", "DEFAULT", new PropertiesDecoder());
+    private static final RedisStrictCommand<Properties> INFO = new RedisStrictCommand<Properties>("INFO", new PropertiesDecoder());
+    
     @Override
     public Properties info() {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, INFO_DEFAULT);
     }
 
     @Override
     public Properties info(String section) {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, INFO, section);
     }
 
     @Override
@@ -1767,17 +1770,17 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public List<String> getConfig(String pattern) {
-        throw new UnsupportedOperationException();
+        return read(null, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
     }
 
     @Override
     public void setConfig(String param, String value) {
-        throw new UnsupportedOperationException();
+        write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, param, value);
     }
 
     @Override
     public void resetConfigStats() {
-        throw new UnsupportedOperationException();
+        write(null, StringCodec.INSTANCE, RedisCommands.CONFIG_RESETSTAT);
     }
 
     private static final RedisStrictCommand<Long> TIME = new RedisStrictCommand<Long>("TIME", new TimeLongObjectDecoder());

@@ -15,8 +15,10 @@
  */
 package org.redisson.api;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.map.MapWriter;
 import org.redisson.api.map.event.MapEntryListener;
 
 /**
@@ -231,6 +233,33 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *         <code>false</code> if key already exists in the hash.
      */
     boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode. 
+     *
+     * @param map - mappings to be stored in this map
+     * @param ttl - time to live for all key\value entries.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     */
+    void putAll(java.util.Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
+    
+    /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch.
+     * <p>
+     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     *
+     * @param map - mappings to be stored in this map
+     * @param ttl - time to live for all key\value entries.
+     *              If <code>0</code> then stores infinitely.
+     * @param ttlUnit - time unit
+     * @return void
+     */
+    RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit);
 
     /**
      * Returns the number of entries in cache.
