@@ -57,7 +57,7 @@ public interface RHyperLogLogAsync<V> extends RExpirableAsync {
      * added into this instances and other instances defined through <code>otherLogNames</code>.
      * 
      * @param otherLogNames - name of instances
-     * @return
+     * @return number
      */
     RFuture<Long> countWithAsync(String ... otherLogNames);
 
@@ -65,6 +65,7 @@ public interface RHyperLogLogAsync<V> extends RExpirableAsync {
      * Merges multiple instances into this instance.
      * 
      * @param otherLogNames - name of instances
+     * @return void
      */
     RFuture<Void> mergeWithAsync(String ... otherLogNames);
 

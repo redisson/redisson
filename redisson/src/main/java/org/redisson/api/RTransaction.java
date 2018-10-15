@@ -160,16 +160,21 @@ public interface RTransaction {
 
     /**
      * Commits all changes made on this transaction in async mode.
+     * 
+     * @return void
      */
     RFuture<Void> commitAsync();
     
     /**
      * Rollback all changes made on this transaction.
+     * 
      */
     void rollback();
     
     /**
      * Rollback all changes made on this transaction in async mode.
+     * 
+     * @return void
      */
     RFuture<Void> rollbackAsync();
     

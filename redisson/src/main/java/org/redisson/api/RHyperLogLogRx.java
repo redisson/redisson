@@ -59,7 +59,7 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * added into this instances and other instances defined through <code>otherLogNames</code>.
      * 
      * @param otherLogNames - name of instances
-     * @return
+     * @return number
      */
     Flowable<Long> countWith(String ... otherLogNames);
 
@@ -67,6 +67,7 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * Merges multiple instances into this instance.
      * 
      * @param otherLogNames - name of instances
+     * @return void
      */
     Flowable<Void> mergeWith(String ... otherLogNames);
 

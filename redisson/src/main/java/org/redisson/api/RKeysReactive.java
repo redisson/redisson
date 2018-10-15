@@ -44,6 +44,7 @@ public interface RKeysReactive {
      * @param port - destination port
      * @param database - destination database
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
      */
     Publisher<Void> migrate(String name, String host, int port, int database, long timeout);
     
@@ -55,6 +56,7 @@ public interface RKeysReactive {
      * @param port - destination port
      * @param database - destination database
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
+     * @return void
      */
     Publisher<Void> copy(String name, String host, int port, int database, long timeout);
     
@@ -103,6 +105,7 @@ public interface RKeysReactive {
      *
      * @param currentName - current name of object
      * @param newName - new name of object
+     * @return void
      */
     Publisher<Void> rename(String currentName, String newName);
     

@@ -34,7 +34,8 @@ public interface RRateLimiterRx extends RObjectRx {
      * @param rate - rate
      * @param rateInterval - rate time interval
      * @param rateIntervalUnit - rate time interval unit
-     * @return
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
      */
     Flowable<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
@@ -77,6 +78,7 @@ public interface RRateLimiterRx extends RObjectRx {
      * <p>Acquires a permit, if one is available and returns immediately,
      * reducing the number of available permits by one.
      * 
+     * @return void
      */
     Flowable<Void> acquire();
     
@@ -88,7 +90,8 @@ public interface RRateLimiterRx extends RObjectRx {
      * and returns immediately, reducing the number of available permits 
      * by the given amount.
      * 
-     * @param permits
+     * @param permits the number of permits to acquire
+     * @return void
      */
     Flowable<Void> acquire(long permits);
     

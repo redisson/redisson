@@ -570,11 +570,10 @@ public interface RedissonClient {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
-     * @param <M> type of message
      * @param pattern of the topic
      * @return PatterTopic object
      */
-    <M> RPatternTopic<M> getPatternTopic(String pattern);
+    RPatternTopic getPatternTopic(String pattern);
 
     /**
      * Returns topic instance satisfies by pattern name
@@ -585,12 +584,11 @@ public interface RedissonClient {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      * 
-     * @param <M> type of message
      * @param pattern of the topic
      * @param codec - codec for message
      * @return PatterTopic object
      */
-    <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec);
+    RPatternTopic getPatternTopic(String pattern, Codec codec);
 
     /**
      * Returns unbounded queue instance by name.
