@@ -15,22 +15,29 @@
  */
 package org.redisson;
 
+import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.MapOptions;
 import org.redisson.api.Node;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RAtomicDoubleRx;
 import org.redisson.api.RAtomicLongRx;
+import org.redisson.api.RBatchRx;
 import org.redisson.api.RBitSetRx;
+import org.redisson.api.RBlockingDequeRx;
+import org.redisson.api.RBlockingQueueRx;
 import org.redisson.api.RBucketRx;
+import org.redisson.api.RDequeRx;
 import org.redisson.api.RGeoRx;
 import org.redisson.api.RHyperLogLogRx;
 import org.redisson.api.RKeysRx;
+import org.redisson.api.RLexSortedSetRx;
 import org.redisson.api.RListMultimapRx;
 import org.redisson.api.RListRx;
 import org.redisson.api.RLockRx;
 import org.redisson.api.RMapCacheRx;
 import org.redisson.api.RMapRx;
+import org.redisson.api.RPatternTopicRx;
 import org.redisson.api.RPermitExpirableSemaphoreRx;
 import org.redisson.api.RQueueRx;
 import org.redisson.api.RRateLimiterRx;
@@ -43,7 +50,10 @@ import org.redisson.api.RSetCacheRx;
 import org.redisson.api.RSetMultimapRx;
 import org.redisson.api.RSetRx;
 import org.redisson.api.RStreamRx;
+import org.redisson.api.RTopicRx;
+import org.redisson.api.RTransactionRx;
 import org.redisson.api.RedissonRxClient;
+import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
@@ -53,7 +63,9 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.rx.CommandRxExecutor;
 import org.redisson.rx.CommandRxService;
+import org.redisson.rx.RedissonBatchRx;
 import org.redisson.rx.RedissonKeysRx;
+import org.redisson.rx.RedissonLexSortedSetRx;
 import org.redisson.rx.RedissonListMultimapRx;
 import org.redisson.rx.RedissonListRx;
 import org.redisson.rx.RedissonMapCacheRx;
@@ -63,6 +75,7 @@ import org.redisson.rx.RedissonScoredSortedSetRx;
 import org.redisson.rx.RedissonSetCacheRx;
 import org.redisson.rx.RedissonSetMultimapRx;
 import org.redisson.rx.RedissonSetRx;
+import org.redisson.rx.RedissonTransactionRx;
 import org.redisson.rx.RxProxyBuilder;
 
 /**
@@ -260,33 +273,32 @@ public class RedissonRx implements RedissonRxClient {
                 new RedissonScoredSortedSetRx<V>(set), RScoredSortedSetRx.class);
     }
 
-//    @Override
-//    public RLexSortedSetReactive getLexSortedSet(String name) {
-//        RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
-//        return ReactiveProxyBuilder.create(commandExecutor, set, 
-//                new RedissonLexSortedSetReactive(set), 
-//                RLexSortedSetReactive.class);
-//    }
-//
-//    @Override
-//    public <M> RTopicReactive<M> getTopic(String name) {
-//        return new RedissonTopicReactive<M>(commandExecutor, name);
-//    }
-//
-//    @Override
-//    public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
-//        return new RedissonTopicReactive<M>(codec, commandExecutor, name);
-//    }
-//
-//    @Override
-//    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern) {
-//        return new RedissonPatternTopicReactive<M>(commandExecutor, pattern);
-//    }
-//
-//    @Override
-//    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
-//        return new RedissonPatternTopicReactive<M>(codec, commandExecutor, pattern);
-//    }
+    @Override
+    public RLexSortedSetRx getLexSortedSet(String name) {
+        RedissonLexSortedSet set = new RedissonLexSortedSet(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, set, 
+                new RedissonLexSortedSetRx(set), RLexSortedSetRx.class);
+    }
+
+    @Override
+    public <M> RTopicRx<M> getTopic(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, name), RTopicRx.class);
+    }
+
+    @Override
+    public <M> RTopicRx<M> getTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, name), RTopicRx.class);
+    }
+
+    @Override
+    public <M> RPatternTopicRx<M> getPatternTopic(String pattern) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, pattern), RPatternTopicRx.class);
+    }
+
+    @Override
+    public <M> RPatternTopicRx<M> getPatternTopic(String pattern, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, pattern), RPatternTopicRx.class);
+    }
 
     @Override
     public <V> RQueueRx<V> getQueue(String name) {
@@ -300,29 +312,33 @@ public class RedissonRx implements RedissonRxClient {
                 new RedissonListRx<V>(new RedissonList<V>(codec,commandExecutor, name, null)), RQueueRx.class);
     }
 
-//    @Override
-//    public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(commandExecutor, name, null), 
-//                new RedissonListReactive<V>(commandExecutor, name), RBlockingQueueReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(codec, commandExecutor, name, null), 
-//                new RedissonListReactive<V>(codec, commandExecutor, name), RBlockingQueueReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RDequeReactive<V> getDeque(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(commandExecutor, name, null), 
-//                new RedissonListReactive<V>(commandExecutor, name), RDequeReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RDequeReactive<V> getDeque(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonDeque<V>(codec, commandExecutor, name, null), 
-//                new RedissonListReactive<V>(codec, commandExecutor, name), RDequeReactive.class);
-//    }
+    @Override
+    public <V> RBlockingQueueRx<V> getBlockingQueue(String name) {
+        RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, queue, 
+                new RedissonListRx<V>(queue), RBlockingQueueRx.class);
+    }
+
+    @Override
+    public <V> RBlockingQueueRx<V> getBlockingQueue(String name, Codec codec) {
+        RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, queue, 
+                new RedissonListRx<V>(queue), RBlockingQueueRx.class);
+    }
+
+    @Override
+    public <V> RDequeRx<V> getDeque(String name) {
+        RedissonDeque<V> queue = new RedissonDeque<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, queue, 
+                new RedissonListRx<V>(queue), RDequeRx.class);
+    }
+
+    @Override
+    public <V> RDequeRx<V> getDeque(String name, Codec codec) {
+        RedissonDeque<V> queue = new RedissonDeque<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, queue, 
+                new RedissonListRx<V>(queue), RDequeRx.class);
+    }
 
     @Override
     public <V> RSetCacheRx<V> getSetCache(String name) {
@@ -358,19 +374,14 @@ public class RedissonRx implements RedissonRxClient {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptRx.class);
     }
 
-//    @Override
-//    public RBatchReactive createBatch(BatchOptions options) {
-//        RedissonBatchReactive batch = new RedissonBatchReactive(evictionScheduler, connectionManager, options);
-//        if (config.isReferenceEnabled()) {
-//            batch.enableRedissonReferenceSupport(this);
-//        }
-//        return batch;
-//    }
-//
-//    @Override
-//    public RBatchReactive createBatch() {
-//        return createBatch(BatchOptions.defaults());
-//    }
+    @Override
+    public RBatchRx createBatch(BatchOptions options) {
+        RedissonBatchRx batch = new RedissonBatchRx(evictionScheduler, connectionManager, options);
+        if (config.isReferenceEnabled()) {
+            batch.enableRedissonReferenceSupport(this);
+        }
+        return batch;
+    }
 
     @Override
     public RKeysRx getKeys() {
@@ -449,20 +460,23 @@ public class RedissonRx implements RedissonRxClient {
                 new RedissonMapRx<K, V>(map), RMapRx.class);
     }
 
-//    @Override
-//    public RTransactionReactive createTransaction(TransactionOptions options) {
-//        return new RedissonTransactionReactive(commandExecutor, options);
-//    }
-//
-//    @Override
-//    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingDeque<V>(commandExecutor, name, null), 
-//                new RedissonListReactive<V>(commandExecutor, name), RBlockingDequeReactive.class);
-//    }
-//
-//    @Override
-//    public <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec) {
-//        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingDeque<V>(codec, commandExecutor, name, null), 
-//                new RedissonListReactive<V>(codec, commandExecutor, name), RBlockingDequeReactive.class);
-//    }
+    @Override
+    public RTransactionRx createTransaction(TransactionOptions options) {
+        return new RedissonTransactionRx(commandExecutor, options);
+    }
+
+    @Override
+    public <V> RBlockingDequeRx<V> getBlockingDeque(String name) {
+        RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, deque, 
+                new RedissonListRx<V>(deque), RBlockingDequeRx.class);
+    }
+
+    @Override
+    public <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec) {
+        RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
+        return RxProxyBuilder.create(commandExecutor, deque, 
+                new RedissonListRx<V>(deque), RBlockingDequeRx.class);
+    }
+    
 }

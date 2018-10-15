@@ -402,66 +402,66 @@ public interface RedissonRxClient {
      */
     <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec);
 
-//    /**
-//     * Returns String based Redis Sorted Set instance by name
-//     * All elements are inserted with the same score during addition,
-//     * in order to force lexicographical ordering
-//     *
-//     * @param name - name of object
-//     * @return LexSortedSet object
-//     */
-//    RLexSortedSetReactive getLexSortedSet(String name);
-//
-//    /**
-//     * Returns topic instance by name.
-//     *
-//     * @param <M> type of message
-//     * @param name - name of object
-//     * @return Topic object
-//     */
-//    <M> RTopicReactive<M> getTopic(String name);
-//
-//    /**
-//     * Returns topic instance by name
-//     * using provided codec for messages.
-//     *
-//     * @param <M> type of message
-//     * @param name - name of object
-//     * @param codec - codec for message
-//     * @return Topic object
-//     */
-//    <M> RTopicReactive<M> getTopic(String name, Codec codec);
-//
-//    /**
-//     * Returns topic instance satisfies by pattern name.
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param <M> type of message
-//     * @param pattern of the topic
-//     * @return PatternTopic object
-//     */
-//    <M> RPatternTopicReactive<M> getPatternTopic(String pattern);
-//
-//    /**
-//     * Returns topic instance satisfies by pattern name
-//     * using provided codec for messages.
-//     *
-//     *  Supported glob-style patterns:
-//     *    h?llo subscribes to hello, hallo and hxllo
-//     *    h*llo subscribes to hllo and heeeello
-//     *    h[ae]llo subscribes to hello and hallo, but not hillo
-//     *
-//     * @param <M> type of message
-//     * @param pattern of the topic
-//     * @param codec - codec for message
-//     * @return PatternTopic object
-//     */
-//    <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec);
-//
+    /**
+     * Returns String based Redis Sorted Set instance by name
+     * All elements are inserted with the same score during addition,
+     * in order to force lexicographical ordering
+     *
+     * @param name - name of object
+     * @return LexSortedSet object
+     */
+    RLexSortedSetRx getLexSortedSet(String name);
+
+    /**
+     * Returns topic instance by name.
+     *
+     * @param <M> type of message
+     * @param name - name of object
+     * @return Topic object
+     */
+    <M> RTopicRx<M> getTopic(String name);
+
+    /**
+     * Returns topic instance by name
+     * using provided codec for messages.
+     *
+     * @param <M> type of message
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return Topic object
+     */
+    <M> RTopicRx<M> getTopic(String name, Codec codec);
+
+    /**
+     * Returns topic instance satisfies by pattern name.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param <M> type of message
+     * @param pattern of the topic
+     * @return PatternTopic object
+     */
+    <M> RPatternTopicRx<M> getPatternTopic(String pattern);
+
+    /**
+     * Returns topic instance satisfies by pattern name
+     * using provided codec for messages.
+     *
+     *  Supported glob-style patterns:
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    h*llo subscribes to hllo and heeeello
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param <M> type of message
+     * @param pattern of the topic
+     * @param codec - codec for message
+     * @return PatternTopic object
+     */
+    <M> RPatternTopicRx<M> getPatternTopic(String pattern, Codec codec);
+
     /**
      * Returns queue instance by name.
      *
@@ -482,65 +482,65 @@ public interface RedissonRxClient {
      */
     <V> RQueueRx<V> getQueue(String name, Codec codec);
 
-//    /**
-//     * Returns blocking queue instance by name.
-//     * 
-//     * @param <V> type of values
-//     * @param name - name of object
-//     * @return BlockingQueue object
-//     */
-//    <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
-//
-//    /**
-//     * Returns blocking queue instance by name
-//     * using provided codec for queue objects.
-//     * 
-//     * @param <V> type of values
-//     * @param name - name of object
-//     * @param codec - code for values
-//     * @return BlockingQueue object
-//     */
-//    <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
-//
-//    /**
-//     * Returns unbounded blocking deque instance by name.
-//     * 
-//     * @param <V> type of value
-//     * @param name - name of object
-//     * @return BlockingDeque object
-//     */
-//    <V> RBlockingDequeReactive<V> getBlockingDeque(String name);
-//
-//    /**
-//     * Returns unbounded blocking deque instance by name
-//     * using provided codec for deque objects.
-//     * 
-//     * @param <V> type of value
-//     * @param name - name of object
-//     * @param codec - deque objects codec
-//     * @return BlockingDeque object
-//     */
-//    <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec);
-//    
-//    /**
-//     * Returns deque instance by name.
-//     * 
-//     * @param <V> type of values
-//     * @param name - name of object
-//     * @return Deque object
-//     */
-//    <V> RDequeReactive<V> getDeque(String name);
-//
-//    /**
-//     * Returns deque instance by name
-//     * using provided codec for deque objects.
-//     * 
-//     * @param <V> type of values
-//     * @param name - name of object
-//     * @param codec - coded for values
-//     * @return Deque object
-//     */
-//    <V> RDequeReactive<V> getDeque(String name, Codec codec);
+    /**
+     * Returns blocking queue instance by name.
+     * 
+     * @param <V> type of values
+     * @param name - name of object
+     * @return BlockingQueue object
+     */
+    <V> RBlockingQueueRx<V> getBlockingQueue(String name);
+
+    /**
+     * Returns blocking queue instance by name
+     * using provided codec for queue objects.
+     * 
+     * @param <V> type of values
+     * @param name - name of object
+     * @param codec - code for values
+     * @return BlockingQueue object
+     */
+    <V> RBlockingQueueRx<V> getBlockingQueue(String name, Codec codec);
+
+    /**
+     * Returns unbounded blocking deque instance by name.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @return BlockingDeque object
+     */
+    <V> RBlockingDequeRx<V> getBlockingDeque(String name);
+
+    /**
+     * Returns unbounded blocking deque instance by name
+     * using provided codec for deque objects.
+     * 
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - deque objects codec
+     * @return BlockingDeque object
+     */
+    <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec);
+    
+    /**
+     * Returns deque instance by name.
+     * 
+     * @param <V> type of values
+     * @param name - name of object
+     * @return Deque object
+     */
+    <V> RDequeRx<V> getDeque(String name);
+
+    /**
+     * Returns deque instance by name
+     * using provided codec for deque objects.
+     * 
+     * @param <V> type of values
+     * @param name - name of object
+     * @param codec - coded for values
+     * @return Deque object
+     */
+    <V> RDequeRx<V> getDeque(String name, Codec codec);
 
     /**
      * Returns "atomic long" instance by name.
@@ -573,30 +573,24 @@ public interface RedissonRxClient {
      */
     RScriptRx getScript();
 
-//    /**
-//     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
-//     * 
-//     * @param options - transaction configuration
-//     * @return Transaction object
-//     */
-//    RTransactionReactive createTransaction(TransactionOptions options);
+    /**
+     * Creates transaction with <b>READ_COMMITTED</b> isolation level.
+     * 
+     * @param options - transaction configuration
+     * @return Transaction object
+     */
+    RTransactionRx createTransaction(TransactionOptions options);
     
-//    /**
-//     * Return batch object which executes group of
-//     * command in pipeline.
-//     *
-//     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
-//     *
-//     * @param options - batch configuration
-//     * @return Batch object
-//     */
-//    RBatchReactive createBatch(BatchOptions options);
-//
-//    /*
-//     * Use createBatch(BatchOptions)
-//     */
-//    @Deprecated
-//    RBatchReactive createBatch();
+    /**
+     * Return batch object which executes group of
+     * command in pipeline.
+     *
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @param options - batch configuration
+     * @return Batch object
+     */
+    RBatchRx createBatch(BatchOptions options);
 
     /**
      * Returns keys operations.

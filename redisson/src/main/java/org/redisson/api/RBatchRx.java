@@ -17,11 +17,12 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
 
+import io.reactivex.Flowable;
+
 /**
- * Reactive interface for Redis pipeline feature.
+ * RxJava2 interface for Redis pipeline feature.
  * <p>
  * All method invocations on objects
  * from this interface are batched to separate queue and could be executed later
@@ -87,7 +88,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return SetMultimap object
      */
-    <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name);
+    <K, V> RSetMultimapRx<K, V> getSetMultimap(String name);
 
     /**
      * Returns Set based Multimap instance by name
@@ -99,7 +100,7 @@ public interface RBatchRx {
      * @param codec - codec for keys and values
      * @return SetMultimap object
      */
-    <K, V> RSetMultimapReactive<K, V> getSetMultimap(String name, Codec codec);
+    <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec);
     
     /**
      * Returns set-based cache instance by <code>name</code>.
@@ -112,7 +113,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return SetCache object
      */
-    <V> RSetCacheReactive<V> getSetCache(String name);
+    <V> RSetCacheRx<V> getSetCache(String name);
 
     /**
      * Returns set-based cache instance by <code>name</code>
@@ -127,7 +128,7 @@ public interface RBatchRx {
      * @param codec - codec for values
      * @return SetCache object
      */
-    <V> RSetCacheReactive<V> getSetCache(String name, Codec codec);
+    <V> RSetCacheRx<V> getSetCache(String name, Codec codec);
 
     /**
      * Returns map-based cache instance by <code>name</code>
@@ -142,7 +143,7 @@ public interface RBatchRx {
      * @param codec - codec for keys and values
      * @return MapCache object
      */
-    <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec);
+    <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec);
 
     /**
      * Returns map-based cache instance by <code>name</code>.
@@ -155,7 +156,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return MapCache object
      */
-    <K, V> RMapCacheReactive<K, V> getMapCache(String name);
+    <K, V> RMapCacheRx<K, V> getMapCache(String name);
 
     /**
      * Returns object holder by name
@@ -164,9 +165,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Bucket object
      */
-    <V> RBucketReactive<V> getBucket(String name);
+    <V> RBucketRx<V> getBucket(String name);
 
-    <V> RBucketReactive<V> getBucket(String name, Codec codec);
+    <V> RBucketRx<V> getBucket(String name, Codec codec);
 
     /**
      * Returns HyperLogLog object by name
@@ -175,9 +176,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return HyperLogLog object
      */
-    <V> RHyperLogLogReactive<V> getHyperLogLog(String name);
+    <V> RHyperLogLogRx<V> getHyperLogLog(String name);
 
-    <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec);
+    <V> RHyperLogLogRx<V> getHyperLogLog(String name, Codec codec);
 
     /**
      * Returns list instance by name.
@@ -186,9 +187,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return List object
      */
-    <V> RListReactive<V> getList(String name);
+    <V> RListRx<V> getList(String name);
 
-    <V> RListReactive<V> getList(String name, Codec codec);
+    <V> RListRx<V> getList(String name, Codec codec);
 
     /**
      * Returns List based MultiMap instance by name.
@@ -198,7 +199,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return ListMultimap object
      */
-    <K, V> RListMultimapReactive<K, V> getListMultimap(String name);
+    <K, V> RListMultimapRx<K, V> getListMultimap(String name);
 
     /**
      * Returns List based MultiMap instance by name
@@ -210,7 +211,7 @@ public interface RBatchRx {
      * @param codec - codec for keys and values
      * @return ListMultimap object
      */
-    <K, V> RListMultimapReactive<K, V> getListMultimap(String name, Codec codec);
+    <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec);
     
     /**
      * Returns map instance by name.
@@ -220,9 +221,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Map object
      */
-    <K, V> RMapReactive<K, V> getMap(String name);
+    <K, V> RMapRx<K, V> getMap(String name);
 
-    <K, V> RMapReactive<K, V> getMap(String name, Codec codec);
+    <K, V> RMapRx<K, V> getMap(String name, Codec codec);
 
     /**
      * Returns set instance by name.
@@ -231,9 +232,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Set object
      */
-    <V> RSetReactive<V> getSet(String name);
+    <V> RSetRx<V> getSet(String name);
 
-    <V> RSetReactive<V> getSet(String name, Codec codec);
+    <V> RSetRx<V> getSet(String name, Codec codec);
 
     /**
      * Returns topic instance by name.
@@ -242,9 +243,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicReactive<M> getTopic(String name);
+    <M> RTopicRx<M> getTopic(String name);
 
-    <M> RTopicReactive<M> getTopic(String name, Codec codec);
+    <M> RTopicRx<M> getTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.
@@ -253,9 +254,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Queue object
      */
-    <V> RQueueReactive<V> getQueue(String name);
+    <V> RQueueRx<V> getQueue(String name);
 
-    <V> RQueueReactive<V> getQueue(String name, Codec codec);
+    <V> RQueueRx<V> getQueue(String name, Codec codec);
 
     /**
      * Returns blocking queue instance by name.
@@ -264,9 +265,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return BlockingQueue object
      */
-    <V> RBlockingQueueReactive<V> getBlockingQueue(String name);
+    <V> RBlockingQueueRx<V> getBlockingQueue(String name);
 
-    <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec);
+    <V> RBlockingQueueRx<V> getBlockingQueue(String name, Codec codec);
 
     /**
      * Returns blocking deque instance by name.
@@ -275,9 +276,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return BlockingDeque object
      */
-    <V> RBlockingDequeReactive<V> getBlockingDeque(String name);
+    <V> RBlockingDequeRx<V> getBlockingDeque(String name);
 
-    <V> RBlockingDequeReactive<V> getBlockingDeque(String name, Codec codec);
+    <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec);
     
     /**
      * Returns deque instance by name.
@@ -286,9 +287,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return Deque object
      */
-    <V> RDequeReactive<V> getDequeReactive(String name);
+    <V> RDequeRx<V> getDeque(String name);
 
-    <V> RDequeReactive<V> getDequeReactive(String name, Codec codec);
+    <V> RDequeRx<V> getDeque(String name, Codec codec);
 
     /**
      * Returns "atomic long" instance by name.
@@ -296,7 +297,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return AtomicLong object
      */
-    RAtomicLongReactive getAtomicLongReactive(String name);
+    RAtomicLongRx getAtomicLong(String name);
 
     /**
      * Returns atomicDouble instance by name.
@@ -304,7 +305,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return AtomicDouble object
      */
-    RAtomicDoubleReactive getAtomicDouble(String name);
+    RAtomicDoubleRx getAtomicDouble(String name);
     
     /**
      * Returns Redis Sorted Set instance by name
@@ -313,9 +314,9 @@ public interface RBatchRx {
      * @param name - name of object
      * @return ScoredSortedSet object
      */
-    <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name);
+    <V> RScoredSortedSetRx<V> getScoredSortedSet(String name);
 
-    <V> RScoredSortedSetReactive<V> getScoredSortedSet(String name, Codec codec);
+    <V> RScoredSortedSetRx<V> getScoredSortedSet(String name, Codec codec);
 
     /**
      * Returns String based Redis Sorted Set instance by name
@@ -325,7 +326,7 @@ public interface RBatchRx {
      * @param name - name of object
      * @return LexSortedSet object
      */
-    RLexSortedSetReactive getLexSortedSet(String name);
+    RLexSortedSetRx getLexSortedSet(String name);
 
     /**
      * Returns bitSet instance by name.
@@ -333,14 +334,14 @@ public interface RBatchRx {
      * @param name of bitSet
      * @return BitSet object
      */
-    RBitSetReactive getBitSet(String name);
+    RBitSetRx getBitSet(String name);
 
     /**
      * Returns script operations object
      *
      * @return Script object
      */
-    RScriptReactive getScript();
+    RScriptRx getScript();
 
     /**
      * Returns keys operations.
@@ -348,7 +349,7 @@ public interface RBatchRx {
      *
      * @return Keys object
      */
-    RKeysReactive getKeys();
+    RKeysRx getKeys();
 
     /**
      * Executes all operations accumulated during Reactive methods invocations Reactivehronously.
@@ -358,7 +359,7 @@ public interface RBatchRx {
      *
      * @return List with result object for each command
      */
-    Publisher<BatchResult<?>> execute();
+    Flowable<BatchResult<?>> execute();
 
     /*
      * Use BatchOptions#atomic
