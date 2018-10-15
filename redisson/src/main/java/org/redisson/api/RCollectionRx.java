@@ -22,7 +22,7 @@ import org.reactivestreams.Publisher;
 import io.reactivex.Flowable;
 
 /**
- * Common reactive interface for collection object
+ * Common RxJava2 interface for collection object
  * 
  * @author Nikita Koksharov
  *

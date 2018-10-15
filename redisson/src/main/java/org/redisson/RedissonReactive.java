@@ -75,13 +75,11 @@ import org.redisson.reactive.RedissonListMultimapReactive;
 import org.redisson.reactive.RedissonListReactive;
 import org.redisson.reactive.RedissonMapCacheReactive;
 import org.redisson.reactive.RedissonMapReactive;
-import org.redisson.reactive.RedissonPatternTopicReactive;
 import org.redisson.reactive.RedissonReadWriteLockReactive;
 import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
-import org.redisson.reactive.RedissonTopicReactive;
 import org.redisson.reactive.RedissonTransactionReactive;
 
 /**
@@ -297,22 +295,22 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <M> RTopicReactive<M> getTopic(String name) {
-        return new RedissonTopicReactive<M>(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, name), RTopicReactive.class);
     }
 
     @Override
     public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
-        return new RedissonTopicReactive<M>(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, name), RTopicReactive.class);
     }
 
     @Override
     public <M> RPatternTopicReactive<M> getPatternTopic(String pattern) {
-        return new RedissonPatternTopicReactive<M>(commandExecutor, pattern);
+         return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic<M>(commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
     @Override
     public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
-        return new RedissonPatternTopicReactive<M>(codec, commandExecutor, pattern);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic<M>(codec, commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
     @Override

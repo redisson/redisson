@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
- * Distributed reactive implementation of  {@link BlockingDeque}
+ * Reactive interface for Redis based BlockingDeque object
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection

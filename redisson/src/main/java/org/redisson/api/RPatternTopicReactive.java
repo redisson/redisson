@@ -22,7 +22,7 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 
 /**
- * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
+ * Reactive interface for Pattern based observer for Publish Subscribe object.
  *
  * @author Nikita Koksharov
  *

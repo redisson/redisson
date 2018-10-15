@@ -20,6 +20,7 @@ import java.util.Collection;
 import org.reactivestreams.Publisher;
 
 /**
+ * Reactive interface for LexSortedSet object
  * 
  * @author Nikita Koksharov
  *

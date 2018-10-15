@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
- * Distributed reactive implementation of {@link BlockingQueue}
+ * Reactive interface for BlockingQueue object
  *
  * @author Nikita Koksharov
  * @param <V> the type of elements held in this collection

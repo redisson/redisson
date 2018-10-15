@@ -26,11 +26,18 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandSyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
+
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -42,16 +49,16 @@ import org.redisson.pubsub.PublishSubscribeService;
 public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     final PublishSubscribeService subscribeService;
-    final CommandExecutor commandExecutor;
+    final CommandAsyncExecutor commandExecutor;
     private final String name;
     private final ChannelName channelName;
     private final Codec codec;
 
-    protected RedissonPatternTopic(CommandExecutor commandExecutor, String name) {
+    protected RedissonPatternTopic(CommandAsyncExecutor commandExecutor, String name) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor, name);
     }
 
-    protected RedissonPatternTopic(Codec codec, CommandExecutor commandExecutor, String name) {
+    protected RedissonPatternTopic(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.channelName = new ChannelName(name);
@@ -75,7 +82,36 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
-
+    
+    @Override
+    public RFuture<Integer> addListenerAsync(PatternStatusListener listener) {
+        PubSubPatternStatusListener<M> pubSubListener = new PubSubPatternStatusListener<M>(listener, name);
+        return addListenerAsync(pubSubListener);
+    }
+    
+    @Override
+    public RFuture<Integer> addListenerAsync(PatternMessageListener<M> listener) {
+        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
+        return addListenerAsync(pubSubListener);
+    }
+    
+    private RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
+        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        final RPromise<Integer> result = new RedissonPromise<Integer>();
+        future.addListener(new FutureListener<PubSubConnectionEntry>() {
+            @Override
+            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+                if (!future.isSuccess()) {
+                    result.tryFailure(future.cause());
+                    return;
+                }
+                
+                result.trySuccess(System.identityHashCode(pubSubListener));
+            }
+        });
+        return result;
+    }
+    
     protected void acquire(AsyncSemaphore semaphore) {
         MasterSlaveServersConfig config = commandExecutor.getConnectionManager().getConfig();
         int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
