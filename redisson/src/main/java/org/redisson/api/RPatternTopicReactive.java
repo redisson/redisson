@@ -26,9 +26,8 @@ import org.redisson.api.listener.PatternStatusListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
  */
-public interface RPatternTopicReactive<M> {
+public interface RPatternTopicReactive {
 
     /**
      * Get topic channel patterns
@@ -41,12 +40,14 @@ public interface RPatternTopicReactive<M> {
      * Subscribes to this topic.
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
-     *
+     * 
+     * @param <T> type of message
+     * @param type - type of message
      * @param listener - message listener
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    Publisher<Integer> addListener(PatternMessageListener<M> listener);
+    <T> Publisher<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
      * Subscribes to status changes of this topic

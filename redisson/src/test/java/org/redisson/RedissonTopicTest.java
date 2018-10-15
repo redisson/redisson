@@ -26,6 +26,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.RedissonTopicPatternTest.Message;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RSet;
@@ -205,8 +206,8 @@ public class RedissonTopicTest {
                     stringMessageReceived.incrementAndGet();
                 }
             });
-            RPatternTopic<String> patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
-            int patternListenerId = patternTopic.addListener(new PatternMessageListener<String>() {
+            RPatternTopic patternTopic = redisson.getPatternTopic("test*", StringCodec.INSTANCE);
+            int patternListenerId = patternTopic.addListener(String.class, new PatternMessageListener<String>() {
                 @Override
                 public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");

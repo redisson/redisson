@@ -25,9 +25,8 @@ import org.redisson.api.listener.PatternStatusListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
  */
-public interface RPatternTopic<M> {
+public interface RPatternTopic {
 
     /**
      * Get topic channel patterns
@@ -40,12 +39,14 @@ public interface RPatternTopic<M> {
      * Subscribes to this topic.
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
-     *
+     * 
+     * @param <T> type of message
+     * @param type - type of message
      * @param listener - message listener
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    int addListener(PatternMessageListener<M> listener);
+    <T> int addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
      * Subscribes to status changes of this topic
@@ -68,7 +69,7 @@ public interface RPatternTopic<M> {
      *
      * @param listener - listener instance
      */
-    void removeListener(PatternMessageListener<M> listener);
+    void removeListener(PatternMessageListener<?> listener);
     
     /**
      * Removes all listeners from this topic
@@ -77,6 +78,6 @@ public interface RPatternTopic<M> {
     
     RFuture<Integer> addListenerAsync(PatternStatusListener listener);
     
-    RFuture<Integer> addListenerAsync(PatternMessageListener<M> listener);
+    <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener);
 
 }

@@ -27,8 +27,6 @@ import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandExecutor;
-import org.redisson.command.CommandSyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -44,9 +42,8 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> message
  */
-public class RedissonPatternTopic<M> implements RPatternTopic<M> {
+public class RedissonPatternTopic implements RPatternTopic {
 
     final PublishSubscribeService subscribeService;
     final CommandAsyncExecutor commandExecutor;
@@ -68,12 +65,12 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
 
     @Override
     public int addListener(PatternStatusListener listener) {
-        return addListener(new PubSubPatternStatusListener<Object>(listener, name));
+        return addListener(new PubSubPatternStatusListener(listener, name));
     };
 
     @Override
-    public int addListener(PatternMessageListener<M> listener) {
-        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
+    public <T> int addListener(Class<T> type, PatternMessageListener<T> listener) {
+        PubSubPatternMessageListener<T> pubSubListener = new PubSubPatternMessageListener<T>(type, listener, name);
         return addListener(pubSubListener);
     }
 
@@ -85,13 +82,13 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     
     @Override
     public RFuture<Integer> addListenerAsync(PatternStatusListener listener) {
-        PubSubPatternStatusListener<M> pubSubListener = new PubSubPatternStatusListener<M>(listener, name);
+        PubSubPatternStatusListener pubSubListener = new PubSubPatternStatusListener(listener, name);
         return addListenerAsync(pubSubListener);
     }
     
     @Override
-    public RFuture<Integer> addListenerAsync(PatternMessageListener<M> listener) {
-        PubSubPatternMessageListener<M> pubSubListener = new PubSubPatternMessageListener<M>(listener, name);
+    public <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener) {
+        PubSubPatternMessageListener<T> pubSubListener = new PubSubPatternMessageListener<T>(type, listener, name);
         return addListenerAsync(pubSubListener);
     }
     
@@ -159,7 +156,7 @@ public class RedissonPatternTopic<M> implements RPatternTopic<M> {
     }
 
     @Override
-    public void removeListener(PatternMessageListener<M> listener) {
+    public void removeListener(PatternMessageListener<?> listener) {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
         

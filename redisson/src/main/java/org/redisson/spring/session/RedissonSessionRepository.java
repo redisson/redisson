@@ -28,7 +28,6 @@ import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.PatternMessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.codec.StringCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -222,9 +221,9 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
     
     private RedissonClient redisson;
     private ApplicationEventPublisher eventPublisher;
-    private RPatternTopic<String> deletedTopic;
-    private RPatternTopic<String> expiredTopic;
-    private RPatternTopic<String> createdTopic;
+    private RPatternTopic deletedTopic;
+    private RPatternTopic expiredTopic;
+    private RPatternTopic createdTopic;
     
     private String keyPrefix = "spring:session:";
     private Integer defaultMaxInactiveInterval;
@@ -234,11 +233,11 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         this.eventPublisher = eventPublisher;
         
         deletedTopic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
-        deletedTopic.addListener(this);
+        deletedTopic.addListener(String.class, this);
         expiredTopic = redisson.getPatternTopic("__keyevent@*:expired", StringCodec.INSTANCE);
-        expiredTopic.addListener(this);
+        expiredTopic.addListener(String.class, this);
         createdTopic = redisson.getPatternTopic(getEventsChannelPrefix() + "*", StringCodec.INSTANCE);
-        createdTopic.addListener(this);
+        createdTopic.addListener(String.class, this);
     }
     
     @Override

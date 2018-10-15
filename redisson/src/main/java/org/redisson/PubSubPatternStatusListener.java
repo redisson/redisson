@@ -16,7 +16,6 @@
 package org.redisson;
 
 import org.redisson.api.listener.PatternStatusListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
@@ -24,9 +23,8 @@ import org.redisson.client.protocol.pubsub.PubSubType;
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
  */
-public class PubSubPatternStatusListener<V> implements RedisPubSubListener<V> {
+public class PubSubPatternStatusListener implements RedisPubSubListener<Object> {
 
     private final PatternStatusListener listener;
     private final String name;
@@ -67,11 +65,11 @@ public class PubSubPatternStatusListener<V> implements RedisPubSubListener<V> {
     }
 
     @Override
-    public void onMessage(CharSequence channel, V message) {
+    public void onMessage(CharSequence channel, Object message) {
     }
 
     @Override
-    public void onPatternMessage(CharSequence pattern, CharSequence channel, V message) {
+    public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
     }
 
     @Override

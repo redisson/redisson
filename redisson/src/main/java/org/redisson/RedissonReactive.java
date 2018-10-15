@@ -304,13 +304,13 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern) {
-         return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic<M>(commandExecutor, pattern), RPatternTopicReactive.class);
+    public RPatternTopicReactive getPatternTopic(String pattern) {
+         return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic(commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
     @Override
-    public <M> RPatternTopicReactive<M> getPatternTopic(String pattern, Codec codec) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic<M>(codec, commandExecutor, pattern), RPatternTopicReactive.class);
+    public RPatternTopicReactive getPatternTopic(String pattern, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic(codec, commandExecutor, pattern), RPatternTopicReactive.class);
     }
 
     @Override
