@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMapCache;
+import org.redisson.api.RMapCache;
 
 /**
  *
@@ -32,8 +33,8 @@ public class RedissonMapCacheRx<K, V> {
 
     private final RedissonMapCache<K, V> instance;
 
-    public RedissonMapCacheRx(RedissonMapCache<K, V> instance) {
-        this.instance = instance;
+    public RedissonMapCacheRx(RMapCache<K, V> instance) {
+        this.instance = (RedissonMapCache<K, V>) instance;
     }
 
     public Publisher<Map.Entry<K, V>> entryIterator() {

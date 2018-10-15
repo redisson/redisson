@@ -18,7 +18,7 @@ package org.redisson.api;
 import org.reactivestreams.Publisher;
 
 /**
- * Distributed reactive implementation of {@link java.util.concurrent.atomic.AtomicLong}
+ * Reactive interface for AtomicLong object
  *
  * @author Nikita Koksharov
  *

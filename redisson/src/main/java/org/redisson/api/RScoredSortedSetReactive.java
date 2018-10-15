@@ -25,6 +25,7 @@ import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
+ * Reactive interface for SortedSet object
  * 
  * @author Nikita Koksharov
  *

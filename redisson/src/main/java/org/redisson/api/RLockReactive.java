@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
+ * Reactive interface for Lock object
  * 
  * @author Nikita Koksharov
  *

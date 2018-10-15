@@ -18,7 +18,7 @@ package org.redisson.api;
 import org.reactivestreams.Publisher;
 
 /**
- * {@link java.util.Queue} backed by Redis
+ * Reactive interface for Queue object
  *
  * @author Nikita Koksharov
  *

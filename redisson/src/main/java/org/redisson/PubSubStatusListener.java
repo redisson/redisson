@@ -16,7 +16,6 @@
 package org.redisson;
 
 import org.redisson.api.listener.StatusListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 

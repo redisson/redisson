@@ -29,6 +29,7 @@ import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
 import org.redisson.client.codec.Codec;
@@ -130,6 +131,23 @@ public class RedissonObjectFactory {
         return rr.getCodec() == null;
     }
 
+    public static <T> T fromReference(RedissonRxClient redisson, RedissonReference rr) throws Exception {
+        Class<? extends Object> type = rr.getReactiveType();
+        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
+        /**
+         * Live Object from reference in reactive client is not supported yet.
+         */
+        if (type != null) {
+            RedissonObjectBuilder b = builders.get(type);
+            if (b != null) {
+                    Method builder = b.get(isDefaultCodec(rr));
+                    return (T) (isDefaultCodec(rr)
+                            ? builder.invoke(redisson, rr.getKeyName())
+                            : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
+            }
+        }
+        throw new ClassNotFoundException("No RObjectReactive is found to match class type of " + rr.getReactiveTypeName()+ " with codec type of " + rr.getCodecName());
+    }
     
     public static <T> T fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();

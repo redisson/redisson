@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,10 +32,10 @@ import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
 import org.redisson.SlotCallback;
-import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -59,7 +58,6 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.connection.ClientConnectionsEntry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -92,6 +90,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     final ConnectionManager connectionManager;
     protected RedissonClient redisson;
     protected RedissonReactiveClient redissonReactive;
+    protected RedissonRxClient redissonRx;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -108,6 +107,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             this.redisson = redisson;
             enableRedissonReferenceSupport(redisson.getConfig());
             this.redissonReactive = null;
+            this.redissonRx = null;
         }
         return this;
     }
@@ -118,6 +118,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             this.redissonReactive = redissonReactive;
             enableRedissonReferenceSupport(redissonReactive.getConfig());
             this.redisson = null;
+            this.redissonRx = null;
+        }
+        return this;
+    }
+    
+    @Override
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
+        if (redissonRx != null) {
+            this.redissonReactive = null;
+            enableRedissonReferenceSupport(redissonRx.getConfig());
+            this.redisson = null;
+            this.redissonRx = redissonRx;
         }
         return this;
     }
@@ -130,7 +142,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
-        return redisson != null || redissonReactive != null;
+        return redisson != null || redissonReactive != null || redissonRx != null;
     }
 
     @Override
@@ -1053,9 +1065,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <R> R fromReference(Object res) {
         try {
-            return redisson != null
-                    ? RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res)
-                    : RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) res);
+            if (redisson != null) {
+                return RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res);
+            }
+            if (redissonReactive != null) {
+                return RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) res);
+            }
+            return RedissonObjectFactory.<R>fromReference(redissonRx, (RedissonReference) res);
         } catch (Exception exception) {
             return (R) res;
         }

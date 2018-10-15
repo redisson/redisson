@@ -23,6 +23,7 @@ import org.redisson.api.RScript.ReturnType;
 import org.redisson.client.codec.Codec;
 
 /**
+ * Reactive interface for Redis Script feature
  * 
  * @author Nikita Koksharov
  *

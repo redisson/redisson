@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
+import org.redisson.api.RMap;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -34,8 +35,8 @@ public class RedissonMapRx<K, V> {
 
     private final RedissonMap<K, V> instance;
 
-    public RedissonMapRx(RedissonMap<K, V> instance) {
-        this.instance = instance;
+    public RedissonMapRx(RMap<K, V> instance) {
+        this.instance = (RedissonMap<K, V>) instance;
     }
 
     public Publisher<Map.Entry<K, V>> entryIterator() {

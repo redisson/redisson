@@ -69,6 +69,7 @@ public class RedissonTopic<M> implements RTopic<M> {
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
 
+    @Override
     public List<String> getChannelNames() {
         return Collections.singletonList(name);
     }
@@ -110,22 +111,15 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
     
     @Override
-    public RFuture<Integer> addListenerAsync(final MessageListener<M> listener) {
-        final PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
-        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
-        final RPromise<Integer> result = new RedissonPromise<Integer>();
-        future.addListener(new FutureListener<PubSubConnectionEntry>() {
-            @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                result.trySuccess(System.identityHashCode(pubSubListener));
-            }
-        });
-        return result;
+    public RFuture<Integer> addListenerAsync(StatusListener listener) {
+        PubSubStatusListener<M> pubSubListener = new PubSubStatusListener<M>(listener, name);
+        return addListenerAsync((RedisPubSubListener<?>)pubSubListener);
+    }
+    
+    @Override
+    public RFuture<Integer> addListenerAsync(MessageListener<M> listener) {
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
+        return addListenerAsync(pubSubListener);
     }
 
     private int addListener(RedisPubSubListener<?> pubSubListener) {
@@ -134,7 +128,7 @@ public class RedissonTopic<M> implements RTopic<M> {
         return System.identityHashCode(pubSubListener);
     }
     
-    public RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
+    private RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
         final RPromise<Integer> result = new RedissonPromise<Integer>();
         future.addListener(new FutureListener<PubSubConnectionEntry>() {

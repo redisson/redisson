@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
+import org.redisson.RedissonMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
@@ -38,11 +39,11 @@ import reactor.core.publisher.FluxSink;
  */
 public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
 
-    private final MapReactive<K, V> map;
+    private final RedissonMap<K, V> map;
     private final String pattern;
     private final int count;
 
-    public RedissonMapReactiveIterator(MapReactive<K, V> map, String pattern, int count) {
+    public RedissonMapReactiveIterator(RedissonMap<K, V> map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
         this.count = count;
@@ -70,7 +71,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
             };
             
             protected void nextValues(FluxSink<M> emitter) {
-                        map.scanIteratorAsync(client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
+                        map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
 
                             @Override
                             public void operationComplete(Future<MapScanResult<Object, Object>> future)
@@ -126,7 +127,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
 
             @Override
             public V setValue(V value) {
-                return map.putSync((K) entry.getKey(), value);
+                return map.put((K) entry.getKey(), value);
             }
 
         };

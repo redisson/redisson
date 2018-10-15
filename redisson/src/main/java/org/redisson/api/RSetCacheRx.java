@@ -13,23 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.reactive;
+package org.redisson.api;
 
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.MapScanResult;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Flowable;
 
 /**
- * 
+ * Async set functions
+ *
  * @author Nikita Koksharov
  *
- * @param <K> key type
- * @param <V> value type
+ * @param <V> value
  */
-interface MapReactive<K, V> {
+public interface RSetCacheRx<V> extends RCollectionRx<V> {
 
-    RFuture<MapScanResult<Object, Object>> scanIteratorAsync(RedisClient client, long startPos, String pattern, int count);
-    
-    V putSync(K key, V value);
+    Flowable<Boolean> add(V value, long ttl, TimeUnit unit);
+
+    /**
+     * Returns the number of elements in cache.
+     * This number can reflects expired elements too
+     * due to non realtime cleanup process.
+     *
+     */
+    @Override
+    Flowable<Integer> size();
+
+    /**
+     * Read all elements at once
+     *
+     * @return values
+     */
+    Flowable<Set<V>> readAll();
     
 }

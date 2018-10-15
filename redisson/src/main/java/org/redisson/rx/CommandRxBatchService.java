@@ -24,7 +24,7 @@ import org.reactivestreams.Subscription;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
@@ -73,7 +73,7 @@ public class CommandRxBatchService extends CommandRxService {
     }
 
     @Override
-    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
+    public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonReactive) {
         batchService.enableRedissonReferenceSupport(redissonReactive);
         return super.enableRedissonReferenceSupport(redissonReactive);
     }

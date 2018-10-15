@@ -21,7 +21,7 @@ import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 
 /**
- * Distributed topic. Messages are delivered to all message listeners across Redis cluster.
+ * Pattern based observer for Publish Subscribe object.
  *
  * @author Nikita Koksharov
  *
@@ -75,5 +75,8 @@ public interface RPatternTopic<M> {
      */
     void removeAllListeners();
     
+    RFuture<Integer> addListenerAsync(PatternStatusListener listener);
+    
+    RFuture<Integer> addListenerAsync(PatternMessageListener<M> listener);
 
 }
