@@ -20,10 +20,7 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
-import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
-import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.MapScanResult;
 
 
 /**
@@ -35,7 +32,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
  * @param <K> key
  * @param <V> value
  */
-public class RedissonMapReactive<K, V> implements MapReactive<K, V> {
+public class RedissonMapReactive<K, V> {
 
     private final RMap<K, V> instance;
 
@@ -43,16 +40,6 @@ public class RedissonMapReactive<K, V> implements MapReactive<K, V> {
         this.instance = instance;
     }
     
-    @Override
-    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(final RedisClient client, final long startPos, final String pattern, final int count) {
-        return ((RedissonMap<K, V>)instance).scanIteratorAsync(instance.getName(), client, startPos, pattern, count);
-    }
-    
-    @Override
-    public V putSync(K key, V value) {
-        return instance.put(key, value);
-    }
-
     public Publisher<Map.Entry<K, V>> entryIterator() {
         return entryIterator(null);
     }
@@ -66,7 +53,7 @@ public class RedissonMapReactive<K, V> implements MapReactive<K, V> {
     }
     
     public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>(this, pattern, count).stream();
+        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) instance, pattern, count).stream();
     }
 
     public Publisher<V> valueIterator() {
@@ -82,7 +69,7 @@ public class RedissonMapReactive<K, V> implements MapReactive<K, V> {
     }
     
     public Publisher<V> valueIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, V>(this, pattern, count) {
+        return new RedissonMapReactiveIterator<K, V, V>((RedissonMap<K, V>) instance, pattern, count) {
             @Override
             V getValue(Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -103,7 +90,7 @@ public class RedissonMapReactive<K, V> implements MapReactive<K, V> {
     }
     
     public Publisher<K> keyIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, K>(this, pattern, count) {
+        return new RedissonMapReactiveIterator<K, V, K>((RedissonMap<K, V>) instance, pattern, count) {
             @Override
             K getValue(Entry<Object, Object> entry) {
                 return (K) entry.getKey();

@@ -20,6 +20,7 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
+import org.redisson.RedissonMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
@@ -38,11 +39,11 @@ import reactor.rx.subscription.ReactiveSubscription;
  */
 public class RedissonMapReactiveIterator<K, V, M> {
 
-    private final MapReactive<K, V> map;
+    private final RedissonMap<K, V> map;
     private final String pattern;
     private final int count;
 
-    public RedissonMapReactiveIterator(MapReactive<K, V> map, String pattern, int count) {
+    public RedissonMapReactiveIterator(RedissonMap<K, V> map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
         this.count = count;
@@ -68,7 +69,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
                     protected void nextValues() {
                         final ReactiveSubscription<M> m = this;
-                        map.scanIteratorAsync(client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
+                        map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
 
                             @Override
                             public void operationComplete(Future<MapScanResult<Object, Object>> future)
@@ -122,7 +123,7 @@ public class RedissonMapReactiveIterator<K, V, M> {
 
             @Override
             public V setValue(V value) {
-                return map.putSync((K) entry.getKey(), value);
+                return map.put((K) entry.getKey(), value);
             }
 
         };
