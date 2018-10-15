@@ -286,9 +286,9 @@ public interface RBatchReactive {
      * @param name - name of object
      * @return Deque object
      */
-    <V> RDequeReactive<V> getDequeReactive(String name);
+    <V> RDequeReactive<V> getDeque(String name);
 
-    <V> RDequeReactive<V> getDequeReactive(String name, Codec codec);
+    <V> RDequeReactive<V> getDeque(String name, Codec codec);
 
     /**
      * Returns "atomic long" instance by name.
@@ -296,7 +296,7 @@ public interface RBatchReactive {
      * @param name - name of object
      * @return AtomicLong object
      */
-    RAtomicLongReactive getAtomicLongReactive(String name);
+    RAtomicLongReactive getAtomicLong(String name);
 
     /**
      * Returns atomicDouble instance by name.

@@ -53,10 +53,6 @@ public class RedissonLexSortedSetReactive {
         };
     }
 
-    public String getName() {
-        return ((RedissonScoredSortedSet)instance).getName();
-    }
-    
     public Publisher<String> iterator() {
         return scanIteratorReactive(null, 10);
     }
