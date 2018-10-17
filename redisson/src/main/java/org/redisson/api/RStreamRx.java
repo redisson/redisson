@@ -48,6 +48,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * {@link StreamId#NEWEST} is used for messages arrived since the moment of group creating
      * 
      * @param groupName - name of group
+     * @param id - stream id
      * @return void
      */
     Flowable<Void> createGroup(String groupName, StreamId id);
@@ -109,13 +110,15 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param idleTime - minimum idle time of messages
      * @param idleTimeUnit - idle time unit
      * @param ids - stream ids
-     * @return
+     * @return stream data mapped by Stream ID
      */
     Flowable<Map<StreamId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
@@ -124,6 +127,8 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
      * @param count - stream data size limit
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
@@ -134,6 +139,8 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
      * Wait for stream data availability for specified <code>timeout</code> interval.
      * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit
      * @param ids - collection of Stream IDs
@@ -145,6 +152,8 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
      * Wait for stream data availability for specified <code>timeout</code> interval.
      * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
      * @param count - stream data size limit
      * @param timeout - time interval to wait for stream data availability
      * @param unit - time interval unit

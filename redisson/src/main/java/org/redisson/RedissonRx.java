@@ -281,23 +281,23 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, name), RTopicRx.class);
+    public RTopicRx getTopic(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(commandExecutor, name), RTopicRx.class);
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, name), RTopicRx.class);
+    public RTopicRx getTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(codec, commandExecutor, name), RTopicRx.class);
     }
 
     @Override
-    public <M> RPatternTopicRx<M> getPatternTopic(String pattern) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, pattern), RPatternTopicRx.class);
+    public RPatternTopicRx getPatternTopic(String pattern) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(commandExecutor, pattern), RPatternTopicRx.class);
     }
 
     @Override
-    public <M> RPatternTopicRx<M> getPatternTopic(String pattern, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, pattern), RPatternTopicRx.class);
+    public RPatternTopicRx getPatternTopic(String pattern, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonPatternTopic(codec, commandExecutor, pattern), RPatternTopicRx.class);
     }
 
     @Override
@@ -426,9 +426,9 @@ public class RedissonRx implements RedissonRxClient {
         return connectionManager.isShuttingDown();
     }
 
-//    protected void enableRedissonReferenceSupport() {
-//        this.commandExecutor.enableRedissonReferenceSupport(this);
-//    }
+    protected void enableRedissonReferenceSupport() {
+        this.commandExecutor.enableRedissonReferenceSupport(this);
+    }
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {

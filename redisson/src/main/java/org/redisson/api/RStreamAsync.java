@@ -108,7 +108,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param idleTime - minimum idle time of messages
      * @param idleTimeUnit - idle time unit
      * @param ids - stream ids
-     * @return
+     * @return stream data mapped by Stream ID
      */
     RFuture<Map<StreamId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
     

@@ -54,6 +54,10 @@ abstract class EvictionTask implements Runnable {
     
     @Override
     public void run() {
+        if (executor.getConnectionManager().isShuttingDown()) {
+            return;
+        }
+        
         RFuture<Integer> future = execute();
         future.addListener(new FutureListener<Integer>() {
             @Override

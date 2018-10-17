@@ -78,8 +78,8 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
             }
             
             @Override
-            protected RTopic<Long> getTopic() {
-                return new RedissonTopic<Long>(LongCodec.INSTANCE, commandExecutor, channelName);
+            protected RTopic getTopic() {
+                return new RedissonTopic(LongCodec.INSTANCE, commandExecutor, channelName);
             }
         };
         

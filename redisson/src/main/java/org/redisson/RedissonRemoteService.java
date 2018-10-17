@@ -189,7 +189,8 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                 }
                 
                 if (!future.isSuccess()) {
-                    if (future.cause() instanceof RedissonShutdownException) {
+                    if (future.cause() instanceof RedissonShutdownException
+                            || redisson.isShuttingDown()) {
                         return;
                     }
                     log.error("Can't process the remote service request.", future.cause());

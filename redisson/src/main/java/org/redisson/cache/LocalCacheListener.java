@@ -77,7 +77,7 @@ public abstract class LocalCacheListener {
     
     private long cacheUpdateLogTime;
     private volatile long lastInvalidate;
-    private RTopic<Object> invalidationTopic;
+    private RTopic invalidationTopic;
     private int syncListenerId;
     private int reconnectionListenerId;
     
@@ -99,7 +99,7 @@ public abstract class LocalCacheListener {
     }
     
     public void add() {
-        invalidationTopic = new RedissonTopic<Object>(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
+        invalidationTopic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
             reconnectionListenerId = invalidationTopic.addListener(new BaseStatusListener() {
@@ -156,7 +156,7 @@ public abstract class LocalCacheListener {
         }
         
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
-            syncListenerId = invalidationTopic.addListener(new MessageListener<Object>() {
+            syncListenerId = invalidationTopic.addListener(Object.class, new MessageListener<Object>() {
                 @Override
                 public void onMessage(CharSequence channel, Object msg) {
                     if (msg instanceof LocalCachedMapDisable) {
@@ -170,7 +170,7 @@ public abstract class LocalCacheListener {
                         
                         disableKeys(requestId, keysToDisable, m.getTimeout());
                         
-                        RedissonTopic<Object> topic = new RedissonTopic<Object>(LocalCachedMessageCodec.INSTANCE, 
+                        RedissonTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
                                                             commandExecutor, RedissonObject.suffixName(name, requestId + DISABLED_ACK_SUFFIX));
                         topic.publishAsync(new LocalCachedMapDisableAck());
                     }

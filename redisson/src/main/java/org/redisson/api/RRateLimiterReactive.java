@@ -34,7 +34,8 @@ public interface RRateLimiterReactive extends RObjectReactive {
      * @param rate - rate
      * @param rateInterval - rate time interval
      * @param rateIntervalUnit - rate time interval unit
-     * @return
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
      */
     Publisher<Boolean> trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
@@ -77,6 +78,7 @@ public interface RRateLimiterReactive extends RObjectReactive {
      * <p>Acquires a permit, if one is available and returns immediately,
      * reducing the number of available permits by one.
      * 
+     * @return void
      */
     Publisher<Void> acquire();
     
@@ -88,7 +90,8 @@ public interface RRateLimiterReactive extends RObjectReactive {
      * and returns immediately, reducing the number of available permits 
      * by the given amount.
      * 
-     * @param permits
+     * @param permits the number of permits to acquire
+     * @return void
      */
     Publisher<Void> acquire(long permits);
     

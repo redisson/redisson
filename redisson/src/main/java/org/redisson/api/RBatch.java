@@ -290,13 +290,12 @@ public interface RBatch {
     /**
      * Returns topic instance by name.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicAsync<M> getTopic(String name);
+    RTopicAsync getTopic(String name);
 
-    <M> RTopicAsync<M> getTopic(String name, Codec codec);
+    RTopicAsync getTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.

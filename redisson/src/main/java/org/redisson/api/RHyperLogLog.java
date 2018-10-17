@@ -56,7 +56,7 @@ public interface RHyperLogLog<V> extends RExpirable, RHyperLogLogAsync<V> {
      * added into this instances and other instances defined through <code>otherLogNames</code>.
      * 
      * @param otherLogNames - name of instances
-     * @return
+     * @return number
      */
     long countWith(String ... otherLogNames);
 

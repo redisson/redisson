@@ -82,7 +82,7 @@ public abstract class QueueTransferTask {
     private int statusListenerId;
     
     public void start() {
-        RTopic<Long> schedulerTopic = getTopic();
+        RTopic schedulerTopic = getTopic();
         statusListenerId = schedulerTopic.addListener(new BaseStatusListener() {
             @Override
             public void onSubscribe(String channel) {
@@ -90,7 +90,7 @@ public abstract class QueueTransferTask {
             }
         });
         
-        messageListenerId = schedulerTopic.addListener(new MessageListener<Long>() {
+        messageListenerId = schedulerTopic.addListener(Long.class, new MessageListener<Long>() {
             @Override
             public void onMessage(CharSequence channel, Long startTime) {
                 scheduleTask(startTime);
@@ -99,7 +99,7 @@ public abstract class QueueTransferTask {
     }
     
     public void stop() {
-        RTopic<Long> schedulerTopic = getTopic();
+        RTopic schedulerTopic = getTopic();
         schedulerTopic.removeListener(messageListenerId);
         schedulerTopic.removeListener(statusListenerId);
     }
@@ -135,7 +135,7 @@ public abstract class QueueTransferTask {
         }
     }
     
-    protected abstract RTopic<Long> getTopic();
+    protected abstract RTopic getTopic();
     
     protected abstract RFuture<Long> pushTaskAsync();
     

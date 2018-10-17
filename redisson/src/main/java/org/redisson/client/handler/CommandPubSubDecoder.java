@@ -106,6 +106,10 @@ public class CommandPubSubDecoder extends CommandDecoder {
     @Override
     protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
             final Object result) throws IOException {
+        if (executor.isShutdown()) {
+            return;
+        }
+
         if (result instanceof Message) {
             checkpoint();
 

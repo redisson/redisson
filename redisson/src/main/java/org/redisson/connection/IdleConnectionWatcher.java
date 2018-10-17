@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
 
 public class IdleConnectionWatcher {
 
@@ -52,9 +53,10 @@ public class IdleConnectionWatcher {
     };
 
     private final Queue<Entry> entries = new ConcurrentLinkedQueue<Entry>();
+    private final ScheduledFuture<?> monitorFuture;
 
     public IdleConnectionWatcher(final ConnectionManager manager, final MasterSlaveServersConfig config) {
-        manager.getGroup().scheduleWithFixedDelay(new Runnable() {
+        monitorFuture = manager.getGroup().scheduleWithFixedDelay(new Runnable() {
 
             @Override
             public void run() {
@@ -89,6 +91,12 @@ public class IdleConnectionWatcher {
 
     public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
         entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter));
+    }
+    
+    public void stop() {
+        if (monitorFuture != null) {
+            monitorFuture.cancel(true);
+        }
     }
 
 }

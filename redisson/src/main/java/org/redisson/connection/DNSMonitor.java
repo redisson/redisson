@@ -84,6 +84,10 @@ public class DNSMonitor {
         dnsMonitorFuture = connectionManager.getGroup().schedule(new Runnable() {
             @Override
             public void run() {
+                if (connectionManager.isShuttingDown()) {
+                    return;
+                }
+                
                 final AtomicInteger counter = new AtomicInteger(masters.size() + slaves.size());
                 for (final Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
                     Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));

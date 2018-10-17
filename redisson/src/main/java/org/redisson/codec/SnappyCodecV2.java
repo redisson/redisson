@@ -22,13 +22,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.xerial.snappy.SnappyInputStream;
-import org.xerial.snappy.SnappyOutputStream;
+import org.xerial.snappy.Snappy;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.buffer.ByteBufInputStream;
-import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 
 /**
  * Google's Snappy compression codec.
@@ -62,10 +59,10 @@ public class SnappyCodecV2 extends BaseCodec {
         
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            int size = buf.readableBytes();
-            SnappyInputStream input = new SnappyInputStream(new ByteBufInputStream(buf));
-            ByteBuf bf = ByteBufAllocator.DEFAULT.buffer(size);
-            bf.writeBytes(input, size);
+            byte[] bytes = new byte[buf.readableBytes()];
+            buf.readBytes(bytes);
+            bytes = Snappy.uncompress(bytes);
+            ByteBuf bf = Unpooled.wrappedBuffer(bytes);
             try {
                 return innerCodec.getValueDecoder().decode(bf, state);
             } finally {
@@ -79,15 +76,11 @@ public class SnappyCodecV2 extends BaseCodec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf encoded = innerCodec.getValueEncoder().encode(in);
-            ByteBuf out = ByteBufAllocator.DEFAULT.buffer(encoded.readableBytes());
-            try {
-                SnappyOutputStream output = new SnappyOutputStream(new ByteBufOutputStream(out));
-                encoded.readBytes(output, encoded.readableBytes());
-                output.flush();
-            } finally {
-                encoded.release();
-            }
-            return out;
+            byte[] bytes = new byte[encoded.readableBytes()];
+            encoded.readBytes(bytes);
+            encoded.release();
+            byte[] res = Snappy.compress(bytes);
+            return Unpooled.wrappedBuffer(res);
         }
     };
 

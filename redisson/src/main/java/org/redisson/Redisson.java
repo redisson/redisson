@@ -185,9 +185,9 @@ public class Redisson implements RedissonClient {
      */
     public static RedissonRxClient createRx(Config config) {
         RedissonRx react = new RedissonRx(config);
-//        if (config.isReferenceEnabled()) {
-//            react.enableRedissonReferenceSupport();
-//        }
+        if (config.isReferenceEnabled()) {
+            react.enableRedissonReferenceSupport();
+        }
         return react;
     }
 
@@ -495,23 +495,23 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <M> RTopic<M> getTopic(String name) {
-        return new RedissonTopic<M>(connectionManager.getCommandExecutor(), name);
+    public RTopic getTopic(String name) {
+        return new RedissonTopic(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
-    public <M> RTopic<M> getTopic(String name, Codec codec) {
-        return new RedissonTopic<M>(codec, connectionManager.getCommandExecutor(), name);
+    public RTopic getTopic(String name, Codec codec) {
+        return new RedissonTopic(codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override
-    public <M> RPatternTopic<M> getPatternTopic(String pattern) {
-        return new RedissonPatternTopic<M>(connectionManager.getCommandExecutor(), pattern);
+    public RPatternTopic getPatternTopic(String pattern) {
+        return new RedissonPatternTopic(connectionManager.getCommandExecutor(), pattern);
     }
 
     @Override
-    public <M> RPatternTopic<M> getPatternTopic(String pattern, Codec codec) {
-        return new RedissonPatternTopic<M>(codec, connectionManager.getCommandExecutor(), pattern);
+    public RPatternTopic getPatternTopic(String pattern, Codec codec) {
+        return new RedissonPatternTopic(codec, connectionManager.getCommandExecutor(), pattern);
     }
 
     @Override

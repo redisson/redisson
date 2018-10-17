@@ -415,22 +415,20 @@ public interface RedissonRxClient {
     /**
      * Returns topic instance by name.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicRx<M> getTopic(String name);
+    RTopicRx getTopic(String name);
 
     /**
      * Returns topic instance by name
      * using provided codec for messages.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @param codec - codec for message
      * @return Topic object
      */
-    <M> RTopicRx<M> getTopic(String name, Codec codec);
+    RTopicRx getTopic(String name, Codec codec);
 
     /**
      * Returns topic instance satisfies by pattern name.
@@ -440,11 +438,10 @@ public interface RedissonRxClient {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param <M> type of message
      * @param pattern of the topic
      * @return PatternTopic object
      */
-    <M> RPatternTopicRx<M> getPatternTopic(String pattern);
+    RPatternTopicRx getPatternTopic(String pattern);
 
     /**
      * Returns topic instance satisfies by pattern name
@@ -455,12 +452,11 @@ public interface RedissonRxClient {
      *    h*llo subscribes to hllo and heeeello
      *    h[ae]llo subscribes to hello and hallo, but not hillo
      *
-     * @param <M> type of message
      * @param pattern of the topic
      * @param codec - codec for message
      * @return PatternTopic object
      */
-    <M> RPatternTopicRx<M> getPatternTopic(String pattern, Codec codec);
+    RPatternTopicRx getPatternTopic(String pattern, Codec codec);
 
     /**
      * Returns queue instance by name.

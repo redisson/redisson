@@ -59,7 +59,7 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * added into this instances and other instances defined through <code>otherLogNames</code>.
      * 
      * @param otherLogNames - name of instances
-     * @return
+     * @return number
      */
     Publisher<Long> countWith(String ... otherLogNames);
 
@@ -67,6 +67,7 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * Merges multiple instances into this instance.
      * 
      * @param otherLogNames - name of instances
+     * @return void
      */
     Publisher<Void> mergeWith(String ... otherLogNames);
 

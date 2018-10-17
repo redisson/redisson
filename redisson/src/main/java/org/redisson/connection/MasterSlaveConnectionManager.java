@@ -610,6 +610,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (dnsMonitor != null) {
             dnsMonitor.stop();
         }
+        
+        connectionWatcher.stop();
 
         if (cfg.getExecutor() == null) {
             executor.shutdown();

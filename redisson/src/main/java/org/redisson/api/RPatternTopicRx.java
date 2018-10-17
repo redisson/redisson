@@ -27,9 +27,8 @@ import io.reactivex.Flowable;
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
  */
-public interface RPatternTopicRx<M> {
+public interface RPatternTopicRx {
 
     /**
      * Get topic channel patterns
@@ -42,12 +41,14 @@ public interface RPatternTopicRx<M> {
      * Subscribes to this topic.
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
-     *
+     * 
+     * @param <T> type of message
+     * @param type - type of message
      * @param listener - message listener
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    Flowable<Integer> addListener(PatternMessageListener<M> listener);
+    <T> Flowable<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
      * Subscribes to status changes of this topic

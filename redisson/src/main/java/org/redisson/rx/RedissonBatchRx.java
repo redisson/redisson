@@ -181,13 +181,13 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name) {
-        return RxProxyBuilder.create(executorService, new RedissonTopic<M>(executorService, name), RTopicRx.class);
+    public RTopicRx getTopic(String name) {
+        return RxProxyBuilder.create(executorService, new RedissonTopic(executorService, name), RTopicRx.class);
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(executorService, new RedissonTopic<M>(codec, executorService, name), RTopicRx.class);
+    public RTopicRx getTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonTopic(codec, executorService, name), RTopicRx.class);
     }
 
     @Override

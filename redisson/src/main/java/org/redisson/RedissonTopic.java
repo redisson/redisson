@@ -47,9 +47,8 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> message
  */
-public class RedissonTopic<M> implements RTopic<M> {
+public class RedissonTopic implements RTopic {
 
     final PublishSubscribeService subscribeService;
     final CommandAsyncExecutor commandExecutor;
@@ -75,12 +74,12 @@ public class RedissonTopic<M> implements RTopic<M> {
     }
 
     @Override
-    public long publish(M message) {
+    public long publish(Object message) {
         return commandExecutor.get(publishAsync(message));
     }
 
     @Override
-    public RFuture<Long> publishAsync(M message) {
+    public RFuture<Long> publishAsync(Object message) {
         return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, encode(message));
     }
 
@@ -101,24 +100,24 @@ public class RedissonTopic<M> implements RTopic<M> {
     
     @Override
     public int addListener(StatusListener listener) {
-        return addListener(new PubSubStatusListener<Object>(listener, name));
+        return addListener(new PubSubStatusListener(listener, name));
     };
 
     @Override
-    public int addListener(MessageListener<M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
+    public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, (MessageListener<M>)listener, name);
         return addListener(pubSubListener);
     }
     
     @Override
     public RFuture<Integer> addListenerAsync(StatusListener listener) {
-        PubSubStatusListener<M> pubSubListener = new PubSubStatusListener<M>(listener, name);
+        PubSubStatusListener pubSubListener = new PubSubStatusListener(listener, name);
         return addListenerAsync((RedisPubSubListener<?>)pubSubListener);
     }
     
     @Override
-    public RFuture<Integer> addListenerAsync(MessageListener<M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(listener, name);
+    public <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener) {
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, listener, name);
         return addListenerAsync(pubSubListener);
     }
 

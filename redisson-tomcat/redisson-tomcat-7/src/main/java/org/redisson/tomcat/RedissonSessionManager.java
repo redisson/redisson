@@ -135,7 +135,7 @@ public class RedissonSessionManager extends ManagerBase {
         return redisson.getMap(name);
     }
 
-    public RTopic<AttributeMessage> getTopic() {
+    public RTopic getTopic() {
         return redisson.getTopic("redisson:tomcat_session_updates:" + container.getName());
     }
     
@@ -202,8 +202,8 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (readMode == ReadMode.MEMORY) {
-            RTopic<AttributeMessage> updatesTopic = getTopic();
-            updatesTopic.addListener(new MessageListener<AttributeMessage>() {
+            RTopic updatesTopic = getTopic();
+            updatesTopic.addListener(AttributeMessage.class, new MessageListener<AttributeMessage>() {
                 
                 @Override
                 public void onMessage(CharSequence channel, AttributeMessage msg) {
