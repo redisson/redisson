@@ -83,7 +83,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
                     new WriteRedisConnectionException("Channel has been closed! Can't write command: " 
                                 + LogHelper.toString(command.getCommand()) + " to channel: " + ctx.channel()));
             
-            if (command.getChannelPromise().isSuccess()) {
+            if (command.getChannelPromise().isSuccess() && !command.getCommand().isBlockingCommand()) {
                 command.getCommand().tryFailure(new RedisConnectionClosedException("Command " 
                                 + LogHelper.toString(command.getCommand()) + " succesfully sent, but channel " + ctx.channel() + " has been closed!"));
             }

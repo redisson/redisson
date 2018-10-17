@@ -107,4 +107,9 @@ public class CommandsData implements QueueCommand {
         return promise.isDone();
     }
 
+    @Override
+    public boolean isBlockingCommand() {
+        return false;
+    }
+
 }
