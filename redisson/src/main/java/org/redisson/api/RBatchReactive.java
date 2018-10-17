@@ -238,13 +238,12 @@ public interface RBatchReactive {
     /**
      * Returns topic instance by name.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicReactive<M> getTopic(String name);
+    RTopicReactive getTopic(String name);
 
-    <M> RTopicReactive<M> getTopic(String name, Codec codec);
+    RTopicReactive getTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.

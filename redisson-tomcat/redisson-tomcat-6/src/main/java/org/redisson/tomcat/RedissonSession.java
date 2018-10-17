@@ -51,7 +51,7 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
-    private RTopic<AttributeMessage> topic;
+    private RTopic topic;
     private final RedissonSessionManager.ReadMode readMode;
     private final UpdateMode updateMode;
     

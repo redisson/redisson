@@ -118,13 +118,13 @@ public class RedissonBatch implements RBatch {
     }
 
     @Override
-    public <M> RTopicAsync<M> getTopic(String name) {
-        return new RedissonTopic<M>(executorService, name);
+    public RTopicAsync getTopic(String name) {
+        return new RedissonTopic(executorService, name);
     }
 
     @Override
-    public <M> RTopicAsync<M> getTopic(String name, Codec codec) {
-        return new RedissonTopic<M>(codec, executorService, name);
+    public RTopicAsync getTopic(String name, Codec codec) {
+        return new RedissonTopic(codec, executorService, name);
     }
 
     @Override

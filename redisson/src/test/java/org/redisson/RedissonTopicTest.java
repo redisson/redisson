@@ -115,8 +115,8 @@ public class RedissonTopicTest {
         int count = 1000;
         CountDownLatch latch = new CountDownLatch(count);
         
-        RTopic<String> eventsTopic = redisson.getTopic("eventsTopic");
-        eventsTopic.addListener((channel, msg) -> {
+        RTopic eventsTopic = redisson.getTopic("eventsTopic");
+        eventsTopic.addListener(String.class, (channel, msg) -> {
             latch.countDown();
         });
 
@@ -147,7 +147,7 @@ public class RedissonTopicTest {
                 @Override
                 public void run() {
                     for (int j = 0; j < loops; j++) {
-                        RTopic<String> t = redisson.getTopic("PUBSUB_" + j);
+                        RTopic t = redisson.getTopic("PUBSUB_" + j);
                         int listenerId = t.addListener(new StatusListener() {
                             @Override
                             public void onUnsubscribe(String channel) {
@@ -179,9 +179,9 @@ public class RedissonTopicTest {
     @Test
     public void testCommandsOrdering() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
-        RTopic<Long> topic1 = redisson1.getTopic("topic", LongCodec.INSTANCE);
+        RTopic topic1 = redisson1.getTopic("topic", LongCodec.INSTANCE);
         AtomicBoolean stringMessageReceived = new AtomicBoolean();
-        topic1.addListener((channel, msg) -> {
+        topic1.addListener(Long.class, (channel, msg) -> {
             assertThat(msg).isEqualTo(123);
             stringMessageReceived.set(true);
         });
@@ -196,10 +196,10 @@ public class RedissonTopicTest {
     public void testTopicState() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         
-        RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
+        RTopic stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         for (int i = 0; i < 3; i++) {
             AtomicInteger stringMessageReceived = new AtomicInteger();
-            int listenerId = stringTopic.addListener(new MessageListener<String>() {
+            int listenerId = stringTopic.addListener(String.class, new MessageListener<String>() {
                 @Override
                 public void onMessage(CharSequence channel, String msg) {
                     assertThat(msg).isEqualTo("testmsg");
@@ -230,9 +230,9 @@ public class RedissonTopicTest {
     public void testMultiTypeConnection() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         
-        RTopic<String> stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
+        RTopic stringTopic = redisson.getTopic("test1", StringCodec.INSTANCE);
         AtomicBoolean stringMessageReceived = new AtomicBoolean();
-        stringTopic.addListener(new MessageListener<String>() {
+        stringTopic.addListener(String.class, new MessageListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String msg) {
                 assertThat(msg).isEqualTo("testmsg");
@@ -241,9 +241,9 @@ public class RedissonTopicTest {
         });
         stringTopic.publish("testmsg");
         
-        RTopic<Long> longTopic = redisson.getTopic("test2", LongCodec.INSTANCE);
+        RTopic longTopic = redisson.getTopic("test2", LongCodec.INSTANCE);
         AtomicBoolean longMessageReceived = new AtomicBoolean();
-        longTopic.addListener(new MessageListener<Long>() {
+        longTopic.addListener(Long.class, new MessageListener<Long>() {
 
             @Override
             public void onMessage(CharSequence channel, Long msg) {
@@ -260,10 +260,10 @@ public class RedissonTopicTest {
     @Test
     public void testSyncCommands() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
-        RTopic<String> topic = redisson.getTopic("system_bus");
+        RTopic topic = redisson.getTopic("system_bus");
         RSet<String> redissonSet = redisson.getSet("set1");
         CountDownLatch latch = new CountDownLatch(1);
-        topic.addListener((channel, msg) -> {
+        topic.addListener(String.class, (channel, msg) -> {
             for (int j = 0; j < 1000; j++) {
                 System.out.println("start: " + j);
                 redissonSet.contains("" + j);
@@ -282,16 +282,16 @@ public class RedissonTopicTest {
     public void testInnerPublish() throws InterruptedException {
 
         RedissonClient redisson1 = BaseTest.createInstance();
-        final RTopic<Message> topic1 = redisson1.getTopic("topic1");
+        final RTopic topic1 = redisson1.getTopic("topic1");
         final CountDownLatch messageRecieved = new CountDownLatch(3);
-        int listenerId = topic1.addListener((channel, msg) -> {
+        int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(msg, new Message("test"));
             messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        final RTopic<Message> topic2 = redisson2.getTopic("topic2");
-        topic2.addListener((channel, msg) -> {
+        final RTopic topic2 = redisson2.getTopic("topic2");
+        topic2.addListener(Message.class, (channel, msg) -> {
             messageRecieved.countDown();
             Message m = new Message("test");
             if (!msg.equals(m)) {
@@ -310,7 +310,7 @@ public class RedissonTopicTest {
     @Test
     public void testStatus() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
-        final RTopic<Message> topic1 = redisson.getTopic("topic1");
+        final RTopic topic1 = redisson.getTopic("topic1");
         final CountDownLatch l = new CountDownLatch(1);
         int listenerId = topic1.addListener(new BaseStatusListener() {
             @Override
@@ -340,11 +340,11 @@ public class RedissonTopicTest {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson.getTopic("topic1");
-        int listenerId = topic1.addListener((channel, msg) -> {
+        RTopic topic1 = redisson.getTopic("topic1");
+        int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
             Assert.fail();
         });
-        topic1.addListener((channel, msg) -> {
+        topic1.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals("topic1", channel.toString());
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
@@ -362,9 +362,9 @@ public class RedissonTopicTest {
     @Test
     public void testRemoveAllListeners() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson.getTopic("topic1");
+        RTopic topic1 = redisson.getTopic("topic1");
         for (int i = 0; i < 10; i++) {
-            topic1.addListener((channel, msg) -> {
+            topic1.addListener(Message.class, (channel, msg) -> {
                 Assert.fail();
             });
         }
@@ -379,7 +379,7 @@ public class RedissonTopicTest {
     @Test
     public void testRemoveByInstance() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson.getTopic("topic1");
+        RTopic topic1 = redisson.getTopic("topic1");
         MessageListener listener = new MessageListener() {
             @Override
             public void onMessage(CharSequence channel, Object msg) {
@@ -387,7 +387,7 @@ public class RedissonTopicTest {
             }
         };
         
-        topic1.addListener(listener);
+        topic1.addListener(Message.class, listener);
 
         topic1 = redisson.getTopic("topic1");
         topic1.removeListener(listener);
@@ -402,8 +402,8 @@ public class RedissonTopicTest {
         final CountDownLatch messageRecieved = new CountDownLatch(1);
 
         RedissonClient redisson1 = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson1.getTopic("topic");
-        int listenerId = topic1.addListener((channel, msg) -> {
+        RTopic topic1 = redisson1.getTopic("topic");
+        int listenerId = topic1.addListener(Message.class, (channel, msg) -> {
             Assert.fail();
         });
         Thread.sleep(1000);
@@ -411,8 +411,8 @@ public class RedissonTopicTest {
         Thread.sleep(1000);
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener((channel, msg) -> {
+        RTopic topic2 = redisson2.getTopic("topic");
+        topic2.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
@@ -429,15 +429,15 @@ public class RedissonTopicTest {
         final CountDownLatch messageRecieved = new CountDownLatch(2);
 
         RedissonClient redisson1 = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson1.getTopic("topic");
-        topic1.addListener((channel, msg) -> {
+        RTopic topic1 = redisson1.getTopic("topic");
+        topic1.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener((channel, msg) -> {
+        RTopic topic2 = redisson2.getTopic("topic");
+        topic2.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
@@ -456,16 +456,16 @@ public class RedissonTopicTest {
         final CountDownLatch messageRecieved = new CountDownLatch(1000);
 
         RedissonClient redisson1 = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson1.getTopic("topic");
-        topic1.addListener((channel, msg) -> {
+        RTopic topic1 = redisson1.getTopic("topic");
+        topic1.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
             counter++;
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic");
-        topic2.addListener((channel, msg) -> {
+        RTopic topic2 = redisson2.getTopic("topic");
+        topic2.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
@@ -487,13 +487,13 @@ public class RedissonTopicTest {
     @Test
     public void testListenerRemove() throws InterruptedException {
         RedissonClient redisson1 = BaseTest.createInstance();
-        RTopic<Message> topic1 = redisson1.getTopic("topic");
-        int id = topic1.addListener((channel, msg) -> {
+        RTopic topic1 = redisson1.getTopic("topic");
+        int id = topic1.addListener(Message.class, (channel, msg) -> {
             Assert.fail();
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic");
+        RTopic topic2 = redisson2.getTopic("topic");
         topic1.removeListener(id);
         topic2.publish(new Message("123"));
 
@@ -518,7 +518,7 @@ public class RedissonTopicTest {
         final AtomicBoolean executed = new AtomicBoolean();
         final AtomicInteger subscriptions = new AtomicInteger();
         
-        RTopic<Integer> topic = redisson.getTopic("topic");
+        RTopic topic = redisson.getTopic("topic");
         topic.addListener(new StatusListener() {
             
             @Override
@@ -530,7 +530,7 @@ public class RedissonTopicTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListener(new MessageListener<Integer>() {
+        topic.addListener(Integer.class, new MessageListener<Integer>() {
             @Override
             public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);
@@ -621,7 +621,7 @@ public class RedissonTopicTest {
         final AtomicBoolean executed = new AtomicBoolean();
         final AtomicInteger subscriptions = new AtomicInteger();
         
-        RTopic<Integer> topic = redisson.getTopic("topic");
+        RTopic topic = redisson.getTopic("topic");
         topic.addListener(new StatusListener() {
             
             @Override
@@ -633,7 +633,7 @@ public class RedissonTopicTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListener(new MessageListener<Integer>() {
+        topic.addListener(Integer.class, new MessageListener<Integer>() {
             @Override
             public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);
@@ -752,7 +752,7 @@ public class RedissonTopicTest {
         final AtomicBoolean executed = new AtomicBoolean();
         final AtomicInteger subscriptions = new AtomicInteger();
         
-        RTopic<Integer> topic = redisson.getTopic("topic");
+        RTopic topic = redisson.getTopic("topic");
         topic.addListener(new StatusListener() {
             
             @Override
@@ -764,7 +764,7 @@ public class RedissonTopicTest {
                 subscriptions.incrementAndGet();
             }
         });
-        topic.addListener(new MessageListener<Integer>() {
+        topic.addListener(Integer.class, new MessageListener<Integer>() {
             @Override
             public void onMessage(CharSequence channel, Integer msg) {
                 executed.set(true);

@@ -495,13 +495,13 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <M> RTopic<M> getTopic(String name) {
-        return new RedissonTopic<M>(connectionManager.getCommandExecutor(), name);
+    public RTopic getTopic(String name) {
+        return new RedissonTopic(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
-    public <M> RTopic<M> getTopic(String name, Codec codec) {
-        return new RedissonTopic<M>(codec, connectionManager.getCommandExecutor(), name);
+    public RTopic getTopic(String name, Codec codec) {
+        return new RedissonTopic(codec, connectionManager.getCommandExecutor(), name);
     }
 
     @Override

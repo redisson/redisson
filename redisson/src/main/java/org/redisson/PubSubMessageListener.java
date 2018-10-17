@@ -15,8 +15,10 @@
  */
 package org.redisson;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
@@ -30,13 +32,15 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
 
     private final MessageListener<V> listener;
     private final String name;
+    private final Class<V> type;
 
     public String getName() {
         return name;
     }
 
-    public PubSubMessageListener(MessageListener<V> listener, String name) {
+    public PubSubMessageListener(Class<V> type, MessageListener<V> listener, String name) {
         super();
+        this.type = type;
         this.listener = listener;
         this.name = name;
     }
@@ -69,11 +73,11 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     public MessageListener<V> getListener() {
         return listener;
     }
-
+    
     @Override
     public void onMessage(CharSequence channel, Object message) {
         // could be subscribed to multiple channels
-        if (name.equals(channel.toString())) {
+        if (name.equals(channel.toString()) && type.isInstance(message)) {
             listener.onMessage(channel, (V)message);
         }
     }
@@ -81,7 +85,7 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     @Override
     public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
         // could be subscribed to multiple channels
-        if (name.equals(pattern.toString())) {
+        if (name.equals(pattern.toString()) && type.isInstance(message)) {
             listener.onMessage(channel, (V)message);
         }
     }

@@ -281,13 +281,13 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, name), RTopicRx.class);
+    public RTopicRx getTopic(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(commandExecutor, name), RTopicRx.class);
     }
 
     @Override
-    public <M> RTopicRx<M> getTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, name), RTopicRx.class);
+    public RTopicRx getTopic(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(codec, commandExecutor, name), RTopicRx.class);
     }
 
     @Override

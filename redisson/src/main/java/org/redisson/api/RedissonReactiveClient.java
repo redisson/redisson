@@ -427,22 +427,20 @@ public interface RedissonReactiveClient {
     /**
      * Returns topic instance by name.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicReactive<M> getTopic(String name);
+    RTopicReactive getTopic(String name);
 
     /**
      * Returns topic instance by name
      * using provided codec for messages.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @param codec - codec for message
      * @return Topic object
      */
-    <M> RTopicReactive<M> getTopic(String name, Codec codec);
+    RTopicReactive getTopic(String name, Codec codec);
 
     /**
      * Returns topic instance satisfies by pattern name.

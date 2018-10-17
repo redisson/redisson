@@ -124,7 +124,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
     private static final long SUM_MSG = 1;
 
     private final RSemaphore semaphore;
-    private final RTopic<Long> topic;
+    private final RTopic topic;
     private final int listenerId;
     
     public RedissonBaseAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
@@ -132,7 +132,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         
         topic = redisson.getTopic(suffixName(getName(), "topic"), LongCodec.INSTANCE);
         semaphore = redisson.getSemaphore(suffixName(getName(), "semaphore"));
-        listenerId = topic.addListener(new MessageListener<Long>() {
+        listenerId = topic.addListener(Long.class, new MessageListener<Long>() {
             
             @Override
             public void onMessage(CharSequence channel, Long msg) {

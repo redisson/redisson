@@ -239,13 +239,12 @@ public interface RBatchRx {
     /**
      * Returns topic instance by name.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopicRx<M> getTopic(String name);
+    RTopicRx getTopic(String name);
 
-    <M> RTopicRx<M> getTopic(String name, Codec codec);
+    RTopicRx getTopic(String name, Codec codec);
 
     /**
      * Returns queue instance by name.

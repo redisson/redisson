@@ -23,9 +23,8 @@ import org.redisson.api.listener.StatusListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
  */
-public interface RTopicAsync<M> {
+public interface RTopicAsync {
 
     /**
      * Publish the message to all subscribers of this topic asynchronously
@@ -33,7 +32,7 @@ public interface RTopicAsync<M> {
      * @param message to send
      * @return number of clients that received the message
      */
-    RFuture<Long> publishAsync(M message);
+    RFuture<Long> publishAsync(Object message);
     
     /**
      * Subscribes to status changes of this topic
@@ -49,10 +48,12 @@ public interface RTopicAsync<M> {
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
      *
+     * @param <M> type of message
+     * @param type - type of message
      * @param listener for messages
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    RFuture<Integer> addListenerAsync(MessageListener<M> listener);
+    <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener);
 
 }

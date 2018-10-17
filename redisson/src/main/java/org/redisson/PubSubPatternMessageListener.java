@@ -78,7 +78,7 @@ public class PubSubPatternMessageListener<V> implements RedisPubSubListener<V> {
     @Override
     public void onPatternMessage(CharSequence pattern, CharSequence channel, V message) {
         // could be subscribed to multiple channels
-        if (name.equals(pattern.toString()) && message.getClass() == type) {
+        if (name.equals(pattern.toString()) && type.isInstance(message)) {
             listener.onMessage(pattern, channel, message);
         }
     }

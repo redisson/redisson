@@ -118,9 +118,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     private final String tasksCounterName;
     private final String statusName;
-    private final RTopic<Integer> terminationTopic;
+    private final RTopic terminationTopic;
     private final RRemoteService remoteService;
-    private final RTopic<String> workersTopic;
+    private final RTopic workersTopic;
     private int workersGroupListenerId;
 
     private final RemoteExecutorServiceAsync asyncScheduledService;
@@ -240,8 +240,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     public void registerWorkers(final int workers, ExecutorService executor) {
         QueueTransferTask task = new QueueTransferTask(connectionManager) {
             @Override
-            protected RTopic<Long> getTopic() {
-                return new RedissonTopic<Long>(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
+            protected RTopic getTopic() {
+                return new RedissonTopic(LongCodec.INSTANCE, commandExecutor, schedulerChannelName);
             }
 
             @Override
@@ -304,7 +304,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
         
         remoteService.register(RemoteExecutorService.class, service, workers, executor);
-        workersGroupListenerId = workersTopic.addListener(new MessageListener<String>() {
+        workersGroupListenerId = workersTopic.addListener(String.class, new MessageListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String id) {
                 redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(workers);
@@ -483,7 +483,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
                 }
             }
         };
-        int listenerId = terminationTopic.addListener(listener);
+        int listenerId = terminationTopic.addListener(Integer.class, listener);
 
         if (isTerminated()) {
             terminationTopic.removeListener(listenerId);

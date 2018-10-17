@@ -180,13 +180,13 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
-    public <M> RTopicReactive<M> getTopic(String name) {
-        return ReactiveProxyBuilder.create(executorService, new RedissonTopic<M>(executorService, name), RTopicReactive.class);
+    public RTopicReactive getTopic(String name) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonTopic(executorService, name), RTopicReactive.class);
     }
 
     @Override
-    public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
-        return ReactiveProxyBuilder.create(executorService, new RedissonTopic<M>(codec, executorService, name), RTopicReactive.class);
+    public RTopicReactive getTopic(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonTopic(codec, executorService, name), RTopicReactive.class);
     }
 
     @Override

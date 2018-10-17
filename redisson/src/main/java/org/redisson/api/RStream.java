@@ -106,7 +106,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param idleTime - minimum idle time of messages
      * @param idleTimeUnit - idle time unit
      * @param ids - stream ids
-     * @return
+     * @return stream data mapped by Stream ID
      */
     Map<StreamId, Map<K, V>> claimPending(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
     

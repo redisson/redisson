@@ -83,8 +83,8 @@ public class RedissonTopicPatternTest extends BaseTest {
         
         Thread.sleep(500);
         
-        Assert.assertEquals(i.get(), 1);
-        Assert.assertEquals(str.get(), 1);
+        Assert.assertEquals(1, i.get());
+        Assert.assertEquals(1, str.get());
     }
 
     @Test
@@ -131,7 +131,7 @@ public class RedissonTopicPatternTest extends BaseTest {
             messageRecieved.countDown();
         });
 
-        RTopic<Message> topic3 = redisson2.getTopic("topic.t1");
+        RTopic topic3 = redisson2.getTopic("topic.t1");
         topic3.publish(new Message("123"));
 
         Assert.assertTrue(messageRecieved.await(5, TimeUnit.SECONDS));
@@ -160,20 +160,20 @@ public class RedissonTopicPatternTest extends BaseTest {
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
-        topic2.addListener((channel, msg) -> {
+        RTopic topic2 = redisson2.getTopic("topic.t1");
+        topic2.addListener(Message.class, (channel, msg) -> {
             Assert.assertEquals(new Message("123"), msg);
             messageRecieved.countDown();
         });
         topic2.publish(new Message("123"));
         topic2.publish(new Message("123"));
 
-        RTopic<Message> topicz = redisson2.getTopic("topicz.t1");
+        RTopic topicz = redisson2.getTopic("topicz.t1");
         topicz.publish(new Message("789")); // this message doesn't get
                                             // delivered, and would fail the
                                             // assertion
 
-        RTopic<Message> topict2 = redisson2.getTopic("topic.t2");
+        RTopic topict2 = redisson2.getTopic("topic.t2");
         topict2.publish(new Message("123"));
 
         statusRecieved.await();
@@ -200,7 +200,7 @@ public class RedissonTopicPatternTest extends BaseTest {
         });
 
         RedissonClient redisson2 = BaseTest.createInstance();
-        RTopic<Message> topic2 = redisson2.getTopic("topic.t1");
+        RTopic topic2 = redisson2.getTopic("topic.t1");
         topic1.removeListener(id);
         topic2.publish(new Message("123"));
 

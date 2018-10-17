@@ -2305,8 +2305,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 channelName = getRemovedSyncChannelName();
             }
             
-            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
-            int listenerId = topic.addListener(new MessageListener<List<Object>>() {
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.REMOVED, msg.get(0), msg.get(1));
@@ -2328,8 +2328,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 channelName = getCreatedSyncChannelName();
             }
 
-            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
-            int listenerId = topic.addListener(new MessageListener<List<Object>>() {
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.CREATED, msg.get(0), msg.get(1));
@@ -2351,8 +2351,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 channelName = getUpdatedSyncChannelName();
             }
 
-            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
-            int listenerId = topic.addListener(new MessageListener<List<Object>>() {
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.UPDATED, msg.get(0), msg.get(1));
@@ -2371,8 +2371,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         if (CacheEntryExpiredListener.class.isAssignableFrom(listener.getClass())) {
             String channelName = getExpiredChannelName();
 
-            RTopic<List<Object>> topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, false));
-            int listenerId = topic.addListener(new MessageListener<List<Object>>() {
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, false));
+            int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
                     JCacheEntryEvent<K, V> event = new JCacheEntryEvent<K, V>(JCache.this, EventType.EXPIRED, msg.get(0), msg.get(1));

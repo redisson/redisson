@@ -71,7 +71,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             updateExpiration();
             
             String channelName = getEventsChannelName(delegate.getId());
-            RTopic<String> topic = redisson.getTopic(channelName, StringCodec.INSTANCE);
+            RTopic topic = redisson.getTopic(channelName, StringCodec.INSTANCE);
             topic.publish(delegate.getId());
         }
 

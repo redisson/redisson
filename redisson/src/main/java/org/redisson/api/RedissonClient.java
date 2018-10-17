@@ -545,22 +545,20 @@ public interface RedissonClient {
     /**
      * Returns topic instance by name.
      * 
-     * @param <M> type of message
      * @param name - name of object
      * @return Topic object
      */
-    <M> RTopic<M> getTopic(String name);
+    RTopic getTopic(String name);
 
     /**
      * Returns topic instance by name
      * using provided codec for messages.
      *
-     * @param <M> type of message
      * @param name - name of object
      * @param codec - codec for message
      * @return Topic object
      */
-    <M> RTopic<M> getTopic(String name, Codec codec);
+    RTopic getTopic(String name, Codec codec);
 
     /**
      * Returns topic instance satisfies by pattern name.

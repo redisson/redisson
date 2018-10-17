@@ -26,9 +26,8 @@ import org.redisson.api.listener.StatusListener;
  *
  * @author Nikita Koksharov
  *
- * @param <M> the type of message object
  */
-public interface RTopicReactive<M> {
+public interface RTopicReactive {
 
     /**
      * Get topic channel names
@@ -43,7 +42,7 @@ public interface RTopicReactive<M> {
      * @param message to send
      * @return the <code>Future</code> object with number of clients that received the message
      */
-    Publisher<Long> publish(M message);
+    Publisher<Long> publish(Object message);
 
     /**
      * Subscribes to status changes of this topic
@@ -59,11 +58,13 @@ public interface RTopicReactive<M> {
      * <code>MessageListener.onMessage</code> is called when any message
      * is published on this topic.
      *
+     * @param <M> type of message
+     * @param type - type of message
      * @param listener for messages
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    Publisher<Integer> addListener(MessageListener<M> listener);
+    <M> Publisher<Integer> addListener(Class<M> type, MessageListener<M> listener);
 
     /**
      * Removes the listener by <code>id</code> for listening this topic

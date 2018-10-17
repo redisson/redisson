@@ -294,13 +294,13 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
-    public <M> RTopicReactive<M> getTopic(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic<M>(commandExecutor, name), RTopicReactive.class);
+    public RTopicReactive getTopic(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic(commandExecutor, name), RTopicReactive.class);
     }
 
     @Override
-    public <M> RTopicReactive<M> getTopic(String name, Codec codec) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic<M>(codec, commandExecutor, name), RTopicReactive.class);
+    public RTopicReactive getTopic(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic(codec, commandExecutor, name), RTopicReactive.class);
     }
 
     @Override
