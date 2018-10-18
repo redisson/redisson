@@ -109,10 +109,16 @@ public class RedissonTopicTest {
     @Test
     public void testPing() throws InterruptedException {
         Config config = BaseTest.createConfig();
-        config.useSingleServer().setPingConnectionInterval(50);
+        config.useSingleServer()
+            .setPingConnectionInterval(50)
+            .setConnectTimeout(20_000)
+            .setTimeout(25_000_000)
+            .setRetryInterval(750)
+            .setConnectionMinimumIdleSize(4)
+            .setConnectionPoolSize(16);        
         RedissonClient redisson = Redisson.create(config);
 
-        int count = 1000;
+        int count = 6000;
         CountDownLatch latch = new CountDownLatch(count);
         
         RTopic eventsTopic = redisson.getTopic("eventsTopic");
