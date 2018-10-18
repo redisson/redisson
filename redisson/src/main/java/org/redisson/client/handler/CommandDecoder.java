@@ -155,7 +155,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             CommandData<Object, Object> cmd) throws IOException {
         if (state().getLevels().size() == 2) {
             StateLevel secondLevel = state().getLevels().get(1);
-            
+
             if (secondLevel.getParts().isEmpty()) {
                 state().getLevels().remove(1);
             }
@@ -189,13 +189,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                     firstLevel.setLastList(null);
                     firstLevel.setLastListSize(0);
-                    
+
                     while (in.isReadable() && firstLevel.getParts().size() < firstLevel.getSize()) {
                         decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
                     }
                     decodeList(in, cmd, null, ctx.channel(), 0, firstLevel.getParts(), false);
                 } else {
                     decodeList(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts(), false);
+                    decode(in, cmd, null, ctx.channel(), false);
                 }
             }
         }
