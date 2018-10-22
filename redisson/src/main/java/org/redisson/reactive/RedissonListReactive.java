@@ -20,7 +20,6 @@ import org.reactivestreams.Subscriber;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveExecutor;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;

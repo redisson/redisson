@@ -30,7 +30,6 @@ import org.redisson.api.RTransaction;
 import org.redisson.api.RTransactionReactive;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveExecutor;
 import org.redisson.transaction.RedissonTransaction;
 
 import reactor.fn.Supplier;

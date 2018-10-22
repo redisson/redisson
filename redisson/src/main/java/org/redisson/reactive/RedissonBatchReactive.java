@@ -72,7 +72,6 @@ import org.redisson.api.RStreamReactive;
 import org.redisson.api.RTopicReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
 

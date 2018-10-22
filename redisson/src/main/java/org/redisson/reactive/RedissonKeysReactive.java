@@ -23,7 +23,6 @@ import org.reactivestreams.Subscriber;
 import org.redisson.RedissonKeys;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 
 import io.netty.util.concurrent.Future;

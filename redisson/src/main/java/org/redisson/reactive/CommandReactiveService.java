@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.command;
+package org.redisson.reactive;
 
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.reactive.NettyFuturePublisher;
 
 import reactor.fn.Supplier;
 

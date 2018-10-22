@@ -20,7 +20,6 @@ import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * 

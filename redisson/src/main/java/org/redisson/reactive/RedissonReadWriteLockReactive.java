@@ -19,7 +19,6 @@ import org.redisson.RedissonReadWriteLock;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RReadWriteLockReactive;
-import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * 
