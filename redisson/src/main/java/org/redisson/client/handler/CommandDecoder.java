@@ -195,8 +195,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                     decodeList(in, cmd, null, ctx.channel(), 0, firstLevel.getParts(), false);
                 } else {
+                    if (in.isReadable()) {
+                        decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
+                    }
                     decodeList(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts(), false);
-                    decode(in, cmd, null, ctx.channel(), false);
                 }
             }
         }
