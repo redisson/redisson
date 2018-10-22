@@ -15,7 +15,9 @@
  */
 package org.redisson.executor;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.ObjectInput;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -36,6 +38,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.codec.CustomObjectInputStream;
 import org.redisson.command.CommandExecutor;
 import org.redisson.executor.params.ScheduledAtFixedRateParameters;
 import org.redisson.executor.params.ScheduledCronExpressionParameters;
@@ -270,7 +273,16 @@ public class TasksRunnerService implements RemoteExecutorService {
                 codecs.put(hash, classLoaderCodec);
             }
             
-            T task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
+            T task;
+            if (params.getLambdaBody() != null) {
+                ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
+                ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
+                task = (T) oo.readObject();
+                oo.close();
+            } else {
+                task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
+            }
+            
             Injector.inject(task, redisson);
             return task;
         } catch (Exception e) {
