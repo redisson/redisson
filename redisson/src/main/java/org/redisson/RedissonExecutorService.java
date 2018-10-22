@@ -974,13 +974,18 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         if (tasks == null) {
             throw new NullPointerException();
         }
-        
-        RExecutorBatchFuture future = submit(tasks.toArray(new Callable[tasks.size()]));
-        io.netty.util.concurrent.Future<T> result = poll(future.getTaskFutures(), timeout, unit);
+
+        List<RExecutorFuture<?>> futures = new ArrayList<RExecutorFuture<?>>();
+        for (Callable<T> callable : tasks) {
+            RExecutorFuture<T> future = submit(callable);
+            futures.add(future);
+        }
+
+        io.netty.util.concurrent.Future<T> result = poll(futures, timeout, unit);
         if (result == null) {
             throw new TimeoutException();
         }
-        for (RExecutorFuture<?> f : future.getTaskFutures()) {
+        for (RExecutorFuture<?> f : futures) {
             f.cancel(true);
         }
         return result.getNow();
