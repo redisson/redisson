@@ -29,7 +29,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.command.CommandReactiveService;
 import org.redisson.connection.MasterSlaveEntry;
 
 import io.netty.util.concurrent.Future;

@@ -23,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 
 import org.redisson.api.RFuture;
-import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * 

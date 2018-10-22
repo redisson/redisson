@@ -27,8 +27,8 @@ public class ScheduledParameters extends TaskParameters {
     public ScheduledParameters() {
     }
     
-    public ScheduledParameters(String className, byte[] classBody, byte[] state, long startTime) {
-        super(className, classBody, state);
+    public ScheduledParameters(String className, byte[] classBody, byte[] lambdaBody, byte[] state, long startTime) {
+        super(className, classBody, lambdaBody, state);
         this.startTime = startTime;
     }
 

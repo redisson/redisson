@@ -24,7 +24,6 @@ import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
 import org.redisson.api.RListReactive;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandReactiveExecutor;
 
 /**
  * 

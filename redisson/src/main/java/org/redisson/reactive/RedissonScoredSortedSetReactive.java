@@ -22,7 +22,6 @@ import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.command.CommandReactiveExecutor;
 
 import reactor.core.publisher.Flux;
 
