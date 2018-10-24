@@ -25,10 +25,6 @@ import java.util.Map;
  */
 public interface ClusterNode extends Node {
 
-    // Use {@link #clusterInfo()}
-    @Deprecated
-    Map<String, String> info();
-
     /**
      * Execute CLUSTER INFO operation.
      *
