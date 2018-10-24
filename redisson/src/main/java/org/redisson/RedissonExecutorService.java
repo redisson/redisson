@@ -15,10 +15,15 @@
  */
 package org.redisson;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.lang.invoke.SerializedLambda;
 import java.lang.ref.ReferenceQueue;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -410,6 +415,29 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             InputStream classStream = c.getClassLoader().getResourceAsStream(classAsPath);
             
             byte[] lambdaBody = null;
+            if (classStream == null) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                try {
+                    ObjectOutput oo = new ObjectOutputStream(os);
+                    oo.writeObject(task);
+                } catch (Exception e) {
+                    throw new IllegalArgumentException("Unable to serialize lambda", e);
+                }
+                lambdaBody = os.toByteArray();
+                
+                SerializedLambda lambda;
+                try {
+                    Method writeReplace = task.getClass().getDeclaredMethod("writeReplace");
+                    writeReplace.setAccessible(true);
+                    lambda = (SerializedLambda) writeReplace.invoke(task);
+                } catch (Exception ex) {
+                    throw new IllegalArgumentException("Lambda should implement java.io.Serializable interface", ex);
+                }
+                
+                className = lambda.getCapturingClass().replace('/', '.');
+                classStream = task.getClass().getClassLoader().getResourceAsStream(lambda.getCapturingClass() + ".class");
+            }
+            
             byte[] classBody;
             try {
                 DataInputStream s = new DataInputStream(classStream);
