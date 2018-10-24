@@ -66,7 +66,7 @@ public class RedisClientEntry implements ClusterNode {
     }
 
     public RFuture<Boolean> pingAsync() {
-        RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Boolean> f = commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
         f.addListener(new FutureListener<Boolean>() {
             @Override

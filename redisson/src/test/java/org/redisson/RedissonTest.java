@@ -817,20 +817,6 @@ public class RedissonTest {
         assertThat(c.toYAML()).isEqualTo(t);
     }
     
-//    @Test
-    public void testCluster() {
-        NodesGroup<ClusterNode> nodes = redisson.getClusterNodesGroup();
-        Assert.assertEquals(2, nodes.getNodes().size());
-
-        nodes.getNodes().stream().forEach((node) -> {
-            Map<String, String> params = node.info();
-            Assert.assertNotNull(params);
-            Assert.assertTrue(node.ping());
-        });
-
-        Assert.assertTrue(nodes.pingAll());
-    }
-
     @Test
     public void testNodesInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
