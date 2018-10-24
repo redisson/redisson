@@ -18,6 +18,7 @@ package org.redisson.spring.starter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.redisson.Redisson;
@@ -116,9 +117,18 @@ public class RedissonAutoConfiguration {
             Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
             List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
             
+            List<String> nodes = new ArrayList<String>();
+            for (String node : nodesObject) {
+                if (!node.startsWith("redis://") && !node.startsWith("rediss://")) {
+                    nodes.add("redis://" + node);
+                } else {
+                    nodes.add(node);
+                }
+            }
+            
             config = new Config();
             config.useClusterServers()
-                .addNodeAddress(nodesObject.toArray(new String[nodesObject.size()]))
+                .addNodeAddress(nodes.toArray(new String[nodes.size()]))
                 .setConnectTimeout(timeout)
                 .setPassword(redisProperties.getPassword());
         } else {
