@@ -35,7 +35,7 @@ import io.netty.util.concurrent.EventExecutor;
  */
 public class MultiDnsAddressResolverGroup extends DnsAddressResolverGroup {
 
-    List<DnsAddressResolverGroup> groups = new ArrayList<DnsAddressResolverGroup>();
+    private final List<DnsAddressResolverGroup> groups = new ArrayList<DnsAddressResolverGroup>();
     
     public MultiDnsAddressResolverGroup(
             Class<? extends DatagramChannel> channelType,
@@ -53,6 +53,9 @@ public class MultiDnsAddressResolverGroup extends DnsAddressResolverGroup {
                 break;
             } 
         }
+        
+        // workaround for short DNS names
+        groups.add(new DnsAddressResolverGroup(channelType, nameServerProvider));
     }
     
     @Override
