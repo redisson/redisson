@@ -862,6 +862,14 @@ public interface RedissonClient {
      * @return Script object
      */
     RScript getScript();
+    
+    /**
+     * Returns script operations object using provided codec.
+     * 
+     * @param codec - codec for params and result
+     * @return Script object
+     */
+    RScript getScript(Codec codec);
 
     /**
      * Returns ScheduledExecutorService by name

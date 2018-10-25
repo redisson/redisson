@@ -342,6 +342,14 @@ public interface RBatchReactive {
     RScriptReactive getScript();
 
     /**
+     * Returns script operations object using provided codec.
+     * 
+     * @param codec - codec for params and result
+     * @return Script object
+     */
+    RScriptReactive getScript(Codec codec);
+    
+    /**
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key
      *

@@ -39,6 +39,7 @@ import org.redisson.api.RMultimapAsync;
 import org.redisson.api.RMultimapCacheAsync;
 import org.redisson.api.RQueueAsync;
 import org.redisson.api.RScoredSortedSetAsync;
+import org.redisson.api.RScript;
 import org.redisson.api.RScriptAsync;
 import org.redisson.api.RSetAsync;
 import org.redisson.api.RSetCacheAsync;
@@ -210,6 +211,11 @@ public class RedissonBatch implements RBatch {
     @Override
     public RScriptAsync getScript() {
         return new RedissonScript(executorService);
+    }
+    
+    @Override
+    public RScript getScript(Codec codec) {
+        return new RedissonScript(executorService, codec);
     }
 
     @Override

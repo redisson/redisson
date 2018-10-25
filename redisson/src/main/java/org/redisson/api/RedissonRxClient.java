@@ -570,6 +570,14 @@ public interface RedissonRxClient {
     RScriptRx getScript();
 
     /**
+     * Returns script operations object using provided codec.
+     * 
+     * @param codec - codec for params and result
+     * @return Script object
+     */
+    RScriptRx getScript(Codec codec);
+    
+    /**
      * Creates transaction with <b>READ_COMMITTED</b> isolation level.
      * 
      * @param options - transaction configuration

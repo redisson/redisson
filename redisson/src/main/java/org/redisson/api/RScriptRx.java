@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
-import org.redisson.client.codec.Codec;
 
 import io.reactivex.Flowable;
 
@@ -31,28 +30,110 @@ import io.reactivex.Flowable;
  */
 public interface RScriptRx {
 
+    /**
+     * Flushes Lua script cache.
+     * 
+     * @return void
+     */
     Flowable<Void> scriptFlush();
 
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
     <R> Flowable<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Flowable<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param key - used to locate Redis node in Cluster which stores cached Lua script 
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
+    <R> Flowable<R> evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @return result object
+     */
     <R> Flowable<R> evalSha(Mode mode, String shaDigest, ReturnType returnType);
 
-    <R> Flowable<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
-
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script 
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
     <R> Flowable<R> eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Flowable<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @return result object
+     */
     <R> Flowable<R> eval(Mode mode, String luaScript, ReturnType returnType);
+    
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param key - used to locate Redis node in Cluster which stores cached Lua script 
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
+    <R> Flowable<R> eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Flowable<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
-
+    /**
+     * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
+     * 
+     * @param luaScript - lua script
+     * @return SHA-1 digest
+     */
     Flowable<String> scriptLoad(String luaScript);
 
+    /**
+     * Checks for presence Lua scripts in Redis script cache by SHA-1 digest.
+     * 
+     * @param shaDigests - collection of SHA-1 digests
+     * @return list of booleans corresponding to collection SHA-1 digests
+     */
     Flowable<List<Boolean>> scriptExists(String ... shaDigests);
 
+    /**
+     * Kills currently executed Lua script
+     * 
+     * @return void
+     */
     Flowable<Void> scriptKill();
 
 }
