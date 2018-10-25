@@ -382,6 +382,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     public RScriptReactive getScript() {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptReactive.class);
     }
+    
+    @Override
+    public RScriptReactive getScript(Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor, codec), RScriptReactive.class);
+    }
 
     @Override
     public RBatchReactive createBatch(BatchOptions options) {

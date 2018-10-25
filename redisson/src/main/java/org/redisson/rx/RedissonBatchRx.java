@@ -282,6 +282,11 @@ public class RedissonBatchRx implements RBatchRx {
     public RScriptRx getScript() {
         return RxProxyBuilder.create(executorService, new RedissonScript(executorService), RScriptRx.class);
     }
+    
+    @Override
+    public RScriptRx getScript(Codec codec) {
+        return RxProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptRx.class);
+    }
 
     @Override
     public RKeysRx getKeys() {

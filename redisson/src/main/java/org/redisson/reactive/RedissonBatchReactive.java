@@ -273,6 +273,11 @@ public class RedissonBatchReactive implements RBatchReactive {
     public RScriptReactive getScript() {
         return ReactiveProxyBuilder.create(executorService, new RedissonScript(executorService), RScriptReactive.class);
     }
+    
+    @Override
+    public RScriptReactive getScript(Codec codec) {
+        return ReactiveProxyBuilder.create(executorService, new RedissonScript(executorService, codec), RScriptReactive.class);
+    }
 
     @Override
     public RKeysReactive getKeys() {

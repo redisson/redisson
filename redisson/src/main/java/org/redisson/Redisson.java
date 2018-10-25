@@ -416,6 +416,11 @@ public class Redisson implements RedissonClient {
     public RScript getScript() {
         return new RedissonScript(connectionManager.getCommandExecutor());
     }
+    
+    @Override
+    public RScript getScript(Codec codec) {
+        return new RedissonScript(connectionManager.getCommandExecutor(), codec);
+    }
 
     @Override
     public RScheduledExecutorService getExecutorService(String name) {

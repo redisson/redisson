@@ -30,28 +30,134 @@ import org.redisson.client.codec.Codec;
  */
 public interface RScriptReactive {
 
+    /**
+     * Flushes Lua script cache.
+     * 
+     * @return void
+     */
     Publisher<Void> scriptFlush();
 
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
     <R> Publisher<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Publisher<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param key - used to locate Redis node in Cluster which stores cached Lua script 
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
+    <R> Publisher<R> evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    
+    /**
+     * Executes Lua script stored in Redis scripts cache by SHA-1 digest
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param shaDigest - SHA-1 digest
+     * @param returnType - return type
+     * @return result object
+     */
     <R> Publisher<R> evalSha(Mode mode, String shaDigest, ReturnType returnType);
 
-    <R> Publisher<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
-
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script 
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
     <R> Publisher<R> eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Publisher<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @return result object
+     */
     <R> Publisher<R> eval(Mode mode, String luaScript, ReturnType returnType);
+    
+    /**
+     * Executes Lua script
+     * 
+     * @param <R> - type of result
+     * @param key - used to locate Redis node in Cluster which stores cached Lua script 
+     * @param mode - execution mode
+     * @param luaScript - lua script
+     * @param returnType - return type
+     * @param keys - keys available through KEYS param in script
+     * @param values - values available through VALUES param in script
+     * @return result object
+     */
+    <R> Publisher<R> eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    <R> Publisher<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
-
+    /**
+     * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
+     * 
+     * @param luaScript - lua script
+     * @return SHA-1 digest
+     */
     Publisher<String> scriptLoad(String luaScript);
 
+    /**
+     * Checks for presence Lua scripts in Redis script cache by SHA-1 digest.
+     * 
+     * @param shaDigests - collection of SHA-1 digests
+     * @return list of booleans corresponding to collection SHA-1 digests
+     */
     Publisher<List<Boolean>> scriptExists(String ... shaDigests);
 
+    /**
+     * Kills currently executed Lua script
+     * 
+     * @return void
+     */
     Publisher<Void> scriptKill();
+    
+    /*
+     * Use getScript(Codec) instead
+     */
+    @Deprecated
+    <R> Publisher<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+
+    /*
+     * Use getScript(Codec) instead
+     */
+    @Deprecated
+    <R> Publisher<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
+
+    /*
+     * Use getScript(Codec) instead
+     */
+    @Deprecated
+    <R> Publisher<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+
+    /*
+     * Use getScript(Codec) instead
+     */
+    @Deprecated
+    <R> Publisher<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
 }

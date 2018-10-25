@@ -682,14 +682,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected void stopThreads() {
-        timer.stop();
-        executor.shutdown();
-        try {
-            executor.awaitTermination(15, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        group.shutdownGracefully().syncUninterruptibly();
+        shutdown();
     }
     
     public PublishSubscribeService getSubscribeService() {

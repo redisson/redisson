@@ -373,6 +373,11 @@ public class RedissonRx implements RedissonRxClient {
     public RScriptRx getScript() {
         return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor), RScriptRx.class);
     }
+    
+    @Override
+    public RScriptRx getScript(Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonScript(commandExecutor, codec), RScriptRx.class);
+    }
 
     @Override
     public RBatchRx createBatch(BatchOptions options) {
