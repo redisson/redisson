@@ -543,7 +543,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public void shutdown() {
-        monitorFuture.cancel(true);
+        if (monitorFuture != null) {
+            monitorFuture.cancel(true);
+        }
         
         List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
         for (RedisClient sentinel : sentinels.values()) {

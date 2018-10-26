@@ -946,14 +946,14 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
         try {
-            mainPromise.trySuccess(tryHandleReference(res));
+            mainPromise.trySuccess((R) tryHandleReference(res));
         } catch (Exception e) {
             //fall back and let other part of the code handle the type conversion.
             mainPromise.trySuccess(res);
         }
     }
     
-    protected <T> T tryHandleReference(T o) {
+    protected Object tryHandleReference(Object o) {
         boolean hasConversion = false;
         if (o instanceof List) {
             List<Object> r = (List<Object>) o;
@@ -1001,7 +1001,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             if (!hasConversion) {
                 return o;
             } else if (useNewSet) {
-                return (T) set;
+                return set;
             } else if (!set.isEmpty()) {
                 r.removeAll(set);
             }
@@ -1031,12 +1031,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else if (o instanceof MapScanResult) {
             MapScanResult scanResult = (MapScanResult) o;
             Map oldMap = ((MapScanResult) o).getMap();
-            Map map = tryHandleReference(oldMap);
+            Map map = (Map) tryHandleReference(oldMap);
             if (map != oldMap) {
                 MapScanResult<Object, Object> newScanResult
                         = new MapScanResult<Object, Object>(scanResult.getPos(), map);
                 newScanResult.setRedisClient(scanResult.getRedisClient());
-                return (T) newScanResult;
+                return newScanResult;
             } else {
                 return o;
             }
@@ -1045,35 +1045,35 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private <T> T tryHandleReference0(T o) {
+    private Object tryHandleReference0(Object o) {
         if (o instanceof RedissonReference) {
             return fromReference(o);
         } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
             ScoredEntry<?> se = ((ScoredEntry<?>) o);
-            return (T) new ScoredEntry(se.getScore(), fromReference(se.getValue()));
+            return new ScoredEntry(se.getScore(), fromReference(se.getValue()));
         } else if (o instanceof Map.Entry) {
             Map.Entry old = (Map.Entry) o;
             Object key = tryHandleReference0(old.getKey());
             Object value = tryHandleReference0(old.getValue());
             return value != old.getValue() || key != old.getKey()
-                    ? (T) new AbstractMap.SimpleEntry(key, value)
+                    ? new AbstractMap.SimpleEntry(key, value)
                     : o;
         } else {
             return o;
         }
     }
 
-    private <R> R fromReference(Object res) {
+    private Object fromReference(Object res) {
         try {
             if (redisson != null) {
-                return RedissonObjectFactory.<R>fromReference(redisson, (RedissonReference) res);
+                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) res);
             }
             if (redissonReactive != null) {
-                return RedissonObjectFactory.<R>fromReference(redissonReactive, (RedissonReference) res);
+                return RedissonObjectFactory.fromReference(redissonReactive, (RedissonReference) res);
             }
-            return RedissonObjectFactory.<R>fromReference(redissonRx, (RedissonReference) res);
+            return RedissonObjectFactory.fromReference(redissonRx, (RedissonReference) res);
         } catch (Exception exception) {
-            return (R) res;
+            return res;
         }
     }
 
