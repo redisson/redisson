@@ -45,7 +45,6 @@ public class RedissonMapCacheTest extends BaseMapTest {
         Map<?, ?> map = Deencapsulation.getField(evictionScheduler, "tasks");
         assertThat(map.isEmpty()).isFalse();
         cache.destroy();
-        System.out.println("keys: " + map.keySet());
         assertThat(map.isEmpty()).isTrue();
     }
     
