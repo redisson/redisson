@@ -89,6 +89,8 @@ public class Config {
     
     private boolean keepPubSubOrder = true;
     
+    private boolean useScriptCache = false;
+    
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
@@ -110,6 +112,7 @@ public class Config {
             oldConf.setCodec(new JsonJacksonCodec());
         }
 
+        setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
         setNettyThreads(oldConf.getNettyThreads());
@@ -590,7 +593,7 @@ public class Config {
     }
 
     /**
-     * Defines whether keep PubSub messages handling in arrival order 
+     * Defines whether to keep PubSub messages handling in arrival order 
      * or handle messages concurrently. 
      * <p>
      * This setting applied only for PubSub messages per channel.
@@ -781,4 +784,26 @@ public class Config {
         return support.toYAML(this);
     }
 
+    /**
+     * Defines whether to use Lua-script cache on Redis side. 
+     * Most Redisson methods are Lua-script based and this setting turned
+     * on could increase speed of such methods execution and save network traffic.
+     * <p>
+     * NOTE: <code>readMode</code> option is not taken into account for such calls 
+     * as Redis slave redirects execution of cached Lua-script on Redis master node. 
+     * <p>
+     * Default is <code>false</code>.
+     * 
+     * @param useScriptCache - <code>true</code> if Lua-script caching is required, <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setUseScriptCache(boolean useScriptCache) {
+        this.useScriptCache = useScriptCache;
+        return this;
+    }
+    public boolean isUseScriptCache() {
+        return useScriptCache;
+    }
+
+    
 }

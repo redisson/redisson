@@ -901,5 +901,11 @@ public class CommandBatchService extends CommandAsyncService {
             mainPromise.tryFailure(future.cause());
         }
     }
+    
+    @Override
+    protected boolean isEvalCacheActive() {
+        return false;
+    }
+    
 
 }

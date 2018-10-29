@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import java.security.MessageDigest;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,6 +37,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
+import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
@@ -48,6 +50,7 @@ import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -69,6 +72,9 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -502,7 +508,121 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private <T, R> RFuture<R> evalAsync(NodeSource nodeSource, boolean readOnlyMode, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+    private RFuture<String> loadScript(List<Object> keys, String script) {
+        if (!keys.isEmpty()) {
+            Object key = keys.get(0);
+            if (key instanceof byte[]) {
+                return writeAsync((byte[])key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+            }
+            return writeAsync((String)key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+        }
+        
+        return writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
+            volatile String result;
+            @Override
+            public void onSlotResult(String result) {
+                this.result = result;
+            }
+            
+            @Override
+            public String onFinish() {
+                return result;
+            }
+        }, script);
+    }
+    
+    protected boolean isEvalCacheActive() {
+        return getConnectionManager().getCfg().isUseScriptCache();
+    }
+    
+    private static final Map<String, String> shaCache = new LRUCacheMap<String, String>(500, 0, 0);
+    
+    private String calcSHA(String script) {
+        String digest = shaCache.get(script);
+        if (digest == null) {
+            try {
+                MessageDigest mdigest = MessageDigest.getInstance("SHA-1");
+                byte[] s = mdigest.digest(script.getBytes());
+                digest = ByteBufUtil.hexDump(s);
+                shaCache.put(script, digest);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return digest;
+    }
+    
+    private Object[] copy(Object[] params) {
+        List<Object> result = new ArrayList<Object>();
+        for (Object object : params) {
+            if (object instanceof ByteBuf) {
+                ByteBuf b = ((ByteBuf) object);
+                ByteBuf nb = ByteBufAllocator.DEFAULT.buffer(b.readableBytes());
+                int ri = b.readerIndex();
+                nb.writeBytes(b);
+                b.readerIndex(ri);
+                result.add(nb);
+            } else {
+                result.add(object);
+            }
+        }
+        return result.toArray();
+    }
+    
+    private <T, R> RFuture<R> evalAsync(final NodeSource nodeSource, boolean readOnlyMode, final Codec codec, final RedisCommand<T> evalCommandType, final String script, final List<Object> keys, final Object... params) {
+        if (isEvalCacheActive() && evalCommandType.getName().equals("EVAL")) {
+            final RPromise<R> mainPromise = new RedissonPromise<R>();
+            
+            final Object[] pps = copy(params);
+            
+            RPromise<R> promise = new RedissonPromise<R>();
+            final String sha1 = calcSHA(script);
+            RedisCommand command = new RedisCommand(evalCommandType, "EVALSHA");
+            List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
+            args.add(sha1);
+            args.add(keys.size());
+            args.addAll(keys);
+            args.addAll(Arrays.asList(params));
+            async(false, nodeSource, codec, command, args.toArray(), promise, 0, false, null);
+            
+            promise.addListener(new FutureListener<R>() {
+                @Override
+                public void operationComplete(Future<R> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        if (future.cause().getMessage().startsWith("NOSCRIPT")) {
+                            RFuture<String> loadFuture = loadScript(keys, script);
+                            loadFuture.addListener(new FutureListener<String>() {
+                                @Override
+                                public void operationComplete(Future<String> future) throws Exception {
+                                    if (!future.isSuccess()) {
+                                        free(pps);
+                                        mainPromise.tryFailure(future.cause());
+                                        return;
+                                    }
+
+                                    RedisCommand command = new RedisCommand(evalCommandType, "EVALSHA");
+                                    List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
+                                    args.add(sha1);
+                                    args.add(keys.size());
+                                    args.addAll(keys);
+                                    args.addAll(Arrays.asList(pps));
+                                    async(false, nodeSource, codec, command, args.toArray(), mainPromise, 0, false,
+                                            null);
+                                }
+                            });
+                        } else {
+                            free(pps);
+                            mainPromise.tryFailure(future.cause());
+                        }
+                        return;
+                    }
+                    free(pps);
+                    mainPromise.trySuccess(future.getNow());
+                }
+            });
+            return mainPromise;
+        }
+        
         RPromise<R> mainPromise = createPromise();
         List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
         args.add(script);
