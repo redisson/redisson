@@ -33,8 +33,8 @@ public class LogHelper {
 
     private LogHelper() {
     }
-
-    public static <T> String toString(T object) {
+    
+    public static String toString(Object object) {
         if (object == null) {
             return "null";
         } else if (object instanceof String) {
@@ -44,8 +44,14 @@ public class LogHelper {
         } else if (object instanceof Collection) {
             return toCollectionString((Collection<?>) object);
         } else if (object instanceof CommandData) {
-            CommandData cd = (CommandData)object;
+            CommandData<?, ?> cd = (CommandData<?, ?>)object;
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
+        } else if (object instanceof ByteBuf) {
+            final ByteBuf byteBuf = (ByteBuf) object;
+            if (byteBuf.refCnt() > 0) {
+                return byteBuf.toString(0, byteBuf.writerIndex(), CharsetUtil.UTF_8);
+            }
+            return byteBuf.toString();
         } else {
             return String.valueOf(object);
         }

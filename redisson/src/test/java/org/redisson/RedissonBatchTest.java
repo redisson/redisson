@@ -150,7 +150,7 @@ public class RedissonBatchTest extends BaseTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatch batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 200000; i++) {
+        for (int i = 0; i < 300000; i++) {
             batch.getBucket("test").setAsync(123);
         }
         

@@ -15,6 +15,7 @@
  */
 package org.redisson.misc;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collections;
@@ -102,7 +103,7 @@ public class RedissonObjectFactory {
         
     }
 
-    public static <T> T fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
+    public static Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getType();
         ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         if (type != null) {
@@ -113,13 +114,25 @@ public class RedissonObjectFactory {
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codecProvider.getCodec(anno, type));
                 Object id = ns.resolveId(rr.getKeyName());
-                return (T) liveObjectService.createLiveObject(type, id);
+                return liveObjectService.createLiveObject(type, id);
             }
-            
+        }
+
+        return getObject(redisson, rr, type, codecProvider);
+    }
+
+    protected static Object getObject(Object redisson, RedissonReference rr, Class<? extends Object> type,
+            ReferenceCodecProvider codecProvider)
+            throws IllegalAccessException, InvocationTargetException, Exception, ClassNotFoundException {
+        if (type != null) {
             RedissonObjectBuilder b = builders.get(type);
+            if (b == null && type.getInterfaces().length > 0) {
+                type = type.getInterfaces()[0];
+            }
+            b = builders.get(type);
             if (b != null) {
                 Method builder = b.get(isDefaultCodec(rr));
-                return (T) (isDefaultCodec(rr)
+                return (isDefaultCodec(rr)
                         ? builder.invoke(redisson, rr.getKeyName())
                                 : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
             }
@@ -131,40 +144,22 @@ public class RedissonObjectFactory {
         return rr.getCodec() == null;
     }
 
-    public static <T> T fromReference(RedissonRxClient redisson, RedissonReference rr) throws Exception {
+    public static Object fromReference(RedissonRxClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();
         ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         /**
          * Live Object from reference in reactive client is not supported yet.
          */
-        if (type != null) {
-            RedissonObjectBuilder b = builders.get(type);
-            if (b != null) {
-                    Method builder = b.get(isDefaultCodec(rr));
-                    return (T) (isDefaultCodec(rr)
-                            ? builder.invoke(redisson, rr.getKeyName())
-                            : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
-            }
-        }
-        throw new ClassNotFoundException("No RObjectReactive is found to match class type of " + rr.getReactiveTypeName()+ " with codec type of " + rr.getCodecName());
+        return getObject(redisson, rr, type, codecProvider);
     }
     
-    public static <T> T fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
+    public static Object fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();
         ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         /**
          * Live Object from reference in reactive client is not supported yet.
          */
-        if (type != null) {
-            RedissonObjectBuilder b = builders.get(type);
-            if (b != null) {
-                    Method builder = b.get(isDefaultCodec(rr));
-                    return (T) (isDefaultCodec(rr)
-                            ? builder.invoke(redisson, rr.getKeyName())
-                            : builder.invoke(redisson, rr.getKeyName(), codecProvider.getCodec(rr.getCodecType())));
-            }
-        }
-        throw new ClassNotFoundException("No RObjectReactive is found to match class type of " + rr.getReactiveTypeName()+ " with codec type of " + rr.getCodecName());
+        return getObject(redisson, rr, type, codecProvider);
     }
 
     public static RedissonReference toReference(Config config, Object object) {

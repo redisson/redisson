@@ -6,21 +6,24 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
-import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RedissonClient;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.EnableCaching;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -119,25 +122,35 @@ public class RedissonSpringCacheTest {
 
     }
 
-    private static RedisProcess p;
+    private static Map<Class<?>, AnnotationConfigApplicationContext> contexts;
 
     @Parameterized.Parameters(name = "{index} - {0}")
-    public static Iterable<Object[]> data() throws IOException, InterruptedException {
-        if (p == null) {
-            p = RedisRunner.startDefaultRedisServerInstance();
-        }
-        return Arrays.asList(new Object[][]{
-            {new AnnotationConfigApplicationContext(Application.class)},
-            {new AnnotationConfigApplicationContext(JsonConfigApplication.class)}
+    public static Iterable<Class<?>[]> data() throws IOException, InterruptedException {
+        return Arrays.asList(new Class<?>[][]{
+            {Application.class},
+            {JsonConfigApplication.class}
         });
     }
 
     @Parameterized.Parameter(0)
+    public Class<?> contextClass;
     public AnnotationConfigApplicationContext context;
+    
+    @Before
+    public void dbefore() {
+        context = contexts.get(contextClass);
+    }
+    
+    @BeforeClass
+    public static void before() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner.startDefaultRedisServerInstance();
+        contexts = StreamSupport.stream(RedissonSpringCacheTest.data().spliterator(), false)
+                          .collect(Collectors.toMap(e -> e[0], e -> new AnnotationConfigApplicationContext(e[0])));
+    }
 
     @AfterClass
     public static void after() throws InterruptedException, IOException {
-        RedissonSpringCacheTest.data().forEach(e -> ((ConfigurableApplicationContext) e[0]).close());
+        contexts.values().forEach(e -> e.close());
         RedisRunner.shutDownDefaultRedisServerInstance();
     }
 

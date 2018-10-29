@@ -84,7 +84,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
 
         if (log.isTraceEnabled()) {
-            log.trace("channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8));
+            log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
         }
         if (state() == null) {
             boolean makeCheckpoint = data != null;
@@ -129,7 +129,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 sendNext(ctx, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                log.error("Unable to decode data. reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data, e);
                 cmd.tryFailure(e);
                 sendNext(ctx);
                 throw e;
@@ -195,7 +195,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                     decodeList(in, cmd, null, ctx.channel(), 0, firstLevel.getParts(), false);
                 } else {
-                    if (in.isReadable()) {
+                    while (firstLevel.getSize() == firstLevel.getParts().size() && in.isReadable()) {
                         decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
                     }
                     decodeList(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts(), false);

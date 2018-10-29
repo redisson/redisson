@@ -25,6 +25,7 @@ import java.util.List;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScript;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -63,7 +64,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<String> scriptLoadAsync(String luaScript) {
-        return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
+        return commandExecutor.writeAllAsync(StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
             volatile String result;
             @Override
             public void onSlotResult(String result) {
@@ -79,7 +80,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public RFuture<String> scriptLoadAsync(String key, String luaScript) {
-        return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_LOAD, luaScript);
+        return commandExecutor.writeAsync(key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, luaScript);
     }
 
     @Override
