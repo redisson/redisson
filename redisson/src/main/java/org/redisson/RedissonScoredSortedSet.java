@@ -273,14 +273,14 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Long addAll(Map<V, Double> objects) {
+    public int addAll(Map<V, Double> objects) {
         return get(addAllAsync(objects));
     }
 
     @Override
-    public RFuture<Long> addAllAsync(Map<V, Double> objects) {
+    public RFuture<Integer> addAllAsync(Map<V, Double> objects) {
         if (objects.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(0L);
+            return RedissonPromise.newSucceededFuture(0);
         }
         List<Object> params = new ArrayList<Object>(objects.size()*2+1);
         params.add(getName());
@@ -289,7 +289,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             params.add(encode(entry.getKey()));
         }
 
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_INT, params.toArray());
     }
 
     @Override
@@ -705,12 +705,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public int count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         return get(countAsync(startScore, startScoreInclusive, endScore, endScoreInclusive));
     }
     
     @Override
-    public RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+    public RFuture<Integer> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
         String startValue = value(startScore, startScoreInclusive);
         String endValue = value(endScore, endScoreInclusive);
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZCOUNT, getName(), startValue, endValue);

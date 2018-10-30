@@ -50,6 +50,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @return value
      */
     RFuture<V> randomAsync();
+    
+    /**
+     * Returns random elements from set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return value
+     */
+    RFuture<Set<V>> randomAsync(int count);
 
     /**
      * Move a member from this set to the given destination set in async mode.

@@ -151,7 +151,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Double> lastScoreAsync();
 
-    RFuture<Long> addAllAsync(Map<V, Double> objects);
+    RFuture<Integer> addAllAsync(Map<V, Double> objects);
 
     RFuture<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -312,7 +312,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param endScoreInclusive - end score inclusive
      * @return count
      */
-    RFuture<Long> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    RFuture<Integer> countAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.

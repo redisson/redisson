@@ -97,6 +97,14 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     V random();
 
     /**
+     * Returns random elements from set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return value
+     */
+    Set<V> random(int count);
+    
+    /**
      * Move a member from this set to the given destination set in.
      *
      * @param destination the destination set

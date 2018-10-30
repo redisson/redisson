@@ -347,7 +347,17 @@ public class RedissonSetTest extends BaseTest {
         assertThat(set.removeRandom(4)).isEmpty();
     }
 
-
+    @Test
+    public void testRandomLimited() {
+        RSet<Integer> set = redisson.getSet("simple");
+        for (int i = 0; i < 10; i++) {
+            set.add(i);
+        }
+        
+        assertThat(set.random(3)).containsAnyElementsOf(set.readAll()).hasSize(3);
+    }
+    
+    
     @Test
     public void testRandom() {
         RSet<Integer> set = redisson.getSet("simple");

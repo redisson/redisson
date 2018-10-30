@@ -162,7 +162,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Double lastScore();
 
-    Long addAll(Map<V, Double> objects);
+    int addAll(Map<V, Double> objects);
 
     int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
@@ -370,7 +370,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param endScoreInclusive - end score inclusive
      * @return count of elements
      */
-    Long count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    int count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.
