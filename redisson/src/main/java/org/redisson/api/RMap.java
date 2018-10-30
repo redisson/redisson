@@ -203,6 +203,18 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     void putAll(java.util.Map<? extends K, ? extends V> map);
     
     /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch. Batch inserted by chunks limited by <code>batchSize</code> amount 
+     * to avoid OOM and/or Redis response timeout error for map with big size. 
+     * <p>
+     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     *
+     * @param map mappings to be stored in this map
+     * @param batchSize - map chunk size
+     */
+    void putAll(Map<? extends K, ? extends V> map, int batchSize);
+    
+    /**
      * Gets a map slice contained the mappings with defined <code>keys</code>
      * by one operation.
      * <p>
