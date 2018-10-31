@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import io.reactivex.Flowable;
 
 /**
  * RxJava2 interface for Semaphore object
@@ -41,7 +41,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return {@code true} if a permit was acquired and {@code false}
      *         otherwise
      */
-    Publisher<Boolean> tryAcquire();
+    Flowable<Boolean> tryAcquire();
     
     /**
      * Acquires the given number of permits only if all are available at the
@@ -58,7 +58,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return {@code true} if a permit was acquired and {@code false}
      *         otherwise
      */
-    Publisher<Boolean> tryAcquire(int permits);
+    Flowable<Boolean> tryAcquire(int permits);
 
     /**
      * Acquires a permit from this semaphore.
@@ -69,7 +69,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return void
      *
      */
-    Publisher<Void> acquire();
+    Flowable<Void> acquire();
 
     /**
      * Acquires the given number of permits, if they are available,
@@ -80,7 +80,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @throws IllegalArgumentException if {@code permits} is negative
      * @return void
      */
-    Publisher<Void> acquire(int permits);
+    Flowable<Void> acquire(int permits);
 
     /**
      * Releases a permit, returning it to the semaphore.
@@ -96,7 +96,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * 
      * @return void
      */
-    Publisher<Void> release();
+    Flowable<Void> release();
 
     /**
      * Releases the given number of permits, returning them to the semaphore.
@@ -113,7 +113,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @param permits amount
      * @return void
      */
-    Publisher<Void> release(int permits);
+    Flowable<Void> release(int permits);
 
     /**
      * Sets number of permits.
@@ -121,7 +121,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @param permits - number of permits
      * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
-    Publisher<Boolean> trySetPermits(int permits);
+    Flowable<Boolean> trySetPermits(int permits);
 
     /**
      * <p>Acquires a permit, if one is available and returns immediately,
@@ -139,7 +139,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Publisher<Boolean> tryAcquire(long waitTime, TimeUnit unit);
+    Flowable<Boolean> tryAcquire(long waitTime, TimeUnit unit);
     
     /**
      * Acquires the given number of permits only if all are available
@@ -161,7 +161,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return {@code true} if a permit was acquired and {@code false}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Publisher<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
+    Flowable<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
     /**
      * Shrinks the number of available permits by the indicated
@@ -174,7 +174,7 @@ public interface RSemaphoreRx extends RExpirableRx {
      * @return void
      * @throws IllegalArgumentException if {@code reduction} is negative
      */
-    Publisher<Void> reducePermits(int permits);
+    Flowable<Void> reducePermits(int permits);
 
     
 }
