@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -264,12 +265,72 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public void putAll(Map<? extends K, ? extends V> map) {
+    public final void putAll(Map<? extends K, ? extends V> map) {
         get(putAllAsync(map));
     }
 
     @Override
-    public RFuture<Void> putAllAsync(final Map<? extends K, ? extends V> map) {
+    public void putAll(Map<? extends K, ? extends V> map, int batchSize) {
+        get(putAllAsync(map, batchSize));
+    }
+    
+    @Override
+    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, int batchSize) {
+        Map<K, V> batch = new HashMap<K, V>();
+        AtomicInteger counter = new AtomicInteger();
+        Iterator<Entry<K, V>> iter = ((Map<K, V>)map).entrySet().iterator();
+        
+        RPromise<Void> promise = new RedissonPromise<Void>();
+        putAllAsync(batch, iter, counter, batchSize, promise);
+        return promise;
+    }
+    
+    private void putAllAsync(final Map<K, V> batch, final Iterator<Entry<K, V>> iter, 
+                                final AtomicInteger counter, final int batchSize, final RPromise<Void> promise) {
+        batch.clear();
+        
+        while (iter.hasNext()) {
+            Entry<K, V> entry = iter.next();
+            batch.put(entry.getKey(), entry.getValue());
+            counter.incrementAndGet();
+            if (counter.get() % batchSize == 0) {
+                RFuture<Void> future = putAllAsync(batch);
+                future.addListener(new FutureListener<Void>() {
+                    @Override
+                    public void operationComplete(Future<Void> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            promise.tryFailure(future.cause());
+                            return;
+                        }
+                        
+                        putAllAsync(batch, iter, counter, batchSize, promise);
+                    }
+                });
+                return;
+            }
+        }
+        
+        if (batch.isEmpty()) {
+            promise.trySuccess(null);
+            return;
+        }
+        
+        RFuture<Void> future = putAllAsync(batch);
+        future.addListener(new FutureListener<Void>() {
+            @Override
+            public void operationComplete(Future<Void> future) throws Exception {
+                if (!future.isSuccess()) {
+                    promise.tryFailure(future.cause());
+                    return;
+                }
+                
+                promise.trySuccess(null);
+            }
+        });
+    }
+    
+    @Override
+    public final RFuture<Void> putAllAsync(final Map<? extends K, ? extends V> map) {
         if (map.isEmpty()) {
             return RedissonPromise.newSucceededFuture(null);
         }
@@ -288,7 +349,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return mapWriterFuture(future, listener);
     }
 
-    protected <M> RFuture<M> mapWriterFuture(RFuture<M> future, final MapWriterTask<M> listener) {
+    protected final <M> RFuture<M> mapWriterFuture(RFuture<M> future, final MapWriterTask<M> listener) {
         if (options != null && options.getWriteMode() == WriteMode.WRITE_BEHIND) {
             future.addListener(new MapWriteBehindListener<M>(commandExecutor, listener, writeBehindCurrentThreads, writeBehindTasks, options.getWriteBehindThreads()));
             return future;

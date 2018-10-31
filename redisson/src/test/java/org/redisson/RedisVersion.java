@@ -16,7 +16,7 @@ public class RedisVersion implements Comparable<RedisVersion>{
 
     public RedisVersion(String fullVersion) {
         this.fullVersion = fullVersion;
-        Matcher matcher = Pattern.compile("^([\\d]+)\\.([\\d]+)\\.([\\d]+)$").matcher(fullVersion);
+        Matcher matcher = Pattern.compile("^([\\d]+)\\.([\\d]+)\\.([\\d]+)").matcher(fullVersion);
         matcher.find();
         majorVersion = Integer.parseInt(matcher.group(1));
         minorVersion = Integer.parseInt(matcher.group(2));

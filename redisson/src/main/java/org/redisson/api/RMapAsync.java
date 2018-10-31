@@ -89,6 +89,19 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
     RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map);
 
     /**
+     * Associates the specified <code>value</code> with the specified <code>key</code>
+     * in batch. Batch inserted by chunks limited by <code>batchSize</code> amount 
+     * to avoid OOM and/or Redis response timeout error for map with big size. 
+     * <p>
+     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     *
+     * @param map mappings to be stored in this map
+     * @param batchSize - map chunk size
+     * @return void
+     */
+    RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, int batchSize);
+    
+    /**
      * Atomically adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.
      *

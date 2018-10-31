@@ -355,6 +355,46 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
+    public void testPutAllBatched() {
+        RMap<Integer, String> map = getMap("simple");
+        map.put(1, "1");
+        map.put(2, "2");
+        map.put(3, "3");
+
+        Map<Integer, String> joinMap = new HashMap<Integer, String>();
+        joinMap.put(4, "4");
+        joinMap.put(5, "5");
+        joinMap.put(6, "6");
+        map.putAll(joinMap, 5);
+
+        assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6);
+        
+        Map<Integer, String> joinMap2 = new HashMap<Integer, String>();
+        joinMap2.put(7, "7");
+        joinMap2.put(8, "8");
+        joinMap2.put(9, "9");
+        joinMap2.put(10, "10");
+        joinMap2.put(11, "11");
+        map.putAll(joinMap2, 5);
+        
+        assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+
+        Map<Integer, String> joinMap3 = new HashMap<Integer, String>();
+        joinMap3.put(12, "12");
+        joinMap3.put(13, "13");
+        joinMap3.put(14, "14");
+        joinMap3.put(15, "15");
+        joinMap3.put(16, "16");
+        joinMap3.put(17, "17");
+        joinMap3.put(18, "18");
+        map.putAll(joinMap3, 5);
+        
+        assertThat(map.keySet()).containsOnly(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18);
+        
+        destroy(map);
+    }
+    
+    @Test
     public void testPutAllBig() {
         Map<Integer, String> joinMap = new HashMap<Integer, String>();
         for (int i = 0; i < 100000; i++) {
