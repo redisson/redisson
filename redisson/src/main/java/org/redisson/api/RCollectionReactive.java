@@ -19,6 +19,9 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+
 /**
  * Common reactive interface for collection object
  * 
@@ -33,7 +36,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * 
      * @return iterator
      */
-    Publisher<V> iterator();
+    Flux<V> iterator();
 
     /**
      * Retains only the elements in this collection that are contained in the
@@ -42,7 +45,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @param c collection containing elements to be retained in this collection
      * @return <code>true</code> if this collection changed as a result of the call
      */
-    Publisher<Boolean> retainAll(Collection<?> c);
+    Mono<Boolean> retainAll(Collection<?> c);
 
     /**
      * Removes all of this collection's elements that are also contained in the
@@ -52,7 +55,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if this collection changed as a result of the
      *         call
      */
-    Publisher<Boolean> removeAll(Collection<?> c);
+    Mono<Boolean> removeAll(Collection<?> c);
 
     /**
      * Returns <code>true</code> if this collection contains encoded state of the specified element.
@@ -61,7 +64,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if this collection contains the specified
      *         element and <code>false</code> otherwise
      */
-    Publisher<Boolean> contains(V o);
+    Mono<Boolean> contains(V o);
 
     /**
      * Returns <code>true</code> if this collection contains all of the elements
@@ -71,7 +74,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if this collection contains all of the elements
      *         in the specified collection
      */
-    Publisher<Boolean> containsAll(Collection<?> c);
+    Mono<Boolean> containsAll(Collection<?> c);
 
     /**
      * Removes a single instance of the specified element from this
@@ -80,14 +83,14 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @param o element to be removed from this collection, if present
      * @return <code>true</code> if an element was removed as a result of this call
      */
-    Publisher<Boolean> remove(V o);
+    Mono<Boolean> remove(V o);
 
     /**
      * Returns number of elements in this collection.
      *
      * @return size of collection
      */
-    Publisher<Integer> size();
+    Mono<Integer> size();
 
     /**
      * Adds element into this collection.
@@ -96,7 +99,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if an element was added 
      *          and <code>false</code> if it is already present
      */
-    Publisher<Boolean> add(V e);
+    Mono<Boolean> add(V e);
 
     /**
      * Adds all elements contained in the specified collection
@@ -105,7 +108,7 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Publisher<Boolean> addAll(Publisher<? extends V> c);
+    Mono<Boolean> addAll(Publisher<? extends V> c);
     
     /**
      * Adds all elements contained in the specified collection
@@ -114,6 +117,6 @@ public interface RCollectionReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Publisher<Boolean> addAll(Collection<? extends V> c);
+    Mono<Boolean> addAll(Collection<? extends V> c);
 
 }

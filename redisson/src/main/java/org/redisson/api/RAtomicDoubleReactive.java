@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for AtomicDouble object
@@ -34,7 +34,7 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @return true if successful; or false if the actual value
      *         was not equal to the expected value.
      */
-    Publisher<Boolean> compareAndSet(double expect, double update);
+    Mono<Boolean> compareAndSet(double expect, double update);
 
     /**
      * Atomically adds the given value to the current value.
@@ -42,28 +42,28 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param delta the value to add
      * @return the updated value
      */
-    Publisher<Double> addAndGet(double delta);
+    Mono<Double> addAndGet(double delta);
 
     /**
      * Atomically decrements the current value by one.
      *
      * @return the updated value
      */
-    Publisher<Double> decrementAndGet();
+    Mono<Double> decrementAndGet();
 
     /**
      * Returns current value.
      *
      * @return current value
      */
-    Publisher<Double> get();
+    Mono<Double> get();
 
     /**
      * Returns and deletes object
      * 
      * @return the current value
      */
-    Publisher<Double> getAndDelete();
+    Mono<Double> getAndDelete();
     
     /**
      * Atomically adds the given value to the current value.
@@ -71,7 +71,7 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param delta the value to add
      * @return the updated value
      */
-    Publisher<Double> getAndAdd(double delta);
+    Mono<Double> getAndAdd(double delta);
 
     /**
      * Atomically sets the given value and returns the old value.
@@ -79,28 +79,28 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param newValue the new value
      * @return the old value
      */
-    Publisher<Double> getAndSet(double newValue);
+    Mono<Double> getAndSet(double newValue);
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the updated value
      */
-    Publisher<Double> incrementAndGet();
+    Mono<Double> incrementAndGet();
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the old value
      */
-    Publisher<Double> getAndIncrement();
+    Mono<Double> getAndIncrement();
 
     /**
      * Atomically decrements by one the current value.
      *
      * @return the previous value
      */
-    Publisher<Double> getAndDecrement();
+    Mono<Double> getAndDecrement();
 
     /**
      * Atomically sets the given value.
@@ -108,6 +108,6 @@ public interface RAtomicDoubleReactive extends RExpirableReactive {
      * @param newValue the new value
      * @return void
      */
-    Publisher<Void> set(double newValue);
+    Mono<Void> set(double newValue);
 
 }

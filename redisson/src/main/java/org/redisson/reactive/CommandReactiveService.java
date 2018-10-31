@@ -15,15 +15,14 @@
  */
 package org.redisson.reactive;
 
-import java.util.List;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  *
@@ -37,8 +36,8 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     }
 
     @Override
-    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
-        return Flux.create(emitter -> {
+    public <R> Mono<R> reactive(Supplier<RFuture<R>> supplier) {
+        return Flux.<R>create(emitter -> {
             emitter.onRequest(n -> {
                 supplier.get().whenComplete((v, e) -> {
                     if (e != null) {
@@ -51,7 +50,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
                     emitter.complete();
                 });
             });
-        });
+        }).next();
     }
 
     }

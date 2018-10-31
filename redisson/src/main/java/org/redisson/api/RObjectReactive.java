@@ -17,8 +17,9 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Base interface for all Redisson objects
@@ -38,7 +39,7 @@ public interface RObjectReactive {
      * @param state - state of object
      * @return void
      */
-    Publisher<Void> restore(byte[] state);
+    Mono<Void> restore(byte[] state);
     
     /**
      * Restores object using its state returned by {@link #dump()} method and set time to live for it.
@@ -48,7 +49,7 @@ public interface RObjectReactive {
      * @param timeUnit - time unit
      * @return void
      */
-    Publisher<Void> restore(byte[] state, long timeToLive, TimeUnit timeUnit);
+    Mono<Void> restore(byte[] state, long timeToLive, TimeUnit timeUnit);
     
     /**
      * Restores and replaces object if it already exists.
@@ -56,7 +57,7 @@ public interface RObjectReactive {
      * @param state - state of the object
      * @return void
      */
-    Publisher<Void> restoreAndReplace(byte[] state);
+    Mono<Void> restoreAndReplace(byte[] state);
     
     /**
      * Restores and replaces object if it already exists and set time to live for it.
@@ -66,21 +67,21 @@ public interface RObjectReactive {
      * @param timeUnit - time unit
      * @return void
      */
-    Publisher<Void> restoreAndReplace(byte[] state, long timeToLive, TimeUnit timeUnit);
+    Mono<Void> restoreAndReplace(byte[] state, long timeToLive, TimeUnit timeUnit);
 
     /**
      * Returns dump of object
      * 
      * @return dump
      */
-    Publisher<byte[]> dump();
+    Mono<byte[]> dump();
     
     /**
      * Update the last access time of an object. 
      * 
      * @return <code>true</code> if object was touched else <code>false</code>
      */
-    Publisher<Boolean> touch();    
+    Mono<Boolean> touch();    
     
     /**
      * Delete the objects.
@@ -90,7 +91,7 @@ public interface RObjectReactive {
      * 
      * @return <code>true</code> if it was exist and deleted else <code>false</code>
      */
-    Publisher<Boolean> unlink();
+    Mono<Boolean> unlink();
     
     /**
      * Copy object from source Redis instance to destination Redis instance
@@ -101,7 +102,7 @@ public interface RObjectReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    Publisher<Void> copy(String host, int port, int database, long timeout);
+    Mono<Void> copy(String host, int port, int database, long timeout);
     
     /**
      * Transfer a object from a source Redis instance to a destination Redis instance
@@ -113,7 +114,7 @@ public interface RObjectReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    Publisher<Void> migrate(String host, int port, int database, long timeout);
+    Mono<Void> migrate(String host, int port, int database, long timeout);
 
     /**
      * Move object to another database in  mode
@@ -121,14 +122,14 @@ public interface RObjectReactive {
      * @param database - number of Redis database
      * @return <code>true</code> if key was moved <code>false</code> if not
      */
-    Publisher<Boolean> move(int database);
+    Mono<Boolean> move(int database);
 
     /**
      * Delete object in  mode
      *
      * @return <code>true</code> if object was deleted <code>false</code> if not
      */
-    Publisher<Boolean> delete();
+    Mono<Boolean> delete();
 
     /**
      * Rename current object key to <code>newName</code>
@@ -137,7 +138,7 @@ public interface RObjectReactive {
      * @param newName - new name of object
      * @return void
      */
-    Publisher<Void> rename(String newName);
+    Mono<Void> rename(String newName);
 
     /**
      * Rename current object key to <code>newName</code>
@@ -146,13 +147,13 @@ public interface RObjectReactive {
      * @param newName - new name of object
      * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
      */
-    Publisher<Boolean> renamenx(String newName);
+    Mono<Boolean> renamenx(String newName);
 
     /**
      * Check object existence
      *
      * @return <code>true</code> if object exists and <code>false</code> otherwise
      */
-    Publisher<Boolean> isExists();
+    Mono<Boolean> isExists();
 
 }

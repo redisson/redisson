@@ -17,9 +17,10 @@ package org.redisson.api;
 
 import java.util.List;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Publish Subscribe object. Messages are delivered to all message listeners across Redis cluster.
@@ -42,7 +43,7 @@ public interface RTopicReactive {
      * @param message to send
      * @return the <code>Future</code> object with number of clients that received the message
      */
-    Publisher<Long> publish(Object message);
+    Mono<Long> publish(Object message);
 
     /**
      * Subscribes to status changes of this topic
@@ -51,7 +52,7 @@ public interface RTopicReactive {
      * @return listener id
      * @see org.redisson.api.listener.StatusListener
      */
-    Publisher<Integer> addListener(StatusListener listener);
+    Mono<Integer> addListener(StatusListener listener);
 
     /**
      * Subscribes to this topic.
@@ -64,7 +65,7 @@ public interface RTopicReactive {
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <M> Publisher<Integer> addListener(Class<M> type, MessageListener<M> listener);
+    <M> Mono<Integer> addListener(Class<M> type, MessageListener<M> listener);
 
     /**
      * Removes the listener by <code>id</code> for listening this topic

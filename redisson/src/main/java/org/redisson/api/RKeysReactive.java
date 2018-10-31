@@ -18,7 +18,8 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -34,7 +35,7 @@ public interface RKeysReactive {
      * @param database - Redis database number
      * @return <code>true</code> if key was moved else <code>false</code>
      */
-    Publisher<Boolean> move(String name, int database);
+    Mono<Boolean> move(String name, int database);
     
     /**
      * Transfer object from source Redis instance to destination Redis instance
@@ -46,7 +47,7 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    Publisher<Void> migrate(String name, String host, int port, int database, long timeout);
+    Mono<Void> migrate(String name, String host, int port, int database, long timeout);
     
     /**
      * Copy object from source Redis instance to destination Redis instance
@@ -58,7 +59,7 @@ public interface RKeysReactive {
      * @param timeout - maximum idle time in any moment of the communication with the destination instance in milliseconds
      * @return void
      */
-    Publisher<Void> copy(String name, String host, int port, int database, long timeout);
+    Mono<Void> copy(String name, String host, int port, int database, long timeout);
     
     /**
      * Set a timeout for object. After the timeout has expired,
@@ -69,7 +70,7 @@ public interface RKeysReactive {
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Publisher<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
+    Mono<Boolean> expire(String name, long timeToLive, TimeUnit timeUnit);
     
     /**
      * Set an expire date for object. When expire date comes
@@ -79,7 +80,7 @@ public interface RKeysReactive {
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Publisher<Boolean> expireAt(String name, long timestamp);
+    Mono<Boolean> expireAt(String name, long timestamp);
     
     /**
      * Clear an expire timeout or expire date for object.
@@ -88,7 +89,7 @@ public interface RKeysReactive {
      * @return <code>true</code> if timeout was removed
      *         <code>false</code> if object does not exist or does not have an associated timeout
      */
-    Publisher<Boolean> clearExpire(String name);
+    Mono<Boolean> clearExpire(String name);
     
     /**
      * Rename object with <code>oldName</code> to <code>newName</code>
@@ -98,7 +99,7 @@ public interface RKeysReactive {
      * @param newName - new name of object
      * @return <code>true</code> if object has been renamed successfully and <code>false</code> otherwise
      */
-    Publisher<Boolean> renamenx(String oldName, String newName);
+    Mono<Boolean> renamenx(String oldName, String newName);
     
     /**
      * Rename current object key to <code>newName</code>
@@ -107,7 +108,7 @@ public interface RKeysReactive {
      * @param newName - new name of object
      * @return void
      */
-    Publisher<Void> rename(String currentName, String newName);
+    Mono<Void> rename(String currentName, String newName);
     
     /**
      * Remaining time to live of Redisson object that has a timeout
@@ -117,7 +118,7 @@ public interface RKeysReactive {
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
-    Publisher<Long> remainTimeToLive(String name);
+    Mono<Long> remainTimeToLive(String name);
 
     /**
      * Update the last access time of an object. 
@@ -125,7 +126,7 @@ public interface RKeysReactive {
      * @param names of keys
      * @return count of objects were touched
      */
-    Publisher<Long> touch(String... names);
+    Mono<Long> touch(String... names);
     
     /**
      * Checks if provided keys exist
@@ -133,7 +134,7 @@ public interface RKeysReactive {
      * @param names of keys
      * @return amount of existing keys
      */
-    Publisher<Long> countExists(String... names);
+    Mono<Long> countExists(String... names);
     
     /**
      * Get Redis object type by key
@@ -141,7 +142,7 @@ public interface RKeysReactive {
      * @param key - name of key
      * @return type of key
      */
-    Publisher<RType> getType(String key);
+    Mono<RType> getType(String key);
     
     /**
      * Load keys in incrementally iterate mode. Keys traversed with SCAN operation.
@@ -149,7 +150,7 @@ public interface RKeysReactive {
      *
      * @return keys
      */
-    Publisher<String> getKeys();
+    Flux<String> getKeys();
     
     /**
      * Load keys in incrementally iterate mode. Keys traversed with SCAN operation.
@@ -158,7 +159,7 @@ public interface RKeysReactive {
      * @param count - keys loaded per request to Redis
      * @return keys
      */
-    Publisher<String> getKeys(int count);
+    Flux<String> getKeys(int count);
 
     /**
      * Find keys by pattern and load it in incrementally iterate mode.
@@ -174,7 +175,7 @@ public interface RKeysReactive {
      * @param pattern - match pattern
      * @return keys
      */
-    Publisher<String> getKeysByPattern(String pattern);
+    Flux<String> getKeysByPattern(String pattern);
 
     /**
      * Get all keys by pattern using iterator. 
@@ -193,7 +194,7 @@ public interface RKeysReactive {
      * @param count - keys loaded per request to Redis
      * @return keys
      */
-    Publisher<String> getKeysByPattern(String pattern, int count);
+    Flux<String> getKeysByPattern(String pattern, int count);
     
     /**
      * Get hash slot identifier for key.
@@ -204,7 +205,7 @@ public interface RKeysReactive {
      * @param key - name of key
      * @return slot number
      */
-    Publisher<Integer> getSlot(String key);
+    Mono<Integer> getSlot(String key);
 
     /**
      * Find keys by key search pattern by one Redis call.
@@ -219,7 +220,7 @@ public interface RKeysReactive {
      * @param pattern - match pattern
      * @return collection of keys
      */
-    Publisher<Collection<String>> findKeysByPattern(String pattern);
+    Mono<Collection<String>> findKeysByPattern(String pattern);
 
     /**
      * Get random key
@@ -228,7 +229,7 @@ public interface RKeysReactive {
      *
      * @return random key
      */
-    Publisher<String> randomKey();
+    Mono<String> randomKey();
 
     /**
      * Delete multiple objects by a key pattern.
@@ -243,7 +244,7 @@ public interface RKeysReactive {
      * @param pattern - match pattern
      * @return deleted objects amount
      */
-    Publisher<Long> deleteByPattern(String pattern);
+    Mono<Long> deleteByPattern(String pattern);
 
     /**
      * Delete multiple objects by name.
@@ -253,7 +254,7 @@ public interface RKeysReactive {
      * @param keys - object names
      * @return deleted objects amount
      */
-    Publisher<Long> delete(String ... keys);
+    Mono<Long> delete(String ... keys);
 
     /**
      * Delete multiple objects by name.
@@ -264,14 +265,14 @@ public interface RKeysReactive {
      * @param keys of objects
      * @return number of removed keys
      */
-    Publisher<Long> unlink(String ... keys);
+    Mono<Long> unlink(String ... keys);
     
     /**
      * Returns the number of keys in the currently-selected database
      *
      * @return count of keys
      */
-    Publisher<Long> count();
+    Mono<Long> count();
     
     /**
      * Delete all the keys of the currently selected database
@@ -280,7 +281,7 @@ public interface RKeysReactive {
      * 
      * @return void
      */
-    Publisher<Void> flushdb();
+    Mono<Void> flushdb();
 
     /**
      * Delete all the keys of all the existing databases
@@ -289,6 +290,6 @@ public interface RKeysReactive {
      *
      * @return void
      */
-    Publisher<Void> flushall();
+    Mono<Void> flushall();
 
 }

@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Set based Multimap
@@ -49,7 +49,7 @@ public interface RSetMultimapReactive<K, V> extends RMultimapReactive<K, V> {
      * @param key - map key
      * @return set of values 
      */
-    Publisher<Set<V>> getAll(K key);
+    Mono<Set<V>> getAll(K key);
     
     /**
      * Removes all values associated with the key {@code key}.
@@ -62,7 +62,7 @@ public interface RSetMultimapReactive<K, V> extends RMultimapReactive<K, V> {
      *     set <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
      */
-    Publisher<Set<V>> removeAll(Object key);
+    Mono<Set<V>> removeAll(Object key);
     
     /**
      * Stores a collection of values with the same key, replacing any existing
@@ -78,6 +78,6 @@ public interface RSetMultimapReactive<K, V> extends RMultimapReactive<K, V> {
      *     <i>may</i> be modifiable, but updating it will have no effect on the
      *     multimap.
      */
-    Publisher<Set<V>> replaceValues(K key, Iterable<? extends V> values);
+    Mono<Set<V>> replaceValues(K key, Iterable<? extends V> values);
     
 }

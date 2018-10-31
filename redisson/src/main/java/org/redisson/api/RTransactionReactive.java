@@ -15,8 +15,9 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
 import org.redisson.client.codec.Codec;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for transaction object allows to execute transactions over Redisson objects.
@@ -149,12 +150,12 @@ public interface RTransactionReactive {
      * 
      * @return void
      */
-    Publisher<Void> commit();
+    Mono<Void> commit();
     
     /**
      * Rollback all changes made on this transaction.
      * @return void
      */
-    Publisher<Void> rollback();
+    Mono<Void> rollback();
 
 }

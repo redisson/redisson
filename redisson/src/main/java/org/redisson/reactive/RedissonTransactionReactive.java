@@ -17,7 +17,6 @@ package org.redisson.reactive;
 
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -33,6 +32,8 @@ import org.redisson.api.RTransactionReactive;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.transaction.RedissonTransaction;
+
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -116,7 +117,7 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     }
 
     @Override
-    public Publisher<Void> commit() {
+    public Mono<Void> commit() {
         return executorService.reactive(new Supplier<RFuture<Void>>() {
             @Override
             public RFuture<Void> get() {
@@ -126,7 +127,7 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     }
 
     @Override
-    public Publisher<Void> rollback() {
+    public Mono<Void> rollback() {
         return executorService.reactive(new Supplier<RFuture<Void>>() {
             @Override
             public RFuture<Void> get() {

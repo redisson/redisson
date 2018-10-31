@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 
 /**
@@ -34,7 +34,7 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * 
      * @return object size
      */
-    Publisher<Long> size();
+    Mono<Long> size();
     
     /**
      * Tries to set element atomically into empty holder.
@@ -43,7 +43,7 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
-    Publisher<Boolean> trySet(V value);
+    Mono<Boolean> trySet(V value);
 
     /**
      * Tries to set element atomically into empty holder with defined <code>timeToLive</code> interval.
@@ -54,7 +54,7 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @return {@code true} if successful, or {@code false} if
      *         element was already set
      */
-    Publisher<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
+    Mono<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
      * Atomically sets the value to the given updated value
@@ -66,7 +66,7 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @return {@code true} if successful; or {@code false} if the actual value
      *         was not equal to the expected value.
      */
-    Publisher<Boolean> compareAndSet(V expect, V update);
+    Mono<Boolean> compareAndSet(V expect, V update);
 
     /**
      * Retrieves current element in the holder and replaces it with <code>newValue</code>. 
@@ -74,21 +74,21 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @param newValue - value to set
      * @return previous value
      */
-    Publisher<V> getAndSet(V newValue);
+    Mono<V> getAndSet(V newValue);
 
     /**
      * Retrieves element stored in the holder.
      * 
      * @return element
      */
-    Publisher<V> get();
+    Mono<V> get();
     
     /**
      * Retrieves element in the holder and removes it.
      * 
      * @return element
      */
-    Publisher<V> getAndDelete();
+    Mono<V> getAndDelete();
 
     /**
      * Stores element into the holder. 
@@ -96,7 +96,7 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @param value - value to set
      * @return void
      */
-    Publisher<Void> set(V value);
+    Mono<Void> set(V value);
 
     /**
      * Stores element into the holder with defined <code>timeToLive</code> interval.
@@ -106,6 +106,6 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      * @param timeUnit - unit of time to live interval
      * @return void
      */
-    Publisher<Void> set(V value, long timeToLive, TimeUnit timeUnit);
+    Mono<Void> set(V value, long timeToLive, TimeUnit timeUnit);
 
 }

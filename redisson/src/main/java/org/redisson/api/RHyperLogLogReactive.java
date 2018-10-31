@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.
@@ -36,7 +36,7 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if object has been added 
      *          or <code>false</code> if it was already added
      */
-    Publisher<Boolean> add(V obj);
+    Mono<Boolean> add(V obj);
 
     /**
      * Adds all elements contained in <code>objects</code> collection into this structure
@@ -45,14 +45,14 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @return <code>true</code> if at least one object has been added 
      *          or <code>false</code> if all were already added
      */
-    Publisher<Boolean> addAll(Collection<V> objects);
+    Mono<Boolean> addAll(Collection<V> objects);
 
     /**
      * Returns approximated number of unique elements added into this structure.
      * 
      * @return approximated number of unique elements added into this structure
      */
-    Publisher<Long> count();
+    Mono<Long> count();
 
     /**
      * Returns approximated number of unique elements 
@@ -61,7 +61,7 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @param otherLogNames - name of instances
      * @return number
      */
-    Publisher<Long> countWith(String ... otherLogNames);
+    Mono<Long> countWith(String ... otherLogNames);
 
     /**
      * Merges multiple instances into this instance.
@@ -69,6 +69,6 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @param otherLogNames - name of instances
      * @return void
      */
-    Publisher<Void> mergeWith(String ... otherLogNames);
+    Mono<Void> mergeWith(String ... otherLogNames);
 
 }

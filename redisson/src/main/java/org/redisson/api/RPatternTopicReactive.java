@@ -17,9 +17,10 @@ package org.redisson.api;
 
 import java.util.List;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
+
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Pattern based observer for Publish Subscribe object.
@@ -47,7 +48,7 @@ public interface RPatternTopicReactive {
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <T> Publisher<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
+    <T> Mono<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
      * Subscribes to status changes of this topic
@@ -56,7 +57,7 @@ public interface RPatternTopicReactive {
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.StatusListener
      */
-    Publisher<Integer> addListener(PatternStatusListener listener);
+    Mono<Integer> addListener(PatternStatusListener listener);
 
     /**
      * Removes the listener by <code>id</code> for listening this topic

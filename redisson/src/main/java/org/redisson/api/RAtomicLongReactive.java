@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for AtomicLong object
@@ -34,7 +34,7 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @return true if successful; or false if the actual value
      *         was not equal to the expected value.
      */
-    Publisher<Boolean> compareAndSet(long expect, long update);
+    Mono<Boolean> compareAndSet(long expect, long update);
 
     /**
      * Atomically adds the given value to the current value.
@@ -42,28 +42,28 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @param delta the value to add
      * @return the updated value
      */
-    Publisher<Long> addAndGet(long delta);
+    Mono<Long> addAndGet(long delta);
 
     /**
      * Atomically decrements the current value by one.
      *
      * @return the updated value
      */
-    Publisher<Long> decrementAndGet();
+    Mono<Long> decrementAndGet();
 
     /**
      * Returns current value.
      *
      * @return the current value
      */
-    Publisher<Long> get();
+    Mono<Long> get();
 
     /**
      * Returns and deletes object
      * 
      * @return the current value
      */
-    Publisher<Long> getAndDelete();
+    Mono<Long> getAndDelete();
     
     /**
      * Atomically adds the given value to the current value.
@@ -71,7 +71,7 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @param delta the value to add
      * @return the old value before the add
      */
-    Publisher<Long> getAndAdd(long delta);
+    Mono<Long> getAndAdd(long delta);
 
     /**
      * Atomically sets the given value and returns the old value.
@@ -79,28 +79,28 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @param newValue the new value
      * @return the old value
      */
-    Publisher<Long> getAndSet(long newValue);
+    Mono<Long> getAndSet(long newValue);
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the updated value
      */
-    Publisher<Long> incrementAndGet();
+    Mono<Long> incrementAndGet();
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the old value
      */
-    Publisher<Long> getAndIncrement();
+    Mono<Long> getAndIncrement();
 
     /**
      * Atomically decrements by one the current value.
      *
      * @return the previous value
      */
-    Publisher<Long> getAndDecrement();
+    Mono<Long> getAndDecrement();
 
     /**
      * Atomically sets the given value.
@@ -108,6 +108,6 @@ public interface RAtomicLongReactive extends RExpirableReactive {
      * @param newValue the new value
      * @return void
      */
-    Publisher<Void> set(long newValue);
+    Mono<Void> set(long newValue);
 
 }

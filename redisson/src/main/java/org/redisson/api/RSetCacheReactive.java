@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Async set functions
@@ -29,7 +29,7 @@ import org.reactivestreams.Publisher;
  */
 public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
 
-    Publisher<Boolean> add(V value, long ttl, TimeUnit unit);
+    Mono<Boolean> add(V value, long ttl, TimeUnit unit);
 
     /**
      * Returns the number of elements in cache.
@@ -38,13 +38,13 @@ public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
      *
      */
     @Override
-    Publisher<Integer> size();
+    Mono<Integer> size();
 
     /**
      * Read all elements at once
      *
      * @return values
      */
-    Publisher<Set<V>> readAll();
+    Mono<Set<V>> readAll();
     
 }

@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.List;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -34,7 +34,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    Publisher<V> readSorted(SortOrder order);
+    Mono<V> readSorted(SortOrder order);
 
     /**
      * Read data in sorted view
@@ -44,7 +44,7 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    Publisher<V> readSorted(SortOrder order, int offset, int count);
+    Mono<V> readSorted(SortOrder order, int offset, int count);
 
     /**
      * Read data in sorted view
@@ -53,7 +53,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    Publisher<V> readSorted(String byPattern, SortOrder order);
+    Mono<V> readSorted(String byPattern, SortOrder order);
 
     /**
      * Read data in sorted view
@@ -64,7 +64,7 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    Publisher<V> readSorted(String byPattern, SortOrder order, int offset, int count);
+    Mono<V> readSorted(String byPattern, SortOrder order, int offset, int count);
 
     /**
      * Read data in sorted view
@@ -75,7 +75,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return sorted collection
      */
-    <T> Publisher<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order);
+    <T> Mono<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
      * Read data in sorted view
@@ -88,7 +88,7 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return sorted collection
      */
-    <T> Publisher<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+    <T> Mono<Collection<T>> readSorted(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -97,7 +97,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, SortOrder order);
+    Mono<Integer> sortTo(String destName, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -108,7 +108,7 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, SortOrder order, int offset, int count);
+    Mono<Integer> sortTo(String destName, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -118,7 +118,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, String byPattern, SortOrder order);
+    Mono<Integer> sortTo(String destName, String byPattern, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -130,7 +130,7 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, String byPattern, SortOrder order, int offset, int count);
+    Mono<Integer> sortTo(String destName, String byPattern, SortOrder order, int offset, int count);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -141,7 +141,7 @@ public interface RSortableReactive<V> {
      * @param order for sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order);
+    Mono<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order);
 
     /**
      * Sort data and store to <code>destName</code> list
@@ -154,6 +154,6 @@ public interface RSortableReactive<V> {
      * @param count of sorted data
      * @return length of sorted data
      */
-    Publisher<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
+    Mono<Integer> sortTo(String destName, String byPattern, List<String> getPatterns, SortOrder order, int offset, int count);
     
 }

@@ -17,7 +17,8 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * Async set functions
@@ -35,7 +36,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param count - size of elements batch
      * @return iterator
      */
-    Publisher<V> iterator(int count);
+    Flux<V> iterator(int count);
     
     /**
      * Returns an iterator over elements in this set.
@@ -46,7 +47,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param count - size of elements batch
      * @return iterator
      */
-    Publisher<V> iterator(String pattern, int count);
+    Flux<V> iterator(String pattern, int count);
     
     /**
      * Returns iterator over elements in this set matches <code>pattern</code>. 
@@ -54,7 +55,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param pattern - search pattern
      * @return iterator
      */
-    Publisher<V> iterator(String pattern);
+    Flux<V> iterator(String pattern);
     
     /**
      * Removes and returns random elements from set
@@ -63,7 +64,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param amount of random values
      * @return random values
      */
-    Publisher<Set<V>> removeRandom(int amount);
+    Mono<Set<V>> removeRandom(int amount);
     
     /**
      * Removes and returns random element from set
@@ -71,7 +72,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      *
      * @return value
      */
-    Publisher<V> removeRandom();
+    Mono<V> removeRandom();
 
     /**
      * Returns random element from set
@@ -79,7 +80,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      *
      * @return value
      */
-    Publisher<V> random();
+    Mono<V> random();
 
     /**
      * Move a member from this set to the given destination set in async mode.
@@ -89,14 +90,14 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @return true if the element is moved, false if the element is not a
      * member of this set or no operation was performed
      */
-    Publisher<Boolean> move(String destination, V member);
+    Mono<Boolean> move(String destination, V member);
 
     /**
      * Read all elements at once
      *
      * @return values
      */
-    Publisher<Set<V>> readAll();
+    Mono<Set<V>> readAll();
     
     /**
      * Union sets specified by name and write to current set.
@@ -105,7 +106,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of union
      */
-    Publisher<Long> union(String... names);
+    Mono<Long> union(String... names);
 
     /**
      * Union sets specified by name with current set.
@@ -114,7 +115,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of union
      */
-    Publisher<Set<V>> readUnion(String... names);
+    Mono<Set<V>> readUnion(String... names);
     
     /**
      * Diff sets specified by name and write to current set.
@@ -123,7 +124,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of diff
      */
-    Publisher<Long> diff(String... names);
+    Mono<Long> diff(String... names);
     
     /**
      * Diff sets specified by name with current set.
@@ -132,7 +133,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return values
      */
-    Publisher<Set<V>> readDiff(String... names);
+    Mono<Set<V>> readDiff(String... names);
     
     /**
      * Intersection sets specified by name and write to current set.
@@ -141,7 +142,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of intersection
      */
-    Publisher<Long> intersection(String... names);
+    Mono<Long> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.
@@ -150,6 +151,6 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return values
      */
-    Publisher<Set<V>> readIntersection(String... names);
+    Mono<Set<V>> readIntersection(String... names);
 
 }

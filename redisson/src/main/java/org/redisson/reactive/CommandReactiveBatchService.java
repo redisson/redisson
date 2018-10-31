@@ -34,6 +34,7 @@ import org.redisson.connection.NodeSource;
 import org.redisson.misc.RPromise;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -51,8 +52,8 @@ public class CommandReactiveBatchService extends CommandReactiveService {
     }
 
     @Override
-    public <R> Publisher<R> reactive(Supplier<RFuture<R>> supplier) {
-        Publisher<R> publisher = super.reactive(supplier);
+    public <R> Mono<R> reactive(Supplier<RFuture<R>> supplier) {
+        Mono<R> publisher = super.reactive(supplier);
         publishers.add(publisher);
         return publisher;
     }

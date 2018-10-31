@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Semaphore object with support of lease time parameter for each acquired permit.
@@ -51,7 +51,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * 
      * @return permit id
      */
-    Publisher<String> acquire();
+    Mono<String> acquire();
     
     /**
      * Acquires a permit with defined lease time from this semaphore, 
@@ -75,7 +75,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param unit - time unit
      * @return permit id
      */
-    Publisher<String> acquire(long leaseTime, TimeUnit unit);
+    Mono<String> acquire(long leaseTime, TimeUnit unit);
     
     /**
      * Acquires a permit only if one is available at the
@@ -91,7 +91,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return permit id if a permit was acquired and {@code null}
      *         otherwise
      */
-    Publisher<String> tryAcquire();
+    Mono<String> tryAcquire();
 
     /**
      * Acquires a permit from this semaphore, if one becomes available
@@ -124,7 +124,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return permit id if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Publisher<String> tryAcquire(long waitTime, TimeUnit unit);
+    Mono<String> tryAcquire(long waitTime, TimeUnit unit);
 
     /**
      * Acquires a permit with defined lease time from this semaphore,
@@ -159,7 +159,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return permit id if a permit was acquired and {@code null}
      *         if the waiting time elapsed before a permit was acquired
      */
-    Publisher<String> tryAcquire(long waitTime, long leaseTime, TimeUnit unit);
+    Mono<String> tryAcquire(long waitTime, long leaseTime, TimeUnit unit);
 
     /**
      * Releases a permit by its id, returning it to the semaphore.
@@ -177,7 +177,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @return {@code true} if a permit has been released and {@code false}
      *         otherwise
      */
-    Publisher<Boolean> tryRelease(String permitId);
+    Mono<Boolean> tryRelease(String permitId);
 
     /**
      * Releases a permit by its id, returning it to the semaphore.
@@ -196,14 +196,14 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param permitId - permit id
      * @return void
      */
-    Publisher<Void> release(String permitId);
+    Mono<Void> release(String permitId);
 
     /**
      * Returns the current number of available permits.
      *
      * @return number of available permits
      */
-    Publisher<Integer> availablePermits();
+    Mono<Integer> availablePermits();
 
     /**
      * Sets number of permits.
@@ -211,7 +211,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param permits - number of permits
      * @return <code>true</code> if permits has been set successfully, otherwise <code>false</code>.  
      */
-    Publisher<Boolean> trySetPermits(int permits);
+    Mono<Boolean> trySetPermits(int permits);
 
     /**
      * Increases or decreases the number of available permits by defined value. 
@@ -219,7 +219,7 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param permits - number of permits to add/remove
      * @return void
      */
-    Publisher<Void> addPermits(int permits);
+    Mono<Void> addPermits(int permits);
 
     /**
      * Overrides and updates lease time for defined permit id.
@@ -229,6 +229,6 @@ public interface RPermitExpirableSemaphoreReactive extends RExpirableReactive {
      * @param unit - the time unit of the {@code timeout} argument
      * @return <code>true</code> if permits has been updated successfully, otherwise <code>false</code>.
      */
-    Publisher<Boolean> updateLeaseTime(String permitId, long leaseTime, TimeUnit unit);
+    Mono<Boolean> updateLeaseTime(String permitId, long leaseTime, TimeUnit unit);
     
 }

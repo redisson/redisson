@@ -18,7 +18,6 @@ package org.redisson.reactive;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.reactivestreams.Publisher;
 import org.redisson.RedissonAtomicDouble;
 import org.redisson.RedissonAtomicLong;
 import org.redisson.RedissonBitSet;
@@ -75,6 +74,8 @@ import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+
+import reactor.core.publisher.Mono;
 
 /**
  * 
@@ -285,7 +286,7 @@ public class RedissonBatchReactive implements RBatchReactive {
     }
 
     @Override
-    public Publisher<BatchResult<?>> execute() {
+    public Mono<BatchResult<?>> execute() {
         return commandExecutor.reactive(new Supplier<RFuture<BatchResult<?>>>() {
             @Override
             public RFuture<BatchResult<?>> get() {

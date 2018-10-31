@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Lock object
@@ -27,29 +27,29 @@ import org.reactivestreams.Publisher;
  */
 public interface RLockReactive extends RExpirableReactive {
 
-    Publisher<Boolean> forceUnlock();
+    Mono<Boolean> forceUnlock();
     
-    Publisher<Void> unlock();
+    Mono<Void> unlock();
     
-    Publisher<Void> unlock(long threadId);
+    Mono<Void> unlock(long threadId);
     
-    Publisher<Boolean> tryLock();
+    Mono<Boolean> tryLock();
 
-    Publisher<Void> lock();
+    Mono<Void> lock();
 
-    Publisher<Void> lock(long threadId);
+    Mono<Void> lock(long threadId);
     
-    Publisher<Void> lock(long leaseTime, TimeUnit unit);
+    Mono<Void> lock(long leaseTime, TimeUnit unit);
     
-    Publisher<Void> lock(long leaseTime, TimeUnit unit, long threadId);
+    Mono<Void> lock(long leaseTime, TimeUnit unit, long threadId);
     
-    Publisher<Boolean> tryLock(long threadId);
+    Mono<Boolean> tryLock(long threadId);
     
-    Publisher<Boolean> tryLock(long waitTime, TimeUnit unit);
+    Mono<Boolean> tryLock(long waitTime, TimeUnit unit);
 
-    Publisher<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
+    Mono<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
 
-    Publisher<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+    Mono<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
 
     
 }

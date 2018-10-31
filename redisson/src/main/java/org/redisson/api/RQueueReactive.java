@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Queue object
@@ -26,12 +26,12 @@ import org.reactivestreams.Publisher;
  */
 public interface RQueueReactive<V> extends RCollectionReactive<V> {
 
-    Publisher<V> peek();
+    Mono<V> peek();
 
-    Publisher<V> poll();
+    Mono<V> poll();
 
-    Publisher<Boolean> offer(V e);
+    Mono<Boolean> offer(V e);
 
-    Publisher<V> pollLastAndOfferFirstTo(String queueName);
+    Mono<V> pollLastAndOfferFirstTo(String queueName);
 
 }

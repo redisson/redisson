@@ -20,9 +20,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
+
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 /**
  *  map functions
@@ -41,7 +43,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param parallelism - parallelism level, used to increase speed of process execution
      * @return void
      */
-    Publisher<Void> loadAll(boolean replaceExistingValues, int parallelism);
+    Mono<Void> loadAll(boolean replaceExistingValues, int parallelism);
     
     /**
      * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
@@ -51,7 +53,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param parallelism - parallelism level, used to increase speed of process execution
      * @return void
      */
-    Publisher<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
+    Mono<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
 
     /**
      * Returns size of value mapped by key in bytes
@@ -59,7 +61,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return size of value
      */
-    Publisher<Integer> valueSize(K key);
+    Mono<Integer> valueSize(K key);
 
     /**
      * Gets a map slice contained the mappings with defined <code>keys</code>
@@ -73,7 +75,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param keys - map keys
      * @return Map slice
      */
-    Publisher<Map<K, V>> getAll(Set<K> keys);
+    Mono<Map<K, V>> getAll(Set<K> keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -84,15 +86,15 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param map mappings to be stored in this map
      * @return void
      */
-    Publisher<Void> putAll(Map<? extends K, ? extends V> map);
+    Mono<Void> putAll(Map<? extends K, ? extends V> map);
 
-    Publisher<V> addAndGet(K key, Number value);
+    Mono<V> addAndGet(K key, Number value);
 
-    Publisher<Boolean> containsValue(Object value);
+    Mono<Boolean> containsValue(Object value);
 
-    Publisher<Boolean> containsKey(Object key);
+    Mono<Boolean> containsKey(Object key);
 
-    Publisher<Integer> size();
+    Mono<Integer> size();
 
     /**
      * Removes <code>keys</code> from map by one operation in async manner.
@@ -105,7 +107,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Publisher<Long> fastRemove(K ... keys);
+    Mono<Long> fastRemove(K ... keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -121,7 +123,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
-    Publisher<Boolean> fastPut(K key, V value);
+    Mono<Boolean> fastPut(K key, V value);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -137,35 +139,35 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and change hasn't been made.
      */
-    Publisher<Boolean> fastPutIfAbsent(K key, V value);
+    Mono<Boolean> fastPutIfAbsent(K key, V value);
     
     /**
      * Read all keys at once
      *
      * @return keys
      */
-    Publisher<Set<K>> readAllKeySet();
+    Mono<Set<K>> readAllKeySet();
 
     /**
      * Read all values at once
      *
      * @return values
      */
-    Publisher<Collection<V>> readAllValues();
+    Mono<Collection<V>> readAllValues();
 
     /**
      * Read all map entries at once
      *
      * @return entries
      */
-    Publisher<Set<Entry<K, V>>> readAllEntrySet();
+    Mono<Set<Entry<K, V>>> readAllEntrySet();
 
     /**
      * Read all map as local instance at once
      *
      * @return map
      */
-    Publisher<Map<K, V>> readAllMap();
+    Mono<Map<K, V>> readAllMap();
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -178,7 +180,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return the value to which the specified key is mapped, or
      *         {@code null} if this map contains no mapping for the key
      */
-    Publisher<V> get(K key);
+    Mono<V> get(K key);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -190,7 +192,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param value - map value
      * @return previous associated value
      */
-    Publisher<V> put(K key, V value);
+    Mono<V> put(K key, V value);
 
     /**
      * Removes <code>key</code> from map and returns associated value in async manner.
@@ -200,7 +202,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param key - map key
      * @return deleted value or <code>null</code> if there wasn't any association
      */
-    Publisher<V> remove(K key);
+    Mono<V> remove(K key);
 
     /**
      * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
@@ -213,7 +215,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return previous associated value 
      *         or <code>null</code> if there wasn't any association and change hasn't been made
      */
-    Publisher<V> replace(K key, V value);
+    Mono<V> replace(K key, V value);
 
     /**
      * Replaces previous <code>oldValue</code> with a <code>newValue</code> associated with the <code>key</code>.
@@ -226,7 +228,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param newValue - map new value
      * @return <code>true</code> if value has been replaced otherwise <code>false</code>.
      */
-    Publisher<Boolean> replace(K key, V oldValue, V newValue);
+    Mono<Boolean> replace(K key, V oldValue, V newValue);
 
     /**
      * Removes <code>key</code> from map only if it associated with <code>value</code>.
@@ -237,7 +239,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param value - map value
      * @return <code>true</code> if map entry has been replaced otherwise <code>false</code>.
      */
-    Publisher<Boolean> remove(Object key, Object value);
+    Mono<Boolean> remove(Object key, Object value);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -250,7 +252,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return <code>null</code> if key is a new one in the hash and value was set.
      *         Previous value if key already exists in the hash and change hasn't been made.
      */
-    Publisher<V> putIfAbsent(K key, V value);
+    Mono<V> putIfAbsent(K key, V value);
 
     /**
      * Returns iterator over map entries collection. 
@@ -260,7 +262,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      *  
      * @return iterator
      */
-    Publisher<Map.Entry<K, V>> entryIterator();
+    Flux<Map.Entry<K, V>> entryIterator();
     
     /**
      * Returns iterator over map entries collection.
@@ -271,7 +273,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of entries batch
      * @return iterator
      */
-    Publisher<Map.Entry<K, V>> entryIterator(int count);
+    Flux<Map.Entry<K, V>> entryIterator(int count);
     
     /**
      * Returns iterator over map entries collection.
@@ -291,7 +293,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param pattern - key pattern
      * @return iterator
      */
-    Publisher<Map.Entry<K, V>> entryIterator(String pattern);
+    Flux<Map.Entry<K, V>> entryIterator(String pattern);
     
     /**
      * Returns iterator over map entries collection.
@@ -312,7 +314,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of entries batch
      * @return iterator
      */
-    Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count);
+    Flux<Map.Entry<K, V>> entryIterator(String pattern, int count);
 
     /**
      * Returns iterator over values collection of this map. 
@@ -322,7 +324,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @return iterator
      */
-    Publisher<V> valueIterator();
+    Flux<V> valueIterator();
     
     /**
      * Returns iterator over values collection of this map.
@@ -333,7 +335,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of values batch
      * @return iterator
      */
-    Publisher<V> valueIterator(int count);
+    Flux<V> valueIterator(int count);
     
     /**
      * Returns iterator over values collection of this map.
@@ -353,7 +355,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param pattern - key pattern
      * @return iterator
      */
-    Publisher<V> valueIterator(String pattern);
+    Flux<V> valueIterator(String pattern);
     
     /**
      * Returns iterator over values collection of this map.
@@ -374,7 +376,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of values batch
      * @return iterator
      */
-    Publisher<V> valueIterator(String pattern, int count);
+    Flux<V> valueIterator(String pattern, int count);
 
     /**
      * Returns iterator over key set of this map. 
@@ -384,7 +386,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * 
      * @return iterator
      */
-    Publisher<K> keyIterator();
+    Flux<K> keyIterator();
     
     /**
      * Returns iterator over key set of this map.
@@ -395,7 +397,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of keys batch
      * @return iterator
      */
-    Publisher<K> keyIterator(int count);
+    Flux<K> keyIterator(int count);
     
     /**
      * Returns iterator over key set of this map. 
@@ -414,7 +416,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param pattern - key pattern
      * @return iterator
      */
-    Publisher<K> keyIterator(String pattern);
+    Flux<K> keyIterator(String pattern);
 
     /**
      * Returns iterator over key set of this map.
@@ -435,6 +437,6 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @param count - size of keys batch
      * @return iterator
      */
-    Publisher<K> keyIterator(String pattern, int count);
+    Flux<K> keyIterator(String pattern, int count);
 
 }

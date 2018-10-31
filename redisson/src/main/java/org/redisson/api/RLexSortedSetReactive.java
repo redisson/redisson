@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for LexSortedSet object
@@ -27,28 +27,28 @@ import org.reactivestreams.Publisher;
  */
 public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>, RCollectionReactive<String> {
 
-    Publisher<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Mono<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
+    Mono<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Integer> removeRangeHead(String toElement, boolean toInclusive);
+    Mono<Integer> removeRangeHead(String toElement, boolean toInclusive);
 
-    Publisher<Integer> countTail(String fromElement, boolean fromInclusive);
+    Mono<Integer> countTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Integer> countHead(String toElement, boolean toInclusive);
+    Mono<Integer> countHead(String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
+    Mono<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
 
-    Publisher<Collection<String>> rangeHead(String toElement, boolean toInclusive);
+    Mono<Collection<String>> rangeHead(String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Mono<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
-    Publisher<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
+    Mono<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
 
-    Publisher<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
+    Mono<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
 
-    Publisher<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    Mono<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
-    Publisher<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Mono<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
 }

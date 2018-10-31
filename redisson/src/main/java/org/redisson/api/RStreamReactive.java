@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 /**
  * Reactive interface for Redis Stream object.
@@ -39,7 +39,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param groupName - name of group
      * @return void
      */
-    Publisher<Void> createGroup(String groupName);
+    Mono<Void> createGroup(String groupName);
     
     /**
      * Creates consumer group by name and stream id. 
@@ -51,7 +51,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id - stream id
      * @return void
      */
-    Publisher<Void> createGroup(String groupName, StreamId id);
+    Mono<Void> createGroup(String groupName, StreamId id);
     
     /**
      * Marks pending messages by group name and stream <code>ids</code> as correctly processed.
@@ -60,7 +60,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - stream ids
      * @return marked messages amount
      */
-    Publisher<Long> ack(String groupName, StreamId... ids);
+    Mono<Long> ack(String groupName, StreamId... ids);
     
     /**
      * Returns pending messages by group name
@@ -68,7 +68,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param groupName - name of group
      * @return result object
      */
-    Publisher<PendingResult> listPending(String groupName);
+    Mono<PendingResult> listPending(String groupName);
 
     /**
      * Returns list of pending messages by group name.
@@ -83,7 +83,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
-    Publisher<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count);
+    Mono<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count);
     
     /**
      * Returns list of pending messages by group name and consumer name.
@@ -99,7 +99,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param count - amount of messages
      * @return list
      */
-    Publisher<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count, String consumerName);
+    Mono<List<PendingEntry>> listPending(String groupName, StreamId startId, StreamId endId, int count, String consumerName);
     
     /**
      * Transfers ownership of pending messages by id to a new consumer 
@@ -112,7 +112,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - stream ids
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -122,7 +122,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -133,7 +133,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamId ... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -146,7 +146,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamId ... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -160,7 +160,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamId ... ids);
 
     
     /**
@@ -168,7 +168,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * 
      * @return size of stream
      */
-    Publisher<Long> size();
+    Mono<Long> size();
 
     /**
      * Appends a new entry and returns generated Stream ID
@@ -177,7 +177,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param value - value of entry
      * @return Stream ID
      */
-    Publisher<StreamId> add(K key, V value);
+    Mono<StreamId> add(K key, V value);
     
     /**
      * Appends a new entry by specified Stream ID
@@ -187,7 +187,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param value - value of entry
      * @return void
      */
-    Publisher<Void> add(StreamId id, K key, V value);
+    Mono<Void> add(StreamId id, K key, V value);
     
     /**
      * Appends a new entry and returns generated Stream ID.
@@ -200,7 +200,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return Stream ID
      */
-    Publisher<StreamId> add(K key, V value, int trimLen, boolean trimStrict);
+    Mono<StreamId> add(K key, V value, int trimLen, boolean trimStrict);
 
     /**
      * Appends a new entry by specified Stream ID.
@@ -214,7 +214,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return void
      */
-    Publisher<Void> add(StreamId id, K key, V value, int trimLen, boolean trimStrict);
+    Mono<Void> add(StreamId id, K key, V value, int trimLen, boolean trimStrict);
     
     /**
      * Appends new entries and returns generated Stream ID
@@ -222,7 +222,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param entries - entries to add
      * @return Stream ID
      */
-    Publisher<StreamId> addAll(Map<K, V> entries);
+    Mono<StreamId> addAll(Map<K, V> entries);
     
     /**
      * Appends new entries by specified Stream ID
@@ -231,7 +231,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param entries - entries to add
      * @return void
      */
-    Publisher<Void> addAll(StreamId id, Map<K, V> entries);
+    Mono<Void> addAll(StreamId id, Map<K, V> entries);
     
     /**
      * Appends new entries and returns generated Stream ID.
@@ -243,7 +243,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return Stream ID
      */
-    Publisher<StreamId> addAll(Map<K, V> entries, int trimLen, boolean trimStrict);
+    Mono<StreamId> addAll(Map<K, V> entries, int trimLen, boolean trimStrict);
 
     /**
      * Appends new entries by specified Stream ID.
@@ -256,7 +256,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param trimStrict - if <code>false</code> then trims to few tens of entries more than specified length to trim
      * @return void
      */
-    Publisher<Void> addAll(StreamId id, Map<K, V> entries, int trimLen, boolean trimStrict);
+    Mono<Void> addAll(StreamId id, Map<K, V> entries, int trimLen, boolean trimStrict);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -264,7 +264,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> read(StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> read(StreamId ... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -273,7 +273,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> read(int count, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> read(int count, StreamId ... ids);
 
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -284,7 +284,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamId ... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -296,7 +296,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId ... ids);
+    Mono<Map<StreamId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamId ... ids);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -306,7 +306,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -318,7 +318,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -327,7 +327,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, Map<String, StreamId> nameToId);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -338,7 +338,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -351,7 +351,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -361,7 +361,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, Map<String, StreamId> nameToId);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -374,7 +374,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -389,7 +389,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -401,7 +401,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -415,7 +415,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - id of second stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2);
 
     /**
      * Read stream data by specified stream names including this stream.
@@ -431,7 +431,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - id of third stream
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, String name2, StreamId id2, String name3, StreamId id3);
     
     /**
      * Read stream data by specified stream id mapped by name including this stream.
@@ -444,7 +444,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - stream id mapped by name
      * @return stream data mapped by key and Stream ID
      */
-    Publisher<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
+    Mono<Map<String, Map<StreamId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamId id, Map<String, StreamId> nameToId);
     
     /**
      * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
@@ -453,7 +453,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> range(StreamId startId, StreamId endId);
+    Mono<Map<StreamId, Map<K, V>>> range(StreamId startId, StreamId endId);
 
     /**
      * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
@@ -463,7 +463,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> range(int count, StreamId startId, StreamId endId);
+    Mono<Map<StreamId, Map<K, V>>> range(int count, StreamId startId, StreamId endId);
     
     /**
      * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
@@ -472,7 +472,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> rangeReversed(StreamId startId, StreamId endId);
+    Mono<Map<StreamId, Map<K, V>>> rangeReversed(StreamId startId, StreamId endId);
     
     /**
      * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
@@ -482,6 +482,6 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param endId - end Stream ID
      * @return stream data mapped by Stream ID
      */
-    Publisher<Map<StreamId, Map<K, V>>> rangeReversed(int count, StreamId startId, StreamId endId);
+    Mono<Map<StreamId, Map<K, V>>> rangeReversed(int count, StreamId startId, StreamId endId);
     
 }
