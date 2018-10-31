@@ -4,6 +4,26 @@ Redisson Releases History
 
 Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 31-Oct-2018 - versions 2.14.0 and 3.9.0 released
+Feature - `RMap.putAll` with ttl param (thanks to [Tobias Wichtrey](https://github.com/wtobi))  
+Feature - RxJava 2 support. Please refer to [documentation](https://github.com/redisson/redisson/wiki/3.-Operations-execution#32-reactive-way) for more details  
+Feature - Lambda task definition for `RExecutorService`. Please refer to [documentation](https://github.com/redisson/redisson/wiki/9.-Distributed-services#932-distributed-executor-service-tasks) for more details  
+Feature - multi-type listeners support for `RTopic` and `RPatternTopic` objects. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-Distributed-objects#67-topic) for more details  
+Feature - `useScriptCache` setting added. Manages by Lua-script caching on Redis side. Please refer to [documentation](https://github.com/redisson/redisson/wiki/2.-Configuration#usescriptcache) for more details  
+Feature - added `RMap.putAllAsync` method with batch size  
+Feature - added `RSet.random` method limited by count  
+Improvement - memory allocation optimization during ExecutorService task execution  
+Fixed - `keepAlive` is not being set  
+Fixed - Redisson can't resolve short DNS name  
+Fixed - Redisson shuts down executor it doesn't own  
+Fixed - "spring.redis.cluster.nodes" param parsing for spring-boot  
+Fixed - `Node.ping` throws Exception if node is unreachable  
+Fixed - NPE in `CommandDecoder`  
+Fixed - `DecoderException` thrown when `pingConnectionInterval` setting being set  
+Fixed - `BlockingQueue.take` method doesn't survey failover  
+Fixed - `SnappyCodecV2` codec doesn't decode properly underlying data encoded by FST codec  
+Fixed - `UnsupportedOperationException` thrown when using Spring Actuator with redisson-spring-data lib  
+
 ### 06-Oct-2018 - versions 2.13.2 and 3.8.2 released
 Feature - `RPermitExpirableSemaphore.updateLeaseTime` method added  
 Improvements - cluster state check  

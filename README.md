@@ -6,8 +6,8 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.8.2  | 06.10.2018 | 1.8 - 11 | Yes | 3.1.x |
-| 2.13.2 | 06.10.2018 | 1.6 - 11, Android | No | 2.0.8 |
+| 3.9.0  | 31.10.2018 | 1.8 - 11 | Yes | 3.x.x |
+| 2.14.0 | 31.10.2018 | 1.6 - 11, Android | No | 2.0.8 |
 
 
 Features
@@ -110,23 +110,23 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.8.2</version>
+       <version>3.9.0</version>
     </dependency>  
 
     <!-- JDK 1.6+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>2.13.2</version>
+       <version>2.14.0</version>
     </dependency>
 
 
 #### Gradle
     // JDK 1.8+ compatible
-    compile 'org.redisson:redisson:3.8.2'  
+    compile 'org.redisson:redisson:3.9.0'  
 
     // JDK 1.6+ compatible
-    compile 'org.redisson:redisson:2.13.2'
+    compile 'org.redisson:redisson:2.14.0'
 
 #### Java
 
@@ -153,11 +153,11 @@ Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced fe
 Downloads
 ===============================
    
-[Redisson 3.8.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.8.2&e=jar),
-[Redisson node 3.8.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.8.2&e=jar)  
+[Redisson 3.9.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.9.0&e=jar),
+[Redisson node 3.9.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.9.0&e=jar)  
 
-[Redisson 2.13.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.13.2&e=jar),
-[Redisson node 2.13.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.13.2&e=jar)  
+[Redisson 2.14.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=2.14.0&e=jar),
+[Redisson node 2.14.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=2.14.0&e=jar)  
 
 FAQs
 ===============================
@@ -177,10 +177,3 @@ FAQs
 
 [Q: Can I use different encoder/decoders for different tasks?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-can-i-use-different-encoderdecoders-for-different-tasks)
 
-### Supported by
-
-YourKit is kindly supporting this open source project with its full-featured Java Profiler.
-YourKit, LLC is the creator of innovative and intelligent tools for profiling
-Java and .NET applications. Take a look at YourKit's leading software products:
-<a href="http://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a> and
-<a href="http://www.yourkit.com/.net/profiler/index.jsp">YourKit .NET Profiler</a>.
