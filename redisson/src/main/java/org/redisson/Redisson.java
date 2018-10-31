@@ -171,10 +171,10 @@ public class Redisson implements RedissonClient {
      *
      * @return Redisson instance
      */
-    public static RedissonReactiveClient createRx() {
+    public static RedissonRxClient createRx() {
         Config config = new Config();
         config.useSingleServer().setAddress("redis://127.0.0.1:6379");
-        return createReactive(config);
+        return createRx(config);
     }
 
     /**
