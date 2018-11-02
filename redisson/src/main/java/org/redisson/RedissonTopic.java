@@ -146,7 +146,20 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public void removeAllListeners() {
-        subscribeService.unsubscribe(channelName, PubSubType.UNSUBSCRIBE);
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+        acquire(semaphore);
+        
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
+        if (entry == null) {
+            semaphore.release();
+            return;
+        }
+
+        if (entry.removeAllListeners(channelName)) {
+            subscribeService.unsubscribe(channelName, semaphore);
+        } else {
+            semaphore.release();
+        }
     }
 
     protected void acquire(AsyncSemaphore semaphore) {

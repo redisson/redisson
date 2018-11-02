@@ -147,8 +147,7 @@ public class RedissonPatternTopic implements RPatternTopic {
             return;
         }
 
-        entry.removeAllListeners(channelName);
-        if (!entry.hasListeners(channelName)) {
+        if (entry.removeAllListeners(channelName)) {
             subscribeService.punsubscribe(channelName, semaphore);
         } else {
             semaphore.release();

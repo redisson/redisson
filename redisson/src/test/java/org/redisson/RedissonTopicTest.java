@@ -369,9 +369,11 @@ public class RedissonTopicTest {
     public void testRemoveAllListeners() throws InterruptedException {
         RedissonClient redisson = BaseTest.createInstance();
         RTopic topic1 = redisson.getTopic("topic1");
+        AtomicInteger counter = new AtomicInteger();
+        
         for (int i = 0; i < 10; i++) {
             topic1.addListener(Message.class, (channel, msg) -> {
-                Assert.fail();
+                counter.incrementAndGet();
             });
         }
 
@@ -379,6 +381,33 @@ public class RedissonTopicTest {
         topic1.removeAllListeners();
         topic1.publish(new Message("123"));
 
+        Thread.sleep(1000);
+        assertThat(counter.get()).isZero();
+        
+        redisson.shutdown();
+    }
+
+    @Test
+    public void testRemoveAllListeners2() throws InterruptedException {
+        RedissonClient redisson = BaseTest.createInstance();
+        RTopic topic1 = redisson.getTopic("topic1");
+        AtomicInteger counter = new AtomicInteger();
+        
+        for (int j = 0; j < 100; j++) {
+            for (int i = 0; i < 10; i++) {
+                topic1.addListener(Message.class, (channel, msg) -> {
+                    counter.incrementAndGet();
+                });
+            }
+            
+            topic1 = redisson.getTopic("topic1");
+            topic1.removeAllListeners();
+            topic1.publish(new Message("123"));
+        }
+
+        Thread.sleep(1000);
+        assertThat(counter.get()).isZero();
+        
         redisson.shutdown();
     }
     
