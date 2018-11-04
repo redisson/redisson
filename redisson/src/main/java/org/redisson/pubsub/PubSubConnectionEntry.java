@@ -100,7 +100,7 @@ public class PubSubConnectionEntry {
         for (RedisPubSubListener<?> listener : listeners) {
             removeListener(channelName, listener);
         }
-        return !listeners.isEmpty();
+        return listeners.isEmpty();
     }
     
     // TODO optimize
