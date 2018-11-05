@@ -38,6 +38,10 @@ import reactor.core.publisher.FluxSink;
 public class RedissonListReactive<V> {
 
     private final RedissonList<V> instance;
+    
+    public RedissonListReactive(RedissonList<V> instance) {
+        this.instance = instance;
+    }
 
     public RedissonListReactive(CommandReactiveExecutor commandExecutor, String name) {
         this.instance = new RedissonList<V>(commandExecutor, name, null);

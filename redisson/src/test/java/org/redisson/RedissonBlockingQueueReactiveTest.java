@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,10 +14,44 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.redisson.api.RBlockingQueueReactive;
 
 public class RedissonBlockingQueueReactiveTest extends BaseReactiveTest {
 
+    @Test
+    public void testTakeElements() {
+        RBlockingQueueReactive<Integer> queue = redisson.getBlockingQueue("test");
+        List<Integer> elements = new ArrayList<>();
+        queue.takeElements().subscribe(new Subscriber<Integer>() {
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                s.request(4);
+            }
+
+            @Override
+            public void onNext(Integer t) {
+                elements.add(t);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+        
+        for (int i = 0; i < 10; i++) {
+            sync(queue.add(i));
+        }
+        
+        assertThat(elements).containsExactly(0, 1, 2, 3);
+    }
+    
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueueReactive<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");

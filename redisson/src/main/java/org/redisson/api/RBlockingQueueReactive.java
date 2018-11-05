@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -143,4 +144,11 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      */
     Mono<Void> put(V e);
 
+    /**
+     * Retrieves and removes stream of elements from the head of this queue.
+     * 
+     * @return stream of messages
+     */
+    Flux<V> takeElements();
+    
 }

@@ -125,7 +125,7 @@ public class ReactiveProxyBuilder {
                 }
                 
                 if (implementation != null 
-                        && instanceMethod.getDeclaringClass() == implementation.getClass()) {
+                        && instanceMethod.getDeclaringClass().isAssignableFrom(implementation.getClass())) {
                     return instanceMethod.invoke(implementation, args);
                 }
                 

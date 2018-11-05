@@ -69,6 +69,7 @@ import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.CommandReactiveService;
 import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.reactive.RedissonBatchReactive;
+import org.redisson.reactive.RedissonBlockingQueueReactive;
 import org.redisson.reactive.RedissonKeysReactive;
 import org.redisson.reactive.RedissonLexSortedSetReactive;
 import org.redisson.reactive.RedissonListMultimapReactive;
@@ -332,14 +333,16 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(commandExecutor, name, null), 
-                new RedissonListReactive<V>(commandExecutor, name), RBlockingQueueReactive.class);
+        RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, queue, 
+                new RedissonBlockingQueueReactive<V>(queue), RBlockingQueueReactive.class);
     }
 
     @Override
     public <V> RBlockingQueueReactive<V> getBlockingQueue(String name, Codec codec) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBlockingQueue<V>(codec, commandExecutor, name, null), 
-                new RedissonListReactive<V>(codec, commandExecutor, name), RBlockingQueueReactive.class);
+        RedissonBlockingQueue<V> queue = new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
+        return ReactiveProxyBuilder.create(commandExecutor, queue, 
+                new RedissonBlockingQueueReactive<V>(queue), RBlockingQueueReactive.class);
     }
 
     @Override
