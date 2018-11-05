@@ -61,6 +61,7 @@ public class RedissonTopicRx {
                     @Override
                     public void operationComplete(Future<Integer> future) throws Exception {
                         if (!future.isSuccess()) {
+                            p.onError(future.cause());
                             return;
                         }
                         
