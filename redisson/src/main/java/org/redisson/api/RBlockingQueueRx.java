@@ -143,4 +143,11 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      */
     Flowable<Void> put(V e);
 
+    /**
+     * Retrieves and removes stream of elements from the head of this queue.
+     * 
+     * @return stream of messages
+     */
+    Flowable<V> takeElements();
+
 }
