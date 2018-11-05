@@ -21,6 +21,7 @@ import java.util.function.LongConsumer;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListAsync;
 import org.redisson.client.codec.Codec;
 
 import io.netty.util.concurrent.Future;
@@ -37,9 +38,9 @@ import reactor.core.publisher.FluxSink;
  */
 public class RedissonListReactive<V> {
 
-    private final RedissonList<V> instance;
+    private final RListAsync<V> instance;
     
-    public RedissonListReactive(RedissonList<V> instance) {
+    public RedissonListReactive(RListAsync<V> instance) {
         this.instance = instance;
     }
 

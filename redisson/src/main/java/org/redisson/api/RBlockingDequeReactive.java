@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -111,4 +112,18 @@ public interface RBlockingDequeReactive<V> extends RDequeReactive<V>, RBlockingQ
      */
     Mono<V> takeFirst();
 
+    /**
+     * Retrieves and removes stream of elements from the head of this queue. Waits for an element become available.
+     * 
+     * @return the head element of this queue
+     */
+    Flux<V> takeFirstElements();
+    
+    /**
+     * Retrieves and removes stream of elements from the tail of this queue. Waits for an element become available.
+     * 
+     * @return the head element of this queue
+     */
+    Flux<V> takeLastElements();
+    
 }
