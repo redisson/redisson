@@ -20,6 +20,7 @@ import java.util.List;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -71,6 +72,15 @@ public interface RTopicReactive {
      * Removes the listener by <code>id</code> for listening this topic
      *
      * @param listenerId - listener id
+     * @return void
      */
-    void removeListener(int listenerId);
+    Mono<Void> removeListener(int listenerId);
+    
+    /**
+     * Returns stream of messages.
+     * 
+     * @param type - type of message to listen
+     * @return stream of messages
+     */
+    <M> Flux<M> getMessages(Class<M> type);
 }

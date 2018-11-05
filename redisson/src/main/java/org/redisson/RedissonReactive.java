@@ -80,6 +80,7 @@ import org.redisson.reactive.RedissonScoredSortedSetReactive;
 import org.redisson.reactive.RedissonSetCacheReactive;
 import org.redisson.reactive.RedissonSetMultimapReactive;
 import org.redisson.reactive.RedissonSetReactive;
+import org.redisson.reactive.RedissonTopicReactive;
 import org.redisson.reactive.RedissonTransactionReactive;
 
 /**
@@ -295,12 +296,16 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RTopicReactive getTopic(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic(commandExecutor, name), RTopicReactive.class);
+        RedissonTopic topic = new RedissonTopic(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic,
+                new RedissonTopicReactive(topic), RTopicReactive.class);
     }
 
     @Override
     public RTopicReactive getTopic(String name, Codec codec) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonTopic(codec, commandExecutor, name), RTopicReactive.class);
+        RedissonTopic topic = new RedissonTopic(codec, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, topic, 
+                new RedissonTopicReactive(topic), RTopicReactive.class);
     }
 
     @Override
