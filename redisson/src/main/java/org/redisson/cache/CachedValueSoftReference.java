@@ -24,7 +24,7 @@ import java.lang.ref.SoftReference;
  *
  * @param <V> value type
  */
-public class CachedValueSoftReference<V> extends SoftReference<V> {
+public class CachedValueSoftReference<V> extends SoftReference<V> implements CachedValueReference {
 
     private final CachedValue<?, ?> owner;
     
@@ -33,6 +33,7 @@ public class CachedValueSoftReference<V> extends SoftReference<V> {
         this.owner = owner;
     }
     
+    @Override
     public CachedValue<?, ?> getOwner() {
         return owner;
     }

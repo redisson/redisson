@@ -221,14 +221,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     protected abstract void onMapFull();
 
-    boolean isFull() {
-        if (size == 0) {
-            return false;
-        }
-        return map.size() >= size;
-    }
-    
-    private boolean isFull(K key) {
+    protected boolean isFull(K key) {
         if (size == 0) {
             return false;
         }
