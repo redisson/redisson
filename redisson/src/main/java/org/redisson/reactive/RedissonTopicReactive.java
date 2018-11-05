@@ -51,6 +51,11 @@ public class RedissonTopicReactive {
                     }
                 });
                 t.whenComplete((id, e) -> {
+                    if (e != null) {
+                        emitter.error(e);
+                        return;
+                    }
+                    
                     emitter.onDispose(() -> {
                         topic.removeListenerAsync(id);
                     });
