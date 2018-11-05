@@ -39,11 +39,17 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
     public <R> Mono<R> reactive(Supplier<RFuture<R>> supplier) {
         return Flux.<R>create(emitter -> {
             emitter.onRequest(n -> {
-                supplier.get().whenComplete((v, e) -> {
+                RFuture<R> future = supplier.get();
+                future.whenComplete((v, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;
-                    } 
+                    }
+
+                    emitter.onDispose(() -> {
+                        future.cancel(true);
+                    });
+                    
                     if (v != null) {
                         emitter.next(v);
                     }
