@@ -24,6 +24,7 @@ import org.redisson.connection.ConnectionManager;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.LongConsumer;
 import io.reactivex.processors.ReplayProcessor;
 
@@ -44,14 +45,22 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long t) throws Exception {
-                supplier.call().addListener(new FutureListener<R>() {
+                RFuture<R> future = supplier.call();
+                future.addListener(new FutureListener<R>() {
 
                     @Override
-                    public void operationComplete(Future<R> future) throws Exception {
+                    public void operationComplete(final Future<R> future) throws Exception {
                         if (!future.isSuccess()) {
                             p.onError(future.cause());
                             return;
                         }
+                        
+                        p.doOnCancel(new Action() {
+                            @Override
+                            public void run() throws Exception {
+                                future.cancel(true);
+                            }
+                        });
                         
                         if (future.getNow() != null) {
                             p.onNext(future.getNow());
