@@ -15,11 +15,13 @@
  */
 package org.redisson.rx;
 
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.RedissonBlockingQueue;
+import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListAsync;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -36,21 +38,32 @@ import io.reactivex.processors.ReplayProcessor;
  */
 public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
 
-    private final RedissonBlockingQueue<V> queue;
+    private final RBlockingQueueAsync<V> queue;
     
-    public RedissonBlockingQueueRx(RedissonBlockingQueue<V> queue) {
-        super(queue);
+    public RedissonBlockingQueueRx(RBlockingQueueAsync<V> queue) {
+        super((RListAsync<V>) queue);
         this.queue = queue;
     }
 
     public Flowable<V> takeElements() {
+        return takeElements(new Callable<RFuture<V>>() {
+            @Override
+            public RFuture<V> call() throws Exception {
+                return queue.takeAsync();
+            }
+        });
+    }
+    
+    protected final Flowable<V> takeElements(final Callable<RFuture<V>> callable) {
         final ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long n) throws Exception {
                 final AtomicLong counter = new AtomicLong(n);
                 final AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
-                take(p, counter, futureRef);
+                
+                take(callable, p, counter, futureRef);
+
                 p.doOnCancel(new Action() {
                     @Override
                     public void run() throws Exception {
@@ -61,8 +74,8 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
         });
     }
     
-    private void take(final ReplayProcessor<V> p, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) {
-        RFuture<V> future = queue.takeAsync();
+    private void take(final Callable<RFuture<V>> factory, final ReplayProcessor<V> p, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) throws Exception {
+        RFuture<V> future = factory.call();
         futureRef.set(future);
         future.addListener(new FutureListener<V>() {
             @Override
@@ -77,8 +90,9 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
                     p.onComplete();
                 }
                 
-                take(p, counter, futureRef);
+                take(factory, p, counter, futureRef);
             }
         });
     }
+    
 }
