@@ -191,9 +191,9 @@ public class RedissonTopic implements RTopic {
     }
     
     @Override
-    public RFuture<Void> removeListenerAsync(MessageListener<?> listener) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+    public RFuture<Void> removeListenerAsync(final MessageListener<?> listener) {
+        final RPromise<Void> promise = new RedissonPromise<Void>();
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         semaphore.acquire(new Runnable() {
             @Override
             public void run() {
@@ -219,9 +219,9 @@ public class RedissonTopic implements RTopic {
     }
 
     @Override
-    public RFuture<Void> removeListenerAsync(int listenerId) {
-        RPromise<Void> promise = new RedissonPromise<Void>();
-        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+    public RFuture<Void> removeListenerAsync(final int listenerId) {
+        final RPromise<Void> promise = new RedissonPromise<Void>();
+        final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         semaphore.acquire(new Runnable() {
             @Override
             public void run() {
