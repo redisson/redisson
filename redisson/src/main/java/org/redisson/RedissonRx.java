@@ -50,6 +50,7 @@ import org.redisson.api.RSetCacheRx;
 import org.redisson.api.RSetMultimapRx;
 import org.redisson.api.RSetRx;
 import org.redisson.api.RStreamRx;
+import org.redisson.api.RTopic;
 import org.redisson.api.RTopicRx;
 import org.redisson.api.RTransactionRx;
 import org.redisson.api.RedissonRxClient;
@@ -75,6 +76,7 @@ import org.redisson.rx.RedissonScoredSortedSetRx;
 import org.redisson.rx.RedissonSetCacheRx;
 import org.redisson.rx.RedissonSetMultimapRx;
 import org.redisson.rx.RedissonSetRx;
+import org.redisson.rx.RedissonTopicRx;
 import org.redisson.rx.RedissonTransactionRx;
 import org.redisson.rx.RxProxyBuilder;
 
@@ -282,12 +284,14 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public RTopicRx getTopic(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(commandExecutor, name), RTopicRx.class);
+        RTopic topic = new RedissonTopic(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
 
     @Override
     public RTopicRx getTopic(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonTopic(codec, commandExecutor, name), RTopicRx.class);
+        RTopic topic = new RedissonTopic(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, topic, new RedissonTopicRx(topic), RTopicRx.class);
     }
 
     @Override

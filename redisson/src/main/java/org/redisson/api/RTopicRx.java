@@ -73,4 +73,13 @@ public interface RTopicRx {
      * @param listenerId - listener id
      */
     void removeListener(int listenerId);
+    
+    /**
+     * Returns stream of messages.
+     * 
+     * @param type - type of message to listen
+     * @return stream of messages
+     */
+    <M> Flowable<M> getMessages(Class<M> type);
+    
 }
