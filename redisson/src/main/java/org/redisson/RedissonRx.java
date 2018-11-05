@@ -65,6 +65,7 @@ import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.rx.CommandRxExecutor;
 import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RedissonBatchRx;
+import org.redisson.rx.RedissonBlockingDequeRx;
 import org.redisson.rx.RedissonBlockingQueueRx;
 import org.redisson.rx.RedissonKeysRx;
 import org.redisson.rx.RedissonLexSortedSetRx;
@@ -479,14 +480,14 @@ public class RedissonRx implements RedissonRxClient {
     public <V> RBlockingDequeRx<V> getBlockingDeque(String name) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, deque, 
-                new RedissonListRx<V>(deque), RBlockingDequeRx.class);
+                new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
     }
 
     @Override
     public <V> RBlockingDequeRx<V> getBlockingDeque(String name, Codec codec) {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, deque, 
-                new RedissonListRx<V>(deque), RBlockingDequeRx.class);
+                new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
     }
     
 }

@@ -16,7 +16,6 @@
 package org.redisson.api;
 
 import java.util.Collection;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 
 import org.reactivestreams.Publisher;
@@ -121,6 +120,17 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      *         specified waiting time elapses before an element is available
      */
     Publisher<V> poll(long timeout, TimeUnit unit);
+    
+    /**
+     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
+     * waiting if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueName - names of destination queue
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
+    Publisher<V> takeLastAndOfferFirstTo(String queueName);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting if necessary

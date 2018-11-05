@@ -128,6 +128,17 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * @return the head of this queue
      */
     Flowable<V> take();
+    
+    /**
+     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
+     * waiting if necessary for an element to become available
+     * in any of defined queues <b>including</b> queue itself.
+     *
+     * @param queueName - names of destination queue
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
+    Flowable<V> takeLastAndOfferFirstTo(String queueName);
 
     /**
      * Inserts the specified element into this queue in async mode, waiting if necessary
@@ -145,6 +156,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
 
     /**
      * Retrieves and removes stream of elements from the head of this queue.
+     * Waits for an element become available.
      * 
      * @return stream of messages
      */

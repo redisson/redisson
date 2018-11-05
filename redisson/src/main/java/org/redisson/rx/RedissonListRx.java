@@ -16,8 +16,8 @@
 package org.redisson.rx;
 
 import org.reactivestreams.Publisher;
-import org.redisson.RedissonList;
 import org.redisson.api.RFuture;
+import org.redisson.api.RListAsync;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -33,9 +33,9 @@ import io.reactivex.processors.ReplayProcessor;
  */
 public class RedissonListRx<V> {
 
-    private final RedissonList<V> instance;
+    private final RListAsync<V> instance;
 
-    public RedissonListRx(RedissonList<V> instance) {
+    public RedissonListRx(RListAsync<V> instance) {
         this.instance = instance;
     }
 
