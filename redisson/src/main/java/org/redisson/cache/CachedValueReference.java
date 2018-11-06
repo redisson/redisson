@@ -15,27 +15,13 @@
  */
 package org.redisson.cache;
 
-import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
-
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value type
  */
-public class CachedValueWeakReference<V> extends WeakReference<V> implements CachedValueReference {
+public interface CachedValueReference {
 
-    private final CachedValue<?, ?> owner;
+    CachedValue<?, ?> getOwner();
     
-    public CachedValueWeakReference(CachedValue<?, ?> owner, V referent, ReferenceQueue<? super V> q) {
-        super(referent, q);
-        this.owner = owner;
-    }
-    
-    @Override
-    public CachedValue<?, ?> getOwner() {
-        return owner;
-    }
-
 }

@@ -17,6 +17,7 @@ package org.redisson.client.handler;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -155,7 +156,13 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         
         SSLParameters sslParams = new SSLParameters();
         if (config.isSslEnableEndpointIdentification()) {
-            sslParams.setEndpointIdentificationAlgorithm("HTTPS");
+            // TODO remove for JDK 1.7+
+            try {
+                Method method = sslParams.getClass().getDeclaredMethod("setEndpointIdentificationAlgorithm", String.class);
+                method.invoke(sslParams, "HTTPS");
+            } catch (Exception e) {
+                throw new SSLException(e);
+            }
         } else {
             if (config.getSslTruststore() == null) {
                 sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
