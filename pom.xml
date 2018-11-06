@@ -20,7 +20,7 @@
         <maven.test.skip>true</maven.test.skip>
         <source.version>1.6</source.version>
         <test.source.version>1.8</test.source.version>
-        <release.version>7</release.version>
+        <release.version>6</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
