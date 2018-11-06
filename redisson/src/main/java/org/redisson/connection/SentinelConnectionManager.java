@@ -371,8 +371,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                             Set<String> removedSlaves = new HashSet<String>(slaves);
                             removedSlaves.removeAll(currentSlaves);
                             for (String slave : removedSlaves) {
-                                String[] parts = slave.replace("redis://", "").split(":");
-                                slaveDown(parts[0], parts[1]);
+                                String hostPort = slave.replace("redis://", "");
+                                int lastColonIdx = hostPort.lastIndexOf(":");
+                                String host = hostPort.substring(0, lastColonIdx);
+                                String port = hostPort.substring(lastColonIdx + 1);
+                                slaveDown(host, port);
                             }
                         };
                     };
