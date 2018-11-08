@@ -18,6 +18,13 @@ import org.redisson.config.Config;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testSizeInMemory() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+        assertThat(al.sizeInMemory()).isEqualTo(49);
+    }
+    
+    @Test
     public void testDumpAndRestore() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);

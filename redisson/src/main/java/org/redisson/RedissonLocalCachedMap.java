@@ -520,6 +520,11 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.HDEL, params.toArray());
     }
 
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), listener.getUpdatesLogName());
+        return super.sizeInMemoryAsync(keys);
+    }
     
     @Override
     public RFuture<Boolean> deleteAsync() {

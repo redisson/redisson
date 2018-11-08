@@ -26,6 +26,13 @@ import java.util.concurrent.TimeUnit;
 public interface RObjectAsync {
 
     /**
+     * Returns size of object in Redis memory
+     * 
+     * @return size of object
+     */
+    RFuture<Long> sizeInMemoryAsync();
+    
+    /**
      * Restores object using its state returned by {@link #dumpAsync()} method.
      * 
      * @param state - state of object

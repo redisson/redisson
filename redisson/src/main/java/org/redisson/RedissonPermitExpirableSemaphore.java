@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -622,6 +623,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                 "redis.call('publish', KEYS[2], value); " + 
                 "return 1;",
                 Arrays.<Object>asList(getName(), getChannelName(), timeoutName), permitId, 1);
+    }
+    
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), timeoutName);
+        return super.sizeInMemoryAsync(keys);
     }
     
     @Override

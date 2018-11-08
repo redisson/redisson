@@ -92,6 +92,12 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
     }
     
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), timeoutSetName);
+        return super.sizeInMemoryAsync(keys);
+    }
+    
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDate = 92233720368547758; " +

@@ -370,6 +370,12 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getSemaphoreName());
     }
+    
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), getSemaphoreName());
+        return super.sizeInMemoryAsync(keys);
+    }
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {

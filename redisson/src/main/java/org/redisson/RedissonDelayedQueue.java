@@ -402,6 +402,12 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
     
     @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(queueName, timeoutSetName);
+        return super.sizeInMemoryAsync(keys);
+    }
+    
+    @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
