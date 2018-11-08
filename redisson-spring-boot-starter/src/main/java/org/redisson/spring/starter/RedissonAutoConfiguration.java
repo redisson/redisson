@@ -74,7 +74,9 @@ public class RedissonAutoConfiguration {
         Method timeoutMethod = ReflectionUtils.findMethod(RedisProperties.class, "getTimeout");
         Object timeoutValue = ReflectionUtils.invokeMethod(timeoutMethod, redisProperties);
         int timeout;
-        if (!(timeoutValue instanceof Integer)) {
+        if(null == timeoutValue){
+            timeout = 0;
+        }else if (!(timeoutValue instanceof Integer)) {
             Method millisMethod = ReflectionUtils.findMethod(timeoutValue.getClass(), "toMillis");
             timeout = ((Long) ReflectionUtils.invokeMethod(millisMethod, timeoutValue)).intValue();
         } else {
