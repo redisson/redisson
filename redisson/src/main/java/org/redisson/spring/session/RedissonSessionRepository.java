@@ -42,6 +42,7 @@ import org.springframework.session.Session;
 import org.springframework.session.events.SessionCreatedEvent;
 import org.springframework.session.events.SessionDeletedEvent;
 import org.springframework.session.events.SessionExpiredEvent;
+import org.springframework.util.StringUtils;
 
 /**
  * 
@@ -59,7 +60,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
         public RedissonSession() {
             this.delegate = new MapSession();
-            map = redisson.getMap("redisson_spring_session:" + delegate.getId());
+            map = redisson.getMap(getSessionNamespace() + delegate.getId());
             principalName = resolvePrincipal(delegate);
 
             Map<String, Object> newMap = new HashMap<String, Object>(3);
@@ -83,7 +84,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         
         public RedissonSession(String sessionId) {
             this.delegate = new MapSession(sessionId);
-            map = redisson.getMap("redisson_spring_session:" + sessionId);
+            map = redisson.getMap(getSessionNamespace() + sessionId);
             principalName = resolvePrincipal(delegate);
         }
         
@@ -226,12 +227,13 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
     private RPatternTopic createdTopic;
     
     private String keyPrefix = "spring:session:";
+    private boolean addPrefixToSpringSessionRootKey = false;
     private Integer defaultMaxInactiveInterval;
     
     public RedissonSessionRepository(RedissonClient redissonClient, ApplicationEventPublisher eventPublisher) {
         this.redisson = redissonClient;
         this.eventPublisher = eventPublisher;
-        
+
         deletedTopic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
         deletedTopic.addListener(String.class, this);
         expiredTopic = redisson.getPatternTopic("__keyevent@*:expired", StringCodec.INSTANCE);
@@ -252,7 +254,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 return;
             }
             
-            String id = body.split(":")[1];
+            String id = getSessionIdFromBody(body);
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
@@ -265,7 +267,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 return;
             }
 
-            String id = body.split(":")[1];
+            String id = getSessionIdFromBody(body);
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
@@ -282,6 +284,14 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private String getSessionIdFromBody(String body) {
+        String content = body;
+        if (addPrefixToSpringSessionRootKey) {
+            content = content.substring(keyPrefix.length());
+        }
+        return content.split(":")[1];
     }
 
     public void setDefaultMaxInactiveInterval(int defaultMaxInactiveInterval) {
@@ -323,9 +333,21 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
     }
     
     public void setKeyPrefix(String keyPrefix) {
+        boolean changed = !this.keyPrefix.equals(keyPrefix);
         this.keyPrefix = keyPrefix;
+
+        if (changed) {
+            // remove the previous create listener and register a new one
+            createdTopic.removeAllListeners();
+            createdTopic = redisson.getPatternTopic(getEventsChannelPrefix() + "*", StringCodec.INSTANCE);
+            createdTopic.addListener(String.class, this);
+        }
     }
-    
+
+    public void setAddPrefixToSpringSessionRootKey(boolean addPrefixToSpringSessionRootKey) {
+        this.addPrefixToSpringSessionRootKey = addPrefixToSpringSessionRootKey;
+    }
+
     String resolvePrincipal(Session session) {
         String principalName = session.getAttribute(PRINCIPAL_NAME_INDEX_NAME);
         if (principalName != null) {
@@ -381,4 +403,12 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         return redisson.getSet(principalKey);
     }
 
+    private String getSessionNamespace() {
+        String sessionNamespace = "redisson_spring_session:";
+        if (addPrefixToSpringSessionRootKey && StringUtils.hasText(keyPrefix)) {
+            sessionNamespace = keyPrefix + sessionNamespace;
+        }
+
+        return sessionNamespace;
+    }
 }

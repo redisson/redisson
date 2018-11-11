@@ -20,6 +20,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.redisson.spring.session.RedissonSessionRepository;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.session.MapSession;
@@ -55,7 +56,30 @@ import org.springframework.session.MapSession;
 public @interface EnableRedissonHttpSession {
 
     int maxInactiveIntervalInSeconds() default MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
-    
+
+    /**
+     * the key prefix to be add.
+     *
+     * <p>
+     * <strong>Note: the key prefix dose not add to the namespace of
+     * {@literal redisson_spring_session} by default, Set {@link #addPrefixToSpringSessionRootKey()}
+     * to {@literal true} to enable this.</strong>
+     * </p>
+     *
+     * @return the key prefix
+     */
     String keyPrefix() default "";
-    
+
+    /**
+     * weather to add {@link #keyPrefix()} to {@literal redisson_spring_session} or not.
+     *
+     * <p>
+     * This option is <strong>ignored</strong> when {@link #keyPrefix()} is blank.
+     * </p>
+     *
+     * @return weather or not
+     * @see RedissonSessionRepository.RedissonSession#RedissonSession()
+     */
+    boolean addPrefixToSpringSessionRootKey() default false;
+
 }

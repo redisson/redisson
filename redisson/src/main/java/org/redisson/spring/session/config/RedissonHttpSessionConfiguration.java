@@ -43,6 +43,7 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
 
     private Integer maxInactiveIntervalInSeconds;
     private String keyPrefix;
+    private boolean addPrefixToSpringSessionRootKey;
     
     @Bean
     public RedissonSessionRepository sessionRepository(
@@ -50,6 +51,7 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
         RedissonSessionRepository repository = new RedissonSessionRepository(redissonClient, eventPublisher);
         if (StringUtils.hasText(keyPrefix)) {
             repository.setKeyPrefix(keyPrefix);
+            repository.setAddPrefixToSpringSessionRootKey(addPrefixToSpringSessionRootKey);
         }
         repository.setDefaultMaxInactiveInterval(maxInactiveIntervalInSeconds);
         return repository;
@@ -63,12 +65,17 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
         this.keyPrefix = keyPrefix;
     }
 
+    public void setAddPrefixToSpringSessionRootKey(boolean addPrefixToSpringSessionRootKey) {
+        this.addPrefixToSpringSessionRootKey = addPrefixToSpringSessionRootKey;
+    }
+
     @Override
     public void setImportMetadata(AnnotationMetadata importMetadata) {
         Map<String, Object> map = importMetadata.getAnnotationAttributes(EnableRedissonHttpSession.class.getName());
         AnnotationAttributes attrs = AnnotationAttributes.fromMap(map);
         keyPrefix = attrs.getString("keyPrefix");
         maxInactiveIntervalInSeconds = attrs.getNumber("maxInactiveIntervalInSeconds");
+        addPrefixToSpringSessionRootKey = attrs.getBoolean("addPrefixToSpringSessionRootKey");
     }
     
 }
