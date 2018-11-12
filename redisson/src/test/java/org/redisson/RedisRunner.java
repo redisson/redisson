@@ -473,7 +473,8 @@ public class RedisRunner {
         options.remove(REDIS_OPTIONS.DIR);
         makeRandomDefaultDir();
 
-        addConfigOption(REDIS_OPTIONS.DIR, defaultDir);
+
+        addConfigOption(REDIS_OPTIONS.DIR, "\"" + defaultDir + "\"");
         return this;
     }
 
@@ -870,7 +871,7 @@ public class RedisRunner {
             f.mkdirs();
             this.defaultDir = f.getAbsolutePath();
             if (RedissonRuntimeEnvironment.isWindows) {
-                defaultDir = "\"" + defaultDir.replace("\\", "\\\\") + "\"";
+                defaultDir = defaultDir.replace("\\", "\\\\");
             }
         }
     }
