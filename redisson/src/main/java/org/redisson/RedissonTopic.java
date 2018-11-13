@@ -156,7 +156,7 @@ public class RedissonTopic implements RTopic {
         }
 
         if (entry.removeAllListeners(channelName)) {
-            subscribeService.unsubscribe(channelName, semaphore);
+            subscribeService.unsubscribe(channelName, semaphore).syncUninterruptibly();
         } else {
             semaphore.release();
         }
