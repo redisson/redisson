@@ -18,6 +18,7 @@ package org.redisson;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -96,6 +97,29 @@ public abstract class RedissonObject implements RObject {
     @Override
     public void rename(String newName) {
         get(renameAsync(newName));
+    }
+    
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        return commandExecutor.writeAsync(getName(), RedisCommands.MEMORY_USAGE, getName());
+    }
+    
+    public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
+        return commandExecutor.evalWriteAsync((String)keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                  "local total = 0;"
+                + "for j = 1, #KEYS, 1 do "
+                    + "local size = redis.call('memory', 'usage', KEYS[j]); "
+                    + "if size ~= false then "
+                        + "total = total + size;"
+                    + "end; "
+                + "end; "
+                + "return total; ", keys);
+
+    }
+    
+    @Override
+    public long sizeInMemory() {
+        return get(sizeInMemoryAsync());
     }
 
     @Override

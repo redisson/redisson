@@ -192,6 +192,11 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
     public RFuture<Boolean> expireKeyAsync(K key, long timeToLive, TimeUnit timeUnit) {
         return baseCache.expireKeyAsync(key, timeToLive, timeUnit);
     }
+    
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        return baseCache.sizeInMemoryAsync();
+    }
 
     @Override
     public RFuture<Boolean> deleteAsync() {

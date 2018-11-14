@@ -105,6 +105,14 @@ public class PublishSubscribeService {
                 }
                 
                 final RPromise<PubSubConnectionEntry> result = new RedissonPromise<PubSubConnectionEntry>();
+                promise.addListener(new FutureListener<PubSubConnectionEntry>() {
+                    @Override
+                    public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+                        if (!future.isSuccess()) {
+                            result.tryFailure(future.cause());
+                        }
+                    }
+                });
                 result.addListener(new FutureListener<PubSubConnectionEntry>() {
                     @Override
                     public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
@@ -245,7 +253,15 @@ public class PublishSubscribeService {
     private void connect(final Codec codec, final ChannelName channelName,
             final RPromise<PubSubConnectionEntry> promise, final PubSubType type, final AsyncSemaphore lock, final RedisPubSubListener<?>... listeners) {
         final int slot = connectionManager.calcSlot(channelName.getName());
-        RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
+        final RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
+        promise.addListener(new FutureListener<PubSubConnectionEntry>() {
+            @Override
+            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
+                if (!future.isSuccess()) {
+                    ((RPromise<RedisPubSubConnection>)connFuture).tryFailure(future.cause());
+                }
+            }
+        });
         connFuture.addListener(new FutureListener<RedisPubSubConnection>() {
 
             @Override

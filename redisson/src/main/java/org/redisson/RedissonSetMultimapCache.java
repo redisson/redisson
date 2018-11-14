@@ -187,6 +187,11 @@ public class RedissonSetMultimapCache<K, V> extends RedissonSetMultimap<K, V> im
     }
     
     @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        return baseCache.sizeInMemoryAsync();
+    }
+    
+    @Override
     public RFuture<Boolean> deleteAsync() {
         return baseCache.deleteAsync();
     }

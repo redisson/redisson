@@ -71,6 +71,16 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
     
     @Test
+    public void testSizeInMemory() {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("test");
+        for (int i = 0; i < 10; i++) {
+            map.put(i, i, 5, TimeUnit.SECONDS);
+        }
+        
+        assertThat(map.sizeInMemory()).isGreaterThanOrEqualTo(466);
+    }
+    
+    @Test
     public void testRemainTimeToLive() {
         RMapCache<String, String> map = redisson.getMapCache("test");
         map.put("1", "2", 2, TimeUnit.SECONDS);

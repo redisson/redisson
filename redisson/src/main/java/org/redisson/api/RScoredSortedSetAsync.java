@@ -151,10 +151,39 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Double> lastScoreAsync();
 
+    /**
+     * Adds all elements contained in the specified map to this sorted set.
+     * Map contains of score mapped by object. 
+     * 
+     * @param objects - map of elements to add
+     * @return amount of added elements, not including already existing in this sorted set
+     */
     RFuture<Integer> addAllAsync(Map<V, Double> objects);
 
+    /**
+     * Removes values by score range.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return number of elements removed
+     */
     RFuture<Integer> removeRangeByScoreAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Removes values by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return
+     */
     RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 
     /**
@@ -219,19 +248,68 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Boolean> tryAddAsync(double score, V object);
 
-    RFuture<Boolean> removeAsync(V object);
+    /**
+     * Removes a single instance of the specified element from this
+     * sorted set, if it is present.
+     *
+     * @param o element to be removed from this sorted set, if present
+     * @return <code>true</code> if an element was removed as a result of this call
+     */
+    RFuture<Boolean> removeAsync(V o);
 
+    /**
+     * Returns size of this set.
+     * 
+     * @return size
+     */
     RFuture<Integer> sizeAsync();
 
+    /**
+     * Returns <code>true</code> if this sorted set contains encoded state of the specified element.
+     *
+     * @param o element whose presence in this collection is to be tested
+     * @return <code>true</code> if this sorted set contains the specified
+     *         element and <code>false</code> otherwise
+     */
     RFuture<Boolean> containsAsync(Object o);
 
+    /**
+     * Returns <code>true</code> if this sorted set contains all of the elements
+     * in encoded state in the specified collection.
+     *
+     * @param  c collection to be checked for containment in this sorted set
+     * @return <code>true</code> if this sorted set contains all of the elements
+     *         in the specified collection
+     */
     RFuture<Boolean> containsAllAsync(Collection<?> c);
 
+    /**
+     * Removes all of this sorted set's elements that are also contained in the
+     * specified collection.
+     *
+     * @param c sorted set containing elements to be removed from this collection
+     * @return <code>true</code> if this sorted set changed as a result of the
+     *         call
+     */
     RFuture<Boolean> removeAllAsync(Collection<?> c);
 
+    /**
+     * Retains only the elements in this sorted set that are contained in the
+     * specified collection.
+     *
+     * @param c collection containing elements to be retained in this collection
+     * @return <code>true</code> if this sorted set changed as a result of the call
+     */
     RFuture<Boolean> retainAllAsync(Collection<?> c);
 
-    RFuture<Double> addScoreAsync(V object, Number value);
+    /**
+     * Increases score of specified element by value.
+     * 
+     * @param element - element whose score needs to be increased
+     * @param value - value
+     * @return updated score of element
+     */
+    RFuture<Double> addScoreAsync(V element, Number value);
 
     /**
      * Adds score to element and returns its reverse rank
@@ -251,12 +329,44 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Integer> addScoreAndGetRankAsync(V object, Number value);
     
+    /**
+     * Returns values by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return elements
+     */
     RFuture<Collection<V>> valueRangeAsync(int startIndex, int endIndex);
     
+    /**
+     * Returns values by rank range in reverse order. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return elements
+     */
     RFuture<Collection<V>> valueRangeReversedAsync(int startIndex, int endIndex);
 
+    /**
+     * Returns entries (value and its score) by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(int startIndex, int endIndex);
     
+    /**
+     * Returns entries (value and its score) by rank range in reverse order. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(int startIndex, int endIndex);
 
     /**
@@ -291,16 +401,108 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return values
+     */
     RFuture<Collection<V>> valueRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return values
+     */
     RFuture<Collection<V>> valueRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
-    
+
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return entries
+     */
     RFuture<Collection<ScoredEntry<V>>> entryRangeReversedAsync(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**

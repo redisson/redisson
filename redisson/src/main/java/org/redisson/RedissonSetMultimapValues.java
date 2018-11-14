@@ -122,6 +122,11 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), timeoutSetName);
+        return super.sizeInMemoryAsync(keys);
+    }
 
     @Override
     public RFuture<Integer> sizeAsync() {

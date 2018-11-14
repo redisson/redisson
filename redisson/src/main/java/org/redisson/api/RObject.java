@@ -28,6 +28,13 @@ import org.redisson.client.codec.Codec;
 public interface RObject extends RObjectAsync {
 
     /**
+     * Returns size of object in Redis memory
+     * 
+     * @return size of object
+     */
+    long sizeInMemory();
+    
+    /**
      * Restores object using its state returned by {@link #dump()} method.
      * 
      * @param state - state of object

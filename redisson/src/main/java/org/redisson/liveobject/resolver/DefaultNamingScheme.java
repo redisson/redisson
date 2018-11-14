@@ -24,6 +24,7 @@ import org.redisson.codec.JsonJacksonCodec;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 
 /**
  *
@@ -72,9 +73,8 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     public Object resolveId(String name) {
         String decode = name.substring(name.indexOf("{") + 1, name.indexOf("}"));
         
-        ByteBuf b = ByteBufAllocator.DEFAULT.buffer(decode.length()/2); 
+        ByteBuf b = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump(decode)); 
         try {
-            b.writeBytes(ByteBufUtil.decodeHexDump(decode));
             return codec.getMapKeyDecoder().decode(b, new State(false));
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to decode [" + decode + "] into object", ex);

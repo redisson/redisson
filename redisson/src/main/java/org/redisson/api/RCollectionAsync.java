@@ -28,7 +28,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
      * Retains only the elements in this collection that are contained in the
-     * specified collection (optional operation).
+     * specified collection.
      *
      * @param c collection containing elements to be retained in this collection
      * @return <code>true</code> if this collection changed as a result of the call
@@ -37,7 +37,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
      * Removes all of this collection's elements that are also contained in the
-     * specified collection (optional operation).
+     * specified collection.
      *
      * @param c collection containing elements to be removed from this collection
      * @return <code>true</code> if this collection changed as a result of the
@@ -66,7 +66,7 @@ public interface RCollectionAsync<V> extends RExpirableAsync {
 
     /**
      * Removes a single instance of the specified element from this
-     * collection, if it is present (optional operation).
+     * collection, if it is present.
      *
      * @param o element to be removed from this collection, if present
      * @return <code>true</code> if an element was removed as a result of this call

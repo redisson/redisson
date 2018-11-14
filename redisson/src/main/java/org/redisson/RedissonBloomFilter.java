@@ -220,6 +220,12 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), configName);
     }
 
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), configName);
+        return super.sizeInMemoryAsync(keys);
+    }
+    
     private void readConfig() {
         RFuture<Map<String, String>> future = commandExecutor.readAsync(configName, StringCodec.INSTANCE,
                 new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder()), configName);
