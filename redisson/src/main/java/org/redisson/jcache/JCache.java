@@ -85,7 +85,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
-    private final boolean v2 = System.getProperty("org.jsr107.tck.management.agentId") == null;
+    private final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
     
     private final JCacheManager cacheManager;
     private final JCacheConfiguration<K, V> config;
@@ -98,6 +98,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private boolean closed;
     private boolean hasOwnRedisson;
     
+    /*
+     * No locking required in atomic execution mode.
+     */
     private static final RLock DUMMY_LOCK = (RLock) Proxy.newProxyInstance(JCache.class.getClassLoader(), new Class[] {RLock.class}, new InvocationHandler() {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -189,7 +192,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         RLock lock = getLockedLock(key);
         try {
             V value;
-            if (v2) {
+            if (atomicExecution) {
                 value = getValue(key);
             } else {
                 value = getValueLocked(key);
@@ -342,7 +345,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         RLock lock = getLockedLock(key);
         try {
             V value;
-            if (v2) {
+            if (atomicExecution) {
                 value = getValue(key);
             } else {
                 value = getValueLocked(key);
@@ -365,7 +368,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         if (value != null) {
             long startTime = currentNanoTime();
-            if (v2) {
+            if (atomicExecution) {
                 putValue(key, value);
             } else {
                 putValueLocked(key, value);
@@ -815,7 +818,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                                         throw new CacheLoaderException(ex);
                                     }
                                     if (value != null) {
-                                        if (v2) {
+                                        if (atomicExecution) {
                                             putValue(key, value);
                                         } else {
                                             putValueLocked(key, value);
@@ -841,7 +844,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
     
     private RLock getLockedLock(K key) {
-        if (v2) {
+        if (atomicExecution) {
             return DUMMY_LOCK;
         }
         
@@ -871,7 +874,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 List<Object> result;
-                if (v2) {
+                if (atomicExecution) {
                     result = getAndPutValue(key, value);
                 } else {
                     result = getAndPutValueLocked(key, value);
@@ -921,7 +924,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 boolean result;
-                if (v2) {
+                if (atomicExecution) {
                     result = putValue(key, value);
                 } else {
                     result = putValueLocked(key, value);
@@ -1093,7 +1096,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 List<Object> result;
-                if (v2) {
+                if (atomicExecution) {
                     result = getAndPutValue(key, value);
                 } else {
                     result = getAndPutValueLocked(key, value);
@@ -1147,7 +1150,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 List<Object> result;
-                if (v2) {
+                if (atomicExecution) {
                     result = getAndPutValue(key, value);
                 } else {
                     result = getAndPutValueLocked(key, value);
@@ -1305,7 +1308,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 boolean result;
-                if (v2) {
+                if (atomicExecution) {
                     result = putIfAbsentValue(key, value);
                 } else {
                     result = putIfAbsentValueLocked(key, value);
@@ -1331,7 +1334,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 boolean result;
-                if (v2) {
+                if (atomicExecution) {
                     result = putIfAbsentValue(key, value);
                 } else {
                     result = putIfAbsentValueLocked(key, value);
@@ -1535,7 +1538,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                if (v2) {
+                if (atomicExecution) {
                     result = removeValue(key, value);
                 } else {
                     result = removeValueLocked(key, value);
@@ -1565,7 +1568,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         } else {
             RLock lock = getLockedLock(key);
             try {
-                if (v2) {
+                if (atomicExecution) {
                     result = removeValue(key, value);
                 } else {
                     result = removeValueLocked(key, value);
@@ -1839,7 +1842,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 long result;
-                if (v2) {
+                if (atomicExecution) {
                     result = replaceValue(key, oldValue, newValue);
                 } else {
                     result = replaceValueLocked(key, oldValue, newValue);
@@ -1876,7 +1879,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 long result;
-                if (v2) {
+                if (atomicExecution) {
                     result = replaceValue(key, oldValue, newValue);
                 } else {
                     result = replaceValueLocked(key, oldValue, newValue);
@@ -2092,7 +2095,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 boolean result;
-                if (v2) {
+                if (atomicExecution) {
                     result = replaceValue(key, value);
                 } else {
                     result = replaceValueLocked(key, value);
@@ -2121,7 +2124,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 boolean result;
-                if (v2) {
+                if (atomicExecution) {
                     result = replaceValue(key, value);
                 } else {
                     result = replaceValueLocked(key, value);
@@ -2155,7 +2158,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 V result;
-                if (v2) {
+                if (atomicExecution) {
                     result = getAndReplaceValue(key, value);
                 } else {
                     result = getAndReplaceValueLocked(key, value);
@@ -2185,7 +2188,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             RLock lock = getLockedLock(key);
             try {
                 V result;
-                if (v2) {
+                if (atomicExecution) {
                     result = getAndReplaceValue(key, value);
                 } else {
                     result = getAndReplaceValueLocked(key, value);
