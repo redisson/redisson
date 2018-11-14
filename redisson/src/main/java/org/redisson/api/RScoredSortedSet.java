@@ -162,10 +162,39 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Double lastScore();
 
+    /**
+     * Adds all elements contained in the specified map to this sorted set.
+     * Map contains of score mapped by object. 
+     * 
+     * @param objects - map of elements to add
+     * @return amount of added elements, not including already existing in this sorted set
+     */
     int addAll(Map<V, Double> objects);
 
+    /**
+     * Removes values by score range.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return number of elements removed
+     */
     int removeRangeByScore(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Removes values by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return number of elements removed
+     */
     int removeRangeByRank(int startIndex, int endIndex);
 
     /**
@@ -273,23 +302,81 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Iterator<V> iterator(String pattern, int count);
 
+    /**
+     * Returns <code>true</code> if this sorted set contains encoded state of the specified element.
+     *
+     * @param o element whose presence in this collection is to be tested
+     * @return <code>true</code> if this sorted set contains the specified
+     *         element and <code>false</code> otherwise
+     */
     boolean contains(Object o);
 
+    /**
+     * Returns this sorted set in array of Object type.
+     * 
+     * @return array of values
+     */
     Object[] toArray();
 
+    /**
+     * Returns this sorted set in array of defined type.
+     * 
+     * @param a - instance of array
+     * @return array of values
+     */
     <T> T[] toArray(T[] a);
 
+    /**
+     * Removes a single instance of the specified element from this
+     * sorted set, if it is present.
+     *
+     * @param o element to be removed from this sorted set, if present
+     * @return <code>true</code> if an element was removed as a result of this call
+     */
     boolean remove(Object o);
 
+    /**
+     * Returns <code>true</code> if this sorted set contains all of the elements
+     * in encoded state in the specified collection.
+     *
+     * @param  c collection to be checked for containment in this sorted set
+     * @return <code>true</code> if this sorted set contains all of the elements
+     *         in the specified collection
+     */
     boolean containsAll(Collection<?> c);
 
+    /**
+     * Removes all of this sorted set's elements that are also contained in the
+     * specified collection.
+     *
+     * @param c collection containing elements to be removed from this collection
+     * @return <code>true</code> if this sorted set changed as a result of the
+     *         call
+     */
     boolean removeAll(Collection<?> c);
 
+    /**
+     * Retains only the elements in this sorted set that are contained in the
+     * specified collection.
+     *
+     * @param c collection containing elements to be retained in this collection
+     * @return <code>true</code> if this sorted set changed as a result of the call
+     */
     boolean retainAll(Collection<?> c);
 
+    /**
+     * Removes all elements of this sorted set.
+     */
     void clear();
 
-    Double addScore(V object, Number value);
+    /**
+     * Increases score of specified element by value.
+     * 
+     * @param element - element whose score needs to be increased
+     * @param value - value
+     * @return updated score of element
+     */
+    Double addScore(V element, Number value);
 
     /**
      * Adds score to element and returns its rank
@@ -309,12 +396,44 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Integer addScoreAndGetRevRank(V object, Number value);
     
+    /**
+     * Returns values by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return elements
+     */
     Collection<V> valueRange(int startIndex, int endIndex);
-    
+
+    /**
+     * Returns values by rank range in reverse order. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return elements
+     */
     Collection<V> valueRangeReversed(int startIndex, int endIndex);
 
+    /**
+     * Returns entries (value and its score) by rank range. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRange(int startIndex, int endIndex);
     
+    /**
+     * Returns entries (value and its score) by rank range in reverse order. Indexes are zero based. 
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * 
+     * @param startIndex - start index 
+     * @param endIndex - end index
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRangeReversed(int startIndex, int endIndex);
 
     /**
@@ -349,16 +468,108 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return values
+     */
     Collection<V> valueRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all values between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return values
+     */
     Collection<V> valueRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code>.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRange(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
-    
+
+    /**
+     * Returns all entries (value and its score) between <code>startScore</code> and <code>endScore</code> in reversed order.
+     * 
+     * @param startScore - start score. 
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code> 
+     *                     to define infinity numbers
+     * 
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return entries
+     */
     Collection<ScoredEntry<V>> entryRangeReversed(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
