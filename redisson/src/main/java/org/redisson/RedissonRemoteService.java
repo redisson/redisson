@@ -362,7 +362,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
                     // could be removed not from future object
                     if (future.getNow().isSendResponse()) {
                         RMap<String, RemoteServiceCancelResponse> map = redisson.getMap(cancelResponseMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
-                        map.putAsync(request.getId(), response);
+                        map.fastPutAsync(request.getId(), response);
                         map.expireAsync(60, TimeUnit.SECONDS);
                     }
                 }
