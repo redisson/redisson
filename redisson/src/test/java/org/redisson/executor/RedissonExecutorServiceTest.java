@@ -118,6 +118,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
+        node.shutdown();
         node = RedissonNode.create(nodeConfig);
         node.start();
         
@@ -181,6 +182,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
+        node.shutdown();
         node = RedissonNode.create(nodeConfig);
         node.start();
 
@@ -234,6 +236,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
+        node.shutdown();
         node = RedissonNode.create(nodeConfig);
         node.start();
         

@@ -49,5 +49,10 @@ public abstract class BaseCodec implements Codec {
     public ClassLoader getClassLoader() {
         return getClass().getClassLoader();
     }
+
+    @Override
+    public String toString() {
+        return getClass().getName();
+    }
     
 }

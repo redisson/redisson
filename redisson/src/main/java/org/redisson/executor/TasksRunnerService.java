@@ -146,7 +146,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             future = service.schedule(params);
         }
         try {
-            executeRunnable(params);
+            executeRunnable(params, nextStartDate);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             if (future != null) {
@@ -209,7 +209,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {
-            finish(params.getRequestId());
+            finish(params.getRequestId(), null);
         }
     }
 
@@ -293,8 +293,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
     }
 
-    @Override
-    public void executeRunnable(TaskParameters params) {
+    public void executeRunnable(TaskParameters params, Date nextDate) {
         if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
             renewRetryTime(params.getRequestId());
         }
@@ -309,8 +308,13 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {
-            finish(params.getRequestId());
+            finish(params.getRequestId(), nextDate);
         }
+    }
+    
+    @Override
+    public void executeRunnable(TaskParameters params) {
+        executeRunnable(params, null);
     }
 
     /**
@@ -323,22 +327,26 @@ public class TasksRunnerService implements RemoteExecutorService {
      * 
      * @param requestId
      */
-    private void finish(String requestId) {
+    private void finish(String requestId, Date nextDate) {
+        String script = "";
+        if (nextDate == null) {
+           script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
+                    + "if scheduled == false then "
+                        + "redis.call('hdel', KEYS[4], ARGV[3]); "
+                    + "end;";
+        }
+        script += "redis.call('zrem', KEYS[5], 'ff' .. ARGV[3]);" +
+                  "if redis.call('decr', KEYS[1]) == 0 then "
+                   + "redis.call('del', KEYS[1]);"
+                    + "if redis.call('get', KEYS[2]) == ARGV[1] then "
+                        + "redis.call('del', KEYS[6]);"
+                        + "redis.call('set', KEYS[2], ARGV[2]);"
+                        + "redis.call('publish', KEYS[3], ARGV[2]);"
+                    + "end;"
+                + "end;";  
+
         commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
-               "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
-             + "if scheduled == false then "
-                 + "redis.call('hdel', KEYS[4], ARGV[3]); "
-             + "end;" +
-               
-               "redis.call('zrem', KEYS[5], 'ff' .. ARGV[3]);" +
-               "if redis.call('decr', KEYS[1]) == 0 then "
-                + "redis.call('del', KEYS[1]);"
-                + "if redis.call('get', KEYS[2]) == ARGV[1] then "
-                    + "redis.call('del', KEYS[6]);"
-                    + "redis.call('set', KEYS[2], ARGV[2]);"
-                    + "redis.call('publish', KEYS[3], ARGV[2]);"
-                + "end;"
-             + "end;",  
+                script,
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);
     }

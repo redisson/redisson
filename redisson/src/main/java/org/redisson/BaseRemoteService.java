@@ -689,7 +689,7 @@ public abstract class BaseRemoteService {
         byte[] id = new byte[17];
         // TODO JDK UPGRADE replace to native ThreadLocalRandom
         PlatformDependent.threadLocalRandom().nextBytes(id);
-        id[0] = 0;
+        id[0] = 00;
         return new RequestId(id);
     }
 
@@ -701,7 +701,7 @@ public abstract class BaseRemoteService {
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
             boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise) {
         RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
-        canceledRequests.putAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
+        canceledRequests.fastPutAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         
         // subscribe for async result if it's not expected before

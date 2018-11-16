@@ -17,6 +17,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.redisson.BaseTest;
+import org.redisson.Redisson;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonNode;
 import org.redisson.api.CronSchedule;
@@ -24,7 +25,9 @@ import org.redisson.api.ExecutorOptions;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
@@ -52,6 +55,43 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     @Override
     public void after() throws InterruptedException {
         super.after();
+        node.shutdown();
+    }
+    
+    public static class TestTask implements Runnable {
+        
+        @RInject
+        RedissonClient redisson;
+        
+        @Override
+        public void run() {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            redisson.getAtomicLong("counter").incrementAndGet();
+        }
+
+    }
+    
+    @Test
+    public void testSingleWorker() throws InterruptedException {
+        Config config = createConfig();
+        RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
+        nodeConfig.getExecutorServiceWorkers().put("JobA", 1);
+        RedissonNode node = RedissonNode.create(nodeConfig);
+        node.start();
+        
+        RedissonClient client = Redisson.create(config);
+        RScheduledExecutorService executorService = client.getExecutorService("JobA");
+        executorService.schedule(new TestTask() , CronSchedule.of("0/1 * * * * ?"));
+        
+        TimeUnit.MILLISECONDS.sleep(4800);
+        
+        assertThat(client.getAtomicLong("counter").get()).isEqualTo(4);
+        
+        client.shutdown();
         node.shutdown();
     }
     
@@ -106,6 +146,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         Config config = createConfig();
         RedissonNodeConfig nodeConfig = new RedissonNodeConfig(config);
         nodeConfig.setExecutorServiceWorkers(Collections.singletonMap("test2", 1));
+        node.shutdown();
         node = RedissonNode.create(nodeConfig);
         node.start();
         

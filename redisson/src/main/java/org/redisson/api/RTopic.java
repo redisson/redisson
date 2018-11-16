@@ -84,4 +84,10 @@ public interface RTopic extends RTopicAsync {
      */
     void removeAllListeners();
 
+    /**
+     * Returns amount of registered listeners
+     * 
+     * @return amount of listeners
+     */
+    int countListeners();
 }
