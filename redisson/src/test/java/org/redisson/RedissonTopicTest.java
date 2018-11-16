@@ -108,6 +108,20 @@ public class RedissonTopicTest {
     }
     
     @Test
+    public void testCountListeners() {
+        RedissonClient redisson = BaseTest.createInstance();
+        RTopic topic1 = redisson.getTopic("topic", LongCodec.INSTANCE);
+        assertThat(topic1.countListeners()).isZero();
+        int id = topic1.addListener(Long.class, (channel, msg) -> {
+        });
+        assertThat(topic1.countListeners()).isOne();
+        topic1.removeListener(id);
+        assertThat(topic1.countListeners()).isZero();
+
+        redisson.shutdown();
+    }
+    
+    @Test
     public void testPing() throws InterruptedException {
         Config config = BaseTest.createConfig();
         config.useSingleServer()

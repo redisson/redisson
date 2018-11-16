@@ -67,7 +67,7 @@ public class RedissonTopic implements RTopic {
         this.codec = codec;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
-
+    
     @Override
     public List<String> getChannelNames() {
         return Collections.singletonList(name);
@@ -262,6 +262,15 @@ public class RedissonTopic implements RTopic {
         } else {
             semaphore.release();
         }
+    }
+
+    @Override
+    public int countListeners() {
+        PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
+        if (entry != null) {
+            return entry.countListeners();
+        }
+        return 0;
     }
 
 }
