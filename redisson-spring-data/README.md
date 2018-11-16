@@ -5,6 +5,8 @@ Integrates Redisson with Spring Data Redis library. Provides ability to work wit
 
 Supports Spring Data Redis 1.6.x, 1.7.x, 1.8.x, 2.0.x
 
+<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
+
 Usage
 ===
 
