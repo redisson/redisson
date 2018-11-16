@@ -5,6 +5,8 @@ Stores session of Apache Tomcat in Redis and allows to distribute requests acros
 
 Supports Apache Tomcat 6.x, 7.x, 8.x, 9.x
 
+<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
+
 Advantages
 ===
 
