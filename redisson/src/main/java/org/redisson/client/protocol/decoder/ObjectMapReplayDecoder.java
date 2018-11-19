@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.convertor.Convertor;
 
 /**
  * 
@@ -31,7 +30,6 @@ import org.redisson.client.protocol.convertor.Convertor;
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     private Decoder<Object> codec;
-    private Convertor<?> convertor;
     
     public ObjectMapReplayDecoder() {
     }
@@ -41,25 +39,23 @@ public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>>
         this.codec = codec;
     }
     
-    public ObjectMapReplayDecoder(Decoder<Object> codec, Convertor<?> convertor) {
-        super();
-        this.codec = codec;
-        this.convertor = convertor;
-    }
-
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
-        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
-        for (int i = 0; i < parts.size(); i++) {
-            if (i % 2 != 0) {
-                if (convertor != null) {
-                    result.put(convertor.convert(parts.get(i-1)), parts.get(i));
-                } else {
+        if (parts.get(0) instanceof Map) {
+            Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
+            for (int i = 0; i < parts.size(); i++) {
+                result.putAll((Map<? extends Object, ? extends Object>) parts.get(i));
+            }
+            return result;
+        } else {
+            Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
+            for (int i = 0; i < parts.size(); i++) {
+                if (i % 2 != 0) {
                     result.put(parts.get(i-1), parts.get(i));
                 }
-           }
+            }
+            return result;
         }
-        return result;
     }
 
     @Override
