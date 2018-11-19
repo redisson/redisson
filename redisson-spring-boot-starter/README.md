@@ -5,6 +5,8 @@ Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](htt
 
 Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x
 
+<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
+
 Usage
 ===
 
@@ -64,3 +66,4 @@ spring.redis.redisson.config=classpath:redisson.yaml
 ```
 
 ### 3. Get access to Redisson through spring bean with `RedissonClient` interface
+

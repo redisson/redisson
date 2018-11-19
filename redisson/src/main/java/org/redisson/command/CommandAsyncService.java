@@ -846,12 +846,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.getTimeout().cancel();
 
         long timeoutTime = connectionManager.getConfig().getTimeout();
-        if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand().getName())
-                || RedisCommands.XREAD_BLOCKING_SINGLE == details.getCommand()
-                    || RedisCommands.XREAD_BLOCKING == details.getCommand()) {
+        if (RedisCommands.BLOCKING_COMMAND_NAMES.contains(details.getCommand().getName())
+                || RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand())) {
             Long popTimeout = null;
-            if (RedisCommands.XREAD_BLOCKING_SINGLE == details.getCommand()
-                    || RedisCommands.XREAD_BLOCKING == details.getCommand()) {
+            if (RedisCommands.BLOCKING_COMMANDS.contains(details.getCommand())) {
                 boolean found = false;
                 for (Object param : details.getParams()) {
                     if (found) {
