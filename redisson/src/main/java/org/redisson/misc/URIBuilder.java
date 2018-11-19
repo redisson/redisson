@@ -28,6 +28,11 @@ import java.net.URI;
 public class URIBuilder {
 
     public static URI create(String uri) {
+        if (!uri.startsWith("redis://")
+                && !uri.startsWith("rediss://")) {
+            throw new IllegalArgumentException("Redis url should start with redis:// or rediss:// (for SSL connection)");
+        }
+        
         URI u = URI.create(uri);
         // Let's assuming most of the time it is OK.
         if (u.getHost() != null) {
