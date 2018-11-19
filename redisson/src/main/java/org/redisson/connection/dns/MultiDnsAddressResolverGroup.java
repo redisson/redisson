@@ -19,13 +19,14 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.netty.channel.ChannelFactory;
+import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStream;
 import io.netty.resolver.dns.DnsServerAddressStreamProvider;
 import io.netty.resolver.dns.SingletonDnsServerAddressStreamProvider;
-import io.netty.util.concurrent.EventExecutor;
 
 /**
  * Workaround for https://github.com/netty/netty/issues/8261
@@ -59,10 +60,12 @@ public class MultiDnsAddressResolverGroup extends DnsAddressResolverGroup {
     }
     
     @Override
-    public AddressResolver<InetSocketAddress> getResolver(EventExecutor executor) {
+    protected AddressResolver<InetSocketAddress> newResolver(EventLoop eventLoop,
+            ChannelFactory<? extends DatagramChannel> channelFactory, DnsServerAddressStreamProvider nameServerProvider)
+            throws Exception {
         List<AddressResolver<InetSocketAddress>> resolvers = new ArrayList<AddressResolver<InetSocketAddress>>();
         for (DnsAddressResolverGroup group : groups) {
-            resolvers.add(group.getResolver(executor));
+            resolvers.add(group.getResolver(eventLoop));
         }
         return new GroupAddressResolver(resolvers);
     }
