@@ -684,4 +684,24 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         return get(removeAsync(ids));
     }
 
+    @Override
+    public RFuture<Long> trimAsync(int count) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM, "MAXLEN", count);
+    }
+
+    @Override
+    public RFuture<Long> trimNonStrictAsync(int count) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XTRIM, "MAXLEN", "~", count);
+    }
+
+    @Override
+    public long trim(int count) {
+        return get(trimAsync(count));
+    }
+
+    @Override
+    public long trimNonStrict(int count) {
+        return get(trimNonStrictAsync(count));
+    }
+
 }

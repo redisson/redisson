@@ -482,5 +482,21 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return deleted messages amount
      */
     long remove(StreamMessageId... ids);
+    
+    /**
+     * Trims stream to specified size
+     * 
+     * @param size - new size of stream
+     * @return number of deleted messages
+     */
+    long trim(int size);
+
+    /**
+     * Trims stream to few tens of entries more than specified length to trim.
+     * 
+     * @param size - new size of stream
+     * @return number of deleted messages
+     */
+    long trimNonStrict(int size);
 
 }
