@@ -225,6 +225,185 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
         return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readGroup(groupName, consumerName, 0, id, keyToId);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readGroupAsync(groupName, consumerName, 0, id, keyToId);
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return get(readGroupAsync(groupName, consumerName, count, id, keyToId));
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readGroupAsync(groupName, consumerName, count, -1, null, id, keyToId);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2) {
+        return readGroupAsync(groupName, consumerName, count, timeout, unit, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readGroupAsync(groupName, consumerName, count, timeout, unit, id, params);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readGroupAsync(groupName, consumerName, 0, timeout, unit, id, keyToId);
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return get(readGroupAsync(groupName, consumerName, count, timeout, unit, id, keyToId));
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readGroup(groupName, consumerName, 0, timeout, unit, id, keyToId);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2) {
+        return readGroupAsync(groupName, consumerName, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readGroupAsync(groupName, consumerName, id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2) {
+        return readGroupAsync(groupName, consumerName, count, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2,
+            String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readGroupAsync(groupName, consumerName, count, id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2) {
+        return readGroupAsync(groupName, consumerName, timeout, unit, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readGroupAsync(groupName, consumerName, timeout, unit, id, params);
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2) {
+        return get(readGroupAsync(groupName, consumerName, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        return get(readGroupAsync(groupName, consumerName, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2) {
+        return get(readGroupAsync(groupName, consumerName, count, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        return get(readGroupAsync(groupName, consumerName, count, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2) {
+        return get(readGroupAsync(groupName, consumerName, timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3) {
+        return get(readGroupAsync(groupName, consumerName, timeout, unit, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2) {
+        return get(readGroupAsync(groupName, consumerName, count, timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3) {
+        return get(readGroupAsync(groupName, consumerName, count, timeout, unit, id, key2, id2, key3, id3));
+    }
+    
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit,
+            StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        List<Object> params = new ArrayList<Object>();
+        params.add("GROUP");
+        params.add(groupName);
+        params.add(consumerName);
+        
+        if (count > 0) {
+            params.add("COUNT");
+            params.add(count);
+        }
+        
+        if (timeout > 0) {
+            params.add("BLOCK");
+            params.add(toSeconds(timeout, unit)*1000);
+        }
+        
+        params.add("STREAMS");
+        params.add(getName());
+        for (String key : keyToId.keySet()) {
+            params.add(key);
+        }
+
+        if (id == null) {
+            params.add(">");
+        } else {
+            params.add(id);
+        }
+        
+        for (StreamMessageId nextId : keyToId.values()) {
+            params.add(nextId.toString());
+        }
+
+        if (timeout > 0) {
+            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+        }
+        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
+    }
+
 
     @Override
     public Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, StreamMessageId... ids) {
@@ -330,8 +509,18 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids) {
-        return get(readAsync(count, ids));
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return read(0, id, keyToId);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readAsync(0, id, keyToId);
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return get(readAsync(count, id, keyToId));
     }
     
     @Override
@@ -340,10 +529,124 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public Map<StreamMessageId, Map<K, V>> read(int count, long timeout, TimeUnit unit, StreamMessageId... ids) {
-        return get(readAsync(count, timeout, unit, ids));
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2) {
+        return readAsync(count, timeout, unit, id, Collections.singletonMap(key2, id2));
     }
 
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(count, timeout, unit, id, params);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return readAsync(0, timeout, unit, id, keyToId);
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return get(readAsync(count, timeout, unit, id, keyToId));
+    }
+    
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+        return read(0, timeout, unit, id, keyToId);
+    }
+    
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String key2, StreamMessageId id2) {
+        return readAsync(id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String key2, StreamMessageId id2) {
+        return readAsync(count, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String key2, StreamMessageId id2,
+            String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(count, id, params);
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2) {
+        return readAsync(timeout, unit, id, Collections.singletonMap(key2, id2));
+    }
+
+    @Override
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id,
+            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
+        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
+        params.put(key2, id2);
+        params.put(key3, id3);
+        return readAsync(timeout, unit, id, params);
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, String key2, StreamMessageId id2) {
+        return get(readAsync(id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        return get(readAsync(id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, String key2, StreamMessageId id2) {
+        return get(readAsync(count, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3) {
+        return get(readAsync(count, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2) {
+        return get(readAsync(timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3) {
+        return get(readAsync(timeout, unit, id, key2, id2, key3, id3));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2) {
+        return get(readAsync(count, timeout, unit, id, key2, id2));
+    }
+
+    @Override
+    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3) {
+        return get(readAsync(count, timeout, unit, id, key2, id2, key3, id3));
+    }
+    
     @Override
     public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
         List<Object> params = new ArrayList<Object>();
@@ -448,6 +751,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId... ids) {
         return readAsync(count, 0, null, ids);
     }
+    
+    @Override
+    public Map<StreamMessageId, Map<K, V>> read(int count, long timeout, TimeUnit unit, StreamMessageId... ids) {
+        return get(readAsync(count, timeout, unit, ids));
+    }
+    
+    @Override
+    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids) {
+        return get(readAsync(count, ids));
+    }
 
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit,
@@ -474,16 +787,6 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_BLOCKING_SINGLE, params.toArray());
         }
         return commandExecutor.readAsync(getName(), codec, RedisCommands.XREAD_SINGLE, params.toArray());
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return get(readAsync(count, id, keyToId));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return get(readAsync(count, timeout, unit, id, keyToId));
     }
 
     @Override
@@ -537,16 +840,6 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return readAsync(0, id, keyToId);
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return readAsync(0, timeout, unit, id, keyToId);
-    }
-
-    @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamMessageId startId, StreamMessageId endId) {
         return rangeAsync(0, startId, endId);
     }
@@ -567,16 +860,6 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return read(0, id, keyToId);
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
-        return read(0, timeout, unit, id, keyToId);
-    }
-
-    @Override
     public Map<StreamMessageId, Map<K, V>> range(StreamMessageId startId, StreamMessageId endId) {
         return range(0, startId, endId);
     }
@@ -584,110 +867,6 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public Map<StreamMessageId, Map<K, V>> rangeReversed(StreamMessageId startId, StreamMessageId endId) {
         return rangeReversed(0, startId, endId);
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String key2, StreamMessageId id2) {
-        return readAsync(id, Collections.singletonMap(key2, id2));
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(StreamMessageId id, String key2, StreamMessageId id2, String key3,
-            StreamMessageId id3) {
-        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
-        params.put(key2, id2);
-        params.put(key3, id3);
-        return readAsync(id, params);
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String key2, StreamMessageId id2) {
-        return readAsync(count, id, Collections.singletonMap(key2, id2));
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, StreamMessageId id, String key2, StreamMessageId id2,
-            String key3, StreamMessageId id3) {
-        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
-        params.put(key2, id2);
-        params.put(key3, id3);
-        return readAsync(count, id, params);
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id,
-            String key2, StreamMessageId id2) {
-        return readAsync(timeout, unit, id, Collections.singletonMap(key2, id2));
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(long timeout, TimeUnit unit, StreamMessageId id,
-            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
-        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
-        params.put(key2, id2);
-        params.put(key3, id3);
-        return readAsync(timeout, unit, id, params);
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id,
-            String key2, StreamMessageId id2) {
-        return readAsync(count, timeout, unit, id, Collections.singletonMap(key2, id2));
-    }
-
-    @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id,
-            String key2, StreamMessageId id2, String key3, StreamMessageId id3) {
-        Map<String, StreamMessageId> params = new HashMap<String, StreamMessageId>(2);
-        params.put(key2, id2);
-        params.put(key3, id3);
-        return readAsync(count, timeout, unit, id, params);
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, String key2, StreamMessageId id2) {
-        return get(readAsync(id, key2, id2));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(StreamMessageId id, String key2, StreamMessageId id2, String key3,
-            StreamMessageId id3) {
-        return get(readAsync(id, key2, id2, key3, id3));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, String key2, StreamMessageId id2) {
-        return get(readAsync(count, id, key2, id2));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId id, String key2, StreamMessageId id2, String key3,
-            StreamMessageId id3) {
-        return get(readAsync(count, id, key2, id2, key3, id3));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, String key2,
-            StreamMessageId id2) {
-        return get(readAsync(timeout, unit, id, key2, id2));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId id, String key2,
-            StreamMessageId id2, String key3, StreamMessageId id3) {
-        return get(readAsync(timeout, unit, id, key2, id2, key3, id3));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
-            StreamMessageId id2) {
-        return get(readAsync(count, timeout, unit, id, key2, id2));
-    }
-
-    @Override
-    public Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
-            StreamMessageId id2, String key3, StreamMessageId id3) {
-        return get(readAsync(count, timeout, unit, id, key2, id2, key3, id3));
     }
 
     @Override
