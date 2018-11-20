@@ -170,7 +170,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
+     * Waits for stream data availability for specified <code>timeout</code> interval.
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -183,7 +183,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs. 
-     * Wait for stream data availability for specified <code>timeout</code> interval.
+     * Waits for stream data availability for specified <code>timeout</code> interval.
      * 
      * @param groupName - name of group
      * @param consumerName - name of consumer
@@ -194,6 +194,184 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return stream data mapped by Stream Message ID
      */
     Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param id - starting message id for this stream
+     * @param nameToId - Stream Message ID mapped by stream name
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param id - starting message id for this stream
+     * @param nameToId - Stream Message ID mapped by stream name
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param nameToId - Stream Message ID mapped by stream name
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param nameToId - Stream Message ID mapped by stream name
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2  - starting message id for second stream
+     * @param key3 - name of third stream
+     * @param id3  - starting message id for third stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2  - starting message id for second stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @param key3 - name of third stream
+     * @param id3 - starting message id for third stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+            StreamMessageId id3);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @param key3 - name of third stream
+     * @param id3 - starting message id for third stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2);
+
+    /**
+     * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
+     * Waits for the first stream data availability for specified <code>timeout</code> interval.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param count - stream data size limit
+     * @param timeout - time interval to wait for stream data availability
+     * @param unit - time interval unit
+     * @param id - starting message id for this stream
+     * @param key2 - name of second stream
+     * @param id2 - starting message id for second stream
+     * @param key3 - name of third stream
+     * @param id3 - starting message id for third stream
+     * @return stream data mapped by key and Stream Message ID
+     */
+    Map<String, Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2,
+            StreamMessageId id2, String key3, StreamMessageId id3);
     
     /**
      * Returns number of entries in stream

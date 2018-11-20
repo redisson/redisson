@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -197,6 +198,30 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(s.size()).isEqualTo(2);
 
         assertThat(stream.ack("testGroup", id1, id2)).isEqualTo(2);
+    }
+    
+    @Test
+    public void testReadGroupMulti() {
+        RStream<String, String> stream1 = redisson.getStream("test1");
+        RStream<String, String> stream2 = redisson.getStream("test2");
+
+        StreamMessageId id01 = stream1.add("0", "0");
+        StreamMessageId id02 = stream2.add("0", "0");
+        
+        stream1.createGroup("testGroup", id01);
+        stream2.createGroup("testGroup", id02);
+        
+        StreamMessageId id11 = stream1.add("1", "1");
+        StreamMessageId id12 = stream1.add("2", "2");
+        StreamMessageId id13 = stream1.add("3", "3");
+        StreamMessageId id21 = stream2.add("1", "1");
+        StreamMessageId id22 = stream2.add("2", "2");
+        StreamMessageId id23 = stream2.add("3", "3");
+        
+        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream1.readGroup("testGroup", "consumer1", id11, Collections.singletonMap("test2", id21));
+        assertThat(s2.keySet()).containsExactly("test1", "test2");
+        assertThat(s2.get("test1").keySet()).containsExactly(id12, id13);
+        assertThat(s2.get("test2").keySet()).containsExactly(id22, id23);
     }
     
     @Test
