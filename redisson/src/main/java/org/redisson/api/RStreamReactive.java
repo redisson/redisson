@@ -197,7 +197,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -209,7 +209,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -225,7 +225,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2, StreamMessageId id2);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -243,7 +243,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
     
     /**
@@ -258,7 +258,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -270,7 +270,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -284,7 +284,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3  - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, String key2, StreamMessageId id2, String key3,
             StreamMessageId id3);
 
     /**
@@ -298,7 +298,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2  - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2);
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -313,7 +313,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2,
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, int count, StreamMessageId id, String key2, StreamMessageId id2,
             String key3, StreamMessageId id3);
 
     /**
@@ -329,7 +329,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id2 - starting message id for second stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2);
 
     /**
@@ -347,7 +347,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @param id3 - starting message id for third stream
      * @return stream data mapped by key and Stream Message ID
      */
-    Publisher<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
+    Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId id,
             String key2, StreamMessageId id2, String key3, StreamMessageId id3);
     
     /**
