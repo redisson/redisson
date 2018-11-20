@@ -19,7 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.redisson.api.StreamId;
+import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -33,7 +33,7 @@ public class StreamResultDecoder implements MultiDecoder<Object> {
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty()) {
-            Map<String, Map<StreamId, Map<Object, Object>>> result = (Map<String, Map<StreamId, Map<Object, Object>>>) parts.get(0);
+            Map<String, Map<StreamMessageId, Map<Object, Object>>> result = (Map<String, Map<StreamMessageId, Map<Object, Object>>>) parts.get(0);
             return result.values().iterator().next();
         }
         return Collections.emptyMap();

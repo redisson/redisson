@@ -15,19 +15,19 @@
  */
 package org.redisson.client.protocol.convertor;
 
-import org.redisson.api.StreamId;
+import org.redisson.api.StreamMessageId;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StreamIdConvertor extends SingleConvertor<StreamId> {
+public class StreamIdConvertor extends SingleConvertor<StreamMessageId> {
 
     @Override
-    public StreamId convert(Object id) {
+    public StreamMessageId convert(Object id) {
         String[] parts = id.toString().split("-");
-        return new StreamId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
+        return new StreamMessageId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
     }
 
 }

@@ -29,14 +29,14 @@ public class PendingResult implements Serializable {
     private static final long serialVersionUID = -5525031552305408248L;
     
     private long total;
-    private StreamId lowestId;
-    private StreamId highestId;
+    private StreamMessageId lowestId;
+    private StreamMessageId highestId;
     private Map<String, Long> consumerNames;
     
     public PendingResult() {
     }
     
-    public PendingResult(long total, StreamId lowestId, StreamId highestId, Map<String, Long> consumerNames) {
+    public PendingResult(long total, StreamMessageId lowestId, StreamMessageId highestId, Map<String, Long> consumerNames) {
         super();
         this.total = total;
         this.lowestId = lowestId;
@@ -58,7 +58,7 @@ public class PendingResult implements Serializable {
      * 
      * @return number
      */
-    public StreamId getLowestId() {
+    public StreamMessageId getLowestId() {
         return lowestId;
     }
 
@@ -67,7 +67,7 @@ public class PendingResult implements Serializable {
      * 
      * @return number
      */
-    public StreamId getHighestId() {
+    public StreamMessageId getHighestId() {
         return highestId;
     }
 

@@ -23,12 +23,12 @@ package org.redisson.api;
  */
 public class PendingEntry {
     
-    private StreamId id;
+    private StreamMessageId id;
     private String consumerName;
     private long idleTime;
     private long lastTimeDelivered;
     
-    public PendingEntry(StreamId id, String consumerName, long idleTime, long lastTimeDelivered) {
+    public PendingEntry(StreamMessageId id, String consumerName, long idleTime, long lastTimeDelivered) {
         super();
         this.id = id;
         this.consumerName = consumerName;
@@ -41,7 +41,7 @@ public class PendingEntry {
      * 
      * @return id
      */
-    public StreamId getId() {
+    public StreamMessageId getId() {
         return id;
     }
 

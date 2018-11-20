@@ -21,34 +21,34 @@ package org.redisson.api;
  * @author Nikita Koksharov
  *
  */
-public class StreamId {
+public class StreamMessageId {
 
     /**
      * Defines minimal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
      */
-    public static final StreamId MIN = new StreamId(-1);
+    public static final StreamMessageId MIN = new StreamMessageId(-1);
     
     /**
      * Defines maximal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
      */
-    public static final StreamId MAX = new StreamId(-1);
+    public static final StreamMessageId MAX = new StreamMessageId(-1);
     
     /**
      * Defines latest id to receive Stream entries added since method invocation.
      * <p>
      * Used  in {@link RStream#read} and {@link RStreamAsync#readAsync} methods
      */
-    public static final StreamId NEWEST = new StreamId(-1);
+    public static final StreamMessageId NEWEST = new StreamMessageId(-1);
     
     private long id0;
     private long id1;
     
-    public StreamId(long id0) {
+    public StreamMessageId(long id0) {
         super();
         this.id0 = id0;
     }
 
-    public StreamId(long id0, long id1) {
+    public StreamMessageId(long id0, long id1) {
         super();
         this.id0 = id0;
         this.id1 = id1;
@@ -89,7 +89,7 @@ public class StreamId {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        StreamId other = (StreamId) obj;
+        StreamMessageId other = (StreamMessageId) obj;
         if (id0 != other.id0)
             return false;
         if (id1 != other.id1)
