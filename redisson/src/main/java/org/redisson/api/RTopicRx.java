@@ -77,6 +77,7 @@ public interface RTopicRx {
     /**
      * Returns stream of messages.
      * 
+     * @param <M> - type of message
      * @param type - type of message to listen
      * @return stream of messages
      */
