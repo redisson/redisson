@@ -70,6 +70,7 @@ import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
 import org.redisson.client.protocol.decoder.SlotsDecoder;
 import org.redisson.client.protocol.decoder.StreamIdDecoder;
+import org.redisson.client.protocol.decoder.StreamIdListDecoder;
 import org.redisson.client.protocol.decoder.StreamResultDecoder;
 import org.redisson.client.protocol.decoder.StringDataDecoder;
 import org.redisson.client.protocol.decoder.StringListReplayDecoder;
@@ -389,7 +390,9 @@ public interface RedisCommands {
                     new ObjectMapReplayDecoder(),
                     new StreamResultDecoder()));
 
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XCLAIM = new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XCLAIM",
+    RedisCommand<List<StreamMessageId>> XCLAIM_IDS = new RedisCommand<List<StreamMessageId>>("XCLAIM", new StreamIdListDecoder());
+    
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XCLAIM = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XCLAIM",
             new ListMultiDecoder(
                     new ObjectDecoder(new StreamIdDecoder()),
                     new ObjectMapReplayDecoder(),

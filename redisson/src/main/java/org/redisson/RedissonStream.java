@@ -132,6 +132,30 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
+            StreamMessageId... ids) {
+        return get(fastClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
+    }
+    
+    @Override
+    public RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime,
+            TimeUnit idleTimeUnit, StreamMessageId... ids) {
+        List<Object> params = new ArrayList<Object>();
+        params.add(getName());
+        params.add(groupName);
+        params.add(consumerName);
+        params.add(idleTimeUnit.toMillis(idleTime));
+        
+        for (StreamMessageId id : ids) {
+            params.add(id.toString());
+        }
+        
+        params.add("JUSTID");
+        
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
+    }
+    
+    @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
@@ -143,12 +167,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         for (StreamMessageId id : ids) {
             params.add(id.toString());
         }
-
+        
         return commandExecutor.readAsync(getName(), codec, RedisCommands.XCLAIM, params.toArray());
     }
 
     @Override
-    public Map<StreamMessageId, Map<K, V>> claimPending(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
+    public Map<StreamMessageId, Map<K, V>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit,
             StreamMessageId... ids) {
         return get(claimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
     }

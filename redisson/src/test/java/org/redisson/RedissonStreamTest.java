@@ -24,7 +24,7 @@ public class RedissonStreamTest extends BaseTest {
         StreamMessageId id2 = stream.add("1", "1");
         assertThat(stream.size()).isEqualTo(2);
         
-        stream.remove(id1, id2);
+        assertThat(stream.remove(id1, id2)).isEqualTo(2);
         assertThat(stream.size()).isZero();
     }
     
@@ -48,13 +48,38 @@ public class RedissonStreamTest extends BaseTest {
         Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
         assertThat(s2.size()).isEqualTo(2);
         
-        Map<StreamMessageId, Map<String, String>> res = stream.claimPending("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
+        Map<StreamMessageId, Map<String, String>> res = stream.claim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
         assertThat(res.size()).isEqualTo(2);
         assertThat(res.keySet()).containsExactly(id3, id4);
         for (Map<String, String> map : res.values()) {
             assertThat(map.keySet()).containsAnyOf("3", "4");
             assertThat(map.values()).containsAnyOf("33", "44");
         }
+    }
+    
+    @Test
+    public void testClaimIds() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+        
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+        
+        StreamMessageId id3 = stream.add("3", "33");
+        StreamMessageId id4 = stream.add("4", "44");
+        
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+        
+        List<StreamMessageId> res = stream.fastClaim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
+        assertThat(res.size()).isEqualTo(2);
+        assertThat(res).containsExactly(id3, id4);
     }
     
     @Test

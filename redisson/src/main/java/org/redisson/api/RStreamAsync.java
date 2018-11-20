@@ -113,6 +113,19 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
     
     /**
+     * Transfers ownership of pending messages by id to a new consumer 
+     * by name if idle time of messages is greater than defined value. 
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param ids - Stream Message IDs
+     * @return list of Stream Message IDs
+     */
+    RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    
+    /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 
      * @param groupName - name of group
