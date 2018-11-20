@@ -17,7 +17,7 @@ package org.redisson.client.protocol.decoder;
 
 import java.io.IOException;
 
-import org.redisson.api.StreamId;
+import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -35,7 +35,7 @@ public class StreamIdDecoder implements Decoder<Object> {
     public Object decode(ByteBuf buf, State state) throws IOException {
         String id = (String) StringCodec.INSTANCE.getValueDecoder().decode(buf, state);
         String[] parts = id.toString().split("-");
-        return new StreamId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
+        return new StreamMessageId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
     }
 
 }

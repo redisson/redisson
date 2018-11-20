@@ -88,89 +88,96 @@ public class DNSMonitor {
                     return;
                 }
                 
-                final AtomicInteger counter = new AtomicInteger(masters.size() + slaves.size());
-                for (final Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
-                    Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
-                    resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
-                        @Override
-                        public void operationComplete(Future<InetSocketAddress> future) throws Exception {
-                            if (counter.decrementAndGet() == 0) {
-                                monitorDnsChange();
-                            }
-
-                            if (!future.isSuccess()) {
-                                log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
-                                return;
-                            }
-                            
-                            InetSocketAddress currentMasterAddr = entry.getValue();
-                            InetSocketAddress newMasterAddr = future.getNow();
-                            if (!newMasterAddr.getAddress().equals(currentMasterAddr.getAddress())) {
-                                log.info("Detected DNS change. Master {} has changed ip from {} to {}", 
-                                        entry.getKey(), currentMasterAddr.getAddress().getHostAddress(), newMasterAddr.getAddress().getHostAddress());
-                                MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
-                                if (masterSlaveEntry == null) {
-                                    log.error("Unable to find master entry for {}", currentMasterAddr);
-                                    return;
-                                }
-                                masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
-                                masters.put(entry.getKey(), newMasterAddr);
-                            }
-                        }
-                    });
-                }
-                
-                for (final Entry<URI, InetSocketAddress> entry : slaves.entrySet()) {
-                    Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
-                    resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
-                        @Override
-                        public void operationComplete(Future<InetSocketAddress> future) throws Exception {
-                            if (counter.decrementAndGet() == 0) {
-                                monitorDnsChange();
-                            }
-
-                            if (!future.isSuccess()) {
-                                log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
-                                return;
-                            }
-                            
-                            final InetSocketAddress currentSlaveAddr = entry.getValue();
-                            final InetSocketAddress newSlaveAddr = future.getNow();
-                            if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
-                                log.info("Detected DNS change. Slave {} has changed ip from {} to {}", 
-                                        entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
-                                for (final MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
-                                    if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
-                                        continue;
-                                    }
-                                    
-                                    if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
-                                        masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
-                                        masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
-                                    } else {
-                                        RFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
-                                        addFuture.addListener(new FutureListener<Void>() {
-                                            @Override
-                                            public void operationComplete(Future<Void> future) throws Exception {
-                                                if (!future.isSuccess()) {
-                                                    log.error("Can't add slave: " + newSlaveAddr, future.cause());
-                                                    return;
-                                                }
-                                                
-                                                masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
-                                            }
-                                        });
-                                    }
-                                    break;
-                                }
-                                slaves.put(entry.getKey(), newSlaveAddr);
-                            }
-                        }
-                    });
-                }
+                AtomicInteger counter = new AtomicInteger(masters.size() + slaves.size());
+                monitorMasters(counter);
+                monitorSlaves(counter);
             }
 
         }, dnsMonitoringInterval, TimeUnit.MILLISECONDS);
+    }
+
+    private void monitorMasters(final AtomicInteger counter) {
+        for (final Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
+            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
+            resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
+                @Override
+                public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                    if (counter.decrementAndGet() == 0) {
+                        monitorDnsChange();
+                    }
+
+                    if (!future.isSuccess()) {
+                        log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                        return;
+                    }
+                    
+                    InetSocketAddress currentMasterAddr = entry.getValue();
+                    InetSocketAddress newMasterAddr = future.getNow();
+                    if (!newMasterAddr.getAddress().equals(currentMasterAddr.getAddress())) {
+                        log.info("Detected DNS change. Master {} has changed ip from {} to {}", 
+                                entry.getKey(), currentMasterAddr.getAddress().getHostAddress(), newMasterAddr.getAddress().getHostAddress());
+                        MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
+                        if (masterSlaveEntry == null) {
+                            log.error("Unable to find master entry for {}", currentMasterAddr);
+                            return;
+                        }
+                        masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
+                        masters.put(entry.getKey(), newMasterAddr);
+                    }
+                }
+            });
+        }
+    }
+
+    private void monitorSlaves(final AtomicInteger counter) {
+        for (final Entry<URI, InetSocketAddress> entry : slaves.entrySet()) {
+            Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
+            resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
+                @Override
+                public void operationComplete(Future<InetSocketAddress> future) throws Exception {
+                    if (counter.decrementAndGet() == 0) {
+                        monitorDnsChange();
+                    }
+
+                    if (!future.isSuccess()) {
+                        log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
+                        return;
+                    }
+                    
+                    final InetSocketAddress currentSlaveAddr = entry.getValue();
+                    final InetSocketAddress newSlaveAddr = future.getNow();
+                    if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
+                        log.info("Detected DNS change. Slave {} has changed ip from {} to {}", 
+                                entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
+                        for (final MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
+                            if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
+                                continue;
+                            }
+                            
+                            if (masterSlaveEntry.hasSlave(newSlaveAddr)) {
+                                masterSlaveEntry.slaveUp(newSlaveAddr, FreezeReason.MANAGER);
+                                masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                            } else {
+                                RFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
+                                addFuture.addListener(new FutureListener<Void>() {
+                                    @Override
+                                    public void operationComplete(Future<Void> future) throws Exception {
+                                        if (!future.isSuccess()) {
+                                            log.error("Can't add slave: " + newSlaveAddr, future.cause());
+                                            return;
+                                        }
+                                        
+                                        masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                                    }
+                                });
+                            }
+                            break;
+                        }
+                        slaves.put(entry.getKey(), newSlaveAddr);
+                    }
+                }
+            });
+        }
     }
 
     

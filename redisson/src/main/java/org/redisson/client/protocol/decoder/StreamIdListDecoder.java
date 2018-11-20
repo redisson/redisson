@@ -15,33 +15,36 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StreamResultDecoder implements MultiDecoder<Object> {
+public class StreamIdListDecoder implements MultiDecoder<List<StreamMessageId>> {
 
-    @Override
-    public Object decode(List<Object> parts, State state) {
-        if (!parts.isEmpty()) {
-            Map<String, Map<StreamMessageId, Map<Object, Object>>> result = (Map<String, Map<StreamMessageId, Map<Object, Object>>>) parts.get(0);
-            return result.values().iterator().next();
-        }
-        return Collections.emptyMap();
-    }
-
+    private final StreamIdConvertor convertor = new StreamIdConvertor();
+    
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
         return null;
+    }
+
+    @Override
+    public List<StreamMessageId> decode(List<Object> parts, State state) {
+        List<StreamMessageId> ids = new ArrayList<StreamMessageId>();
+        for (Object id : parts) {
+            StreamMessageId streamMessageId = convertor.convert(id);
+            ids.add(streamMessageId);
+        }
+        return ids;
     }
 
 }
