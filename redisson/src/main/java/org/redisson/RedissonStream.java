@@ -110,8 +110,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count,
-            String consumerName) {
+    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count, consumerName);
     }
 
@@ -126,9 +125,8 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
-    public List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count,
-            String consumerName) {
-        return get(listPendingAsync(groupName, startId, endId, count, consumerName));
+    public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
+        return get(listPendingAsync(groupName, consumerName, startId, endId, count));
     }
 
     @Override
@@ -726,6 +724,36 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public long trimNonStrict(int count) {
         return get(trimNonStrictAsync(count));
+    }
+
+    @Override
+    public RFuture<Void> removeGroupAsync(String groupName) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "DESTROY", getName(), groupName);
+    }
+
+    @Override
+    public void removeGroup(String groupName) {
+        get(removeGroupAsync(groupName));
+    }
+
+    @Override
+    public RFuture<Long> removeConsumerAsync(String groupName, String consumerName) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP_LONG, "DELCONSUMER", getName(), groupName, consumerName);
+    }
+
+    @Override
+    public long removeConsumer(String groupName, String consumerName) {
+        return get(removeConsumerAsync(groupName, consumerName));
+    }
+
+    @Override
+    public RFuture<Void> updateGroupMessageIdAsync(String groupName, StreamMessageId id) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "SETID", getName(), groupName, id);
+    }
+
+    @Override
+    public void updateGroupMessageId(String groupName, StreamMessageId id) {
+        get(updateGroupMessageIdAsync(groupName, id));
     }
 
 }

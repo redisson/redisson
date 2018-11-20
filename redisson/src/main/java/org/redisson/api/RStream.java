@@ -50,6 +50,30 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     void createGroup(String groupName, StreamMessageId id);
     
     /**
+     * Removes group by name.
+     * 
+     * @param groupName - name of group
+     */
+    void removeGroup(String groupName);
+
+    /**
+     * Removes consumer of the group by name.
+     * 
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @return number of pending messages owned by consumer
+     */
+    long removeConsumer(String groupName, String consumerName);
+
+    /**
+     * Updates next message id delivered to consumers. 
+     * 
+     * @param groupName - name of group
+     * @param id - Stream Message ID
+     */
+    void updateGroupMessageId(String groupName, StreamMessageId id);
+    
+    /**
      * Marks pending messages by group name and stream <code>ids</code> as correctly processed.
      * 
      * @param groupName - name of group
@@ -95,7 +119,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param count - amount of messages
      * @return list
      */
-    List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count, String consumerName);
+    List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
      * Transfers ownership of pending messages by id to a new consumer 

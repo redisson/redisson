@@ -13,11 +13,68 @@ import org.redisson.api.PendingEntry;
 import org.redisson.api.PendingResult;
 import org.redisson.api.RStream;
 import org.redisson.api.StreamMessageId;
+import org.redisson.client.RedisException;
 
 public class RedissonStreamTest extends BaseTest {
 
     @Test
-    public void testRemove() {
+    public void testUpdateGroupMessageId() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id = stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+
+        StreamMessageId id1 = stream.add("1", "1");
+        System.out.println("id1 " + id1);
+        StreamMessageId id2 = stream.add("2", "2");
+        System.out.println("id2 " + id2);
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+        
+        stream.updateGroupMessageId("testGroup", id);
+        
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+    }
+    
+    @Test
+    public void testRemoveConsumer() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+        
+        assertThat(stream.removeConsumer("testGroup", "consumer1")).isEqualTo(2);
+        assertThat(stream.removeConsumer("testGroup", "consumer2")).isZero();
+    }
+    
+    @Test(expected = RedisException.class)
+    public void testRemoveGroup() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        
+        stream.createGroup("testGroup");
+        
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+        
+        stream.removeGroup("testGroup");
+        
+        stream.readGroup("testGroup", "consumer1");
+    }
+    
+    @Test
+    public void testRemoveMessages() {
         RStream<String, String> stream = redisson.getStream("test");
 
         StreamMessageId id1 = stream.add("0", "0");
@@ -116,7 +173,7 @@ public class RedissonStreamTest extends BaseTest {
             assertThat(pendingEntry.getLastTimeDelivered()).isOne();
         }
         
-        List<PendingEntry> list2 = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 10, "consumer1");
+        List<PendingEntry> list2 = stream.listPending("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 10);
         assertThat(list2.size()).isEqualTo(2);
         for (PendingEntry pendingEntry : list2) {
             assertThat(pendingEntry.getId()).isIn(id1, id2);

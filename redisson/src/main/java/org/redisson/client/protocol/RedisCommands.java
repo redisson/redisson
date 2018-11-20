@@ -407,6 +407,7 @@ public interface RedisCommands {
     
     RedisStrictCommand<StreamMessageId> XADD = new RedisStrictCommand<StreamMessageId>("XADD", new StreamIdConvertor());
     RedisStrictCommand<Void> XGROUP = new RedisStrictCommand<Void>("XGROUP", new VoidReplayConvertor());
+    RedisStrictCommand<Long> XGROUP_LONG = new RedisStrictCommand<Long>("XGROUP");
     RedisStrictCommand<Void> XADD_VOID = new RedisStrictCommand<Void>("XADD", new VoidReplayConvertor());
     RedisStrictCommand<Long> XLEN = new RedisStrictCommand<Long>("XLEN");
     RedisStrictCommand<Long> XACK = new RedisStrictCommand<Long>("XACK");
