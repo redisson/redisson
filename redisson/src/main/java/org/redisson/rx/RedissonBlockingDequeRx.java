@@ -38,7 +38,7 @@ public class RedissonBlockingDequeRx<V> extends RedissonBlockingQueueRx<V> {
     }
 
     public Flowable<V> takeFirstElements() {
-        return takeElements(new Callable<RFuture<V>>() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {
                 return queue.takeFirstAsync();
@@ -47,7 +47,7 @@ public class RedissonBlockingDequeRx<V> extends RedissonBlockingQueueRx<V> {
     }
     
     public Flowable<V> takeLastElements() {
-        return takeElements(new Callable<RFuture<V>>() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {
                 return queue.takeLastAsync();

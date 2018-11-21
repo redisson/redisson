@@ -32,7 +32,7 @@ public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> 
     @Override
     public Object decode(List<Object> parts, State state) {
         if (!parts.isEmpty()) {
-            return parts.get(2);
+            return parts.get(1);
         }
         return null;
     }
@@ -42,7 +42,7 @@ public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> 
         if (paramNum == 0) {
             return StringCodec.INSTANCE.getValueDecoder();
         }
-        if (paramNum == 1) {
+        if (paramNum == 2) {
             return DoubleCodec.INSTANCE.getValueDecoder();
         }
         return null;

@@ -16,19 +16,12 @@
 package org.redisson.rx;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
 
 /**
  * 
@@ -46,51 +39,10 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
     }
 
     public Flowable<V> takeElements() {
-        return takeElements(new Callable<RFuture<V>>() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {
                 return queue.takeAsync();
-            }
-        });
-    }
-    
-    protected final Flowable<V> takeElements(final Callable<RFuture<V>> callable) {
-        final ReplayProcessor<V> p = ReplayProcessor.create();
-        return p.doOnRequest(new LongConsumer() {
-            @Override
-            public void accept(long n) throws Exception {
-                final AtomicLong counter = new AtomicLong(n);
-                final AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
-                
-                take(callable, p, counter, futureRef);
-
-                p.doOnCancel(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                        futureRef.get().cancel(true);
-                    }
-                });
-            }
-        });
-    }
-    
-    private void take(final Callable<RFuture<V>> factory, final ReplayProcessor<V> p, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) throws Exception {
-        RFuture<V> future = factory.call();
-        futureRef.set(future);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    p.onError(future.cause());
-                    return;
-                }
-                
-                p.onNext(future.getNow());
-                if (counter.decrementAndGet() == 0) {
-                    p.onComplete();
-                }
-                
-                take(factory, p, counter, futureRef);
             }
         });
     }

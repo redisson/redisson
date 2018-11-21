@@ -415,5 +415,18 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      */
     Publisher<Integer> union(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
+    /**
+     * Removes and returns the head element waiting if necessary for an element to become available.
+     *
+     * @return the head element
+     */
+    Publisher<V> takeFirst();
+
+    /**
+     * Removes and returns the tail element waiting if necessary for an element to become available.
+     *
+     * @return the tail element
+     */
+    Publisher<V> takeLast();
     
 }

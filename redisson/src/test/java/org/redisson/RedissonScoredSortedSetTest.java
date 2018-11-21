@@ -31,6 +31,21 @@ import org.redisson.client.protocol.ScoredEntry;
 public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
+    public void testTakeFirst() {
+        final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
+            RScoredSortedSet<Integer> queue3 = redisson.getScoredSortedSet("queue:pollany2");
+            queue1.add(0.1, 1);
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.takeFirst();
+        Assert.assertEquals(1, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+    }
+    
+    @Test
     public void testPollFirstFromAny() throws InterruptedException {
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
