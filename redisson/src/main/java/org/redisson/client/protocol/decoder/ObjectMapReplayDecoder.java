@@ -29,40 +29,19 @@ import org.redisson.client.protocol.Decoder;
  */
 public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
-    private Decoder<Object> codec;
-    
-    public ObjectMapReplayDecoder() {
-    }
-    
-    public ObjectMapReplayDecoder(Decoder<Object> codec) {
-        super();
-        this.codec = codec;
-    }
-    
     @Override
     public Map<Object, Object> decode(List<Object> parts, State state) {
-        if (parts.get(0) instanceof Map) {
-            Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
-            for (int i = 0; i < parts.size(); i++) {
-                result.putAll((Map<? extends Object, ? extends Object>) parts.get(i));
+        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
+        for (int i = 0; i < parts.size(); i++) {
+            if (i % 2 != 0) {
+                result.put(parts.get(i-1), parts.get(i));
             }
-            return result;
-        } else {
-            Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
-            for (int i = 0; i < parts.size(); i++) {
-                if (i % 2 != 0) {
-                    result.put(parts.get(i-1), parts.get(i));
-                }
-            }
-            return result;
         }
+        return result;
     }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        if (codec != null) {
-            return codec;
-        }
         return null;
     }
 

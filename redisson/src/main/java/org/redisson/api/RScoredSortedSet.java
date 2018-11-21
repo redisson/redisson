@@ -78,7 +78,21 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return the head element, or {@code null} if all sorted sets are empty 
      */
     V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
-        
+
+    /**
+     * Removes and returns the head element waiting if necessary for an element to become available.
+     *
+     * @return the head element
+     */
+    V takeFirst();
+
+    /**
+     * Removes and returns the tail element waiting if necessary for an element to become available.
+     *
+     * @return the tail element
+     */
+    V takeLast();
+    
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
      *

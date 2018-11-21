@@ -112,16 +112,18 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
     Flowable<V> takeFirst();
 
     /**
-     * Retrieves and removes stream of elements from the head of this queue. Waits for an element become available.
+     * Retrieves and removes continues stream of elements from the head of this queue. 
+     * Waits for next element become available.
      * 
-     * @return the head element of this queue
+     * @return stream of head elements
      */
     Flowable<V> takeFirstElements();
     
     /**
-     * Retrieves and removes stream of elements from the tail of this queue. Waits for an element become available.
+     * Retrieves and removes continues stream of elements from the tail of this queue. 
+     * Waits for next element become available.
      * 
-     * @return the head element of this queue
+     * @return stream of tail elements
      */
     Flowable<V> takeLastElements();
     

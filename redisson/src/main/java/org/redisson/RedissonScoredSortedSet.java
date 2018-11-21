@@ -1066,4 +1066,24 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, params.toArray());
     }
+
+    @Override
+    public RFuture<V> takeFirstAsync() {
+        return pollFirstAsync(0, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public RFuture<V> takeLastAsync() {
+        return pollLastAsync(0, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public V takeFirst() {
+        return get(takeFirstAsync());
+    }
+
+    @Override
+    public V takeLast() {
+        return get(takeLastAsync());
+    }
 }

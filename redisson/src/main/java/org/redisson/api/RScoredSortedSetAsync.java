@@ -79,6 +79,20 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollFirstAsync(long timeout, TimeUnit unit);
 
     /**
+     * Removes and returns the head element waiting if necessary for an element to become available.
+     *
+     * @return the head element
+     */
+    RFuture<V> takeFirstAsync();
+
+    /**
+     * Removes and returns the tail element waiting if necessary for an element to become available.
+     *
+     * @return the tail element
+     */
+    RFuture<V> takeLastAsync();
+    
+    /**
      * Removes and returns the tail element or {@code null} if this sorted set is empty.
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>

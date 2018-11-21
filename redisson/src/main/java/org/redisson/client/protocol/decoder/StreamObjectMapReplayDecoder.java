@@ -15,10 +15,10 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -27,23 +27,34 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class ScoredSortedSetPolledObjectDecoder implements MultiDecoder<Object> {
+public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder {
+
+    private Decoder<Object> codec;
+    
+    public StreamObjectMapReplayDecoder() {
+    }
+    
+    public StreamObjectMapReplayDecoder(Decoder<Object> codec) {
+        super();
+        this.codec = codec;
+    }
 
     @Override
-    public Object decode(List<Object> parts, State state) {
-        if (!parts.isEmpty()) {
-            return parts.get(1);
+    public Map<Object, Object> decode(List<Object> parts, State state) {
+        if (parts.get(0) instanceof Map) {
+            Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
+            for (int i = 0; i < parts.size(); i++) {
+                result.putAll((Map<? extends Object, ? extends Object>) parts.get(i));
+            }
+            return result;
         }
-        return null;
+        return super.decode(parts, state);
     }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        if (paramNum == 0) {
-            return StringCodec.INSTANCE.getValueDecoder();
-        }
-        if (paramNum == 2) {
-            return DoubleCodec.INSTANCE.getValueDecoder();
+        if (codec != null) {
+            return codec;
         }
         return null;
     }

@@ -15,7 +15,8 @@
  */
 package org.redisson.rx;
 
-import org.reactivestreams.Publisher;
+import java.util.concurrent.Callable;
+
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSetAsync;
@@ -47,23 +48,41 @@ public class RedissonScoredSortedSetRx<V>  {
         }.create();
     }
 
+    public Flowable<V> takeFirst() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
+            @Override
+            public RFuture<V> call() throws Exception {
+                return instance.takeFirstAsync();
+            }
+        });
+    }
+    
+    public Flowable<V> takeLast() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
+            @Override
+            public RFuture<V> call() throws Exception {
+                return instance.takeLastAsync();
+            }
+        });
+    }
+    
     public String getName() {
         return ((RedissonScoredSortedSet<V>)instance).getName();
     }
     
-    public Publisher<V> iterator() {
+    public Flowable<V> iterator() {
         return scanIteratorReactive(null, 10);
     }
 
-    public Publisher<V> iterator(String pattern) {
+    public Flowable<V> iterator(String pattern) {
         return scanIteratorReactive(pattern, 10);
     }
 
-    public Publisher<V> iterator(int count) {
+    public Flowable<V> iterator(int count) {
         return scanIteratorReactive(null, count);
     }
 
-    public Publisher<V> iterator(String pattern, int count) {
+    public Flowable<V> iterator(String pattern, int count) {
         return scanIteratorReactive(pattern, count);
     }
 
