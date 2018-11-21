@@ -422,13 +422,13 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *
      * @return the head element
      */
-    Publisher<V> takeFirst();
+    Mono<V> takeFirst();
 
     /**
      * Removes and returns the tail element waiting if necessary for an element to become available.
      *
      * @return the tail element
      */
-    Publisher<V> takeLast();
+    Mono<V> takeLast();
     
 }
