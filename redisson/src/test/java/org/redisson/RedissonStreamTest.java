@@ -472,9 +472,13 @@ public class RedissonStreamTest extends BaseTest {
         Map<String, String> entries = new HashMap<>();
         entries.put("6", "61");
         entries.put("4", "41");
-        stream.addAll(new StreamMessageId(12, 42), entries, 10, false);
+        StreamMessageId id = new StreamMessageId(12, 42);
+        stream.addAll(id, entries, 10, false);
         assertThat(stream.size()).isEqualTo(1);
 
+        Map<StreamMessageId, Map<String, String>> res = stream.read(new StreamMessageId(10, 42));
+        assertThat(res.get(id).size()).isEqualTo(2);
+        
         entries.clear();
         entries.put("1", "11");
         entries.put("3", "31");
