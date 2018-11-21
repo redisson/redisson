@@ -156,9 +156,10 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
     Mono<Void> put(V e);
 
     /**
-     * Retrieves and removes stream of elements from the head of this queue.
+     * Retrieves and removes continues stream of elements from the head of this queue.
+     * Waits for next element become available.
      * 
-     * @return stream of messages
+     * @return stream of elements
      */
     Flux<V> takeElements();
     

@@ -430,5 +430,21 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the tail element
      */
     Mono<V> takeLast();
+
+    /**
+     * Retrieves and removes continues stream of elements from the head of this queue. 
+     * Waits for next element become available.
+     * 
+     * @return stream of head elements
+     */
+    Flux<V> takeFirstElements();
     
+    /**
+     * Retrieves and removes continues stream of elements from the tail of this queue. 
+     * Waits for next element become available.
+     * 
+     * @return stream of tail elements
+     */
+    Flux<V> takeLastElements();
+
 }

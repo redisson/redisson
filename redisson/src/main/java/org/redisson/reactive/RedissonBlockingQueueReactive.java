@@ -16,17 +16,12 @@
 package org.redisson.reactive;
 
 import java.util.concurrent.Callable;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 
 /**
  * 
@@ -43,52 +38,12 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
         this.queue = queue;
     }
 
-    private void take(final Callable<RFuture<V>> factory, final FluxSink<V> emitter, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) {
-        RFuture<V> future;
-        try {
-            future = factory.call();
-        } catch (Exception e) {
-            emitter.error(e);
-            return;
-        }
-        futureRef.set(future);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    emitter.error(future.cause());
-                    return;
-                }
-                
-                emitter.next(future.getNow());
-                if (counter.decrementAndGet() == 0) {
-                    emitter.complete();
-                }
-                
-                take(factory, emitter, counter, futureRef);
-            }
-        });
-    }
-    
     public Flux<V> takeElements() {
-        return takeElements(new Callable<RFuture<V>>() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {
                 return queue.takeAsync();
             }
-        });
-    }
-    
-    protected final Flux<V> takeElements(Callable<RFuture<V>> callable) {
-        return Flux.<V>create(emitter -> {
-            emitter.onRequest(n -> {
-                AtomicLong counter = new AtomicLong(n);
-                AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
-                take(callable, emitter, counter, futureRef);
-                emitter.onDispose(() -> {
-                    futureRef.get().cancel(true);
-                });
-            });
         });
     }
     

@@ -15,7 +15,8 @@
  */
 package org.redisson.reactive;
 
-import org.reactivestreams.Publisher;
+import java.util.concurrent.Callable;
+
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSetAsync;
@@ -49,6 +50,24 @@ public class RedissonScoredSortedSetReactive<V>  {
 
     private RedissonScoredSortedSetReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RScoredSortedSetAsync<V> instance) {
         this.instance = instance;
+    }
+    
+    public Flux<V> takeFirstElements() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
+            @Override
+            public RFuture<V> call() throws Exception {
+                return instance.takeFirstAsync();
+            }
+        });
+    }
+    
+    public Flux<V> takeLastElements() {
+        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
+            @Override
+            public RFuture<V> call() throws Exception {
+                return instance.takeLastAsync();
+            }
+        });
     }
 
     private Flux<V> scanIteratorReactive(final String pattern, final int count) {
