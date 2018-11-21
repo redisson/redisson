@@ -48,7 +48,7 @@ public class RedissonScoredSortedSetRx<V>  {
         }.create();
     }
 
-    public Flowable<V> takeFirst() {
+    public Flowable<V> takeFirstElements() {
         return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {
@@ -57,7 +57,7 @@ public class RedissonScoredSortedSetRx<V>  {
         });
     }
     
-    public Flowable<V> takeLast() {
+    public Flowable<V> takeLastElements() {
         return ElementsStream.takeElements(new Callable<RFuture<V>>() {
             @Override
             public RFuture<V> call() throws Exception {

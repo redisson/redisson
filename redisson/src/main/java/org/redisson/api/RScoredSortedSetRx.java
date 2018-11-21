@@ -429,5 +429,21 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the tail element
      */
     Flowable<V> takeLast();
+
+    /**
+     * Retrieves and removes continues stream of elements from the head. 
+     * Waits for next element become available.
+     * 
+     * @return stream of head elements
+     */
+    Flowable<V> takeFirstElements();
+
+    /**
+     * Retrieves and removes continues stream of elements from the tail. 
+     * Waits for next element become available.
+     * 
+     * @return stream of tail elements
+     */
+    Flowable<V> takeLastElements();
     
 }
