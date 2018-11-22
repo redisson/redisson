@@ -1,9 +1,10 @@
 Redis based Hibernate Cache implementation
 ===
 
-Implements Hibernate 2nd level Cache provider based on Redisson.
+Implements Hibernate 2nd level Cache provider based on Redisson.  
+Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.
 
-Supports Hibernate 4.x, 5.x
+Compatible with Hibernate 4.x, 5.x
 
 <sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
