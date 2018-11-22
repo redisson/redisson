@@ -102,7 +102,7 @@ Configuration examples:
 <property name="hibernate.cache.redisson.my_list.expiration.time_to_live" value="600000" />
 <property name="hibernate.cache.redisson.my_list.expiration.max_idle_time" value="300000" />
 
-<!-- cache definition for naturalid region. Prefixed by ##NaturalId. Example region name: "my_object" -->
+<!-- cache definition for naturalid region. Suffixed by ##NaturalId. Example region name: "my_object" -->
 <property name="hibernate.cache.redisson.my_object##NaturalId.eviction.max_entries" value="10000" />
 <property name="hibernate.cache.redisson.my_object##NaturalId.expiration.time_to_live" value="600000" />
 <property name="hibernate.cache.redisson.my_object##NaturalId.expiration.max_idle_time" value="300000" />
