@@ -67,7 +67,7 @@ Usage
 
 ### 2. Specify hibernate cache settings
 
-```
+```xml
 <!-- 2nd level cache activation -->
 <property name="hibernate.cache.use_second_level_cache" value="true" />
 <property name="hibernate.cache.use_query_cache" value="true" />
@@ -81,13 +81,17 @@ Usage
 ```
 
 Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:  
+
 `eviction.max_entries` - max size of cache. Superfluous entries are evicted using LRU algorithm. `0` value means unbounded cache. Default value: 0  
+
 `expiration.time_to_live` - time to live per cache entry in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+
 `expiration.max_idle_time` - max idle time per cache entry in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+
 
 Configuration examples:
 
-```
+```xml
 <!-- cache definition for entity region. Example region name: "my_object" -->
 <property name="hibernate.cache.redisson.my_object.eviction.max_entries" value="10000" />
 <property name="hibernate.cache.redisson.my_object.expiration.time_to_live" value="600000" />
