@@ -33,7 +33,7 @@ public class RedisRedirectException extends RedisException {
 
     public RedisRedirectException(int slot, String url) {
         this.slot = slot;
-        this.url = URIBuilder.create("//" + url);
+        this.url = URIBuilder.create("redis://" + url);
     }
 
     public int getSlot() {
