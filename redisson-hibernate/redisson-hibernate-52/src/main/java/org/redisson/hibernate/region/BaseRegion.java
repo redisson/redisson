@@ -25,7 +25,6 @@ import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.GeneralDataRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TransactionalDataRegion;
-import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.redisson.api.RMapCache;
 import org.redisson.hibernate.RedissonRegionFactory;
@@ -95,7 +94,6 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
     @Override
     public void destroy() throws CacheException {
         try {
-            mapCache.clear();
             mapCache.destroy();
         } catch (Exception e) {
             throw new CacheException(e);

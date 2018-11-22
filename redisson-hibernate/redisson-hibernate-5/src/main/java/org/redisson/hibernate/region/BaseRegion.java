@@ -94,7 +94,6 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
     @Override
     public void destroy() throws CacheException {
         try {
-            mapCache.clear();
             mapCache.destroy();
         } catch (Exception e) {
             throw new CacheException(e);
