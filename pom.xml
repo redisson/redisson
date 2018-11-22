@@ -62,6 +62,7 @@
         <module>redisson-tomcat</module>
         <module>redisson-spring-data</module>
         <module>redisson-spring-boot-starter</module>
+        <module>redisson-hibernate</module>
     </modules>
 
     <profiles>
