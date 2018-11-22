@@ -89,8 +89,36 @@ Redisson allows to define follow cache settings per entity, collection, naturali
 
 `expiration.max_idle_time` - max idle time per cache entry in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
 
+Default region configuration used for all caches not specified in configuration:
 
-Configuration examples:
+```xml
+<!-- cache definition applied to all caches in entity region -->
+<property name="hibernate.cache.redisson.entry.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.entry.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.entry.expiration.max_idle_time" value="300000" />
+
+<!-- cache definition applied to all caches in collection region -->
+<property name="hibernate.cache.redisson.collection.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.collection.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.collection.expiration.max_idle_time" value="300000" />
+
+<!-- cache definition applied to all caches in naturalid region -->
+<property name="hibernate.cache.redisson.naturalid.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.naturalid.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.naturalid.expiration.max_idle_time" value="300000" />
+
+<!-- cache definition applied to all caches in query region -->
+<property name="hibernate.cache.redisson.query.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.query.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.query.expiration.max_idle_time" value="300000" />
+
+<!-- cache definition for timestamps region -->
+<property name="hibernate.cache.redisson.timestamps.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.timestamps.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.timestamps.expiration.max_idle_time" value="300000" />
+```
+
+Configuration per entity/collection/naturalid/query region overrides default configuration:
 
 ```xml
 <!-- cache definition for entity region. Example region name: "my_object" -->
@@ -112,10 +140,5 @@ Configuration examples:
 <property name="hibernate.cache.redisson.my_entity.eviction.max_entries" value="10000" />
 <property name="hibernate.cache.redisson.my_entity.expiration.time_to_live" value="600000" />
 <property name="hibernate.cache.redisson.my_entity.expiration.max_idle_time" value="300000" />
-
-<!-- cache definition for timestamps region. -->
-<property name="hibernate.cache.redisson.timestamps.eviction.max_entries" value="10000" />
-<property name="hibernate.cache.redisson.timestamps.expiration.time_to_live" value="600000" />
-<property name="hibernate.cache.redisson.timestamps.expiration.max_idle_time" value="300000" />
 
 ```
