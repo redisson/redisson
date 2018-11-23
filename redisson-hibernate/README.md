@@ -2,7 +2,7 @@ Redis based Hibernate Cache implementation
 ===
 
 Implements Hibernate 2nd level Cache provider based on Redisson.  
-Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.
+Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
 Compatible with Hibernate 4.x, 5.x
@@ -102,7 +102,7 @@ Usage
 <property name="hibernate.cache.redisson.config" value="/redisson.json" />
 ```
 
-Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:  
+#### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:  
 
 `hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` - max size of cache. Superfluous entries in Redis are evicted using LRU algorithm. `0` value means unbounded cache. Default value: 0  
 
@@ -134,7 +134,7 @@ Default value: NONE
 
 _Please note: `*.localcache.*` settings are available for `RedissonClusteredLocalCachedRegionFactory` and `RedissonLocalCachedRegionFactory` classes only._
 
-Default region configuration used for all caches not specified in configuration:
+#### Default region configuration used for all caches not specified in configuration:
 
 ```xml
 <!-- cache definition applied to all caches in entity region -->
@@ -198,7 +198,7 @@ Default region configuration used for all caches not specified in configuration:
 <property name="hibernate.cache.redisson.timestamps.localcache.size" value="5000" />
 ```
 
-Configuration per entity/collection/naturalid/query region overrides default configuration:
+#### Configuration per entity/collection/naturalid/query region overrides default configuration:
 
 ```xml
 <!-- cache definition for entity region. Example region name: "my_object" -->
