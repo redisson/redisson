@@ -3,6 +3,7 @@ Redis based Hibernate Cache implementation
 
 Implements Hibernate 2nd level Cache provider based on Redisson.  
 Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.
+It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
 Compatible with Hibernate 4.x, 5.x
 
@@ -20,8 +21,6 @@ Below is the list of all available factories with local cache and/or data partit
 |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | **Yes** | No |
 |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | No | **Yes** |
 |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | **Yes** | **Yes** |
-
-<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
 Usage
 ===

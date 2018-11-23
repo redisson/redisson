@@ -37,7 +37,7 @@ import org.redisson.hibernate.strategy.TransactionalNaturalIdRegionAccessStrateg
  */
 public class RedissonNaturalIdRegion extends BaseRegion implements NaturalIdRegion {
 
-    private Settings settings;
+    private final Settings settings;
     
     public RedissonNaturalIdRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
             CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {

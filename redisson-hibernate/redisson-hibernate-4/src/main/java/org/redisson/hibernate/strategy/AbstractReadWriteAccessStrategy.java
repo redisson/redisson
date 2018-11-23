@@ -61,7 +61,7 @@ public class AbstractReadWriteAccessStrategy extends BaseRegionAccessStrategy {
 
     private final UUID uuid = UUID.randomUUID();
     private final AtomicLong nextLockId = new AtomicLong();
-    RMapCache<Object, Object> mapCache;
+    final RMapCache<Object, Object> mapCache;
     
     public AbstractReadWriteAccessStrategy(Settings settings, GeneralDataRegion region, RMapCache<Object, Object> mapCache) {
         super(settings, region);

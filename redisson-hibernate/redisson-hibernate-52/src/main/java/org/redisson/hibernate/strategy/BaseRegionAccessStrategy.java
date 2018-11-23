@@ -29,8 +29,8 @@ import org.hibernate.engine.spi.SharedSessionContractImplementor;
  */
 abstract class BaseRegionAccessStrategy implements RegionAccessStrategy {
 
-    GeneralDataRegion region;
-    Settings settings;
+    final GeneralDataRegion region;
+    final Settings settings;
     
     BaseRegionAccessStrategy(Settings settings, GeneralDataRegion region) {
         this.settings = settings;

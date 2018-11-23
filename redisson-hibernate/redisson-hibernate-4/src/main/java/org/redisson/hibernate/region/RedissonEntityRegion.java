@@ -37,7 +37,7 @@ import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
  */
 public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
 
-    private Settings settings;
+    private final Settings settings;
     
     public RedissonEntityRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
             CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
