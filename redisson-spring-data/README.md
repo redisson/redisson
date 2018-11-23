@@ -1,7 +1,7 @@
 Spring Data Redis integration
 ===
 
-Integrates Redisson with Spring Data Redis library. Provides ability to work with Redis through `RedisTemplate` object.
+Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnection` and `RedisClusterConnection` interfaces, so you could work with Redis through `RedisTemplate` object.
 
 Supports Spring Data Redis 1.6.x, 1.7.x, 1.8.x, 2.0.x, 2.1.x
 
