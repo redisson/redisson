@@ -2,7 +2,7 @@ Redis based Hibernate Cache implementation
 ===
 
 Implements Hibernate 2nd level Cache provider based on Redisson.  
-Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.
+Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
 Compatible with Hibernate 4.x, 5.x
