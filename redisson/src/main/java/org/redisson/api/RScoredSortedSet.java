@@ -20,15 +20,17 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.protocol.ScoredEntry;
 
 /**
+ * Set containing elements sorted by score.
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> object type
  */
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable, RSortable<Set<V>> {
 
@@ -286,6 +288,43 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return <code>true</code> if empty
      */
     boolean isEmpty();
+    
+    /**
+     * Returns stream of elements in this set.
+     * Elements are loaded in batch. Batch size is 10. 
+     * 
+     * @return stream of elements
+     */
+    Stream<V> stream();
+    
+    /**
+     * Returns stream of elements in this set.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @return stream of elements
+     */
+    Stream<V> stream(String pattern);
+    
+    /**
+     * Returns stream of elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * 
+     * @param count - size of elements batch
+     * @return stream of elements
+     */
+    Stream<V> stream(int count);
+    
+    /**
+     * Returns stream of elements in this set.
+     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * If pattern is not null then only elements match this pattern are loaded.
+     * 
+     * @param pattern - search pattern
+     * @param count - size of elements batch
+     * @return stream of elements
+     */
+    Stream<V> stream(String pattern, int count);
     
     /**
      * Returns an iterator over elements in this set.

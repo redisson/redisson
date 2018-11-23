@@ -19,8 +19,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
@@ -73,6 +78,11 @@ public abstract class RedissonObject implements RObject {
         return "{" + name + "}:" + suffix;
     }
 
+    protected final <T> Stream<T> toStream(Iterator<T> iterator) {
+        Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
+        return StreamSupport.stream(spliterator, false);
+    }
+    
     protected final <V> V get(RFuture<V> future) {
         return commandExecutor.get(future);
     }

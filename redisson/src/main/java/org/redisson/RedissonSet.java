@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -657,5 +658,20 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         }
 
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_SET, params.toArray());
+    }
+
+    @Override
+    public Stream<V> stream(int count) {
+        return toStream(iterator(count));
+    }
+
+    @Override
+    public Stream<V> stream(String pattern, int count) {
+        return toStream(iterator(pattern, count));
+    }
+
+    @Override
+    public Stream<V> stream(String pattern) {
+        return toStream(iterator(pattern));
     }
 }

@@ -21,10 +21,14 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RKeys;
@@ -516,5 +520,29 @@ public class RedissonKeys implements RKeys {
         return commandExecutor.writeAsync(name, RedisCommands.MOVE, name, database);
     }
 
+    @Override
+    public Stream<String> getKeysStreamByPattern(String pattern) {
+        return toStream(getKeysByPattern(pattern).iterator());
+    }
+
+    protected <T> Stream<T> toStream(Iterator<T> iterator) {
+        Spliterator<T> spliterator = Spliterators.spliteratorUnknownSize(iterator, Spliterator.NONNULL);
+        return StreamSupport.stream(spliterator, false);
+    }
+
+    @Override
+    public Stream<String> getKeysStreamByPattern(String pattern, int count) {
+        return toStream(getKeysByPattern(pattern, count).iterator());
+    }
+
+    @Override
+    public Stream<String> getKeysStream() {
+        return toStream(getKeys().iterator());
+    }
+
+    @Override
+    public Stream<String> getKeysStream(int count) {
+        return toStream(getKeys(count).iterator());
+    }
     
 }

@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RPriorityDeque;
@@ -226,6 +227,11 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     @Override
     public boolean removeLastOccurrence(Object o) {
         return remove(o, -1);
+    }
+
+    @Override
+    public Stream<V> descendingStream() {
+        return toStream(descendingIterator());
     }
 
 }

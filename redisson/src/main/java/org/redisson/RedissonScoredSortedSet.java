@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
@@ -1085,5 +1086,25 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public V takeLast() {
         return get(takeLastAsync());
+    }
+
+    @Override
+    public Stream<V> stream() {
+        return toStream(iterator());
+    }
+
+    @Override
+    public Stream<V> stream(String pattern) {
+        return toStream(iterator(pattern));
+    }
+
+    @Override
+    public Stream<V> stream(int count) {
+        return toStream(iterator(count));
+    }
+
+    @Override
+    public Stream<V> stream(String pattern, int count) {
+        return toStream(iterator(pattern, count));
     }
 }
