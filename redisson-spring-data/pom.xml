@@ -18,6 +18,7 @@
         <module>redisson-spring-data-17</module>
         <module>redisson-spring-data-18</module>
         <module>redisson-spring-data-20</module>
+        <module>redisson-spring-data-21</module>
     </modules>
 
     <build>
