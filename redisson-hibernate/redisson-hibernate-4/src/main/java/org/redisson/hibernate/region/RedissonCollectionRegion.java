@@ -37,7 +37,7 @@ import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrate
  */
 public class RedissonCollectionRegion extends BaseRegion implements CollectionRegion {
 
-    private Settings settings;
+    private final Settings settings;
     
     public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
             CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {

@@ -182,7 +182,7 @@ public class RedissonRegionFactory implements RegionFactory {
             throws CacheException {
         log.debug("Building entity cache region: " + regionName);
 
-        RMapCache<Object, Object> mapCache = getCache(regionName, properties);
+        RMapCache<Object, Object> mapCache = getCache(regionName, properties, ENTITY_DEF);
         return new RedissonEntityRegion(mapCache, this, metadata, settings, properties, ENTITY_DEF);
     }
 
@@ -191,7 +191,7 @@ public class RedissonRegionFactory implements RegionFactory {
             throws CacheException {
         log.debug("Building naturalId cache region: " + regionName);
         
-        RMapCache<Object, Object> mapCache = getCache(regionName, properties);
+        RMapCache<Object, Object> mapCache = getCache(regionName, properties, NATURAL_ID_DEF);
         return new RedissonNaturalIdRegion(mapCache, this, metadata, settings, properties, NATURAL_ID_DEF);
     }
 
@@ -200,7 +200,7 @@ public class RedissonRegionFactory implements RegionFactory {
             CacheDataDescription metadata) throws CacheException {
         log.debug("Building collection cache region: " + regionName);
         
-        RMapCache<Object, Object> mapCache = getCache(regionName, properties);
+        RMapCache<Object, Object> mapCache = getCache(regionName, properties, COLLECTION_DEF);
         return new RedissonCollectionRegion(mapCache, this, metadata, settings, properties, COLLECTION_DEF);
     }
 
@@ -208,7 +208,7 @@ public class RedissonRegionFactory implements RegionFactory {
     public QueryResultsRegion buildQueryResultsRegion(String regionName, Properties properties) throws CacheException {
         log.debug("Building query cache region: " + regionName);
         
-        RMapCache<Object, Object> mapCache = getCache(regionName, properties);
+        RMapCache<Object, Object> mapCache = getCache(regionName, properties, QUERY_DEF);
         return new RedissonQueryRegion(mapCache, this, properties, QUERY_DEF);
     }
 
@@ -216,11 +216,11 @@ public class RedissonRegionFactory implements RegionFactory {
     public TimestampsRegion buildTimestampsRegion(String regionName, Properties properties) throws CacheException {
         log.debug("Building timestamps cache region: " + regionName);
         
-        RMapCache<Object, Object> mapCache = getCache(regionName, properties);
+        RMapCache<Object, Object> mapCache = getCache(regionName, properties, TIMESTAMPS_DEF);
         return new RedissonTimestampsRegion(mapCache, this, properties, TIMESTAMPS_DEF);
     }
 
-    protected RMapCache<Object, Object> getCache(String regionName, Properties properties) {
+    protected RMapCache<Object, Object> getCache(String regionName, Properties properties, String defaultKey) {
         return redisson.getMapCache(regionName);
     }
     

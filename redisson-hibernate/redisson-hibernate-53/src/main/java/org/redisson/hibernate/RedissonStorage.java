@@ -29,7 +29,7 @@ import org.redisson.api.RMapCache;
  */
 public class RedissonStorage implements DomainDataStorageAccess {
 
-    private RMapCache<Object, Object> mapCache;
+    private final RMapCache<Object, Object> mapCache;
     
     int ttl;
     int maxIdle;

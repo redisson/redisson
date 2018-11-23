@@ -36,9 +36,9 @@ import org.redisson.hibernate.RedissonRegionFactory;
  */
 public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
-    RMapCache<Object, Object> mapCache;
-    RegionFactory regionFactory;
-    CacheDataDescription metadata;
+    final RMapCache<Object, Object> mapCache;
+    final RegionFactory regionFactory;
+    final CacheDataDescription metadata;
     
     int ttl;
     int maxIdle;
@@ -136,6 +136,7 @@ public class BaseRegion implements TransactionalDataRegion, GeneralDataRegion {
 
     @Override
     public int getTimeout() {
+        // 60 seconds (normalized value)
         return (1 << 12) * 60000;
     }
 
