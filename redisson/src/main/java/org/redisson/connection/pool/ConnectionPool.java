@@ -16,6 +16,7 @@
 package org.redisson.connection.pool;
 
 import java.net.InetSocketAddress;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -187,13 +188,16 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     public RFuture<T> get(RedisCommand<?> command) {
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
+        for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
+            ClientConnectionsEntry entry = iterator.next();
+            if (!((!entry.isFreezed() || entry.isMasterForRead()) && 
+                    tryAcquireConnection(entry))) {
+                iterator.remove();
+            }
+        }
         while (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy);
-            if ((!entry.isFreezed() || entry.isMasterForRead()) && 
-        		    tryAcquireConnection(entry)) {
-                return acquireConnection(command, entry);
-            }
-            entriesCopy.remove(entry);
+            return acquireConnection(command, entry);
         }
         
         List<InetSocketAddress> failed = new LinkedList<InetSocketAddress>();
@@ -252,7 +256,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         if (entry.getNodeType() == NodeType.SLAVE && entry.isFailed()) {
             checkForReconnect(entry, null);
             return false;
-    }
+        }
         return true;
     }
 
