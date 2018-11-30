@@ -83,11 +83,6 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
     }
 
     @Override
-    public <T extends Codec> T getCodec(Class<T> codecClass, RObject rObject) {
-        return getCodec(codecClass, rObject.getClass(), rObject.getName());
-    }
-
-    @Override
     public <T extends Codec> void registerCodec(Class<T> cls, T codec) {
         if (!cls.isInstance(codec)) {
             throw new IllegalArgumentException("codec is not an instance of the class [" + cls.getCanonicalName() + "]");
