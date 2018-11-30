@@ -33,7 +33,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 
 /**
- * Type based codec for RMap objects
+ * @deprecated Use org.redisson.codec.TypedJsonJacksonCodec instead
  * 
  * @author Nikita Koksharov
  * @author Andrej Kazakov
