@@ -82,6 +82,11 @@ public class RedissonRegionFactory implements RegionFactory {
     
     @Override
     public void start(SessionFactoryOptions settings, Properties properties) throws CacheException {
+        this.redisson = createRedissonClient(properties);
+        this.settings = new Settings(settings);
+    }
+
+    protected RedissonClient createRedissonClient(Properties properties) {
         Config config = null;
         if (!properties.containsKey(REDISSON_CONFIG_PATH)) {
             config = loadConfig(RedissonRegionFactory.class.getClassLoader(), "redisson.json");
@@ -100,10 +105,9 @@ public class RedissonRegionFactory implements RegionFactory {
             throw new CacheException("Unable to locate Redisson configuration");
         }
         
-        this.redisson = Redisson.create(config);
-        this.settings = new Settings(settings);
+        return Redisson.create(config);
     }
-
+    
     private Config loadConfig(String configPath) {
         try {
             return Config.fromJSON(new File(configPath));
