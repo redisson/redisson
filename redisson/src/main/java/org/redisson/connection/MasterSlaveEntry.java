@@ -188,6 +188,10 @@ public class MasterSlaveEntry {
     }
     
     private boolean slaveDown(ClientConnectionsEntry entry) {
+        if (entry.isMasterForRead()) {
+            return false;
+        }
+        
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
@@ -201,11 +205,23 @@ public class MasterSlaveEntry {
             connection.closeAsync();
             reattachBlockingQueue(connection);
         }
+        while (true) {
+            RedisConnection connection = entry.pollConnection();
+            if (connection == null) {
+                break;
+            }
+        }
         entry.getAllConnections().clear();
         
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
             connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);
+        }
+        while (true) {
+            RedisConnection connection = entry.pollSubscribeConnection();
+            if (connection == null) {
+                break;
+            }
         }
         entry.getAllSubscribeConnections().clear();
         
@@ -436,6 +452,8 @@ public class MasterSlaveEntry {
 
                 slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
                 slaveBalancer.changeType(newMasterClient.getAddr(), NodeType.MASTER);
+                // freeze in slaveBalancer
+                slaveDown(oldMaster.getClient().getAddr(), FreezeReason.MANAGER);
 
                 // more than one slave available, so master can be removed from slaves
                 if (!config.checkSkipSlavesInit()

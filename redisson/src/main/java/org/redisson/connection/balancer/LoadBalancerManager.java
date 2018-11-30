@@ -164,7 +164,11 @@ public class LoadBalancerManager {
         synchronized (connectionEntry) {
             // only RECONNECT freeze reason could be replaced
             if (connectionEntry.getFreezeReason() == null
-                    || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT) {
+                    || connectionEntry.getFreezeReason() == FreezeReason.RECONNECT
+                        || (freezeReason == FreezeReason.MANAGER 
+                                && connectionEntry.getFreezeReason() != FreezeReason.MANAGER 
+                                    && connectionEntry.getNodeType() == NodeType.SLAVE
+                                    )) {
                 connectionEntry.setFreezed(true);
                 connectionEntry.setFreezeReason(freezeReason);
                 return connectionEntry;

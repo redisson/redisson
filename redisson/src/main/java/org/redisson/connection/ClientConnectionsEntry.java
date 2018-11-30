@@ -76,7 +76,7 @@ public class ClientConnectionsEntry {
     }
     
     public boolean isMasterForRead() {
-        return getFreezeReason() == FreezeReason.SYSTEM && getConfig().getReadMode() == ReadMode.MASTER_SLAVE;
+        return getFreezeReason() == FreezeReason.SYSTEM && getConfig().getReadMode() == ReadMode.MASTER_SLAVE && getNodeType() == NodeType.MASTER;
     }
     
     public void setNodeType(NodeType nodeType) {
