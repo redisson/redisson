@@ -90,16 +90,6 @@ public interface ReferenceCodecProvider {
     <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass, String name);
 
     /**
-     * Get a codec instance by its class and an instance of the RObject.
-     * 
-     * @param <T> the expected codec type.
-     * @param codecClass the codec class used to lookup the codec.
-     * @param rObject instance of the RObject implementation.
-     * @return the cached codec instance.
-     */
-    <T extends Codec> T getCodec(Class<T> codecClass, RObject rObject);
-
-    /**
      * Register a codec by its class or super class.
      * 
      * @param <T> the codec type to register.
