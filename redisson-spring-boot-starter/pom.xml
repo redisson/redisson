@@ -86,6 +86,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-redis</artifactId>
+            <exclusions>
+              <exclusion>
+                 <groupId>redis.clients</groupId>
+                 <artifactId>jedis</artifactId>
+              </exclusion>
+              <exclusion>
+                 <groupId>io.lettuce</groupId>
+                 <artifactId>lettuce-core</artifactId>
+              </exclusion>
+            </exclusions> 
         </dependency>
 <!--
         <dependency>
