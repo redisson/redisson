@@ -92,6 +92,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
         super(config, id);
 
+        if (cfg.getNodeAddresses().isEmpty()) {
+            throw new IllegalArgumentException("At least one cluster node should be defined!");
+        }
+        
         this.config = create(cfg);
         initTimer(this.config);
         

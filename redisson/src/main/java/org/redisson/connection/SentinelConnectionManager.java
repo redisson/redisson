@@ -78,6 +78,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (cfg.getMasterName() == null) {
             throw new IllegalArgumentException("masterName parameter is not defined!");
         }
+        if (cfg.getSentinelAddresses().isEmpty()) {
+            throw new IllegalArgumentException("At least one sentinel node should be defined!");
+        }
 
         this.config = create(cfg);
         initTimer(this.config);
