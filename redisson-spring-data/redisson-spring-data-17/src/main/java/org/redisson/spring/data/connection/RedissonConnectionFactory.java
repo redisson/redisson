@@ -83,7 +83,6 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public void destroy() throws Exception {
-        redisson.shutdown();
     }
 
     @Override
