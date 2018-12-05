@@ -12,17 +12,17 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 Features
 ================================
-* Replicated servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
+* Replicated Redis servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master server change discovery
-* Cluster servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
+* Clustered Redis servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master and slave servers discovery
     2. automatic status and topology update
     3. automatic slots change discovery
-* Sentinel servers mode: 
+* Sentinel Redis servers mode: 
     1. automatic master, slave and sentinel servers discovery
     2. automatic status and topology update
-* Master with Slave servers mode  
-* Single server mode  
+* Master with Slave Redis servers mode  
+* Single Redis server mode  
 * Thread-safe implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
