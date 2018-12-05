@@ -137,14 +137,14 @@ Config = ...
 // 2. Create Redisson instance
 RedissonClient redisson = Redisson.create(config);
 
-// 3. Get object you need
+// 3. Get Redis based object or service you need
 RMap<MyKey, MyValue> map = redisson.getMap("myMap");
 
 RLock lock = redisson.getLock("myLock");
 
 RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
-// over 30 different objects and services ...
+// over 30 different Redis based objects and services ...
 
 ```
 
