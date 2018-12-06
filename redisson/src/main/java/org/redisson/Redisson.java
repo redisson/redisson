@@ -124,6 +124,10 @@ public class Redisson implements RedissonClient {
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
     }
 
+    public SemaphorePubSub getSemaphorePubSub() {
+        return semaphorePubSub;
+    }
+    
     public EvictionScheduler getEvictionScheduler() {
         return evictionScheduler;
     }

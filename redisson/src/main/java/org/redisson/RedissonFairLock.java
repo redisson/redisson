@@ -45,7 +45,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     private final String threadsQueueName;
     private final String timeoutSetName;
 
-    protected RedissonFairLock(CommandAsyncExecutor commandExecutor, String name) {
+    public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         threadsQueueName = prefixName("redisson_lock_queue", name);

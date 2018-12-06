@@ -103,6 +103,38 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * @return MapReduce instance
      */
     <KOut, VOut> RMapReduce<K, V, KOut, VOut> mapReduce();
+
+    /**
+     * Returns <code>RCountDownLatch</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RCountDownLatch getCountDownLatch(K key);
+    
+    /**
+     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
+
+    /**
+     * Returns <code>RSemaphore</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RSemaphore getSemaphore(K key);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RLock getFairLock(K key);
     
     /**
      * Returns <code>RReadWriteLock</code> instance associated with key
