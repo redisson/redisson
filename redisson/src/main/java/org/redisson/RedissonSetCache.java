@@ -24,8 +24,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.RSetCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -366,19 +370,49 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         delete();
     }
 
-    public String getLockName(Object value) {
+    public String getLockName(Object value, String suffix) {
         ByteBuf state = encode(value);
         try {
-            return suffixName(getName(value), Hash.hash128toBase64(state) + ":lock");
+            return suffixName(getName(value), Hash.hash128toBase64(state) + ":" + suffix);
         } finally {
             state.release();
         }
     }
+
+    @Override
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
+        String lockName = getLockName(value, "permitexpirablesemaphore");
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+    }
+
+    @Override
+    public RSemaphore getSemaphore(V value) {
+        String lockName = getLockName(value, "semaphore");
+        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+    }
+    
+    @Override
+    public RCountDownLatch getCountDownLatch(V value) {
+        String lockName = getLockName(value, "countdownlatch");
+        return new RedissonCountDownLatch(commandExecutor, lockName);
+    }
+    
+    @Override
+    public RLock getFairLock(V value) {
+        String lockName = getLockName(value, "fairlock");
+        return new RedissonFairLock(commandExecutor, lockName);
+    }
     
     @Override
     public RLock getLock(V value) {
-        String lockName = getLockName(value);
+        String lockName = getLockName(value, "lock");
         return new RedissonLock(commandExecutor, lockName);
+    }
+    
+    @Override
+    public RReadWriteLock getReadWriteLock(V value) {
+        String lockName = getLockName(value, "rw_lock");
+        return new RedissonReadWriteLock(commandExecutor, lockName);
     }
 
     @Override

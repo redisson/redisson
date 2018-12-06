@@ -41,10 +41,50 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 public interface RSetCache<V> extends Set<V>, RExpirable, RSetCacheAsync<V>, RDestroyable {
 
     /**
+     * Returns <code>RCountDownLatch</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RCountDownLatch object
+     */
+    RCountDownLatch getCountDownLatch(V value);
+    
+    /**
+     * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RPermitExpirableSemaphore object
+     */
+    RPermitExpirableSemaphore getPermitExpirableSemaphore(V value);
+
+    /**
+     * Returns <code>RSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RSemaphore object
+     */
+    RSemaphore getSemaphore(V value);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RLock object
+     */
+    RLock getFairLock(V value);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RReadWriteLock object
+     */
+    RReadWriteLock getReadWriteLock(V value);
+    
+    /**
      * Returns lock instance associated with <code>value</code>
      * 
      * @param value - set value
-     * @return lock
+     * @return RLock object
      */
     RLock getLock(V value);
     
