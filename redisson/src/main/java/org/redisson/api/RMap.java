@@ -108,7 +108,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Returns <code>RCountDownLatch</code> instance associated with key
      * 
      * @param key - map key
-     * @return readWriteLock
+     * @return countdownlatch
      */
     RCountDownLatch getCountDownLatch(K key);
     
@@ -116,7 +116,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
      * 
      * @param key - map key
-     * @return readWriteLock
+     * @return permitExpirableSemaphore
      */
     RPermitExpirableSemaphore getPermitExpirableSemaphore(K key);
 
@@ -124,7 +124,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Returns <code>RSemaphore</code> instance associated with key
      * 
      * @param key - map key
-     * @return readWriteLock
+     * @return semaphore
      */
     RSemaphore getSemaphore(K key);
     
@@ -132,7 +132,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      * Returns <code>RReadWriteLock</code> instance associated with key
      * 
      * @param key - map key
-     * @return readWriteLock
+     * @return fairlock
      */
     RLock getFairLock(K key);
     
