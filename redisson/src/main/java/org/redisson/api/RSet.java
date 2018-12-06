@@ -54,7 +54,7 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     RSemaphore getSemaphore(V value);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * Returns <code>RLock</code> instance associated with <code>value</code>
      * 
      * @param value - set value
      * @return RLock object

@@ -129,7 +129,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     RSemaphore getSemaphore(K key);
     
     /**
-     * Returns <code>RReadWriteLock</code> instance associated with key
+     * Returns <code>RLock</code> instance associated with key
      * 
      * @param key - map key
      * @return fairlock
