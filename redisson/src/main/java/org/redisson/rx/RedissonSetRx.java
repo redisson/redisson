@@ -18,7 +18,12 @@ package org.redisson.rx;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLockRx;
+import org.redisson.api.RPermitExpirableSemaphoreRx;
+import org.redisson.api.RReadWriteLockRx;
+import org.redisson.api.RSemaphoreRx;
 import org.redisson.api.RSet;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
@@ -34,9 +39,11 @@ import io.reactivex.Flowable;
 public class RedissonSetRx<V> {
 
     private final RSet<V> instance;
+    private final RedissonRxClient redisson;
 
-    public RedissonSetRx(RSet<V> instance) {
+    public RedissonSetRx(RSet<V> instance, RedissonRxClient redisson) {
         this.instance = instance;
+        this.redisson = redisson;
     }
     
     public Flowable<Boolean> addAll(Publisher<? extends V> c) {
@@ -60,13 +67,38 @@ public class RedissonSetRx<V> {
         return new SetRxIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonSet)instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
+                return ((RedissonSet<V>)instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
             }
         }.create();
     }
 
     public Publisher<V> iterator() {
         return iterator(null, 10);
+    }
+    
+    public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "permitexpirablesemaphore");
+        return redisson.getPermitExpirableSemaphore(name);
+    }
+
+    public RSemaphoreRx getSemaphore(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "semaphore");
+        return redisson.getSemaphore(name);
+    }
+    
+    public RLockRx getFairLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "fairlock");
+        return redisson.getFairLock(name);
+    }
+    
+    public RReadWriteLockRx getReadWriteLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "rw_lock");
+        return redisson.getReadWriteLock(name);
+    }
+    
+    public RLockRx getLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "lock");
+        return redisson.getLock(name);
     }
     
 }

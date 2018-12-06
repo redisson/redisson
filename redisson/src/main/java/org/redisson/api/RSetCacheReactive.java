@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 
 /**
- * Async set functions
+ * Reactive interface for RSetCache object
  *
  * @author Nikita Koksharov
  *
@@ -29,6 +29,57 @@ import org.reactivestreams.Publisher;
  */
 public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
 
+    /**
+     * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RPermitExpirableSemaphore object
+     */
+    RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(V value);
+
+    /**
+     * Returns <code>RSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RSemaphore object
+     */
+    RSemaphoreReactive getSemaphore(V value);
+    
+    /**
+     * Returns <code>RLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RLock object
+     */
+    RLockReactive getFairLock(V value);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RReadWriteLock object
+     */
+    RReadWriteLockReactive getReadWriteLock(V value);
+    
+    /**
+     * Returns lock instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RLock object
+     */
+    RLockReactive getLock(V value);
+
+    /**
+     * Stores value with specified time to live.
+     * Value expires after specified time to live.
+     *
+     * @param value to add
+     * @param ttl - time to live for key\value entry.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit - time unit
+     * @return <code>true</code> if value has been added. <code>false</code>
+     *          if value already been in collection.
+     */
     Publisher<Boolean> add(V value, long ttl, TimeUnit unit);
 
     /**

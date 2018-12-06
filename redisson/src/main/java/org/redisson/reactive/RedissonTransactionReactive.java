@@ -91,28 +91,28 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     public <V> RSetReactive<V> getSet(String name) {
         RSet<V> set = transaction.<V>getSet(name);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetReactive<V>(set), RSetReactive.class);
+                new RedissonSetReactive<V>(set, null), RSetReactive.class);
     }
 
     @Override
     public <V> RSetReactive<V> getSet(String name, Codec codec) {
         RSet<V> set = transaction.<V>getSet(name, codec);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetReactive<V>(set), RSetReactive.class);
+                new RedissonSetReactive<V>(set, null), RSetReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
         RSetCache<V> set = transaction.<V>getSetCache(name);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set, null), RSetCacheReactive.class);
     }
 
     @Override
     public <V> RSetCacheReactive<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = transaction.<V>getSetCache(name, codec);
         return ReactiveProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheReactive<V>(set), RSetCacheReactive.class);
+                new RedissonSetCacheReactive<V>(set, null), RSetCacheReactive.class);
     }
 
     @Override

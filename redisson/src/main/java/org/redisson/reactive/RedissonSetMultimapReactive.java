@@ -19,6 +19,7 @@ import org.redisson.RedissonListMultimap;
 import org.redisson.api.RSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSetReactive;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.codec.Codec;
 
 /**
@@ -30,21 +31,26 @@ import org.redisson.client.codec.Codec;
  */
 public class RedissonSetMultimapReactive<K, V> {
 
-    private CommandReactiveExecutor commandExecutor;
-    private RedissonListMultimap<K, V> instance;
+    private final RedissonReactiveClient redisson;
+    private final CommandReactiveExecutor commandExecutor;
+    private final RedissonListMultimap<K, V> instance;
     
-    public RedissonSetMultimapReactive(CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonSetMultimapReactive(CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
         this.instance = new RedissonListMultimap<K, V>(commandExecutor, name);
+        this.redisson = redisson;
+        this.commandExecutor = commandExecutor;
     }
 
-    public RedissonSetMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
+    public RedissonSetMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name, RedissonReactiveClient redisson) {
         this.instance = new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+        this.redisson = redisson;
+        this.commandExecutor = commandExecutor;
     }
 
     public RSetReactive<V> get(K key) {
         RSet<V> set = ((RSetMultimap<K, V>)instance).get(key);
         return ReactiveProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetReactive<V>(set), RSetReactive.class);
+                new RedissonSetReactive<V>(set, redisson), RSetReactive.class);
     }
 
 }
