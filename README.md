@@ -1,4 +1,4 @@
-Redisson: Redis based In-Memory Data Grid for Java.<br/> State of the Art Redis client
+Redisson: Redis based In-Memory Data Grid for Java.<br/> State of the Art Redis Java client
 ====
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.8.2) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
 
@@ -12,17 +12,17 @@ Based on high-performance async and lock-free Java Redis client and [Netty](http
 
 Features
 ================================
-* Replicated servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
+* Replicated Redis servers mode (also supports [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master server change discovery
-* Cluster servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
+* Clustered Redis servers mode (also supports [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/)):
     1. automatic master and slave servers discovery
     2. automatic status and topology update
     3. automatic slots change discovery
-* Sentinel servers mode: 
+* Sentinel Redis servers mode: 
     1. automatic master, slave and sentinel servers discovery
     2. automatic status and topology update
-* Master with Slave servers mode  
-* Single server mode  
+* Master with Slave Redis servers mode  
+* Single Redis server mode  
 * Thread-safe implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
@@ -137,14 +137,14 @@ Config = ...
 // 2. Create Redisson instance
 RedissonClient redisson = Redisson.create(config);
 
-// 3. Get object you need
+// 3. Get Redis based object or service you need
 RMap<MyKey, MyValue> map = redisson.getMap("myMap");
 
 RLock lock = redisson.getLock("myLock");
 
 RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
-// over 30 different objects and services ...
+// over 30 different Redis based objects and services ...
 
 ```
 

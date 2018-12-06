@@ -46,6 +46,8 @@ Usage
 
 ### 2. Add settings into `application.settings` file
 
+Common spring boot settings or Redisson settings could be used.
+
 ```properties
 # common spring boot settings
 
