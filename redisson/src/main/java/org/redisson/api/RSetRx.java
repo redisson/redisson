@@ -20,7 +20,7 @@ import java.util.Set;
 import io.reactivex.Flowable;
 
 /**
- * Async set functions
+ * RxJava2 interface for RSetCache object
  *
  * @author Nikita Koksharov
  *
@@ -28,6 +28,46 @@ import io.reactivex.Flowable;
  */
 public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
 
+    /**
+     * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RPermitExpirableSemaphore object
+     */
+    RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value);
+
+    /**
+     * Returns <code>RSemaphore</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RSemaphore object
+     */
+    RSemaphoreRx getSemaphore(V value);
+    
+    /**
+     * Returns <code>RLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RLock object
+     */
+    RLockRx getFairLock(V value);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RReadWriteLock object
+     */
+    RReadWriteLockRx getReadWriteLock(V value);
+    
+    /**
+     * Returns lock instance associated with <code>value</code>
+     * 
+     * @param value - set value
+     * @return RLock object
+     */
+    RLockRx getLock(V value);
+    
     /**
      * Returns an iterator over elements in this set.
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 

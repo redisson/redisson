@@ -452,7 +452,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
     }
 
     public void returnConnection(ClientConnectionsEntry entry, T connection) {
-        if (entry.isFreezed() && !entry.isMasterForRead()) {
+        if (entry.isFreezed() && entry.getFreezeReason() != FreezeReason.SYSTEM) {
             connection.closeAsync();
             entry.getAllConnections().remove(connection);
         } else {

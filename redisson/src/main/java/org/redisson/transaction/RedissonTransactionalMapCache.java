@@ -24,9 +24,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.RedissonMapCache;
+import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.mapreduce.RMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -296,6 +299,26 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     @Override
     public RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
         throw new UnsupportedOperationException("loadAll method is not supported in transaction");
+    }
+    
+    @Override
+    public RLock getFairLock(K key) {
+        throw new UnsupportedOperationException("getFairLock method is not supported in transaction");
+    }
+    
+    @Override
+    public RCountDownLatch getCountDownLatch(K key) {
+        throw new UnsupportedOperationException("getCountDownLatch method is not supported in transaction");
+    }
+    
+    @Override
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
+        throw new UnsupportedOperationException("getPermitExpirableSemaphore method is not supported in transaction");
+    }
+    
+    @Override
+    public RSemaphore getSemaphore(K key) {
+        throw new UnsupportedOperationException("getSemaphore method is not supported in transaction");
     }
     
     @Override

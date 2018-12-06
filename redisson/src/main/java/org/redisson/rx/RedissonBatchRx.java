@@ -142,14 +142,14 @@ public class RedissonBatchRx implements RBatchRx {
     public <K, V> RMapRx<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, null);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
     }
 
     @Override
@@ -170,14 +170,14 @@ public class RedissonBatchRx implements RBatchRx {
     public <V> RSetRx<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(executorService, name, null);
         return RxProxyBuilder.create(executorService, set, 
-                new RedissonSetRx<V>(set), RSetRx.class);
+                new RedissonSetRx<V>(set, null), RSetRx.class);
     }
 
     @Override
     public <V> RSetRx<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, executorService, name, null);
         return RxProxyBuilder.create(executorService, set, 
-                new RedissonSetRx<V>(set), RSetRx.class);
+                new RedissonSetRx<V>(set, null), RSetRx.class);
     }
 
     @Override
@@ -241,14 +241,14 @@ public class RedissonBatchRx implements RBatchRx {
     public <V> RSetCacheRx<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, executorService, name, null);
         return RxProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+                new RedissonSetCacheRx<V>(set, null), RSetCacheRx.class);
     }
 
     @Override
     public <V> RSetCacheRx<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, executorService, name, null);
         return RxProxyBuilder.create(executorService, set, 
-                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+                new RedissonSetCacheRx<V>(set, null), RSetCacheRx.class);
     }
 
     @Override
@@ -359,13 +359,13 @@ public class RedissonBatchRx implements RBatchRx {
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
         return RxProxyBuilder.create(executorService, new RedissonSetMultimap<K, V>(executorService, name), 
-                new RedissonSetMultimapRx<K, V>(executorService, name), RSetMultimapRx.class);
+                new RedissonSetMultimapRx<K, V>(executorService, name, null), RSetMultimapRx.class);
     }
 
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec) {
         return RxProxyBuilder.create(executorService, new RedissonSetMultimap<K, V>(codec, executorService, name), 
-                new RedissonSetMultimapRx<K, V>(codec, executorService, name), RSetMultimapRx.class);
+                new RedissonSetMultimapRx<K, V>(codec, executorService, name, null), RSetMultimapRx.class);
     }
 
     @Override

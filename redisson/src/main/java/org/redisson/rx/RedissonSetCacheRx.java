@@ -16,9 +16,15 @@
 package org.redisson.rx;
 
 import org.reactivestreams.Publisher;
+import org.redisson.RedissonSetCache;
 import org.redisson.ScanIterator;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLockRx;
+import org.redisson.api.RPermitExpirableSemaphoreRx;
+import org.redisson.api.RReadWriteLockRx;
+import org.redisson.api.RSemaphoreRx;
 import org.redisson.api.RSetCache;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
@@ -31,9 +37,11 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 public class RedissonSetCacheRx<V> {
 
     private final RSetCache<V> instance;
+    private final RedissonRxClient redisson;
     
-    public RedissonSetCacheRx(RSetCache<V> instance) {
+    public RedissonSetCacheRx(RSetCache<V> instance, RedissonRxClient redisson) {
         this.instance = instance;
+        this.redisson = redisson;
     }
 
     public Publisher<V> iterator() {
@@ -54,4 +62,29 @@ public class RedissonSetCacheRx<V> {
         }.addAll(c);
     }
 
+    public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value) {
+        String name = ((RedissonSetCache<V>)instance).getLockName(value, "permitexpirablesemaphore");
+        return redisson.getPermitExpirableSemaphore(name);
+    }
+
+    public RSemaphoreRx getSemaphore(V value) {
+        String name = ((RedissonSetCache<V>)instance).getLockName(value, "semaphore");
+        return redisson.getSemaphore(name);
+    }
+    
+    public RLockRx getFairLock(V value) {
+        String name = ((RedissonSetCache<V>)instance).getLockName(value, "fairlock");
+        return redisson.getFairLock(name);
+    }
+    
+    public RReadWriteLockRx getReadWriteLock(V value) {
+        String name = ((RedissonSetCache<V>)instance).getLockName(value, "rw_lock");
+        return redisson.getReadWriteLock(name);
+    }
+    
+    public RLockRx getLock(V value) {
+        String name = ((RedissonSetCache<V>)instance).getLockName(value, "lock");
+        return redisson.getLock(name);
+    }
+    
 }

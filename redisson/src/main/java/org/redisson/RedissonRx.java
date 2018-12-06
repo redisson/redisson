@@ -226,41 +226,41 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
-                new RedissonSetMultimapRx<K, V>(commandExecutor, name), RSetMultimapRx.class);
+                new RedissonSetMultimapRx<K, V>(commandExecutor, name, this), RSetMultimapRx.class);
     }
 
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
-                new RedissonSetMultimapRx<K, V>(codec, commandExecutor, name), RSetMultimapRx.class);
+                new RedissonSetMultimapRx<K, V>(codec, commandExecutor, name, this), RSetMultimapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override
     public <V> RSetRx<V> getSet(String name) {
         RedissonSet<V> set = new RedissonSet<V>(commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetRx<V>(set), RSetRx.class);
+                new RedissonSetRx<V>(set, this), RSetRx.class);
     }
 
     @Override
     public <V> RSetRx<V> getSet(String name, Codec codec) {
         RedissonSet<V> set = new RedissonSet<V>(codec, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetRx<V>(set), RSetRx.class);
+                new RedissonSetRx<V>(set, this), RSetRx.class);
     }
 
     @Override
@@ -350,14 +350,14 @@ public class RedissonRx implements RedissonRxClient {
     public <V> RSetCacheRx<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+                new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
     }
 
     @Override
     public <V> RSetCacheRx<V> getSetCache(String name, Codec codec) {
         RSetCache<V> set = new RedissonSetCache<V>(codec, evictionScheduler, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetCacheRx<V>(set), RSetCacheRx.class);
+                new RedissonSetCacheRx<V>(set, this), RSetCacheRx.class);
     }
 
     @Override
@@ -460,7 +460,7 @@ public class RedissonRx implements RedissonRxClient {
     public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
 
@@ -468,7 +468,7 @@ public class RedissonRx implements RedissonRxClient {
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override

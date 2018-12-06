@@ -24,8 +24,12 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
+import org.redisson.api.RPermitExpirableSemaphore;
+import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.RSet;
 import org.redisson.api.SortOrder;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -50,7 +54,8 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonSetMultimapValues<V> extends RedissonExpirable implements RSet<V> {
 
-    private static final RedisCommand<ListScanResult<Object>> EVAL_SSCAN = new RedisCommand<ListScanResult<Object>>("EVAL", new ListMultiDecoder(new LongMultiDecoder(), new ObjectListReplayDecoder(), new ListScanResultReplayDecoder()), ValueType.MAP_VALUE);
+    private static final RedisCommand<ListScanResult<Object>> EVAL_SSCAN = new RedisCommand<ListScanResult<Object>>("EVAL", 
+                new ListMultiDecoder(new LongMultiDecoder(), new ObjectListReplayDecoder(), new ListScanResultReplayDecoder()), ValueType.MAP_VALUE);
     
     private final RSet<V> set;
     private final Object key;
@@ -467,6 +472,31 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
                         +"end "
                        + "return v ",
                Arrays.<Object>asList(timeoutSetName, getName()), args.toArray());
+    }
+
+    @Override
+    public RCountDownLatch getCountDownLatch(V value) {
+        return set.getCountDownLatch(value);
+    }
+
+    @Override
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
+        return set.getPermitExpirableSemaphore(value);
+    }
+
+    @Override
+    public RSemaphore getSemaphore(V value) {
+        return set.getSemaphore(value);
+    }
+
+    @Override
+    public RLock getFairLock(V value) {
+        return set.getFairLock(value);
+    }
+
+    @Override
+    public RReadWriteLock getReadWriteLock(V value) {
+        return set.getReadWriteLock(value);
     }
 
     @Override

@@ -24,7 +24,12 @@ import java.util.function.Supplier;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLockReactive;
+import org.redisson.api.RPermitExpirableSemaphoreReactive;
+import org.redisson.api.RReadWriteLockReactive;
+import org.redisson.api.RSemaphoreReactive;
 import org.redisson.api.RSet;
+import org.redisson.api.RedissonReactiveClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
@@ -40,9 +45,11 @@ import reactor.core.publisher.Flux;
 public class RedissonSetReactive<V> {
 
     private final RSet<V> instance;
+    private final RedissonReactiveClient redisson;
 
-    public RedissonSetReactive(RSet<V> instance) {
+    public RedissonSetReactive(RSet<V> instance, RedissonReactiveClient redisson) {
         this.instance = instance;
+        this.redisson = redisson;
     }
 
     public Publisher<Boolean> addAll(Publisher<? extends V> c) {
@@ -75,4 +82,29 @@ public class RedissonSetReactive<V> {
         return iterator(null, 10);
 }
     
-            }
+    public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "permitexpirablesemaphore");
+        return redisson.getPermitExpirableSemaphore(name);
+    }
+
+    public RSemaphoreReactive getSemaphore(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "semaphore");
+        return redisson.getSemaphore(name);
+    }
+    
+    public RLockReactive getFairLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "fairlock");
+        return redisson.getFairLock(name);
+    }
+    
+    public RReadWriteLockReactive getReadWriteLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "rw_lock");
+        return redisson.getReadWriteLock(name);
+    }
+    
+    public RLockReactive getLock(V value) {
+        String name = ((RedissonSet<V>)instance).getLockName(value, "lock");
+        return redisson.getLock(name);
+    }
+    
+}
