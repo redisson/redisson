@@ -20,7 +20,13 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
+import org.redisson.RedissonRx;
+import org.redisson.api.RLockRx;
 import org.redisson.api.RMap;
+import org.redisson.api.RPermitExpirableSemaphoreRx;
+import org.redisson.api.RReadWriteLockRx;
+import org.redisson.api.RSemaphoreRx;
+import org.redisson.api.RedissonRxClient;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.concurrent.ConcurrentMap}
@@ -34,9 +40,11 @@ import org.redisson.api.RMap;
 public class RedissonMapRx<K, V> {
 
     private final RedissonMap<K, V> instance;
+    private RedissonRxClient redisson;
 
-    public RedissonMapRx(RMap<K, V> instance) {
+    public RedissonMapRx(RMap<K, V> instance, RedissonRx redisson) {
         this.instance = (RedissonMap<K, V>) instance;
+        this.redisson = redisson;
     }
 
     public Publisher<Map.Entry<K, V>> entryIterator() {
@@ -95,6 +103,31 @@ public class RedissonMapRx<K, V> {
                 return (K) entry.getKey();
             }
         }.create();
+    }
+
+    public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "permitexpirablesemaphore");
+        return redisson.getPermitExpirableSemaphore(name);
+    }
+
+    public RSemaphoreRx getSemaphore(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "semaphore");
+        return redisson.getSemaphore(name);
+    }
+    
+    public RLockRx getFairLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "fairlock");
+        return redisson.getFairLock(name);
+    }
+    
+    public RReadWriteLockRx getReadWriteLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "rw_lock");
+        return redisson.getReadWriteLock(name);
+    }
+    
+    public RLockRx getLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "lock");
+        return redisson.getLock(name);
     }
 
 }

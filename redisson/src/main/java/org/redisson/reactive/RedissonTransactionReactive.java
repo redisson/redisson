@@ -63,14 +63,14 @@ public class RedissonTransactionReactive implements RTransactionReactive {
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RMap<K, V> map = transaction.<K, V>getMap(name);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         RMap<K, V> map = transaction.<K, V>getMap(name, codec);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override

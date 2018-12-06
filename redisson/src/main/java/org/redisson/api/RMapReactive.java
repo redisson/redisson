@@ -436,5 +436,45 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * @return iterator
      */
     Publisher<K> keyIterator(String pattern, int count);
+    
+    /**
+     * Returns <code>RPermitExpirableSemaphore</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key);
+
+    /**
+     * Returns <code>RSemaphore</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RSemaphoreReactive getSemaphore(K key);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RLockReactive getFairLock(K key);
+    
+    /**
+     * Returns <code>RReadWriteLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return readWriteLock
+     */
+    RReadWriteLockReactive getReadWriteLock(K key);
+    
+    /**
+     * Returns <code>RLock</code> instance associated with key
+     * 
+     * @param key - map key
+     * @return lock
+     */
+    RLockReactive getLock(K key);
 
 }

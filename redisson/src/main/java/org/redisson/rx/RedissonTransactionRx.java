@@ -65,14 +65,14 @@ public class RedissonTransactionRx implements RTransactionRx {
     public <K, V> RMapRx<K, V> getMap(String name) {
         RMap<K, V> map = transaction.<K, V>getMap(name);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
         RMap<K, V> map = transaction.<K, V>getMap(name, codec);
         return RxProxyBuilder.create(executorService, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, null), RMapRx.class);
     }
 
     @Override

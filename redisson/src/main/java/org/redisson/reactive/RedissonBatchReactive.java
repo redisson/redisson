@@ -140,14 +140,14 @@ public class RedissonBatchReactive implements RBatchReactive {
     public <K, V> RMapReactive<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
-                new RedissonMapReactive<K, V>(map), RMapReactive.class);
+                new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override

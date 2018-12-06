@@ -239,14 +239,14 @@ public class RedissonRx implements RedissonRxClient {
     public <K, V> RMapRx<K, V> getMap(String name) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override
@@ -460,7 +460,7 @@ public class RedissonRx implements RedissonRxClient {
     public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
 
@@ -468,7 +468,7 @@ public class RedissonRx implements RedissonRxClient {
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
         RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
         return RxProxyBuilder.create(commandExecutor, map, 
-                new RedissonMapRx<K, V>(map), RMapRx.class);
+                new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override

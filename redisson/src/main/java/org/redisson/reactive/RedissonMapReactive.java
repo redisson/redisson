@@ -20,7 +20,12 @@ import java.util.Map.Entry;
 
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonMap;
+import org.redisson.api.RLockReactive;
 import org.redisson.api.RMap;
+import org.redisson.api.RPermitExpirableSemaphoreReactive;
+import org.redisson.api.RReadWriteLockReactive;
+import org.redisson.api.RSemaphoreReactive;
+import org.redisson.api.RedissonReactiveClient;
 
 
 /**
@@ -35,9 +40,11 @@ import org.redisson.api.RMap;
 public class RedissonMapReactive<K, V> {
 
     private final RMap<K, V> instance;
+    private final RedissonReactiveClient redisson;
 
-    public RedissonMapReactive(RMap<K, V> instance) {
+    public RedissonMapReactive(RMap<K, V> instance, RedissonReactiveClient redisson) {
         this.instance = instance;
+        this.redisson = redisson;
     }
     
     public Publisher<Map.Entry<K, V>> entryIterator() {
@@ -96,6 +103,31 @@ public class RedissonMapReactive<K, V> {
                 return (K) entry.getKey();
             }
         }.stream();
+    }
+    
+    public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "permitexpirablesemaphore");
+        return redisson.getPermitExpirableSemaphore(name);
+    }
+
+    public RSemaphoreReactive getSemaphore(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "semaphore");
+        return redisson.getSemaphore(name);
+    }
+    
+    public RLockReactive getFairLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "fairlock");
+        return redisson.getFairLock(name);
+    }
+    
+    public RReadWriteLockReactive getReadWriteLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "rw_lock");
+        return redisson.getReadWriteLock(name);
+    }
+    
+    public RLockReactive getLock(K key) {
+        String name = ((RedissonMap<K, V>)instance).getLockName(key, "lock");
+        return redisson.getLock(name);
     }
 
 }
