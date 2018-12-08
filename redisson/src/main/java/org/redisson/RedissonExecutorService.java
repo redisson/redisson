@@ -167,7 +167,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         tasksCounterName = objectName + ":counter";
         tasksName = objectName + ":tasks";
         statusName = objectName + ":status";
-        terminationTopic = redisson.getTopic(objectName + ":termination-topic", codec);
+        terminationTopic = redisson.getTopic(objectName + ":termination-topic", LongCodec.INSTANCE);
 
         tasksRetryIntervalName = objectName + ":retry-interval";
         schedulerChannelName = objectName + ":scheduler-channel";
@@ -511,15 +511,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         
         final CountDownLatch latch = new CountDownLatch(1);
-        MessageListener<Integer> listener = new MessageListener<Integer>() {
+        MessageListener<Long> listener = new MessageListener<Long>() {
             @Override
-            public void onMessage(CharSequence channel, Integer msg) {
+            public void onMessage(CharSequence channel, Long msg) {
                 if (msg == TERMINATED_STATE) {
                     latch.countDown();
                 }
             }
         };
-        int listenerId = terminationTopic.addListener(Integer.class, listener);
+        int listenerId = terminationTopic.addListener(Long.class, listener);
 
         if (isTerminated()) {
             terminationTopic.removeListener(listenerId);

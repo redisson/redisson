@@ -1,9 +1,8 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
 import java.util.concurrent.Callable;
 
-public class ParameterizedTask implements Callable<String>, Serializable {
+public class ParameterizedTask implements Callable<String> {
 
     private String param;
     

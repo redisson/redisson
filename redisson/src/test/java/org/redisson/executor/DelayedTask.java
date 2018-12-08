@@ -1,13 +1,12 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
-public class DelayedTask implements Callable<Object>, Serializable {
+public class DelayedTask implements Callable<Object> {
 
     @RInject
     private RedissonClient redisson;

@@ -7,7 +7,6 @@ import static org.redisson.BaseTest.createInstance;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -35,15 +34,11 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.Node;
 import org.redisson.api.Node.InfoSection;
-import org.redisson.api.RScript.Mode;
-import org.redisson.api.RScript.ReturnType;
 import org.redisson.api.NodeType;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RFuture;
-import org.redisson.api.RList;
 import org.redisson.api.RMap;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.SortOrder;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
@@ -56,7 +51,6 @@ import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
-import org.redisson.config.ClusterServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
@@ -64,8 +58,6 @@ import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
-
-import net.bytebuddy.utility.RandomString;
 
 public class RedissonTest {
 
@@ -856,52 +848,6 @@ public class RedissonTest {
         redisson.shutdown();
         process.shutdown();
     }
-
-    @Test
-    public void testNodesInCluster2() throws Exception {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master4 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave4 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave5 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave6 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave7 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slave8 = new RedisRunner().randomPort().randomDir().nosave();
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slave1, slave2)
-                .addNode(master2, slave3, slave4)
-                .addNode(master3, slave5, slave6)
-                .addNode(master4, slave7, slave8);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.setNettyThreads(50);
-        config.setCodec(StringCodec.INSTANCE);
-        ClusterServersConfig clusterServersConfig = config.useClusterServers();
-        clusterServersConfig.addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        clusterServersConfig.setTimeout(1000);
-        clusterServersConfig.setRetryAttempts(1);
-        clusterServersConfig.setRetryInterval(500);
-        clusterServersConfig.setConnectTimeout(1000);
-        clusterServersConfig.setMasterConnectionPoolSize(2000);
-        clusterServersConfig.setMasterConnectionMinimumIdleSize(100);
-        clusterServersConfig.setSlaveConnectionMinimumIdleSize(50);
-        clusterServersConfig.setSlaveConnectionPoolSize(1000);
-        RedissonClient redissonClient = Redisson.create(config);
-        
-        for (int i = 0; i < 100; i++) {
-            redissonClient.getScript().eval(Mode.READ_WRITE, "redis.call('set', KEYS[1], 'XX')", ReturnType.VALUE, Arrays.asList("1234"));
-        }
-
-        redisson.shutdown();
-        process.shutdown();
-    }
-
     
     @Test
     public void testMovedRedirectInCluster() throws Exception {

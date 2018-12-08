@@ -1,12 +1,11 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
 import java.util.concurrent.Callable;
 
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
-public class IncrementCallableTask implements Callable<String>, Serializable {
+public class IncrementCallableTask implements Callable<String> {
 
     private String counterName;
     

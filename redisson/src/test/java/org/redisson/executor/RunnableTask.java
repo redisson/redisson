@@ -1,8 +1,6 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
-
-public class RunnableTask implements Runnable, Serializable {
+public class RunnableTask implements Runnable {
 
     @Override
     public void run() {

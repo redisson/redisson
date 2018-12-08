@@ -1,11 +1,9 @@
 package org.redisson.executor;
 
-import java.io.Serializable;
-
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
-public class IncrementRunnableTask implements Runnable, Serializable {
+public class IncrementRunnableTask implements Runnable {
 
     private String counterName;
     

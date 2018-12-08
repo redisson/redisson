@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -516,7 +515,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         redisson.getExecutorService("test").submit(new TaskCallableClass());
     }
 
-    public static class TaskStaticCallableClass implements Callable<String>, Serializable {
+    public static class TaskStaticCallableClass implements Callable<String> {
 
         @Override
         public String call() throws Exception {
@@ -544,7 +543,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         redisson.getExecutorService("test").submit(new TaskRunnableClass());
     }
 
-    public static class TaskStaticRunnableClass implements Runnable, Serializable {
+    public static class TaskStaticRunnableClass implements Runnable {
 
         @Override
         public void run() {
