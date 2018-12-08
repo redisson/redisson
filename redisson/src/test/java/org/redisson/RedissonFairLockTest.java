@@ -19,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RScript;
+import org.redisson.client.codec.LongCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,7 +97,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             Assert.fail("Lock should have been unlocked by now");
         }
         //check the timeout scores - they should all be within a reasonable amount of time from now
-        List<Long> queue = redisson.getScript().eval(RScript.Mode.READ_ONLY,
+        List<Long> queue = redisson.getScript(LongCodec.INSTANCE).eval(RScript.Mode.READ_ONLY,
                 "local result = {}; " +
                         "local timeouts = redis.call('zrange', KEYS[1], 0, 99, 'WITHSCORES'); " +
                         "for i=1,#timeouts,2 do " +
