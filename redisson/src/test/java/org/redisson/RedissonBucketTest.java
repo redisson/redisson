@@ -21,7 +21,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testSizeInMemory() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(49);
+        assertThat(al.sizeInMemory()).isEqualTo(55);
     }
     
     @Test

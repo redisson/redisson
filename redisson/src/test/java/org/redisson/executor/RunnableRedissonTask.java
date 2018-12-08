@@ -1,9 +1,11 @@
 package org.redisson.executor;
 
+import java.io.Serializable;
+
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 
-public class RunnableRedissonTask implements Runnable {
+public class RunnableRedissonTask implements Runnable, Serializable {
 
     @RInject
     private RedissonClient redissonClient;

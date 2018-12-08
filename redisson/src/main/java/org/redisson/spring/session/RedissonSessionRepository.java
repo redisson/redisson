@@ -259,7 +259,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
             
             String id = body.split(":")[1];
-            RedissonSession session = new RedissonSession(id);
+            RedissonSession session = new RedissonSession(keyPrefix, id);
             if (session.load()) {
                 session.clearPrincipal();
             }
@@ -270,7 +270,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
 
             String id = body.split(":")[1];
-            RedissonSession session = new RedissonSession(id);
+            RedissonSession session = new RedissonSession(keyPrefix, id);
             if (session.load()) {
                 session.clearPrincipal();
             }
@@ -306,7 +306,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
     @Override
     public RedissonSession findById(String id) {
-        RedissonSession session = new RedissonSession(id);
+        RedissonSession session = new RedissonSession(keyPrefix, id);
         if (!session.load() || session.isExpired()) {
             return null;
         }
