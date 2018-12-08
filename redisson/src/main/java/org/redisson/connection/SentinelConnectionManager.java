@@ -135,6 +135,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     String port = map.get("port");
 
                     String host = createAddress(ip, port);
+                    log.info("sentinel: {} added", host);
                     URI sentinelAddr = URIBuilder.create(host);
                     RFuture<Void> future = registerSentinel(sentinelAddr, this.config);
                     connectionFutures.add(future);

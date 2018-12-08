@@ -241,7 +241,7 @@ public class RedisRunner {
             String line;
             try {
                 while (p.isAlive() && (line = reader.readLine()) != null && !RedissonRuntimeEnvironment.isTravis) {
-                    System.out.println("REDIS PROCESS: " + line);
+//                    System.out.println("REDIS PROCESS: " + line);
                 }
             } catch (IOException ex) {
                 System.out.println("Exception: " + ex.getLocalizedMessage());

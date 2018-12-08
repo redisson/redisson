@@ -253,7 +253,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
             
             String id = body.split(":")[1];
-            RedissonSession session = new RedissonSession(id);
+            RedissonSession session = new RedissonSession(keyPrefix, id);
             if (session.load()) {
                 session.clearPrincipal();
                 publishEvent(new SessionDeletedEvent(this, session));
@@ -304,7 +304,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
     @Override
     public RedissonSession getSession(String id) {
-        RedissonSession session = new RedissonSession(id);
+        RedissonSession session = new RedissonSession(keyPrefix, id);
         if (!session.load() || session.isExpired()) {
             return null;
         }

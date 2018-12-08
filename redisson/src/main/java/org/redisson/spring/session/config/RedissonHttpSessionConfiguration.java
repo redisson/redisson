@@ -17,7 +17,9 @@ package org.redisson.spring.session.config;
 
 import java.util.Map;
 
+import org.redisson.api.Node;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.Node.InfoSection;
 import org.redisson.spring.session.RedissonSessionRepository;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -51,6 +53,8 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
         if (StringUtils.hasText(keyPrefix)) {
             repository.setKeyPrefix(keyPrefix);
         }
+        
+        Node node = redissonClient.getNodesGroup().getNodes().iterator().next();
         repository.setDefaultMaxInactiveInterval(maxInactiveIntervalInSeconds);
         return repository;
     }

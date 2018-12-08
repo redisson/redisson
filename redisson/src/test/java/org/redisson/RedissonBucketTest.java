@@ -21,7 +21,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testSizeInMemory() {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(49);
+        assertThat(al.sizeInMemory()).isEqualTo(55);
     }
     
     @Test
@@ -173,7 +173,7 @@ public class RedissonBucketTest extends BaseTest {
         
         bucket.migrate(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
         
-        Config config = new Config();
+        Config config = createConfig();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient r = Redisson.create(config);
         
@@ -197,7 +197,7 @@ public class RedissonBucketTest extends BaseTest {
         
         bucket.copy(runner.getRedisServerBindAddress(), runner.getRedisServerPort(), 0, 5000);
         
-        Config config = new Config();
+        Config config = createConfig();
         config.useSingleServer().setAddress(runner.getRedisServerAddressAndPort());
         RedissonClient r = Redisson.create(config);
         

@@ -6,6 +6,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.redisson.api.RedissonClient;
+import org.redisson.codec.FstCodec;
 import org.redisson.config.Config;
 
 public abstract class BaseTest {
@@ -62,9 +63,11 @@ public abstract class BaseTest {
 //            redisAddress = "127.0.0.1:6379";
 //        }
         Config config = new Config();
+        config.setCodec(new FstCodec());
 //        config.setCodec(new MsgPackJacksonCodec());
 //        config.useSentinelServers().setMasterName("mymaster").addSentinelAddress("127.0.0.1:26379", "127.0.0.1:26389");
 //        config.useClusterServers().addNodeAddress("127.0.0.1:7004", "127.0.0.1:7001", "127.0.0.1:7000");
+        System.out.println("addr " + RedisRunner.getDefaultRedisServerBindAddressAndPort());
         config.useSingleServer()
                 .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
 //        .setPassword("mypass1");

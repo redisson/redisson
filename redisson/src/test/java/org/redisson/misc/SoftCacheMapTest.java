@@ -1,5 +1,6 @@
 package org.redisson.misc;
 
+import org.junit.Ignore;
 import org.junit.Test;
 import org.redisson.cache.Cache;
 import org.redisson.cache.ReferenceCacheMap;
@@ -9,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Ignore
 public class SoftCacheMapTest {
 
     @Test

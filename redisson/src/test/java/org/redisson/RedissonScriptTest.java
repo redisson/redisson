@@ -52,16 +52,16 @@ public class RedissonScriptTest extends BaseTest {
     
     @Test
     public void testEval() {
-        RScript script = redisson.getScript();
-        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
-        assertThat(res).containsExactly(1L, 2L, 3L, "foo");
+        RScript script = redisson.getScript(StringCodec.INSTANCE);
+        List<Object> res = script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        assertThat(res).containsExactly("1", "2", "3.3333", "foo");
     }
 
     @Test
     public void testEvalAsync() {
-        RScript script = redisson.getScript();
-        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
-        assertThat(res.awaitUninterruptibly().getNow()).containsExactly(1L, 2L, 3L, "foo");
+        RScript script = redisson.getScript(StringCodec.INSTANCE);
+        RFuture<List<Object>> res = script.evalAsync(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList());
+        assertThat(res.awaitUninterruptibly().getNow()).containsExactly("1", "2", "3.3333", "foo");
     }
     
     @Test
