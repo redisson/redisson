@@ -53,11 +53,11 @@ public class RedissonKeysReactive {
         this.commandExecutor = commandExecutor;
     }
 
-    public Publisher<String> getKeysByPattern(String pattern) {
+    public Flux<String> getKeysByPattern(String pattern) {
         return getKeysByPattern(pattern, 10);
     }
     
-    public Publisher<String> getKeysByPattern(String pattern, int count) {
+    public Flux<String> getKeysByPattern(String pattern, int count) {
         List<Publisher<String>> publishers = new ArrayList<Publisher<String>>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             publishers.add(createKeysIterator(entry, pattern, count));
@@ -65,7 +65,7 @@ public class RedissonKeysReactive {
         return Flux.merge(publishers);
     }
 
-    private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
+    private Flux<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
         return Flux.create(new Consumer<FluxSink<String>>() {
             
             @Override
