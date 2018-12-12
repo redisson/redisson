@@ -9,6 +9,7 @@
     </parent>
 
     <artifactId>redisson</artifactId>
+    <version>3.9.1-crs-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Redisson</name>

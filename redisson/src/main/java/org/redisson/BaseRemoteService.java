@@ -402,9 +402,9 @@ public abstract class BaseRemoteService {
                                 entry.getResponses().remove(requestId);
                             }
 
-                            if (entry.getResponses().isEmpty()) {
-                                responses.remove(responseQueueName, entry);
-                            }
+//                            if (entry.getResponses().isEmpty()) {
+//                                responses.remove(responseQueueName, entry);
+//                            }
                         }
                     }
                     
@@ -427,9 +427,9 @@ public abstract class BaseRemoteService {
                             if (list.isEmpty()) {
                                 entry.getResponses().remove(requestId);
                             }
-                            if (entry.getResponses().isEmpty()) {
-                                responses.remove(responseQueueName, entry);
-                            }
+//                            if (entry.getResponses().isEmpty()) {
+//                                responses.remove(responseQueueName, entry);
+//                            }
                         }
                     }
                 }
