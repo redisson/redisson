@@ -64,6 +64,8 @@ public class URIBuilder {
             
             field.setAccessible(true);
             field.setLong(null, maskValue);
+        } catch (NoSuchFieldException e) {
+            // skip for Android platform
         } catch (Exception e) {
             throw new IOException(e);
         }

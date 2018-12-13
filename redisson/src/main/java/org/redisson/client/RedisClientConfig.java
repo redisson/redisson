@@ -25,7 +25,7 @@ import org.redisson.misc.URIBuilder;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.AddressResolverGroup;
 import io.netty.util.Timer;
 
 /**
@@ -41,7 +41,7 @@ public class RedisClientConfig {
     private Timer timer;
     private ExecutorService executor;
     private EventLoopGroup group;
-    private DnsAddressResolverGroup resolverGroup;
+    private AddressResolverGroup<InetSocketAddress> resolverGroup;
     private Class<? extends SocketChannel> socketChannelClass = NioSocketChannel.class;
     private int connectTimeout = 10000;
     private int commandTimeout = 10000;
@@ -286,10 +286,10 @@ public class RedisClientConfig {
         return this;
     }
 
-    public DnsAddressResolverGroup getResolverGroup() {
+    public AddressResolverGroup<InetSocketAddress> getResolverGroup() {
         return resolverGroup;
     }
-    public RedisClientConfig setResolverGroup(DnsAddressResolverGroup resolverGroup) {
+    public RedisClientConfig setResolverGroup(AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolverGroup = resolverGroup;
         return this;
     }
