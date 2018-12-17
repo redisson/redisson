@@ -95,6 +95,19 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
     
     @Test
+    public void testFastPutTTL() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("getAll");
+        map.trySetMaxSize(1);
+        map.fastPut(new SimpleKey("1"), new SimpleValue("3"), 5, TimeUnit.SECONDS, 0, TimeUnit.SECONDS);
+        Thread.sleep(5000);
+        assertThat(map.get(new SimpleKey("1"))).isNull();
+
+        map.fastPut(new SimpleKey("1"), new SimpleValue("4"), 5, TimeUnit.SECONDS, 0, TimeUnit.SECONDS);
+        Thread.sleep(10000);
+        assertThat(map.get(new SimpleKey("1"))).isNull();
+    }
+    
+    @Test
     public void testWriterPutIfAbsentTTL() {
         Map<String, String> store = new HashMap<>();
         RMapCache<String, String> map = (RMapCache<String, String>) getWriterTestMap("test", store);
@@ -179,6 +192,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.put("03", "00")).isNull();
         assertThat(map.fastPutIfAbsent("04", "00", 10, TimeUnit.SECONDS)).isTrue();
         assertThat(map.fastPut("1", "11", 10, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.size()).isEqualTo(2);
         assertThat(map.fastPut("2", "22", 10, TimeUnit.SECONDS)).isTrue();
         assertThat(map.fastPut("3", "33", 10, TimeUnit.SECONDS)).isTrue();
 

@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.resolver.AddressResolver;
+import io.netty.resolver.AddressResolverGroup;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
@@ -54,7 +55,7 @@ public class DNSMonitor {
     private ScheduledFuture<?> dnsMonitorFuture;
     private long dnsMonitoringInterval;
 
-    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<URI> slaveHosts, long dnsMonitoringInterval, DnsAddressResolverGroup resolverGroup) {
+    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<URI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         
         masterHost.resolveAddr().syncUninterruptibly();

@@ -64,7 +64,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.AddressResolverGroup;
+import io.netty.resolver.DefaultAddressResolverGroup;
 import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
@@ -146,7 +147,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final Config cfg;
 
-    protected final DnsAddressResolverGroup resolverGroup;
+    protected final AddressResolverGroup<InetSocketAddress> resolverGroup;
     
     private PublishSubscribeService subscribeService;
     
@@ -172,7 +173,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = EpollSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            if (PlatformDependent.isAndroid()) {
+                this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
+            } else {
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(EpollDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            }
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -181,7 +186,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = KQueueSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            if (PlatformDependent.isAndroid()) {
+                this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
+            } else {
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(KQueueDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            }
         } else {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new NioEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
@@ -190,7 +199,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
 
             this.socketChannelClass = NioSocketChannel.class;
-            this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            if (PlatformDependent.isAndroid()) {
+                this.resolverGroup = DefaultAddressResolverGroup.INSTANCE;
+            } else {
+                this.resolverGroup = cfg.getAddressResolverGroupFactory().create(NioDatagramChannel.class, DnsServerAddressStreamProviders.platformDefault());
+            }
         }
         
         if (cfg.getExecutor() == null) {
