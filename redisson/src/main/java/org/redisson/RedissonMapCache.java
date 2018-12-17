@@ -165,7 +165,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "    return 1;" +
                 "end;" +
                 "return 0; ",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
