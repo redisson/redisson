@@ -360,7 +360,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "    if cacheSize >= maxSize then " +
                             "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize); " +
                             "        for index, lruItem in ipairs(lruItems) do " +
-                            "            if lruItem then " +
+                            "            if lruItem and lruItem ~= ARGV[5] then " +
                             "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                             "                redis.call('hdel', KEYS[1], lruItem); " +
                             "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -390,7 +390,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return val; "
                         + "end; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         if (hasNoWriter()) {
             return future;
@@ -448,7 +448,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0; "
                         + "end",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getRemovedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                        getLastAccessTimeSetNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
@@ -482,7 +482,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
                         "end; "
                         + "return val; ",
-                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsName(key)),
+                Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getLastAccessTimeSetNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key));
     }
 
@@ -526,7 +526,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "        if cacheSize > maxSize then" +
                 "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
                 "            for index, lruItem in ipairs(lruItems) do" +
-                "                if lruItem then" +
+                "                if lruItem and lruItem ~= ARGV[2] then" +
                 "                    local lruItemValue = redis.call('hget', KEYS[1], lruItem);" +
                 "                    redis.call('hdel', KEYS[1], lruItem);" +
                 "                    redis.call('zrem', KEYS[2], lruItem);" +
@@ -555,7 +555,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "redis.call('publish', KEYS[5], msg);" +
                 "return val;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
@@ -597,7 +597,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if cacheSize > maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
                         "        for index, lruItem in ipairs(lruItems) do " +
-                        "            if lruItem then " +
+                        "            if lruItem and lruItem ~= ARGV[2] then " +
                         "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                redis.call('hdel', KEYS[1], lruItem); " +
                         "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -617,7 +617,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('publish', KEYS[4], msg); "
                         + "return nil;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
     
@@ -700,7 +700,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if cacheSize > maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
                         "        for index, lruItem in ipairs(lruItems) do " +
-                        "            if lruItem then " +
+                        "            if lruItem and lruItem ~= ARGV[2] then " +
                         "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                redis.call('hdel', KEYS[1], lruItem); " +
                         "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -718,7 +718,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         + "return tostring(newValue); ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), keyState, new BigDecimal(value.toString()).toPlainString());
     }
 
@@ -834,7 +834,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if cacheSize >= maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize); " +
                         "        for index, lruItem in ipairs(lruItems) do " +
-                        "            if lruItem then " +
+                        "            if lruItem and lruItem ~= ARGV[5] then " +
                         "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                redis.call('hdel', KEYS[1], lruItem); " +
                         "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -862,7 +862,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0;"
                         + "end;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
@@ -972,7 +972,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if cacheSize >= maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize); " +
                         "        for index, lruItem in ipairs(lruItems) do " +
-                        "            if lruItem then " +
+                        "            if lruItem and lruItem ~= ARGV[5] then " +
                         "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                redis.call('hdel', KEYS[1], lruItem); " +
                         "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -1004,7 +1004,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         + "return val",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         return future;
     }
@@ -1085,8 +1085,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     String getOptionsName() {
         return suffixName(getName(), "redisson_options");
     }
+
+    String getOptionsName(String name) {
+        return suffixName(name, "redisson_options");
+    }
     
-    String getOptionsName(Object key) {
+    String getOptionsNameByKey(Object key) {
         return suffixName(getName(key), "redisson_options");
     }
     
@@ -1336,7 +1340,6 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return (RFuture<MapScanResult<Object, Object>>)(Object)f;
     }
 
-
     @Override
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
         return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
@@ -1375,7 +1378,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if cacheSize > maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
                         "        for index, lruItem in ipairs(lruItems) do " +
-                        "            if lruItem then " +
+                        "            if lruItem and lruItem ~= ARGV[2] then " +
                         "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                redis.call('hdel', KEYS[1], lruItem); " +
                         "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -1402,7 +1405,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 0;"
                         + "end;",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getUpdatedChannelNameByKey(key), getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
@@ -1427,7 +1430,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "    if cacheSize > maxSize then " +
                             "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
                             "        for index, lruItem in ipairs(lruItems) do " +
-                            "            if lruItem then " +
+                            "            if lruItem and lruItem ~= ARGV[2] then " +
                             "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                             "                redis.call('hdel', KEYS[1], lruItem); " +
                             "                redis.call('zrem', KEYS[2], lruItem); " +
@@ -1477,7 +1480,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "redis.call('publish', KEYS[4], msg); "
                         + "return 1; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
@@ -1573,7 +1576,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "        if cacheSize >= maxSize then " +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize); " +
                         "            for index, lruItem in ipairs(lruItems) do " +
-                        "                if lruItem then " +
+                        "                if lruItem and lruItem ~= ARGV[5] then " +
                         "                    local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
                         "                    redis.call('hdel', KEYS[1], lruItem); " +
                         "                    redis.call('zrem', KEYS[2], lruItem); " +
@@ -1598,7 +1601,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    return 0; " +
                         "end; ",
                 Arrays.<Object>asList(getName(key), getTimeoutSetNameByKey(key), getIdleSetNameByKey(key), getCreatedChannelNameByKey(key),
-                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsName(key)),
+                        getLastAccessTimeSetNameByKey(key), getRemovedChannelNameByKey(key), getOptionsNameByKey(key)),
                 System.currentTimeMillis(), ttlTimeout, maxIdleTimeout, maxIdleDelta, encodeMapKey(key), encodeMapValue(value));
         if (hasNoWriter()) {
             return future;
@@ -1766,7 +1769,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "        if cacheSize > maxSize then" +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
                         "            for index, lruItem in ipairs(lruItems) do" +
-                        "                if lruItem then" +
+                        "                if lruItem and lruItem ~= key then" +
                         "                    local lruItemValue = redis.call('hget', KEYS[1], lruItem);" +
                         "                    redis.call('hdel', KEYS[1], lruItem);" +
                         "                    redis.call('zrem', KEYS[2], lruItem);" +
@@ -1865,7 +1868,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "        if cacheSize > maxSize then" +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
                         "            for index, lruItem in ipairs(lruItems) do" +
-                        "                if lruItem then" +
+                        "                if lruItem and lruItem ~= key then" +
                         "                    local lruItemValue = redis.call('hget', KEYS[1], lruItem);" +
                         "                    redis.call('hdel', KEYS[1], lruItem);" +
                         "                    redis.call('zrem', KEYS[2], lruItem);" +
