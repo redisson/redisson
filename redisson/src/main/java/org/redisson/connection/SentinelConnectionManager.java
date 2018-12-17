@@ -155,7 +155,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         if (sentinels.isEmpty()) {
             stopThreads();
-            throw new RedisConnectionException("At least two sentinels should be defined in Redis configuration!");
+            throw new RedisConnectionException("At least two sentinels should be defined in Redis configuration! SENTINEL SENTINELS command returns empty result!");
         }
         
         if (currentMaster.get() == null) {
