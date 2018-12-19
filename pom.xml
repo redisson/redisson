@@ -224,7 +224,9 @@
                 <configuration>
                     <source>${source.version}</source>
                     <target>${source.version}</target>
+<!--
                     <release>${release.version}</release>
+-->
                     <optimize>true</optimize>
                     <showDeprecations>true</showDeprecations>
                 </configuration>
