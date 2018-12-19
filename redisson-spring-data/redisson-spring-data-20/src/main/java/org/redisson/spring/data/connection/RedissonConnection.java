@@ -336,7 +336,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         }
 
         Set<byte[]> results = new HashSet<byte[]>();
-        RFuture<Set<byte[]>> f = (RFuture<Set<byte[]>>)(Object)(executorService.readAllAsync(results, StringCodec.INSTANCE, KEYS, pattern));
+        RFuture<Set<byte[]>> f = (RFuture<Set<byte[]>>)(Object)(executorService.readAllAsync(results, ByteArrayCodec.INSTANCE, KEYS, pattern));
         return sync(f);
     }
 
