@@ -23,12 +23,16 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.SentinelConnectionManager;
+import org.redisson.reactive.CommandReactiveService;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
 import org.springframework.data.redis.PassThroughExceptionTranslationStrategy;
+import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
+import org.springframework.data.redis.connection.ReactiveRedisConnection;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisClusterConnection;
 import org.springframework.data.redis.connection.RedisConnection;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -40,7 +44,8 @@ import org.springframework.data.redis.connection.RedisSentinelConnection;
  * @author Nikita Koksharov
  *
  */
-public class RedissonConnectionFactory implements RedisConnectionFactory, InitializingBean, DisposableBean {
+public class RedissonConnectionFactory implements RedisConnectionFactory, 
+                ReactiveRedisConnectionFactory, InitializingBean, DisposableBean {
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
@@ -131,6 +136,16 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
         }
         
         throw new InvalidDataAccessResourceUsageException("Sentinels are not found");
+    }
+
+    @Override
+    public ReactiveRedisConnection getReactiveConnection() {
+        return new RedissonReactiveRedisConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager()));
+    }
+
+    @Override
+    public ReactiveRedisClusterConnection getReactiveClusterConnection() {
+        return new RedissonReactiveRedisClusterConnection(new CommandReactiveService(((Redisson)redisson).getConnectionManager()));
     }
 
 }

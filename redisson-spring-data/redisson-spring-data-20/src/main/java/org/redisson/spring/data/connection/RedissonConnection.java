@@ -66,7 +66,6 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.StringListReplayDecoder;
 import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
@@ -327,7 +326,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, TYPE, key);
     }
 
-    private static final RedisStrictCommand<Set<byte[]>> KEYS = new RedisStrictCommand<Set<byte[]>>("KEYS", new SetReplayDecoder<byte[]>(ByteArrayCodec.INSTANCE.getValueDecoder()));
+    private static final RedisStrictCommand<Set<byte[]>> KEYS = new RedisStrictCommand<Set<byte[]>>("KEYS", new ObjectSetReplayDecoder<byte[]>());
     
     @Override
     public Set<byte[]> keys(byte[] pattern) {
@@ -764,7 +763,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, RPUSH, args.toArray());
     }
 
-    private static final RedisStrictCommand<Integer> LPUSH = new RedisStrictCommand<Integer>("LPUSH");
+    private static final RedisStrictCommand<Long> LPUSH = new RedisStrictCommand<Long>("LPUSH");
     
     @Override
     public Long lPush(byte[] key, byte[]... values) {
@@ -774,14 +773,14 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(key, StringCodec.INSTANCE, LPUSH, args.toArray());
     }
 
-    private static final RedisStrictCommand<Integer> RPUSHX = new RedisStrictCommand<Integer>("RPUSHX");
+    private static final RedisStrictCommand<Long> RPUSHX = new RedisStrictCommand<Long>("RPUSHX");
     
     @Override
     public Long rPushX(byte[] key, byte[] value) {
         return write(key, StringCodec.INSTANCE, RPUSHX, key, value);
     }
 
-    private static final RedisStrictCommand<Integer> LPUSHX = new RedisStrictCommand<Integer>("LPUSHX");
+    private static final RedisStrictCommand<Long> LPUSHX = new RedisStrictCommand<Long>("LPUSHX");
     
     @Override
     public Long lPushX(byte[] key, byte[] value) {
@@ -1162,7 +1161,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZREVRANGE, key, start, end);
     }
 
-    private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZRANGE", new ScoredSortedSetReplayDecoder());
+    private static final RedisCommand<Set<Tuple>> ZREVRANGE_ENTRY = new RedisCommand<Set<Tuple>>("ZREVRANGE", new ScoredSortedSetReplayDecoder());
     
     @Override
     public Set<Tuple> zRevRangeWithScores(byte[] key, long start, long end) {
@@ -1248,11 +1247,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return zCount(key, new Range().gte(min).lte(max));
     }
 
+    private static final RedisStrictCommand<Long> ZCOUNT = new RedisStrictCommand<Long>("ZCOUNT");
+    
     @Override
     public Long zCount(byte[] key, Range range) {
         String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
         String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
-        return read(key, StringCodec.INSTANCE, RedisCommands.ZCOUNT, key, min, max);
+        return read(key, StringCodec.INSTANCE, ZCOUNT, key, min, max);
     }
 
     @Override
@@ -1802,11 +1803,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         throw new UnsupportedOperationException();
     }
 
-    private static final RedisStrictCommand<Properties> CONFIG_GET = new RedisStrictCommand<Properties>("CONFIG", "GET", new PropertiesDecoder());
+    private static final RedisStrictCommand<Properties> CONFIG_GET = new RedisStrictCommand<Properties>("CONFIG", "GET", new PropertiesListDecoder());
     
     @Override
     public Properties getConfig(String pattern) {
-        return read(null, StringCodec.INSTANCE, RedisCommands.CONFIG_GET, pattern);
+        return read(null, StringCodec.INSTANCE, CONFIG_GET, pattern);
     }
 
     @Override
@@ -2051,14 +2052,15 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, StringCodec.INSTANCE, GEOHASH, params.toArray());
     }
 
+    private final MultiDecoder<Map<Object, Object>> geoDecoder = new ListMultiDecoder(new PointDecoder(), new ObjectListReplayDecoder2(ListMultiDecoder.RESET));
+
     @Override
     public List<Point> geoPos(byte[] key, byte[]... members) {
         List<Object> params = new ArrayList<Object>(members.length + 1);
         params.add(key);
         params.addAll(Arrays.asList(members));
         
-        MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder(new PointDecoder(), new ObjectListReplayDecoder2(ListMultiDecoder.RESET));
-        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
+        RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", geoDecoder);
         return read(key, StringCodec.INSTANCE, command, params.toArray());
     }
 
