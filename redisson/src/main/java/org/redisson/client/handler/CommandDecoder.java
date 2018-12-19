@@ -143,6 +143,17 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 sendNext(ctx);
                 throw e;
             }
+        } else {
+            try {
+                while (in.writerIndex() > in.readerIndex()) {
+                    decode(in, null, null, ctx.channel(), false);
+                }
+                sendNext(ctx);
+            } catch (Exception e) {
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                sendNext(ctx);
+                throw e;
+            }
         }
     }
 
@@ -335,7 +346,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     if (data != null) {
                         data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                     } else {
-                        log.error("Error: {} channel: {} data: {}", error, channel, LogHelper.toString(data));
+                        log.error("Error message from Redis: {} channel: {}", error, channel);
                     }
                 }
             } finally {
