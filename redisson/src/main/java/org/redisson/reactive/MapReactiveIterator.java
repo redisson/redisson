@@ -22,6 +22,7 @@ import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 
 import org.redisson.RedissonMap;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
@@ -37,13 +38,13 @@ import reactor.core.publisher.FluxSink;
  * @param <V> value type
  * @param <M> entry type
  */
-public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
+public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
 
     private final RedissonMap<K, V> map;
     private final String pattern;
     private final int count;
 
-    public RedissonMapReactiveIterator(RedissonMap<K, V> map, String pattern, int count) {
+    public MapReactiveIterator(RedissonMap<K, V> map, String pattern, int count) {
         this.map = map;
         this.pattern = pattern;
         this.count = count;
@@ -71,7 +72,7 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
             };
             
             protected void nextValues(FluxSink<M> emitter) {
-                        map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count).addListener(new FutureListener<MapScanResult<Object, Object>>() {
+                        scanIterator(client, nextIterPos).addListener(new FutureListener<MapScanResult<Object, Object>>() {
 
                             @Override
                             public void operationComplete(Future<MapScanResult<Object, Object>> future)
@@ -131,6 +132,10 @@ public class RedissonMapReactiveIterator<K, V, M> implements Consumer<FluxSink<M
             }
 
         };
+    }
+
+    public RFuture<MapScanResult<Object, Object>> scanIterator(RedisClient client, long nextIterPos) {
+        return map.scanIteratorAsync(map.getName(), client, nextIterPos, pattern, count);
     }
 
 }

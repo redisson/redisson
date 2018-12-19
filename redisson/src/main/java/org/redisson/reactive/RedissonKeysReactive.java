@@ -19,15 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
 
 import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
-import org.reactivestreams.Subscription;
 import org.redisson.RedissonKeys;
 import org.redisson.client.RedisClient;
-import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.connection.MasterSlaveEntry;
 
@@ -43,11 +38,11 @@ import reactor.core.publisher.FluxSink;
  */
 public class RedissonKeysReactive {
 
-    private final CommandReactiveService commandExecutor;
+    private final CommandReactiveExecutor commandExecutor;
 
     private final RedissonKeys instance;
 
-    public RedissonKeysReactive(CommandReactiveService commandExecutor) {
+    public RedissonKeysReactive(CommandReactiveExecutor commandExecutor) {
         super();
         instance = new RedissonKeys(commandExecutor);
         this.commandExecutor = commandExecutor;
