@@ -50,7 +50,7 @@ public class RedissonMapCacheReactive<K, V> {
     }
     
     public Publisher<Map.Entry<K, V>> entryIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) mapCache, pattern, count).stream();
+        return new MapReactiveIterator<K, V, Map.Entry<K, V>>((RedissonMap<K, V>) mapCache, pattern, count).stream();
     }
 
     public Publisher<V> valueIterator() {
@@ -66,7 +66,7 @@ public class RedissonMapCacheReactive<K, V> {
     }
     
     public Publisher<V> valueIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, V>((RedissonMap<K, V>) mapCache, pattern, count) {
+        return new MapReactiveIterator<K, V, V>((RedissonMap<K, V>) mapCache, pattern, count) {
             @Override
             V getValue(Entry<Object, Object> entry) {
                 return (V) entry.getValue();
@@ -87,7 +87,7 @@ public class RedissonMapCacheReactive<K, V> {
     }
     
     public Publisher<K> keyIterator(String pattern, int count) {
-        return new RedissonMapReactiveIterator<K, V, K>((RedissonMap<K, V>) mapCache, pattern, count) {
+        return new MapReactiveIterator<K, V, K>((RedissonMap<K, V>) mapCache, pattern, count) {
             @Override
             K getValue(Entry<Object, Object> entry) {
                 return (K) entry.getKey();

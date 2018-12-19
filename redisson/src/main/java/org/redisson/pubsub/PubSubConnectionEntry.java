@@ -138,7 +138,7 @@ public class PubSubConnectionEntry {
         return false;
     }
 
-    private void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
+    public void removeListener(ChannelName channelName, RedisPubSubListener<?> listener) {
         Queue<RedisPubSubListener<?>> queue = channelListeners.get(channelName);
         synchronized (queue) {
             if (queue.remove(listener) && queue.isEmpty()) {

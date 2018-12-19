@@ -38,11 +38,11 @@ import reactor.rx.subscription.ReactiveSubscription;
  */
 public class RedissonKeysReactive {
 
-    private final CommandReactiveService commandExecutor;
+    private final CommandReactiveExecutor commandExecutor;
 
     private final RedissonKeys instance;
 
-    public RedissonKeysReactive(CommandReactiveService commandExecutor) {
+    public RedissonKeysReactive(CommandReactiveExecutor commandExecutor) {
         super();
         instance = new RedissonKeys(commandExecutor);
         this.commandExecutor = commandExecutor;

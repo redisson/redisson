@@ -245,13 +245,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
+    @Override
+    public <T, R> RFuture<Collection<R>> readAllAsync(Codec codec, RedisCommand<T> command, Object... params) {
         List<R> results = new ArrayList<R>();
-        return readAllAsync(results, command, params);
+        return readAllAsync(results, codec, command, params);
     }
     
     @Override
-    public <T, R> RFuture<Collection<R>> readAllAsync(final Collection<R> results, RedisCommand<T> command, Object... params) {
+    public <T, R> RFuture<Collection<R>> readAllAsync(RedisCommand<T> command, Object... params) {
+        List<R> results = new ArrayList<R>();
+        return readAllAsync(results, connectionManager.getCodec(), command, params);
+    }
+    
+    @Override
+    public <T, R> RFuture<Collection<R>> readAllAsync(final Collection<R> results, Codec codec, RedisCommand<T> command, Object... params) {
         final RPromise<Collection<R>> mainPromise = createPromise();
         final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
@@ -284,11 +291,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         for (MasterSlaveEntry entry : nodes) {
             RPromise<R> promise = new RedissonPromise<R>();
             promise.addListener(listener);
-            async(true, new NodeSource(entry), connectionManager.getCodec(), command, params, promise, 0, true, null);
+            async(true, new NodeSource(entry), codec, command, params, promise, 0, true, null);
         }
         return mainPromise;
     }
-
+    
     @Override
     public <T, R> RFuture<R> readRandomAsync(Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
