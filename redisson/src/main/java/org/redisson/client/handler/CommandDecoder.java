@@ -487,6 +487,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         Decoder<Object> decoder = data.getCommand().getReplayDecoder();
         if (decoder == null) {
+            if (data.getCodec() == null) {
+                return StringCodec.INSTANCE.getValueDecoder();
+            }
             if (data.getCommand().getOutParamType() == ValueType.MAP) {
                 if (parts != null && parts.size() % 2 != 0) {
                     return data.getCodec().getMapValueDecoder();
