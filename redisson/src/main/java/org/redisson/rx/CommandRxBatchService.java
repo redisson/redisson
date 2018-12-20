@@ -25,7 +25,6 @@ import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonRxClient;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.command.CommandAsyncExecutor;
@@ -65,8 +64,8 @@ public class CommandRxBatchService extends CommandRxService {
     
     @Override
     public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect, RFuture<RedisConnection> connFuture) {
-        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt, ignoreRedirect, connFuture);
+            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect) {
+        batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt, ignoreRedirect);
     }
 
     public RFuture<BatchResult<?>> executeAsync(BatchOptions options) {
