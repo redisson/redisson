@@ -1070,12 +1070,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
-        try {
-            mainPromise.trySuccess((R) tryHandleReference(res));
-        } catch (Exception e) {
-            //fall back and let other part of the code handle the type conversion.
-            mainPromise.trySuccess(res);
-        }
+        mainPromise.trySuccess((R) tryHandleReference(res));
     }
     
     protected Object tryHandleReference(Object o) {
@@ -1198,7 +1193,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             return RedissonObjectFactory.fromReference(redissonRx, (RedissonReference) res);
         } catch (Exception exception) {
-            return res;
+            throw new IllegalStateException(exception);
         }
     }
 

@@ -101,7 +101,7 @@ public abstract class RedissonObject implements RObject {
     
     @Override
     public RFuture<Long> sizeInMemoryAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.MEMORY_USAGE, getName());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.MEMORY_USAGE, getName());
     }
     
     public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
@@ -124,7 +124,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.RENAME, getName(), newName);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
     }
 
     @Override
@@ -134,7 +134,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> migrateAsync(String host, int port, int database, long timeout) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database, timeout);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.MIGRATE, host, port, getName(), database, timeout);
     }
     
     @Override
@@ -144,7 +144,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> copyAsync(String host, int port, int database, long timeout) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.MIGRATE, host, port, getName(), database, timeout, "COPY");
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.MIGRATE, host, port, getName(), database, timeout, "COPY");
     }
     
     @Override
@@ -154,7 +154,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> moveAsync(int database) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.MOVE, getName(), database);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.MOVE, getName(), database);
     }
 
     @Override
@@ -164,7 +164,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), RedisCommands.RENAMENX, getName(), newName);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getName(), newName);
     }
 
     @Override
@@ -174,7 +174,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_BOOL, getName());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DEL_BOOL, getName());
     }
     
     @Override
@@ -184,7 +184,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> unlinkAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.UNLINK_BOOL, getName());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.UNLINK_BOOL, getName());
     }
 
     @Override
@@ -194,7 +194,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> touchAsync() {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.TOUCH, getName());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.TOUCH, getName());
     }
     
     @Override
@@ -204,7 +204,7 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> isExistsAsync() {
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.EXISTS, getName());
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.EXISTS, getName());
     }
 
     @Override

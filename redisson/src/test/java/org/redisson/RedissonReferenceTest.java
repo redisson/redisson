@@ -2,8 +2,10 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.*;
+import static org.assertj.core.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,6 +21,21 @@ import org.redisson.config.Config;
  */
 public class RedissonReferenceTest extends BaseTest {
 
+    @Test
+    public void testBitSet() {
+        RMap<String, RBitSet> data = redisson.getMap("data-00");
+        RBitSet bs = redisson.getBitSet("data-01");
+        bs.set(5);
+        bs.set(7);
+        data.put("a", bs);
+
+        assertThat(data.entrySet()).hasSize(1);
+        for (Map.Entry<String, RBitSet> entry : data.entrySet()) {
+            assertThat(entry.getValue().get(5)).isTrue();
+            assertThat(entry.getValue().get(7)).isTrue();
+        }        
+    }
+    
     @Test
     public void testBasic() {
         RBucket<Object> b1 = redisson.getBucket("b1");
