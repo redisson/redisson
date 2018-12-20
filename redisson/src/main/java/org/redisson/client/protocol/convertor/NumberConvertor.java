@@ -17,7 +17,12 @@ package org.redisson.client.protocol.convertor;
 
 import java.math.BigDecimal;
 
-public class NumberConvertor extends SingleConvertor<Object> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class NumberConvertor implements Convertor<Object> {
 
     private Class<?> resultClass;
 

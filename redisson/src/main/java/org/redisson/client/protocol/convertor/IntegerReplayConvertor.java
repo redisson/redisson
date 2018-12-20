@@ -20,7 +20,7 @@ package org.redisson.client.protocol.convertor;
  * @author Nikita Koksharov
  *
  */
-public class IntegerReplayConvertor extends SingleConvertor<Integer> {
+public class IntegerReplayConvertor implements Convertor<Integer> {
 
     private Integer nullValue;
     

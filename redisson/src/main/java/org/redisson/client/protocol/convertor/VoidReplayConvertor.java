@@ -15,7 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class VoidReplayConvertor extends SingleConvertor<Void> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class VoidReplayConvertor implements Convertor<Void> {
 
     @Override
     public Void convert(Object obj) {

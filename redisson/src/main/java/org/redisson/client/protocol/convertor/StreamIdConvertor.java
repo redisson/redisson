@@ -22,7 +22,7 @@ import org.redisson.api.StreamMessageId;
  * @author Nikita Koksharov
  *
  */
-public class StreamIdConvertor extends SingleConvertor<StreamMessageId> {
+public class StreamIdConvertor implements Convertor<StreamMessageId> {
 
     @Override
     public StreamMessageId convert(Object id) {

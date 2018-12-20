@@ -15,7 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class DoubleReplayConvertor extends SingleConvertor<Double> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class DoubleReplayConvertor implements Convertor<Double> {
 
     @Override
     public Double convert(Object obj) {

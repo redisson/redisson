@@ -15,7 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class BooleanNullReplayConvertor extends SingleConvertor<Boolean> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class BooleanNullReplayConvertor implements Convertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {
