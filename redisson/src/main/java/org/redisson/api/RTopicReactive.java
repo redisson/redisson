@@ -72,4 +72,13 @@ public interface RTopicReactive {
      * @param listenerId - listener id
      */
     void removeListener(int listenerId);
+    
+    /**
+     * Returns amount of subscribers to this topic across all Redisson instances.
+     * Each subscriber may have multiple listeners.
+     * 
+     * @return amount of subscribers
+     */
+    Publisher<Long> countSubscribers();
+    
 }

@@ -85,9 +85,17 @@ public interface RTopic extends RTopicAsync {
     void removeAllListeners();
 
     /**
-     * Returns amount of registered listeners
+     * Returns amount of registered listeners to this topic
      * 
      * @return amount of listeners
      */
     int countListeners();
+    
+    /**
+     * Returns amount of subscribers to this topic across all Redisson instances.
+     * Each subscriber may have multiple listeners.
+     * 
+     * @return amount of subscribers
+     */
+    long countSubscribers();
 }
