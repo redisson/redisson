@@ -102,7 +102,7 @@ public class RedissonPriorityBlockingDequeTest extends BaseTest {
 
         long s = System.currentTimeMillis();
         assertThat(queue1.pollFirst(5, TimeUnit.SECONDS)).isNull();
-        assertThat(System.currentTimeMillis() - s).isGreaterThan(5000);
+        assertThat(System.currentTimeMillis() - s).isGreaterThan(4900);
     }
 
     @Test

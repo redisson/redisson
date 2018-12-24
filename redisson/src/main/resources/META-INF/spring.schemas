@@ -1,4 +1,5 @@
-http\://redisson.org/schema/redisson/redisson.xsd=org/redisson/spring/support/redisson-1.2.xsd
+http\://redisson.org/schema/redisson/redisson.xsd=org/redisson/spring/support/redisson-1.3.xsd
 http\://redisson.org/schema/redisson/redisson-1.0.xsd=org/redisson/spring/support/redisson-1.0.xsd
 http\://redisson.org/schema/redisson/redisson-1.1.xsd=org/redisson/spring/support/redisson-1.1.xsd
 http\://redisson.org/schema/redisson/redisson-1.2.xsd=org/redisson/spring/support/redisson-1.2.xsd
+http\://redisson.org/schema/redisson/redisson-1.3.xsd=org/redisson/spring/support/redisson-1.3.xsd

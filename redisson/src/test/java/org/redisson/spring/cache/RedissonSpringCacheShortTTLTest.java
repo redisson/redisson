@@ -3,6 +3,7 @@ package org.redisson.spring.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +33,7 @@ import org.springframework.stereotype.Service;
 @RunWith(Parameterized.class)
 public class RedissonSpringCacheShortTTLTest {
 
-    public static class SampleObject {
+    public static class SampleObject implements Serializable {
 
         private String name;
         private String value;

@@ -3,6 +3,7 @@ package org.redisson;
 import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -28,7 +29,7 @@ import org.redisson.config.Config;
 
 public class RedissonTopicPatternTest extends BaseTest {
 
-    public static class Message {
+    public static class Message implements Serializable {
 
         private String name;
 

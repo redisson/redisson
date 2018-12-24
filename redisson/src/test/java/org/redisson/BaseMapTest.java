@@ -27,7 +27,10 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 
@@ -441,9 +444,7 @@ public abstract class BaseMapTest extends BaseTest {
     
     @Test(timeout = 5000)
     public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
-        redisson.getConfig().setCodec(new JsonJacksonCodec());
-
-        RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure");
+        RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());
         Assume.assumeTrue(!(map instanceof RLocalCachedMap));
         SimpleObjectWithoutDefaultConstructor object = new SimpleObjectWithoutDefaultConstructor("test-val");
 
@@ -948,7 +949,7 @@ public abstract class BaseMapTest extends BaseTest {
     
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMap<Integer, Integer> map = getMap("getAll");
+        RMap<Integer, Integer> map = getMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         map.put(1, 100);
 
         Integer res = map.addAndGet(1, 12);
@@ -956,7 +957,7 @@ public abstract class BaseMapTest extends BaseTest {
         res = map.get(1);
         assertThat(res).isEqualTo(112);
 
-        RMap<Integer, Double> map2 = getMap("getAll2");
+        RMap<Integer, Double> map2 = getMap("getAll2", new CompositeCodec(redisson.getConfig().getCodec(), DoubleCodec.INSTANCE));
         map2.put(1, new Double(100.2));
 
         Double res2 = map2.addAndGet(1, new Double(12.1));
@@ -964,7 +965,7 @@ public abstract class BaseMapTest extends BaseTest {
         res2 = map2.get(1);
         assertThat(res2).isEqualTo(112.3);
 
-        RMap<String, Integer> mapStr = getMap("mapStr");
+        RMap<String, Integer> mapStr = getMap("mapStr", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         assertThat(mapStr.put("1", 100)).isNull();
 
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);

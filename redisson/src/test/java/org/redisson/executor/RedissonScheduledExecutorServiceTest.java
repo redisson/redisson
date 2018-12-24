@@ -3,6 +3,7 @@ package org.redisson.executor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,7 +59,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         node.shutdown();
     }
     
-    public static class TestTask implements Runnable {
+    public static class TestTask implements Runnable, Serializable {
         
         @RInject
         RedissonClient redisson;

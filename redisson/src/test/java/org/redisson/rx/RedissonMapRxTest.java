@@ -15,6 +15,9 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RMapRx;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
+import org.redisson.codec.CompositeCodec;
 
 public class RedissonMapRxTest extends BaseRxTest {
 
@@ -122,7 +125,7 @@ public class RedissonMapRxTest extends BaseRxTest {
 
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMapRx<Integer, Integer> map = redisson.getMap("getAll");
+        RMapRx<Integer, Integer> map = redisson.getMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         sync(map.put(1, 100));
 
         Integer res = sync(map.addAndGet(1, 12));
@@ -130,7 +133,7 @@ public class RedissonMapRxTest extends BaseRxTest {
         res = sync(map.get(1));
         Assert.assertEquals(112, (int)res);
 
-        RMapRx<Integer, Double> map2 = redisson.getMap("getAll2");
+        RMapRx<Integer, Double> map2 = redisson.getMap("getAll2", new CompositeCodec(redisson.getConfig().getCodec(), DoubleCodec.INSTANCE));
         sync(map2.put(1, new Double(100.2)));
 
         Double res2 = sync(map2.addAndGet(1, new Double(12.1)));
@@ -138,7 +141,7 @@ public class RedissonMapRxTest extends BaseRxTest {
         res2 = sync(map2.get(1));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
 
-        RMapRx<String, Integer> mapStr = redisson.getMap("mapStr");
+        RMapRx<String, Integer> mapStr = redisson.getMap("mapStr", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         assertThat(sync(mapStr.put("1", 100))).isNull();
 
         assertThat(sync(mapStr.addAndGet("1", 12))).isEqualTo(112);
@@ -228,23 +231,6 @@ public class RedissonMapRxTest extends BaseRxTest {
 
         Assert.assertEquals(1, sync(map.size()).intValue());
     }
-
-    @Test
-    public void testEquals() {
-        RMapRx<String, String> map = redisson.getMap("simple");
-        sync(map.put("1", "7"));
-        sync(map.put("2", "4"));
-        sync(map.put("3", "5"));
-
-        Map<String, String> testMap = new HashMap<String, String>();
-        testMap.put("1", "7");
-        testMap.put("2", "4");
-        testMap.put("3", "5");
-
-        Assert.assertEquals(map, testMap);
-        Assert.assertEquals(map.hashCode(), testMap.hashCode());
-    }
-
 
     @Test
     public void testPutAll() {

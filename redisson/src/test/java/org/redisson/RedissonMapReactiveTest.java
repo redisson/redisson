@@ -16,6 +16,9 @@ import java.util.concurrent.ExecutionException;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RMapReactive;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
+import org.redisson.codec.CompositeCodec;
 
 public class RedissonMapReactiveTest extends BaseReactiveTest {
 
@@ -149,7 +152,7 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
     
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMapReactive<Integer, Integer> map = redisson.getMap("getAll");
+        RMapReactive<Integer, Integer> map = redisson.getMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         sync(map.put(1, 100));
 
         Integer res = sync(map.addAndGet(1, 12));
@@ -157,7 +160,7 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         res = sync(map.get(1));
         Assert.assertEquals(112, (int)res);
 
-        RMapReactive<Integer, Double> map2 = redisson.getMap("getAll2");
+        RMapReactive<Integer, Double> map2 = redisson.getMap("getAll2", new CompositeCodec(redisson.getConfig().getCodec(), DoubleCodec.INSTANCE));
         sync(map2.put(1, new Double(100.2)));
 
         Double res2 = sync(map2.addAndGet(1, new Double(12.1)));
@@ -165,7 +168,7 @@ public class RedissonMapReactiveTest extends BaseReactiveTest {
         res2 = sync(map2.get(1));
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
 
-        RMapReactive<String, Integer> mapStr = redisson.getMap("mapStr");
+        RMapReactive<String, Integer> mapStr = redisson.getMap("mapStr", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
         assertThat(sync(mapStr.put("1", 100))).isNull();
 
         assertThat(sync(mapStr.addAndGet("1", 12))).isEqualTo(112);

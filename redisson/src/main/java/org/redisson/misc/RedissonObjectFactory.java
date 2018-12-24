@@ -112,7 +112,7 @@ public class RedissonObjectFactory {
                 REntity anno = ClassUtils.getAnnotation(type, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(codecProvider.getCodec(anno, type));
+                        .newInstance(codecProvider.getCodec(anno, type, redisson.getConfig()));
                 Object id = ns.resolveId(rr.getKeyName());
                 return liveObjectService.createLiveObject(type, id);
             }
@@ -192,7 +192,7 @@ public class RedissonObjectFactory {
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(config.getReferenceCodecProvider().getCodec(anno, (Class) rEntity));
+                        .newInstance(config.getReferenceCodecProvider().getCodec(anno, (Class) rEntity, config));
                 String name = Introspectior
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();

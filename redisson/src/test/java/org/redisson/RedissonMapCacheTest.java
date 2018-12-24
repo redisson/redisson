@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 
 import org.awaitility.Duration;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
@@ -29,8 +30,10 @@ import org.redisson.api.map.event.EntryRemovedListener;
 import org.redisson.api.map.event.EntryUpdatedListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.eviction.EvictionScheduler;
 
 import mockit.Deencapsulation;
@@ -72,6 +75,8 @@ public class RedissonMapCacheTest extends BaseMapTest {
     
     @Test
     public void testSizeInMemory() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
+        
         RMapCache<Integer, Integer> map = redisson.getMapCache("test");
         for (int i = 0; i < 10; i++) {
             map.put(i, i, 5, TimeUnit.SECONDS);
@@ -769,8 +774,11 @@ public class RedissonMapCacheTest extends BaseMapTest {
         checkCreatedListener(map, 14, 2, () -> map.putIfAbsent(14, 2, 2, TimeUnit.SECONDS));
         checkCreatedListener(map, 4, 1, () -> map.fastPutIfAbsent(4, 1));
         checkCreatedListener(map, 15, 2, () -> map.fastPutIfAbsent(15, 2, 2, TimeUnit.SECONDS));
-        checkCreatedListener(map, 5, 0, () -> map.addAndGet(5, 0));
         map.destroy();
+        
+        RMapCache<Integer, Integer> map2 = redisson.getMapCache("simple3", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
+        checkCreatedListener(map2, 5, 10, () -> map2.addAndGet(5, 10));
+        map2.destroy();
     }
 
     private void checkCreatedListener(RMapCache<Integer, Integer> map, Integer key, Integer value, Runnable runnable) {
@@ -779,11 +787,15 @@ public class RedissonMapCacheTest extends BaseMapTest {
 
             @Override
             public void onCreated(EntryEvent<Integer, Integer> event) {
-                assertThat(event.getKey()).isEqualTo(key);
-                assertThat(event.getValue()).isEqualTo(value);
-                
-                if (!ref.compareAndSet(false, true)) {
-                    Assert.fail();
+                try {
+                    assertThat(event.getKey()).isEqualTo(key);
+                    assertThat(event.getValue()).isEqualTo(value);
+                    
+                    if (!ref.compareAndSet(false, true)) {
+                        Assert.fail();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
             }
             
@@ -814,10 +826,12 @@ public class RedissonMapCacheTest extends BaseMapTest {
         map.put(14, 1);
         checkUpdatedListener(map, 14, 2, 1, () -> map.replace(14, 2));
         checkUpdatedListener(map, 14, 3, 2, () -> map.replace(14, 2, 3));
-        
-        map.put(5, 1);
-        checkUpdatedListener(map, 5, 4, 1, () -> map.addAndGet(5, 3));
         map.destroy();
+        
+        RMapCache<Integer, Integer> map2 = redisson.getMapCache("simple2", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE));
+        map2.put(5, 1);
+        checkUpdatedListener(map2, 5, 4, 1, () -> map2.addAndGet(5, 3));
+        map2.destroy();
 
     }
     
