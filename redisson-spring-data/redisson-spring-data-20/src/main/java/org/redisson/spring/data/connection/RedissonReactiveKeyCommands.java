@@ -25,7 +25,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.connection.DataType;
 import org.springframework.data.redis.connection.ReactiveKeyCommands;
@@ -62,7 +62,7 @@ public class RedissonReactiveKeyCommands extends RedissonBaseReactive implements
         });
     }
     
-    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new SingleConvertor<DataType>() {
+    private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new Convertor<DataType>() {
         @Override
         public DataType convert(Object obj) {
             return DataType.fromCode(obj.toString());

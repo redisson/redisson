@@ -15,7 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.client.protocol.convertor.Convertor;
 import org.springframework.data.geo.Distance;
 import org.springframework.data.geo.Metric;
 
@@ -24,7 +24,7 @@ import org.springframework.data.geo.Metric;
  * @author Nikita Koksharov
  *
  */
-public class DistanceConvertor extends SingleConvertor<Distance> {
+public class DistanceConvertor implements Convertor<Distance> {
 
     private final Metric metric;
     

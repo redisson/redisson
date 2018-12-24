@@ -18,14 +18,12 @@ package org.redisson.client.protocol.convertor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.redisson.client.protocol.convertor.SingleConvertor;
-
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StringToListConvertor extends SingleConvertor<List<String>> {
+public class StringToListConvertor implements Convertor<List<String>> {
 
     @Override
     public List<String> convert(Object obj) {

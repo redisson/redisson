@@ -82,5 +82,13 @@ public interface RTopicRx {
      * @return stream of messages
      */
     <M> Flowable<M> getMessages(Class<M> type);
+
+    /**
+     * Returns amount of subscribers to this topic across all Redisson instances.
+     * Each subscriber may have multiple listeners.
+     * 
+     * @return amount of subscribers
+     */
+    Flowable<Long> countSubscribers();
     
 }

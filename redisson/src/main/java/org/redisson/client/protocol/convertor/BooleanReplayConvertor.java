@@ -20,7 +20,7 @@ package org.redisson.client.protocol.convertor;
  * @author Nikita Koksharov
  *
  */
-public class BooleanReplayConvertor extends SingleConvertor<Boolean> {
+public class BooleanReplayConvertor implements Convertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {

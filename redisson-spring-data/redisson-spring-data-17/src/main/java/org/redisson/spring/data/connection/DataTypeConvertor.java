@@ -15,7 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.client.protocol.convertor.Convertor;
 import org.springframework.data.redis.connection.DataType;
 
 /**
@@ -23,7 +23,7 @@ import org.springframework.data.redis.connection.DataType;
  * @author Nikita Koksharov
  *
  */
-public class DataTypeConvertor extends SingleConvertor<DataType> {
+public class DataTypeConvertor implements Convertor<DataType> {
 
     @Override
     public DataType convert(Object obj) {

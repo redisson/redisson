@@ -27,6 +27,8 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
@@ -80,7 +82,7 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public RFuture<Long> publishAsync(Object message) {
-        return commandExecutor.writeAsync(name, codec, RedisCommands.PUBLISH, name, encode(message));
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBLISH, name, encode(message));
     }
 
     protected ByteBuf encode(Object value) {
@@ -271,6 +273,16 @@ public class RedissonTopic implements RTopic {
             return entry.countListeners();
         }
         return 0;
+    }
+
+    @Override
+    public RFuture<Long> countSubscribersAsync() {
+        return commandExecutor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.PUBSUB_NUMSUB, name);
+    }
+
+    @Override
+    public long countSubscribers() {
+        return commandExecutor.get(countSubscribersAsync());
     }
 
 }

@@ -17,12 +17,15 @@ package org.redisson.client.handler;
 
 import java.util.List;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
 public class StateLevel {
 
-    private long size;
-    private List<Object> parts;
-    private long lastListSize;
-    private List<Object> lastList;
+    private final long size;
+    private final List<Object> parts;
 
     public StateLevel(long size, List<Object> parts) {
         super();
@@ -30,20 +33,10 @@ public class StateLevel {
         this.parts = parts;
     }
 
-    public long getLastListSize() {
-        return lastListSize;
+    public boolean isFull() {
+        return size == parts.size();
     }
-    public void setLastListSize(long lastListSize) {
-        this.lastListSize = lastListSize;
-    }
-
-    public List<Object> getLastList() {
-        return lastList;
-    }
-    public void setLastList(List<Object> lastList) {
-        this.lastList = lastList;
-    }
-
+    
     public long getSize() {
         return size;
     }

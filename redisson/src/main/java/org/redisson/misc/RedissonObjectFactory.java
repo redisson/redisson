@@ -171,14 +171,18 @@ public class RedissonObjectFactory {
             Class<?> clazz = object.getClass().getInterfaces()[0];
             
             RObject rObject = ((RObject) object);
-            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            if (rObject.getCodec() != null) {
+                config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            }
             return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
         if (object instanceof RObjectReactive && !(object instanceof RLiveObject)) {
             Class<?> clazz = object.getClass().getInterfaces()[0];
 
             RObjectReactive rObject = ((RObjectReactive) object);
-            config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            if (rObject.getCodec() != null) {
+                config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+            }
             return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
         

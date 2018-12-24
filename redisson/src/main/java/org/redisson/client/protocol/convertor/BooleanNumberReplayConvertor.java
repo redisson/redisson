@@ -15,7 +15,12 @@
  */
 package org.redisson.client.protocol.convertor;
 
-public class BooleanNumberReplayConvertor extends SingleConvertor<Boolean> {
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ */
+public class BooleanNumberReplayConvertor implements Convertor<Boolean> {
 
     private long number;
 

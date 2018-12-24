@@ -38,7 +38,7 @@ import org.redisson.command.CommandBatchService;
 public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
-        super(connectionManager, name);
+        super(null, connectionManager, name);
     }
 
     @Override

@@ -17,14 +17,14 @@ package org.redisson.spring.data.connection;
 
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.client.protocol.convertor.Convertor;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class SecondsConvertor extends SingleConvertor<Long> {
+public class SecondsConvertor implements Convertor<Long> {
 
     private final TimeUnit unit;
     private final TimeUnit source;
