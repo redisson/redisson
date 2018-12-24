@@ -65,8 +65,19 @@ public class CommandsQueue extends ChannelDuplexHandler {
     };
 
     public void sendNextCommand(Channel channel) {
-        channel.attr(CommandsQueue.CURRENT_COMMAND).set(null);
-        queue.poll();
+        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).getAndSet(null);
+        if (command != null) {
+            queue.poll();
+        } else {
+            QueueCommandHolder c = queue.peek();
+            if (c != null) {
+                QueueCommand data = c.getCommand();
+                List<CommandData<Object, Object>> pubSubOps = data.getPubSubOperations();
+                if (!pubSubOps.isEmpty()) {
+                    queue.poll();
+                }
+            }
+        }
         sendData(channel);
     }
 

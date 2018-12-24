@@ -39,7 +39,6 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.CharsetUtil;
 import io.netty.util.internal.PlatformDependent;
@@ -75,7 +74,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (data == null) {
             try {
                 while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, ctx.channel(), false);
+                    decode(in, null, null, ctx, false);
                 }
                 sendNext(ctx);
             } catch (Exception e) {
@@ -86,11 +85,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
         } else if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
-                if (state().getLevels().size() > 0) {
+                if (state().isMakeCheckpoint()) {
                     decodeFromCheckpoint(ctx, in, data, cmd);
                 } else {
                     while (in.writerIndex() > in.readerIndex()) {
-                        decode(in, cmd, null, ctx.channel(), false);
+                        decode(in, cmd, null, ctx, false);
                     }
                 }
                 sendNext(ctx, data);
@@ -104,7 +103,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
     
     @Override
-    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
+    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, ChannelHandlerContext ctx,
             final Object result) throws IOException {
         if (executor.isShutdown()) {
             return;
@@ -113,7 +112,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (result instanceof Message) {
             checkpoint();
 
-            final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
+            final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(ctx.channel());
             ChannelName channelName = ((Message) result).getChannel();
             if (result instanceof PubSubStatusMessage) {
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
@@ -161,7 +160,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
         } else {
             if (data != null && data.getCommand().getName().equals("PING")) {
-                super.decodeResult(data, parts, channel, result);
+                super.decodeResult(data, parts, ctx, result);
             }
         }
     }

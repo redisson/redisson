@@ -51,9 +51,7 @@ import org.redisson.client.protocol.QueueCommand;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.decoder.SlotsDecoder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
@@ -87,19 +85,23 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
         }
         if (state() == null) {
-            boolean makeCheckpoint = data != null;
-            if (data != null) {
-                if (data instanceof CommandsData) {
-                    makeCheckpoint = false;
-                } else {
-                    CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
-                    if (cmd.getCommand().getReplayMultiDecoder() != null 
-                            && (SlotsDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass())
-                                    || ListMultiDecoder.class.isAssignableFrom(cmd.getCommand().getReplayMultiDecoder().getClass()))) {
-                        makeCheckpoint = false;
-                    }
-                }
-            }
+            boolean makeCheckpoint = false;
+// commented out due to https://github.com/redisson/redisson/issues/1632. Reproduced with RedissonMapCacheTest
+//            
+//            boolean makeCheckpoint = data != null;
+//            if (data != null) {
+//                if (data instanceof CommandsData) {
+//                    makeCheckpoint = false;
+//                } else {
+//                    CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+//                    MultiDecoder<Object> decoder = cmd.getCommand().getReplayMultiDecoder();
+//                    if (decoder != null 
+//                            && (decoder instanceof SlotsDecoder
+//                                    || decoder instanceof ListMultiDecoder)) {
+//                        makeCheckpoint = false;
+//                    }
+//                }
+//            }
             state(new State(makeCheckpoint));
         }
 
@@ -122,10 +124,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         if (data instanceof CommandData) {
             CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
             try {
-                if (state().getLevels().size() > 0) {
+                if (state().isMakeCheckpoint()) {
                     decodeFromCheckpoint(ctx, in, data, cmd);
                 } else {
-                    decode(in, cmd, null, ctx.channel(), false);
+                    decode(in, cmd, null, ctx, false);
                 }
                 sendNext(ctx, data);
             } catch (Exception e) {
@@ -146,7 +148,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         } else {
             try {
                 while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, ctx.channel(), false);
+                    decode(in, null, null, ctx, false);
                 }
                 sendNext(ctx);
             } catch (Exception e) {
@@ -164,54 +166,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void decodeFromCheckpoint(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data,
             CommandData<Object, Object> cmd) throws IOException {
-        if (state().getLevels().size() == 2) {
-            StateLevel secondLevel = state().getLevels().get(1);
-
-            if (secondLevel.getParts().isEmpty()) {
-                state().getLevels().remove(1);
-            }
+        StateLevel level = state().getLastLevel();
+        
+        List<Object> prevParts = null;
+        if (state().getLevels().size() > 1) {
+            StateLevel prevLevel = state().getLevels().get(state().getLevel() - 1);
+            prevParts = prevLevel.getParts();
         }
         
-        if (state().getLevels().size() == 2) {
-            StateLevel firstLevel = state().getLevels().get(0);
-            StateLevel secondLevel = state().getLevels().get(1);
-            
-            decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), secondLevel.getSize(), secondLevel.getParts(), false);
-            
-            MultiDecoder<Object> decoder = messageDecoder(cmd, firstLevel.getParts());
-            if (decoder != null) {
-                Object result = decoder.decode(firstLevel.getParts(), state());
-                if (data != null) {
-                    handleResult(cmd, null, result, true, ctx.channel());
-                }
-            }
-        }
-        if (state().getLevels().size() == 1) {
-            StateLevel firstLevel = state().getLevels().get(0);
-            if (firstLevel.getParts().isEmpty() && firstLevel.getLastList() == null) {
-                state().resetLevel();
-                decode(in, cmd, null, ctx.channel(), false);
-            } else {
-                if (firstLevel.getLastList() != null) {
-                    if (firstLevel.getLastList().isEmpty()) {
-                        decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
-                    } else {
-                        decodeList(in, cmd, firstLevel.getParts(), ctx.channel(), firstLevel.getLastListSize(), firstLevel.getLastList(), false);
-                    }
-                    firstLevel.setLastList(null);
-                    firstLevel.setLastListSize(0);
-
-                    while (in.isReadable() && firstLevel.getParts().size() < firstLevel.getSize()) {
-                        decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
-                    }
-                    decodeList(in, cmd, null, ctx.channel(), 0, firstLevel.getParts(), false);
-                } else {
-                    while (firstLevel.getSize() == firstLevel.getParts().size() && in.isReadable()) {
-                        decode(in, cmd, firstLevel.getParts(), ctx.channel(), false);
-                    }
-                    decodeList(in, cmd, null, ctx.channel(), firstLevel.getSize(), firstLevel.getParts(), false);
-                }
-            }
+        decodeList(in, cmd, prevParts, ctx, level.getSize(), level.getParts(), false);
+        
+        if (state().getLastLevel() == level) {
+            state().removeLastLevel();
         }
     }
     
@@ -244,7 +210,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 }
                 
                 try {
-                    decode(in, commandData, null, ctx.channel(), skipConvertor);
+                    decode(in, commandData, null, ctx, skipConvertor);
                 } finally {
                     if (commandData != null && RedisCommands.EXEC.getName().equals(commandData.getCommand().getName())) {
                         commandsData.remove();
@@ -302,8 +268,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
 
-    protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, Channel channel, boolean skipConvertor) throws IOException {
+    protected void decode(ByteBuf in, CommandData<Object, Object> data, List<Object> parts, ChannelHandlerContext ctx, boolean skipConvertor) throws IOException {
         int code = in.readByte();
+        Channel channel = ctx.channel();
         if (code == '+') {
             ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
             try {
@@ -365,33 +332,22 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
             long size = readLong(in);
-            List<Object> respParts;
+            final List<Object> respParts = new ArrayList<Object>();
             
-            StateLevel lastLevel = state().getLastLevel();
-            if (lastLevel != null && lastLevel.getSize() != lastLevel.getParts().size()) {
-                respParts = new ArrayList<Object>();
-                lastLevel.setLastListSize(size);
-                lastLevel.setLastList(respParts);
-            } else {
-                int level = state().incLevel();
-                if (state().getLevels().size()-1 >= level) {
-                    StateLevel stateLevel = state().getLevels().get(level);
-                    respParts = stateLevel.getParts();
-                    size = stateLevel.getSize();
-                } else {
-                    respParts = new ArrayList<Object>();
-                    if (state().isMakeCheckpoint()) {
-                        state().addLevel(new StateLevel(size, respParts));
-                    }
+            StateLevel lastLevel = null;
+            if (state().isMakeCheckpoint()) {
+                lastLevel = new StateLevel(size, respParts);
+                state().addLevel(lastLevel);
+            }
+            
+            decodeList(in, data, parts, ctx, size, respParts, skipConvertor);
+            
+            if (state().isMakeCheckpoint()) {
+                if (lastLevel == state().getLastLevel() && lastLevel.isFull()) {
+                    state().removeLastLevel();
                 }
             }
             
-            decodeList(in, data, parts, channel, size, respParts, skipConvertor);
-            
-            if (lastLevel != null && lastLevel.getLastList() != null) {
-                lastLevel.setLastList(null);
-                lastLevel.setLastListSize(0);
-            }
         } else {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
@@ -400,7 +356,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     @SuppressWarnings("unchecked")
     private void decodeList(ByteBuf in, CommandData<Object, Object> data, List<Object> parts,
-            Channel channel, long size, List<Object> respParts, boolean skipConvertor)
+            ChannelHandlerContext ctx, long size, List<Object> respParts, boolean skipConvertor)
                     throws IOException {
         if (parts == null && commandsData.get() != null) {
             List<CommandData<?, ?>> commands = commandsData.get();
@@ -410,7 +366,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     suffix = 1;
                 }
                 CommandData<Object, Object> commandData = (CommandData<Object, Object>) commands.get(i+suffix);
-                decode(in, commandData, respParts, channel, skipConvertor);
+                decode(in, commandData, respParts, ctx, skipConvertor);
                 if (commandData.getPromise().isDone() && !commandData.getPromise().isSuccess()) {
                     data.tryFailure(commandData.cause());
                 }
@@ -421,7 +377,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             }
         } else {
             for (int i = respParts.size(); i < size; i++) {
-                decode(in, data, respParts, channel, skipConvertor);
+                decode(in, data, respParts, ctx, skipConvertor);
                 if (state().isMakeCheckpoint()) {
                     checkpoint();
                 }
@@ -434,13 +390,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
 
         Object result = decoder.decode(respParts, state());
-        decodeResult(data, parts, channel, result);
+        decodeResult(data, parts, ctx, result);
     }
 
-    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
+    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, ChannelHandlerContext ctx,
             Object result) throws IOException {
         if (data != null) {
-            handleResult(data, parts, result, true, channel);
+            handleResult(data, parts, result, true, ctx.channel());
         }
     }
 
