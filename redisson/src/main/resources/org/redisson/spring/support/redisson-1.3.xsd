@@ -221,6 +221,20 @@
                      ]]></xsd:documentation>
                     </xsd:annotation>
                 </xsd:attribute>
+                <xsd:attribute name="lock-watchdog-timeout" type="xsd:string">
+                    <xsd:annotation>
+                        <xsd:documentation><![CDATA[
+        This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
+        Lock will be expired after <code>lockWatchdogTimeout</code> if watchdog 
+        didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
+
+        This prevents against infinity locked locks due to Redisson client crush or 
+        any other reason when lock can't be released in proper way. Value defined in milliseconds.
+
+        Default: 30000
+                     ]]></xsd:documentation>
+                    </xsd:annotation>
+                </xsd:attribute>
                 <xsd:attribute name="netty-threads" type="xsd:string">
                     <xsd:annotation>
                         <xsd:documentation><![CDATA[
