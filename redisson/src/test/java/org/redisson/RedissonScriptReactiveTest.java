@@ -9,15 +9,17 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RScript;
 import org.redisson.api.RScriptReactive;
+import org.redisson.api.RScriptRx;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.StringCodec;
 
 public class RedissonScriptReactiveTest extends BaseReactiveTest {
 
     @Test
     public void testEval() {
-        RScriptReactive script = redisson.getScript();
-        List<Object> res = sync(script.<List<Object>>eval(RScript.Mode.READ_ONLY, "return {1,2,3.3333,'\"foo\"',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList()));
-        assertThat(res).containsExactly(1L, 2L, 3L, "foo");
+        RScriptReactive script = redisson.getScript(StringCodec.INSTANCE);
+        List<Object> res = sync(script.eval(RScript.Mode.READ_ONLY, "return {'1','2','3.3333','foo',nil,'bar'}", RScript.ReturnType.MULTI, Collections.emptyList()));
+        assertThat(res).containsExactly("1", "2", "3.3333", "foo");
     }
 
     @Test

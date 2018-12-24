@@ -433,7 +433,7 @@ public class RedissonTest {
         
         System.out.println("master " + master.getRedisServerAddressAndPort() + " has been stopped!");
         
-        Thread.sleep(TimeUnit.SECONDS.toMillis(20));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(30));
         
         RedisProcess newMaster = null;
         Collection<ClusterNode> newMasterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);

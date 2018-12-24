@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
@@ -19,6 +20,7 @@ public class RedissonBucketTest extends BaseTest {
 
     @Test
     public void testSizeInMemory() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
         assertThat(al.sizeInMemory()).isEqualTo(55);
