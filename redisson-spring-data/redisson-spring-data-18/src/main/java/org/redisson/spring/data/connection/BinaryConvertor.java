@@ -15,7 +15,7 @@
  */
 package org.redisson.spring.data.connection;
 
-import org.redisson.client.protocol.convertor.SingleConvertor;
+import org.redisson.client.protocol.convertor.Convertor;
 
 import io.netty.util.CharsetUtil;
 
@@ -24,7 +24,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class BinaryConvertor extends SingleConvertor<Object> {
+public class BinaryConvertor implements Convertor<Object> {
 
     @Override
     public Object convert(Object obj) {
