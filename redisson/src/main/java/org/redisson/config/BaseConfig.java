@@ -226,12 +226,7 @@ class BaseConfig<T extends BaseConfig<T>> {
         return clientName;
     }
 
-    /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll</code> operation
-     *
-     * @param pingTimeout - timeout in milliseconds
-     * @return config
-     */
+    @Deprecated
     public T setPingTimeout(int pingTimeout) {
         this.pingTimeout = pingTimeout;
         return (T) this;
