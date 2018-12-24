@@ -18,6 +18,7 @@ package org.redisson.codec;
 import io.netty.util.internal.PlatformDependent;
 import java.util.concurrent.ConcurrentMap;
 import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
 import org.redisson.api.RObject;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
@@ -33,26 +34,36 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
 
     @Override
     public <T extends Codec> T getCodec(Class<T> codecClass) {
-        if (!codecCache.containsKey(codecClass)) {
+        Codec codec = codecCache.get(codecClass);
+        if (codec == null) {
             try {
-                codecCache.putIfAbsent(codecClass, codecClass.newInstance());
+                codec = codecClass.newInstance();
+                codecCache.putIfAbsent(codecClass, codec);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         }
-        return (T) codecCache.get(codecClass);
+        return (T) codec;
     }
 
     @Override
-    public <T extends Codec> T getCodec(REntity anno, Class<?> cls) {
+    public <T extends Codec> T getCodec(REntity anno, Class<?> cls, Config config) {
         if (!ClassUtils.isAnnotationPresent(cls, anno.annotationType())) {
             throw new IllegalArgumentException("Annotation REntity does not present on type [" + cls.getCanonicalName() + "]");
         }
-        return this.<T>getCodec((Class<T>) anno.codec());
+        
+        Class<?> codecClass;
+        if (anno.codec() == REntity.DEFAULT.class) {
+            codecClass = config.getCodec().getClass();
+        } else {
+            codecClass = anno.codec();
+        }
+
+        return this.getCodec((Class<T>) codecClass);
     }
 
     @Override
-    public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName) {
+    public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config) {
         try {
             if (!ClassUtils.getDeclaredField(cls, fieldName).isAnnotationPresent(anno.getClass())) {
                 throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");
@@ -63,25 +74,17 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         if (rObjectClass.isInterface()) {
             throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
         }
-        return this.<T>getCodec((Class<T>) anno.codec());
+        
+        Class<?> codecClass;
+        if (anno.codec() == RObjectField.DEFAULT.class) {
+            codecClass = config.getCodec().getClass();
+        } else {
+            codecClass = anno.codec();
+        }
+        
+        return this.<T>getCodec((Class<T>) codecClass);
     }
     
-    @Override
-    public <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass) {
-        if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
-        }
-        return getCodec(codecClass);
-    }
-    
-    @Override
-    public <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass, String name) {
-        if (rObjectClass.isInterface()) {
-            throw new IllegalArgumentException("Cannot lookup an interface class of RObject [" + rObjectClass.getCanonicalName() + "]. Concrete class only.");
-        }
-        return getCodec(codecClass, rObjectClass);
-    }
-
     @Override
     public <T extends Codec> void registerCodec(Class<T> cls, T codec) {
         if (!cls.isInstance(codec)) {

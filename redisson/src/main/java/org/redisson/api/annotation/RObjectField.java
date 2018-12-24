@@ -21,7 +21,11 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 import org.redisson.codec.JsonJacksonCodec;
 
 /**
@@ -41,12 +45,29 @@ public @interface RObjectField{
      * (Optional) Live Object naming scheme. Defines how to assign key names for each instance of this class. 
      * Used to create a reference to an existing Live Object and materialising a new one in redis. 
      * Defaults to {@link DefaultNamingScheme} implementation.
+     * 
+     * @return scheme
      */
     Class<? extends NamingScheme> namingScheme() default DefaultNamingScheme.class;
 
     /**
-     * (Optional) Live Object state codec. Defaults to {@link JsonJacksonCodec}.
+     * (Optional) Live Object state codec.
+     * <code>null</code> means to use codec specified in Redisson configuration
+     * 
+     * @return codec
      */
-    Class<? extends Codec> codec() default JsonJacksonCodec.class;
+    Class<? extends Codec> codec() default DEFAULT.class;
+    
+    static final class DEFAULT extends BaseCodec {
+        @Override
+        public Decoder<Object> getValueDecoder() {
+            return null;
+        }
+
+        @Override
+        public Encoder getValueEncoder() {
+            return null;
+        }
+    }
     
 }

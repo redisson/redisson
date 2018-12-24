@@ -19,10 +19,8 @@ import java.io.IOException;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
-import org.redisson.codec.JsonJacksonCodec;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 
@@ -31,8 +29,6 @@ import io.netty.buffer.Unpooled;
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class DefaultNamingScheme extends AbstractNamingScheme implements NamingScheme {
-
-    public static final DefaultNamingScheme INSTANCE = new DefaultNamingScheme(new JsonJacksonCodec());
 
     public DefaultNamingScheme(Codec codec) {
         super(codec);

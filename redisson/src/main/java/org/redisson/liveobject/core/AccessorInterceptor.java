@@ -84,7 +84,10 @@ public class AccessorInterceptor {
             }
             
             if (result != null && fieldType.isEnum()) {
-                return Enum.valueOf((Class)fieldType, (String)result);
+                if (result instanceof String) {
+                    return Enum.valueOf((Class)fieldType, (String)result);
+                }
+                return result;
             }
             if (result instanceof RedissonReference) {
                 return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result);
@@ -104,7 +107,7 @@ public class AccessorInterceptor {
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(redisson.getConfig().getReferenceCodecProvider().getCodec(anno, (Class) rEntity));
+                        .newInstance(redisson.getConfig().getReferenceCodecProvider().getCodec(anno, (Class) rEntity, redisson.getConfig()));
                 liveMap.fastPut(fieldName, new RedissonReference(rEntity,
                         ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
                                 liveObject.getLiveObjectId())));

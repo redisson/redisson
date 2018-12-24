@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import org.redisson.client.codec.Codec;
+import org.redisson.config.Config;
 import org.redisson.api.RObject;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
@@ -42,9 +43,11 @@ public interface ReferenceCodecProvider {
      * @param <T> the expected codec type.
      * @param anno REntity annotation used on the class.
      * @param cls The class that has the REntity annotation.
+     * @param config Redisson config object
+     * 
      * @return the cached codec instance.
      */
-    <T extends Codec> T getCodec(REntity anno, Class<?> cls);
+    <T extends Codec> T getCodec(REntity anno, Class<?> cls, Config config);
     
     /**
      * Get a codec instance by a RObjectField annotation and the class annotated
@@ -59,35 +62,11 @@ public interface ReferenceCodecProvider {
      * @param rObjectClass the implementation class of RObject the field is going
      * to be transformed into.
      * @param fieldName the name of the field with this RObjectField annotation.
-     * @return the cached codec instance.
-     */
-    <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName);
-
-    /**
-     * Get a codec instance by its class, the implementation class of the RObject
-     * interface.
+     * @param config Redisson config object
      * 
-     * @param <T> the expected codec type.
-     * @param <K> the RObject type.
-     * @param codecClass the codec class used to lookup the codec.
-     * @param rObjectClass the class of the RObject implementation.
      * @return the cached codec instance.
      */
-    <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass);
-
-    /**
-     * Get a codec instance by its class, the implementation class of the RObject
-     * interface and the name of RObject (the value returned by RObject.getName()
-     * method).
-     * 
-     * @param <T> the expected codec type.
-     * @param <K> the RObject type.
-     * @param codecClass the codec class used to lookup the codec.
-     * @param rObjectClass the class of the RObject implementation.
-     * @param name the name of RObject.
-     * @return the cached codec instance.
-     */
-    <T extends Codec, K extends RObject> T getCodec(Class<T> codecClass, Class<K> rObjectClass, String name);
+    <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config);
 
     /**
      * Register a codec by its class or super class.

@@ -16,22 +16,22 @@
 package org.redisson.liveobject.core;
 
 import java.lang.reflect.Method;
+
+import org.redisson.api.RMap;
+import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.REntity;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.Codec;
+import org.redisson.codec.ReferenceCodecProvider;
+import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.liveobject.resolver.NamingScheme;
+
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldProxy;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.This;
-
-import org.redisson.RedissonMap;
-import org.redisson.client.RedisException;
-import org.redisson.client.codec.Codec;
-import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.annotation.REntity;
-import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.liveobject.misc.ClassUtils;
-import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
  *
@@ -55,17 +55,19 @@ public class LiveObjectInterceptor {
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
-    private final Class<? extends Codec> codecClass;
+    private Codec codec;
 
     public LiveObjectInterceptor(RedissonClient redisson, Class<?> entityClass, String idFieldName) {
         this.redisson = redisson;
         this.codecProvider = redisson.getConfig().getReferenceCodecProvider();
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
-        REntity anno = (REntity) ClassUtils.getAnnotation(entityClass, REntity.class);
-        this.codecClass = anno.codec();
+        
+        REntity anno = ClassUtils.getAnnotation(entityClass, REntity.class);
+        codec = codecProvider.getCodec(anno, entityClass, redisson.getConfig());
+        
         try {
-            this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codecProvider.getCodec(anno, originalClass));
+            this.namingScheme = anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(codec);
             this.idFieldType = ClassUtils.getDeclaredField(originalClass, idFieldName).getType();
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
@@ -103,8 +105,7 @@ public class LiveObjectInterceptor {
                     //key may already renamed by others.
                 }
             }
-            RMap<Object, Object> liveMap = redisson.getMap(idKey,
-                    codecProvider.getCodec(codecClass, RedissonMap.class, idKey));
+            RMap<Object, Object> liveMap = redisson.getMap(idKey, codec);
             mapSetter.setValue(liveMap);
 
             return null;
