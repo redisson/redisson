@@ -230,23 +230,6 @@ public class RedissonMapRxTest extends BaseRxTest {
     }
 
     @Test
-    public void testEquals() {
-        RMapRx<String, String> map = redisson.getMap("simple");
-        sync(map.put("1", "7"));
-        sync(map.put("2", "4"));
-        sync(map.put("3", "5"));
-
-        Map<String, String> testMap = new HashMap<String, String>();
-        testMap.put("1", "7");
-        testMap.put("2", "4");
-        testMap.put("3", "5");
-
-        Assert.assertEquals(map, testMap);
-        Assert.assertEquals(map.hashCode(), testMap.hashCode());
-    }
-
-
-    @Test
     public void testPutAll() {
         RMapRx<Integer, String> map = redisson.getMap("simple");
         sync(map.put(1, "1"));

@@ -18,16 +18,6 @@ import reactor.rx.Promise;
 public class RedissonListRxTest extends BaseRxTest {
 
     @Test
-    public void testHashCode() throws InterruptedException {
-        RListRx<String> list = redisson.getList("list");
-        sync(list.add("a"));
-        sync(list.add("b"));
-        sync(list.add("c"));
-
-        Assert.assertEquals(126145, list.hashCode());
-    }
-
-    @Test
     public void testAddByIndex() {
         RListRx<String> test2 = redisson.getList("test2");
         sync(test2.add("foo"));
