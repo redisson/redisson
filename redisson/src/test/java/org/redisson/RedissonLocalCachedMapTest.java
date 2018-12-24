@@ -21,7 +21,10 @@ import org.redisson.api.RMap;
 import org.redisson.cache.Cache;
 import org.redisson.cache.CacheKey;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 
 import mockit.Deencapsulation;
 
@@ -538,7 +541,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     
     @Test
     public void testAddAndGet() throws InterruptedException {
-        RMap<Integer, Integer> map = redisson.getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
+        RMap<Integer, Integer> map = redisson.getLocalCachedMap("getAll", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE), LocalCachedMapOptions.defaults());
         Cache<CacheKey, CacheValue> cache = Deencapsulation.getField(map, "cache");
         map.put(1, 100);
 
@@ -548,7 +551,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         res = map.get(1);
         assertThat(res).isEqualTo(112);
 
-        RMap<Integer, Double> map2 = redisson.getLocalCachedMap("getAll2", LocalCachedMapOptions.defaults());
+        RMap<Integer, Double> map2 = redisson.getLocalCachedMap("getAll2", new CompositeCodec(redisson.getConfig().getCodec(), DoubleCodec.INSTANCE), LocalCachedMapOptions.defaults());
         map2.put(1, new Double(100.2));
 
         Double res2 = map2.addAndGet(1, new Double(12.1));
@@ -556,7 +559,7 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         res2 = map2.get(1);
         assertThat(res2).isEqualTo(112.3);
 
-        RMap<String, Integer> mapStr = redisson.getLocalCachedMap("mapStr", LocalCachedMapOptions.defaults());
+        RMap<String, Integer> mapStr = redisson.getLocalCachedMap("mapStr", new CompositeCodec(redisson.getConfig().getCodec(), IntegerCodec.INSTANCE), LocalCachedMapOptions.defaults());
         assertThat(mapStr.put("1", 100)).isNull();
 
         assertThat(mapStr.addAndGet("1", 12)).isEqualTo(112);

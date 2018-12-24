@@ -442,7 +442,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
-    public void testResetShutdownState() throws InterruptedException, ExecutionException {
+    public void testResetShutdownState() throws InterruptedException, ExecutionException, TimeoutException {
         for (int i = 0; i < 10; i++) {
             RExecutorService e = redisson.getExecutorService("test");
             e.execute(new RunnableTask());
@@ -455,7 +455,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
             assertThat(e.isShutdown()).isFalse();
             assertThat(e.isTerminated()).isFalse();
             Future<?> future = e.submit(new RunnableTask());
-            future.get();
+            future.get(30, TimeUnit.SECONDS);
         }
     }
     
