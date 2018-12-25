@@ -111,8 +111,7 @@ public class Config {
 
         if (oldConf.getCodec() == null) {
             // use it by default
-            oldConf.setCodec(new JsonJacksonCodec());
-//            oldConf.setCodec(new FstCodec());
+            oldConf.setCodec(new FstCodec());
         }
 
         setUseScriptCache(oldConf.isUseScriptCache());
@@ -583,6 +582,8 @@ public class Config {
      * <p>  
      * This prevents against infinity locked locks due to Redisson client crush or 
      * any other reason when lock can't be released in proper way.
+     * <p>
+     * Default is 30000 milliseconds
      * 
      * @param lockWatchdogTimeout timeout in milliseconds
      * @return config
