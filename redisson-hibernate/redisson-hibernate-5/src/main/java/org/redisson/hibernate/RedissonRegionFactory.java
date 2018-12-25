@@ -47,11 +47,12 @@ import org.redisson.hibernate.region.RedissonQueryRegion;
 import org.redisson.hibernate.region.RedissonTimestampsRegion;
 
 /**
+ * Hibernate Cache region factory based on Redisson. 
+ * Creates own Redisson instance during region start.
  * 
  * @author Nikita Koksharov
  *
- */
-public class RedissonRegionFactory implements RegionFactory {
+ */public class RedissonRegionFactory implements RegionFactory {
     
     private static final Logger log = Logger.getLogger( RedissonRegionFactory.class );
 

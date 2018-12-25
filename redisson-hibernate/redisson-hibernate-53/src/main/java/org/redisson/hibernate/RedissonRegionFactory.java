@@ -41,6 +41,8 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
 
 /**
+ * Hibernate Cache region factory based on Redisson. 
+ * Creates own Redisson instance during region start.
  * 
  * @author Nikita Koksharov
  *
