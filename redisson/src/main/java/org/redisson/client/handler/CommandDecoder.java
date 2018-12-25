@@ -332,7 +332,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
             long size = readLong(in);
-            final List<Object> respParts = new ArrayList<Object>();
+            final List<Object> respParts = new ArrayList<Object>(Math.max((int)size, 0));
             
             StateLevel lastLevel = null;
             if (state().isMakeCheckpoint()) {
