@@ -47,6 +47,8 @@ import org.redisson.hibernate.region.RedissonQueryRegion;
 import org.redisson.hibernate.region.RedissonTimestampsRegion;
 
 /**
+ * Hibernate Cache region factory based on Redisson. 
+ * Creates own Redisson instance during region start.
  * 
  * @author Nikita Koksharov
  *
