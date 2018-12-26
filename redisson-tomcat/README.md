@@ -35,6 +35,8 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 
    `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
+#### Shared Redisson instance
+
 Each RedissonSessionManager created per Web Application and thus creates own Redisson instance. For multiple applications, using the same Redis setup, amount of Redisson instances could be reduced using JNDI registry:
 
 1. Add shared redisson instance produced by `JndiRedissonFactory` into `tomcat/conf/server.xml` in `GlobalNamingResources` tag area:
