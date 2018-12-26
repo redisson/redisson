@@ -76,22 +76,6 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         
     }
     
-    /**
-     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
-     * 
-     */
-    @Deprecated
-    public enum InvalidationPolicy {
-        
-        NONE, 
-
-        ON_CHANGE, 
-        
-        ON_CHANGE_WITH_CLEAR_ON_RECONNECT, 
-
-        ON_CHANGE_WITH_LOAD_ON_RECONNECT
-    }
-    
     public enum EvictionPolicy {
         
         /**
@@ -219,41 +203,6 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return this;
     }
     
-    /*
-     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
-     * 
-     */
-    @Deprecated
-    public LocalCachedMapOptions<K, V> invalidationPolicy(InvalidationPolicy invalidationPolicy) {
-        if (invalidationPolicy == InvalidationPolicy.NONE) {
-            this.syncStrategy = SyncStrategy.NONE;
-        }
-        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE) {
-            this.syncStrategy = SyncStrategy.INVALIDATE;
-        }
-        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE_WITH_CLEAR_ON_RECONNECT) {
-            this.syncStrategy = SyncStrategy.INVALIDATE;
-            this.reconnectionStrategy = ReconnectionStrategy.CLEAR;
-        }
-        if (invalidationPolicy == InvalidationPolicy.ON_CHANGE_WITH_LOAD_ON_RECONNECT) {
-            this.syncStrategy = SyncStrategy.INVALIDATE;
-            this.reconnectionStrategy = ReconnectionStrategy.LOAD;
-        }
-        return this;
-    }
-
-    /*
-     * Use {@link #syncStrategy(SyncStrategy)} and/or {@link #reconnectionStrategy(ReconnectionStrategy)} instead
-     * 
-     */
-    @Deprecated
-    public LocalCachedMapOptions<K, V> invalidateEntryOnChange(boolean value) {
-        if (value) {
-            return invalidationPolicy(InvalidationPolicy.ON_CHANGE);
-        }
-        return invalidationPolicy(InvalidationPolicy.NONE);
-    }
-
     /**
      * Sets eviction policy. 
      * 

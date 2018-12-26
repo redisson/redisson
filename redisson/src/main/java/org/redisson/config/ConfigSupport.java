@@ -30,7 +30,6 @@ import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.ElasticacheConnectionManager;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.connection.SentinelConnectionManager;
@@ -110,9 +109,6 @@ public class ConfigSupport {
 
         @JsonProperty
         ClusterServersConfig clusterServersConfig;
-
-        @JsonProperty
-        ElasticacheServersConfig elasticacheServersConfig;
 
         @JsonProperty
         ReplicatedServersConfig replicatedServersConfig;
@@ -196,9 +192,6 @@ public class ConfigSupport {
         } else if (configCopy.getClusterServersConfig() != null) {
             validate(configCopy.getClusterServersConfig());
             return new ClusterConnectionManager(configCopy.getClusterServersConfig(), configCopy, id);
-        } else if (configCopy.getElasticacheServersConfig() != null) {
-            validate(configCopy.getElasticacheServersConfig());
-            return new ElasticacheConnectionManager(configCopy.getElasticacheServersConfig(), configCopy, id);
         } else if (configCopy.getReplicatedServersConfig() != null) {
             validate(configCopy.getReplicatedServersConfig());
             return new ReplicatedConnectionManager(configCopy.getReplicatedServersConfig(), configCopy, id);

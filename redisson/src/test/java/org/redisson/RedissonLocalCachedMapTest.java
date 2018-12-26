@@ -94,28 +94,6 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         
     }
 
-//        @Test
-    public void testPerf() {
-        LocalCachedMapOptions options = LocalCachedMapOptions.defaults().evictionPolicy(EvictionPolicy.NONE).cacheSize(100000).invalidateEntryOnChange(true);
-        Map<String, Integer> map = redisson.getLocalCachedMap("test", options);
-        
-//        Map<String, Integer> map = redisson.getMap("test");
-
-        
-        for (int i = 0; i < 10000; i++) {
-            map.put("" + i, i);
-        }
-        
-        long s = System.currentTimeMillis();
-        for (int i = 0; i < 10; i++) {
-            for (int j = 0; j < 10000; j++) {
-                map.get("" + j);
-            }
-        }
-        System.out.println(System.currentTimeMillis() - s);
-
-    }
-    
     @Override
     protected <K, V> RMap<K, V> getMap(String name) {
         return redisson.getLocalCachedMap(name, LocalCachedMapOptions.<K, V>defaults());
