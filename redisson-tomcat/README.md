@@ -15,15 +15,17 @@ Current implementation differs from any other Redis based Tomcat Session Manager
 Usage
 ===
 
-**1** Add `RedissonSessionManager` into `tomcat/conf/context.xml`
+### 1. Add `RedissonSessionManager`
+
+Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
-	         configPath="${catalina.base}/redisson.conf" readMode="MEMORY" updateMode="DEFAULT"/>
+	         configPath="${catalina.base}/redisson.conf" readMode="REDIS" updateMode="DEFAULT"/>
    ```
    `readMode` - read attributes mode. Two modes are available:
-   * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events. Default mode.
-   * `REDIS` - stores attributes into Redis only.  
+   * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
+   * `REDIS` - stores attributes into Redis only.  Default mode.
    <br/>
 
    `updateMode` - attributes update mode. Two modes are available:
@@ -31,31 +33,33 @@ Usage
    * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
    <br/>
 
-   `sharedSession` - share session across multiple deployed applications. Appropriate solution for migration of EAR based application with multiple WARs hosted previously on JBoss, WebLogic...  Works only in `readMode=REDIS`.  
-   <i>This option available only in [Redisson PRO](http://redisson.pro) edition.</i>  
-   
-   * `false` - don't share single session. Default mode.  
-   * `true` - share single session.
-   
-   Requires to set `crossContext` setting in `tomcat/conf/context.xml`
-   ```xml
-   <Context crossContext="true">
-   ...   
-   </Context>
-   ```	    
-   Cookie path should be the same for all applications and defined in `web.xml`
-   ```xml
-   <session-config>
-      <cookie-config>
-         <path>/</path>
-      </cookie-config>
-      ...
-   </session-config>
-   ```
-   <br/>
-
    `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
+Each RedissonSessionManager created per Web Application and thus creates own Redisson instance. For multiple applications, using the same Redis setup, amount of Redisson instances could be reduced using JNDI registry:
+
+1. Add shared redisson instance produced by `JndiRedissonFactory` into `tomcat/conf/server.xml` in `GlobalNamingResources` tag area:
+
+```xml
+  <GlobalNamingResources>
+    <Resource name="bean/redisson" auth="Container"
+              factory="org.redisson.JndiRedissonFactory"
+              configPath="${catalina.base}/conf/redisson.yaml"/>
+  </GlobalNamingResources>
+```
+
+2. Add `JndiRedissonSessionManager` with resource link to redisson instance into `tomcat/conf/context.xml`
+
+```xml
+    <ResourceLink name="bean/redisson"
+                  global="bean/redisson"
+		  type="org.redisson.api.RedissonClient" />
+
+    <Manager className="org.redisson.tomcat.JndiRedissonSessionManager"
+         readMode="REDIS"
+         jndiName="bean/redisson" />
+```
+
+3. Package all classes used in session into separate jar and copy it to `tomcat/lib` directory.
 
 **2** Copy two jars into `TOMCAT_BASE/lib` directory:
   
