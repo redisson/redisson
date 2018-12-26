@@ -82,12 +82,10 @@ Usage
 
 ### 2. Specify hibernate cache settings
 
-```xml
-<!-- 2nd level cache activation -->
-<property name="hibernate.cache.use_second_level_cache" value="true" />
-<property name="hibernate.cache.use_query_cache" value="true" />
+Define Redisson Region Cache Factory:
 
-<!-- Redisson Hibernate Cache factory -->
+```xml
+<!-- Redisson Region Cache factory -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonRegionFactory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonLocalCachedRegionFactory" />
@@ -95,6 +93,25 @@ Usage
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredRegionFactory" />
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredLocalCachedRegionFactory" />
+```
+By default each Region Factory creates own Redisson instance. For multiple applications, using the same Redis setup and deployed in the same JVM, amount of Redisson instances could be reduced using JNDI registry:
+```xml
+<!-- name of Redisson instance registered in JNDI -->
+<property name="hibernate.cache.region.jndi_name" value="redisson_instance" />
+<!-- JNDI Redisson Region Cache factory -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonRegionFactory" />
+<!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonLocalCachedRegionFactory" />
+<!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonClusteredRegionFactory" />
+<!-- or -->
+<property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.JndiRedissonClusteredLocalCachedRegionFactory" />
+```
+
+```xml
+<!-- 2nd level cache activation -->
+<property name="hibernate.cache.use_second_level_cache" value="true" />
+<property name="hibernate.cache.use_query_cache" value="true" />
 
 <!-- Redisson YAML config (searched in filesystem and classpath) -->
 <property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
