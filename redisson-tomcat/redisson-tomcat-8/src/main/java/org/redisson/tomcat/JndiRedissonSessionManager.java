@@ -23,8 +23,10 @@ import org.apache.catalina.LifecycleException;
 import org.redisson.api.RedissonClient;
 
 /**
+ * Redisson Session Manager for Apache Tomcat. 
+ * Uses Redisson instance located in JNDI.
  * 
- * @author Nikita Koksharov
+ * @author Nikita Koksharov 
  *
  */
 public class JndiRedissonSessionManager extends RedissonSessionManager {

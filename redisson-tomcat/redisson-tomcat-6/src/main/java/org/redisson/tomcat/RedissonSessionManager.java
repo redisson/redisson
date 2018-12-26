@@ -57,7 +57,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     
     private RedissonClient redisson;
     private String configPath;
-    private ReadMode readMode = ReadMode.MEMORY;
+    private ReadMode readMode = ReadMode.REDIS;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
     private String keyPrefix = "";
 
