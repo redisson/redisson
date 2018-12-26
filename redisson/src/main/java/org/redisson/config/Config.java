@@ -25,12 +25,10 @@ import java.util.concurrent.ExecutorService;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.FstCodec;
-import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.ReferenceCodecProvider;
-import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.DnsAddressResolverGroupFactory;
-import org.redisson.connection.MultiDnsAddressResolverGroupFactory;
 import org.redisson.connection.AddressResolverGroupFactory;
+import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MultiDnsAddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.misc.URIBuilder;
 
@@ -51,8 +49,6 @@ public class Config {
     private SingleServerConfig singleServerConfig;
 
     private ClusterServersConfig clusterServersConfig;
-
-    private ElasticacheServersConfig elasticacheServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
     
@@ -138,9 +134,6 @@ public class Config {
         if (oldConf.getClusterServersConfig() != null) {
             setClusterServersConfig(new ClusterServersConfig(oldConf.getClusterServersConfig()));
         }
-        if (oldConf.getElasticacheServersConfig() != null) {
-            setElasticacheServersConfig(new ElasticacheServersConfig(oldConf.getElasticacheServersConfig()));
-        }
         if (oldConf.getReplicatedServersConfig() != null) {
             setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
         }
@@ -224,7 +217,6 @@ public class Config {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
-        checkElasticacheServersConfig();
         checkReplicatedServersConfig();
 
         if (clusterServersConfig == null) {
@@ -242,37 +234,6 @@ public class Config {
     }
 
     /**
-     *
-     * Use {@link #useReplicatedServers()}
-     * 
-     * @return config object
-     */
-    @Deprecated
-    public ElasticacheServersConfig useElasticacheServers() {
-        return useElasticacheServers(new ElasticacheServersConfig());
-    }
-
-    ElasticacheServersConfig useElasticacheServers(ElasticacheServersConfig config) {
-        checkClusterServersConfig();
-        checkMasterSlaveServersConfig();
-        checkSentinelServersConfig();
-        checkSingleServerConfig();
-
-        if (elasticacheServersConfig == null) {
-            elasticacheServersConfig = new ElasticacheServersConfig();
-        }
-        return elasticacheServersConfig;
-    }
-
-    ElasticacheServersConfig getElasticacheServersConfig() {
-        return elasticacheServersConfig;
-    }
-
-    void setElasticacheServersConfig(ElasticacheServersConfig elasticacheServersConfig) {
-        this.elasticacheServersConfig = elasticacheServersConfig;
-    }
-
-    /**
      * Init Replicated servers configuration.
      * Most used with Azure Redis Cache or AWS Elasticache
      *
@@ -287,7 +248,6 @@ public class Config {
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
         checkSingleServerConfig();
-        checkElasticacheServersConfig();
 
         if (replicatedServersConfig == null) {
             replicatedServersConfig = new ReplicatedServersConfig();
@@ -338,7 +298,6 @@ public class Config {
         checkClusterServersConfig();
         checkMasterSlaveServersConfig();
         checkSentinelServersConfig();
-        checkElasticacheServersConfig();
         checkReplicatedServersConfig();
 
         if (singleServerConfig == null) {
@@ -368,7 +327,6 @@ public class Config {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkMasterSlaveServersConfig();
-        checkElasticacheServersConfig();
         checkReplicatedServersConfig();
 
         if (this.sentinelServersConfig == null) {
@@ -398,7 +356,6 @@ public class Config {
         checkClusterServersConfig();
         checkSingleServerConfig();
         checkSentinelServersConfig();
-        checkElasticacheServersConfig();
         checkReplicatedServersConfig();
 
         if (masterSlaveServersConfig == null) {
@@ -465,12 +422,6 @@ public class Config {
     private void checkSingleServerConfig() {
         if (singleServerConfig != null) {
             throw new IllegalStateException("single server config already used!");
-        }
-    }
-
-    private void checkElasticacheServersConfig() {
-        if (elasticacheServersConfig != null) {
-            throw new IllegalStateException("elasticache replication group servers config already used!");
         }
     }
 

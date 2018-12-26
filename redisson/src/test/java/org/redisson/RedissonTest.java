@@ -954,15 +954,6 @@ public class RedissonTest {
     }
 
     @Test(expected = RedisConnectionException.class)
-    public void testElasticacheConnectionFail() throws InterruptedException {
-        Config config = new Config();
-        config.useElasticacheServers().addNodeAddress("redis://127.99.0.1:1111");
-        Redisson.create(config);
-
-        Thread.sleep(1500);
-    }
-
-    @Test(expected = RedisConnectionException.class)
     public void testReplicatedConnectionFail() throws InterruptedException {
         Config config = new Config();
         config.useReplicatedServers().addNodeAddress("redis://127.99.0.1:1111");
