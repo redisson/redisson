@@ -51,7 +51,7 @@ public class JndiRedissonRegionFactory extends RedissonRegionFactory {
             context = new InitialContext(jndiProperties);
             return (RedissonClient) context.lookup(jndiName);
         } catch (NamingException e) {
-            throw new CacheException("Unable to locate Redisson instances by " + jndiName, e);
+            throw new CacheException("Unable to locate Redisson instance by name: " + jndiName, e);
         } finally {
             if (context != null) {
                 try {
