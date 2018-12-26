@@ -16,13 +16,19 @@
 package org.redisson.config;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
 import java.net.URL;
 import java.util.List;
+import java.util.Scanner;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
@@ -118,7 +124,33 @@ public class ConfigSupport {
     private ObjectMapper jsonMapper = createMapper(null, null);
     private ObjectMapper yamlMapper = createMapper(new YAMLFactory(), null);
     
+    private String resolveEnvParams(Readable in) {
+        Scanner s = new Scanner(in).useDelimiter("\\A");
+        try {
+            if (s.hasNext()) {
+                return resolveEnvParams(s.next());
+            }
+            return "";
+        } finally {
+            s.close();
+        }
+    }
+    
+    private String resolveEnvParams(String content) {
+        Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\}");
+        Matcher m = pattern.matcher(content);
+        while (m.find()) {
+            String s = m.group(1);
+            String v = System.getenv(s);
+            if (v != null) {
+                content = content.replace(m.group(), v);
+            }
+        }
+        return content;
+    }
+    
     public <T> T fromJSON(String content, Class<T> configType) throws IOException {
+        content = resolveEnvParams(content);
         return jsonMapper.readValue(content, configType);
     }
 
@@ -128,19 +160,23 @@ public class ConfigSupport {
     
     public <T> T fromJSON(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
         jsonMapper = createMapper(null, classLoader);
-        return jsonMapper.readValue(file, configType);
+        String content = resolveEnvParams(new FileReader(file));
+        return jsonMapper.readValue(content, configType);
     }
 
     public <T> T fromJSON(URL url, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(url, configType);
+        String content = resolveEnvParams(new InputStreamReader(url.openStream()));
+        return jsonMapper.readValue(content, configType);
     }
 
     public <T> T fromJSON(Reader reader, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(reader, configType);
+        String content = resolveEnvParams(reader);
+        return jsonMapper.readValue(content, configType);
     }
 
     public <T> T fromJSON(InputStream inputStream, Class<T> configType) throws IOException {
-        return jsonMapper.readValue(inputStream, configType);
+        String content = resolveEnvParams(new InputStreamReader(inputStream));
+        return jsonMapper.readValue(content, configType);
     }
 
     public String toJSON(Config config) throws IOException {
@@ -148,29 +184,33 @@ public class ConfigSupport {
     }
 
     public <T> T fromYAML(String content, Class<T> configType) throws IOException {
+        content = resolveEnvParams(content);
         return yamlMapper.readValue(content, configType);
     }
 
     public <T> T fromYAML(File file, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(file, configType);
+        return fromYAML(file, configType, null);
     }
     
     public <T> T fromYAML(File file, Class<T> configType, ClassLoader classLoader) throws IOException {
         yamlMapper = createMapper(new YAMLFactory(), classLoader);
-        return yamlMapper.readValue(file, configType);
+        String content = resolveEnvParams(new FileReader(file));
+        return yamlMapper.readValue(content, configType);
     }
 
-
     public <T> T fromYAML(URL url, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(url, configType);
+        String content = resolveEnvParams(new InputStreamReader(url.openStream()));
+        return yamlMapper.readValue(content, configType);
     }
 
     public <T> T fromYAML(Reader reader, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(reader, configType);
+        String content = resolveEnvParams(reader);
+        return yamlMapper.readValue(content, configType);
     }
 
     public <T> T fromYAML(InputStream inputStream, Class<T> configType) throws IOException {
-        return yamlMapper.readValue(inputStream, configType);
+        String content = resolveEnvParams(new InputStreamReader(inputStream));
+        return yamlMapper.readValue(content, configType);
     }
 
     public String toYAML(Config config) throws IOException {
