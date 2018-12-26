@@ -102,7 +102,6 @@ public class Config {
     }
 
     public Config(Config oldConf) {
-        setUseLinuxNativeEpoll(oldConf.isUseLinuxNativeEpoll());
         setExecutor(oldConf.getExecutor());
 
         if (oldConf.getCodec() == null) {
@@ -447,21 +446,6 @@ public class Config {
         return transportMode;
     }
     
-    /**
-     * Use {@link #setTransportMode(TransportMode)}
-     */
-    @Deprecated
-    public Config setUseLinuxNativeEpoll(boolean useLinuxNativeEpoll) {
-        if (useLinuxNativeEpoll) {
-            setTransportMode(TransportMode.EPOLL);
-        }
-        return this;
-    }
-
-    public boolean isUseLinuxNativeEpoll() {
-        return getTransportMode() == TransportMode.EPOLL;
-    }
-
     /**
      * Threads amount shared between all redis clients used by Redisson.
      * <p>
