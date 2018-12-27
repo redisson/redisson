@@ -699,7 +699,7 @@ public class BaseTransactionalMap<K, V> {
             }
         }
 
-        RFuture<Map<K, V>> future = ((RedissonMap<K, V>)map).getAllOperationAsync(keysToLoad);
+        RFuture<Map<K, V>> future = ((RedissonMap<K, V>)this.map).getAllOperationAsync(keysToLoad);
         future.addListener(new FutureListener<Map<K, V>>() {
             @Override
             public void operationComplete(Future<Map<K, V>> future) throws Exception {
