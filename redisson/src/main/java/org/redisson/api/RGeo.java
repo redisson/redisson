@@ -80,6 +80,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -94,6 +96,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -109,6 +113,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -125,6 +131,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -142,6 +150,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -157,6 +167,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units and limited by count.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -173,6 +185,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -190,6 +204,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -207,6 +223,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -222,6 +240,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -238,6 +258,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -255,6 +277,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param longitude - longitude of object
      * @param latitude - latitude of object
@@ -271,6 +295,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -284,6 +310,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -298,6 +326,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -313,6 +343,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -329,6 +361,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -343,6 +377,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -358,6 +394,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -374,6 +412,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -390,6 +430,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units.
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -404,6 +446,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -419,6 +463,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units
@@ -435,6 +481,8 @@ public interface RGeo<V> extends RScoredSortedSet<V>, RGeoAsync<V> {
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code>
      * and limited by count
+     * <p>
+     * Requires <b>Redis 3.2.10 and higher.</b>
      * 
      * @param member - object
      * @param radius - radius in geo units

@@ -91,8 +91,8 @@ public interface RedisCommands {
     
     RedisStrictCommand<Long> GEOADD = new RedisStrictCommand<Long>("GEOADD");
     RedisCommand<Double> GEODIST = new RedisCommand<Double>("GEODIST", new DoubleReplayConvertor());
-    RedisCommand<List<Object>> GEORADIUS = new RedisCommand<List<Object>>("GEORADIUS", new ObjectListReplayDecoder<Object>());
-    RedisCommand<List<Object>> GEORADIUSBYMEMBER = new RedisCommand<List<Object>>("GEORADIUSBYMEMBER", new ObjectListReplayDecoder<Object>());
+    RedisCommand<List<Object>> GEORADIUS_RO = new RedisCommand<List<Object>>("GEORADIUS_RO", new ObjectListReplayDecoder<Object>());
+    RedisCommand<List<Object>> GEORADIUSBYMEMBER_RO = new RedisCommand<List<Object>>("GEORADIUSBYMEMBER_RO", new ObjectListReplayDecoder<Object>());
     RedisCommand<Object> GEORADIUS_STORE = new RedisCommand<Object>("GEORADIUS", new Long2MultiDecoder());
     RedisCommand<Object> GEORADIUSBYMEMBER_STORE = new RedisCommand<Object>("GEORADIUSBYMEMBER", new Long2MultiDecoder());
     
