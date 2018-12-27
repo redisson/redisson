@@ -15,6 +15,7 @@ Feature - `JndiRedissonFactory` and Tomcat `JndiRedissonSessionManager` added
 Feature - Hibernate Region Factories with JNDI support  
 Feature - ability to use Environmental Variables in config files  
 Feature - Spring Data Redis 2.1.x support added  
+Feature - Spring Boot Starter 2.1.x support added  
 Feature - Spring Data Redis 2.x and 2.1 integrations support `ReactiveRedisTemplate`  
 Feature - Support of [Different monitoring systems](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#1410-statistics-monitoring-jmx-and-other-systems)  
 Improvement - RGeo.radius methods use GEORADIUS_RO and GEORADIUSBYMEMBER_RO commands  
