@@ -121,7 +121,6 @@ public class SpringNamespaceWikiTest {
             assertEquals(1, config.getThreads());
             assertEquals(2, config.getNettyThreads());
             assertSame(context.getBean("myCodec", Codec.class), config.getCodec());
-            assertEquals(false, config.isUseLinuxNativeEpoll());
             assertEquals(false, config.isReferenceEnabled());
             assertSame(context.getBean("myCodecProvider", ReferenceCodecProvider.class), config.getReferenceCodecProvider());
             assertSame(context.getBean("myExecutor", Executor.class), config.getExecutor());
