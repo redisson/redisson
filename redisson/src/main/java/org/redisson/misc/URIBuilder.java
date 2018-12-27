@@ -70,10 +70,17 @@ public class URIBuilder {
             throw new IOException(e);
         }
     }
-    
+
+    private static String trimIpv6Brackets(String host) {
+        if (host.startsWith("[") && host.endsWith("]")) {
+            return host.substring(1, host.length() - 1);
+        }
+        return host;
+    }
+
     public static boolean compare(InetSocketAddress entryAddr, URI addr) {
-        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(addr.getHost()))
-                || entryAddr.getAddress().getHostAddress().equals(addr.getHost()))
+        if (((entryAddr.getHostName() != null && entryAddr.getHostName().equals(trimIpv6Brackets(addr.getHost())))
+                || entryAddr.getAddress().getHostAddress().equals(trimIpv6Brackets(addr.getHost())))
                 && entryAddr.getPort() == addr.getPort()) {
             return true;
         }
