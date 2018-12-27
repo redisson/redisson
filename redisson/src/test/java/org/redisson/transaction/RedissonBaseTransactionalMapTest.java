@@ -2,7 +2,9 @@ package org.redisson.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -43,6 +45,19 @@ public abstract class RedissonBaseTransactionalMapTest extends BaseTest {
         
         transaction1.commit();
         assertThat(m.size()).isZero();
+    }
+    
+    @Test
+    public void testGetAll() {
+        RMap<String, String> m = getMap();
+        m.put("1", "2");
+        m.put("3", "4");
+        
+        RTransaction t = redisson.createTransaction(TransactionOptions.defaults());
+        RMap<String, String> map = getTransactionalMap(t);
+        assertThat(map.getAll(new HashSet<String>(Arrays.asList("1", "3"))).values()).containsOnly("2", "4");
+        
+        t.commit();
     }
     
     @Test

@@ -32,6 +32,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
 /**
+ * Redisson object factory used to register instance in JNDI registry. 
  * 
  * @author Nikita Koksharov
  *
