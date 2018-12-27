@@ -2,7 +2,42 @@ Redisson Releases History
 ================================
 ### Please Note: trunk is current development branch.
 
-Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
+Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
+
+### 27-Dec-2018 - versions 2.15.0 and 3.10.0 released  
+Feature - new __[Hibernate cache](https://github.com/redisson/redisson/tree/master/redisson-hibernate) implementation__  
+Feature - __Hibernate 5.3__ support  
+Feature - [TypedJsonJacksonCodec](https://github.com/redisson/redisson/blob/master/redisson/src/main/java/org/redisson/codec/TypedJsonJacksonCodec.java) added  
+Feature - `getCountDownLatch`, `getSemaphore`, `getPermitExpirableSemaphore`, `getFairLock` methods added to `RMap` object  
+Feature - `getCountDownLatch`, `getSemaphore`, `getPermitExpirableSemaphore`, `getFairLock` methods added to `RSet` object  
+Feature - `RTopic.countSubscribers` method added  
+Feature - `JndiRedissonFactory` and Tomcat `JndiRedissonSessionManager` added  
+Feature - Hibernate Region Factories with JNDI support  
+Feature - ability to use Environmental Variables in config files  
+Feature - Spring Data Redis 2.1.x support added  
+Feature - Spring Data Redis 2.x and 2.1 integrations support `ReactiveRedisTemplate`  
+Improvement - RGeo.radius methods use GEORADIUS_RO and GEORADIUSBYMEMBER_RO commands  
+Improvement - restored implementation of DnsAddressResolverGroupFactory  
+Improvement - RedisConnectionClosedException removed  
+Fixed - `RMap.getAll` throws `ClassCastException` during transaction execution  
+Fixed - `pingConnectionInterval` and `lock-watchdog-timeout` parameters added to `redisson.xsd`  
+Fixed - zRevRangeWithScores does not work properly in Spring RedisTemplate  
+Fixed - `CommandDecoder` throws `IndexOutOfBoundsException` if `pingConnectionInterval` param is used  
+Fixed - NPE in `CommandDecoder`  
+Fixed - error during channel initialization is not logged  
+Fixed - `RBitSet` object couldn't be used as nested object  
+Fixed - use `keyPrefix` for topic object used in Tomcat Session Manager  
+Fixed - unable connect to Redis on Android  
+Fixed - `RMapCache` element expiration doesn't work with map size = 1  
+Fixed - MOVED handling  
+Fixed - Pooled connection closed after MOVED redirection  
+Fixed - Master node shouldn't be shutdown on slave down event in Sentinel mode  
+Fixed - `RoundRobinLoadBalancer` doesn't distribute load equally if one of slave nodes failed  
+Fixed - Spring Session `keyPrefix` setting isn't used in session name  
+Fixed - failed Redis Master node is not shutdown properly  
+Fixed - Redisson shouldn't be shutdown in Spring Data RedissonConnectionFactory  
+Fixed - Redisson Spring Boot doesn't start properly without lettuce or jedis in classpath  
+Fixed - validation of filled out Redis node address in Config  
 
 ### 21-Nov-2018 - versions 2.14.1 and 3.9.1 released
 Feature - `takeFirstElements` and `takeLastElements` streaming methods added to `RBlockingDequeRx`  
