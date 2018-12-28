@@ -21,6 +21,7 @@ Feature - Support of [Different monitoring systems](https://github.com/redisson/
 Improvement - RGeo.radius methods use GEORADIUS_RO and GEORADIUSBYMEMBER_RO commands  
 Improvement - restored implementation of DnsAddressResolverGroupFactory  
 Improvement - RedisConnectionClosedException removed  
+Improvement - __default codec changed to FSTCodec__  
 Fixed - `RMap.getAll` throws `ClassCastException` during transaction execution  
 Fixed - `pingConnectionInterval` and `lock-watchdog-timeout` parameters added to `redisson.xsd`  
 Fixed - zRevRangeWithScores does not work properly in Spring RedisTemplate  
