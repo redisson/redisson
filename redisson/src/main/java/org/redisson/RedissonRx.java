@@ -56,7 +56,6 @@ import org.redisson.api.RTransactionRx;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -95,7 +94,6 @@ public class RedissonRx implements RedissonRxClient {
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-    protected final ReferenceCodecProvider codecProvider;
 
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -106,7 +104,6 @@ public class RedissonRx implements RedissonRxClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandRxService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
-        codecProvider = config.getReferenceCodecProvider();
     }
     
     @Override
@@ -402,11 +399,6 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public Config getConfig() {
         return config;
-    }
-
-    @Override
-    public ReferenceCodecProvider getCodecProvider() {
-        return codecProvider;
     }
 
     @Override

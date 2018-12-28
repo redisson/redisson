@@ -104,7 +104,7 @@ public class AccessorInterceptor {
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
-                Codec codec = redisson.getConfig().getReferenceCodecProvider().getCodec(anno, rEntity, redisson.getConfig());
+                Codec codec = objectBuilder.getReferenceCodecProvider().getCodec(anno, rEntity, redisson.getConfig());
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
                         .newInstance(codec);

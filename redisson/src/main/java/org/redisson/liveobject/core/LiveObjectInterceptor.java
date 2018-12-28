@@ -57,9 +57,9 @@ public class LiveObjectInterceptor {
     private final NamingScheme namingScheme;
     private Codec codec;
 
-    public LiveObjectInterceptor(RedissonClient redisson, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(RedissonClient redisson, Class<?> entityClass, String idFieldName, RedissonObjectBuilder objectBuilder) {
         this.redisson = redisson;
-        this.codecProvider = redisson.getConfig().getReferenceCodecProvider();
+        this.codecProvider = objectBuilder.getReferenceCodecProvider();
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
         

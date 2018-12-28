@@ -66,11 +66,6 @@ public class Config {
      */
     private Codec codec;
     
-    /**
-     * For codec registry and look up. DefaultCodecProvider used by default
-     */
-    private ReferenceCodecProvider referenceCodecProvider = new DefaultReferenceCodecProvider();
-    
     private ExecutorService executor;
     
     /**
@@ -115,7 +110,6 @@ public class Config {
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
-        setReferenceCodecProvider(oldConf.getReferenceCodecProvider());
         setReferenceEnabled(oldConf.isReferenceEnabled());
         setEventLoopGroup(oldConf.getEventLoopGroup());
         setTransportMode(oldConf.getTransportMode());
@@ -157,28 +151,6 @@ public class Config {
 
     public Codec getCodec() {
         return codec;
-    }
-    
-    /**
-     * Reference objects codec provider used for codec registry and look up. 
-     * <code>org.redisson.codec.DefaultReferenceCodecProvider</code> used by default.
-     * 
-     * @param codecProvider object 
-     * @return config
-     * @see org.redisson.codec.ReferenceCodecProvider
-     */
-    public Config setReferenceCodecProvider(ReferenceCodecProvider codecProvider) {
-        this.referenceCodecProvider = codecProvider;
-        return this;
-    }
-
-    /**
-     * Returns the CodecProvider instance
-     * 
-     * @return CodecProvider
-     */
-    public ReferenceCodecProvider getReferenceCodecProvider() {
-        return referenceCodecProvider;
     }
     
     /**

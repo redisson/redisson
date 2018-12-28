@@ -653,7 +653,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class))
                         .to(new LiveObjectInterceptor(redisson, entityClass,
-                                getRIdFieldName(entityClass))))
+                                getRIdFieldName(entityClass), commandExecutor.getObjectBuilder())))
 //                .intercept(MethodDelegation.to(
 //                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
 //                                        getRIdFieldName(entityClass)))

@@ -142,9 +142,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private void enableRedissonReferenceSupport(Config config) {
         Codec codec = config.getCodec();
-        ReferenceCodecProvider codecProvider = config.getReferenceCodecProvider();
-        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
         objectBuilder = new RedissonObjectBuilder(config);
+        ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
+        codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     @Override

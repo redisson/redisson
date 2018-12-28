@@ -18,7 +18,6 @@ package org.redisson.api;
 import java.util.List;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 
 /**
@@ -635,13 +634,6 @@ public interface RedissonReactiveClient {
      * @return Config object
      */
     Config getConfig();
-    
-    /**
-     * Returns the CodecProvider instance
-     * 
-     * @return CodecProvider object
-     */
-    ReferenceCodecProvider getCodecProvider();
     
     /**
      * Get Redis nodes group for server operations

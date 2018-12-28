@@ -54,6 +54,7 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.client.codec.Codec;
+import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.liveobject.misc.ClassUtils;
@@ -86,7 +87,6 @@ public class RedissonObjectBuilder {
     }
 
     private final Config config;
-    private final ReferenceCodecProvider codecProvider;
     
     public static class CodecMethodRef {
 
@@ -103,15 +103,20 @@ public class RedissonObjectBuilder {
     
     private static final Map<Class<?>, CodecMethodRef> references = new HashMap<Class<?>, CodecMethodRef>();
     
+    private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
+    
     public RedissonObjectBuilder(Config config) {
         super();
         this.config = config;
-        this.codecProvider = config.getReferenceCodecProvider();
         fillCodecMethods(references, RedissonClient.class, RObject.class);
         fillCodecMethods(references, RedissonReactiveClient.class, RObjectReactive.class);
         fillCodecMethods(references, RedissonRxClient.class, RObjectRx.class);
     }
 
+    public ReferenceCodecProvider getReferenceCodecProvider() {
+        return codecProvider;
+    }
+    
     public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         Codec codec = ar.getCodec();
         if (codec != null) {
@@ -195,7 +200,6 @@ public class RedissonObjectBuilder {
 
     public Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getType();
-        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         if (type != null) {
             if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
                 RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
@@ -236,7 +240,6 @@ public class RedissonObjectBuilder {
 
     public Object fromReference(RedissonRxClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();
-        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         /**
          * Live Object from reference in reactive client is not supported yet.
          */
@@ -245,7 +248,6 @@ public class RedissonObjectBuilder {
     
     public Object fromReference(RedissonReactiveClient redisson, RedissonReference rr) throws Exception {
         Class<? extends Object> type = rr.getReactiveType();
-        ReferenceCodecProvider codecProvider = redisson.getConfig().getReferenceCodecProvider();
         /**
          * Live Object from reference in reactive client is not supported yet.
          */
@@ -262,7 +264,7 @@ public class RedissonObjectBuilder {
             
             RObject rObject = ((RObject) object);
             if (rObject.getCodec() != null) {
-                config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+                codecProvider.registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
             }
             return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
@@ -271,7 +273,7 @@ public class RedissonObjectBuilder {
 
             RObjectReactive rObject = ((RObjectReactive) object);
             if (rObject.getCodec() != null) {
-                config.getReferenceCodecProvider().registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
+                codecProvider.registerCodec((Class) rObject.getCodec().getClass(), rObject.getCodec());
             }
             return new RedissonReference(clazz, rObject.getName(), rObject.getCodec());
         }
@@ -282,7 +284,7 @@ public class RedissonObjectBuilder {
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(config.getReferenceCodecProvider().getCodec(anno, (Class) rEntity, config));
+                        .newInstance(codecProvider.getCodec(anno, (Class) rEntity, config));
                 String name = Introspectior
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();
