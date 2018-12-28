@@ -46,7 +46,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
  */
 public class RedissonObjectFactory {
 
-    public static class RedissonObjectBuilder {
+    public static class CodecMethodRef {
 
         Method defaultCodecMethod;
         Method customCodecMethod;
@@ -59,19 +59,26 @@ public class RedissonObjectFactory {
         }
     }
     
-    private static final Map<Class<?>, RedissonObjectBuilder> builders;
+    private static final Map<Class<?>, CodecMethodRef> references;
     
     static {
-        HashMap<Class<?>, RedissonObjectBuilder> b = new HashMap<Class<?>, RedissonObjectBuilder>();
-        for (Method method : RedissonClient.class.getDeclaredMethods()) {
+        HashMap<Class<?>, CodecMethodRef> b = new HashMap<Class<?>, CodecMethodRef>();
+        fillCodecMethods(b, RedissonClient.class, RObject.class);
+        fillCodecMethods(b, RedissonReactiveClient.class, RObjectReactive.class);
+        
+        references = Collections.unmodifiableMap(b);
+    }
+
+    private static void fillCodecMethods(HashMap<Class<?>, CodecMethodRef> b, Class<?> clientClazz, Class<?> objectClazz) {
+        for (Method method : clientClazz.getDeclaredMethods()) {
             if (!method.getReturnType().equals(Void.TYPE)
-                    && RObject.class.isAssignableFrom(method.getReturnType())
+                    && objectClazz.isAssignableFrom(method.getReturnType())
                     && method.getName().startsWith("get")) {
                 Class<?> cls = method.getReturnType();
                 if (!b.containsKey(cls)) {
-                    b.put(cls, new RedissonObjectBuilder());
+                    b.put(cls, new CodecMethodRef());
                 }
-                RedissonObjectBuilder builder = b.get(cls);
+                CodecMethodRef builder = b.get(cls);
                 if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
                         && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
                     builder.customCodecMethod = method;
@@ -80,27 +87,6 @@ public class RedissonObjectFactory {
                 }
             }
         }
-        
-        for (Method method : RedissonReactiveClient.class.getDeclaredMethods()) {
-            if (!method.getReturnType().equals(Void.TYPE)
-                    && RObjectReactive.class.isAssignableFrom(method.getReturnType())
-                    && method.getName().startsWith("get")) {
-                Class<?> cls = method.getReturnType();
-                if (!b.containsKey(cls)) {
-                    b.put(cls, new RedissonObjectBuilder());
-                }
-                RedissonObjectBuilder builder = b.get(cls);
-                if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
-                        && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
-                    builder.customCodecMethod = method;
-                } else if (method.getParameterTypes().length == 1) {
-                    builder.defaultCodecMethod = method;
-                }
-            }
-        }
-        
-        builders = Collections.unmodifiableMap(b);
-        
     }
 
     public static Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
@@ -121,15 +107,15 @@ public class RedissonObjectFactory {
         return getObject(redisson, rr, type, codecProvider);
     }
 
-    protected static Object getObject(Object redisson, RedissonReference rr, Class<? extends Object> type,
+    private static Object getObject(Object redisson, RedissonReference rr, Class<? extends Object> type,
             ReferenceCodecProvider codecProvider)
             throws IllegalAccessException, InvocationTargetException, Exception, ClassNotFoundException {
         if (type != null) {
-            RedissonObjectBuilder b = builders.get(type);
+            CodecMethodRef b = references.get(type);
             if (b == null && type.getInterfaces().length > 0) {
                 type = type.getInterfaces()[0];
             }
-            b = builders.get(type);
+            b = references.get(type);
             if (b != null) {
                 Method builder = b.get(isDefaultCodec(rr));
                 return (isDefaultCodec(rr)
@@ -210,8 +196,8 @@ public class RedissonObjectFactory {
     public static <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
         List<Class<?>> interfaces = Arrays.asList(expectedType.getInterfaces());
         for (Class<?> iType : interfaces) {
-            if (builders.containsKey(iType)) {// user cache to speed up things a little.
-                Method builder = builders.get(iType).get(codec != null);
+            if (references.containsKey(iType)) {// user cache to speed up things a little.
+                Method builder = references.get(iType).get(codec != null);
                 return (T) (codec != null
                         ? builder.invoke(redisson, name)
                         : builder.invoke(redisson, name, codec));
