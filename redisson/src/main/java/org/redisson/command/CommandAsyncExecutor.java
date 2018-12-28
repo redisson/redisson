@@ -30,6 +30,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 /**
  *
@@ -38,6 +39,8 @@ import org.redisson.connection.MasterSlaveEntry;
  */
 public interface CommandAsyncExecutor {
 
+    RedissonObjectBuilder getObjectBuilder();
+    
     ConnectionManager getConnectionManager();
 
     CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson);

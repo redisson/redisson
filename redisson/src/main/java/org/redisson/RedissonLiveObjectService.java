@@ -54,6 +54,7 @@ import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.liveobject.LiveObjectTemplate;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
@@ -61,7 +62,6 @@ import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.core.RExpirableInterceptor;
 import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.core.RObjectInterceptor;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
@@ -84,12 +84,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
-    private final RedissonObjectBuilder objectBuilder;
+    private final CommandAsyncExecutor commandExecutor;
 
-    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache) {
+    public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CommandAsyncExecutor commandExecutor) {
         this.redisson = redisson;
         this.classCache = classCache;
-        this.objectBuilder = new RedissonObjectBuilder(redisson);
+        this.commandExecutor = commandExecutor;
     }
 
     //TODO: Add ttl renewal functionality
@@ -204,9 +204,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 continue;
             }
             
-            RObject rObject = objectBuilder.createObject(id, detachedObject.getClass(), object.getClass(), field.getName());
+            RObject rObject = commandExecutor.getObjectBuilder().createObject(id, detachedObject.getClass(), object.getClass(), field.getName(), redisson);
             if (rObject != null) {
-                objectBuilder.store(rObject, field.getName(), liveMap);
+                commandExecutor.getObjectBuilder().store(rObject, field.getName(), liveMap);
                 if (rObject instanceof SortedSet) {
                     ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
                 }
@@ -696,8 +696,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.isPublic()
                                 .or(ElementMatchers.isProtected()))
                         )
-                .intercept(MethodDelegation.to(
-                                new AccessorInterceptor(redisson, objectBuilder)))
+                .intercept(MethodDelegation.to(new AccessorInterceptor(redisson, commandExecutor.getObjectBuilder())))
                 
                 .make().load(entityClass.getClassLoader(),
                         ClassLoadingStrategy.Default.WRAPPER)

@@ -29,7 +29,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonObjectFactory;
 
 import io.netty.buffer.ByteBuf;
 
@@ -240,7 +239,7 @@ public abstract class RedissonObject implements RObject {
     
     public ByteBuf encode(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
             if (reference != null) {
                 value = reference;
             }
@@ -255,7 +254,7 @@ public abstract class RedissonObject implements RObject {
     
     public ByteBuf encodeMapKey(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
             if (reference != null) {
                 value = reference;
             }
@@ -270,7 +269,7 @@ public abstract class RedissonObject implements RObject {
 
     public ByteBuf encodeMapValue(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
             if (reference != null) {
                 value = reference;
             }

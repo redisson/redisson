@@ -65,9 +65,9 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +75,6 @@ import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
@@ -94,6 +93,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
+    private RedissonObjectBuilder objectBuilder;
     protected RedissonClient redisson;
     protected RedissonReactiveClient redissonReactive;
     protected RedissonRxClient redissonRx;
@@ -144,6 +144,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         Codec codec = config.getCodec();
         ReferenceCodecProvider codecProvider = config.getReferenceCodecProvider();
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
+        objectBuilder = new RedissonObjectBuilder(config);
     }
 
     @Override
@@ -1192,14 +1193,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private Object fromReference(Object res) {
+        if (objectBuilder == null) {
+            return res;
+        }
+        
         try {
             if (redisson != null) {
-                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) res);
+                return objectBuilder.fromReference(redisson, (RedissonReference) res);
             }
             if (redissonReactive != null) {
-                return RedissonObjectFactory.fromReference(redissonReactive, (RedissonReference) res);
+                return objectBuilder.fromReference(redissonReactive, (RedissonReference) res);
             }
-            return RedissonObjectFactory.fromReference(redissonRx, (RedissonReference) res);
+            return objectBuilder.fromReference(redissonRx, (RedissonReference) res);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }
@@ -1222,5 +1227,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             ChannelFuture future = connection.send(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
             details.setWriteFuture(future);
         }
+    }
+    
+    @Override
+    public RedissonObjectBuilder getObjectBuilder() {
+        return objectBuilder;
     }
 }

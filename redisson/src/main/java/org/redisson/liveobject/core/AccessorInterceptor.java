@@ -32,7 +32,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.misc.RedissonObjectFactory;
 
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
@@ -76,7 +75,7 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
+                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName, redisson);
                 if (ar != null) {
                     objectBuilder.store(ar, fieldName, liveMap);
                     return ar;
@@ -90,7 +89,7 @@ public class AccessorInterceptor {
                 return result;
             }
             if (result instanceof RedissonReference) {
-                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) result);
+                return objectBuilder.fromReference(redisson, (RedissonReference) result);
             }
             return result;
         }
@@ -105,9 +104,10 @@ public class AccessorInterceptor {
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
                 REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
+                Codec codec = redisson.getConfig().getReferenceCodecProvider().getCodec(anno, rEntity, redisson.getConfig());
                 NamingScheme ns = anno.namingScheme()
                         .getDeclaredConstructor(Codec.class)
-                        .newInstance(redisson.getConfig().getReferenceCodecProvider().getCodec(anno, (Class) rEntity, redisson.getConfig()));
+                        .newInstance(codec);
                 liveMap.fastPut(fieldName, new RedissonReference(rEntity,
                         ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
                                 liveObject.getLiveObjectId())));
@@ -119,7 +119,7 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
                             REntity.class).fieldTransformation())) {
-                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
+                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName, redisson);
                 if (arg != null) {
                     if (rObject instanceof Collection) {
                         Collection<?> c = (Collection<?>) rObject;

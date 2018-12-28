@@ -29,7 +29,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RedissonObjectFactory;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import io.netty.buffer.ByteBuf;
 
@@ -257,7 +257,7 @@ public class RedissonScript implements RScript {
     
     private ByteBuf encode(Object value, Codec codec) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
             if (reference != null) {
                 value = reference;
             }

@@ -85,7 +85,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.transaction.RedissonTransaction;
@@ -102,7 +101,6 @@ import io.netty.util.internal.PlatformDependent;
 public class Redisson implements RedissonClient {
 
     static {
-        RedissonObjectFactory.warmUp();
         RedissonReference.warmUp();
     }
 
@@ -657,7 +655,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache);
+        return new RedissonLiveObjectService(this, liveObjectClassCache, connectionManager.getCommandExecutor());
     }
 
     @Override
