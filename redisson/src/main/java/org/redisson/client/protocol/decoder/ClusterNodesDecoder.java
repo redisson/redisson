@@ -65,8 +65,11 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
                 if (ssl) {
                     protocol = "rediss://";
                 }
-                String addr = protocol + params[1].split("@")[0];
-                node.setAddress(addr);
+                String addr =  params[1].split("@")[0];
+                if (params[1].charAt(0) == ':') {
+                    addr = "127.0.0.1" + addr;
+                }
+                node.setAddress(protocol + addr);
             }
 
             String slaveOf = params[3];
