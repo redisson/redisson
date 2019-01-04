@@ -15,13 +15,13 @@
  */
 package org.redisson.cache;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,7 +36,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     private final AtomicLong index = new AtomicLong();
     private final List<Collection<CachedValue<K, V>>> queues = 
-            new ArrayList<Collection<CachedValue<K, V>>>(Runtime.getRuntime().availableProcessors()*2);
+                        new CopyOnWriteArrayList<Collection<CachedValue<K, V>>>();
     
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
