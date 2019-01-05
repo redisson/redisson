@@ -15,6 +15,7 @@
  */
 package org.redisson.cache;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -36,7 +37,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     private final AtomicLong index = new AtomicLong();
     private final List<Collection<CachedValue<K, V>>> queues = 
-                        new CopyOnWriteArrayList<Collection<CachedValue<K, V>>>();
+                        new ArrayList<Collection<CachedValue<K, V>>>();
     
     public LRUCacheMap(int size, long timeToLiveInMillis, long maxIdleInMillis) {
         super(size, timeToLiveInMillis, maxIdleInMillis);
@@ -54,7 +55,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     }
 
     private Collection<CachedValue<K, V>> getQueue(CachedValue<K, V> value) {
-        return queues.get(value.hashCode() % queues.size());
+        return queues.get(Math.abs(value.hashCode() % queues.size()));
     }
     
     @Override
