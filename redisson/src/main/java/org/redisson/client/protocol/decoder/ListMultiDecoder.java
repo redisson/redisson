@@ -115,12 +115,23 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
     public ListMultiDecoder(MultiDecoder<?> ... decoders) {
         this.decoders = decoders;
     }
+    
+    private Integer fixedIndex;
+    
+    public ListMultiDecoder(Integer fixedIndex, MultiDecoder<?> ... decoders) {
+        this.fixedIndex = fixedIndex;
+        this.decoders = decoders;
+    }
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
         if (paramNum == 0) {
             NestedDecoderState s = getDecoder(state);
-            s.incIndex();
+            if (fixedIndex != null) {
+                s.setIndex(fixedIndex);
+            } else {
+                s.incIndex();
+            }
             s.resetPartsIndex();
         }
 
@@ -152,7 +163,11 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
         int index = s.getIndex();
         index += s.incPartsIndex();
         
-        if (index == -1) {
+        if (fixedIndex != null && parts.isEmpty()) {
+            s.resetPartsIndex();
+        }
+        
+        if (index == -1 || (fixedIndex != null && state.getLevel() == 0)) {
             return decoders[decoders.length-1].decode(parts, state);
         }
         

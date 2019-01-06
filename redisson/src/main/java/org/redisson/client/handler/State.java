@@ -54,6 +54,14 @@ public class State {
         return levels.get(level);
     }
     
+    public void incLevel() {
+        level++;
+    }
+    
+    public void decLevel() {
+        level--;
+    }
+    
     public void addLevel(StateLevel stateLevel) {
         if (levels == null) {
             levels = new ArrayList<StateLevel>(2);
