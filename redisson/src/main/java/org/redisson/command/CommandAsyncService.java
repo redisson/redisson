@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
@@ -1233,4 +1236,57 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public RedissonObjectBuilder getObjectBuilder() {
         return objectBuilder;
     }
+    
+    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String ... queueNames) {
+        if (connectionManager.isClusterMode() && queueNames.length > 0) {
+            RPromise<V> result = new RedissonPromise<V>();
+            AtomicReference<Iterator<String>> ref = new AtomicReference<Iterator<String>>();
+            List<String> names = new ArrayList<String>();
+            names.add(name);
+            names.addAll(Arrays.asList(queueNames));
+            ref.set(names.iterator());
+            AtomicLong counter = new AtomicLong(secondsTimeout);
+            poll(name, codec, result, ref, names, counter, command);
+            return result;
+        } else {
+            List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+            params.add(name);
+            for (Object queueName : queueNames) {
+                params.add(queueName);
+            }
+            params.add(secondsTimeout);
+            return writeAsync(name, codec, command, params.toArray());
+        }
+    }
+
+    private <V> void poll(final String name, final Codec codec, final RPromise<V> result, final AtomicReference<Iterator<String>> ref, 
+            final List<String> names, final AtomicLong counter, final RedisCommand<Object> command) {
+        if (ref.get().hasNext()) {
+            String currentName = ref.get().next().toString();
+            RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
+            future.addListener(new FutureListener<V>() {
+                @Override
+                public void operationComplete(Future<V> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        result.tryFailure(future.cause());
+                        return;
+                    }
+                    
+                    if (future.getNow() != null) {
+                        result.trySuccess(future.getNow());
+                    } else {
+                        if (counter.decrementAndGet() == 0) {
+                            result.trySuccess(null);
+                            return;
+                        }
+                        poll(name, codec, result, ref, names, counter, command);
+                    }
+                }
+            });
+        } else {
+            ref.set(names.iterator());
+            poll(name, codec, result, ref, names, counter, command);
+        }
+    }
+    
 }

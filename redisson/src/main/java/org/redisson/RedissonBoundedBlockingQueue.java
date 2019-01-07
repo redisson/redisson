@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -247,13 +246,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
      */
     @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
-        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
-        params.add(getName());
-        for (Object name : queueNames) {
-            params.add(name);
-        }
-        params.add(unit.toSeconds(timeout));
-        RFuture<V> takeFuture = commandExecutor.writeAsync(getName(), codec, RedisCommands.BLPOP_VALUE, params.toArray());
+        RFuture<V> takeFuture = commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BLPOP_VALUE, toSeconds(timeout, unit), queueNames);
         return wrapTakeFuture(takeFuture);
     }
 
