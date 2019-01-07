@@ -58,7 +58,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         private final MapSession delegate;
         private RMap<String, Object> map;
 
-        public RedissonSession(String keyPrefix) {
+        public RedissonSession() {
             this.delegate = new MapSession();
             map = redisson.getMap(keyPrefix + delegate.getId());
             principalName = resolvePrincipal(delegate);
@@ -82,7 +82,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
         }
         
-        public RedissonSession(String keyPrefix, String sessionId) {
+        public RedissonSession(String sessionId) {
             this.delegate = new MapSession(sessionId);
             map = redisson.getMap(keyPrefix + sessionId);
             principalName = resolvePrincipal(delegate);
@@ -214,7 +214,9 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
         @Override
         public String changeSessionId() {
-            return delegate.changeSessionId();
+            String id = delegate.changeSessionId();
+            map.rename(keyPrefix + id);
+            return id;
         }
 
     }
@@ -259,7 +261,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
             
             String id = body.split(":")[1];
-            RedissonSession session = new RedissonSession(keyPrefix, id);
+            RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
             }
@@ -270,7 +272,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
 
             String id = body.split(":")[1];
-            RedissonSession session = new RedissonSession(keyPrefix, id);
+            RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
             }
@@ -292,7 +294,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
     @Override
     public RedissonSession createSession() {
-        RedissonSession session = new RedissonSession(keyPrefix);
+        RedissonSession session = new RedissonSession();
         if (defaultMaxInactiveInterval != null) {
             session.setMaxInactiveInterval(Duration.ofSeconds(defaultMaxInactiveInterval));
         }
@@ -306,7 +308,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
     @Override
     public RedissonSession findById(String id) {
-        RedissonSession session = new RedissonSession(keyPrefix, id);
+        RedissonSession session = new RedissonSession(id);
         if (!session.load() || session.isExpired()) {
             return null;
         }
