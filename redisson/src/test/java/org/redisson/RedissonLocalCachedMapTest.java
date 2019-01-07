@@ -270,6 +270,23 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache1.size()).isEqualTo(2);
         assertThat(cache2.size()).isEqualTo(2);
     }
+
+    @Test
+    public void testLocalCacheState() throws InterruptedException {
+        LocalCachedMapOptions<String, String> options = LocalCachedMapOptions.<String, String>defaults()
+                .evictionPolicy(EvictionPolicy.LFU)
+                .cacheSize(5)
+                .syncStrategy(SyncStrategy.INVALIDATE);
+        
+        RLocalCachedMap<String, String> map = redisson.getLocalCachedMap("test", options);
+        map.put("1", "11");
+        map.put("2", "22");
+        assertThat(map.cachedKeySet()).containsExactly("1", "2");
+        assertThat(map.cachedValues()).containsExactlyInAnyOrder("11", "22");
+        assertThat(map.getCachedMap().keySet()).containsExactly("1", "2");
+        assertThat(map.getCachedMap().values()).containsExactly("11", "22");
+    }
+
     
     @Test
     public void testLocalCacheClear() throws InterruptedException {

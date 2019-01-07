@@ -15,6 +15,10 @@
  */
 package org.redisson.api;
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
+
 /**
  * Map object with local entry cache support.
  * <p>
@@ -46,4 +50,33 @@ public interface RLocalCachedMap<K, V> extends RMap<K, V>, RDestroyable {
      * Clears local cache across all instances
      */
     void clearLocalCache();
+    
+    /**
+     * Returns all keys stored in local cache
+     *
+     * @return keys
+     */
+    Set<K> cachedKeySet();
+
+    /**
+     * Returns all values stored in local cache
+     *
+     * @return values
+     */
+    Collection<V> cachedValues();
+
+    /**
+     * Returns all map entries stored in local cache
+     *
+     * @return entries
+     */
+    Set<Entry<K, V>> cachedEntrySet();
+
+    /**
+     * Returns state of local cache
+     *
+     * @return map
+     */
+    Map<K, V> getCachedMap();
+    
 }
