@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
@@ -314,6 +315,52 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         redisson.shutdown();
     }
 
+    @Test
+    public void testPollFromAnyInCluster() throws Exception {
+        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+        
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Thread.sleep(5000); 
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");
+        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
+            RBlockingQueue<Integer> queue2 = redisson.getBlockingQueue("queue:pollany1");
+            RBlockingQueue<Integer> queue3 = redisson.getBlockingQueue("queue:pollany2");
+            try {
+                queue3.put(2);
+                queue1.put(1);
+                queue2.put(3);
+            } catch (InterruptedException e) {
+                Assert.fail();
+            }
+        }, 3, TimeUnit.SECONDS);
+
+        long s = System.currentTimeMillis();
+        int l = queue1.pollFromAny(4, TimeUnit.SECONDS, "queue:pollany1", "queue:pollany2");
+
+        Assert.assertEquals(2, l);
+        Assert.assertTrue(System.currentTimeMillis() - s > 2000);
+        
+        redisson.shutdown();
+        process.shutdown();
+    }
+    
     @Test
     public void testPollFromAny() throws InterruptedException {
         final RBlockingQueue<Integer> queue1 = redisson.getBlockingQueue("queue:pollany");

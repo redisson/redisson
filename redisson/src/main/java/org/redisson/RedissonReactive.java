@@ -60,7 +60,6 @@ import org.redisson.api.RTransactionReactive;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.TransactionOptions;
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
@@ -98,7 +97,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final CommandReactiveService commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-    protected final ReferenceCodecProvider codecProvider;
 
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
@@ -109,7 +107,6 @@ public class RedissonReactive implements RedissonReactiveClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandReactiveService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
-        codecProvider = config.getReferenceCodecProvider();
     }
     
     public EvictionScheduler getEvictionScheduler() {
@@ -435,11 +432,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public Config getConfig() {
         return config;
-    }
-
-    @Override
-    public ReferenceCodecProvider getCodecProvider() {
-        return codecProvider;
     }
 
     @Override

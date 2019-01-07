@@ -67,5 +67,5 @@ spring.redis.sentinel.nodes=
 spring.redis.redisson.config=classpath:redisson.yaml
 ```
 
-### 3. Get access to Redisson through spring bean with `RedissonClient` interface
+### 3. Use Redisson through spring bean with `RedissonClient` interface or `RedisTemplate`/`ReactiveRedisTemplate` objects
 

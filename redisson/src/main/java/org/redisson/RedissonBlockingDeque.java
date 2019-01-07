@@ -233,13 +233,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
 
     @Override
     public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
-        List<Object> params = new ArrayList<Object>(queueNames.length + 1);
-        params.add(getName());
-        for (Object name : queueNames) {
-            params.add(name);
-        }
-        params.add(toSeconds(timeout, unit));
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BRPOP_VALUE, params.toArray());
+        return commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BRPOP_VALUE, toSeconds(timeout, unit), queueNames);
     }
 
     @Override

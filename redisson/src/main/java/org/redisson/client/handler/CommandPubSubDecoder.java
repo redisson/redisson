@@ -152,7 +152,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                             pubSubConnection.onMessage((PubSubStatusMessage) result);
                         } else if (result instanceof PubSubMessage) {
                             pubSubConnection.onMessage((PubSubMessage) result);
-                        } else {
+                        } else if (result instanceof PubSubPatternMessage) {
                             pubSubConnection.onMessage((PubSubPatternMessage) result);
                         }
                     }
@@ -182,7 +182,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                                     pubSubConnection.onMessage((PubSubStatusMessage) result);
                                 } else if (result instanceof PubSubMessage) {
                                     pubSubConnection.onMessage((PubSubMessage) result);
-                                } else {
+                                } else if (result instanceof PubSubPatternMessage) {
                                     pubSubConnection.onMessage((PubSubPatternMessage) result);
                                 }
                             } else {
@@ -242,11 +242,11 @@ public class CommandPubSubDecoder extends CommandDecoder {
             
             if (parts.size() == 2 && "message".equals(parts.get(0))) {
                 byte[] channelName = (byte[]) parts.get(1);
-                return entries.get(new ChannelName(channelName)).getDecoder().getDecoder(parts.size(), state());
+                return getDecoder(parts, channelName);
             }
             if (parts.size() == 3 && "pmessage".equals(parts.get(0))) {
                 byte[] patternName = (byte[]) parts.get(1);
-                return entries.get(new ChannelName(patternName)).getDecoder().getDecoder(parts.size(), state());
+                return getDecoder(parts, patternName);
             }
         }
         
@@ -255,6 +255,14 @@ public class CommandPubSubDecoder extends CommandDecoder {
         }
         
         return super.selectDecoder(data, parts);
+    }
+
+    private Decoder<Object> getDecoder(List<Object> parts, byte[] name) {
+        PubSubEntry entry = entries.get(new ChannelName(name));
+        if (entry != null) {
+            return entry.getDecoder().getDecoder(parts.size(), state());
+        }
+        return ByteArrayCodec.INSTANCE.getValueDecoder();
     }
 
 }

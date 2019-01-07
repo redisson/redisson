@@ -340,7 +340,11 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 state().addLevel(lastLevel);
             }
             
+            state().incLevel();
+            
             decodeList(in, data, parts, ctx, size, respParts, skipConvertor);
+            
+            state().decLevel();
             
             if (state().isMakeCheckpoint()) {
                 if (lastLevel == state().getLastLevel() && lastLevel.isFull()) {

@@ -33,7 +33,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
 import org.redisson.pubsub.AsyncSemaphore;
@@ -87,7 +86,7 @@ public class RedissonTopic implements RTopic {
 
     protected ByteBuf encode(Object value) {
         if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = RedissonObjectFactory.toReference(commandExecutor.getConnectionManager().getCfg(), value);
+            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
             if (reference != null) {
                 value = reference;
             }

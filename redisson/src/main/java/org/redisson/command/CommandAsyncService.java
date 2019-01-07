@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
@@ -65,9 +68,9 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonObjectFactory;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +78,6 @@ import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
@@ -94,6 +96,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
+    private RedissonObjectBuilder objectBuilder;
     protected RedissonClient redisson;
     protected RedissonReactiveClient redissonReactive;
     protected RedissonRxClient redissonRx;
@@ -142,7 +145,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private void enableRedissonReferenceSupport(Config config) {
         Codec codec = config.getCodec();
-        ReferenceCodecProvider codecProvider = config.getReferenceCodecProvider();
+        objectBuilder = new RedissonObjectBuilder(config);
+        ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
@@ -1192,14 +1196,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private Object fromReference(Object res) {
+        if (objectBuilder == null) {
+            return res;
+        }
+        
         try {
             if (redisson != null) {
-                return RedissonObjectFactory.fromReference(redisson, (RedissonReference) res);
+                return objectBuilder.fromReference(redisson, (RedissonReference) res);
             }
             if (redissonReactive != null) {
-                return RedissonObjectFactory.fromReference(redissonReactive, (RedissonReference) res);
+                return objectBuilder.fromReference(redissonReactive, (RedissonReference) res);
             }
-            return RedissonObjectFactory.fromReference(redissonRx, (RedissonReference) res);
+            return objectBuilder.fromReference(redissonRx, (RedissonReference) res);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }
@@ -1223,4 +1231,62 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             details.setWriteFuture(future);
         }
     }
+    
+    @Override
+    public RedissonObjectBuilder getObjectBuilder() {
+        return objectBuilder;
+    }
+    
+    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String ... queueNames) {
+        if (connectionManager.isClusterMode() && queueNames.length > 0) {
+            RPromise<V> result = new RedissonPromise<V>();
+            AtomicReference<Iterator<String>> ref = new AtomicReference<Iterator<String>>();
+            List<String> names = new ArrayList<String>();
+            names.add(name);
+            names.addAll(Arrays.asList(queueNames));
+            ref.set(names.iterator());
+            AtomicLong counter = new AtomicLong(secondsTimeout);
+            poll(name, codec, result, ref, names, counter, command);
+            return result;
+        } else {
+            List<Object> params = new ArrayList<Object>(queueNames.length + 1);
+            params.add(name);
+            for (Object queueName : queueNames) {
+                params.add(queueName);
+            }
+            params.add(secondsTimeout);
+            return writeAsync(name, codec, command, params.toArray());
+        }
+    }
+
+    private <V> void poll(final String name, final Codec codec, final RPromise<V> result, final AtomicReference<Iterator<String>> ref, 
+            final List<String> names, final AtomicLong counter, final RedisCommand<Object> command) {
+        if (ref.get().hasNext()) {
+            String currentName = ref.get().next().toString();
+            RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
+            future.addListener(new FutureListener<V>() {
+                @Override
+                public void operationComplete(Future<V> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        result.tryFailure(future.cause());
+                        return;
+                    }
+                    
+                    if (future.getNow() != null) {
+                        result.trySuccess(future.getNow());
+                    } else {
+                        if (counter.decrementAndGet() == 0) {
+                            result.trySuccess(null);
+                            return;
+                        }
+                        poll(name, codec, result, ref, names, counter, command);
+                    }
+                }
+            });
+        } else {
+            ref.set(names.iterator());
+            poll(name, codec, result, ref, names, counter, command);
+        }
+    }
+    
 }
