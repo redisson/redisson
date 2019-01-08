@@ -17,6 +17,7 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -164,11 +165,15 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
-                Map<String, Object> attrs;
-                if (readMode == ReadMode.MEMORY) {
-                    attrs = getMap(id).readAllMap();
-                } else {
-                    attrs = getMap(id).getAll(RedissonSession.ATTRS);
+                Map<String, Object> attrs = new HashMap<String, Object>();
+                try {
+                    if (readMode == ReadMode.MEMORY) {
+                        attrs = getMap(id).readAllMap();
+                    } else {
+                        attrs = getMap(id).getAll(RedissonSession.ATTRS);
+                    }
+                } catch (Exception e) {
+                    log.error("Can't read session object by id " + id, e);
                 }
                 
                 if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {

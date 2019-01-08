@@ -145,10 +145,14 @@ public class RedissonSessionManager extends ManagerBase {
         if (result == null) {
             if (id != null) {
                 Map<String, Object> attrs = new HashMap<String, Object>();
-                if (readMode == ReadMode.MEMORY) {
-                    attrs = getMap(id).readAllMap();
-                } else {
-                    attrs = getMap(id).getAll(RedissonSession.ATTRS);
+                try {
+                    if (readMode == ReadMode.MEMORY) {
+                        attrs = getMap(id).readAllMap();
+                    } else {
+                        attrs = getMap(id).getAll(RedissonSession.ATTRS);
+                    }
+                } catch (Exception e) {
+                    log.error("Can't read session object by id " + id, e);
                 }
                 
                 if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
