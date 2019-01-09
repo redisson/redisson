@@ -91,15 +91,15 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
         return Hash.hash128toBase64(objectState);
     }
 
-    protected String hashAndRelease(ByteBuf objectState) {
+    protected String keyHash(Object key) {
+        ByteBuf objectState = encodeMapKey(key);
         try {
             return Hash.hash128toBase64(objectState);
         } finally {
             objectState.release();
         }
     }
-
-
+    
     @Override
     public int size() {
         return get(sizeAsync());
