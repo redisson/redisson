@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import java.nio.channels.ClosedChannelException;
 import java.security.MessageDigest;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -54,6 +55,7 @@ import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.ConnectionWatchdog;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
@@ -78,6 +80,7 @@ import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufUtil;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
@@ -848,6 +851,25 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                 if (!details.getAttemptPromise().tryFailure(details.getException())) {
                     log.error(details.getException().getMessage());
+                }
+
+                //closed exception try to reconnect using the connection watchdog.
+                if (future.cause() instanceof ClosedChannelException) {
+                    Channel channel = future.channel();
+                    log.error("ClosedChannelException try to reconnect using the ConnectionWatchdog, {}",
+                        connection);
+                    ConnectionWatchdog watchDog = ConnectionWatchdog.getFrom(channel);
+                    if (watchDog != null) {
+                        log.debug("try to call channel.close(), {}", connection);
+                        channel.close();
+                        log.debug("try to call watchDog.doReconnect(), {}", connection);
+                        watchDog.doReconnect(channel);
+                    } else {
+                        log.error("not found ConnectionWatchdog from the channel:{}, connection:{}", channel,
+                            connection);
+                    }
+                } else {
+                    log.warn(details.getException().getMessage(), future.cause());
                 }
             }
             return;
