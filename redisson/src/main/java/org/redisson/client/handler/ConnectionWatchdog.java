@@ -35,6 +35,9 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.util.Attribute;
+import io.netty.util.AttributeKey;
+import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
@@ -49,12 +52,28 @@ import io.netty.util.concurrent.FutureListener;
 @Sharable
 public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
+    /** save the watchdog instance. */
+    private static final AttributeKey<ConnectionWatchdog> WATCHDOG = AttributeKey.valueOf("watchDog");
+    /** save the reconnecting flag(true/false).*/
+    private static final AttributeKey<Boolean> RECONNECTING = AttributeKey.valueOf("reconnecting");
+    /** save the channel status. */
+    private static final AttributeKey<Boolean> DISCONNECTED = AttributeKey.valueOf("disconnected");
+    /** save the reconnect attempt count.*/
+    private static final AttributeKey<Integer> RECONNECT_ATTEMPTS = AttributeKey.valueOf("reconnectAttempts");
+    /** save the reconnect timeout instance. */
+    private static final AttributeKey<Timeout> RECONNECT_TIMEOUT_INS = AttributeKey.valueOf("reconnectTimeoutIns");
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final Timer timer;
     private final Bootstrap bootstrap;
     private final ChannelGroup channels;
     private static final int BACKOFF_CAP = 12;
+    private static final int DEBUG_MOD_ATTEMPTS = 10;
+
+    public static ConnectionWatchdog getFrom(Channel channel) {
+        return channel.attr(WATCHDOG).get();
+    }
 
     public ConnectionWatchdog(Bootstrap bootstrap, ChannelGroup channels, Timer timer) {
         this.bootstrap = bootstrap;
@@ -64,57 +83,114 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        ctx.channel().attr(WATCHDOG).set(this);
+        ctx.channel().attr(RECONNECTING).set(false);
+        ctx.channel().attr(DISCONNECTED).set(false);
         channels.add(ctx.channel());
         ctx.fireChannelActive();
     }
 
-    @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        RedisConnection connection = RedisConnection.getFrom(ctx.channel());
+    public void doReconnect(Channel channel) {
+
+        RedisConnection connection = RedisConnection.getFrom(channel);
         if (connection != null) {
-            connection.fireDisconnected();
-            if (!connection.isClosed()) {
-                if (connection.isFastReconnect()) {
-                    tryReconnect(connection, 1);
+
+            Attribute<Boolean> disconnected = channel.attr(DISCONNECTED);
+            if (Boolean.TRUE.equals(disconnected.get())) {
+                log.info("the status disconnected, reconnectAttempts={}, {}",
+                    channel.attr(RECONNECT_ATTEMPTS).get(), connection);
+                //fired from the CommandAsyncService.checkAttemptFuture
+                if (!connection.isClosed()) {
+                    tryReconnect(channel, connection, channel.attr(RECONNECT_ATTEMPTS).get() + 1);
                 } else {
-                    reconnect(connection, 1);
+                    log.error("the connection closed,{}", connection);
+                }
+            } else {
+                channel.attr(RECONNECT_ATTEMPTS).set(1);
+                disconnected.set(true);
+                connection.fireDisconnected();
+                if (!connection.isClosed()) {
+                    if (connection.isFastReconnect()) {
+                        tryReconnect(channel, connection, 1);
+                    } else {
+                        reconnect(channel, connection, 1);
+                    }
+                } else {
+                    log.error("the connection closed,{}", connection);
                 }
             }
+
+
+        } else {
+            log.warn("can't get redisConnect from the channel {}", channel);
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.warn("channelInactive fired, try to reconnect, {}",
+            ctx.channel());
+
+        doReconnect(ctx.channel());
         ctx.fireChannelInactive();
     }
-    
-    private void reconnect(final RedisConnection connection, final int attempts){
-        int timeout = 2 << attempts;
+
+    private void reconnect(final Channel oldChannel, final RedisConnection connection, final int attempts) {
+        int timeout = 2 << Math.min(BACKOFF_CAP, attempts);
         if (bootstrap.config().group().isShuttingDown()) {
             return;
         }
-        
+
         try {
-            timer.newTimeout(new TimerTask() {
+            Attribute<Timeout> timeoutAttr = oldChannel.attr(RECONNECT_TIMEOUT_INS);
+            if (timeoutAttr.get() != null) {
+                return;
+            }
+            Timeout timeoutObj = timer.newTimeout(new TimerTask() {
                 @Override
                 public void run(Timeout timeout) throws Exception {
-                    tryReconnect(connection, Math.min(BACKOFF_CAP, attempts + 1));
+                    oldChannel.attr(RECONNECT_TIMEOUT_INS).set(null);
+                    if (attempts % DEBUG_MOD_ATTEMPTS == 1) {
+                        if (timer instanceof HashedWheelTimer) {
+                            log.info("tryReconnect, attempts={},pendingTimeouts={}, {}", attempts,
+                                ((HashedWheelTimer) timer).pendingTimeouts(), connection);
+                        } else {
+                            log.info("tryReconnect, attempts={}, {}", attempts, connection);
+                        }
+
+                    }
+                    //save the attempts to channel attr
+                    oldChannel.attr(RECONNECT_ATTEMPTS).set(attempts);
+                    tryReconnect(oldChannel, connection, attempts + 1);
                 }
             }, timeout, TimeUnit.MILLISECONDS);
+            timeoutAttr.set(timeoutObj);
         } catch (IllegalStateException e) {
             // skip
         }
     }
 
-    private void tryReconnect(final RedisConnection connection, final int nextAttempt) {
+    private void tryReconnect(final Channel oldChannel, final RedisConnection connection, final int nextAttempt) {
         if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
             return;
         }
 
-        log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
-
+        Attribute<Boolean> reconnectingAttr = oldChannel.attr(RECONNECTING);
         try {
+
+            //reconnecting skip it.
+            if (Boolean.TRUE.equals(reconnectingAttr.get())) {
+                log.info("The redisConnection is reconnecting. {}", connection);
+                return;
+            }
+            reconnectingAttr.set(true);
             bootstrap.connect(connection.getRedisClient().getAddr()).addListener(new ChannelFutureListener() {
 
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
+                        reconnectingAttr.set(false);
+                        log.error("The redisConnection is closed, or bootstrap is shuttingdown . {}", connection);
                         return;
                     }
 
@@ -131,8 +207,11 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                 public void operationComplete(Future<RedisConnection> future) throws Exception {
                                     if (future.isSuccess()) {
                                         refresh(connection, channel);
-                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                        reconnectingAttr.set(false);
+                                        log.info("reconnect successfully. {} connected to {}, command: {}", connection,
+                                            connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     } else {
+                                        reconnectingAttr.set(false);
                                         log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
                                     }
                                     
@@ -141,12 +220,13 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                             return;
                         }
                     }
-
-                    reconnect(connection, nextAttempt);
+                    reconnectingAttr.set(false);
+                    reconnect(oldChannel, connection, nextAttempt);
                 }
             });
         } catch (RejectedExecutionException e) {
             // skip
+            reconnectingAttr.set(false);
         }
     }
 
@@ -171,8 +251,9 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             connection.clearFastReconnect();
         }
 
-        reattachBlockingQueue(connection, currentCommand);            
+        reattachBlockingQueue(connection, currentCommand);
         reattachPubSub(connection);
+        channel.attr(DISCONNECTED).set(false);
     }
 
     private void reattachBlockingQueue(RedisConnection connection, CommandData<?, ?> currentCommand) {
@@ -182,7 +263,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        log.debug("blocking queue sent " + connection);
+        log.info("blocking queue sent " + connection);
         ChannelFuture future = connection.send(currentCommand);
         final CommandData<?, ?> cd = currentCommand;
         future.addListener(new ChannelFutureListener() {
