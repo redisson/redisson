@@ -978,11 +978,14 @@ public interface RedissonClient {
      */
     RBatch createBatch(BatchOptions options);
 
-    /*
-     * Use #createBatch(BatchOptions)
-     * 
+    /**
+     * Creates batch object which could be executed later 
+     * with collected group of commands in pipeline mode.
+     * <p>
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @return Batch object
      */
-    @Deprecated
     RBatch createBatch();
     
     /**
