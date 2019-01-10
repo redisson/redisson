@@ -13,25 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
-
-import org.redisson.client.codec.Codec;
+package org.redisson.api.condition;
 
 /**
+ * Interface for conditional object
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-public abstract class AbstractNamingScheme implements NamingScheme {
-    
-    protected final Codec codec;
+public interface Condition {
 
-    public AbstractNamingScheme(Codec codec) {
-        this.codec = codec;
-    }
-    
-    @Override
-    public Codec getCodec() {
-        return codec;
-    }
-    
 }

@@ -27,6 +27,7 @@ import io.netty.buffer.Unpooled;
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
+ * @author Nikita Koksharov
  */
 public class DefaultNamingScheme extends AbstractNamingScheme implements NamingScheme {
 
@@ -85,6 +86,11 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         } finally {
             bytes.release();
         }
+    }
+
+    @Override
+    public String getIndexName(Class<?> entityClass, String fieldName) {
+        return "redisson_live_object_index:{" + entityClass.getName() + "}:" + fieldName;
     }
 
 }
