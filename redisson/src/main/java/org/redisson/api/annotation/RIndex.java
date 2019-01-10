@@ -13,25 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
+package org.redisson.api.annotation;
 
-import org.redisson.client.codec.Codec;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import org.redisson.api.RLiveObjectService;
+import org.redisson.api.condition.Conditions;
 
 /**
+ * Specifies that the field is used in search index.
+ * 
+ * @see Conditions
+ * @see RLiveObjectService#find
  *
- * @author Rui Gu (https://github.com/jackygurui)
+ * @author Nikita Koksharov
  */
-public abstract class AbstractNamingScheme implements NamingScheme {
-    
-    protected final Codec codec;
-
-    public AbstractNamingScheme(Codec codec) {
-        this.codec = codec;
-    }
-    
-    @Override
-    public Codec getCodec() {
-        return codec;
-    }
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface RIndex {
     
 }

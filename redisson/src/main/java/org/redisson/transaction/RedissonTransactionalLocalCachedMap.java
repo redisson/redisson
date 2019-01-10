@@ -15,7 +15,10 @@
  */
 package org.redisson.transaction;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.api.RFuture;
@@ -55,6 +58,26 @@ public class RedissonTransactionalLocalCachedMap<K, V> extends RedissonTransacti
     @Override
     public void clearLocalCache() {
         throw new UnsupportedOperationException("clearLocalCache method is not supported in transaction");
+    }
+
+    @Override
+    public Set<K> cachedKeySet() {
+        throw new UnsupportedOperationException("cachedKeySet method is not supported in transaction");
+    }
+
+    @Override
+    public Collection<V> cachedValues() {
+        throw new UnsupportedOperationException("cachedValues method is not supported in transaction");
+    }
+
+    @Override
+    public Set<Entry<K, V>> cachedEntrySet() {
+        throw new UnsupportedOperationException("cachedEntrySet method is not supported in transaction");
+    }
+
+    @Override
+    public Map<K, V> getCachedMap() {
+        throw new UnsupportedOperationException("getCachedMap method is not supported in transaction");
     }
 
 }

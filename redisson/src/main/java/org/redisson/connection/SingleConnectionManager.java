@@ -64,6 +64,8 @@ public class SingleConnectionManager extends MasterSlaveConnectionManager {
         newconfig.setSubscriptionConnectionMinimumIdleSize(cfg.getSubscriptionConnectionMinimumIdleSize());
         newconfig.setReadMode(ReadMode.MASTER);
         newconfig.setSubscriptionMode(SubscriptionMode.MASTER);
+        newconfig.setKeepAlive(cfg.isKeepAlive());
+        
         return newconfig;
     }
 

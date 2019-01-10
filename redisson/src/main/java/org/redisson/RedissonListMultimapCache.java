@@ -142,8 +142,7 @@ public class RedissonListMultimapCache<K, V> extends RedissonListMultimap<K, V> 
 
     @Override
     public RList<V> get(K key) {
-        ByteBuf keyState = encodeMapKey(key);
-        String keyHash = hashAndRelease(keyState);
+        String keyHash = keyHash(key);
         String valuesName = getValuesName(keyHash);
 
         return new RedissonListMultimapValues<V>(codec, commandExecutor, valuesName, getTimeoutSetName(), key);

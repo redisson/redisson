@@ -61,8 +61,6 @@ import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
-import io.netty.util.internal.PlatformDependent;
-
 /**
  * 
  * @author Rui Gu
@@ -72,7 +70,6 @@ import io.netty.util.internal.PlatformDependent;
 public class RedissonObjectBuilder {
 
     private static final Map<Class<?>, Class<? extends RObject>> supportedClassMapping = new LinkedHashMap<Class<?>, Class<? extends RObject>>();
-    ConcurrentMap<String, NamingScheme> namingSchemeCache = PlatformDependent.newConcurrentHashMap();
     
     static {
         supportedClassMapping.put(SortedSet.class,      RedissonSortedSet.class);
@@ -131,7 +128,7 @@ public class RedissonObjectBuilder {
         try {
             if (mappedClass != null) {
                 Codec fieldCodec = getFieldCodec(clazz, mappedClass, fieldName);
-                NamingScheme fieldNamingScheme = getFieldNamingScheme(clazz, fieldName, fieldCodec);
+                NamingScheme fieldNamingScheme = getNamingScheme(clazz, fieldCodec);
                 String referenceName = fieldNamingScheme.getFieldReferenceName(clazz, id, mappedClass, fieldName, null);
                 
                 return createRObject(redisson, mappedClass, referenceName, fieldCodec);
@@ -156,17 +153,19 @@ public class RedissonObjectBuilder {
         }
     }
     
-    /**
-     * WARNING: rEntity has to be the class of @This object.
-     */
-    private NamingScheme getFieldNamingScheme(Class<?> rEntity, String fieldName, Codec c) throws Exception {
-        if (!namingSchemeCache.containsKey(fieldName)) {
-            REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
-            namingSchemeCache.putIfAbsent(fieldName, anno.namingScheme()
-                    .getDeclaredConstructor(Codec.class)
-                    .newInstance(c));
+    public NamingScheme getNamingScheme(Class<?> entityClass) {
+        REntity anno = ClassUtils.getAnnotation(entityClass, REntity.class);
+        Codec codec = codecProvider.getCodec(anno, entityClass, config);
+        return getNamingScheme(entityClass, codec);
+    }
+    
+    public NamingScheme getNamingScheme(Class<?> rEntity, Codec c) {
+        REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
+        try {
+            return anno.namingScheme().getDeclaredConstructor(Codec.class).newInstance(c);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
         }
-        return namingSchemeCache.get(fieldName);
     }
 
     private Class<? extends RObject> getMappedClass(Class<?> cls) {
@@ -178,16 +177,16 @@ public class RedissonObjectBuilder {
         return null;
     }
     
-    private void fillCodecMethods(Map<Class<?>, CodecMethodRef> b, Class<?> clientClazz, Class<?> objectClazz) {
+    private void fillCodecMethods(Map<Class<?>, CodecMethodRef> map, Class<?> clientClazz, Class<?> objectClazz) {
         for (Method method : clientClazz.getDeclaredMethods()) {
             if (!method.getReturnType().equals(Void.TYPE)
                     && objectClazz.isAssignableFrom(method.getReturnType())
                     && method.getName().startsWith("get")) {
                 Class<?> cls = method.getReturnType();
-                if (!b.containsKey(cls)) {
-                    b.put(cls, new CodecMethodRef());
+                if (!map.containsKey(cls)) {
+                    map.put(cls, new CodecMethodRef());
                 }
-                CodecMethodRef builder = b.get(cls);
+                CodecMethodRef builder = map.get(cls);
                 if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
                         && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
                     builder.customCodecMethod = method;
@@ -203,10 +202,8 @@ public class RedissonObjectBuilder {
         if (type != null) {
             if (ClassUtils.isAnnotationPresent(type, REntity.class)) {
                 RedissonLiveObjectService liveObjectService = (RedissonLiveObjectService) redisson.getLiveObjectService();
-                REntity anno = ClassUtils.getAnnotation(type, REntity.class);
-                NamingScheme ns = anno.namingScheme()
-                        .getDeclaredConstructor(Codec.class)
-                        .newInstance(codecProvider.getCodec(anno, type, redisson.getConfig()));
+                
+                NamingScheme ns = getNamingScheme(type);
                 Object id = ns.resolveId(rr.getKeyName());
                 return liveObjectService.createLiveObject(type, id);
             }
@@ -281,10 +278,7 @@ public class RedissonObjectBuilder {
         try {
             if (object instanceof RLiveObject) {
                 Class<? extends Object> rEntity = object.getClass().getSuperclass();
-                REntity anno = ClassUtils.getAnnotation(rEntity, REntity.class);
-                NamingScheme ns = anno.namingScheme()
-                        .getDeclaredConstructor(Codec.class)
-                        .newInstance(codecProvider.getCodec(anno, (Class) rEntity, config));
+                NamingScheme ns = getNamingScheme(rEntity);
                 String name = Introspectior
                         .getFieldsWithAnnotation(rEntity, RId.class)
                         .getOnly().getName();

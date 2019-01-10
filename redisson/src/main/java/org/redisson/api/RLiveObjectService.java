@@ -15,6 +15,11 @@
  */
 package org.redisson.api;
 
+import java.util.Collection;
+
+import org.redisson.api.condition.Condition;
+import org.redisson.api.condition.Conditions;
+
 /**
  * The pre-registration of each entity class is not necessary.
  *
@@ -22,6 +27,7 @@ package org.redisson.api;
  * automatically.
  *
  * @author Rui Gu (https://github.com/jackygurui)
+ * @author Nikita Koksharov
  *
  */
 public interface RLiveObjectService {
@@ -39,13 +45,28 @@ public interface RLiveObjectService {
      * </ol>
      *
      *
-     * @param entityClass Entity class
+     * @param entityClass - entity class
      * @param id identifier
      * @param <T> Entity type
-     * @param <K> Key type
      * @return a proxied object if it exists in redis, or null if not.
      */
-    <T, K> T get(Class<T> entityClass, K id);
+    <T> T get(Class<T> entityClass, Object id);
+    
+    /**
+     * Finds the entities matches specified <code>condition</code>.
+     * Usage example:
+     * <pre>
+     * Collection objects = liveObjectService.find(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"), 
+     *                          Conditions.and(Conditions.eq("field2", "value2"), Conditions.eq("field3", "value5"))));
+     * </pre>
+     * 
+     * @see Conditions
+     * 
+     * @param entityClass - entity class
+     * @param condition - condition object 
+     * @return collection of live objects or empty collection.
+     */
+    <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
      * Returns proxied object for the detached object. Discard all the
@@ -117,13 +138,12 @@ public interface RLiveObjectService {
      * Deletes object by class and id including all nested objects.
      *
      * @param <T> Entity type
-     * @param <K> Key type
      * @param entityClass - object class
      * @param id - object id
      * 
      * @return <code>true</code> if entity was deleted successfully, <code>false</code> otherwise 
      */
-    <T, K> boolean delete(Class<T> entityClass, K id);
+    <T> boolean delete(Class<T> entityClass, Object id);
     
     /**
      * To cast the instance to RLiveObject instance.
