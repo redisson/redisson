@@ -94,6 +94,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
+        if (this.config.getSlaveAddresses().isEmpty()) {
+            log.warn("Slave nodes not found! Please specify all nodes in replicated mode.");
+        }
 
         initSingleEntry();
 
