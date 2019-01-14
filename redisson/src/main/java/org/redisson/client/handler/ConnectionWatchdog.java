@@ -133,9 +133,9 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                         refresh(connection, channel);
                                         log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     } else {
-                                        log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
+                                        channel.close();
+                                        reconnect(connection, nextAttempt);
                                     }
-                                    
                                 }
                             });
                             return;
