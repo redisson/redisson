@@ -110,21 +110,8 @@ public class RedissonSessionManager extends ManagerBase {
 
     @Override
     public Session createSession(String sessionId) {
-        RedissonSession session = (RedissonSession) createEmptySession();
-        
-        session.setNew(true);
-        session.setValid(true);
-        session.setCreationTime(System.currentTimeMillis());
-        session.setMaxInactiveInterval(getContext().getSessionTimeout() * 60);
-
-        if (sessionId == null) {
-            sessionId = generateSessionId();
-        }
-        
-        session.setManager(this);
-        session.setId(sessionId);
+    	RedissonSession session = (RedissonSession) super.createSession(sessionId);
         session.save();
-        
         return session;
     }
 
@@ -145,18 +132,18 @@ public class RedissonSessionManager extends ManagerBase {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
-                Map<String, Object> attrs = new HashMap<String, Object>();
+                Map<String, Object> attrs = null;
                 try {
-                    if (readMode == ReadMode.MEMORY) {
+                if (readMode == ReadMode.MEMORY) {
                         attrs = getMap(id).readAllMap();
-                    } else {
+                } else {
                         attrs = getMap(id).getAll(RedissonSession.ATTRS);
-                    }
+                }
                 } catch (Exception e) {
                     log.error("Can't read session object by id " + id, e);
                 }
                 
-                if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
+                if (attrs == null || attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
                     log.info("Session " + id + " can't be found");
                     return null;
                 }

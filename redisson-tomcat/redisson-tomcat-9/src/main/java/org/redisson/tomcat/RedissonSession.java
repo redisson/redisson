@@ -17,6 +17,7 @@ package org.redisson.tomcat;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -82,9 +83,32 @@ public class RedissonSession extends StandardSession {
     
     @Override
     public void setId(String id, boolean notify) {
+    	Map<String, Object> oldMap = null;
+        String oldId = getIdInternal();
+        if (oldId != null) {
+        	Enumeration<String> attributeNames = getAttributeNames();
+        	if (attributeNames != null) {
+        		oldMap = new HashMap<String, Object>();
+        		while (attributeNames.hasMoreElements()) {
+        			String attributeName = attributeNames.nextElement();
+        			Object attributeValue = getAttribute(attributeName);
+        			if (attributeValue != null) {
+        				oldMap.put(attributeName, attributeValue);
+        			}
+        		}
+        	}
+        }
+        //redis session attribute keys will be deleted if the oldId is not null as setId will remove and add the session to the manager and redis manager on remove will delete redis keys
         super.setId(id, notify);
         map = redissonManager.getMap(id);
         topic = redissonManager.getTopic();
+        
+        if (oldMap != null) {
+        	for (String attributeName : oldMap.keySet()) {
+        		superSetAttribute(attributeName, oldMap.get(attributeName), false);
+        	}
+        	save();
+        }
     }
     
     public void delete() {
@@ -151,6 +175,9 @@ public class RedissonSession extends StandardSession {
 
     private void fastPut(String name, Object value) {
         map.fastPut(name, value);
+        if (maxInactiveInterval >= 0) {
+            map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
+        }
         if (readMode == ReadMode.MEMORY) {
             topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value));
         }
@@ -211,6 +238,9 @@ public class RedissonSession extends StandardSession {
         
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
+            if (maxInactiveInterval >= 0) {
+                map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
+            }
             if (readMode == ReadMode.MEMORY) {
                 topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), name));
             }
@@ -273,4 +303,10 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    @Override
+    public void recycle() {
+    	super.recycle();
+    	map = null;
+    	topic = null;
+    }
 }
