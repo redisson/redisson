@@ -210,7 +210,7 @@ public class RedissonSession extends StandardSession {
         boolean oldValue = isNew;
         super.endAccess();
 
-        if (isNew != oldValue) {
+        if (isNew != oldValue && map != null) {
             fastPut(IS_NEW_ATTR, isNew);
         }
     }
