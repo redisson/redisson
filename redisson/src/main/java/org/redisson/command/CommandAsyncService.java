@@ -164,7 +164,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         try {
             int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
             if (!future.await(timeout)) {
-                ((RPromise)future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms)"));
+                ((RPromise<?>)future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

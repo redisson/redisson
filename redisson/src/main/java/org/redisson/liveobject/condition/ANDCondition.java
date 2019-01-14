@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
+package org.redisson.liveobject.condition;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.api.condition.Condition;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-public abstract class AbstractNamingScheme implements NamingScheme {
+public class ANDCondition implements Condition {
     
-    protected final Codec codec;
+    private final Condition[] conditions;
 
-    public AbstractNamingScheme(Codec codec) {
-        this.codec = codec;
+    public ANDCondition(Condition[] conditions) {
+        this.conditions = conditions;
     }
-    
-    @Override
-    public Codec getCodec() {
-        return codec;
+
+    public Condition[] getConditions() {
+        return conditions;
     }
     
 }

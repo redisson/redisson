@@ -13,25 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.resolver;
+package org.redisson.liveobject.condition;
 
-import org.redisson.client.codec.Codec;
+import org.redisson.api.condition.Condition;
 
 /**
+ * 
+ * @author Nikita Koksharov
  *
- * @author Rui Gu (https://github.com/jackygurui)
  */
-public abstract class AbstractNamingScheme implements NamingScheme {
+public class EQCondition implements Condition {
     
-    protected final Codec codec;
-
-    public AbstractNamingScheme(Codec codec) {
-        this.codec = codec;
+    private final String name;
+    private final Object value;
+    
+    public EQCondition(String name, Object value) {
+        super();
+        this.name = name;
+        this.value = value;
     }
     
-    @Override
-    public Codec getCodec() {
-        return codec;
+    public String getName() {
+        return name;
+    }
+    
+    public Object getValue() {
+        return value;
     }
     
 }

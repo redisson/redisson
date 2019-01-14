@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,14 +49,20 @@ import org.redisson.api.RObject;
 import org.redisson.api.RObjectAsync;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
+import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
+import org.redisson.api.annotation.RIndex;
+import org.redisson.api.condition.Condition;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.liveobject.LiveObjectTemplate;
+import org.redisson.liveobject.condition.ANDCondition;
+import org.redisson.liveobject.condition.EQCondition;
+import org.redisson.liveobject.condition.ORCondition;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
@@ -65,6 +72,7 @@ import org.redisson.liveobject.core.RObjectInterceptor;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.Resolver;
 
 import io.netty.util.internal.PlatformDependent;
@@ -72,6 +80,7 @@ import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
+import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
 import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.dynamic.loading.ClassLoadingStrategy;
@@ -103,7 +112,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        return instance;
 //    }
     
-    public RMap<String, Object> getMap(Object proxied) {
+    private RMap<String, Object> getMap(Object proxied) {
         return ClassUtils.getField(proxied, "liveObjectLiveMap");
     }
     
@@ -127,39 +136,129 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return providerCache.get(resolverClass);
     }
 
-    public <T, K> T createLiveObject(Class<T> entityClass, K id) {
-        try {
-            return instantiateLiveObject(getProxyClass(entityClass), id);
-        } catch (Exception ex) {
-            unregisterClass(entityClass);
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
-        }
+    public <T> T createLiveObject(Class<T> entityClass, Object id) {
+        return instantiateLiveObject(getProxyClass(entityClass), id);
     }
     
     @Override
-    public <T, K> T get(Class<T> entityClass, K id) {
-        try {
-            T proxied = instantiateLiveObject(getProxyClass(entityClass), id);
-            return asLiveObject(proxied).isExists() ? proxied : null;
-        } catch (Exception ex) {
-            unregisterClass(entityClass);
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
+    public <T> T get(Class<T> entityClass, Object id) {
+        T proxied = createLiveObject(entityClass, id);
+        return asLiveObject(proxied).isExists() ? proxied : null;
+    }
+
+    Set<Object> traverseAnd(ANDCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
+        Set<Object> allIds = new HashSet<Object>();
+        RSet<Object> firstSet = null;
+        List<String> names = new ArrayList<String>();
+        boolean isAllEqConditions = true;
+        for (Condition cond : condition.getConditions()) {
+            if (cond instanceof EQCondition) {
+                EQCondition eqc = (EQCondition) cond;
+                
+                String indexName = namingScheme.getIndexName(entityClass, eqc.getName());
+                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+                RSet<Object> values = map.get(eqc.getValue());
+                if (firstSet == null) {
+                    firstSet = values;
+                } else {
+                    names.add(values.getName());
+                }
+            }
+            if (cond instanceof ORCondition) {
+                isAllEqConditions = false;
+                Collection<Object> ids = traverseOr((ORCondition) cond, namingScheme, entityClass);
+                allIds.addAll(ids);
+            }
         }
+        if (!isAllEqConditions && allIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        
+        if (firstSet != null) {
+            if (names.isEmpty()) {
+                if (!isAllEqConditions && !allIds.isEmpty()) {
+                    allIds.retainAll(firstSet.readAll());    
+                } else {
+                    allIds.addAll(firstSet.readAll());
+                }
+            } else {
+                Set<Object> intersect = firstSet.readIntersection(names.toArray(new String[names.size()]));
+                if (!isAllEqConditions && !allIds.isEmpty()) {
+                    allIds.retainAll(intersect);    
+                } else {
+                    allIds.addAll(intersect);
+                }
+            }
+        }
+        return allIds;
+    }
+
+    Set<Object> traverseOr(ORCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
+        Set<Object> allIds = new HashSet<Object>();
+        RSet<Object> firstSet = null;
+        List<String> names = new ArrayList<String>();
+        for (Condition cond : condition.getConditions()) {
+            if (cond instanceof EQCondition) {
+                EQCondition eqc = (EQCondition) cond;
+                
+                String indexName = namingScheme.getIndexName(entityClass, eqc.getName());
+                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+                RSet<Object> values = map.get(eqc.getValue());
+                if (firstSet == null) {
+                    firstSet = values;
+                } else {
+                    names.add(values.getName());
+                }
+            }
+            if (cond instanceof ANDCondition) {
+                Collection<Object> ids = traverseAnd((ANDCondition) cond, namingScheme, entityClass);
+                allIds.addAll(ids);
+            }
+        }
+        if (firstSet != null) {
+            if (names.isEmpty()) {
+                allIds.addAll(firstSet.readAll());
+            } else {
+                allIds.addAll(firstSet.readUnion(names.toArray(new String[names.size()])));
+            }
+        }
+        return allIds;
+    }
+    
+    @Override
+    public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
+        NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
+
+        Set<Object> ids = Collections.emptySet();
+        if (condition instanceof EQCondition) {
+            EQCondition c = (EQCondition) condition;
+            String indexName = namingScheme.getIndexName(entityClass, c.getName());
+            RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+            ids = map.getAll(c.getValue());
+        } else if (condition instanceof ORCondition) {
+            ids = traverseOr((ORCondition) condition, namingScheme, entityClass);
+        } else if (condition instanceof ANDCondition) {
+            ids = traverseAnd((ANDCondition) condition, namingScheme, entityClass);
+        }
+        
+        if (ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<T> result = new ArrayList<T>(ids.size());
+        for (Object id : ids) {
+            T proxied = createLiveObject(entityClass, id);
+            result.add(proxied);
+        }
+        return result;
     }
 
     @Override
     public <T> T attach(T detachedObject) {
         validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
-        try {
-            String idFieldName = getRIdFieldName(detachedObject.getClass());
-            Object id = ClassUtils.getField(detachedObject, idFieldName);
-            Class<? extends T> proxyClass = getProxyClass(entityClass);
-            return instantiateLiveObject(proxyClass, id);
-        } catch (Exception ex) {
-            unregisterClass(entityClass);
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
-        }
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
+        Object id = ClassUtils.getField(detachedObject, idFieldName);
+        return createLiveObject(entityClass, id);
     }
 
     @Override
@@ -199,7 +298,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         
         for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
             Object object = ClassUtils.getField(detachedObject, field.getName());
-            
             if (object == null) {
                 continue;
             }
@@ -494,11 +592,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T, K> boolean delete(Class<T> entityClass, K id) {
-        T entity = get(entityClass, id);
-        if (entity == null) {
-            return false;
-        }
+    public <T> boolean delete(Class<T> entityClass, Object id) {
+        T entity = createLiveObject(entityClass, id);
         return asLiveObject(entity).delete();
     }
 
@@ -558,7 +653,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .getName();
     }
 
-    private <T, K> T instantiateLiveObject(Class<T> proxyClass, K id) throws Exception {
+    private <T> T instantiateLiveObject(Class<T> proxyClass, Object id) {
         if (id == null) {
             throw new IllegalStateException("Non-null value is required for the field with RId annotation.");
         }
@@ -567,7 +662,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance;
     }
 
-    private <T, K> T instantiateDetachedObject(Class<T> cls, K id) throws Exception {
+    private <T, K> T instantiateDetachedObject(Class<T> cls, K id) {
         T instance = instantiate(cls, id);
         String fieldName = getRIdFieldName(cls);
         if (ClassUtils.getField(instance, fieldName) == null) {
@@ -576,12 +671,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance;
     }
 
-    private <T, K> T instantiate(Class<T> cls, K id) throws Exception {
-        for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
-            if (constructor.getParameterTypes().length == 0) {
-                constructor.setAccessible(true);
-                return (T) constructor.newInstance();
+    private <T> T instantiate(Class<T> cls, Object id) {
+        try {
+            for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
+                if (constructor.getParameterTypes().length == 0) {
+                    constructor.setAccessible(true);
+                    return (T) constructor.newInstance();
+                }
             }
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
         }
         throw new IllegalArgumentException("Can't find default constructor for " + cls);
     }
@@ -598,6 +697,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         if (!ClassUtils.isAnnotationPresent(entityClass, REntity.class)) {
             throw new IllegalArgumentException("REntity annotation is missing from class type declaration.");
         }
+
+        FieldList<FieldDescription.InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
+        fields = fields.filter(ElementMatchers.fieldType(ElementMatchers.hasSuperType(
+                                ElementMatchers.anyOf(Map.class, Collection.class, RObject.class))));
+        for (InDefinedShape field : fields) {
+            throw new IllegalArgumentException("RIndex annotation couldn't be defined for field '" + field.getName() + "' with type '" + field.getType() + "'");
+        }
+        
         FieldList<FieldDescription.InDefinedShape> fieldsWithRIdAnnotation
                 = Introspectior.getFieldsWithAnnotation(entityClass, RId.class);
         if (fieldsWithRIdAnnotation.size() == 0) {

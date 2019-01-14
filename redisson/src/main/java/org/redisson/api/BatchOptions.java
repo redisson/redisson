@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration for Batch objecct.
+ * Configuration for Batch object.
  * 
  * @author Nikita Koksharov
  *
