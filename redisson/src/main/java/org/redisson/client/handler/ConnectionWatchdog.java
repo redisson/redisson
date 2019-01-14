@@ -211,7 +211,10 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                         log.info("reconnect successfully. {} connected to {}, command: {}", connection,
                                             connection.getRedisClient().getAddr(), connection.getCurrentCommand());
                                     } else {
+                                        //fixed #1811  The connection not reconnect
+                                        channel.close();
                                         reconnectingAttr.set(false);
+                                        reconnect(oldChannel, connection, nextAttempt);
                                         log.warn("Can't connect " + connection + " to " + connection.getRedisClient().getAddr(), future.cause());
                                     }
                                     
