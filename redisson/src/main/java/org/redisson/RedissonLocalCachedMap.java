@@ -18,9 +18,7 @@ package org.redisson;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.AbstractCollection;
 import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +43,7 @@ import org.redisson.cache.CacheKey;
 import org.redisson.cache.LFUCacheMap;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.cache.LocalCacheListener;
+import org.redisson.cache.LocalCacheView;
 import org.redisson.cache.LocalCachedMapClear;
 import org.redisson.cache.LocalCachedMapInvalidate;
 import org.redisson.cache.LocalCachedMapUpdate;
@@ -138,6 +137,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private SyncStrategy syncStrategy;
 
     private LocalCacheListener listener;
+    private LocalCacheView<K, V> localCacheView;
     
     public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
         super(commandExecutor, name, redisson, options);
@@ -168,6 +168,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             
         };
         listener.add();
+        localCacheView = new LocalCacheView(cache, this);
 
         if (options.getSyncStrategy() != SyncStrategy.NONE) {
             invalidateEntryOnChange = 1;
@@ -1095,183 +1096,22 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public Set<K> cachedKeySet() {
-        return new LocalKeySet();
+        return localCacheView.cachedKeySet();
     }
 
-    class LocalKeySet extends AbstractSet<K> {
-
-        @Override
-        public Iterator<K> iterator() {
-            return new Iterator<K>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public K next() {
-                    return (K) iter.next().getKey();
-                }
-            };
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            CacheKey cacheKey = toCacheKey(o);
-            return cache.containsKey(cacheKey);
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            CacheKey cacheKey = toCacheKey(o);
-            return cache.remove(cacheKey) != null;
-        }
-
-        @Override
-        public int size() {
-            return cache.size();
-        }
-
-        @Override
-        public void clear() {
-            cache.clear();
-        }
-
-    }
-    
     @Override
     public Collection<V> cachedValues() {
-        return new LocalValues();
+        return localCacheView.cachedValues();
     }
     
-    final class LocalValues extends AbstractCollection<V> {
-
-        @Override
-        public Iterator<V> iterator() {
-            return new Iterator<V>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public V next() {
-                    return (V) iter.next().getValue();
-                }
-            };
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            CacheValue cacheValue = new CacheValue(null, o);
-            return cache.containsValue(cacheValue);
-        }
-
-        @Override
-        public int size() {
-            return cache.size();
-        }
-
-        @Override
-        public void clear() {
-            cache.clear();
-        }
-
-    }
-
     @Override
     public Set<Entry<K, V>> cachedEntrySet() {
-        return new LocalEntrySet();
-    }
-
-    final class LocalEntrySet extends AbstractSet<Map.Entry<K,V>> {
-
-        @Override
-        public Iterator<Map.Entry<K,V>> iterator() {
-            return new Iterator<Map.Entry<K,V>>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
-                @Override
-                public boolean hasNext() {
-                    return iter.hasNext();
-                }
-
-                @Override
-                public Map.Entry<K,V> next() {
-                    CacheValue e = iter.next();
-                    return new AbstractMap.SimpleEntry<K, V>((K)e.getKey(), (V)e.getValue());
-                }
-            };
-        }
-
-        @Override
-        public boolean contains(Object o) {
-            if (!(o instanceof Map.Entry))
-                return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-            CacheKey cacheKey = toCacheKey(e.getKey());
-            CacheValue entry = cache.get(cacheKey);
-            return entry != null && entry.getValue().equals(e.getValue());
-        }
-
-        @Override
-        public boolean remove(Object o) {
-            if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
-                CacheKey cacheKey = toCacheKey(e.getKey());
-                return cache.remove(cacheKey, new CacheValue(e.getKey(), e.getValue()));
-            }
-            return false;
-        }
-
-        @Override
-        public int size() {
-            return cache.size();
-        }
-
-        @Override
-        public void clear() {
-            cache.clear();
-        }
-
+        return localCacheView.cachedEntrySet();
     }
     
     @Override
     public Map<K, V> getCachedMap() {
-        return new LocalMap();
+        return localCacheView.getCachedMap();
     }
-    
-    final class LocalMap extends AbstractMap<K,V> {
-
-        @Override
-        public V get(Object key) {
-            CacheKey cacheKey = toCacheKey(key);
-            CacheValue e = cache.get(cacheKey);
-            if (e != null) {
-                return (V) e.getValue();
-            }
-            return null;
-        }
-        
-        @Override
-        public boolean containsKey(Object key) {
-            CacheKey cacheKey = toCacheKey(key);
-            return cache.containsKey(cacheKey);
-        }
-        
-        @Override
-        public boolean containsValue(Object value) {
-            CacheValue cacheValue = new CacheValue(null, value);
-            return cache.containsValue(cacheValue);
-        }
-
-        @Override
-        public Set<Entry<K, V>> entrySet() {
-            return RedissonLocalCachedMap.this.cachedEntrySet();
-        }
-
-    }
-
     
 }
