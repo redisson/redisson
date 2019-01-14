@@ -304,12 +304,8 @@ public class PublishSubscribeService {
     }
     
     public RFuture<Void> unsubscribe(final ChannelName channelName, final AsyncSemaphore lock) {
-        if (connectionManager.isShuttingDown()) {
-            return RedissonPromise.newSucceededFuture(null);
-        }
-        
         final PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-        if (entry == null) {
+        if (entry == null || connectionManager.isShuttingDown()) {
             lock.release();
             return RedissonPromise.newSucceededFuture(null);
         }
