@@ -691,7 +691,6 @@ public class CommandBatchService extends CommandAsyncService {
                         details.setException(new RedisTimeoutException("Unable to get connection! "
                                     + "Node source: " + source + " after " + attempts + " retry attempts"));
                     }
-                    connectionManager.getShutdownLatch().release();
                 } else {
                     if (connectionFuture.isSuccess()) {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
@@ -859,6 +858,7 @@ public class CommandBatchService extends CommandAsyncService {
             RFuture<RedisConnection> connFuture, final boolean noResult, final long responseTimeout, final int attempts, 
             ExecutionMode executionMode, final AtomicInteger slots) {
         if (connFuture.isCancelled()) {
+            connectionManager.getShutdownLatch().release();
             return;
         }
 
