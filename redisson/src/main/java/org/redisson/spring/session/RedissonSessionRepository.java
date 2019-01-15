@@ -29,6 +29,7 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEvent;
@@ -59,7 +60,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
         public RedissonSession(String keyPrefix) {
             this.delegate = new MapSession();
-            map = redisson.getMap(keyPrefix + delegate.getId());
+            map = redisson.getMap(keyPrefix + delegate.getId(), new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
             principalName = resolvePrincipal(delegate);
 
             Map<String, Object> newMap = new HashMap<String, Object>(3);
@@ -83,7 +84,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         
         public RedissonSession(String keyPrefix, String sessionId) {
             this.delegate = new MapSession(sessionId);
-            map = redisson.getMap(keyPrefix + sessionId);
+            map = redisson.getMap(keyPrefix + sessionId, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
             principalName = resolvePrincipal(delegate);
         }
         
@@ -378,7 +379,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
 
     private RSet<String> getPrincipalSet(String indexValue) {
         String principalKey = getPrincipalKey(indexValue);
-        return redisson.getSet(principalKey);
+        return redisson.getSet(principalKey, StringCodec.INSTANCE);
     }
 
 }
