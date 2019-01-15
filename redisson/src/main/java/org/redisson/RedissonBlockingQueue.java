@@ -150,7 +150,7 @@ public class RedissonBlockingQueue<V> extends RedissonQueue<V> implements RBlock
 
         return commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Object>("EVAL", new ListDrainToDecoder(c)),
               "local vals = redis.call('lrange', KEYS[1], 0, -1); " +
-              "redis.call('ltrim', KEYS[1], -1, 0); " +
+              "redis.call('del', KEYS[1]); " +
               "return vals", Collections.<Object>singletonList(getName()));
     }
 
