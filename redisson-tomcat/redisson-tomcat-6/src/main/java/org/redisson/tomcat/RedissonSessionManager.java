@@ -39,6 +39,8 @@ import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
 
 /**
@@ -152,8 +154,8 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     public RMap<String, Object> getMap(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
-        final String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
-        return redisson.getMap(name);
+        String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
+        return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
     }
 
     public RTopic getTopic() {
