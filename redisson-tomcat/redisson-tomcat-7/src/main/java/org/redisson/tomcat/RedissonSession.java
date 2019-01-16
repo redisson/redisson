@@ -117,9 +117,13 @@ public class RedissonSession extends StandardSession {
             if (readMode == ReadMode.MEMORY) {
                 topic.publish(createPutAllMessage(newMap));
             }
-            if (getMaxInactiveInterval() >= 0) {
-                map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
-            }
+            expireSession();
+        }
+    }
+
+    protected void expireSession() {
+        if (maxInactiveInterval >= 0) {
+            map.expire(maxInactiveInterval + 60, TimeUnit.SECONDS);
         }
     }
 
@@ -137,9 +141,7 @@ public class RedissonSession extends StandardSession {
         
         if (map != null) {
             fastPut(MAX_INACTIVE_INTERVAL_ATTR, maxInactiveInterval);
-            if (maxInactiveInterval >= 0) {
-                map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
-            }
+            expireSession();
         }
     }
 
@@ -235,9 +237,7 @@ public class RedissonSession extends StandardSession {
             topic.publish(createPutAllMessage(newMap));
         }
         
-        if (maxInactiveInterval >= 0) {
-            map.expire(getMaxInactiveInterval(), TimeUnit.SECONDS);
-        }
+        expireSession();
     }
     
     public void load(Map<String, Object> attrs) {
