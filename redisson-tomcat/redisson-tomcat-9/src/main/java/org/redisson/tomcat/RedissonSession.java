@@ -51,7 +51,7 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
-    private RTopic topic;
+    private final RTopic topic;
     private final RedissonSessionManager.ReadMode readMode;
     private final UpdateMode updateMode;
     
@@ -60,6 +60,7 @@ public class RedissonSession extends StandardSession {
         this.redissonManager = manager;
         this.readMode = readMode;
         this.updateMode = updateMode;
+        this.topic = redissonManager.getTopic();
         
         try {
             Field attr = StandardSession.class.getDeclaredField("attributes");
@@ -78,13 +79,6 @@ public class RedissonSession extends StandardSession {
         }
 
         return super.getAttribute(name);
-    }
-    
-    @Override
-    public void setId(String id, boolean notify) {
-        super.setId(id, notify);
-        map = redissonManager.getMap(id);
-        topic = redissonManager.getTopic();
     }
     
     public void delete() {
@@ -183,7 +177,7 @@ public class RedissonSession extends StandardSession {
         boolean oldValue = isNew;
         super.endAccess();
 
-        if (isNew != oldValue) {
+        if (isNew != oldValue && map != null) {
             fastPut(IS_NEW_ATTR, isNew);
         }
     }
@@ -218,6 +212,10 @@ public class RedissonSession extends StandardSession {
     }
     
     public void save() {
+        if (map == null) {
+            map = redissonManager.getMap(id);
+        }
+        
         Map<String, Object> newMap = new HashMap<String, Object>();
         newMap.put(CREATION_TIME_ATTR, creationTime);
         newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);

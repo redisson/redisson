@@ -125,7 +125,6 @@ public class RedissonSessionManager extends ManagerBase {
         
         session.setManager(this);
         session.setId(sessionId);
-        session.save();
         
         return session;
     }
@@ -191,6 +190,12 @@ public class RedissonSessionManager extends ManagerBase {
         if (session.getIdInternal() != null) {
             ((RedissonSession)session).delete();
         }
+    }
+    
+    @Override
+    public void add(Session session) {
+        super.add(session);
+        ((RedissonSession)session).save();
     }
     
     public RedissonClient getRedisson() {

@@ -147,7 +147,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         
         session.setManager(this);
         session.setId(sessionId);
-        session.save();
         
         return session;
     }
@@ -204,6 +203,12 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     @Override
     public Session createEmptySession() {
         return new RedissonSession(this, readMode, updateMode);
+    }
+    
+    @Override
+    public void add(Session session) {
+        super.add(session);
+        ((RedissonSession)session).save();
     }
     
     @Override
