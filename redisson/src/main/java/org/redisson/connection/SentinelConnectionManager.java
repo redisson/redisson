@@ -41,6 +41,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.config.SentinelServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.CountableListener;
@@ -161,6 +162,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (currentMaster.get() == null) {
             stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
+        }
+        if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
+            log.warn("ReadMode = " + this.config.getReadMode() + ", but slave nodes are not found!");
         }
         
         initSingleEntry();

@@ -30,6 +30,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.BaseMasterSlaveServersConfig;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.config.ReadMode;
 import org.redisson.config.ReplicatedServersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,8 +95,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
             stopThreads();
             throw new RedisConnectionException("Can't connect to servers!");
         }
-        if (this.config.getSlaveAddresses().isEmpty()) {
-            log.warn("Slave nodes not found! Please specify all nodes in replicated mode.");
+        if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
+            log.warn("ReadMode = " + this.config.getReadMode() + ", but slave nodes are not found! Please specify all nodes in replicated mode.");
         }
 
         initSingleEntry();
@@ -111,6 +112,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void scheduleMasterChangeCheck(final ReplicatedServersConfig cfg) {
+        if (isShuttingDown()) {
+            return;
+        }
+        
         monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {

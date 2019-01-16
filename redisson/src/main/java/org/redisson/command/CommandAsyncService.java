@@ -712,7 +712,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                     + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
                                     + " after " + details.getAttempt() + " retry attempts"));
                     }
-                    connectionManager.getShutdownLatch().release();
                 } else {
                     if (details.getConnectionFuture().isSuccess()) {
                         if (details.getWriteFuture() == null || !details.getWriteFuture().isDone()) {
@@ -781,6 +780,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             @Override
             public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
                 if (connFuture.isCancelled()) {
+                    connectionManager.getShutdownLatch().release();
                     return;
                 }
 

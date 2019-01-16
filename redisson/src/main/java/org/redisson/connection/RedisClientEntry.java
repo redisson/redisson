@@ -166,5 +166,10 @@ public class RedisClientEntry implements ClusterNode {
         }
         throw new IllegalStateException();
     }
+
+    @Override
+    public String toString() {
+        return "RedisClientEntry [client=" + client + ", type=" + type + "]";
+    }
     
 }
