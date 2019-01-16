@@ -249,7 +249,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         RedisConnection connection = nodeConnections.get(key);
         if (connection != null) {
-            return RedissonPromise.newSucceededFuture(connection);
+            if (!connection.isActive()) {
+                nodeConnections.remove(key);
+                connection.closeAsync();
+            } else {
+                return RedissonPromise.newSucceededFuture(connection);
+            }
         }
 
         if (addr != null) {

@@ -257,22 +257,22 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionCreatedEvent(this, session));
             }
         } else if (deletedTopic.getPatternNames().contains(pattern.toString())) {
-            if (!body.contains(":")) {
+            if (!body.startsWith(keyPrefix)) {
                 return;
             }
             
-            String id = body.split(":")[1];
+            String id = body.split(keyPrefix)[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
             }
             publishEvent(new SessionDeletedEvent(this, session));
         } else if (expiredTopic.getPatternNames().contains(pattern.toString())) {
-            if (!body.contains(":")) {
+            if (!body.startsWith(keyPrefix)) {
                 return;
             }
 
-            String id = body.split(":")[1];
+            String id = body.split(keyPrefix)[1];
             RedissonSession session = new RedissonSession(id);
             if (session.load()) {
                 session.clearPrincipal();
