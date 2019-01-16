@@ -249,11 +249,11 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionCreatedEvent(this, session));
             }
         } else if (deletedTopic.getPatternNames().contains(pattern.toString())) {
-            if (!body.contains(":")) {
+            if (!body.startsWith(keyPrefix)) {
                 return;
             }
             
-            String id = body.split(":")[1];
+            String id = body.split(keyPrefix)[1];
             RedissonSession session = new RedissonSession(keyPrefix, id);
             if (session.load()) {
                 session.clearPrincipal();
@@ -262,11 +262,11 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
                 publishEvent(new SessionDeletedEvent(this, id));
             }
         } else if (expiredTopic.getPatternNames().contains(pattern.toString())) {
-            if (!body.contains(":")) {
+            if (!body.startsWith(keyPrefix)) {
                 return;
             }
 
-            String id = body.split(":")[1];
+            String id = body.split(keyPrefix)[1];
             RedissonSession session = new RedissonSession(keyPrefix, id);
             if (session.load()) {
                 session.clearPrincipal();
