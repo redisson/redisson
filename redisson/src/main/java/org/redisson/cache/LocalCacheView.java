@@ -65,6 +65,11 @@ public class LocalCacheView<K, V> {
                 public K next() {
                     return (K) iter.next().getKey();
                 }
+                
+                @Override
+                public void remove() {
+                    iter.remove();
+                }
             };
         }
 
@@ -111,6 +116,11 @@ public class LocalCacheView<K, V> {
                 public V next() {
                     return (V) iter.next().getValue();
                 }
+                
+                @Override
+                public void remove() {
+                    iter.remove();
+                }
             };
         }
 
@@ -151,6 +161,11 @@ public class LocalCacheView<K, V> {
                 public Map.Entry<K,V> next() {
                     CacheValue e = iter.next();
                     return new AbstractMap.SimpleEntry<K, V>((K)e.getKey(), (V)e.getValue());
+                }
+                
+                @Override
+                public void remove() {
+                    iter.remove();
                 }
             };
         }
