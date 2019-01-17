@@ -34,4 +34,8 @@ public class SmileJacksonCodec extends JsonJacksonCodec {
         super(createObjectMapper(classLoader, new ObjectMapper(new SmileFactory())));
     }
     
+    public SmileJacksonCodec(ClassLoader classLoader, SmileJacksonCodec codec) {
+        super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
+    
 }

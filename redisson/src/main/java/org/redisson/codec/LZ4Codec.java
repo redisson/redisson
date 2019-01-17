@@ -61,6 +61,10 @@ public class LZ4Codec extends BaseCodec {
         this(new FstCodec(classLoader));
     }
 
+    public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) {
+        this(copy(classLoader, codec.innerCodec));
+    }
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {

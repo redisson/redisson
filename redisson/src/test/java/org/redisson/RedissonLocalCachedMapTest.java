@@ -281,10 +281,10 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         RLocalCachedMap<String, String> map = redisson.getLocalCachedMap("test", options);
         map.put("1", "11");
         map.put("2", "22");
-        assertThat(map.cachedKeySet()).containsExactly("1", "2");
+        assertThat(map.cachedKeySet()).containsExactlyInAnyOrder("1", "2");
         assertThat(map.cachedValues()).containsExactlyInAnyOrder("11", "22");
-        assertThat(map.getCachedMap().keySet()).containsExactly("1", "2");
-        assertThat(map.getCachedMap().values()).containsExactly("11", "22");
+        assertThat(map.getCachedMap().keySet()).containsExactlyInAnyOrder("1", "2");
+        assertThat(map.getCachedMap().values()).containsExactlyInAnyOrder("11", "22");
     }
 
     

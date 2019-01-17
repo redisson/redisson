@@ -61,6 +61,15 @@ public class MapCacheEventCodec implements Codec {
         this.codec = codec;
         this.isWindows = isWindows;
     }
+    
+    public MapCacheEventCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
+        try {
+            this.codec = codec.codec.getClass().getConstructor(ClassLoader.class, codec.codec.getClass()).newInstance(classLoader, codec.codec);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        this.isWindows = codec.isWindows;
+    }
 
     @Override
     public Decoder<Object> getMapValueDecoder() {
@@ -107,6 +116,34 @@ public class MapCacheEventCodec implements Codec {
     @Override
     public ClassLoader getClassLoader() {
         return getClass().getClassLoader();
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((codec == null) ? 0 : codec.hashCode());
+        result = prime * result + (isWindows ? 1231 : 1237);
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MapCacheEventCodec other = (MapCacheEventCodec) obj;
+        if (codec == null) {
+            if (other.codec != null)
+                return false;
+        } else if (!codec.equals(other.codec))
+            return false;
+        if (isWindows != other.isWindows)
+            return false;
+        return true;
     }
 
 }

@@ -33,4 +33,8 @@ public class IonJacksonCodec extends JsonJacksonCodec {
         super(createObjectMapper(classLoader, new IonObjectMapper()));
     }
     
+    public IonJacksonCodec(ClassLoader classLoader, IonJacksonCodec codec) {
+        super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
+    
 }

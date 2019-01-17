@@ -103,6 +103,10 @@ public class JsonJacksonCodec extends BaseCodec {
     public JsonJacksonCodec(ClassLoader classLoader) {
         this(createObjectMapper(classLoader, new ObjectMapper()));
     }
+
+    public JsonJacksonCodec(ClassLoader classLoader, JsonJacksonCodec codec) {
+        this(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
     
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
         TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);

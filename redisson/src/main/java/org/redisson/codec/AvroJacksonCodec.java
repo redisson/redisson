@@ -81,6 +81,10 @@ public class AvroJacksonCodec extends JsonJacksonCodec {
         super(createObjectMapper(classLoader, new ObjectMapper(new AvroFactory())));
     }
     
+    public AvroJacksonCodec(ClassLoader classLoader, AvroJacksonCodec codec) {
+        super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
+    
     @Override
     protected void initTypeInclusion(ObjectMapper mapObjectMapper) {
     }

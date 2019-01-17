@@ -50,7 +50,27 @@ public class FstCodec extends BaseCodec {
     public FstCodec(ClassLoader classLoader) {
         this(createConfig(classLoader));
     }
+    
+    public FstCodec(ClassLoader classLoader, FstCodec codec) {
+        this(copy(classLoader, codec));
+    }
 
+    private static FSTConfiguration copy(ClassLoader classLoader, FstCodec codec) {
+        FSTConfiguration def = FSTConfiguration.createDefaultConfiguration();
+        def.setClassLoader(classLoader);
+        def.setCoderSpecific(codec.config.getCoderSpecific());
+        def.setCrossPlatform(codec.config.isCrossPlatform());
+        def.setForceClzInit(codec.config.isForceClzInit());
+        def.setForceSerializable(codec.config.isForceSerializable());
+        def.setInstantiator(codec.config.getInstantiator(null));
+        def.setName(codec.config.getName());
+        def.setPreferSpeed(codec.config.isPreferSpeed());
+        def.setShareReferences(codec.config.isShareReferences());
+        def.setStreamCoderFactory(codec.config.getStreamCoderFactory());
+        def.setVerifier(codec.config.getVerifier());
+        return def;
+    }
+    
     private static FSTConfiguration createConfig(ClassLoader classLoader) {
         FSTConfiguration def = FSTConfiguration.createDefaultConfiguration();
         def.setClassLoader(classLoader);
