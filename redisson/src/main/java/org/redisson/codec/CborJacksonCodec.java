@@ -33,4 +33,8 @@ public class CborJacksonCodec extends JsonJacksonCodec {
         super(createObjectMapper(classLoader, new ObjectMapper(new CBORFactory())));
     }
     
+    public CborJacksonCodec(ClassLoader classLoader, CborJacksonCodec codec) {
+        super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
+    
 }

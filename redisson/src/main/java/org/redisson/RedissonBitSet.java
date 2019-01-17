@@ -147,7 +147,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
         params.add(getName());
         params.add(getName());
         params.addAll(Arrays.asList(bitSetNames));
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.BITOP, params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.BITOP, params.toArray());
     }
 
     @Override
@@ -185,7 +185,7 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Long> lengthAsync() {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalReadAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 "local fromBit = redis.call('bitpos', KEYS[1], 1, -1);"
                 + "local toBit = 8*(fromBit/8 + 1) - fromBit % 8;"
                         + "for i = toBit, fromBit, -1 do "

@@ -15,7 +15,13 @@
  */
 package org.redisson.tomcat;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
+
+import org.apache.catalina.util.CustomObjectInputStream;
 
 /**
  * 
@@ -31,10 +37,6 @@ public class AttributeMessage implements Serializable {
     public AttributeMessage() {
     }
     
-    public AttributeMessage(String sessionId) {
-        this.sessionId = sessionId;
-    }
-
     public AttributeMessage(String nodeId, String sessionId) {
         this.nodeId = nodeId;
         this.sessionId = sessionId;
@@ -48,4 +50,22 @@ public class AttributeMessage implements Serializable {
         return nodeId;
     }
     
+	protected byte[] toByteArray(Object value) throws IOException {
+		if (value == null) {
+			return null;
+		}
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		ObjectOutputStream out = new ObjectOutputStream(bos);
+		out.writeObject(value);
+		out.flush();
+		return bos.toByteArray();
+	}
+	
+	protected Object toObject(ClassLoader classLoader, byte[] value) throws IOException, ClassNotFoundException {
+    	if (value == null) {
+    		return null;
+    	}
+    	CustomObjectInputStream in = new CustomObjectInputStream(new ByteArrayInputStream(value), classLoader);
+    	return in.readObject();		
+	}
 }

@@ -28,11 +28,6 @@ public class AttributeRemoveMessage extends AttributeMessage {
         super();
     }
 
-    public AttributeRemoveMessage(String sessionId, String name) {
-        super(sessionId);
-        this.name = name;
-    }
-
     public AttributeRemoveMessage(String nodeId, String sessionId, String name) {
         super(nodeId, sessionId);
         this.name = name;

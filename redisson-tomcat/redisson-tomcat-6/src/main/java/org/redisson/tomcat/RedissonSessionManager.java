@@ -158,7 +158,9 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     }
 
     public RTopic getTopic() {
-        return redisson.getTopic("redisson:tomcat_session_updates:" + container.getName());
+        String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
+        final String name = keyPrefix + separator + "redisson:tomcat_session_updates:" + ((Context) getContainer()).getName();
+        return redisson.getTopic(name);
     }
     
     @Override
@@ -228,6 +230,13 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public void start() throws LifecycleException {
         redisson = buildClient();
         
+        final ClassLoader applicationClassLoader;
+        if (Thread.currentThread().getContextClassLoader() != null) {
+            applicationClassLoader = Thread.currentThread().getContextClassLoader();
+        } else {
+            applicationClassLoader = getClass().getClassLoader();
+        }
+        
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
@@ -252,17 +261,17 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
+                                for (Entry<String, Object> entry : m.getAttrs(applicationClassLoader).entrySet()) {
                                     session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(), true);
+                                session.superSetAttribute(m.getName(), m.getValue(applicationClassLoader), true);
                             }
                         }
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         log.error("Can't handle topic message", e);
                     }
                 }

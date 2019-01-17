@@ -209,6 +209,13 @@ public class RedissonSessionManager extends ManagerBase {
         super.startInternal();
         redisson = buildClient();
         
+        final ClassLoader applicationClassLoader;
+        if (Thread.currentThread().getContextClassLoader() != null) {
+            applicationClassLoader = Thread.currentThread().getContextClassLoader();
+        } else {
+            applicationClassLoader = getClass().getClassLoader();
+        }
+        
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
@@ -233,17 +240,17 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs().entrySet()) {
+                                for (Entry<String, Object> entry : m.getAttrs(applicationClassLoader).entrySet()) {
                                     session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(), true);
+                                session.superSetAttribute(m.getName(), m.getValue(applicationClassLoader), true);
                             }
                         }
-                    } catch (IOException e) {
+                    } catch (Exception e) {
                         log.error("Can't handle topic message", e);
                     }
                 }

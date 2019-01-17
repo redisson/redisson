@@ -96,6 +96,10 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
     public JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference, ObjectMapper mapper) {
         this(keyTypeReference, valueTypeReference, null, null, mapper);
     }
+    
+    public JsonJacksonMapCodec(ClassLoader classLoader, JsonJacksonMapCodec codec) {
+        this(codec.keyTypeReference, codec.valueTypeReference, codec.keyClass, codec.valueClass, createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
 
     JsonJacksonMapCodec(TypeReference<?> keyTypeReference, TypeReference<?> valueTypeReference, Class<?> keyClass, Class<?> valueClass, ObjectMapper mapper) {
         super(mapper);

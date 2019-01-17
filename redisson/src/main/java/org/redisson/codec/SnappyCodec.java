@@ -65,6 +65,10 @@ public class SnappyCodec extends BaseCodec {
         this(new FstCodec(classLoader));
     }
     
+    public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) {
+        this(copy(classLoader, codec.innerCodec));
+    }
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         
         @Override

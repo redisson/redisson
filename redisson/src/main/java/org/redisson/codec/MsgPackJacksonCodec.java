@@ -35,4 +35,8 @@ public class MsgPackJacksonCodec extends JsonJacksonCodec {
         super(createObjectMapper(classLoader, new ObjectMapper(new MessagePackFactory())));
     }
     
+    public MsgPackJacksonCodec(ClassLoader classLoader, MsgPackJacksonCodec codec) {
+        super(createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
+    
 }

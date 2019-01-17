@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -74,6 +75,14 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     private final Decoder<Object> valueDecoder;
     private final Decoder<Object> mapValueDecoder;
     private final Decoder<Object> mapKeyDecoder;
+    
+    private final TypeReference<?> valueTypeReference;
+    private final TypeReference<?> mapKeyTypeReference;
+    private final TypeReference<?> mapValueTypeReference;
+    
+    private final Class<?> valueClass;
+    private final Class<?> mapKeyClass; 
+    private final Class<?> mapValueClass;
 
     public TypedJsonJacksonCodec(Class<?> valueClass) {
         this(valueClass, new ObjectMapper());
@@ -122,6 +131,12 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
     public TypedJsonJacksonCodec(TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, ObjectMapper mapper) {
         this(valueTypeReference, mapKeyTypeReference, mapValueTypeReference, null, null, null, mapper);
     }
+    
+    public TypedJsonJacksonCodec(ClassLoader classLoader, TypedJsonJacksonCodec codec) {
+        this(codec.valueTypeReference, codec.mapKeyTypeReference, codec.mapValueTypeReference, 
+              codec.valueClass, codec.mapKeyClass, codec.mapValueClass,
+                createObjectMapper(classLoader, codec.mapObjectMapper.copy()));
+    }
 
     TypedJsonJacksonCodec(
             TypeReference<?> valueTypeReference, TypeReference<?> mapKeyTypeReference, TypeReference<?> mapValueTypeReference, 
@@ -130,6 +145,13 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
         this.mapValueDecoder = createDecoder(mapValueClass, mapValueTypeReference);
         this.mapKeyDecoder = createDecoder(mapKeyClass, mapKeyTypeReference);
         this.valueDecoder = createDecoder(valueClass, valueTypeReference);
+        
+        this.mapValueClass = mapValueClass;
+        this.mapValueTypeReference = mapValueTypeReference;
+        this.mapKeyClass = mapKeyClass;
+        this.mapKeyTypeReference = mapKeyTypeReference;
+        this.valueClass = valueClass;
+        this.valueTypeReference = valueTypeReference;
     }
     
     @Override

@@ -172,7 +172,8 @@ public class CommandBatchService extends CommandAsyncService {
             if (!isRedisBasedQueue()) {
                 batchParams = params;
             }
-            BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codec, command, batchParams, index.incrementAndGet());
+            Codec codecToUse = getCodec(codec);
+            BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
             entry.getCommands().add(commandData);
         }
         

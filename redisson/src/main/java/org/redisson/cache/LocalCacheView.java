@@ -185,7 +185,7 @@ public class LocalCacheView<K, V> {
             if (o instanceof Map.Entry) {
                 Map.Entry<?,?> e = (Map.Entry<?,?>) o;
                 CacheKey cacheKey = toCacheKey(e.getKey());
-                return cache.remove(cacheKey, new CacheValue(e.getKey(), e.getValue()));
+                return cache.remove(cacheKey) != null;
             }
             return false;
         }

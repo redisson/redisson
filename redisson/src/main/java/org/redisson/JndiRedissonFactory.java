@@ -26,9 +26,7 @@ import javax.naming.RefAddr;
 import javax.naming.Reference;
 import javax.naming.spi.ObjectFactory;
 
-import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
-import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
 /**
@@ -63,15 +61,6 @@ public class JndiRedissonFactory implements ObjectFactory {
         }
         
         try {
-            try {
-                Config c = new Config(config);
-                Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
-                                .newInstance(Thread.currentThread().getContextClassLoader());
-                config.setCodec(codec);
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
-            }
-            
             return Redisson.create(config);
         } catch (Exception e) {
             NamingException ex = new NamingException();

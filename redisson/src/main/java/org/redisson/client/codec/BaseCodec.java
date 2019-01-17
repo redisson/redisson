@@ -15,8 +15,10 @@
  */
 package org.redisson.client.codec;
 
+import org.redisson.cache.LocalCachedMessageCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
+import org.redisson.jcache.JCacheEventCodec;
 
 /**
  * 
@@ -25,6 +27,23 @@ import org.redisson.client.protocol.Encoder;
  */
 public abstract class BaseCodec implements Codec {
 
+    public static Codec copy(ClassLoader classLoader, Codec codec) {
+        if (codec instanceof StringCodec
+                || codec instanceof ByteArrayCodec
+                    || codec instanceof LocalCachedMessageCodec
+                        || codec instanceof BitSetCodec
+                            || codec instanceof JCacheEventCodec
+                                || codec == null) {
+            return codec;
+        }
+
+        try {
+            return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+    
     @Override
     public Decoder<Object> getMapValueDecoder() {
         return getValueDecoder();
