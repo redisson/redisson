@@ -15,7 +15,10 @@
  */
 package org.redisson.tomcat;
 
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * 
@@ -24,23 +27,32 @@ import java.util.Map;
  */
 public class AttributesPutAllMessage extends AttributeMessage {
 
-    private Map<String, Object> attrs;
+    private Map<String, byte[]> attrs;
     
     public AttributesPutAllMessage() {
     }
 
-    public AttributesPutAllMessage(String sessionId, Map<String, Object> attrs) {
-        super(sessionId);
-        this.attrs = attrs;
-    }
-
-    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs) {
+    public AttributesPutAllMessage(String nodeId, String sessionId, Map<String, Object> attrs) throws IOException {
         super(nodeId, sessionId);
-        this.attrs = attrs;
+        if (attrs != null) {
+        	this.attrs = new HashMap<String, byte[]>();
+        	for (Entry<String, Object> entry: attrs.entrySet()) {
+            	this.attrs.put(entry.getKey(), toByteArray(entry.getValue()));
+        	}
+        } else {
+        	this.attrs = null;
+        }
     }
 
-    public Map<String, Object> getAttrs() {
-        return attrs;
+    public Map<String, Object> getAttrs(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+    	if (attrs == null) {
+    		return null;
+    	}
+    	Map<String, Object> result = new HashMap<String, Object>();
+    	for (Entry<String, byte[]> entry: attrs.entrySet()) {
+    		result.put(entry.getKey(), toObject(classLoader, entry.getValue()));
+    	}
+        return result;
     }
 
 }

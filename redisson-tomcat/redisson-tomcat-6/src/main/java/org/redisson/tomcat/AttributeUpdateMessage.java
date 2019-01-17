@@ -15,6 +15,8 @@
  */
 package org.redisson.tomcat;
 
+import java.io.IOException;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -23,29 +25,23 @@ package org.redisson.tomcat;
 public class AttributeUpdateMessage extends AttributeMessage {
 
     private String name;
-    private Object value;
+    private byte[] value;
 
     public AttributeUpdateMessage() {
     }
     
-    public AttributeUpdateMessage(String sessionId, String name, Object value) {
-        super(sessionId);
-        this.name = name;
-        this.value = value;
-    }
-
-    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value) {
+    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value) throws IOException {
         super(nodeId, sessionId);
         this.name = name;
-        this.value = value;
+		this.value = toByteArray(value);
     }
 
     public String getName() {
         return name;
     }
     
-    public Object getValue() {
-        return value;
+    public Object getValue(ClassLoader classLoader) throws IOException, ClassNotFoundException {
+    	return toObject(classLoader, value);
     }
     
 }

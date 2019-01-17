@@ -15,6 +15,7 @@
  */
 package org.redisson.tomcat;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -132,7 +133,11 @@ public class RedissonSession extends StandardSession {
         for (Entry<String, Object> entry : newMap.entrySet()) {
             map.put(entry.getKey(), entry.getValue());
         }
-        return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map);
+        try {
+            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
     }
     
     @Override
@@ -148,7 +153,11 @@ public class RedissonSession extends StandardSession {
     private void fastPut(String name, Object value) {
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
-            topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value));
+            try {
+                topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value));
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
         }
     }
     
