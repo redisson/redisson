@@ -35,7 +35,6 @@ import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
-import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
@@ -275,15 +274,6 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         try {
-            try {
-            Config c = new Config(config);
-            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
-                            .newInstance(Thread.currentThread().getContextClassLoader());
-            config.setCodec(codec);
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
-            }
-            
             return Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
