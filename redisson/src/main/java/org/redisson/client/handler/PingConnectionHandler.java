@@ -21,6 +21,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
 
 import io.netty.channel.ChannelHandler.Sharable;
@@ -66,7 +67,9 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
         config.getTimer().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (future.cancel(false) || !future.isSuccess()) {
+                CommandData<?, ?> commandData = connection.getCurrentCommand();
+                if ((commandData == null || !commandData.isBlockingCommand()) && 
+                        (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
                 } else {
                     sendPing(ctx);
