@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Nikita Koksharov
+ * Copyright (c) 2013-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     }
 
     protected void sendPing(final ChannelHandlerContext ctx) {
-        RedisConnection connection = RedisConnection.getFrom(ctx.channel());
+        final RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         final RFuture<String> future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         
         config.getTimer().newTimeout(new TimerTask() {

@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Nikita Koksharov
+ * Copyright (c) 2013-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -146,7 +146,7 @@ public class TasksRunnerService implements RemoteExecutorService {
             future = service.schedule(params);
         }
         try {
-            executeRunnable(params, nextStartDate);
+            executeRunnable(params, nextStartDate == null);
         } catch (RuntimeException e) {
             // cancel task if it throws an exception
             if (future != null) {
@@ -178,7 +178,11 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @Override
     public void scheduleWithFixedDelay(ScheduledWithFixedDelayParameters params) {
-        executeRunnable(params);
+        executeRunnable(params, false);
+        if (!redisson.getMap(tasksName, StringCodec.INSTANCE).containsKey(params.getRequestId())) {
+            return;
+        }
+        
         long newStartTime = System.currentTimeMillis() + params.getDelay();
         params.setStartTime(newStartTime);
         asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleWithFixedDelay(params);
@@ -209,7 +213,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {
-            finish(params.getRequestId(), null);
+            finish(params.getRequestId(), true);
         }
     }
 
@@ -293,7 +297,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
     }
 
-    public void executeRunnable(TaskParameters params, Date nextDate) {
+    public void executeRunnable(TaskParameters params, boolean removeTask) {
         if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
             renewRetryTime(params.getRequestId());
         }
@@ -308,13 +312,13 @@ public class TasksRunnerService implements RemoteExecutorService {
         } catch (Exception e) {
             throw new IllegalArgumentException(e);
         } finally {
-            finish(params.getRequestId(), nextDate);
+            finish(params.getRequestId(), removeTask);
         }
     }
     
     @Override
     public void executeRunnable(TaskParameters params) {
-        executeRunnable(params, null);
+        executeRunnable(params, true);
     }
 
     /**
@@ -327,9 +331,9 @@ public class TasksRunnerService implements RemoteExecutorService {
      * 
      * @param requestId
      */
-    private void finish(String requestId, Date nextDate) {
+    private void finish(String requestId, boolean removeTask) {
         String script = "";
-        if (nextDate == null) {
+        if (removeTask) {
            script +=  "local scheduled = redis.call('zscore', KEYS[5], ARGV[3]);"
                     + "if scheduled == false then "
                         + "redis.call('hdel', KEYS[4], ARGV[3]); "
@@ -345,7 +349,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "end;"
                 + "end;";  
 
-        commandExecutor.evalWriteAsync(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+        commandExecutor.evalWrite(name, StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 script,
                 Arrays.<Object>asList(tasksCounterName, statusName, terminationTopicName, tasksName, schedulerQueueName, tasksRetryIntervalName),
                 RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE, requestId);

@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 Nikita Koksharov
+ * Copyright (c) 2013-2019 Nikita Koksharov
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisException;
@@ -165,7 +166,16 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                         if (master.equals(addr)) {
                                             log.debug("Current master {} unchanged", master);
                                         } else if (currentMaster.compareAndSet(master, addr)) {
-                                            changeMaster(singleSlotRange.getStartSlot(), addr);
+                                            RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), addr);
+                                            changeFuture.addListener(new FutureListener<RedisClient>() {
+                                                @Override
+                                                public void operationComplete(Future<RedisClient> future)
+                                                        throws Exception {
+                                                    if (!future.isSuccess()) {
+                                                        currentMaster.compareAndSet(addr, master);
+                                                    }
+                                                }
+                                            });
                                         }
                                     } else if (!config.checkSkipSlavesInit()) {
                                         slaveUp(addr);
