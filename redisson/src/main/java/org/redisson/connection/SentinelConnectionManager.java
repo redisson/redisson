@@ -320,11 +320,19 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 List<String> master = future.getNow();
 
-                String current = currentMaster.get();
-                String newMaster = createAddress(master.get(0), master.get(1));
+                final String current = currentMaster.get();
+                final String newMaster = createAddress(master.get(0), master.get(1));
                 if (!newMaster.equals(current)
                         && currentMaster.compareAndSet(current, newMaster)) {
-                    changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
+                    RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), URIBuilder.create(newMaster));
+                    changeFuture.addListener(new FutureListener<RedisClient>() {
+                        @Override
+                        public void operationComplete(Future<RedisClient> future) throws Exception {
+                            if (!future.isSuccess()) {
+                                currentMaster.compareAndSet(newMaster, current);
+                            }
+                        }
+                    });
                 }
             }
         });
