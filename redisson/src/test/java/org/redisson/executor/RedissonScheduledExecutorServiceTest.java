@@ -344,6 +344,42 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
             // skip
         }
     }
+    
+    public static class ScheduledRunnableTask2 implements Runnable, Serializable {
+        private static final long serialVersionUID = -3523561767248576192L;
+        private String key;
+
+        @RInject
+        private RedissonClient redisson;
+
+        public ScheduledRunnableTask2(String key) {
+            this.key = key;
+        }
+
+        @Override
+        public void run() {
+            System.out.println("job is running");
+            try {
+                redisson.getAtomicLong(key).incrementAndGet();
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("job is over");
+        }
+    }
+
+    @Test
+    public void testCancelAtFixedDelay2() throws InterruptedException, ExecutionException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(30, TimeUnit.MINUTES));
+        executor.registerWorkers(5);
+        RScheduledFuture<?> future1 = executor.scheduleWithFixedDelay(new ScheduledRunnableTask2("executed1"), 1, 2, TimeUnit.SECONDS);
+        Thread.sleep(5000);
+        assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
+        assertThat(executor.cancelTask(future1.getTaskId())).isTrue();
+        Thread.sleep(30000);
+        assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);
+    }
 
 
     @Test
