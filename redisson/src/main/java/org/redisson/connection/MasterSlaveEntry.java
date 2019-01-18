@@ -438,6 +438,12 @@ public class MasterSlaveEntry {
             @Override
             public void operationComplete(Future<RedisClient> future) throws Exception {
                 if (!future.isSuccess()) {
+                    if (oldMaster != masterEntry) {
+                        writeConnectionPool.remove(masterEntry);
+                        pubSubConnectionPool.remove(masterEntry);
+                        masterEntry.getClient().shutdownAsync();
+                        masterEntry = oldMaster;
+                    }
                     log.error("Unable to change master from: " + oldMaster.getClient().getAddr() + " to: " + address, future.cause());
                     return;
                 }
