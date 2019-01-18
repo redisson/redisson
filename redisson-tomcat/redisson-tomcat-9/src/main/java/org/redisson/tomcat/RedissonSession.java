@@ -279,4 +279,10 @@ public class RedissonSession extends StandardSession {
         }
     }
     
+    @Override
+    public void recycle() {
+        super.recycle();
+        map = null;
+    }
+    
 }
