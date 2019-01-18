@@ -73,17 +73,71 @@ public class RedissonSession extends StandardSession {
 
     private static final long serialVersionUID = -2518607181636076487L;
 
+    private static ThreadLocal<Map<String, Object>> requestSessionAttributeCache = new ThreadLocal<Map<String, Object>>();
+
+    private Object getRequestSessionAttributeCacheValue(String name) {
+    	Map<String, Object> localMap = requestSessionAttributeCache.get();
+    	if (localMap != null) {
+    		return localMap.get(name);
+    	}
+    	return null;
+    }
+    
+    private void setRequestSessionAttributeCacheValue(String name, Object value) {
+    	if (name != null) {
+	    	Map<String, Object> localMap = requestSessionAttributeCache.get();
+	    	if (localMap != null) {
+	    		localMap.remove(name);
+	    	}
+	    	if (value != null) {
+	    		if (!(value instanceof String) && !(value instanceof Number) && !(value instanceof Boolean) && !(value instanceof Character)) { // do not cache common immutable classes
+	    			if (localMap == null) {
+	    				localMap = new HashMap<String, Object>();
+	    				requestSessionAttributeCache.set(localMap);
+	    			}
+	    			localMap.put(name, value);
+	    		}
+	    	}
+    	}
+    }
+
+    public void saveRequestSessionAttributeCache() {
+    	Map<String, Object> localMap = requestSessionAttributeCache.get();
+    	if (localMap != null && !localMap.isEmpty()) { // check if we gave to the application mutable objects or the application set mutable objects
+    		//only store the attributes that were provided and/or stored to the application as mutable to prevent serialization of potentially big objects that were not touched by the current http request.
+    		if (updateMode != UpdateMode.AFTER_REQUEST) {//check if updateMode is not AFTER_REQUEST to not store attributes into Redis twice, as after request will update all attributes at the end of the request.
+    			save(localMap);
+    		}
+    	}
+    }
+
+    // use static method here so that if the session gets invalidated and we can't get the id out of it in RequestSessionAttributeCacheValve we should still be able to properly clean the thread
+    public static void clearRequestSessionAttributeCache() {
+    	requestSessionAttributeCache.remove();
+    }
+
     @Override
     public Object getAttribute(String name) {
+    	Object localResult = getRequestSessionAttributeCacheValue(name);
+    	if (localResult != null) {
+    		return localResult;
+    	}
+    	Object result = null;
         if (readMode == ReadMode.REDIS) {
-            return map.get(name);
+            result = map.get(name);
+        } else {
+        	result = super.getAttribute(name);
         }
 
-        return super.getAttribute(name);
+        //try to add redis object (readMode="REDIS") that was read or regular object when we have readMode="MEMORY" into thread cache so 
+        //that at the end of the request we are going to update redis with those mutable objects, because web application could have alter those objects once received during request processing.
+    	setRequestSessionAttributeCacheValue(name, result);
+        return result;
     }
     
     public void delete() {
         map.delete();
+		clearRequestSessionAttributeCache();
         if (readMode == ReadMode.MEMORY) {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
@@ -201,6 +255,8 @@ public class RedissonSession extends StandardSession {
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
         
+    	setRequestSessionAttributeCacheValue(name, value);
+		
         if (updateMode == UpdateMode.DEFAULT && map != null && value != null) {
             fastPut(name, value);
         }
@@ -213,6 +269,8 @@ public class RedissonSession extends StandardSession {
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
+
+    	setRequestSessionAttributeCacheValue(name, null);
         
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
@@ -221,8 +279,12 @@ public class RedissonSession extends StandardSession {
             }
         }
     }
-    
+
     public void save() {
+    	save(attrs);
+    }
+    
+    protected void save(Map<String, Object> attributes) {
         if (map == null) {
             map = redissonManager.getMap(id);
         }
@@ -235,8 +297,8 @@ public class RedissonSession extends StandardSession {
         newMap.put(IS_VALID_ATTR, isValid);
         newMap.put(IS_NEW_ATTR, isNew);
         
-        if (attrs != null) {
-            for (Entry<String, Object> entry : attrs.entrySet()) {
+        if (attributes != null) {
+            for (Entry<String, Object> entry : attributes.entrySet()) {
                 newMap.put(entry.getKey(), entry.getValue());
             }
         }

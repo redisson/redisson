@@ -145,18 +145,9 @@ public class RedissonSessionManager extends ManagerBase {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
-                Map<String, Object> attrs = new HashMap<String, Object>();
-                try {
-                    if (readMode == ReadMode.MEMORY) {
-                        attrs = getMap(id).readAllMap();
-                    } else {
-                        attrs = getMap(id).getAll(RedissonSession.ATTRS);
-                    }
-                } catch (Exception e) {
-                    log.error("Can't read session object by id " + id, e);
-                }
-                
-                if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
+                final Map<String, Object> attrs = getSessionAttributes(id);
+
+                if (attrs == null || attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
                     log.info("Session " + id + " can't be found");
                     return null;
                 }
@@ -177,6 +168,19 @@ public class RedissonSessionManager extends ManagerBase {
         result.endAccess();
         
         return result;
+    }
+    
+    protected Map<String, Object> getSessionAttributes(String id) {
+        try {
+            if (readMode == ReadMode.MEMORY) {
+                return getMap(id).readAllMap();
+            } else {
+            	return getMap(id).getAll(RedissonSession.ATTRS);
+            }
+        } catch (Exception e) {
+            log.error("Can't read session object by id " + id, e);
+        }
+        return null;
     }
     
     @Override
@@ -215,6 +219,8 @@ public class RedissonSessionManager extends ManagerBase {
             applicationClassLoader = getClass().getClassLoader();
         }
         
+		getEngine().getPipeline().addValve(new RequestSessionAttributeCacheValve());
+		
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
