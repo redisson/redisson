@@ -61,7 +61,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     }
 
     protected void sendPing(final ChannelHandlerContext ctx) {
-        RedisConnection connection = RedisConnection.getFrom(ctx.channel());
+        final RedisConnection connection = RedisConnection.getFrom(ctx.channel());
         final RFuture<String> future = connection.async(StringCodec.INSTANCE, RedisCommands.PING);
         
         config.getTimer().newTimeout(new TimerTask() {
