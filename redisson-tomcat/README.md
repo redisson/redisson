@@ -43,9 +43,11 @@ Each RedissonSessionManager created per Web Application and thus creates own Red
 
 ```xml
   <GlobalNamingResources>
-    <Resource name="bean/redisson" auth="Container"
+    <Resource name="bean/redisson" 
+	      auth="Container"
               factory="org.redisson.JndiRedissonFactory"
-              configPath="${catalina.base}/conf/redisson.yaml"/>
+              configPath="${catalina.base}/conf/redisson.yaml"
+	      closeMethod="shutdown"/>
   </GlobalNamingResources>
 ```
 
