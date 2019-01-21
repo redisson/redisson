@@ -197,7 +197,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
               + "assert(rate ~= false and interval ~= false and type ~= false, 'RateLimiter is not initialized')"
               
               + "local valueName = KEYS[2];"
-              + "if type == 1 then "
+              + "if type == '1' then "
                   + "valueName = KEYS[3];"
               + "end;"
               

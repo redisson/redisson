@@ -28,12 +28,12 @@ Features
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
 * Asynchronous connection pool  
 * Lua scripting  
-* [Distributed objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)  
+* [Distributed Java objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)  
     Object holder, Binary stream holder, Geospatial holder, BitSet, AtomicLong, AtomicDouble, PublishSubscribe,
     Bloom filter, HyperLogLog
-* [Distributed collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)  
+* [Distributed Java collections](https://github.com/redisson/redisson/wiki/7.-Distributed-collections)  
     Map, Multimap, Set, List, SortedSet, ScoredSortedSet, LexSortedSet, Queue, Deque, Blocking Queue, Bounded Blocking Queue, Blocking Deque, Delayed Queue, Priority Queue, Priority Deque
-* [Distributed locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)  
+* [Distributed Java locks and synchronizers](https://github.com/redisson/redisson/wiki/8.-Distributed-locks-and-synchronizers)  
     Lock, FairLock, MultiLock, RedLock, ReadWriteLock, Semaphore, PermitExpirableSemaphore, CountDownLatch
 * [Distributed services](https://github.com/redisson/redisson/wiki/9.-distributed-services)  
     Remote service, Live Object service, Executor service, Scheduler service, MapReduce service

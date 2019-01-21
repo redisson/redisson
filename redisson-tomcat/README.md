@@ -43,9 +43,11 @@ Each RedissonSessionManager created per Web Application and thus creates own Red
 
 ```xml
   <GlobalNamingResources>
-    <Resource name="bean/redisson" auth="Container"
+    <Resource name="bean/redisson" 
+	      auth="Container"
               factory="org.redisson.JndiRedissonFactory"
-              configPath="${catalina.base}/conf/redisson.yaml"/>
+              configPath="${catalina.base}/conf/redisson.yaml"
+	      closeMethod="shutdown"/>
   </GlobalNamingResources>
 ```
 
@@ -60,8 +62,6 @@ Each RedissonSessionManager created per Web Application and thus creates own Red
          readMode="REDIS"
          jndiName="bean/redisson" />
 ```
-
-3. Package all classes used in session into separate jar and copy it to `tomcat/lib` directory.
 
 **2** Copy two jars into `TOMCAT_BASE/lib` directory:
   

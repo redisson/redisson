@@ -15,11 +15,13 @@
  */
 package org.redisson.connection;
 
-import org.redisson.connection.dns.MultiDnsAddressResolverGroup;
-
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.resolver.ResolvedAddressTypes;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
+import io.netty.resolver.dns.DnsNameResolverBuilder;
 import io.netty.resolver.dns.DnsServerAddressStreamProvider;
+import io.netty.resolver.dns.DnsServerAddressStreamProviders;
 
 /**
  * Workaround for https://github.com/netty/netty/issues/8261
@@ -32,7 +34,11 @@ public class MultiDnsAddressResolverGroupFactory implements AddressResolverGroup
     @Override
     public DnsAddressResolverGroup create(Class<? extends DatagramChannel> channelType,
             DnsServerAddressStreamProvider nameServerProvider) {
-        return new MultiDnsAddressResolverGroup(channelType, nameServerProvider);
+        
+        return new DnsAddressResolverGroup(new DnsNameResolverBuilder()
+                .channelType(NioDatagramChannel.class)
+                .nameServerProvider(DnsServerAddressStreamProviders.platformDefault())
+                .resolvedAddressTypes(ResolvedAddressTypes.IPV4_ONLY));
     }
 
 }
