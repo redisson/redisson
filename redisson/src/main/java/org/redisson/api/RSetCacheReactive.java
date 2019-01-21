@@ -27,7 +27,7 @@ import org.reactivestreams.Publisher;
  *
  * @param <V> value
  */
-public interface RSetCacheReactive<V> extends RCollectionReactive<V> {
+public interface RSetCacheReactive<V> extends RCollectionReactive<V>, RDestroyable {
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>

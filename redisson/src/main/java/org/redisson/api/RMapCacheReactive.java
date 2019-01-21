@@ -38,7 +38,7 @@ import org.reactivestreams.Publisher;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheReactive<K, V> extends RMapReactive<K, V> {
+public interface RMapCacheReactive<K, V> extends RMapReactive<K, V>, RDestroyable {
 
     /**
      * Sets max size of the map.

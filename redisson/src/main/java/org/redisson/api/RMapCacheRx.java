@@ -38,7 +38,7 @@ import io.reactivex.Flowable;
  * @param <K> key
  * @param <V> value
  */
-public interface RMapCacheRx<K, V> extends RMapRx<K, V> {
+public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
 
     /**
      * Sets max size of the map.
