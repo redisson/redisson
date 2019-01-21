@@ -39,7 +39,7 @@ Usage
          <artifactId>redisson-hibernate-5</artifactId>
          <!-- for Hibernate v5.2.x -->
          <artifactId>redisson-hibernate-52</artifactId>
-         <!-- for Hibernate v5.3.x -->
+         <!-- for Hibernate v5.3.x - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
          <version>3.10.1</version>
      </dependency>
@@ -53,7 +53,7 @@ Usage
      compile 'org.redisson:redisson-hibernate-5:3.10.1'
      // for Hibernate v5.2.x
      compile 'org.redisson:redisson-hibernate-52:3.10.1'
-     // for Hibernate v5.3.x
+     // for Hibernate v5.3.x - v5.4.x
      compile 'org.redisson:redisson-hibernate-53:3.10.1'
      ```  
 
