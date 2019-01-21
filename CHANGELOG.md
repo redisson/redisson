@@ -6,6 +6,7 @@ Redisson Releases History
 
 ### 21-Jan-2018 - versions 2.15.1 and 3.10.1 released  
 Feature - `cachedKeySet`, `cachedValues`, `cachedEntrySet` and `getCachedMap` methods added to `RLocalCachedMap` object  
+Feature - __Hibernate 5.4__ support  
 Feature - [search LiveObjects](https://github.com/redisson/redisson/wiki/9.-Distributed-services#rindex) by field  
 Feature - allow checking if lock is held by a thread (thanks to [hackworks](https://github.com/hackworks))  
 Improvement - return `null` if Tomcat session attribute couldn't be parsed  
