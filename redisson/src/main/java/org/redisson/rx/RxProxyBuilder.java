@@ -29,6 +29,9 @@ import org.redisson.api.RFuture;
  * @author Nikita Koksharov
  *
  */
+//TODO refactor to common object and MethodHandles
+//MethodHandle mh = MethodHandles.lookup().findVirtual(implementation.getClass(), method.getName(), 
+//                MethodType.methodType(method.getReturnType(), method.getParameterTypes()));
 public class RxProxyBuilder {
 
     private static class CacheKey {

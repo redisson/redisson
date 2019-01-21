@@ -30,6 +30,9 @@ import reactor.fn.Supplier;
  * @author Nikita Koksharov
  *
  */
+//TODO refactor to common object and MethodHandles
+//MethodHandle mh = MethodHandles.lookup().findVirtual(implementation.getClass(), method.getName(), 
+//                MethodType.methodType(method.getReturnType(), method.getParameterTypes()));
 public class ReactiveProxyBuilder {
 
     private static class CacheKey {
