@@ -63,8 +63,6 @@ Each RedissonSessionManager created per Web Application and thus creates own Red
          jndiName="bean/redisson" />
 ```
 
-3. Package all classes used in session into separate jar and copy it to `tomcat/lib` directory.
-
 **2** Copy two jars into `TOMCAT_BASE/lib` directory:
   
 1. __For JDK 1.8+__  
