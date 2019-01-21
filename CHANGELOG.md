@@ -4,6 +4,36 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 21-Jan-2018 - versions 2.15.1 and 3.10.1 released  
+Feature - `cachedKeySet`, `cachedValues`, `cachedEntrySet` and `getCachedMap` methods added to `RLocalCachedMap` object  
+Feature - __Hibernate 5.4__ support  
+Feature - [search LiveObjects](https://github.com/redisson/redisson/wiki/9.-Distributed-services#rindex) by field  
+Feature - allow checking if lock is held by a thread (thanks to [hackworks](https://github.com/hackworks))  
+Improvement - return `null` if Tomcat session attribute couldn't be parsed  
+Improvement - Tomcat Session key codec changed to StringCodec  
+Improvement - Spring Session key codec changed to StringCodec  
+Improvement - Tomcat Session recycle method implementation (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - RRateLimiter RateType checking  
+Fixed - implementation of workaround for DNS name resolver bug (thanks to [shengjie8329](https://github.com/shengjie8329))  
+Fixed - running scheduleWithFixedDelay Job couldn't be canceled  
+Fixed - master can't be changed anymore if new master wasn't added the first time  
+Fixed - don't send PING command for blocking queues  
+Fixed - getting `java.lang.ClassNotFoundException` if same Redisson instance used in tomcat and application (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - Tomcat Session manager throws `java.lang.ClassNotFoundException` if `readMode=MEMORY` (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - ReplicatedConnectionManager doesn't recover Master node as Slave after failover  
+Fixed - Spring Session manager process changes of unnecessary keys  
+Fixed - Tomcat Session expires in Redis earlier than scheduled by Tomcat (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - Tomcat Session `getAttribute` method throws NPE  
+Fixed - `BlockingQueue.drainTo` doesn't work when queue contains only one element  
+Fixed - `RTopic.removeListener` method throws `RejectedExecutionException`  
+Fixed - connection is not reconnected if init command failed to send  
+Fixed - `keepAlive` setting is not set for single server connection mode  
+Fixed - NPE in CommandPubSubDecoder  
+Fixed - `pollFromAny` doesn't support Redis cluster  
+Fixed - `RGeo.pos` throws `ClassCastException`  
+Fixed - `LRUCacheMap` throws `ArrayIndexOutOfBoundsException`  
+Fixed - IPv6 hosts support (thanks to [antimony](https://github.com/antimony))
+
 ### 27-Dec-2018 - versions 2.15.0 and 3.10.0 released  
 Feature - new __[Hibernate cache](https://github.com/redisson/redisson/tree/master/redisson-hibernate) implementation__  
 Feature - __Hibernate 5.3__ support  
