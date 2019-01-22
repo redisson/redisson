@@ -66,4 +66,8 @@ public class JndiRedissonSessionManager extends RedissonSessionManager {
         this.jndiName = jndiName;
     }
 
+    @Override
+    protected void shutdownRedisson() {
+    }
+    
 }
