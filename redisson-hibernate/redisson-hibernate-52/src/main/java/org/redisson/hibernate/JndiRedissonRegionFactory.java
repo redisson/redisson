@@ -21,6 +21,7 @@ import javax.naming.InitialContext;
 import javax.naming.NamingException;
 
 import org.hibernate.cache.CacheException;
+import org.hibernate.engine.jndi.internal.JndiServiceImpl;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.hibernate.internal.util.jndi.JndiHelper;
 import org.redisson.api.RedissonClient;
@@ -45,7 +46,7 @@ public class JndiRedissonRegionFactory extends RedissonRegionFactory {
             throw new CacheException(JNDI_NAME + " property not set");
         }
         
-        Properties jndiProperties = JndiHelper.extractJndiProperties(properties);
+        Properties jndiProperties = JndiServiceImpl.extractJndiProperties(properties);
         InitialContext context = null;
         try {
             context = new InitialContext(jndiProperties);
