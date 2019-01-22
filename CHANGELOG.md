@@ -13,8 +13,8 @@ Improvement - return `null` if Tomcat session attribute couldn't be parsed
 Improvement - Tomcat Session key codec changed to StringCodec  
 Improvement - Spring Session key codec changed to StringCodec  
 Improvement - Tomcat Session recycle method implementation (thanks to [jchobantonov](https://github.com/jchobantonov))  
-Fixed - RRateLimiter RateType checking  
-Fixed - implementation of workaround for DNS name resolver bug (thanks to [shengjie8329](https://github.com/shengjie8329))  
+Fixed - RRateLimiter RateType checking (thanks to [shengjie8329](https://github.com/shengjie8329))  
+Fixed - implementation of workaround for DNS name resolver bug  
 Fixed - running scheduleWithFixedDelay Job couldn't be canceled  
 Fixed - master can't be changed anymore if new master wasn't added the first time  
 Fixed - don't send PING command for blocking queues  
