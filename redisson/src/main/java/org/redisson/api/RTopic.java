@@ -77,7 +77,7 @@ public interface RTopic extends RTopicAsync {
      *
      * @param listenerId - listener id
      */
-    void removeListener(int listenerId);
+    void removeListener(Integer... listenerIds);
 
     /**
      * Removes all listeners from this topic

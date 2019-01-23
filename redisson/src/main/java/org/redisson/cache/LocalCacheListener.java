@@ -16,9 +16,11 @@
 package org.redisson.cache;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -278,12 +280,14 @@ public abstract class LocalCacheListener {
     }
     
     public void remove() {
+        List<Integer> ids = new ArrayList<Integer>(2);
         if (syncListenerId != 0) {
-            invalidationTopic.removeListener(syncListenerId);
+            ids.add(syncListenerId);
         }
         if (reconnectionListenerId != 0) {
-            invalidationTopic.removeListener(reconnectionListenerId);
+            ids.add(reconnectionListenerId);
         }
+        invalidationTopic.removeListenerAsync(ids.toArray(new Integer[ids.size()]));
     }
 
     public String getUpdatesLogName() {

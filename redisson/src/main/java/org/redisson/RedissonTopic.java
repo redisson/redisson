@@ -220,7 +220,7 @@ public class RedissonTopic implements RTopic {
     }
 
     @Override
-    public RFuture<Void> removeListenerAsync(final int listenerId) {
+    public RFuture<Void> removeListenerAsync(final Integer... listenerIds) {
         final RPromise<Void> promise = new RedissonPromise<Void>();
         final AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         semaphore.acquire(new Runnable() {
@@ -233,7 +233,9 @@ public class RedissonTopic implements RTopic {
                     return;
                 }
 
-                entry.removeListener(channelName, listenerId);
+                for (int id : listenerIds) {
+                    entry.removeListener(channelName, id);
+                }
                 if (!entry.hasListeners(channelName)) {
                     subscribeService.unsubscribe(channelName, semaphore)
                         .addListener(new TransferListener<Void>(promise));
@@ -247,7 +249,7 @@ public class RedissonTopic implements RTopic {
     }
     
     @Override
-    public void removeListener(int listenerId) {
+    public void removeListener(Integer... listenerIds) {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
         
@@ -257,7 +259,9 @@ public class RedissonTopic implements RTopic {
             return;
         }
 
-        entry.removeListener(channelName, listenerId);
+        for (int id : listenerIds) {
+            entry.removeListener(channelName, id);
+        }
         if (!entry.hasListeners(channelName)) {
             subscribeService.unsubscribe(channelName, semaphore).syncUninterruptibly();
         } else {

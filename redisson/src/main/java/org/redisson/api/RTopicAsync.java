@@ -62,7 +62,7 @@ public interface RTopicAsync {
      * @param listenerId - listener id
      * @return void
      */
-    RFuture<Void> removeListenerAsync(int listenerId);
+    RFuture<Void> removeListenerAsync(Integer... listenerIds);
 
     /**
      * Removes the listener by its instance
