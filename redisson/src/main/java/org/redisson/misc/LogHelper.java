@@ -19,6 +19,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommands;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.util.CharsetUtil;
@@ -45,6 +46,9 @@ public class LogHelper {
             return toCollectionString((Collection<?>) object);
         } else if (object instanceof CommandData) {
             CommandData<?, ?> cd = (CommandData<?, ?>)object;
+            if (RedisCommands.AUTH.equals(cd.getCommand())) {
+                return cd.getCommand() + ", params: (password masked)";
+            }
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
         } else if (object instanceof ByteBuf) {
             final ByteBuf byteBuf = (ByteBuf) object;
