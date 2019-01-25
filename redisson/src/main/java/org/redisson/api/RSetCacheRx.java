@@ -27,7 +27,7 @@ import io.reactivex.Flowable;
  *
  * @param <V> value
  */
-public interface RSetCacheRx<V> extends RCollectionRx<V> {
+public interface RSetCacheRx<V> extends RCollectionRx<V>, RDestroyable {
 
     /**
      * Returns <code>RPermitExpirableSemaphore</code> instance associated with <code>value</code>

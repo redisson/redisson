@@ -59,10 +59,10 @@ public interface RTopicAsync {
     /**
      * Removes the listener by <code>id</code> for listening this topic
      *
-     * @param listenerId - listener id
+     * @param listenerIds - listener ids
      * @return void
      */
-    RFuture<Void> removeListenerAsync(int listenerId);
+    RFuture<Void> removeListenerAsync(Integer... listenerIds);
 
     /**
      * Removes the listener by its instance

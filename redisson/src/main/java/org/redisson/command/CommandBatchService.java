@@ -438,7 +438,7 @@ public class CommandBatchService extends CommandAsyncService {
                     listener.setCounter(connections.size());
                     for (final Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
                         final RPromise<List<Object>> execPromise = new RedissonPromise<List<Object>>();
-                        async(false, new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
+                        async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
                                 new Object[] {}, execPromise, 0, false);
                         execPromise.addListener(new FutureListener<List<Object>>() {
                             @Override

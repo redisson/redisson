@@ -287,13 +287,17 @@ public class RedissonSessionManager extends ManagerBase {
         setState(LifecycleState.STOPPING);
         
         try {
-            if (redisson != null) {
-                redisson.shutdown();
-            }
+            shutdownRedisson();
         } catch (Exception e) {
             throw new LifecycleException(e);
         }
         
+    }
+
+    protected void shutdownRedisson() {
+        if (redisson != null) {
+            redisson.shutdown();
+        }
     }
 
     public void store(HttpSession session) throws IOException {

@@ -314,14 +314,18 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     @Override
     public void stop() throws LifecycleException {
         try {
-            if (redisson != null) {
-                redisson.shutdown();
-            }
+            shutdownRedisson();
         } catch (Exception e) {
             throw new LifecycleException(e);
         }
         
         lifecycle.fireLifecycleEvent(STOP_EVENT, null);
+    }
+
+    protected void shutdownRedisson() {
+        if (redisson != null) {
+            redisson.shutdown();
+        }
     }
 
     public void store(HttpSession session) throws IOException {

@@ -23,12 +23,10 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
-import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.FstCodec;
-import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.MultiDnsAddressResolverGroupFactory;
+import org.redisson.connection.DnsAddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
 import org.redisson.misc.URIBuilder;
 
@@ -87,7 +85,7 @@ public class Config {
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
-    private AddressResolverGroupFactory addressResolverGroupFactory = new MultiDnsAddressResolverGroupFactory();
+    private AddressResolverGroupFactory addressResolverGroupFactory = new DnsAddressResolverGroupFactory();
 
     public Config() {
     }

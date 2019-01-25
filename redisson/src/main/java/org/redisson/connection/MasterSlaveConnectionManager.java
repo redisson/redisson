@@ -495,7 +495,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (URIBuilder.compare(entry.getClient().getAddr(), addr)) {
                 return entry;
-    }
+            }
             if (entry.hasSlave(addr)) {
                 return entry;
             }
@@ -561,6 +561,12 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (entry == null) {
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
             return RedissonPromise.newFailedFuture(ex);
+        }
+        // fix for https://github.com/redisson/redisson/issues/1548
+        if (source.getRedirect() != null &&
+                !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) &&
+                entry.hasSlave(source.getAddr())) {
+            return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }
         return entry.connectionWriteOp(command);
     }

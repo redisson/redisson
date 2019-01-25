@@ -124,34 +124,20 @@ public class RedissonRegionFactory implements RegionFactory {
     }
     
     private Config loadConfig(ClassLoader classLoader, String fileName) {
-        Config config = null;
-        try {
-            InputStream is = classLoader.getResourceAsStream(fileName);
-            if (is != null) {
-                try {
-                    config = Config.fromJSON(is);
-                } finally {
-                    is.close();
-                }
-            }
-        } catch (IOException e) {
-            throw new CacheException("Can't parse json config", e);
-        }
-        if (config == null) {
+        InputStream is = classLoader.getResourceAsStream(fileName);
+        if (is != null) {
             try {
-                InputStream is = classLoader.getResourceAsStream(fileName);
-                if (is != null) {
-                    try {
-                        config = Config.fromYAML(is);
-                    } finally {
-                        is.close();
-                    }
-                }
+                return Config.fromJSON(is);
             } catch (IOException e) {
-                throw new CacheException("Can't parse yaml config", e);
+                try {
+                    is = classLoader.getResourceAsStream(fileName);
+                    return Config.fromYAML(is);
+                } catch (IOException e1) {
+                    throw new CacheException("Can't parse yaml config", e1);
+                }
             }
         }
-        return config;
+        return null;
     }
 
     @Override

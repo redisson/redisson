@@ -285,7 +285,7 @@ public class MasterSlaveEntry {
     public boolean hasSlave(URI addr) {
         return slaveBalancer.contains(addr);
     }
-    
+
     public int getAvailableClients() {
         return slaveBalancer.getAvailableClients();
     }
@@ -486,6 +486,10 @@ public class MasterSlaveEntry {
 
     public RFuture<RedisConnection> connectionWriteOp(RedisCommand<?> command) {
         return writeConnectionPool.get(command);
+    }
+
+    public RFuture<RedisConnection> redirectedConnectionWriteOp(RedisCommand<?> command, URI addr) {
+        return slaveBalancer.getConnection(command, addr);
     }
 
     public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command) {
