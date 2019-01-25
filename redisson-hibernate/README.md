@@ -22,7 +22,7 @@ Below is the list of all available factories with local cache and/or data partit
 |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | No | **Yes** |
 |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | **Yes** | **Yes** |
 
-Usage
+Hibernate Cache Usage
 ===
 
 ### 1.  Add `redisson-hibernate` dependency into your project:
