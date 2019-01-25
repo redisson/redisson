@@ -562,6 +562,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
             return RedissonPromise.newFailedFuture(ex);
         }
+        // fix for https://github.com/redisson/redisson/issues/1548
         if (source.getRedirect() != null &&
                 !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) &&
                 entry.hasSlave(source.getAddr())) {
