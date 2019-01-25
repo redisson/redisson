@@ -175,7 +175,7 @@ public class AsyncSemaphore {
 
     @Override
     public String toString() {
-        return String.valueOf(counter);
+        return "value:" + counter + ":queue:" + queueSize();
     }
     
     
