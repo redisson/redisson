@@ -82,9 +82,9 @@ public class RedissonMultiLock implements Lock {
         long waitTime = -1;
         if (leaseTime == -1) {
             waitTime = baseWaitTime;
-            unit = TimeUnit.MILLISECONDS;
         } else {
-            waitTime = unit.toMillis(leaseTime);
+            leaseTime = unit.toMillis(leaseTime);
+            waitTime = leaseTime;
             if (waitTime <= 2000) {
                 waitTime = 2000;
             } else if (waitTime <= baseWaitTime) {
@@ -92,11 +92,10 @@ public class RedissonMultiLock implements Lock {
             } else {
                 waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
             }
-            waitTime = unit.convert(waitTime, TimeUnit.MILLISECONDS);
         }
 
         RPromise<Void> result = new RedissonPromise<Void>();
-        tryLockAsync(leaseTime, unit, waitTime, result);
+        tryLockAsync(leaseTime, TimeUnit.MILLISECONDS, waitTime, result);
         return result;
     }
 
@@ -129,9 +128,9 @@ public class RedissonMultiLock implements Lock {
         long waitTime = -1;
         if (leaseTime == -1) {
             waitTime = baseWaitTime;
-            unit = TimeUnit.MILLISECONDS;
         } else {
-            waitTime = unit.toMillis(leaseTime);
+            leaseTime = unit.toMillis(leaseTime);
+            waitTime = leaseTime;
             if (waitTime <= 2000) {
                 waitTime = 2000;
             } else if (waitTime <= baseWaitTime) {
@@ -139,11 +138,10 @@ public class RedissonMultiLock implements Lock {
             } else {
                 waitTime = ThreadLocalRandom.current().nextLong(baseWaitTime, waitTime);
             }
-            waitTime = unit.convert(waitTime, TimeUnit.MILLISECONDS);
         }
         
         while (true) {
-            if (tryLock(waitTime, leaseTime, unit)) {
+            if (tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS)) {
                 return;
             }
         }
