@@ -1,7 +1,7 @@
 Redis based Hibernate Cache implementation
 ===
 
-Implements Hibernate 2nd level Cache provider based on Redisson.  
+Implements Hibernate 2nd level Cache provider based on Redis.  
 Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
@@ -140,7 +140,7 @@ NONE - No synchronizations on map changes
 
 Default value: INVALIDATE
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed updates during any connection failures to Redis. Since, local cache updates can't be get in absence of connection to Redis. Follow reconnection strategies are available:  
+`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed updates through Hibernate during any connection failures to Redis. Since, local cache updates can't be get in absence of connection to Redis. Follow reconnection strategies are available:  
 CLEAR - Clear local cache if map instance has been disconnected for a while.  
 LOAD - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.  
 NONE - Default. No reconnection handling  
