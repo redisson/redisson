@@ -23,7 +23,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class RedissonRedLockTest {
 
     @Test
-    public void testLockLeasetime() throws IOException, InterruptedException {
+    public void testLockLeasetimeWithMilliSeconds() throws IOException, InterruptedException {
+        testLockLeasetime(2000, TimeUnit.MILLISECONDS);
+    }
+
+    @Test
+    public void testLockLeasetimeWithSeconds() throws IOException, InterruptedException {
+        testLockLeasetime(2, TimeUnit.SECONDS);
+    }
+
+    @Test
+    public void testLockLeasetimeWithMinutes() throws IOException, InterruptedException {
+        testLockLeasetime(1, TimeUnit.MINUTES);
+    }
+
+    private void testLockLeasetime(final long leaseTime, final TimeUnit unit) throws IOException, InterruptedException {
         RedisProcess redis1 = redisTestMultilockInstance();
         RedisProcess redis2 = redisTestMultilockInstance();
         
@@ -47,7 +61,7 @@ public class RedissonRedLockTest {
             executor.submit(() -> {
                 for (int j = 0; j < 5; j++) {
                     try {
-                        lock.lock(2, TimeUnit.SECONDS);
+                        lock.lock(leaseTime, unit);
                         int nextValue = counter.get() + 1;
                         Thread.sleep(1000);
                         counter.set(nextValue);

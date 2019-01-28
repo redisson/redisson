@@ -33,6 +33,7 @@ package org.redisson.client.handler;
 
 import org.redisson.client.ChannelName;
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +105,11 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
             }
             
             if (log.isTraceEnabled()) {
-                log.trace("channel: {} message: {}", ctx.channel(), out.toString(CharsetUtil.UTF_8));
+                String info = out.toString(CharsetUtil.UTF_8);
+                if (RedisCommands.AUTH.equals(msg.getCommand())) {
+                    info = info.substring(0, info.indexOf(RedisCommands.AUTH.getName()) + RedisCommands.AUTH.getName().length()) + "(password masked)";
+                }
+                log.trace("channel: {} message: {}", ctx.channel(), info);
             }
         } catch (Exception e) {
             msg.tryFailure(e);
