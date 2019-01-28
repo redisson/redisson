@@ -37,6 +37,7 @@ import org.redisson.client.protocol.pubsub.Message;
 import org.redisson.client.protocol.pubsub.PubSubMessage;
 import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
+import org.redisson.misc.LogHelper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -78,7 +79,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(ctx);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), LogHelper.toString(in), e);
                 sendNext(ctx);
                 throw e;
             }
@@ -94,7 +95,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 }
                 sendNext(ctx, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), e);
+                log.error("Unable to decode data. channel: {} message: {}", ctx.channel(), LogHelper.toString(in), e);
                 cmd.tryFailure(e);
                 sendNext(ctx);
                 throw e;
