@@ -18,6 +18,8 @@ package org.redisson.tomcat;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -76,13 +78,52 @@ public class RedissonSession extends StandardSession {
     @Override
     public Object getAttribute(String name) {
         if (readMode == ReadMode.REDIS) {
+            if (!isValidInternal()) {
+                throw new IllegalStateException(sm.getString("standardSession.getAttribute.ise"));
+            }
+
+            if (name == null) {
+                return null;
+            }
+
             return map.get(name);
         }
 
         return super.getAttribute(name);
     }
     
+    @Override
+    public Enumeration<String> getAttributeNames() {
+        if (readMode == ReadMode.REDIS) {
+            if (!isValidInternal()) {
+                throw new IllegalStateException
+                    (sm.getString("standardSession.getAttributeNames.ise"));
+            }
+            return Collections.enumeration(map.readAllKeySet());
+        }
+        
+        return super.getAttributeNames();
+    }
+
+    @Override
+    public String[] getValueNames() {
+        if (readMode == ReadMode.REDIS) {
+            if (!isValidInternal()) {
+                throw new IllegalStateException
+                    (sm.getString("standardSession.getAttributeNames.ise"));
+            }
+            Set<String> keys = map.readAllKeySet();
+            return keys.toArray(new String[keys.size()]);
+        }
+        
+        return super.getValueNames();
+    }
+    
     public void delete() {
+        if (map == null) {
+            map = redissonManager.getMap(id);
+        }
+        
         map.delete();
         if (readMode == ReadMode.MEMORY) {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
