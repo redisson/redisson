@@ -23,6 +23,8 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,6 +42,8 @@ import io.netty.util.concurrent.FutureListener;
 @Sharable
 public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
 
+    private static final Logger log = LoggerFactory.getLogger(PingConnectionHandler.class);
+    
     private final RedisClientConfig config;
 
     public PingConnectionHandler(RedisClientConfig config) {
@@ -71,6 +75,7 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 if ((commandData == null || !commandData.isBlockingCommand()) && 
                         (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
+                    log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                 } else {
                     sendPing(ctx);
                 }
