@@ -236,7 +236,11 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
         }
         if (status.compareAndSet(0, CANCELED)) {
             promise.cancel(mayInterruptIfRunning);
-            return super.cancel(mayInterruptIfRunning);
+            try {
+                return super.cancel(mayInterruptIfRunning);
+            } catch (CancellationException e) {
+                return true;
+            }
         }
         return false;
     }
