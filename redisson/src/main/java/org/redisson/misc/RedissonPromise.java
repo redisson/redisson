@@ -224,10 +224,11 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
 
     @Override
     public T getNow() {
-        if (isCompletedExceptionally()) {
+        try {
+            return getNow(null);
+        } catch (Exception e) {
             return null;
         }
-        return getNow(null);
     }
 
     @Override
