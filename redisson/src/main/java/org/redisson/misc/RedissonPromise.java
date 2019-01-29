@@ -15,11 +15,10 @@
  */
 package org.redisson.misc;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
-import java.lang.reflect.Field;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -95,6 +94,8 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
     public Throwable cause() {
         try {
             getNow(null);
+        } catch (CancellationException e) {
+            return e;
         } catch (CompletionException e) {
             return e.getCause();
         }
@@ -236,11 +237,7 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
         }
         if (status.compareAndSet(0, CANCELED)) {
             promise.cancel(mayInterruptIfRunning);
-            try {
-                return super.cancel(mayInterruptIfRunning);
-            } catch (CancellationException e) {
-                return true;
-            }
+            return super.cancel(mayInterruptIfRunning);
         }
         return false;
     }
