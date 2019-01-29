@@ -437,7 +437,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private String createAddress(String host, Object port) {
-        if (host.contains(":")) {
+        if (host.contains(":") && !host.startsWith("[")) {
             host = "[" + host + "]";
         }
         return "redis://" + host + ":" + port;
