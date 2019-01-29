@@ -938,7 +938,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         TimerTask timeoutTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (details.getAttempt() < connectionManager.getConfig().getRetryAttempts()) {
+                if (!details.getAttemptPromise().isDone() 
+                        && details.getAttempt() < connectionManager.getConfig().getRetryAttempts()) {
                     if (!details.getAttemptPromise().cancel(false)) {
                         return;
                     }
