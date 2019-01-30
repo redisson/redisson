@@ -917,7 +917,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         popTimeout = Long.valueOf(param.toString()) / 1000;
                         break;
                     }
-                    if (param instanceof String) {
+                    if ("BLOCK".equals(param)) {
                         found = true; 
                     }
                 }
