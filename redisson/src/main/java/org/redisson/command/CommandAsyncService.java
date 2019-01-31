@@ -1080,14 +1080,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 return;
             }
             
-            if (future.cause() instanceof RedisLoadingException) {
-                async(details.isReadOnlyMode(), source, details.getCodec(),
-                        details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-                AsyncDetails.release(details);
-                return;
-            }
-            
-            if (future.cause() instanceof RedisTryAgainException) {
+            if (future.cause() instanceof RedisTryAgainException
+                    || future.cause() instanceof RedisLoadingException) {
                 connectionManager.newTimeout(new TimerTask() {
                     @Override
                     public void run(Timeout timeout) throws Exception {
