@@ -83,6 +83,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
         return promise;
     }
 
+    public RPromise<Void> initConnections(ClientConnectionsEntry entry) {
+        RPromise<Void> promise = new RedissonPromise<Void>();
+        initConnections(entry, promise, false);
+        return promise;
+    }
+    
     private void initConnections(final ClientConnectionsEntry entry, final RPromise<Void> initPromise, boolean checkFreezed) {
         final int minimumIdleSize = getMinimumIdleSize(entry);
 
@@ -408,16 +414,9 @@ abstract class ConnectionPool<T extends RedisConnection> {
                                     }
 
                                     if (future.isSuccess() && "PONG".equals(future.getNow())) {
-                                        entry.resetFirstFail();
-                                        RPromise<Void> promise = new RedissonPromise<Void>();
-                                        promise.addListener(new FutureListener<Void>() {
-                                            @Override
-                                            public void operationComplete(Future<Void> future) throws Exception {
-                                                    masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT);
-                                                    log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
-                                                        }
-                                        });
-                                        initConnections(entry, promise, false);
+                                        if (masterSlaveEntry.slaveUp(entry, FreezeReason.RECONNECT)) {
+                                            log.info("slave {} has been successfully reconnected", entry.getClient().getAddr());
+                                        }
                                     } else {
                                         scheduleCheck(entry);
                                     }
