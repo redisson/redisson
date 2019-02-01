@@ -216,7 +216,14 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         @Override
         public String changeSessionId() {
             String id = delegate.changeSessionId();
-            map.rename(keyPrefix + id);
+            if (redisson.getConfig().isClusterConfig()) {
+                Map<String, Object> oldState = map.readAllMap();
+                map.delete();
+                map = redisson.getMap(keyPrefix + id, map.getCodec());
+                map.putAll(oldState);
+            } else {
+                map.rename(keyPrefix + id);
+            }
             return id;
         }
 
