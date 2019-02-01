@@ -43,7 +43,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.redisson.liveobject.misc;
+package org.redisson.misc;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -55,17 +55,27 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.api.RObject;
+import org.redisson.api.annotation.RId;
 import org.redisson.cache.LRUCacheMap;
+import org.redisson.liveobject.misc.Introspectior;
 
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui) Modified
  */
-public class ClassUtils {
+public final class ClassUtils {
     
     public static void setField(Object obj, String fieldName, Object value) {
         try {
             Field field = getDeclaredField(obj.getClass(), fieldName);
+            setField(obj, field, value);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static void setField(Object obj, Field field, Object value) {
+        try {
             if (!field.isAccessible()) {
                 field.setAccessible(true);
             }
@@ -74,7 +84,54 @@ public class ClassUtils {
             throw new IllegalArgumentException(e);
         }
     }
-    
+
+    public static void trySetFieldWithSetter(Object obj, Field field, Object value) {
+        Method setter = searchForMethod(field.getDeclaringClass(),
+                getSetterName(field),
+                value == null ? new Class[0] : new Class[]{value.getClass()});
+        if (setter == null) {
+            //fallback
+            setField(obj, field, value);
+            return;
+        }
+        try {
+            setter.invoke(obj, value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static boolean isGetter(Method method, String fieldName) {
+        return method.getName().equals("get" + getFieldNameAsSuffix(fieldName))
+                || method.getName().equals("is" + getFieldNameAsSuffix(fieldName));
+    }
+
+    public static boolean isSetter(Method method, String fieldName) {
+        return method.getName().equals("set" + getFieldNameAsSuffix(fieldName));
+    }
+
+    public static String getGetterName(Field field) {
+        Class<?> type = field.getType();
+        return (boolean.class.equals(type) || Boolean.class.equals(type) ? "is" : "get")
+                + getFieldNameAsSuffix(field.getName());
+    }
+
+    public static String getSetterName(Field field) {
+        Class<?> type = field.getType();
+        return "set" + getFieldNameAsSuffix(field.getName());
+    }
+
+    public static String getFieldNameAsSuffix(String fieldName) {
+        return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+    }
+
+    public static String getREntityIdFieldName(Object o) throws Exception {
+        return Introspectior
+                .getFieldsWithAnnotation(o.getClass().getSuperclass(), RId.class)
+                .getOnly()
+                .getName();
+    }
+
     public static <T extends Annotation> T getAnnotation(Class<?> clazz, String fieldName, Class<T> annotationClass) {
         try {
             Field field = getDeclaredField(clazz, fieldName);

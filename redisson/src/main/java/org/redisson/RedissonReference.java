@@ -49,7 +49,7 @@ import org.redisson.api.RSetCacheReactive;
 import org.redisson.api.RSetReactive;
 import org.redisson.api.annotation.REntity;
 import org.redisson.client.codec.Codec;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 import org.redisson.misc.BiHashMap;
 
 /**

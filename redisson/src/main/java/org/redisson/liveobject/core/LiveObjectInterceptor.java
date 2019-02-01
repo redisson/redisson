@@ -25,7 +25,7 @@ import org.redisson.api.RMultimapAsync;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.client.RedisException;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 

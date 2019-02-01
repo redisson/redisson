@@ -70,7 +70,7 @@ import org.redisson.liveobject.core.RExpirableInterceptor;
 import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.core.RObjectInterceptor;
 import org.redisson.liveobject.misc.AdvBeanCopy;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.Resolver;

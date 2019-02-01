@@ -22,7 +22,7 @@ import org.redisson.config.Config;
 import org.redisson.api.RObject;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 
 /**
  *
