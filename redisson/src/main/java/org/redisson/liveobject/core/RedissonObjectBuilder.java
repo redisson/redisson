@@ -184,7 +184,14 @@ public class RedissonObjectBuilder {
                     && method.getName().startsWith("get")) {
                 Class<?> cls = method.getReturnType();
                 if (!map.containsKey(cls)) {
-                    map.put(cls, new CodecMethodRef());
+                    CodecMethodRef ref = new CodecMethodRef();
+                    map.put(cls, ref);
+                    try {
+                        Class<?> asyncClass = Class.forName(cls.getName() + "Async");
+                        map.put(asyncClass, ref);
+                    } catch (ClassNotFoundException e) {
+                        //ignore;
+                    }
                 }
                 CodecMethodRef builder = map.get(cls);
                 if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
