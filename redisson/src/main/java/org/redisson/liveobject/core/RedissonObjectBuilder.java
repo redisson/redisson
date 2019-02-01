@@ -301,7 +301,14 @@ public class RedissonObjectBuilder {
     }
 
     public <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
-        List<Class<?>> interfaces = Arrays.asList(expectedType.getInterfaces());
+
+        List<Class<?>> interfaces;
+        if (expectedType.isInterface()) {
+            interfaces = new ArrayList<>();
+            interfaces.add(expectedType);
+        } else {
+            interfaces = Arrays.asList(expectedType.getInterfaces());
+        }
         for (Class<?> iType : interfaces) {
             if (references.containsKey(iType)) {// user cache to speed up things a little.
                 Method builder = references.get(iType).get(codec != null);
