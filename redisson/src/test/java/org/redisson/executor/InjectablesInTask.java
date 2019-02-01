@@ -1,5 +1,6 @@
 package org.redisson.executor;
 
+import org.redisson.RedissonAtomicLong;
 import org.redisson.api.RAtomicLong;
 import org.redisson.api.RBucket;
 import org.redisson.api.RBucketAsync;
@@ -19,7 +20,7 @@ public class InjectablesInTask implements Runnable, Serializable {
     private RedissonClient redisson;
 
     @RInject(name = "myCounter")
-    private RAtomicLong atomicLong;
+    private RedissonAtomicLong atomicLong;
 
     @RInject(name = "myBucket")
     private RBucketAsync bucket;
