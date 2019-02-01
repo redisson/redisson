@@ -126,7 +126,6 @@ public class LoadBalancerManager {
         return unfreeze(entry, freezeReason);
     }
 
-    
     public boolean unfreeze(ClientConnectionsEntry entry, FreezeReason freezeReason) {
         synchronized (entry) {
             if (!entry.isFreezed()) {
@@ -138,6 +137,9 @@ public class LoadBalancerManager {
                 entry.resetFirstFail();
                 entry.setFreezed(false);
                 entry.setFreezeReason(null);
+                
+                slaveConnectionPool.initConnections(entry);
+                pubSubConnectionPool.initConnections(entry);
                 return true;
             }
         }

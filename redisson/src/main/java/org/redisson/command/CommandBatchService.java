@@ -776,20 +776,18 @@ public class CommandBatchService extends CommandAsyncService {
                     execute(entry, nodeSource, mainPromise, slots, attempt, options);
                     return;
                 }
-                if (future.cause() instanceof RedisLoadingException) {
-                    entry.clearErrors();
-                    execute(entry, source, mainPromise, slots, attempt, options);
-                    return;
-                }
-                if (future.cause() instanceof RedisTryAgainException) {
-                    entry.clearErrors();
-                    connectionManager.newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            execute(entry, source, mainPromise, slots, attempt, options);
-                        }
-                    }, 1, TimeUnit.SECONDS);
-                    return;
+                if (future.cause() instanceof RedisLoadingException
+                        || future.cause() instanceof RedisTryAgainException) {
+                    if (details.getAttempt() < connectionManager.getConfig().getRetryAttempts()) {
+                        entry.clearErrors();
+                        connectionManager.newTimeout(new TimerTask() {
+                            @Override
+                            public void run(Timeout timeout) throws Exception {
+                                execute(entry, source, mainPromise, slots, attempt + 1, options);
+                            }
+                        }, Math.min(connectionManager.getConfig().getTimeout(), 1000), TimeUnit.MILLISECONDS);
+                        return;
+                    }
                 }
 
                 free(entry);

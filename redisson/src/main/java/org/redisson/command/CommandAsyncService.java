@@ -917,7 +917,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         popTimeout = Long.valueOf(param.toString()) / 1000;
                         break;
                     }
-                    if (param instanceof String) {
+                    if ("BLOCK".equals(param)) {
                         found = true; 
                     }
                 }
@@ -1080,24 +1080,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 return;
             }
             
-            if (future.cause() instanceof RedisLoadingException) {
-                async(details.isReadOnlyMode(), source, details.getCodec(),
-                        details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-                AsyncDetails.release(details);
-                return;
-            }
-            
-            if (future.cause() instanceof RedisTryAgainException) {
-                connectionManager.newTimeout(new TimerTask() {
-                    @Override
-                    public void run(Timeout timeout) throws Exception {
-                        async(details.isReadOnlyMode(), source, details.getCodec(),
-                                details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
-                        
-                    }
-                }, 1, TimeUnit.SECONDS);
-                AsyncDetails.release(details);
-                return;
+            if (future.cause() instanceof RedisLoadingException
+                    || future.cause() instanceof RedisTryAgainException) {
+                if (details.getAttempt() < connectionManager.getConfig().getRetryAttempts()) {
+                    connectionManager.newTimeout(new TimerTask() {
+                        @Override
+                        public void run(Timeout timeout) throws Exception {
+                            async(details.isReadOnlyMode(), source, details.getCodec(),
+                                    details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt() + 1, ignoreRedirect);
+                        }
+                    }, Math.min(connectionManager.getConfig().getTimeout(), 1000), TimeUnit.MILLISECONDS);
+                    AsyncDetails.release(details);
+                    return;
+                }
             }
             
             free(details.getParams());

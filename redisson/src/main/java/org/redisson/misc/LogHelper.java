@@ -31,7 +31,7 @@ public class LogHelper {
 
     private static final int MAX_COLLECTION_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxCollectionLogSize", "10"));
     private static final int MAX_STRING_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxStringLogSize", "100"));
-    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "10000"));
+    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "1000"));
 
     private LogHelper() {
     }
@@ -53,13 +53,14 @@ public class LogHelper {
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
         } else if (object instanceof ByteBuf) {
             final ByteBuf byteBuf = (ByteBuf) object;
-            if (byteBuf.refCnt() > 0) {
-                if (byteBuf.writerIndex() > MAX_BYTEBUF_LOG_SIZE) {
-                    return new StringBuilder(byteBuf.toString(0, MAX_BYTEBUF_LOG_SIZE, CharsetUtil.UTF_8)).append("...").toString();
-                } else {
-                    return byteBuf.toString(0, byteBuf.writerIndex(), CharsetUtil.UTF_8);
-                }
-            }
+            // can't be used due to Buffer Leak error is appeared in log
+//            if (byteBuf.refCnt() > 0) {
+//                if (byteBuf.writerIndex() > MAX_BYTEBUF_LOG_SIZE) {
+//                    return new StringBuilder(byteBuf.toString(0, MAX_BYTEBUF_LOG_SIZE, CharsetUtil.UTF_8)).append("...").toString();
+//                } else {
+//                    return byteBuf.toString(0, byteBuf.writerIndex(), CharsetUtil.UTF_8);
+//                }
+//            }
             return byteBuf.toString();
         } else {
             return String.valueOf(object);
