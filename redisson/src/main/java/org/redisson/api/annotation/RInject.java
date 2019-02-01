@@ -15,13 +15,15 @@
  */
 package org.redisson.api.annotation;
 
+import org.redisson.client.codec.Codec;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Specifies that the field value is filled up with RedissonClient instance. 
+ * Specifies that the field value is filled up with RedissonClient and other Redisson supplied instances.
  * 
  * @author Nikita Koksharov
  *
@@ -29,5 +31,33 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface RInject {
+
+    /**
+     * Only used to signal {@link org.redisson.misc.Injector} to use default codec from its config.
+     *
+     * Maybe there is a better way to reduce the memory footprint, for now it is the best way to implement without
+     * changes to the Config class.
+     */
+    abstract class DefaultCodec implements Codec {
+        private DefaultCodec() {}
+    }
+
+    /**
+     * The name of requested object.
+     *
+     * Leave as default if the type is {@link org.redisson.api.RedissonClient RedissonClient}. <b>Required</b> for other types.
+     *
+     * @return key name
+     */
+    String name() default "";
+
+    /**
+     * Codec used for requested object. Will try to find existing instance of given class via {@link org.redisson.codec.ReferenceCodecProvider#getCodec(Class) ReferenceCodecProvider.getCodec(Class)} method.
+     *
+     * Leave as default if the type is {@link org.redisson.api.RedissonClient RedissonClient}. <b>Optional</b> for other types.
+     *
+     * @return codec class
+     */
+    Class<? extends Codec> codec() default DefaultCodec.class;
 
 }
