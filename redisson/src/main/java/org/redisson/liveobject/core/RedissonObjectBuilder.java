@@ -18,6 +18,7 @@ package org.redisson.liveobject.core;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashMap;
@@ -311,8 +312,8 @@ public class RedissonObjectBuilder {
         }
         for (Class<?> iType : interfaces) {
             if (references.containsKey(iType)) {// user cache to speed up things a little.
-                Method builder = references.get(iType).get(codec != null);
-                return (T) (codec != null
+                Method builder = references.get(iType).get(codec == null);
+                return (T) (codec == null
                         ? builder.invoke(redisson, name)
                         : builder.invoke(redisson, name, codec));
             }
