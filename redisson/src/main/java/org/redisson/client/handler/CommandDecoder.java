@@ -272,52 +272,43 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         int code = in.readByte();
         Channel channel = ctx.channel();
         if (code == '+') {
-            ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
-            try {
-                String result = rb.toString(CharsetUtil.UTF_8);
-                in.skipBytes(2);
+            int len = in.bytesBefore((byte) '\r');
+            String result = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
+            in.skipBytes(len + 2);
 
-                handleResult(data, parts, result, skipConvertor, channel);
-            } finally {
-                rb.release();
-            }
+            handleResult(data, parts, result, skipConvertor, channel);
         } else if (code == '-') {
-            ByteBuf rb = in.readBytes(in.bytesBefore((byte) '\r'));
-            try {
-                String error = rb.toString(CharsetUtil.UTF_8);
-                in.skipBytes(2);
-
-                if (error.startsWith("MOVED")) {
-                    String[] errorParts = error.split(" ");
-                    int slot = Integer.valueOf(errorParts[1]);
-                    String addr = errorParts[2];
-                    data.tryFailure(new RedisMovedException(slot, addr));
-                } else if (error.startsWith("ASK")) {
-                    String[] errorParts = error.split(" ");
-                    int slot = Integer.valueOf(errorParts[1]);
-                    String addr = errorParts[2];
-                    data.tryFailure(new RedisAskException(slot, addr));
-                } else if (error.startsWith("TRYAGAIN")) {
-                    data.tryFailure(new RedisTryAgainException(error
-                            + ". channel: " + channel + " data: " + data));
-                } else if (error.startsWith("LOADING")) {
-                    data.tryFailure(new RedisLoadingException(error
-                            + ". channel: " + channel + " data: " + data));
-                } else if (error.startsWith("OOM")) {
-                    data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
-                            + ". channel: " + channel + " data: " + data));
-                } else if (error.contains("-OOM ")) {
-                    data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
-                            + ". channel: " + channel + " data: " + data));
+            int len = in.bytesBefore((byte) '\r');
+            String error = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
+            in.skipBytes(len + 2);
+            if (error.startsWith("MOVED")) {
+                String[] errorParts = error.split(" ");
+                int slot = Integer.valueOf(errorParts[1]);
+                String addr = errorParts[2];
+                data.tryFailure(new RedisMovedException(slot, addr));
+            } else if (error.startsWith("ASK")) {
+                String[] errorParts = error.split(" ");
+                int slot = Integer.valueOf(errorParts[1]);
+                String addr = errorParts[2];
+                data.tryFailure(new RedisAskException(slot, addr));
+            } else if (error.startsWith("TRYAGAIN")) {
+                data.tryFailure(new RedisTryAgainException(error
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("LOADING")) {
+                data.tryFailure(new RedisLoadingException(error
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("OOM")) {
+                data.tryFailure(new RedisOutOfMemoryException(error.split("OOM ")[1]
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.contains("-OOM ")) {
+                data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
+                        + ". channel: " + channel + " data: " + data));
+            } else {
+                if (data != null) {
+                    data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
                 } else {
-                    if (data != null) {
-                        data.tryFailure(new RedisException(error + ". channel: " + channel + " command: " + LogHelper.toString(data)));
-                    } else {
-                        log.error("Error message from Redis: {} channel: {}", error, channel);
-                    }
+                    log.error("Error message from Redis: {} channel: {}", error, channel);
                 }
-            } finally {
-                rb.release();
             }
         } else if (code == ':') {
             Long result = readLong(in);
