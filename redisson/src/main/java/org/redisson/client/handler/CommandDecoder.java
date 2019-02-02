@@ -272,15 +272,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         int code = in.readByte();
         Channel channel = ctx.channel();
         if (code == '+') {
-            int len = in.bytesBefore((byte) '\r');
-            String result = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
-            in.skipBytes(len + 2);
+            String result = readString(in);
 
             handleResult(data, parts, result, skipConvertor, channel);
         } else if (code == '-') {
-            int len = in.bytesBefore((byte) '\r');
-            String error = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
-            in.skipBytes(len + 2);
+            String error = readString(in);
+
             if (error.startsWith("MOVED")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
@@ -347,6 +344,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             String dataStr = in.toString(0, in.writerIndex(), CharsetUtil.UTF_8);
             throw new IllegalStateException("Can't decode replay: " + dataStr);
         }
+    }
+
+    private String readString(ByteBuf in) {
+        int len = in.bytesBefore((byte) '\r');
+        String result = in.toString(in.readerIndex(), len, CharsetUtil.UTF_8);
+        in.skipBytes(len + 2);
+        return result;
     }
 
     @SuppressWarnings("unchecked")
