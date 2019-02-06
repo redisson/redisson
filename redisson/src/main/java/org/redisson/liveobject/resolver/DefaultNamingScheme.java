@@ -72,7 +72,7 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         
         ByteBuf b = Unpooled.wrappedBuffer(ByteBufUtil.decodeHexDump(decode)); 
         try {
-            return codec.getMapKeyDecoder().decode(b, new State(false));
+            return codec.getMapKeyDecoder().decode(b, new State());
         } catch (IOException ex) {
             throw new IllegalStateException("Unable to decode [" + decode + "] into object", ex);
         } finally {

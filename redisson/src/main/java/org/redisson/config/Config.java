@@ -80,6 +80,8 @@ public class Config {
     
     private boolean keepPubSubOrder = true;
     
+    private boolean decodeInExecutor = false;
+    
     private boolean useScriptCache = false;
     
     /**
@@ -102,6 +104,7 @@ public class Config {
             oldConf.setCodec(new FstCodec());
         }
 
+        setDecodeInExecutor(oldConf.isDecodeInExecutor());
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
@@ -714,5 +717,21 @@ public class Config {
         return useScriptCache;
     }
 
-    
+    public boolean isDecodeInExecutor() {
+        return decodeInExecutor;
+    }
+    /**
+     * Defines whether to decode data by <code>codec</code> in executor's threads or netty's threads. 
+     * If decoding data process takes long time and netty thread is used then `RedisTimeoutException` could arise time to time.
+     * <p>
+     * Default is <code>false</code>.
+     * 
+     * @param decodeInExecutor - <code>true</code> to use executor's threads, <code>false</code> to use netty's threads.
+     * @return config
+     */
+    public Config setDecodeInExecutor(boolean decodeInExecutor) {
+        this.decodeInExecutor = decodeInExecutor;
+        return this;
+    }
+
 }

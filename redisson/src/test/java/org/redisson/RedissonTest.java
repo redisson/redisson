@@ -44,7 +44,11 @@ import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
@@ -58,6 +62,10 @@ import org.redisson.connection.CRC16;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
+
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.CharsetUtil;
 
 public class RedissonTest {
 
@@ -389,6 +397,96 @@ public class RedissonTest {
         slave1.stop();
         slave2.stop();
     }
+    
+    public static class SlowCodec extends BaseCodec {
+
+        private final Encoder encoder = new Encoder() {
+            @Override
+            public ByteBuf encode(Object in) throws IOException {
+                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+                out.writeCharSequence(in.toString(), CharsetUtil.UTF_8);
+                return out;
+            }
+        };
+
+        public final Decoder<Object> decoder = new Decoder<Object>() {
+            @Override
+            public Object decode(ByteBuf buf, State state) throws IOException {
+                String str = buf.toString(CharsetUtil.UTF_8);
+                buf.readerIndex(buf.readableBytes());
+                try {
+                    Thread.sleep(2500);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                return str;
+            }
+        };
+
+        public SlowCodec() {
+        }
+        
+        public SlowCodec(ClassLoader classLoader) {
+            this();
+        }
+
+
+        @Override
+        public Decoder<Object> getValueDecoder() {
+            return decoder;
+        }
+
+        @Override
+        public Encoder getValueEncoder() {
+            return encoder;
+        }
+
+    }
+    
+    @Test
+    public void testDecoderInExecutor() throws Exception {
+        Config config = new Config();
+        config.setCodec(new SlowCodec());
+        config.setReferenceEnabled(false);
+        config.setThreads(32);
+        config.setNettyThreads(8);
+        config.setDecodeInExecutor(true);
+        config.useSingleServer()
+            .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        CountDownLatch latch = new CountDownLatch(16);
+        AtomicBoolean hasErrors = new AtomicBoolean();
+        for (int i = 0; i < 16; i++) {
+            Thread t = new Thread() {
+                public void run() {
+                    for (int i = 0; i < 10; i++) {
+                        try {
+                            redisson.getBucket("123").set("1");
+                            redisson.getBucket("123").get();
+                            if (hasErrors.get()) {
+                                latch.countDown();
+                                return;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            hasErrors.set(true);
+                        }
+                        
+                    }
+                    latch.countDown();
+                };
+            };
+            t.start();
+        }
+        
+        assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
+        assertThat(hasErrors).isFalse();
+        
+        redisson.shutdown();
+    }
+
     
     @Test
     public void testFailoverWithoutErrorsInCluster() throws Exception {
