@@ -41,20 +41,20 @@ Hibernate Cache Usage
          <artifactId>redisson-hibernate-52</artifactId>
          <!-- for Hibernate v5.3.x - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.10.1</version>
+         <version>3.10.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.10.1'
+     compile 'org.redisson:redisson-hibernate-4:3.10.2'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.10.1'
+     compile 'org.redisson:redisson-hibernate-5:3.10.2'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.10.1'
+     compile 'org.redisson:redisson-hibernate-52:3.10.2'
      // for Hibernate v5.3.x - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.10.1'
+     compile 'org.redisson:redisson-hibernate-53:3.10.2'
      ```  
 
 2. __For JDK 1.6+__  
@@ -67,16 +67,16 @@ Hibernate Cache Usage
          <artifactId>redisson-hibernate-4</artifactId>
          <!-- for Hibernate v5.0.x - v5.1.x -->
          <artifactId>redisson-hibernate-5</artifactId>
-         <version>2.15.1</version>
+         <version>2.15.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:2.15.1'
+     compile 'org.redisson:redisson-hibernate-4:2.15.2'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:2.15.1'
+     compile 'org.redisson:redisson-hibernate-5:2.15.2'
      ``` 
 
 
