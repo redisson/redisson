@@ -19,13 +19,13 @@ Usage
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.10.1</version>
+         <version>3.10.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
-     compile 'org.redisson:redisson-spring-boot-starter:3.10.1'
+     compile 'org.redisson:redisson-spring-boot-starter:3.10.2'
      ```  
 
 2. __For JDK 1.6+__  
@@ -35,13 +35,13 @@ Usage
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>2.15.1</version>
+         <version>2.15.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
-     compile 'org.redisson:redisson-spring-boot-starter:2.15.1'
+     compile 'org.redisson:redisson-spring-boot-starter:2.15.2'
      ```  
 
 ### 2. Add settings into `application.settings` file
