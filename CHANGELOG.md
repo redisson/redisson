@@ -8,7 +8,7 @@ Redisson Releases History
 Feature - `StreamMessageId.NEVER_DELIVERED` added  
 Feature - [decodeInExecutor](https://github.com/redisson/redisson/wiki/2.-Configuration#decodeinexecutor) setting added  
 Feature - `lockAsync` and `tryLockAsync` methods with threadId param added to RedissonMultiLock object  
-Improvement - default values of `nettyThreads` and `threads` settings set to `32` and 16` respectively  
+Improvement - default values of `nettyThreads` and `threads` settings set to `32` and `16` respectively  
 Improvement - Redis nodes with empty names in cluster config should be skipped  
 Fixed - `RFuture.cause()` method should return CancellationException and not throw it  
 Fixed - continues handling of RedisLoadingException leads to excessive load  
