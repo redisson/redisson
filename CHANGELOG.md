@@ -21,12 +21,12 @@ Fixed - huge messages logged in case of decoding error
 Fixed - Redis password shouldn't be included in exceptions  
 Fixed - Redis Password visible in log  
 Fixed - infinite loop in RedLock or MultiLock (thanks to [zhaixiaoxiang](https://github.com/zhaixiaoxiang))  
-Fixed - RBatch object in REDIS_READ_ATOMIC execution mode is not executed on Redis salve  
+Fixed - `RBatch` object in `REDIS_READ_ATOMIC` execution mode is not executed on Redis salve  
 Fixed - MOVED loop redirect error while "CLUSTER FAILOVER" (thanks to [sKabYY](https://github.com/sKabYY))  
 Fixed - redisson configuration in yaml format, located in classpath, couldn't be loaded by hibernate factory  
 Fixed - class files should be excluded from META-INF folder  
-Fixed - JndiRedissonSessionManager shouldn't shutdown Redisson instance (thanks to [jchobantonov](https://github.com/jchobantonov))  
-Fixed - RDestroyable interface should be implemented by RMapCache and RSetCache rx/reactive objects  
+Fixed - `JndiRedissonSessionManager` shouldn't shutdown Redisson instance (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - `RDestroyable` interface should be implemented by RMapCache and RSetCache rx/reactive objects  
 
 ### 21-Jan-2018 - versions 2.15.1 and 3.10.1 released  
 Feature - `cachedKeySet`, `cachedValues`, `cachedEntrySet` and `getCachedMap` methods added to `RLocalCachedMap` object  
