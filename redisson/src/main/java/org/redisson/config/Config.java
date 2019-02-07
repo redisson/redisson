@@ -55,9 +55,9 @@ public class Config {
     /**
      * Threads amount shared between all redis node clients
      */
-    private int threads = 0; // 0 = current_processors_amount * 2
+    private int threads = 16;
     
-    private int nettyThreads = 0; // 0 = current_processors_amount * 2
+    private int nettyThreads = 32;
 
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
@@ -361,7 +361,7 @@ public class Config {
      * invocation handlers of <code>RRemoteService</code> object  
      * and <code>RExecutorService</code> tasks.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>16</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
@@ -422,7 +422,7 @@ public class Config {
     /**
      * Threads amount shared between all redis clients used by Redisson.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>32</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
