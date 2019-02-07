@@ -24,6 +24,13 @@ package org.redisson.api;
 public class StreamMessageId {
 
     /**
+     * Defines id to receive Stream entries never delivered to any other consumer.
+     * <p> 
+     * Used in {@link RStream#readGroup} and {@link RStreamAsync#readGroupAsync} methods
+     */
+    public static final StreamMessageId NEVER_DELIVERED = new StreamMessageId(-1);
+    
+    /**
      * Defines minimal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
      */
     public static final StreamMessageId MIN = new StreamMessageId(-1);
@@ -34,7 +41,7 @@ public class StreamMessageId {
     public static final StreamMessageId MAX = new StreamMessageId(-1);
     
     /**
-     * Defines latest id to receive Stream entries added since method invocation.
+     * Defines id to receive Stream entries added since method invocation.
      * <p>
      * Used  in {@link RStream#read} and {@link RStreamAsync#readAsync} methods
      */
@@ -99,6 +106,9 @@ public class StreamMessageId {
     
     @Override
     public String toString() {
+        if (this == NEVER_DELIVERED) {
+            return ">";
+        }
         if (this == NEWEST) {
             return "$";
         }
