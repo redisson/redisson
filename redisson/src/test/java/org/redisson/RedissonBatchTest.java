@@ -233,7 +233,7 @@ public class RedissonBatchTest extends BaseTest {
         redisson.shutdown();
     }
 
-    @Test
+    @Test(timeout = 60000)
     public void testWriteTimeout() {
         Config config = createConfig();
         config.useSingleServer().setTimeout(15000);

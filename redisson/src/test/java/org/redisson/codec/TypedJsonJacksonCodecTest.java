@@ -75,7 +75,7 @@ public class TypedJsonJacksonCodecTest extends BaseTest {
     public void shouldDeserializeTheMapCorrectly() throws Exception {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         buf.writeBytes(new ObjectMapper().writeValueAsBytes(map));
-        assertThat(mapCodec.getMapValueDecoder().decode(buf, new State(false)))
+        assertThat(mapCodec.getMapValueDecoder().decode(buf, new State()))
                 .isInstanceOf(Map.class)
                 .isEqualTo(map);
         buf.release();
@@ -97,7 +97,7 @@ public class TypedJsonJacksonCodecTest extends BaseTest {
     public void shouldDeserializeTheStringCorrectly() throws Exception {
         ByteBuf buf = ByteBufAllocator.DEFAULT.buffer();
         buf.writeBytes(new ObjectMapper().writeValueAsBytes("axk"));
-        assertThat(stringCodec.getMapValueDecoder().decode(buf, new State(false)))
+        assertThat(stringCodec.getMapValueDecoder().decode(buf, new State()))
                 .isInstanceOf(String.class)
                 .isEqualTo("axk");
         buf.release();

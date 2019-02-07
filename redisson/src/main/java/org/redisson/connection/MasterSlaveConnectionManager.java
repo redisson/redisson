@@ -181,7 +181,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
-        } else {
+            } else {
                 this.group = cfg.getEventLoopGroup();
             }
 
@@ -457,6 +457,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
               .setClientName(config.getClientName())
+              .setDecodeInExecutor(cfg.isDecodeInExecutor())
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())
               .setKeepAlive(config.isKeepAlive())

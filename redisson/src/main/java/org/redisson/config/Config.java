@@ -55,9 +55,9 @@ public class Config {
     /**
      * Threads amount shared between all redis node clients
      */
-    private int threads = 0; // 0 = current_processors_amount * 2
+    private int threads = 16;
     
-    private int nettyThreads = 0; // 0 = current_processors_amount * 2
+    private int nettyThreads = 32;
 
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
@@ -79,6 +79,8 @@ public class Config {
     private long lockWatchdogTimeout = 30 * 1000;
     
     private boolean keepPubSubOrder = true;
+    
+    private boolean decodeInExecutor = false;
     
     private boolean useScriptCache = false;
     
@@ -102,6 +104,7 @@ public class Config {
             oldConf.setCodec(new FstCodec());
         }
 
+        setDecodeInExecutor(oldConf.isDecodeInExecutor());
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
@@ -358,7 +361,7 @@ public class Config {
      * invocation handlers of <code>RRemoteService</code> object  
      * and <code>RExecutorService</code> tasks.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>16</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
@@ -419,7 +422,7 @@ public class Config {
     /**
      * Threads amount shared between all redis clients used by Redisson.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>32</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
@@ -714,5 +717,21 @@ public class Config {
         return useScriptCache;
     }
 
-    
+    public boolean isDecodeInExecutor() {
+        return decodeInExecutor;
+    }
+    /**
+     * Defines whether to decode data by <code>codec</code> in executor's threads or netty's threads. 
+     * If decoding data process takes long time and netty thread is used then `RedisTimeoutException` could arise time to time.
+     * <p>
+     * Default is <code>false</code>.
+     * 
+     * @param decodeInExecutor - <code>true</code> to use executor's threads, <code>false</code> to use netty's threads.
+     * @return config
+     */
+    public Config setDecodeInExecutor(boolean decodeInExecutor) {
+        this.decodeInExecutor = decodeInExecutor;
+        return this;
+    }
+
 }

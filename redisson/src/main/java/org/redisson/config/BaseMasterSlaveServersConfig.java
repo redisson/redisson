@@ -203,7 +203,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * Redis 'slave' node maximum subscription (pub/sub) connection pool size for <b>each</b> slave node
+     * Maximum connection pool size for subscription (pub/sub) channels
      * <p>
      * Default is <code>50</code>
      * <p>
@@ -222,7 +222,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
 
     
     /**
-     * Redis 'slave' node minimum idle connection amount for <b>each</b> slave node
+     * Minimum idle connection pool size for subscription (pub/sub) channels
      * <p>
      * Default is <code>10</code>
      * <p>
