@@ -716,7 +716,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getConnectionFuture().cancel(false)) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to get connection! "
+                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and 'connection pool' settings or set decodeInExecutor = true and increase 'threads' setting"
                                     + "Node source: " + source
                                     + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
                                     + " after " + details.getAttempt() + " retry attempts"));

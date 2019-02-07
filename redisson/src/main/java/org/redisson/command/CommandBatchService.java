@@ -689,7 +689,7 @@ public class CommandBatchService extends CommandAsyncService {
 
                 if (connectionFuture.cancel(false)) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to get connection! "
+                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and 'connection pool' settings or set decodeInExecutor = true and increase 'threads' setting"
                                     + "Node source: " + source + " after " + attempts + " retry attempts"));
                     }
                 } else {
