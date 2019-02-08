@@ -113,9 +113,9 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 <property name="hibernate.cache.use_second_level_cache" value="true" />
 <property name="hibernate.cache.use_query_cache" value="true" />
 
-<!-- Redisson YAML config (searched in filesystem and classpath) -->
+<!-- Redisson YAML config (located in filesystem or classpath) -->
 <property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
-<!-- Redisson JSON config (searched in filesystem and classpath) -->
+<!-- Redisson JSON config (located in filesystem or classpath) -->
 <property name="hibernate.cache.redisson.config" value="/redisson.json" />
 ```
 
