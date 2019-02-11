@@ -64,7 +64,7 @@ import org.redisson.liveobject.misc.Introspectior;
  * @author Rui Gu (https://github.com/jackygurui) Modified
  */
 public final class ClassUtils {
-    
+
     public static void setField(Object obj, String fieldName, Object value) {
         try {
             Field field = getDeclaredField(obj.getClass(), fieldName);
@@ -156,6 +156,14 @@ public final class ClassUtils {
     public static <T> T getField(Object obj, String fieldName) {
         try {
             Field field = getDeclaredField(obj.getClass(), fieldName);
+            return getField(obj, field);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static <T> T getField(Object obj, Field field) {
+        try {
             if (!field.isAccessible()) {
                 field.setAccessible(true);
             }
@@ -175,7 +183,30 @@ public final class ClassUtils {
         }
         throw new NoSuchFieldException("No such field: " + fieldName);
     }
-    
+
+    public static <T> T tryGetFieldWithGetter(Object obj, String fieldName) {
+        try {
+            Field field = getDeclaredField(obj.getClass(), fieldName);
+            return tryGetFieldWithGetter(obj, field);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    public static <T> T tryGetFieldWithGetter(Object obj, Field field) {
+        Method getter = searchForMethod(field.getDeclaringClass(),
+                getGetterName(field),null);
+        if (getter == null) {
+            //fallback
+            return getField(obj, field);
+        }
+        try {
+            return (T) getter.invoke(obj);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     private static final Map<Class<?>, Boolean> annotatedClasses = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
 
     public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
