@@ -26,6 +26,7 @@ import java.lang.annotation.Target;
  * Specifies that the field value is filled up with RedissonClient and other Redisson supplied instances.
  * 
  * @author Nikita Koksharov
+ * @author Rui Gu (https://github.com/jackygurui)
  *
  */
 @Retention(RetentionPolicy.RUNTIME)
@@ -37,27 +38,47 @@ public @interface RInject {
      *
      * Maybe there is a better way to reduce the memory footprint, for now it is the best way to implement without
      * changes to the Config class.
+     *
      */
     abstract class DefaultCodec implements Codec {
         private DefaultCodec() {}
     }
 
     /**
+     * Shorthand for {@link #name()}. Ignored when  {@link #name()} is specified.
+     * @see #name()
+     */
+    String value() default "";
+
+
+    /**
      * The name of requested object.
      *
-     * Leave as default if the type is {@link org.redisson.api.RedissonClient RedissonClient}. <b>Required</b> for other types.
+     * <b>Optional</b> for {@link org.redisson.api.RedissonClient RedissonClient} type, it is used to lookup the
+     * instance in CDI framework if configured, otherwise ignored.
+     * <b>Required</b> for other types.
      *
-     * @return key name
+     * For Spring framework, it is possible to SpEL expression as name. Hence it is possible to use "@myBean" as value
+     * to find the bean named "myBean" from context as injection candidate.
      */
     String name() default "";
 
     /**
-     * Codec used for requested object. Will try to find existing instance of given class via {@link org.redisson.codec.ReferenceCodecProvider#getCodec(Class) ReferenceCodecProvider.getCodec(Class)} method.
+     * The codec used for requested object. Will try to find existing instance of given class via
+     * {@link org.redisson.codec.ReferenceCodecProvider#getCodec(Class) ReferenceCodecProvider.getCodec(Class)} method.
      *
-     * Leave as default if the type is {@link org.redisson.api.RedissonClient RedissonClient}. <b>Optional</b> for other types.
+     * <b>Ignored</b> when the type is {@link org.redisson.api.RedissonClient RedissonClient}.
+     * <b>Optional</b> for other types.
      *
-     * @return codec class
      */
     Class<? extends Codec> codec() default DefaultCodec.class;
 
+
+    /**
+     * Bean name used to lookup the Redisson instance in CDI framework.
+     *
+     * <b>Ignored</b> when the type is {@link org.redisson.api.RedissonClient RedissonClient}.
+     * <b>Optional</b> for other types.
+     */
+    String redissonBeanRef() default "";
 }
