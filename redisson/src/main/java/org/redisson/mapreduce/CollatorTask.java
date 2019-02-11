@@ -22,6 +22,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Injector;
 
 /**
@@ -59,7 +60,7 @@ public class CollatorTask<KOut, VOut, R> implements Callable<R> {
     public R call() throws Exception {
         this.codec = (Codec) codecClass.getConstructor().newInstance();
         
-        Injector.inject(collator, redisson);
+        Injector.inject(collator, new DefaultInjectionContext(redisson));
         
         RMap<KOut, VOut> resultMap = redisson.getMap(resultMapName, codec);
         R result = collator.collate(resultMap);

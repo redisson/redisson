@@ -24,6 +24,7 @@ import org.redisson.api.RSortedSet;
 import org.redisson.api.mapreduce.RCollectionMapper;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Injector;
 
 /**
@@ -57,7 +58,7 @@ public class CollectionMapperTask<VIn, KOut, VOut> extends BaseMapperTask<KOut, 
             throw new IllegalStateException(e);
         }
         
-        Injector.inject(mapper, redisson);
+        Injector.inject(mapper, new DefaultInjectionContext(redisson));
 
         for (String objectName : objectNames) {
             Iterable<VIn> collection = null;

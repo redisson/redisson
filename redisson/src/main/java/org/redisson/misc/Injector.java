@@ -15,13 +15,7 @@
  */
 package org.redisson.misc;
 
-import org.redisson.Redisson;
-import org.redisson.api.RObject;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RInject;
-import org.redisson.client.codec.Codec;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -31,11 +25,12 @@ import java.util.List;
 /**
  * 
  * @author Nikita Koksharov
+ * @author Rui Gu (https://github.com/jackygurui)
  *
  */
 public class Injector {
 
-    public static void inject(Object task, RedissonClient redisson) {
+    public static void inject(Object task, InjectionContext injectionContext) {
         List<Field> allFields = new ArrayList<Field>();
         Class<?> clazz = task.getClass();
         while (true) {
@@ -51,56 +46,24 @@ public class Injector {
                 clazz = null;
             }
         }
+        doInjection(allFields, task, injectionContext);
+    }
 
-        for (Field field : allFields) {
+    private static void doInjection(List<Field> fields, Object target, InjectionContext injectionContext) {
+        for (Field field : fields) {
             if (!field.isAnnotationPresent(RInject.class)) {
                 continue;
             }
+
             Class<?> fieldType = field.getType();
             RInject rInject = field.getAnnotation(RInject.class);
-            if (RedissonClient.class.isAssignableFrom(fieldType)) {
-                try {
-                    ClassUtils.trySetFieldWithSetter(task, field, redisson);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalStateException("Failed to set RedissonClient instance", e);
-                }
-                continue;
-            }
-
-            String name = rInject.name();
-            if ("".equals(name)) {
-                throw new IllegalStateException("Name in RInject is required for class " + fieldType.getName());
-            }
-            if (fieldType.isAnnotationPresent(REntity.class)) {
-                Object rlo = redisson == null
-                        ? null
-                        : redisson.getLiveObjectService().get(fieldType, name);
-                try {
-                    ClassUtils.trySetFieldWithSetter(task, field, rlo);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalStateException("Failed to set REntity of type " + fieldType.getName(), e);
-                }
-            } else {
-                RObject rObject;
-                if (redisson == null) {
-                    rObject = null;
-                } else {
-                    RedissonObjectBuilder builder = ((Redisson) redisson).getCommandExecutor().getObjectBuilder();
-                    Class codecClass = rInject.codec();
-                    Codec codec = RInject.DefaultCodec.class.isAssignableFrom(codecClass) ? null : builder.getReferenceCodecProvider().getCodec(codecClass);
-                    try {
-                        rObject = builder.createRObject(redisson, (Class<RObject>) fieldType, name, codec);
-                    } catch (Exception e) {
-                        throw new IllegalStateException("Failed to create RObject of type " + fieldType.getName(), e);
-                    }
-                }
-                try {
-                    ClassUtils.trySetFieldWithSetter(task, field, rObject);
-                } catch (IllegalArgumentException e) {
-                    throw new IllegalStateException("Failed to set RObject of type " + fieldType.getName(), e);
-                }
+            Object obj = injectionContext.resolve(target, field, rInject);
+            try {
+                ClassUtils.trySetFieldWithSetter(target, field, obj);
+            } catch (IllegalStateException | IllegalArgumentException e) {
+                throw new IllegalStateException("Failed to set instance of type " + fieldType.getName() + " for field named " + field.getName(), e);
             }
         }
     }
-
+    
 }

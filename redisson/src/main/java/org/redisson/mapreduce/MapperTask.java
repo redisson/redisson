@@ -22,6 +22,7 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.mapreduce.RCollector;
 import org.redisson.api.mapreduce.RMapper;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Injector;
 
 /**
@@ -56,7 +57,7 @@ public class MapperTask<KIn, VIn, KOut, VOut> extends BaseMapperTask<KOut, VOut>
             throw new IllegalStateException(e);
         }
         
-        Injector.inject(mapper, redisson);
+        Injector.inject(mapper, new DefaultInjectionContext(redisson));
         RCollector<KOut, VOut> collector = new Collector<KOut, VOut>(codec, redisson, collectorMapName, workersAmount, timeout);
 
         for (String objectName : objectNames) {

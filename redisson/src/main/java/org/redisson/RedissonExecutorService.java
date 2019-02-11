@@ -78,6 +78,7 @@ import org.redisson.executor.params.ScheduledCronExpressionParameters;
 import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
 import org.redisson.executor.params.TaskParameters;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
@@ -362,7 +363,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     private byte[] encode(Object task) {
         // erase RedissonClient field to avoid its serialization
-        Injector.inject(task, null);
+        Injector.inject(task, new DefaultInjectionContext(null));
         
         ByteBuf buf = null;
         try {
