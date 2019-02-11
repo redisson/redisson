@@ -58,17 +58,6 @@ import java.util.regex.Pattern;
 class SpringContextAwareInjectionContext extends AbstractInjectionContext {
 
     /**
-     *  (([A-Za-z]+)) Matches alpha characters for one or more times at the beginning as the first caption group
-     *  \\(' Should have left bracket and a single quote after the word
-     *  [^] for negative selection
-     *  ([^'()]+) within the capture group shoud not be any more brackets or quotes. For one or more times.
-     *  '\\) Should have a single quote and a right bracket to end the expression.
-     *
-     *  Example: RMap('myMap')
-     */
-    private static final Pattern redissonExpressionPattern = Pattern.compile("^([A-Za-z]+)\\('([^'()]+)'\\)$");
-
-    /**
      *  [^#${]* There should not be a start of any expression before the legitimate start token "#{", other things're OK.
      *  (#\{[^{}]+}) Matches start token "#{" and end toke "}". There should be no nested expressions.
      *  [^}]* There should not be another end token(s) "}" after the legitimate end.
@@ -164,16 +153,6 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
                         "Failed to resolve expression [" + name + "] for type " + expected.getName(), e);
         }
 
-        final Matcher redissonExpressionMatcher = getRedissonExpressionMatcher(value);
-        if (redissonExpressionMatcher.matches()) {
-            final String objName = redissonExpressionMatcher.group(1);
-            final Class<?> supportedTypes = RedissonObjectBuilder.getSupportedTypes(objName);
-            if (supportedTypes == null) {
-                throw new IllegalArgumentException("Redisson does not support the \"" + objName + "\" mentioned in \"" + name + "\"");
-            }
-            expected = (Class<T>) supportedTypes;
-            value = redissonExpressionMatcher.group(2);
-        }
 
         return super.resolveRedissonObjects(redissonClient, expected, value, codecClass);
     }
@@ -272,7 +251,4 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
         return propertyExpressionPattern.matcher(expr).matches();
     }
 
-    private Matcher getRedissonExpressionMatcher(String expr) {
-        return redissonExpressionPattern.matcher(expr);
-    }
 }

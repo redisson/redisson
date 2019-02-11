@@ -22,6 +22,8 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 
 import java.lang.reflect.Field;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -29,6 +31,17 @@ import java.lang.reflect.Field;
  *
  */
 public abstract class AbstractInjectionContext implements InjectionContext {
+
+    /**
+     *  (([A-Za-z]+)) Matches alpha characters for one or more times at the beginning as the first caption group
+     *  \\(' Should have left bracket and a single quote after the word
+     *  [^] for negative selection
+     *  ([^'()]+) within the capture group shoud not be any more brackets or quotes. For one or more times.
+     *  '\\) Should have a single quote and a right bracket to end the expression.
+     *
+     *  Example: RMap('myMap')
+     */
+    private static final Pattern redissonExpressionPattern = Pattern.compile("^([A-Za-z]+)\\('([^'()]+)'\\)$");
 
     @Override
     public Object resolve(Object target, Field field, RInject rInject) {
@@ -63,17 +76,32 @@ public abstract class AbstractInjectionContext implements InjectionContext {
 
     //TODO: Support Redisson services lookup
     protected <T, C extends Codec > T resolveRedissonObjects(RedissonClient redissonClient, Class<T> expected, String name, Class<C> codecClass) {
+
+        final Matcher redissonExpressionMatcher = getRedissonExpressionMatcher(name);
+        if (redissonExpressionMatcher.matches()) {
+            final String objName = redissonExpressionMatcher.group(1);
+            final Class<?> supportedTypes = RedissonObjectBuilder.getSupportedTypes(objName);
+            if (supportedTypes == null) {
+                throw new IllegalArgumentException("Redisson does not support the \"" + objName + "\" mentioned in \"" + name + "\"");
+            }
+            expected = (Class<T>) supportedTypes;
+            name = redissonExpressionMatcher.group(2);
+        }
+
         if (expected.isAnnotationPresent(REntity.class)) {
             return redissonClient.getLiveObjectService().get(expected, name);
         } else {
             RedissonObjectBuilder builder = ((Redisson) redissonClient).getCommandExecutor().getObjectBuilder();
             Codec codec = RInject.DefaultCodec.class.isAssignableFrom(codecClass) ? null : builder.getReferenceCodecProvider().getCodec(codecClass);
             try {
-                return (T) builder.createRObject(redissonClient, builder.getTranslatedTypes(expected), name, codec);
+                return (T) builder.createRObject(redissonClient, builder.tryTranslatedTypes(expected), name, codec);
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to create RObject of type " + expected.getName(), e);
             }
         }
     }
 
+    protected Matcher getRedissonExpressionMatcher(String expr) {
+        return redissonExpressionPattern.matcher(expr);
+    }
 }
