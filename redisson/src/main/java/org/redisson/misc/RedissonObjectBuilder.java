@@ -56,7 +56,6 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
-import org.redisson.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -68,45 +67,30 @@ import org.redisson.liveobject.resolver.NamingScheme;
  */
 public class RedissonObjectBuilder {
 
-    private static final Map<Class<?>, Class<? extends RObject>> supportedClassMapping = new LinkedHashMap<Class<?>, Class<? extends RObject>>();
-    
+    private static final Map<Class<?>, Class<? extends RObject>> translatableTypeMapping = new LinkedHashMap<Class<?>, Class<? extends RObject>>();
+
     static {
-        supportedClassMapping.put(SortedSet.class,      RedissonSortedSet.class);
-        supportedClassMapping.put(Set.class,            RedissonSet.class);
-        supportedClassMapping.put(ConcurrentMap.class,  RedissonMap.class);
-        supportedClassMapping.put(Map.class,            RedissonMap.class);
-        supportedClassMapping.put(BlockingDeque.class,  RedissonBlockingDeque.class);
-        supportedClassMapping.put(Deque.class,          RedissonDeque.class);
-        supportedClassMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
-        supportedClassMapping.put(Queue.class,          RedissonQueue.class);
-        supportedClassMapping.put(List.class,           RedissonList.class);
+        translatableTypeMapping.put(SortedSet.class,      RedissonSortedSet.class);
+        translatableTypeMapping.put(Set.class,            RedissonSet.class);
+        translatableTypeMapping.put(ConcurrentMap.class,  RedissonMap.class);
+        translatableTypeMapping.put(Map.class,            RedissonMap.class);
+        translatableTypeMapping.put(BlockingDeque.class,  RedissonBlockingDeque.class);
+        translatableTypeMapping.put(Deque.class,          RedissonDeque.class);
+        translatableTypeMapping.put(BlockingQueue.class,  RedissonBlockingQueue.class);
+        translatableTypeMapping.put(Queue.class,          RedissonQueue.class);
+        translatableTypeMapping.put(List.class,           RedissonList.class);
     }
 
     private final Config config;
     
-    public static class CodecMethodRef {
+    private static final Map<Class<?>, RedissonIntrospector.CodecMethodRef> references = RedissonIntrospector.getObjectBuilderMethods();
+    private static final Map<String, Class<?>> supportedTypes = RedissonIntrospector.getSupportedTypes();
 
-        Method defaultCodecMethod;
-        Method customCodecMethod;
-
-        Method get(boolean value) {
-            if (value) {
-                return defaultCodecMethod;
-            }
-            return customCodecMethod;
-        }
-    }
-    
-    private static final Map<Class<?>, CodecMethodRef> references = new HashMap<Class<?>, CodecMethodRef>();
-    
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
     public RedissonObjectBuilder(Config config) {
         super();
         this.config = config;
-        fillCodecMethods(references, RedissonClient.class, RObject.class);
-        fillCodecMethods(references, RedissonReactiveClient.class, RObjectReactive.class);
-        fillCodecMethods(references, RedissonRxClient.class, RObjectRx.class);
     }
 
     public ReferenceCodecProvider getReferenceCodecProvider() {
@@ -123,7 +107,7 @@ public class RedissonObjectBuilder {
     }
     
     public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, RedissonClient redisson) {
-        Class<? extends RObject> mappedClass = getMappedClass(fieldType);
+        Class<? extends RObject> mappedClass = getTranslatedTypes(fieldType);
         try {
             if (mappedClass != null) {
                 Codec fieldCodec = getFieldCodec(clazz, mappedClass, fieldName);
@@ -167,40 +151,20 @@ public class RedissonObjectBuilder {
         }
     }
 
-    private Class<? extends RObject> getMappedClass(Class<?> cls) {
-        for (Entry<Class<?>, Class<? extends RObject>> entrySet : supportedClassMapping.entrySet()) {
+    public static Class<? extends RObject> getTranslatedTypes(Class<?> cls) {
+        if (RObject.class.isAssignableFrom(cls)) {
+            return (Class<? extends RObject>) cls;
+        }
+        for (Entry<Class<?>, Class<? extends RObject>> entrySet : translatableTypeMapping.entrySet()) {
             if (entrySet.getKey().isAssignableFrom(cls)) {
                 return entrySet.getValue();
             }
         }
         return null;
     }
-    
-    private void fillCodecMethods(Map<Class<?>, CodecMethodRef> map, Class<?> clientClazz, Class<?> objectClazz) {
-        for (Method method : clientClazz.getDeclaredMethods()) {
-            if (!method.getReturnType().equals(Void.TYPE)
-                    && objectClazz.isAssignableFrom(method.getReturnType())
-                    && method.getName().startsWith("get")) {
-                Class<?> cls = method.getReturnType();
-                if (!map.containsKey(cls)) {
-                    CodecMethodRef ref = new CodecMethodRef();
-                    map.put(cls, ref);
-                    try {
-                        Class<?> asyncClass = Class.forName(cls.getName() + "Async");
-                        map.put(asyncClass, ref);
-                    } catch (ClassNotFoundException e) {
-                        //ignore;
-                    }
-                }
-                CodecMethodRef builder = map.get(cls);
-                if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
-                        && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
-                    builder.customCodecMethod = method;
-                } else if (method.getParameterTypes().length == 1) {
-                    builder.defaultCodecMethod = method;
-                }
-            }
-        }
+
+    public static Class<?> getSupportedTypes(String simpleName) {
+        return supportedTypes.get(simpleName);
     }
 
     public Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
@@ -222,7 +186,7 @@ public class RedissonObjectBuilder {
             ReferenceCodecProvider codecProvider)
             throws IllegalAccessException, InvocationTargetException, Exception, ClassNotFoundException {
         if (type != null) {
-            CodecMethodRef b = references.get(type);
+            RedissonIntrospector.CodecMethodRef b = references.get(type);
             if (b == null && type.getInterfaces().length > 0) {
                 type = type.getInterfaces()[0];
             }
