@@ -149,7 +149,16 @@ public final class RedissonDefinitionParser
         helper.parseAttributes(element, parserContext, configBuilder);
         helper.registerBeanDefinition(configBuilder, configId,
                 null, parserContext);
-        
+
+        //Do the RInjectBeanPostProcessor
+        String processorId = RInjectBeanPostProcessor.class.getSimpleName();
+        if (!helper.containsBeanDefinition(processorId, parserContext)) {
+            BeanDefinitionBuilder processorBuilder
+                    = helper.createBeanDefinitionBuilder(null, parserContext, RInjectBeanPostProcessor.class);
+            processorBuilder.setScope(BeanDefinition.SCOPE_SINGLETON);
+            helper.registerBeanDefinition(processorBuilder, processorId, null, parserContext);
+        }
+
         //Do the main Redisson bean
         BeanDefinitionBuilder builder 
                 = helper.createBeanDefinitionBuilder(element, parserContext,
