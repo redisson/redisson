@@ -45,7 +45,9 @@ import org.redisson.RedissonSortedSet;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
+import org.redisson.api.RObjectAsync;
 import org.redisson.api.RObjectReactive;
+import org.redisson.api.RObjectRx;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
@@ -97,17 +99,18 @@ public class RedissonObjectBuilder {
         return codecProvider;
     }
     
-    public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
-        Codec codec = ar.getCodec();
+    public void store(Object ar, String fieldName, RMap<String, Object> liveMap) {
+        Codec codec = ClassUtils.tryGetFieldWithGetter(ar, "codec");
+        String name = ClassUtils.tryGetFieldWithGetter(ar, "name");
         if (codec != null) {
             codecProvider.registerCodec((Class) codec.getClass(), codec);
         }
         liveMap.fastPut(fieldName,
-                new RedissonReference(ar.getClass(), ar.getName(), codec));
+                new RedissonReference(ar.getClass(), name, codec));
     }
     
-    public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, RedissonClient redisson) {
-        Class<? extends RObject> mappedClass = getTranslatedTypes(fieldType);
+    public Object createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, RedissonClient redisson) {
+        Class<?> mappedClass = tryTranslatedTypes(fieldType);
         try {
             if (mappedClass != null) {
                 Codec fieldCodec = getFieldCodec(clazz, mappedClass, fieldName);
@@ -125,7 +128,7 @@ public class RedissonObjectBuilder {
     /**
      * WARNING: rEntity has to be the class of @This object.
      */
-    private Codec getFieldCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
+    private Codec getFieldCodec(Class<?> rEntity, Class<?> rObjectClass, String fieldName) throws Exception {
         Field field = ClassUtils.getDeclaredField(rEntity, fieldName);
         if (field.isAnnotationPresent(RObjectField.class)) {
             RObjectField anno = field.getAnnotation(RObjectField.class);
@@ -151,9 +154,10 @@ public class RedissonObjectBuilder {
         }
     }
 
-    public static Class<? extends RObject> getTranslatedTypes(Class<?> cls) {
-        if (RObject.class.isAssignableFrom(cls)) {
-            return (Class<? extends RObject>) cls;
+    public static Class<?> tryTranslatedTypes(Class<?> cls) {
+        if (RObjectAsync.class.isAssignableFrom(cls)
+            || RObjectRx.class.isAssignableFrom(cls)) {
+            return cls;
         }
         for (Entry<Class<?>, Class<? extends RObject>> entrySet : translatableTypeMapping.entrySet()) {
             if (entrySet.getKey().isAssignableFrom(cls)) {
@@ -263,7 +267,7 @@ public class RedissonObjectBuilder {
         return null;
     }
 
-    public <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
+    public <T, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
 
         List<Class<?>> interfaces;
         if (expectedType.isInterface()) {
