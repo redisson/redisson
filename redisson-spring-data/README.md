@@ -28,22 +28,22 @@ Usage
          <artifactId>redisson-spring-data-20</artifactId>
          <!-- for Spring Data Redis v.2.1.x -->
          <artifactId>redisson-spring-data-21</artifactId>
-         <version>3.10.1</version>
+         <version>3.10.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.10.1'
+     compile 'org.redisson:redisson-spring-data-16:3.10.2'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.10.1'
+     compile 'org.redisson:redisson-spring-data-17:3.10.2'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.10.1'
+     compile 'org.redisson:redisson-spring-data-18:3.10.2'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.10.1'
+     compile 'org.redisson:redisson-spring-data-20:3.10.2'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.10.1'
+     compile 'org.redisson:redisson-spring-data-21:3.10.2'
      ```  
 
 2. __For JDK 1.6+__  
@@ -58,18 +58,18 @@ Usage
          <artifactId>redisson-spring-data-17</artifactId>
          <!-- for Spring Data Redis v.1.8.x -->
          <artifactId>redisson-spring-data-18</artifactId>
-         <version>2.15.1</version>
+         <version>2.15.2</version>
      </dependency>
      ```
      Gradle
 
      ```java
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:2.15.1'
+     compile 'org.redisson:redisson-spring-data-16:2.15.2'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:2.15.1'
+     compile 'org.redisson:redisson-spring-data-17:2.15.2'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:2.15.1'
+     compile 'org.redisson:redisson-spring-data-18:2.15.2'
      ```  
 
 

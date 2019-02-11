@@ -4,6 +4,30 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 07-Feb-2018 - versions 2.15.2 and 3.10.2 released  
+Feature - `StreamMessageId.NEVER_DELIVERED` added  
+Feature - [decodeInExecutor](https://github.com/redisson/redisson/wiki/2.-Configuration#decodeinexecutor) setting added  
+Feature - `lockAsync` and `tryLockAsync` methods with threadId param added to RedissonMultiLock object  
+Improvement - default values of `nettyThreads` and `threads` settings set to `32` and `16` respectively  
+Improvement - Redis nodes with empty names in cluster config should be skipped  
+Fixed - `RFuture.cause()` method should return CancellationException and not throw it  
+Fixed - continues handling of RedisLoadingException leads to excessive load  
+Fixed - slave's connection pools are not initialized when it back from failover  
+Fixed - Buffer leak during failover and RBatch object execution  
+Fixed - NumberFormatException error appears in log during RStream.readGroup invocation  
+Fixed - already wrapped IPv6 addresses shouldn't be wrapped in square brackets (thanks to [antimony](https://github.com/antimony))  
+Fixed - NPE arise during Tomcat Session getAttribute/delete methods invocation (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - huge messages logged in case of decoding error  
+Fixed - Redis password shouldn't be included in exceptions  
+Fixed - Redis Password visible in log  
+Fixed - infinite loop in RedLock or MultiLock (thanks to [zhaixiaoxiang](https://github.com/zhaixiaoxiang))  
+Fixed - `RBatch` object in `REDIS_READ_ATOMIC` execution mode is not executed on Redis salve  
+Fixed - MOVED loop redirect error while "CLUSTER FAILOVER" (thanks to [sKabYY](https://github.com/sKabYY))  
+Fixed - redisson configuration in yaml format, located in classpath, couldn't be loaded by hibernate factory  
+Fixed - class files should be excluded from META-INF folder  
+Fixed - `JndiRedissonSessionManager` shouldn't shutdown Redisson instance (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - `RDestroyable` interface should be implemented by RMapCache and RSetCache rx/reactive objects  
+
 ### 21-Jan-2018 - versions 2.15.1 and 3.10.1 released  
 Feature - `cachedKeySet`, `cachedValues`, `cachedEntrySet` and `getCachedMap` methods added to `RLocalCachedMap` object  
 Feature - __Hibernate 5.4__ support  
