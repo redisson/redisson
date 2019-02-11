@@ -10,8 +10,10 @@ import org.redisson.api.RSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.codec.FstCodec;
+import org.redisson.codec.JsonJacksonCodec;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class InjectablesInTask implements Runnable, Serializable {
@@ -28,6 +30,9 @@ public class InjectablesInTask implements Runnable, Serializable {
     @RInject(name = "mySet", codec = FstCodec.class)
     private RSet set;
 
+    @RInject(name = "RMap('myMap')", codec = JsonJacksonCodec.class)
+    private Map map;
+
     public InjectablesInTask() {
     }
 
@@ -41,6 +46,18 @@ public class InjectablesInTask implements Runnable, Serializable {
         set.add(1);
         if (FstCodec.class.equals(set.getCodec().getClass())) {
             atomicLong.incrementAndGet();
+        }
+        if (map instanceof RMap) {
+            atomicLong.incrementAndGet();
+
+            RMap m = (RMap) map;
+            if ("myMap".equals(m.getName())) {
+                atomicLong.incrementAndGet();
+                m.put("1", "999");
+            }
+            if (JsonJacksonCodec.class.isAssignableFrom(m.getCodec().getClass())) {
+                atomicLong.incrementAndGet();
+            }
         }
     }
 
