@@ -57,7 +57,6 @@
         <redisson:lex-sorted-set                id="lex-sorted-set"             key="lex-sorted-set"/>
         <redisson:topic                         id="topic"                      topic="topic"/>
         <redisson:pattern-topic                 id="pattern-topic"              pattern="pattern-topic"/>
-        <redisson:blocking-fair-queue           id="blocking-fair-queue"        key="blocking-fair-queue"/>
         <redisson:queue                         id="queue"                      key="queue"/>
         <redisson:delayed-queue                 id="delayed-queue"              destination-queue-ref="queue"/>
         <redisson:priority-queue                id="priority-queue"             key="priority-queue"/>
@@ -149,7 +148,6 @@
     <redisson:lex-sorted-set                id="lex-sorted-set-ext"             key="lex-sorted-set-ext"                    redisson-ref="myRedisson"/>
     <redisson:topic                         id="topic-ext"                      topic="topic-ext"                           redisson-ref="myRedisson"/>
     <redisson:pattern-topic                 id="pattern-topic-ext"              pattern="pattern-topic-ext"                 redisson-ref="myRedisson"/>
-    <redisson:blocking-fair-queue           id="blocking-fair-queue-ext"        key="blocking-fair-queue-ext"               redisson-ref="myRedisson"/>
     <redisson:queue                         id="queue-ext"                      key="queue-ext"                             redisson-ref="myRedisson"/>
     <redisson:delayed-queue                 id="delayed-queue-ext"              destination-queue-ref="queue-ext"           redisson-ref="myRedisson"/>
     <redisson:priority-queue                id="priority-queue-ext"             key="priority-queue-ext"                    redisson-ref="myRedisson"/>
