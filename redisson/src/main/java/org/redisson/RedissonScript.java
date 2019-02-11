@@ -29,7 +29,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import io.netty.buffer.ByteBuf;
 

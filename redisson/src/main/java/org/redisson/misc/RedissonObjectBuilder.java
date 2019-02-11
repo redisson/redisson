@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.core;
+package org.redisson.misc;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -21,7 +21,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,6 @@ import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
 import org.redisson.api.RObjectReactive;
-import org.redisson.api.RObjectRx;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
@@ -63,8 +61,8 @@ import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
- * 
- * @author Rui Gu
+ *
+ * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
  *
  */
@@ -320,5 +318,6 @@ public class RedissonObjectBuilder {
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + (expectedType != null ? expectedType.getName() : "null") + " with codec type of " + (codec != null ? codec.getClass().getName() : "null"));
     }
-    
+
+
 }

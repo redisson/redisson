@@ -39,6 +39,7 @@ import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import net.bytebuddy.implementation.bind.annotation.This;
+import org.redisson.misc.RedissonObjectBuilder;
 
 /**
  * This class is going to be instantiated and becomes a <b>static</b> field of
