@@ -16,7 +16,7 @@
 package org.redisson.misc;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.base64.Base64;
 import io.netty.util.CharsetUtil;
 
@@ -35,9 +35,8 @@ public class Hash {
     public static byte[] hash128toArray(ByteBuf objectState) {
         long[] hash = hash128(objectState);
 
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
+        ByteBuf buf = Unpooled.copyLong(hash[0], hash[1]);
         try {
-            buf.writeLong(hash[0]).writeLong(hash[1]);
             byte[] dst = new byte[buf.readableBytes()];
             buf.readBytes(dst);
             return dst;
@@ -77,9 +76,8 @@ public class Hash {
     public static String hash128toBase64(ByteBuf objectState) {
         long[] hash = hash128(objectState);
 
-        ByteBuf buf = ByteBufAllocator.DEFAULT.buffer((2 * Long.SIZE) / Byte.SIZE);
+        ByteBuf buf = Unpooled.copyLong(hash[0], hash[1]);
         try {
-            buf.writeLong(hash[0]).writeLong(hash[1]);
             ByteBuf b = Base64.encode(buf);
             try {
                 String s = b.toString(CharsetUtil.UTF_8);
