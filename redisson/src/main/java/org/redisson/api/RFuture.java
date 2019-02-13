@@ -17,8 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
-
-import io.netty.util.concurrent.FutureListener;
+import java.util.function.BiConsumer;
 
 /**
  * Represents the result of an asynchronous computation
@@ -96,30 +95,6 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
     boolean await(long timeoutMillis) throws InterruptedException;
     
     /**
-     * Use methods from {@link CompletionStage} interface
-     * 
-     * @param listener - listener for future object
-     * @return Future object
-     */
-    @Deprecated
-    RFuture<V> addListener(FutureListener<? super V> listener);
-
-    /**
-     * Use methods from {@link CompletionStage} interface
-     * 
-     * @param listeners - listeners for future object
-     * @return Future object
-     */
-    @Deprecated
-    RFuture<V> addListeners(FutureListener<? super V>... listeners);
-
-    @Deprecated
-    RFuture<V> removeListener(FutureListener<? super V> listener);
-
-    @Deprecated
-    RFuture<V> removeListeners(FutureListener<? super V>... listeners);
-
-    /**
      * Waits for this future until it is done, and rethrows the cause of the failure if this future
      * failed.
      *
@@ -178,5 +153,6 @@ public interface RFuture<V> extends java.util.concurrent.Future<V>, CompletionSt
      */
     boolean awaitUninterruptibly(long timeoutMillis);
 
+    void onComplete(BiConsumer<? super V, ? super Throwable> action);
     
 }

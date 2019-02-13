@@ -15,11 +15,10 @@
  */
 package org.redisson.client;
 
+import org.redisson.api.RFuture;
 import org.redisson.client.protocol.pubsub.PubSubType;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.ImmediateEventExecutor;
-import io.netty.util.concurrent.Promise;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 /**
  * 
@@ -28,7 +27,7 @@ import io.netty.util.concurrent.Promise;
  */
 public class SubscribeListener extends BaseRedisPubSubListener {
 
-    private final Promise<Void> promise = ImmediateEventExecutor.INSTANCE.newPromise();
+    private final RPromise<Void> promise = new RedissonPromise<>();
     private final ChannelName name;
     private final PubSubType type;
 
@@ -46,7 +45,7 @@ public class SubscribeListener extends BaseRedisPubSubListener {
         return true;
     }
 
-    public Future<Void> getSuccessFuture() {
+    public RFuture<Void> getSuccessFuture() {
         return promise;
     }
     

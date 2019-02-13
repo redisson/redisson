@@ -58,8 +58,6 @@ import org.redisson.eviction.EvictionScheduler;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -278,7 +276,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<V> putIfAbsentAsync(final K key, final V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+    public RFuture<V> putIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
         checkValue(value);
         
@@ -403,8 +401,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             }
 
             @Override
-            protected boolean condition(Future<V> future) {
-                return future.getNow() == null;
+            protected boolean condition(V res) {
+                return res == null;
             }
         };
         return mapWriterFuture(future, listener);
@@ -627,7 +625,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
     
     @Override
-    public RFuture<Void> putAllAsync(final Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
+    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, long ttl, TimeUnit ttlUnit) {
         if (map.isEmpty()) {
             return RedissonPromise.newSucceededFuture(null);
         }
@@ -738,7 +736,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<Boolean> fastPutAsync(final K key, final V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+    public RFuture<Boolean> fastPutAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
         checkValue(value);
 
@@ -878,7 +876,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<V> putAsync(final K key, final V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+    public RFuture<V> putAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
         checkValue(value);
 
@@ -926,7 +924,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return mapWriterFuture(future, listener);
     }
 
-    protected RFuture<V> putOperationAsync(final K key, final V value, long ttlTimeout, long maxIdleTimeout,
+    protected RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout,
             long maxIdleDelta) {
         RFuture<V> future = commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local insertable = false; "
@@ -1247,7 +1245,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(final String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<MapScanResult<Object, Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(startPos);
@@ -1298,42 +1296,36 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 Arrays.<Object>asList(name, getTimeoutSetName(name), getIdleSetName(name)),
                 params.toArray());
 
-        f.addListener(new FutureListener<MapCacheScanResult<Object, Object>>() {
-            @Override
-            public void operationComplete(Future<MapCacheScanResult<Object, Object>> future)
-                    throws Exception {
-                if (future.isSuccess()) {
-                    MapCacheScanResult<Object, Object> res = future.getNow();
-                    if (res.getIdleKeys().isEmpty()) {
-                        return;
-                    }
+        f.onComplete((res, e) -> {
+            if (res != null) {
+                if (res.getIdleKeys().isEmpty()) {
+                    return;
+                }
 
-                    List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
-                    args.add(System.currentTimeMillis());
-                    encodeMapKeys(args, res.getIdleKeys());
+                List<Object> args = new ArrayList<Object>(res.getIdleKeys().size() + 1);
+                args.add(System.currentTimeMillis());
+                encodeMapKeys(args, res.getIdleKeys());
 
-                    commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), ValueType.MAP_VALUE),
-                                    "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
-                                  + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
-                                  + "for i = #map, 1, -1 do "
-                                      + "local value = map[i]; "
-                                      + "if value ~= false then "
-                                          + "local key = ARGV[i]; "
-                                          + "local t, val = struct.unpack('dLc0', value); "
+                commandExecutor.evalWriteAsync(name, codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(args, 1), ValueType.MAP_VALUE),
+                                "local currentTime = tonumber(table.remove(ARGV, 1)); " // index is the first parameter
+                              + "local map = redis.call('hmget', KEYS[1], unpack(ARGV)); "
+                              + "for i = #map, 1, -1 do "
+                                  + "local value = map[i]; "
+                                  + "if value ~= false then "
+                                      + "local key = ARGV[i]; "
+                                      + "local t, val = struct.unpack('dLc0', value); "
 
-                                          + "if t ~= 0 then "
-                                              + "local expireIdle = redis.call('zscore', KEYS[2], key); "
-                                              + "if expireIdle ~= false then "
-                                                  + "if tonumber(expireIdle) > currentTime then "
-                                                      + "redis.call('zadd', KEYS[2], t + currentTime, key); "
-                                                  + "end; "
+                                      + "if t ~= 0 then "
+                                          + "local expireIdle = redis.call('zscore', KEYS[2], key); "
+                                          + "if expireIdle ~= false then "
+                                              + "if tonumber(expireIdle) > currentTime then "
+                                                  + "redis.call('zadd', KEYS[2], t + currentTime, key); "
                                               + "end; "
                                           + "end; "
                                       + "end; "
-                                  + "end; ",
-                            Arrays.<Object>asList(name, getIdleSetName(name)), args.toArray());
-
-                }
+                                  + "end; "
+                              + "end; ",
+                        Arrays.<Object>asList(name, getIdleSetName(name)), args.toArray());
             }
         });
 
@@ -1495,7 +1487,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-	public RFuture<Boolean> fastPutIfAbsentAsync(final K key, final V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+	public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
         checkValue(value);
 
@@ -1613,8 +1605,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 options.getWriter().write(key, value);
             }
             @Override
-            protected boolean condition(Future<Boolean> future) {
-                return future.getNow();
+            protected boolean condition(Boolean res) {
+                return res;
             }
         };
         return mapWriterFuture(future, listener);
@@ -1904,7 +1896,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private Boolean isWindows;
     
     @Override
-    public int addListener(final MapEntryListener listener) {
+    public int addListener(MapEntryListener listener) {
         if (listener == null) {
             throw new NullPointerException();
         }

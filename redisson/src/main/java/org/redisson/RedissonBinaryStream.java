@@ -32,8 +32,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -272,20 +270,17 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     private void write(final byte[] value, final RPromise<Void> result, final int chunkSize, final int i) {
         final int len = Math.min(value.length - i*chunkSize, chunkSize);
         byte[] bytes = Arrays.copyOfRange(value, i*chunkSize, i*chunkSize + len);
-        writeAsync(bytes).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                int j = i + 1;
-                if (j*chunkSize > value.length) {
-                    result.trySuccess(null);
-                } else {
-                    write(value, result, chunkSize, j);
-                }
+        writeAsync(bytes).onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            
+            int j = i + 1;
+            if (j*chunkSize > value.length) {
+                result.trySuccess(null);
+            } else {
+                write(value, result, chunkSize, j);
             }
         });
     }

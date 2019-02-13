@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.redisson.api.RFuture;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -42,21 +40,18 @@ public class ElementsStream {
             return;
         }
         futureRef.set(future);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    emitter.error(future.cause());
-                    return;
-                }
-                
-                emitter.next(future.getNow());
-                if (counter.decrementAndGet() == 0) {
-                    emitter.complete();
-                }
-                
-                take(factory, emitter, counter, futureRef);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                emitter.error(e);
+                return;
             }
+            
+            emitter.next(res);
+            if (counter.decrementAndGet() == 0) {
+                emitter.complete();
+            }
+            
+            take(factory, emitter, counter, futureRef);
         });
     }
     

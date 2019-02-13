@@ -40,7 +40,7 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
         return Flux.<R>create(emitter -> {
             emitter.onRequest(n -> {
                 RFuture<R> future = supplier.get();
-                future.whenComplete((v, e) -> {
+                future.onComplete((v, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;

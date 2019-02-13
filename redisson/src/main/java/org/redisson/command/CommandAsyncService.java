@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,9 +29,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
@@ -90,8 +91,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  *
@@ -180,11 +179,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <V> V get(RFuture<V> future) {
         if (!future.isDone()) {
             final CountDownLatch l = new CountDownLatch(1);
-            future.addListener(new FutureListener<V>() {
-                @Override
-                public void operationComplete(Future<V> future) throws Exception {
-                    l.countDown();
-                }
+            future.onComplete((res, e) -> {
+                l.countDown();
             });
 
             boolean interrupted = false;
@@ -214,11 +210,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
         final CountDownLatch l = new CountDownLatch(1);
-        future.addListener(new FutureListener<Object>() {
-            @Override
-            public void operationComplete(Future<Object> future) throws Exception {
-                l.countDown();
-            }
+        future.onComplete((res, e) -> {
+            l.countDown();
         });
         return l.await(timeout, timeoutUnit);
     }
@@ -270,18 +263,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     @Override
     public <T, R> RFuture<Collection<R>> readAllAsync(final Collection<R> results, Codec codec, RedisCommand<T> command, Object... params) {
-        final RPromise<Collection<R>> mainPromise = createPromise();
-        final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
-        final AtomicInteger counter = new AtomicInteger(nodes.size());
-        FutureListener<Object> listener = new FutureListener<Object>() {
+        RPromise<Collection<R>> mainPromise = createPromise();
+        Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
+        AtomicInteger counter = new AtomicInteger(nodes.size());
+        BiConsumer<Object, Throwable> listener = new BiConsumer<Object, Throwable>() {
             @Override
-            public void operationComplete(Future<Object> future) throws Exception {
-                if (!future.isSuccess() && !(future.cause() instanceof RedisRedirectException)) {
-                    mainPromise.tryFailure(future.cause());
+            public void accept(Object result, Throwable u) {
+                if (u != null && !(u instanceof RedisRedirectException)) {
+                    mainPromise.tryFailure(u);
                     return;
                 }
-
-                Object result = future.getNow();
+                
                 if (result instanceof Collection) {
                     synchronized (results) {
                         results.addAll((Collection) result);
@@ -291,7 +283,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                         results.add((R) result);
                     }
                 }
-
+                
                 if (counter.decrementAndGet() == 0
                         && !mainPromise.isDone()) {
                     mainPromise.trySuccess(results);
@@ -301,7 +293,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         for (MasterSlaveEntry entry : nodes) {
             RPromise<R> promise = new RedissonPromise<R>();
-            promise.addListener(listener);
+            promise.onComplete(listener);
             async(true, new NodeSource(entry), codec, command, params, promise, 0, true);
         }
         return mainPromise;
@@ -327,22 +319,19 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <R, T> void retryReadRandomAsync(final Codec codec, final RedisCommand<T> command, final RPromise<R> mainPromise,
             final List<MasterSlaveEntry> nodes, final Object... params) {
         final RPromise<R> attemptPromise = new RedissonPromise<R>();
-        attemptPromise.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (future.isSuccess()) {
-                    if (future.getNow() == null) {
-                        if (nodes.isEmpty()) {
-                            mainPromise.trySuccess(null);
-                        } else {
-                            retryReadRandomAsync(codec, command, mainPromise, nodes, params);
-                        }
+        attemptPromise.onComplete((res, e) -> {
+            if (e == null) {
+                if (res == null) {
+                    if (nodes.isEmpty()) {
+                        mainPromise.trySuccess(null);
                     } else {
-                        mainPromise.trySuccess(future.getNow());
+                        retryReadRandomAsync(codec, command, mainPromise, nodes, params);
                     }
                 } else {
-                    mainPromise.tryFailure(future.cause());
+                    mainPromise.trySuccess(res);
                 }
+            } else {
+                mainPromise.tryFailure(e);
             }
         });
 
@@ -374,19 +363,18 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         final RPromise<R> mainPromise = new RedissonPromise<R>();
         final Collection<MasterSlaveEntry> nodes = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(nodes.size());
-        FutureListener<T> listener = new FutureListener<T>() {
+        BiConsumer<T, Throwable> listener = new BiConsumer<T, Throwable>() {
             @Override
-            public void operationComplete(Future<T> future) throws Exception {
-                if (!future.isSuccess() && !(future.cause() instanceof RedisRedirectException)) {
-                    mainPromise.tryFailure(future.cause());
+            public void accept(T result, Throwable u) {
+                if (u != null && !(u instanceof RedisRedirectException)) {
+                    mainPromise.tryFailure(u);
                     return;
                 }
                 
-                T result = future.getNow();
-                if (future.cause() instanceof RedisRedirectException) {
+                if (u instanceof RedisRedirectException) {
                     result = command.getConvertor().convert(result);
                 }
-
+                
                 if (callback != null) {
                     callback.onSlotResult(result);
                 }
@@ -402,7 +390,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         for (MasterSlaveEntry entry : nodes) {
             RPromise<T> promise = new RedissonPromise<T>();
-            promise.addListener(listener);
+            promise.onComplete(listener);
             async(readOnlyMode, new NodeSource(entry), codec, command, params, promise, 0, true);
         }
         return mainPromise;
@@ -496,16 +484,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         final RPromise<R> mainPromise = new RedissonPromise<R>();
         final Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         final AtomicInteger counter = new AtomicInteger(entries.size());
-        FutureListener<T> listener = new FutureListener<T>() {
-
+        BiConsumer<T, Throwable> listener = new BiConsumer<T, Throwable>() {
             @Override
-            public void operationComplete(Future<T> future) throws Exception {
-                if (!future.isSuccess() && !(future.cause() instanceof RedisRedirectException)) {
-                    mainPromise.tryFailure(future.cause());
+            public void accept(T t, Throwable u) {
+                if (u != null && !(u instanceof RedisRedirectException)) {
+                    mainPromise.tryFailure(u);
                     return;
                 }
-
-                callback.onSlotResult(future.getNow());
+                
+                callback.onSlotResult(t);
                 if (counter.decrementAndGet() == 0
                         && !mainPromise.isDone()) {
                     mainPromise.trySuccess(callback.onFinish());
@@ -520,7 +507,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.addAll(Arrays.asList(params));
         for (MasterSlaveEntry entry : entries) {
             RPromise<T> promise = new RedissonPromise<T>();
-            promise.addListener(listener);
+            promise.onComplete(listener);
             async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0, true);
         }
         return mainPromise;
@@ -595,47 +582,41 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             
             RPromise<R> promise = new RedissonPromise<R>();
             final String sha1 = calcSHA(script);
-            RedisCommand command = new RedisCommand(evalCommandType, "EVALSHA");
+            RedisCommand cmd = new RedisCommand(evalCommandType, "EVALSHA");
             List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
             args.add(sha1);
             args.add(keys.size());
             args.addAll(keys);
             args.addAll(Arrays.asList(params));
-            async(false, nodeSource, codec, command, args.toArray(), promise, 0, false);
+            async(false, nodeSource, codec, cmd, args.toArray(), promise, 0, false);
             
-            promise.addListener(new FutureListener<R>() {
-                @Override
-                public void operationComplete(Future<R> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        if (future.cause().getMessage().startsWith("NOSCRIPT")) {
-                            RFuture<String> loadFuture = loadScript(keys, script);
-                            loadFuture.addListener(new FutureListener<String>() {
-                                @Override
-                                public void operationComplete(Future<String> future) throws Exception {
-                                    if (!future.isSuccess()) {
-                                        free(pps);
-                                        mainPromise.tryFailure(future.cause());
-                                        return;
-                                    }
+            promise.onComplete((res, e) -> {
+                if (e != null) {
+                    if (e.getMessage().startsWith("NOSCRIPT")) {
+                        RFuture<String> loadFuture = loadScript(keys, script);
+                        loadFuture.onComplete((r, ex) -> {
+                            if (ex != null) {
+                                free(pps);
+                                mainPromise.tryFailure(ex);
+                                return;
+                            }
 
-                                    RedisCommand command = new RedisCommand(evalCommandType, "EVALSHA");
-                                    List<Object> args = new ArrayList<Object>(2 + keys.size() + params.length);
-                                    args.add(sha1);
-                                    args.add(keys.size());
-                                    args.addAll(keys);
-                                    args.addAll(Arrays.asList(pps));
-                                    async(false, nodeSource, codec, command, args.toArray(), mainPromise, 0, false);
-                                }
-                            });
-                        } else {
-                            free(pps);
-                            mainPromise.tryFailure(future.cause());
-                        }
-                        return;
+                            RedisCommand command = new RedisCommand(evalCommandType, "EVALSHA");
+                            List<Object> newargs = new ArrayList<Object>(2 + keys.size() + params.length);
+                            newargs.add(sha1);
+                            newargs.add(keys.size());
+                            newargs.addAll(keys);
+                            newargs.addAll(Arrays.asList(pps));
+                            async(false, nodeSource, codec, command, newargs.toArray(), mainPromise, 0, false);
+                        });
+                    } else {
+                        free(pps);
+                        mainPromise.tryFailure(e);
                     }
-                    free(pps);
-                    mainPromise.trySuccess(future.getNow());
+                    return;
                 }
+                free(pps);
+                mainPromise.trySuccess(res);
             });
             return mainPromise;
         }
@@ -693,10 +674,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.init(connectionFuture, attemptPromise,
                 readOnlyMode, source, codecToUse, command, params, mainPromise, attempt);
 
-        FutureListener<R> mainPromiseListener = new FutureListener<R>() {
+        BiConsumer<R, Throwable> mainPromiseListener = new BiConsumer<R, Throwable>() {
+
             @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (future.isCancelled() && connectionFuture.cancel(false)) {
+            public void accept(R t, Throwable u) {
+                if (mainPromise.isCancelled() && connectionFuture.cancel(false)) {
                     log.debug("Connection obtaining canceled for {}", command);
                     details.getTimeout().cancel();
                     if (details.getAttemptPromise().cancel(false)) {
@@ -786,44 +768,37 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         details.setTimeout(timeout);
         details.setupMainPromiseListener(mainPromiseListener);
 
-        connectionFuture.addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> connFuture) throws Exception {
-                if (connFuture.isCancelled()) {
-                    connectionManager.getShutdownLatch().release();
-                    return;
-                }
-
-                if (!connFuture.isSuccess()) {
-                    connectionManager.getShutdownLatch().release();
-                    details.setException(convertException(connectionFuture));
-                    return;
-                }
-
-                if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
-                    releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
-                    return;
-                }
-
-                final RedisConnection connection = connFuture.getNow();
-                sendCommand(details, connection);
-
-                details.getWriteFuture().addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        checkWriteFuture(details, ignoreRedirect, connection);
-                    }
-                });
-
-                releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+        connectionFuture.onComplete((connection, e) -> {
+            if (connectionFuture.isCancelled()) {
+                connectionManager.getShutdownLatch().release();
+                return;
             }
+
+            if (!connectionFuture.isSuccess()) {
+                connectionManager.getShutdownLatch().release();
+                details.setException(convertException(connectionFuture));
+                return;
+            }
+
+            if (details.getAttemptPromise().isDone() || details.getMainPromise().isDone()) {
+                releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
+                return;
+            }
+
+            sendCommand(details, connection);
+
+            details.getWriteFuture().addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    checkWriteFuture(details, ignoreRedirect, connection);
+                }
+            });
+
+            releaseConnection(source, connectionFuture, details.isReadOnlyMode(), details.getAttemptPromise(), details);
         });
 
-        attemptPromise.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                checkAttemptFuture(source, details, future, ignoreRedirect);
-            }
+        attemptPromise.onComplete((r, e) -> {
+            checkAttemptFuture(source, details, attemptPromise, ignoreRedirect);
         });
     }
     
@@ -966,9 +941,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleBlockingOperations(final AsyncDetails<V, R> details, final RedisConnection connection, Long popTimeout) {
-        final FutureListener<Boolean> listener = new FutureListener<Boolean>() {
+        AtomicBoolean skip = new AtomicBoolean();
+        BiConsumer<Boolean, Throwable> listener = new BiConsumer<Boolean, Throwable>() {
             @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
+            public void accept(Boolean t, Throwable u) {
+                if (skip.get()) {
+                    return;
+                }
                 details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
             }
         };
@@ -988,69 +967,60 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             scheduledFuture = null;
         }
 
-        details.getMainPromise().addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (scheduledFuture != null) {
-                    scheduledFuture.cancel();
-                }
+        details.getMainPromise().onComplete((res, e) -> {
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel();
+            }
 
-                synchronized (listener) {
-                    connectionManager.getShutdownPromise().removeListener(listener);
-                }
+            synchronized (listener) {
+                skip.set(true);
+            }
 
-                // handling cancel operation for blocking commands
-                if (future.isCancelled() && !details.getAttemptPromise().isDone()) {
-                    log.debug("Canceled blocking operation {} used {}", details.getCommand(), connection);
-                    connection.forceFastReconnectAsync().addListener(new FutureListener<Void>() {
-                        @Override
-                        public void operationComplete(Future<Void> future) throws Exception {
-                            details.getAttemptPromise().cancel(true);
-                        }
-                    });
-                    return;
-                }
+            // handling cancel operation for blocking commands
+            if (details.getMainPromise().isCancelled() && !details.getAttemptPromise().isDone()) {
+                log.debug("Canceled blocking operation {} used {}", details.getCommand(), connection);
+                connection.forceFastReconnectAsync().onComplete((r, ex) -> {
+                    details.getAttemptPromise().cancel(true);
+                });
+                return;
+            }
 
-                if (future.cause() instanceof RedissonShutdownException) {
-                    details.getAttemptPromise().tryFailure(future.cause());
-                }
+            if (e instanceof RedissonShutdownException) {
+                details.getAttemptPromise().tryFailure(e);
             }
         });
 
         synchronized (listener) {
             if (!details.getMainPromise().isDone()) {
-                connectionManager.getShutdownPromise().addListener(listener);
+                connectionManager.getShutdownPromise().onComplete(listener);
             }
         }
     }
 
     protected <V, R> void releaseConnection(final NodeSource source, final RFuture<RedisConnection> connectionFuture,
             final boolean isReadOnly, RPromise<R> attemptPromise, final AsyncDetails<V, R> details) {
-        attemptPromise.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                if (!connectionFuture.isSuccess()) {
-                    return;
-                }
+        attemptPromise.onComplete((res, e) -> {
+            if (!connectionFuture.isSuccess()) {
+                return;
+            }
 
-                RedisConnection connection = connectionFuture.getNow();
-                connectionManager.getShutdownLatch().release();
-                if (isReadOnly) {
-                    connectionManager.releaseRead(source, connection);
-                } else {
-                    connectionManager.releaseWrite(source, connection);
-                }
+            RedisConnection connection = connectionFuture.getNow();
+            connectionManager.getShutdownLatch().release();
+            if (isReadOnly) {
+                connectionManager.releaseRead(source, connection);
+            } else {
+                connectionManager.releaseWrite(source, connection);
+            }
 
-                if (log.isDebugEnabled()) {
-                    log.debug("connection released for command {} and params {} from slot {} using connection {}",
-                            details.getCommand(), LogHelper.toString(details.getParams()), details.getSource(), connection);
-                }
+            if (log.isDebugEnabled()) {
+                log.debug("connection released for command {} and params {} from slot {} using connection {}",
+                        details.getCommand(), LogHelper.toString(details.getParams()), details.getSource(), connection);
             }
         });
     }
     
-    protected <R, V> void checkAttemptFuture(final NodeSource source, final AsyncDetails<V, R> details,
-            Future<R> future, final boolean ignoreRedirect) {
+    protected <R, V> void checkAttemptFuture(NodeSource source, AsyncDetails<V, R> details,
+            RFuture<R> future, boolean ignoreRedirect) {
         details.getTimeout().cancel();
         if (future.isCancelled()) {
             return;
@@ -1310,23 +1280,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (ref.get().hasNext()) {
             String currentName = ref.get().next().toString();
             RFuture<V> future = writeAsync(currentName, codec, command, currentName, 1);
-            future.addListener(new FutureListener<V>() {
-                @Override
-                public void operationComplete(Future<V> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        result.tryFailure(future.cause());
+            future.onComplete((res, e) -> {
+                if (e != null) {
+                    result.tryFailure(e);
+                    return;
+                }
+                
+                if (res != null) {
+                    result.trySuccess(res);
+                } else {
+                    if (counter.decrementAndGet() == 0) {
+                        result.trySuccess(null);
                         return;
                     }
-                    
-                    if (future.getNow() != null) {
-                        result.trySuccess(future.getNow());
-                    } else {
-                        if (counter.decrementAndGet() == 0) {
-                            result.trySuccess(null);
-                            return;
-                        }
-                        poll(name, codec, result, ref, names, counter, command);
-                    }
+                    poll(name, codec, result, ref, names, counter, command);
                 }
             });
         } else {

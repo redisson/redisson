@@ -67,8 +67,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -252,17 +250,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         }
 
         RFuture<V> future = super.getAsync((K)key);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                V value = future.getNow();
-                if (value != null) {
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((value, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (value != null) {
+                cachePut(cacheKey, key, value);
             }
         });
         return future;
@@ -563,22 +557,17 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         
         final RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
         RFuture<Map<K, V>> future = super.getAllAsync(mapKeys);
-        future.addListener(new FutureListener<Map<K, V>>() {
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                Map<K, V> map = future.getNow();
-                result.putAll(map);
-
-                cacheMap(map);
-                
-                promise.trySuccess(result);
+        future.onComplete((map, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            result.putAll(map);
 
+            cacheMap(map);
+            
+            promise.trySuccess(result);
         });
         return promise;
     }
@@ -652,24 +641,21 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()),
                 params.toArray());
 
-        future.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                cacheMap(map);
-                result.trySuccess(null);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            cacheMap(map);
+            result.trySuccess(null);
         });
         return result;
     }
 
     @Override
     protected RFuture<V> addAndGetOperationAsync(final K key, Number value) {
-        final ByteBuf keyState = encodeMapKey(key);
+        ByteBuf keyState = encodeMapKey(key);
         CacheKey cacheKey = toCacheKey(keyState);
         ByteBuf msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
         byte[] entryId = generateLogEntryId(cacheKey.getKeyHash());
@@ -686,18 +672,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               Arrays.<Object>asList(getName(), listener.getInvalidationTopicName(), listener.getUpdatesLogName()), 
               keyState, new BigDecimal(value.toString()).toPlainString(), invalidateEntryOnChange, msg, System.currentTimeMillis(), entryId);
 
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                V value = future.getNow();
-                if (value != null) {
-                    CacheKey cacheKey = toCacheKey(key);
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((res, e) -> {
+            if (res != null) {
+                CacheKey cKey = toCacheKey(key);
+                cachePut(cKey, key, res);
             }
         });
         return future;
@@ -706,17 +684,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Boolean> fastPutIfAbsentAsync(final K key, final V value) {
         RFuture<Boolean> future = super.fastPutIfAbsentAsync(key, value);
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow()) {
-                    CacheKey cacheKey = toCacheKey(key);
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res) {
+                CacheKey cacheKey = toCacheKey(key);
+                cachePut(cacheKey, key, value);
             }
         });
         return future;
@@ -752,18 +727,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
               Arrays.<Object>asList(getName()), 
               mapKeys.toArray());
         
-        future.addListener(new FutureListener<Collection<V>>() {
-
-            @Override
-            public void operationComplete(Future<Collection<V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                result.addAll(future.get());
-                promise.trySuccess(result);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            result.addAll(res);
+            promise.trySuccess(result);
         });
         
         return promise;
@@ -781,21 +752,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         final RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
         RFuture<Map<K, V>> future = readAll(ALL_MAP, mapKeys, result);
         
-        future.addListener(new FutureListener<Map<K, V>>() {
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                for (java.util.Map.Entry<K, V> entry : future.getNow().entrySet()) {
-                    CacheKey cacheKey = toCacheKey(entry.getKey());
-                    cachePut(cacheKey, entry.getKey(), entry.getValue());
-                }
-                result.putAll(future.getNow());
-                promise.trySuccess(result);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            for (java.util.Map.Entry<K, V> entry : res.entrySet()) {
+                CacheKey cacheKey = toCacheKey(entry.getKey());
+                cachePut(cacheKey, entry.getKey(), entry.getValue());
+            }
+            result.putAll(res);
+            promise.trySuccess(result);
         });
         
         return promise;
@@ -835,21 +803,18 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         final RPromise<Set<Entry<K, V>>> promise = new RedissonPromise<Set<Entry<K, V>>>();
         RFuture<Set<Entry<K, V>>> future = readAll(ALL_ENTRIES, mapKeys, result);
         
-        future.addListener(new FutureListener<Set<Entry<K, V>>>() {
-            @Override
-            public void operationComplete(Future<Set<Entry<K, V>>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                for (java.util.Map.Entry<K, V> entry : future.getNow()) {
-                    CacheKey cacheKey = toCacheKey(entry.getKey());
-                    cachePut(cacheKey, entry.getKey(), entry.getValue());
-                }
-                result.addAll(future.getNow());
-                promise.trySuccess(result);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            for (java.util.Map.Entry<K, V> entry : res) {
+                CacheKey cacheKey = toCacheKey(entry.getKey());
+                cachePut(cacheKey, entry.getKey(), entry.getValue());
+            }
+            result.addAll(res);
+            promise.trySuccess(result);
         });
         
         return promise;
@@ -881,17 +846,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Boolean> fastReplaceAsync(final K key, final V value) {
         RFuture<Boolean> future = super.fastReplaceAsync(key, value);
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow()) {
-                    CacheKey cacheKey = toCacheKey(key);
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res) {
+                CacheKey cacheKey = toCacheKey(key);
+                cachePut(cacheKey, key, value);
             }
         });
         
@@ -956,17 +918,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<V> replaceAsync(final K key, final V value) {
         RFuture<V> future = super.replaceAsync(key, value);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow() != null) {
-                    CacheKey cacheKey = toCacheKey(key);
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res != null) {
+                CacheKey cacheKey = toCacheKey(key);
+                cachePut(cacheKey, key, value);
             }
         });
         
@@ -1004,16 +963,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         final CacheKey cacheKey = toCacheKey(key);
         
         RFuture<Boolean> future = super.replaceAsync(key, oldValue, newValue);
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow()) {
-                    cachePut(cacheKey, key, newValue);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res) {
+                cachePut(cacheKey, key, newValue);
             }
         });
         
@@ -1050,16 +1006,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         final CacheKey cacheKey = toCacheKey(key);
         RFuture<Boolean> future = super.removeAsync(key, value);
 
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow()) {
-                    cache.remove(cacheKey);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res) {
+                cache.remove(cacheKey);
             }
         });
         return future;
@@ -1069,17 +1022,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<V> putIfAbsentAsync(final K key, final V value) {
         RFuture<V> future = super.putIfAbsentAsync(key, value);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
-                
-                if (future.getNow() == null) {
-                    CacheKey cacheKey = toCacheKey(key);
-                    cachePut(cacheKey, key, value);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+            
+            if (res == null) {
+                CacheKey cacheKey = toCacheKey(key);
+                cachePut(cacheKey, key, value);
             }
         });
         return future;

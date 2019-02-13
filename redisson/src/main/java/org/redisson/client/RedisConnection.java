@@ -35,8 +35,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -139,11 +137,8 @@ public class RedisConnection implements RedisCommands {
 
     public <R> R await(RFuture<R> future) {
         final CountDownLatch l = new CountDownLatch(1);
-        future.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                l.countDown();
-            }
+        future.onComplete((res, e) -> {
+            l.countDown();
         });
         
         try {
@@ -217,11 +212,8 @@ public class RedisConnection implements RedisCommands {
             }
         }, timeout, TimeUnit.MILLISECONDS);
         
-        promise.addListener(new FutureListener<R>() {
-            @Override
-            public void operationComplete(Future<R> future) throws Exception {
-                scheduledFuture.cancel(false);
-            }
+        promise.onComplete((res, e) -> {
+            scheduledFuture.cancel(false);
         });
         
         ChannelFuture writeFuture = send(new CommandData<T, R>(promise, encoder, command, params));
@@ -264,12 +256,9 @@ public class RedisConnection implements RedisCommands {
             channel.close();
         } else {
             RFuture<Void> f = async(RedisCommands.QUIT);
-            f.addListener(new FutureListener<Void>() {
-                @Override
-                public void operationComplete(Future<Void> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        channel.close();
-                    }
+            f.onComplete((res, e) -> {
+                if (e != null) {
+                    channel.close();
                 }
             });
         }
@@ -300,7 +289,8 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + "]";
+        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", command=" + command + "]";
     }
 
 }

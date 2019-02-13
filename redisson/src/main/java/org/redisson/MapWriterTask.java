@@ -15,8 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.Future;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -25,7 +23,7 @@ import io.netty.util.concurrent.Future;
  */
 public abstract class MapWriterTask<R> {
 
-    protected boolean condition(Future<R> future) {
+    protected boolean condition(R res) {
         return true;
     }
 

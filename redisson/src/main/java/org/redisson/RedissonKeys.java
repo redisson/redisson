@@ -21,12 +21,13 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -46,10 +47,6 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ImmediateEventExecutor;
 
 /**
  * 
@@ -91,9 +88,9 @@ public class RedissonKeys implements RKeys {
     }
     
     @Override
-    public Iterable<String> getKeysByPattern(final String pattern, final int count) {
+    public Iterable<String> getKeysByPattern(String pattern, int count) {
         List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
-        for (final MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
+        for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             Iterable<String> iterable = new Iterable<String>() {
                 @Override
                 public Iterator<String> iterator() {
@@ -123,7 +120,7 @@ public class RedissonKeys implements RKeys {
         return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH", pattern, "COUNT", count);
     }
 
-    private Iterator<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
+    private Iterator<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count) {
         return new RedissonBaseIterator<String>() {
 
             @Override
@@ -208,27 +205,24 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public RFuture<Long> deleteByPatternAsync(final String pattern) {
-        final int batchSize = 100;
-        final RPromise<Long> result = new RedissonPromise<Long>();
-        final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
-        final AtomicLong count = new AtomicLong();
+    public RFuture<Long> deleteByPatternAsync(String pattern) {
+        int batchSize = 100;
+        RPromise<Long> result = new RedissonPromise<Long>();
+        AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
+        AtomicLong count = new AtomicLong();
         Collection<MasterSlaveEntry> entries = commandExecutor.getConnectionManager().getEntrySet();
-        final AtomicLong executed = new AtomicLong(entries.size());
-        final FutureListener<Long> listener = new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (future.isSuccess()) {
-                    count.addAndGet(future.getNow());
-                } else {
-                    failed.set(future.cause());
-                }
-
-                checkExecution(result, failed, count, executed);
+        AtomicLong executed = new AtomicLong(entries.size());
+        BiConsumer<Long, Throwable> listener = (res, e) -> {
+            if (e == null) {
+                count.addAndGet(res);
+            } else {
+                failed.set(e);
             }
+            
+            checkExecution(result, failed, count, executed);
         };
 
-        for (final MasterSlaveEntry entry : entries) {
+        for (MasterSlaveEntry entry : entries) {
             commandExecutor.getConnectionManager().getExecutor().execute(new Runnable() {
                 @Override
                 public void run() {
@@ -251,11 +245,11 @@ public class RedissonKeys implements RKeys {
                             keys.clear();
                         }
                         
-                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newSucceededFuture(count);
-                        future.addListener(listener);
+                        RFuture<Long> future = RedissonPromise.newSucceededFuture(count);
+                        future.onComplete(listener);
                     } catch (Exception e) {
-                        Future<Long> future = ImmediateEventExecutor.INSTANCE.newFailedFuture(e);
-                        future.addListener(listener);
+                        RFuture<Long> future = RedissonPromise.newFailedFuture(e);
+                        future.onComplete(listener);
                     }
                 }
             });
@@ -316,26 +310,22 @@ public class RedissonKeys implements RKeys {
             list.add(key);
         }
 
-        final RPromise<Long> result = new RedissonPromise<Long>();
-        final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
-        final AtomicLong count = new AtomicLong();
-        final AtomicLong executed = new AtomicLong(range2key.size());
-        FutureListener<List<?>> listener = new FutureListener<List<?>>() {
-            @Override
-            public void operationComplete(Future<List<?>> future) throws Exception {
-                if (future.isSuccess()) {
-                    List<Long> result = (List<Long>) future.get();
-                    for (Long res : result) {
-                        if (res != null) {
-                            count.addAndGet(res);
-                        }
+        RPromise<Long> result = new RedissonPromise<Long>();
+        AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
+        AtomicLong count = new AtomicLong();
+        AtomicLong executed = new AtomicLong(range2key.size());
+        BiConsumer<List<?>, Throwable> listener = (t, u) -> {
+            if (u == null) {
+                for (Long res : (List<Long>) t) {
+                    if (res != null) {
+                        count.addAndGet(res);
                     }
-                } else {
-                    failed.set(future.cause());
                 }
-
-                checkExecution(result, failed, count, executed);
+            } else {
+                failed.set(u);
             }
+            
+            checkExecution(result, failed, count, executed);
         };
 
         for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
@@ -346,7 +336,7 @@ public class RedissonKeys implements RKeys {
             }
 
             RFuture<List<?>> future = executorService.executeAsync();
-            future.addListener(listener);
+            future.onComplete(listener);
         }
 
         return result;
@@ -414,8 +404,8 @@ public class RedissonKeys implements RKeys {
         return commandExecutor.writeAllAsync(RedisCommands.FLUSHALL);
     }
 
-    private void checkExecution(final RPromise<Long> result, final AtomicReference<Throwable> failed,
-            final AtomicLong count, final AtomicLong executed) {
+    private void checkExecution(RPromise<Long> result, AtomicReference<Throwable> failed,
+            AtomicLong count, AtomicLong executed) {
         if (executed.decrementAndGet() == 0) {
             if (failed.get() != null) {
                 if (count.get() > 0) {

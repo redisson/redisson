@@ -87,10 +87,10 @@ public class LoadBalancerManager {
         };
 
         RFuture<Void> slaveFuture = slaveConnectionPool.add(entry);
-        slaveFuture.addListener(listener);
+        slaveFuture.onComplete(listener);
         
         RFuture<Void> pubSubFuture = pubSubConnectionPool.add(entry);
-        pubSubFuture.addListener(listener);
+        pubSubFuture.onComplete(listener);
         return result;
     }
 
@@ -267,7 +267,7 @@ public class LoadBalancerManager {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, client2Entry.values().size());
         for (ClientConnectionsEntry entry : client2Entry.values()) {
-            entry.getClient().shutdownAsync().addListener(listener);
+            entry.getClient().shutdownAsync().onComplete(listener);
         }
         return result;
     }

@@ -34,9 +34,6 @@ import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
  *
@@ -92,19 +89,16 @@ public class RedissonPatternTopic implements RPatternTopic {
         return addListenerAsync(pubSubListener);
     }
     
-    private RFuture<Integer> addListenerAsync(final RedisPubSubListener<?> pubSubListener) {
+    private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
-        final RPromise<Integer> result = new RedissonPromise<Integer>();
-        future.addListener(new FutureListener<PubSubConnectionEntry>() {
-            @Override
-            public void operationComplete(Future<PubSubConnectionEntry> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                result.trySuccess(System.identityHashCode(pubSubListener));
+        RPromise<Integer> result = new RedissonPromise<Integer>();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            result.trySuccess(System.identityHashCode(pubSubListener));
         });
         return result;
     }

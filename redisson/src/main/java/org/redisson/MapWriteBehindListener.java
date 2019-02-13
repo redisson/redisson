@@ -17,13 +17,11 @@ package org.redisson;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -31,7 +29,7 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @param <R> return type
  */
-public class MapWriteBehindListener<R> implements FutureListener<R> {
+public class MapWriteBehindListener<R> implements BiConsumer<R, Throwable> {
 
     private static final Logger log = LoggerFactory.getLogger(MapWriteBehindListener.class);
     
@@ -48,22 +46,6 @@ public class MapWriteBehindListener<R> implements FutureListener<R> {
         this.task = task;
         this.writeBehindCurrentThreads = writeBehindCurrentThreads;
         this.writeBehindTasks = writeBehindTasks;
-    }
-
-    @Override
-    public void operationComplete(Future<R> future) throws Exception {
-        if (future.isSuccess() && task.condition(future)) {
-            enqueueRunnable(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        task.execute();
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
-                    }
-                }
-            });
-        }
     }
 
     private void enqueueRunnable(Runnable runnable) {
@@ -93,6 +75,19 @@ public class MapWriteBehindListener<R> implements FutureListener<R> {
             });
         } else {
             writeBehindCurrentThreads.decrementAndGet();
+        }
+    }
+
+    @Override
+    public void accept(R t, Throwable u) {
+        if (u == null && task.condition(t)) {
+            enqueueRunnable(() -> {
+                try {
+                    task.execute();
+                } catch (Exception e) {
+                    log.error(e.getMessage(), e);
+                }
+            });
         }
     }
 

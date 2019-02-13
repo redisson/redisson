@@ -31,15 +31,12 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClientConnectionsEntry;
+import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.RedisClientEntry;
-import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.URIBuilder;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -117,21 +114,17 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public boolean pingAll() {
         List<RedisClientEntry> clients = new ArrayList<RedisClientEntry>((Collection<RedisClientEntry>)getNodes());
-        final Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<RedisConnection, RFuture<String>>(clients.size());
-        final CountDownLatch latch = new CountDownLatch(clients.size());
+        Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<>(clients.size());
+        CountDownLatch latch = new CountDownLatch(clients.size());
         for (RedisClientEntry entry : clients) {
             RFuture<RedisConnection> f = entry.getClient().connectAsync();
-            f.addListener(new FutureListener<RedisConnection>() {
-                @Override
-                public void operationComplete(Future<RedisConnection> future) throws Exception {
-                    if (future.isSuccess()) {
-                        RedisConnection c = future.getNow();
-                        RFuture<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
-                        result.put(c, r);
-                        latch.countDown();
-                    } else {
-                        latch.countDown();
-                    }
+            f.onComplete((c, e) -> {
+                if (c != null) {
+                    RFuture<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
+                    result.put(c, r);
+                    latch.countDown();
+                } else {
+                    latch.countDown();
                 }
             });
         }

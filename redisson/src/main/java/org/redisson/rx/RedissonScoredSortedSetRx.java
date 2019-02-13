@@ -15,8 +15,6 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSetAsync;
@@ -49,20 +47,14 @@ public class RedissonScoredSortedSetRx<V>  {
     }
 
     public Flowable<V> takeFirstElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeFirstAsync();
-            }
+        return ElementsStream.takeElements(() -> {
+            return instance.takeFirstAsync();
         });
     }
     
     public Flowable<V> takeLastElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeLastAsync();
-            }
+        return ElementsStream.takeElements(() -> {
+            return instance.takeLastAsync();
         });
     }
     

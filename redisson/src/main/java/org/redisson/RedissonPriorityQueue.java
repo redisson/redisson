@@ -39,9 +39,6 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  *
  * @author Nikita Koksharov
@@ -167,7 +164,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
 
     @Override
-    public boolean contains(final Object o) {
+    public boolean contains(Object o) {
         return binarySearch((V)o, codec).getIndex() >= 0;
     }
 
@@ -291,41 +288,31 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return pollAsync(RedisCommands.LPOP, getName());
     }
 
-    protected <T> RFuture<V> pollAsync(final RedisCommand<T> command, final Object ... params) {
-        final long threadId = Thread.currentThread().getId();
-        final RPromise<V> result = new RedissonPromise<V>();
-        lock.lockAsync(threadId).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
+    protected <T> RFuture<V> pollAsync(RedisCommand<T> command, Object ... params) {
+        long threadId = Thread.currentThread().getId();
+        RPromise<V> result = new RedissonPromise<V>();
+        lock.lockAsync(threadId).onComplete((r, exc) -> {
+            if (exc != null) {
+                result.tryFailure(exc);
+                return;
+            }
+            
+            RFuture<V> f = commandExecutor.writeAsync(getName(), codec, command, params);
+            f.onComplete((value, e) -> {
+                if (e != null) {
+                    result.tryFailure(e);
                     return;
                 }
                 
-                RFuture<V> f = commandExecutor.writeAsync(getName(), codec, command, params);
-                f.addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        final V value = future.getNow();
-                        lock.unlockAsync(threadId).addListener(new FutureListener<Void>() {
-                            @Override
-                            public void operationComplete(Future<Void> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    result.tryFailure(future.cause());
-                                    return;
-                                }
-                                
-                                result.trySuccess(value);
-                            }
-                        });
+                lock.unlockAsync(threadId).onComplete((res, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(ex);
+                        return;
                     }
+                    
+                    result.trySuccess(value);
                 });
-            }
+            });
         });
         return result;
     }
@@ -365,7 +352,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     @Override
     public boolean trySetComparator(Comparator<? super V> comparator) {
         String className = comparator.getClass().getName();
-        final String comparatorSign = className + ":" + calcClassSign(className);
+        String comparatorSign = className + ":" + calcClassSign(className);
 
         Boolean res = commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('llen', KEYS[1]) == 0 then "

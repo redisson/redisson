@@ -30,9 +30,6 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -89,17 +86,14 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
 
     @Override
     public RFuture<Void> acquireAsync(long permits) {
-        final RPromise<Void> promise = new RedissonPromise<Void>();
-        tryAcquireAsync(permits, -1, null).addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                promise.trySuccess(null);
+        RPromise<Void> promise = new RedissonPromise<Void>();
+        tryAcquireAsync(permits, -1, null).onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            promise.trySuccess(null);
         });
         return promise;
     }
@@ -130,61 +124,48 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
         return promise;
     }
     
-    private void tryAcquireAsync(final long permits, final RPromise<Boolean> promise, final long timeoutInMillis) {
-        final long start = System.currentTimeMillis();
+    private void tryAcquireAsync(long permits, RPromise<Boolean> promise, long timeoutInMillis) {
+        long s = System.currentTimeMillis();
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
-        future.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                Long delay = future.getNow();
-                if (delay == null) {
-                    promise.trySuccess(true);
-                    return;
-                }
-                
-                if (timeoutInMillis == -1) {
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            tryAcquireAsync(permits, promise, timeoutInMillis);
-                        }
-                    }, delay, TimeUnit.MILLISECONDS);
-                    return;
-                }
-                
-                long elapsed = System.currentTimeMillis() - start;
-                final long remains = timeoutInMillis - elapsed;
-                if (remains <= 0) {
+        future.onComplete((delay, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
+            }
+            
+            if (delay == null) {
+                promise.trySuccess(true);
+                return;
+            }
+            
+            if (timeoutInMillis == -1) {
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                    tryAcquireAsync(permits, promise, timeoutInMillis);
+                }, delay, TimeUnit.MILLISECONDS);
+                return;
+            }
+            
+            long el = System.currentTimeMillis() - s;
+            long remains = timeoutInMillis - el;
+            if (remains <= 0) {
+                promise.trySuccess(false);
+                return;
+            }
+            if (remains < delay) {
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
                     promise.trySuccess(false);
-                    return;
-                }
-                if (remains < delay) {
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            promise.trySuccess(false);
-                        }
-                    }, remains, TimeUnit.MILLISECONDS);
-                } else {
-                    final long start = System.currentTimeMillis();
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            long elapsed = System.currentTimeMillis() - start;
-                            if (remains <= elapsed) {
-                                promise.trySuccess(false);
-                                return;
-                            }
-                            
-                            tryAcquireAsync(permits, promise, remains - elapsed);
-                        }
-                    }, delay, TimeUnit.MILLISECONDS);
-                }
+                }, remains, TimeUnit.MILLISECONDS);
+            } else {
+                long start = System.currentTimeMillis();
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                    long elapsed = System.currentTimeMillis() - start;
+                    if (remains <= elapsed) {
+                        promise.trySuccess(false);
+                        return;
+                    }
+                    
+                    tryAcquireAsync(permits, promise, remains - elapsed);
+                }, delay, TimeUnit.MILLISECONDS);
             }
         });
     }

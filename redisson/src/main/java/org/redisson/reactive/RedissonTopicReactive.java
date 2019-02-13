@@ -50,7 +50,7 @@ public class RedissonTopicReactive {
                         }
                     }
                 });
-                t.whenComplete((id, e) -> {
+                t.onComplete((id, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;

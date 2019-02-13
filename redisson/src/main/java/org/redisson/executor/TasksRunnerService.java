@@ -55,8 +55,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * Executor service runs Callable and Runnable tasks.
@@ -252,12 +250,9 @@ public class TasksRunnerService implements RemoteExecutorService {
                 + "return 0;", 
                 Arrays.<Object>asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
                 System.currentTimeMillis(), requestId);
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess() || future.get()) {
-                    scheduleRetryTimeRenewal(requestId);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null || res) {
+                scheduleRetryTimeRenewal(requestId);
             }
         });
     }

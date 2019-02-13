@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.resolver.AddressResolver;
 import io.netty.resolver.AddressResolverGroup;
-import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -160,16 +159,13 @@ public class DNSMonitor {
                                 masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                             } else {
                                 RFuture<Void> addFuture = masterSlaveEntry.addSlave(newSlaveAddr, entry.getKey());
-                                addFuture.addListener(new FutureListener<Void>() {
-                                    @Override
-                                    public void operationComplete(Future<Void> future) throws Exception {
-                                        if (!future.isSuccess()) {
-                                            log.error("Can't add slave: " + newSlaveAddr, future.cause());
-                                            return;
-                                        }
-                                        
-                                        masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
+                                addFuture.onComplete((res, e) -> {
+                                    if (e != null) {
+                                        log.error("Can't add slave: " + newSlaveAddr, e);
+                                        return;
                                     }
+                                    
+                                    masterSlaveEntry.slaveDown(currentSlaveAddr, FreezeReason.MANAGER);
                                 });
                             }
                             break;

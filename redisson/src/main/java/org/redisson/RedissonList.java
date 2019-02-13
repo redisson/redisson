@@ -49,9 +49,6 @@ import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
  *
@@ -188,7 +185,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public RFuture<Boolean> addAllAsync(final Collection<? extends V> c) {
+    public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return RedissonPromise.newSucceededFuture(false);
         }
@@ -354,27 +351,23 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<V> setAsync(int index, V element) {
-        final RPromise<V> result = new RedissonPromise<V>();
+        RPromise<V> result = new RedissonPromise<V>();
         RFuture<V> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
                 Collections.<Object>singletonList(getName()), index, encode(element));
-        future.addListener(new FutureListener<V>() {
-
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    if (future.cause().getMessage().contains("ERR index out of range")) {
-                        result.tryFailure(new IndexOutOfBoundsException("index out of range"));
-                        return;
-                    }
-                    result.tryFailure(future.cause());
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                if (e.getMessage().contains("ERR index out of range")) {
+                    result.tryFailure(new IndexOutOfBoundsException("index out of range"));
                     return;
                 }
-                
-                result.trySuccess(future.getNow());
+                result.tryFailure(e);
+                return;
             }
+            
+            result.trySuccess(res);
         });
         return result;
     }
@@ -511,7 +504,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public ListIterator<V> listIterator(final int ind) {
+    public ListIterator<V> listIterator(int ind) {
         return new ListIterator<V>() {
 
             private V prevCurrentValue;

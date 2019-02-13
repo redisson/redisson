@@ -43,8 +43,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -173,45 +171,37 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(tryAcquireAsync(leaseTime, unit, threadId));
     }
     
-    private RFuture<Boolean> tryAcquireOnceAsync(long leaseTime, TimeUnit unit, final long threadId) {
+    private RFuture<Boolean> tryAcquireOnceAsync(long leaseTime, TimeUnit unit, long threadId) {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
         }
         RFuture<Boolean> ttlRemainingFuture = tryLockInnerAsync(commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_NULL_BOOLEAN);
-        ttlRemainingFuture.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
+        ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
+            if (e != null) {
+                return;
+            }
 
-                Boolean ttlRemaining = future.getNow();
-                // lock acquired
-                if (ttlRemaining) {
-                    scheduleExpirationRenewal(threadId);
-                }
+            // lock acquired
+            if (ttlRemaining) {
+                scheduleExpirationRenewal(threadId);
             }
         });
         return ttlRemainingFuture;
     }
 
-    private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, final long threadId) {
+    private <T> RFuture<Long> tryAcquireAsync(long leaseTime, TimeUnit unit, long threadId) {
         if (leaseTime != -1) {
             return tryLockInnerAsync(leaseTime, unit, threadId, RedisCommands.EVAL_LONG);
         }
         RFuture<Long> ttlRemainingFuture = tryLockInnerAsync(commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout(), TimeUnit.MILLISECONDS, threadId, RedisCommands.EVAL_LONG);
-        ttlRemainingFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    return;
-                }
+        ttlRemainingFuture.onComplete((ttlRemaining, e) -> {
+            if (e != null) {
+                return;
+            }
 
-                Long ttlRemaining = future.getNow();
-                // lock acquired
-                if (ttlRemaining == null) {
-                    scheduleExpirationRenewal(threadId);
-                }
+            // lock acquired
+            if (ttlRemaining == null) {
+                scheduleExpirationRenewal(threadId);
             }
         });
         return ttlRemainingFuture;
@@ -222,7 +212,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(tryLockAsync());
     }
 
-    private void scheduleExpirationRenewal(final long threadId) {
+    private void scheduleExpirationRenewal(long threadId) {
         if (expirationRenewalMap.containsKey(getEntryName())) {
             return;
         }
@@ -232,20 +222,16 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             public void run(Timeout timeout) throws Exception {
                 
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
-                
-                future.addListener(new FutureListener<Boolean>() {
-                    @Override
-                    public void operationComplete(Future<Boolean> future) throws Exception {
-                        expirationRenewalMap.remove(getEntryName());
-                        if (!future.isSuccess()) {
-                            log.error("Can't update lock " + getName() + " expiration", future.cause());
-                            return;
-                        }
-                        
-                        if (future.getNow()) {
-                            // reschedule itself
-                            scheduleExpirationRenewal(threadId);
-                        }
+                future.onComplete((res, e) -> {
+                    expirationRenewalMap.remove(getEntryName());
+                    if (e != null) {
+                        log.error("Can't update lock " + getName() + " expiration", e);
+                        return;
+                    }
+                    
+                    if (res) {
+                        // reschedule itself
+                        scheduleExpirationRenewal(threadId);
                     }
                 });
             }
@@ -306,7 +292,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
         long time = unit.toMillis(waitTime);
         long current = System.currentTimeMillis();
-        final long threadId = Thread.currentThread().getId();
+        long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(leaseTime, unit, threadId);
         // lock acquired
         if (ttl == null) {
@@ -320,15 +306,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
         
         current = System.currentTimeMillis();
-        final RFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
+        RFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
         if (!await(subscribeFuture, time, TimeUnit.MILLISECONDS)) {
             if (!subscribeFuture.cancel(false)) {
-                subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
-                    @Override
-                    public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
-                        if (subscribeFuture.isSuccess()) {
-                            unsubscribe(subscribeFuture, threadId);
-                        }
+                subscribeFuture.onComplete((res, e) -> {
+                    if (e == null) {
+                        unsubscribe(subscribeFuture, threadId);
                     }
                 });
             }
@@ -458,7 +441,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public boolean isHeldByThread(long threadId) {
-        final RFuture<Boolean> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(threadId));
+        RFuture<Boolean> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HEXISTS, getName(), getLockName(threadId));
         return get(future);
     }
 
@@ -508,31 +491,27 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
     
     @Override
-    public RFuture<Void> unlockAsync(final long threadId) {
-        final RPromise<Void> result = new RedissonPromise<Void>();
+    public RFuture<Void> unlockAsync(long threadId) {
+        RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Boolean> future = unlockInnerAsync(threadId);
 
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    cancelExpirationRenewal(threadId);
-                    result.tryFailure(future.cause());
-                    return;
-                }
-
-                Boolean opStatus = future.getNow();
-                if (opStatus == null) {
-                    IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
-                            + id + " thread-id: " + threadId);
-                    result.tryFailure(cause);
-                    return;
-                }
-                if (opStatus) {
-                    cancelExpirationRenewal(null);
-                }
-                result.trySuccess(null);
+        future.onComplete((opStatus, e) -> {
+            if (e != null) {
+                cancelExpirationRenewal(threadId);
+                result.tryFailure(e);
+                return;
             }
+
+            if (opStatus == null) {
+                IllegalMonitorStateException cause = new IllegalMonitorStateException("attempt to unlock lock, not locked by current thread by node id: "
+                        + id + " thread-id: " + threadId);
+                result.tryFailure(cause);
+                return;
+            }
+            if (opStatus) {
+                cancelExpirationRenewal(null);
+            }
+            result.trySuccess(null);
         });
 
         return result;
@@ -545,7 +524,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit) {
-        final long currentThreadId = Thread.currentThread().getId();
+        long currentThreadId = Thread.currentThread().getId();
         return lockAsync(leaseTime, unit, currentThreadId);
     }
 
@@ -555,97 +534,81 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
     
     @Override
-    public RFuture<Void> lockAsync(final long leaseTime, final TimeUnit unit, final long currentThreadId) {
-        final RPromise<Void> result = new RedissonPromise<Void>();
+    public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long currentThreadId) {
+        RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-
-                Long ttl = future.getNow();
-
-                // lock acquired
-                if (ttl == null) {
-                    if (!result.trySuccess(null)) {
-                        unlockAsync(currentThreadId);
-                    }
-                    return;
-                }
-
-                final RFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
-                subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
-                    @Override
-                    public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-
-                        lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
-                    }
-
-                });
+        ttlFuture.onComplete((ttl, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+
+            // lock acquired
+            if (ttl == null) {
+                if (!result.trySuccess(null)) {
+                    unlockAsync(currentThreadId);
+                }
+                return;
+            }
+
+            RFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
+            subscribeFuture.onComplete((res, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
+            });
         });
 
         return result;
     }
 
-    private void lockAsync(final long leaseTime, final TimeUnit unit,
-            final RFuture<RedissonLockEntry> subscribeFuture, final RPromise<Void> result, final long currentThreadId) {
+    private void lockAsync(long leaseTime, TimeUnit unit,
+            RFuture<RedissonLockEntry> subscribeFuture, RPromise<Void> result, long currentThreadId) {
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    unsubscribe(subscribeFuture, currentThreadId);
-                    result.tryFailure(future.cause());
-                    return;
-                }
+        ttlFuture.onComplete((ttl, e) -> {
+            if (e != null) {
+                unsubscribe(subscribeFuture, currentThreadId);
+                result.tryFailure(e);
+                return;
+            }
 
-                Long ttl = future.getNow();
-                // lock acquired
-                if (ttl == null) {
-                    unsubscribe(subscribeFuture, currentThreadId);
-                    if (!result.trySuccess(null)) {
-                        unlockAsync(currentThreadId);
+            // lock acquired
+            if (ttl == null) {
+                unsubscribe(subscribeFuture, currentThreadId);
+                if (!result.trySuccess(null)) {
+                    unlockAsync(currentThreadId);
+                }
+                return;
+            }
+
+            RedissonLockEntry entry = getEntry(currentThreadId);
+            if (entry.getLatch().tryAcquire()) {
+                lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
+            } else {
+                // waiting for message
+                AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+                Runnable listener = () -> {
+                    if (futureRef.get() != null) {
+                        futureRef.get().cancel();
                     }
-                    return;
-                }
-
-                final RedissonLockEntry entry = getEntry(currentThreadId);
-                if (entry.getLatch().tryAcquire()) {
                     lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
-                } else {
-                    // waiting for message
-                    final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-                    final Runnable listener = new Runnable() {
+                };
+
+                entry.addListener(listener);
+
+                if (ttl >= 0) {
+                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
                         @Override
-                        public void run() {
-                            if (futureRef.get() != null) {
-                                futureRef.get().cancel();
+                        public void run(Timeout timeout) throws Exception {
+                            if (entry.removeListener(listener)) {
+                                lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                             }
-                            lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
                         }
-                    };
-
-                    entry.addListener(listener);
-
-                    if (ttl >= 0) {
-                        Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                            @Override
-                            public void run(Timeout timeout) throws Exception {
-                                if (entry.removeListener(listener)) {
-                                    lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
-                                }
-                            }
-                        }, ttl, TimeUnit.MILLISECONDS);
-                        futureRef.set(scheduledFuture);
-                    }
+                    }, ttl, TimeUnit.MILLISECONDS);
+                    futureRef.set(scheduledFuture);
                 }
             }
         });
@@ -673,95 +636,83 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     @Override
-    public RFuture<Boolean> tryLockAsync(final long waitTime, final long leaseTime, final TimeUnit unit,
-            final long currentThreadId) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    public RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit,
+            long currentThreadId) {
+        RPromise<Boolean> result = new RedissonPromise<Boolean>();
 
-        final AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
-        final long currentTime = System.currentTimeMillis();
+        AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
+        long currentTime = System.currentTimeMillis();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-
-                Long ttl = future.getNow();
-
-                // lock acquired
-                if (ttl == null) {
-                    if (!result.trySuccess(true)) {
-                        unlockAsync(currentThreadId);
-                    }
-                    return;
-                }
-
-                long elapsed = System.currentTimeMillis() - currentTime;
-                time.addAndGet(-elapsed);
-                
-                if (time.get() <= 0) {
-                    trySuccessFalse(currentThreadId, result);
-                    return;
-                }
-                
-                final long current = System.currentTimeMillis();
-                final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-                final RFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
-                subscribeFuture.addListener(new FutureListener<RedissonLockEntry>() {
-                    @Override
-                    public void operationComplete(Future<RedissonLockEntry> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-
-                        if (futureRef.get() != null) {
-                            futureRef.get().cancel();
-                        }
-
-                        long elapsed = System.currentTimeMillis() - current;
-                        time.addAndGet(-elapsed);
-                        
-                        tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
-                    }
-                });
-                if (!subscribeFuture.isDone()) {
-                    Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
-                        @Override
-                        public void run(Timeout timeout) throws Exception {
-                            if (!subscribeFuture.isDone()) {
-                                subscribeFuture.cancel(false);
-                                trySuccessFalse(currentThreadId, result);
-                            }
-                        }
-                    }, time.get(), TimeUnit.MILLISECONDS);
-                    futureRef.set(scheduledFuture);
-                }
+        ttlFuture.onComplete((ttl, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
 
+            // lock acquired
+            if (ttl == null) {
+                if (!result.trySuccess(true)) {
+                    unlockAsync(currentThreadId);
+                }
+                return;
+            }
+
+            long el = System.currentTimeMillis() - currentTime;
+            time.addAndGet(-el);
+            
+            if (time.get() <= 0) {
+                trySuccessFalse(currentThreadId, result);
+                return;
+            }
+            
+            long current = System.currentTimeMillis();
+            AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+            RFuture<RedissonLockEntry> subscribeFuture = subscribe(currentThreadId);
+            subscribeFuture.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                if (futureRef.get() != null) {
+                    futureRef.get().cancel();
+                }
+
+                long elapsed = System.currentTimeMillis() - current;
+                time.addAndGet(-elapsed);
+                
+                tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
+            });
+            if (!subscribeFuture.isDone()) {
+                Timeout scheduledFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                    @Override
+                    public void run(Timeout timeout) throws Exception {
+                        if (!subscribeFuture.isDone()) {
+                            subscribeFuture.cancel(false);
+                            trySuccessFalse(currentThreadId, result);
+                        }
+                    }
+                }, time.get(), TimeUnit.MILLISECONDS);
+                futureRef.set(scheduledFuture);
+            }
         });
 
 
         return result;
     }
 
-    private void trySuccessFalse(final long currentThreadId, final RPromise<Boolean> result) {
-        acquireFailedAsync(currentThreadId).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (future.isSuccess()) {
-                    result.trySuccess(false);
-                } else {
-                    result.tryFailure(future.cause());
-                }
+    private void trySuccessFalse(long currentThreadId, RPromise<Boolean> result) {
+        acquireFailedAsync(currentThreadId).onComplete((res, e) -> {
+            if (e == null) {
+                result.trySuccess(false);
+            } else {
+                result.tryFailure(e);
             }
         });
     }
 
-    private void tryLockAsync(final AtomicLong time, final long leaseTime, final TimeUnit unit,
-            final RFuture<RedissonLockEntry> subscribeFuture, final RPromise<Boolean> result, final long currentThreadId) {
+    private void tryLockAsync(AtomicLong time, long leaseTime, TimeUnit unit,
+            RFuture<RedissonLockEntry> subscribeFuture, RPromise<Boolean> result, long currentThreadId) {
         if (result.isDone()) {
             unsubscribe(subscribeFuture, currentThreadId);
             return;
@@ -773,18 +724,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return;
         }
         
-        final long current = System.currentTimeMillis();
+        long curr = System.currentTimeMillis();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
-        ttlFuture.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
+        ttlFuture.onComplete((ttl, e) -> {
+                if (e != null) {
                     unsubscribe(subscribeFuture, currentThreadId);
-                    result.tryFailure(future.cause());
+                    result.tryFailure(e);
                     return;
                 }
 
-                Long ttl = future.getNow();
                 // lock acquired
                 if (ttl == null) {
                     unsubscribe(subscribeFuture, currentThreadId);
@@ -794,8 +742,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     return;
                 }
                 
-                long elapsed = System.currentTimeMillis() - current;
-                time.addAndGet(-elapsed);
+                long el = System.currentTimeMillis() - curr;
+                time.addAndGet(-el);
                 
                 if (time.get() <= 0) {
                     unsubscribe(subscribeFuture, currentThreadId);
@@ -804,26 +752,23 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 }
 
                 // waiting for message
-                final long current = System.currentTimeMillis();
-                final RedissonLockEntry entry = getEntry(currentThreadId);
+                long current = System.currentTimeMillis();
+                RedissonLockEntry entry = getEntry(currentThreadId);
                 if (entry.getLatch().tryAcquire()) {
                     tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                 } else {
-                    final AtomicBoolean executed = new AtomicBoolean();
-                    final AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
-                    final Runnable listener = new Runnable() {
-                        @Override
-                        public void run() {
-                            executed.set(true);
-                            if (futureRef.get() != null) {
-                                futureRef.get().cancel();
-                            }
-
-                            long elapsed = System.currentTimeMillis() - current;
-                            time.addAndGet(-elapsed);
-                            
-                            tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
+                    AtomicBoolean executed = new AtomicBoolean();
+                    AtomicReference<Timeout> futureRef = new AtomicReference<Timeout>();
+                    Runnable listener = () -> {
+                        executed.set(true);
+                        if (futureRef.get() != null) {
+                            futureRef.get().cancel();
                         }
+
+                        long elapsed = System.currentTimeMillis() - current;
+                        time.addAndGet(-elapsed);
+                        
+                        tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                     };
                     entry.addListener(listener);
 
@@ -846,7 +791,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         futureRef.set(scheduledFuture);
                     }
                 }
-            }
         });
     }
 

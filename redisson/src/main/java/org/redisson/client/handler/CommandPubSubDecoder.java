@@ -160,35 +160,32 @@ public class CommandPubSubDecoder extends CommandDecoder {
         }
     }
 
-    private void enqueueMessage(Object result, final RedisPubSubConnection pubSubConnection, final PubSubEntry entry) {
-        if (result != null) {
-            entry.getQueue().add((Message)result);
+    private void enqueueMessage(Object res, final RedisPubSubConnection pubSubConnection, final PubSubEntry entry) {
+        if (res != null) {
+            entry.getQueue().add((Message)res);
         }
         
         if (entry.getSent().compareAndSet(false, true)) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            Message result = entry.getQueue().poll();
-                            if (result != null) {
-                                if (result instanceof PubSubStatusMessage) {
-                                    pubSubConnection.onMessage((PubSubStatusMessage) result);
-                                } else if (result instanceof PubSubMessage) {
-                                    pubSubConnection.onMessage((PubSubMessage) result);
-                                } else if (result instanceof PubSubPatternMessage) {
-                                    pubSubConnection.onMessage((PubSubPatternMessage) result);
-                                }
-                            } else {
-                                break;
+            executor.execute(() -> {
+                try {
+                    while (true) {
+                        Message result = entry.getQueue().poll();
+                        if (result != null) {
+                            if (result instanceof PubSubStatusMessage) {
+                                pubSubConnection.onMessage((PubSubStatusMessage) result);
+                            } else if (result instanceof PubSubMessage) {
+                                pubSubConnection.onMessage((PubSubMessage) result);
+                            } else if (result instanceof PubSubPatternMessage) {
+                                pubSubConnection.onMessage((PubSubPatternMessage) result);
                             }
+                        } else {
+                            break;
                         }
-                    } finally {
-                        entry.getSent().set(false);
-                        if (!entry.getQueue().isEmpty()) {
-                            enqueueMessage(null, pubSubConnection, entry);
-                        }
+                    }
+                } finally {
+                    entry.getSent().set(false);
+                    if (!entry.getQueue().isEmpty()) {
+                        enqueueMessage(null, pubSubConnection, entry);
                     }
                 }
             });

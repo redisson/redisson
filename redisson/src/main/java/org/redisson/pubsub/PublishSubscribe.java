@@ -82,7 +82,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 if (entry != null) {
                     entry.aquire();
                     semaphore.release();
-                    entry.getPromise().addListener(new TransferListener<E>(newPromise));
+                    entry.getPromise().onComplete(new TransferListener<E>(newPromise));
                     return;
                 }
                 
@@ -93,7 +93,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                 if (oldValue != null) {
                     oldValue.aquire();
                     semaphore.release();
-                    oldValue.getPromise().addListener(new TransferListener<E>(newPromise));
+                    oldValue.getPromise().onComplete(new TransferListener<E>(newPromise));
                     return;
                 }
                 

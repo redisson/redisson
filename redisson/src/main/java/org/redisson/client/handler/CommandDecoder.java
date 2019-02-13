@@ -150,21 +150,18 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             decoderStatus.set(Status.NORMAL);
             
             final Channel channel = ctx.channel();
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    decoderStatus.set(Status.DECODE_BUFFER);
-                    state.set(new State());
-                    state.get().setDecoderState(null);
-                    try {
-                        decodeCommand(channel, copy, data);
-                    } catch (Exception e) {
-                        log.error("Unable to decode data in separate thread: " + LogHelper.toString(data), e);
-                    } finally {
-                        copy.release();
-                        decoderStatus.remove();
-                        state.remove();
-                    }
+            executor.execute(() -> {
+                decoderStatus.set(Status.DECODE_BUFFER);
+                state.set(new State());
+                state.get().setDecoderState(null);
+                try {
+                    decodeCommand(channel, copy, data);
+                } catch (Exception e) {
+                    log.error("Unable to decode data in separate thread: " + LogHelper.toString(data), e);
+                } finally {
+                    copy.release();
+                    decoderStatus.remove();
+                    state.remove();
                 }
             });
         }

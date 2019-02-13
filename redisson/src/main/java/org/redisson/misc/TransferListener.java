@@ -15,8 +15,7 @@
  */
 package org.redisson.misc;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import java.util.function.BiConsumer;
 
 /**
  * 
@@ -24,9 +23,9 @@ import io.netty.util.concurrent.FutureListener;
  *
  * @param <T> type
  */
-public class TransferListener<T> implements FutureListener<T> {
+public class TransferListener<T> implements BiConsumer<T, Throwable> {
 
-    private RPromise<T> promise;
+    private final RPromise<T> promise;
     
     public TransferListener(RPromise<T> promise) {
         super();
@@ -34,13 +33,13 @@ public class TransferListener<T> implements FutureListener<T> {
     }
 
     @Override
-    public void operationComplete(Future<T> future) throws Exception {
-        if (!future.isSuccess()) {
-            promise.tryFailure(future.cause());
+    public void accept(T t, Throwable u) {
+        if (u != null) {
+            promise.tryFailure(u);
             return;
         }
    
-        promise.trySuccess(future.getNow());
+        promise.trySuccess(t);
     }
     
 }

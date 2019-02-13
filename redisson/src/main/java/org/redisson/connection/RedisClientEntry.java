@@ -30,9 +30,6 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -68,16 +65,13 @@ public class RedisClientEntry implements ClusterNode {
     public RFuture<Boolean> pingAsync() {
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         RFuture<Boolean> f = commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
-        f.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.trySuccess(false);
-                    return;
-                }
-                
-                result.trySuccess(future.getNow());
+        f.onComplete((res, e) -> {
+            if (e != null) {
+                result.trySuccess(false);
+                return;
             }
+            
+            result.trySuccess(res);
         });
         return result;
     }

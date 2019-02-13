@@ -39,11 +39,8 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
     }
 
     public Flowable<V> takeElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return queue.takeAsync();
-            }
+        return ElementsStream.takeElements(() -> {
+            return queue.takeAsync();
         });
     }
     

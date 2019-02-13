@@ -26,8 +26,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScheduledExecutorService;
 
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * A {@link CompletionService} that uses a supplied {@link Executor}
  * to execute tasks.  This class arranges that submitted tasks are,
@@ -68,12 +66,9 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
             throw new NullPointerException("taks can't be null");
         }
         
-        final RFuture<V> f = executorService.submit(task);
-        f.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<V> future) throws Exception {
-                completionQueue.add(f);
-            }
+        RFuture<V> f = executorService.submit(task);
+        f.onComplete((res, e) -> {
+            completionQueue.add(f);
         });
         return f;
     }
@@ -84,12 +79,9 @@ public class RedissonCompletionService<V> implements CompletionService<V> {
             throw new NullPointerException("taks can't be null");
         }
         
-        final RFuture<V> f = executorService.submit(task, result);
-        f.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(io.netty.util.concurrent.Future<V> future) throws Exception {
-                completionQueue.add(f);
-            }
+        RFuture<V> f = executorService.submit(task, result);
+        f.onComplete((res, e) -> {
+            completionQueue.add(f);
         });
         return f;
     }
