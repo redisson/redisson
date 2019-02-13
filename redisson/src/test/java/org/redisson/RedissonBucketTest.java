@@ -155,10 +155,11 @@ public class RedissonBucketTest extends BaseTest {
         RBucket<String> bucket2 = redisson.getBucket("test2");
         bucket2.set("someValue2");
         Assert.assertTrue(bucket.renamenx("test1"));
+        bucket.set("value1");
         RBucket<String> oldBucket = redisson.getBucket("test");
         Assert.assertNull(oldBucket.get());
         RBucket<String> newBucket = redisson.getBucket("test1");
-        Assert.assertEquals("someValue", newBucket.get());
+        Assert.assertEquals("value1", newBucket.get());
         Assert.assertFalse(newBucket.renamenx("test2"));
     }
     
@@ -215,10 +216,11 @@ public class RedissonBucketTest extends BaseTest {
         RBucket<String> bucket = redisson.getBucket("test");
         bucket.set("someValue");
         bucket.rename("test1");
+        bucket.set("value1");
         RBucket<String> oldBucket = redisson.getBucket("test");
         Assert.assertNull(oldBucket.get());
         RBucket<String> newBucket = redisson.getBucket("test1");
-        Assert.assertEquals("someValue", newBucket.get());
+        Assert.assertEquals("value1", newBucket.get());
     }
 
     @Test
