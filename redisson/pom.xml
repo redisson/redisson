@@ -323,23 +323,13 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.5</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-eclipse-plugin</artifactId>
-                <version>2.10</version>
-                <configuration>
-                    <downloadSources>true</downloadSources>
-                    <forceRecheck>true</forceRecheck>
-                </configuration>
+                <version>2.7</version>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.9.0</version>
+                <version>3.11.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -370,10 +360,18 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <includes>**/org/redisson/api/**/*.java</includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                       <groupId>com.puppycrawl.tools</groupId>
+                       <artifactId>checkstyle</artifactId>
+                       <version>8.17</version>
+                  </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>
