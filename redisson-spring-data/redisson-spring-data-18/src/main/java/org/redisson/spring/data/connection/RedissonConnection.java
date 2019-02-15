@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 
 import org.redisson.Redisson;
 import org.redisson.SlotCallback;
@@ -282,20 +283,20 @@ public class RedissonConnection extends AbstractRedisConnection {
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         final AtomicLong executed = new AtomicLong(range2key.size());
-        FutureListener<List<?>> listener = new FutureListener<List<?>>() {
+        BiConsumer<List<?>, Throwable> listener = new BiConsumer<List<?>, Throwable>() {
             @Override
-            public void operationComplete(Future<List<?>> future) throws Exception {
-                if (future.isSuccess()) {
-                    List<Long> result = (List<Long>) future.get();
+            public void accept(List<?> r, Throwable u) {
+                if (u == null) {    
+                    List<Long> result = (List<Long>) r;
                     for (Long res : result) {
                         if (res != null) {
                             count.addAndGet(res);
                         }
                     }
                 } else {
-                    failed.set(future.cause());
+                    failed.set(u);
                 }
-
+                
                 checkExecution(result, failed, count, executed);
             }
         };
@@ -307,7 +308,7 @@ public class RedissonConnection extends AbstractRedisConnection {
             }
 
             RFuture<List<?>> future = es.executeAsync();
-            future.addListener(listener);
+            future.onComplete(listener);
         }
 
         return result;

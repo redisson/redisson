@@ -31,8 +31,6 @@ import org.redisson.reactive.CommandReactiveExecutor;
 import org.springframework.data.redis.RedisSystemException;
 import org.springframework.data.redis.connection.RedisClusterNode;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -59,16 +57,13 @@ abstract class RedissonBaseReactive {
     
     RFuture<String> toStringFuture(RFuture<Void> f) {
         RPromise<String> promise = new RedissonPromise<>();
-        f.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                promise.trySuccess("OK");
+        f.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            promise.trySuccess("OK");
         });
         return promise;
     }
