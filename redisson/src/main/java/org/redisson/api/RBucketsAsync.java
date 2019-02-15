@@ -33,7 +33,7 @@ public interface RBucketsAsync {
      * @param keys - keys
      * @return Map with name of bucket as key and bucket as value
      */
-    <V> RFuture<Map<String, V>> getAsync(String ... keys);
+    <V> RFuture<Map<String, V>> getAsync(String... keys);
 
     /**
      * Try to save objects mapped by Redis key.

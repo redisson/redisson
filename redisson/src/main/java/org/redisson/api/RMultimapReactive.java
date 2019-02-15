@@ -127,7 +127,7 @@ public interface RMultimapReactive<K, V> extends RExpirableReactive {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Mono<Long> fastRemove(K ... keys);
+    Mono<Long> fastRemove(K... keys);
 
     /**
      * Read all keys at once

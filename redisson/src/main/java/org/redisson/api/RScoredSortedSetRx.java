@@ -48,7 +48,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      *        {@code timeout} parameter
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
-    Flowable<V> pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Flowable<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
@@ -65,7 +65,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return the head element, or {@code null} if all sorted sets are empty
      *  
      */
-    Flowable<V> pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Flowable<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.

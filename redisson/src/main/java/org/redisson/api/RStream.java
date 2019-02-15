@@ -132,7 +132,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
 
     /**
      * Transfers ownership of pending messages by id to a new consumer 
@@ -145,7 +145,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - Stream Message IDs
      * @return list of Stream Message IDs
      */
-    List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs.
@@ -155,7 +155,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs.
@@ -166,7 +166,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, int count, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, int count, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs. 
@@ -179,7 +179,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs. 
@@ -193,7 +193,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -470,7 +470,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> read(StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> read(StreamMessageId... ids);
 
     /**
      * Read stream data by specified collection of Stream Message IDs.
@@ -479,7 +479,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream Message IDs. 
@@ -490,7 +490,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> read(long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> read(long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data by specified collection of Stream Message IDs. 
@@ -502,7 +502,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @param ids - collection of Stream Message IDs
      * @return stream data mapped by Stream Message ID
      */
-    Map<StreamMessageId, Map<K, V>> read(int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Map<StreamMessageId, Map<K, V>> read(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data by specified stream name including this stream.

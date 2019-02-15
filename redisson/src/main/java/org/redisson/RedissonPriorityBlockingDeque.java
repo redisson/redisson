@@ -80,7 +80,7 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     }
 
     @Override
-    public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException("use poll method");
     }
 
@@ -201,22 +201,22 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     }
 
     @Override
-    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return pollFromAnyAsync(timeout, unit, queueNames);
     }
 
     @Override
-    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         throw new UnsupportedOperationException();
     }
 

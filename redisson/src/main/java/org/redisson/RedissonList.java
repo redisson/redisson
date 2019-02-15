@@ -308,11 +308,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
     }
     
-    public List<V> get(int ...indexes) {
+    public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
     
-    public RFuture<List<V>> getAsync(int ...indexes) {
+    public RFuture<List<V>> getAsync(int...indexes) {
         List<Integer> params = new ArrayList<Integer>();
         for (Integer index : indexes) {
             params.add(index);

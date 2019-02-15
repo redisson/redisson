@@ -49,7 +49,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      *        {@code timeout} parameter
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
-    Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
@@ -66,7 +66,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return the head element, or {@code null} if all sorted sets are empty
      *  
      */
-    Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.

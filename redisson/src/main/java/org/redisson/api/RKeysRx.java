@@ -253,7 +253,7 @@ public interface RKeysRx {
      * @param keys - object names
      * @return deleted objects amount
      */
-    Flowable<Long> delete(String ... keys);
+    Flowable<Long> delete(String... keys);
 
     /**
      * Delete multiple objects by name.
@@ -264,7 +264,7 @@ public interface RKeysRx {
      * @param keys of objects
      * @return number of removed keys
      */
-    Flowable<Long> unlink(String ... keys);
+    Flowable<Long> unlink(String... keys);
     
     /**
      * Returns the number of keys in the currently-selected database

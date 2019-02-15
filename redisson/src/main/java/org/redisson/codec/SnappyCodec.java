@@ -26,6 +26,7 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.compression.Snappy;
+import io.netty.util.concurrent.FastThreadLocal;
 
 /**
  * Snappy compression codec.
@@ -39,13 +40,13 @@ import io.netty.handler.codec.compression.Snappy;
  */
 public class SnappyCodec extends BaseCodec {
 
-    private static final ThreadLocal<Snappy> snappyDecoder = new ThreadLocal<Snappy>() {
+    private static final FastThreadLocal<Snappy> snappyDecoder = new FastThreadLocal<Snappy>() {
         protected Snappy initialValue() {
             return new Snappy();
         };
     };
     
-    private static final ThreadLocal<Snappy> snappyEncoder = new ThreadLocal<Snappy>() {
+    private static final FastThreadLocal<Snappy> snappyEncoder = new FastThreadLocal<Snappy>() {
         protected Snappy initialValue() {
             return new Snappy();
         };

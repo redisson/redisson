@@ -40,7 +40,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Flowable<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Retrieves and removes first available tail element of <b>any</b> queue in reactive mode,
@@ -55,7 +55,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Flowable<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Adds value to the head of queue.

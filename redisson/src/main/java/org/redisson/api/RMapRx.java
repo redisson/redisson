@@ -106,7 +106,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Flowable<Long> fastRemove(K ... keys);
+    Flowable<Long> fastRemove(K... keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>

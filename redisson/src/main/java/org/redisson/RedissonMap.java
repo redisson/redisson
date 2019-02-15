@@ -1028,7 +1028,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public RFuture<Long> fastRemoveAsync(K ... keys) {
+    public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null) {
             throw new NullPointerException();
         }
@@ -1112,7 +1112,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     @Override
-    public long fastRemove(K ... keys) {
+    public long fastRemove(K... keys) {
         return get(fastRemoveAsync(keys));
     }
 

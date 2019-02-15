@@ -41,7 +41,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * @return Flowable object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Flowable<V> pollFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Removes at most the given number of available elements from

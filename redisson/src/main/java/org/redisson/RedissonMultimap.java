@@ -195,12 +195,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public long fastRemove(K ... keys) {
+    public long fastRemove(K... keys) {
         return get(fastRemoveAsync(keys));
     }
 
     @Override
-    public RFuture<Long> fastRemoveAsync(K ... keys) {
+    public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null || keys.length == 0) {
             return RedissonPromise.newSucceededFuture(0L);
         }

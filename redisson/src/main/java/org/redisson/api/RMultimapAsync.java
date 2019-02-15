@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Set;
+
 /**
  * Base asynchronous MultiMap interface. A collection that maps multiple values per one key.
  *
@@ -139,8 +140,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
     RFuture<Collection<V>> removeAllAsync(Object key);
 
     RFuture<Collection<V>> getAllAsync(K key);
-    
-    
+
     /**
      * Returns the number of key-value pairs in this multimap.
      *
@@ -157,7 +157,7 @@ public interface RMultimapAsync<K, V> extends RExpirableAsync {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    RFuture<Long> fastRemoveAsync(K ... keys);
+    RFuture<Long> fastRemoveAsync(K... keys);
 
     /**
      * Read all keys at once

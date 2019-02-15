@@ -68,6 +68,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import io.netty.util.CharsetUtil;
+import io.netty.util.concurrent.FastThreadLocal;
 
 /**
  * Redis protocol command decoder
@@ -112,14 +113,14 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     final ExecutorService executor;
     private final boolean decodeInExecutor;
     
-    private final ThreadLocal<Status> decoderStatus = new ThreadLocal<Status>() {
+    private final FastThreadLocal<Status> decoderStatus = new FastThreadLocal<Status>() {
         @Override
         protected Status initialValue() {
             return Status.NORMAL;
         };
     };
 
-    private final ThreadLocal<State> state = new ThreadLocal<State>();
+    private final FastThreadLocal<State> state = new FastThreadLocal<State>();
     
     public CommandDecoder(ExecutorService executor, boolean decodeInExecutor) {
         this.decodeInExecutor = decodeInExecutor;

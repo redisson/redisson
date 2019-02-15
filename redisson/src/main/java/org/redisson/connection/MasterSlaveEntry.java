@@ -232,52 +232,40 @@ public class MasterSlaveEntry {
             return;
         }
 
-        System.out.println("reattachBlockingQueue " + connection);
-        try {
-            RFuture<RedisConnection> newConnectionFuture = connectionWriteOp(commandData.getCommand());
-            System.out.println("newConnectionFuture " + newConnectionFuture);
-            newConnectionFuture.onComplete((newConnection, e) -> {
-                if (e != null) {
-                    log.error("Can't resubscribe blocking queue " + commandData, e);
-                    return;
-                }
-                
-                System.out.println("newConnectionFuture1 " + connection);
-                AtomicBoolean skip = new AtomicBoolean();
-                BiConsumer<Object, Throwable> listener = new BiConsumer<Object, Throwable>() {
-                    @Override
-                    public void accept(Object t, Throwable u) {
-                        if (skip.get()) {
-                            return;
-                        }
-                        releaseWrite(newConnection);
-                    }
-                };
-                commandData.getPromise().onComplete(listener);
-                if (commandData.getPromise().isDone()) {
-                    return;
-                }
-                System.out.println("newConnectionFuture2 " + connection);
-                ChannelFuture channelFuture = newConnection.send(commandData);
-                channelFuture.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(ChannelFuture future) throws Exception {
-                        if (!future.isSuccess()) {
-                            listener.accept(null, null);
-                            skip.set(true);
-                            releaseWrite(newConnection);
-                            log.error("Can't resubscribe blocking queue {}", commandData);
-                        } else {
-                            System.out.println("resubscribed " + connection);
-                        }
-                    }
-                });
-            });
+        RFuture<RedisConnection> newConnectionFuture = connectionWriteOp(commandData.getCommand());
+        newConnectionFuture.onComplete((newConnection, e) -> {
+            if (e != null) {
+                log.error("Can't resubscribe blocking queue " + commandData, e);
+                return;
+            }
             
-        } catch (Exception e2) {
-            e2.printStackTrace();
-            // TODO: handle exception
-        }
+            AtomicBoolean skip = new AtomicBoolean();
+            BiConsumer<Object, Throwable> listener = new BiConsumer<Object, Throwable>() {
+                @Override
+                public void accept(Object t, Throwable u) {
+                    if (skip.get()) {
+                        return;
+                    }
+                    releaseWrite(newConnection);
+                }
+            };
+            commandData.getPromise().onComplete(listener);
+            if (commandData.getPromise().isDone()) {
+                return;
+            }
+            ChannelFuture channelFuture = newConnection.send(commandData);
+            channelFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        listener.accept(null, null);
+                        skip.set(true);
+                        releaseWrite(newConnection);
+                        log.error("Can't resubscribe blocking queue {}", commandData);
+                    }
+                }
+            });
+        });
     }
     
     public boolean hasSlave(RedisClient redisClient) {

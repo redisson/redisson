@@ -290,7 +290,7 @@ public interface RKeys extends RKeysAsync {
      * @param objects of Redisson
      * @return number of removed keys
      */
-    long delete(RObject ... objects);
+    long delete(RObject... objects);
     
     /**
      * Delete multiple objects by name
@@ -298,7 +298,7 @@ public interface RKeys extends RKeysAsync {
      * @param keys - object names
      * @return number of removed keys
      */
-    long delete(String ... keys);
+    long delete(String... keys);
 
     /**
      * Delete multiple objects by name.
@@ -309,7 +309,7 @@ public interface RKeys extends RKeysAsync {
      * @param keys of objects
      * @return number of removed keys
      */
-    long unlink(String ... keys);
+    long unlink(String... keys);
     
     /**
      * Returns the number of keys in the currently-selected database

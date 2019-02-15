@@ -254,7 +254,7 @@ public interface RKeysReactive {
      * @param keys - object names
      * @return deleted objects amount
      */
-    Mono<Long> delete(String ... keys);
+    Mono<Long> delete(String... keys);
 
     /**
      * Delete multiple objects by name.
@@ -265,7 +265,7 @@ public interface RKeysReactive {
      * @param keys of objects
      * @return number of removed keys
      */
-    Mono<Long> unlink(String ... keys);
+    Mono<Long> unlink(String... keys);
     
     /**
      * Returns the number of keys in the currently-selected database

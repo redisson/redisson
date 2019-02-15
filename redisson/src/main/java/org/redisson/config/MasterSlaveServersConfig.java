@@ -84,7 +84,7 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * @param addresses of Redis
      * @return config
      */
-    public MasterSlaveServersConfig addSlaveAddress(String ... addresses) {
+    public MasterSlaveServersConfig addSlaveAddress(String... addresses) {
         for (String address : addresses) {
             slaveAddresses.add(URIBuilder.create(address));
         }

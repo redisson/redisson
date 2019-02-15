@@ -161,7 +161,7 @@ public class RedisConnection implements RedisCommands {
         }
     }
 
-    public <T> T sync(RedisCommand<T> command, Object ... params) {
+    public <T> T sync(RedisCommand<T> command, Object... params) {
         return sync(null, command, params);
     }
 
@@ -173,25 +173,25 @@ public class RedisConnection implements RedisCommands {
         return channel.writeAndFlush(data);
     }
 
-    public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> R sync(Codec encoder, RedisCommand<T> command, Object... params) {
         RPromise<R> promise = new RedissonPromise<R>();
         send(new CommandData<T, R>(promise, encoder, command, params));
         return await(promise);
     }
 
-    public <T, R> RFuture<R> async(RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(RedisCommand<T> command, Object... params) {
         return async(null, command, params);
     }
     
-    public <T, R> RFuture<R> async(long timeout, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(long timeout, RedisCommand<T> command, Object... params) {
         return async(null, command, params);
     }
 
-    public <T, R> RFuture<R> async(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> RFuture<R> async(Codec encoder, RedisCommand<T> command, Object... params) {
         return async(-1, encoder, command, params);
     }
 
-    public <T, R> RFuture<R> async(long timeout, Codec encoder, final RedisCommand<T> command, final Object ... params) {
+    public <T, R> RFuture<R> async(long timeout, Codec encoder, final RedisCommand<T> command, final Object... params) {
         final RPromise<R> promise = new RedissonPromise<R>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
@@ -228,7 +228,7 @@ public class RedisConnection implements RedisCommands {
         return promise;
     }
 
-    public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object ... params) {
+    public <T, R> CommandData<T, R> create(Codec encoder, RedisCommand<T> command, Object... params) {
         RPromise<R> promise = new RedissonPromise<R>();
         return new CommandData<T, R>(promise, encoder, command, params);
     }

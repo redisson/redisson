@@ -1213,7 +1213,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-    protected RFuture<Long> fastRemoveOperationAsync(K ... keys) {
+    protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
         List<Object> params = new ArrayList<Object>(keys.length);
         for (K key : keys) {
             params.add(encodeMapKey(key));

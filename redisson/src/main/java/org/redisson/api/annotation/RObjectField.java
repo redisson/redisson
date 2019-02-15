@@ -15,8 +15,6 @@
  */
 package org.redisson.api.annotation;
 
-import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -26,7 +24,8 @@ import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.liveobject.resolver.DefaultNamingScheme;
+import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
  * By default <code>namingScheme</code> and/or <code>codec</code> parameters specified in {@link REntity}
@@ -58,7 +57,7 @@ public @interface RObjectField{
      */
     Class<? extends Codec> codec() default DEFAULT.class;
     
-    static final class DEFAULT extends BaseCodec {
+    final class DEFAULT extends BaseCodec {
         @Override
         public Decoder<Object> getValueDecoder() {
             return null;

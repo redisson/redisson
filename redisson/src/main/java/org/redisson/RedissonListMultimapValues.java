@@ -365,12 +365,12 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
-    public List<V> get(int ...indexes) {
+    public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
     
     @Override
-    public RFuture<List<V>> getAsync(int ...indexes) {
+    public RFuture<List<V>> getAsync(int...indexes) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(encodeMapKey(key));

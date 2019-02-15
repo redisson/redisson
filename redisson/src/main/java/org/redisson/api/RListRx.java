@@ -36,7 +36,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param indexes of elements
      * @return elements
      */
-    Flowable<List<V>> get(int ...indexes);
+    Flowable<List<V>> get(int...indexes);
     
     /**
      * Add <code>element</code> after <code>elementToFind</code>

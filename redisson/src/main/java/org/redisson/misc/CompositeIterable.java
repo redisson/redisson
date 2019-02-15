@@ -28,7 +28,7 @@ public class CompositeIterable<T> implements Iterable<T> {
         this.iterablesList = iterables;
     }
 
-    public CompositeIterable(Iterable<T> ... iterables) {
+    public CompositeIterable(Iterable<T>... iterables) {
         this.iterables = iterables;
     }
 

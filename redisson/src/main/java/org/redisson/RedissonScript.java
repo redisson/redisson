@@ -176,12 +176,12 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public List<Boolean> scriptExists(String ... shaDigests) {
+    public List<Boolean> scriptExists(String... shaDigests) {
         return commandExecutor.get(scriptExistsAsync(shaDigests));
     }
 
     @Override
-    public RFuture<List<Boolean>> scriptExistsAsync(final String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(final String... shaDigests) {
          return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
             volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
             @Override
@@ -201,11 +201,11 @@ public class RedissonScript implements RScript {
         }, (Object[])shaDigests);
     }
 
-    public List<Boolean> scriptExists(String key, String ... shaDigests) {
+    public List<Boolean> scriptExists(String key, String... shaDigests) {
         return commandExecutor.get(scriptExistsAsync(key, shaDigests));
     }
 
-    public RFuture<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(String key, String... shaDigests) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_EXISTS, shaDigests);
     }
 

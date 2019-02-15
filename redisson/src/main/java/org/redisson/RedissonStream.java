@@ -758,7 +758,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids) {
+    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId... ids) {
         return get(readAsync(count, ids));
     }
 

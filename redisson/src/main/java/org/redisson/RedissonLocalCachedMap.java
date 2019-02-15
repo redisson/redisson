@@ -447,7 +447,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     @Override
-    protected RFuture<Long> fastRemoveOperationAsync(K ... keys) {
+    protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
 
             if (invalidateEntryOnChange == 1) {
                 List<Object> params = new ArrayList<Object>(keys.length*2);

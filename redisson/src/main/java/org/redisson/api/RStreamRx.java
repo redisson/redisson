@@ -138,7 +138,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - stream ids
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -148,7 +148,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -159,7 +159,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -172,7 +172,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -186,7 +186,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> readGroup(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -197,7 +197,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    Flowable<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    Flowable<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroup(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -451,7 +451,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> read(StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> read(StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -460,7 +460,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> read(int count, StreamMessageId... ids);
 
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -471,7 +471,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> read(long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -483,7 +483,7 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    Flowable<Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    Flowable<Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data by specified stream name including this stream.

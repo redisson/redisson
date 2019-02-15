@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public class ExecutorOptions {
+public final class ExecutorOptions {
     
     private long taskRetryInterval = 5 * 60000;
 

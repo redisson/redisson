@@ -33,7 +33,7 @@ public interface RBuckets extends RBucketsAsync {
      * @param keys - keys
      * @return Map with name of bucket as key and bucket as value
      */
-    <V> Map<String, V> get(String ... keys);
+    <V> Map<String, V> get(String... keys);
 
     /**
      * Try to save objects mapped by Redis key.

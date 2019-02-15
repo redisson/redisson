@@ -378,7 +378,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
     
-    private <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
+    private <T, R> R write(String key, RedisCommand<T> command, Object... params) {
         RFuture<R> future = commandExecutor.writeAsync(key, command, params);
         try {
             return get(future);
@@ -387,7 +387,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    private <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);
@@ -396,7 +396,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    private <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalReadAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);

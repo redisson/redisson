@@ -85,21 +85,21 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
 
-    public void subscribe(Codec codec, ChannelName ... channels) {
+    public void subscribe(Codec codec, ChannelName... channels) {
         for (ChannelName ch : channels) {
             this.channels.put(ch, codec);
         }
         async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channels);
     }
 
-    public void psubscribe(Codec codec, ChannelName ... channels) {
+    public void psubscribe(Codec codec, ChannelName... channels) {
         for (ChannelName ch : channels) {
             patternChannels.put(ch, codec);
         }
         async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channels);
     }
 
-    public void unsubscribe(final ChannelName ... channels) {
+    public void unsubscribe(final ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 this.channels.remove(ch);
@@ -145,7 +145,7 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
     
-    public void punsubscribe(final ChannelName ... channels) {
+    public void punsubscribe(final ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 patternChannels.remove(ch);
@@ -166,7 +166,7 @@ public class RedisPubSubConnection extends RedisConnection {
         });
     }
 
-    private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object ... params) {
+    private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object... params) {
         RPromise<R> promise = new RedissonPromise<R>();
         return channel.writeAndFlush(new CommandData<T, R>(promise, messageDecoder, null, command, params));
     }

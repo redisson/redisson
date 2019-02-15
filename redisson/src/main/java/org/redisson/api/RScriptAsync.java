@@ -171,7 +171,7 @@ public interface RScriptAsync {
      * @param shaDigests - collection of SHA-1 digests
      * @return list of booleans corresponding to collection SHA-1 digests
      */
-    RFuture<List<Boolean>> scriptExistsAsync(String ... shaDigests);
+    RFuture<List<Boolean>> scriptExistsAsync(String... shaDigests);
 
     /**
      * Checks for presence Lua scripts in Redis script cache by SHA-1 digest.
@@ -180,7 +180,7 @@ public interface RScriptAsync {
      * @param shaDigests - collection of SHA-1 digests
      * @return list of booleans corresponding to collection SHA-1 digests
      */
-    RFuture<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests);
+    RFuture<List<Boolean>> scriptExistsAsync(String key, String... shaDigests);
 
     /**
      * Kills currently executed Lua script

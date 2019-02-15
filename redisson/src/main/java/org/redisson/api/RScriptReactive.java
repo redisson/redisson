@@ -128,7 +128,7 @@ public interface RScriptReactive {
      * @param shaDigests - collection of SHA-1 digests
      * @return list of booleans corresponding to collection SHA-1 digests
      */
-    Mono<List<Boolean>> scriptExists(String ... shaDigests);
+    Mono<List<Boolean>> scriptExists(String... shaDigests);
 
     /**
      * Kills currently executed Lua script

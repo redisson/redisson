@@ -60,7 +60,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
      * @param addresses in <code>host:port</code> format
      * @return config
      */
-    public ReplicatedServersConfig addNodeAddress(String ... addresses) {
+    public ReplicatedServersConfig addNodeAddress(String... addresses) {
         for (String address : addresses) {
             nodeAddresses.add(URIBuilder.create(address));
         }

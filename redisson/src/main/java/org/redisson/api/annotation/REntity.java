@@ -36,7 +36,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
 @Target({ElementType.TYPE})
 public @interface REntity {
 
-    public enum TransformationMode {
+    enum TransformationMode {
         
         IMPLEMENTATION_BASED, 
         
@@ -68,7 +68,7 @@ public @interface REntity {
      */
     TransformationMode fieldTransformation() default TransformationMode.ANNOTATION_BASED;
     
-    static final class DEFAULT extends BaseCodec {
+    final class DEFAULT extends BaseCodec {
         @Override
         public Decoder<Object> getValueDecoder() {
             return null;

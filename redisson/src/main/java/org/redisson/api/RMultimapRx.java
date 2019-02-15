@@ -127,7 +127,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Flowable<Long> fastRemove(K ... keys);
+    Flowable<Long> fastRemove(K... keys);
 
     /**
      * Read all keys at once

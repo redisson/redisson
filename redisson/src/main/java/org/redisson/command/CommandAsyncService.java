@@ -1253,7 +1253,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return objectBuilder;
     }
     
-    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String ... queueNames) {
+    public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames) {
         if (connectionManager.isClusterMode() && queueNames.length > 0) {
             RPromise<V> result = new RedissonPromise<V>();
             AtomicReference<Iterator<String>> ref = new AtomicReference<Iterator<String>>();

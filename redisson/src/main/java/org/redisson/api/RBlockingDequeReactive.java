@@ -41,7 +41,7 @@ public interface RBlockingDequeReactive<V> extends RDequeReactive<V>, RBlockingQ
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Mono<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Retrieves and removes first available tail element of <b>any</b> queue in reactive mode,
@@ -56,7 +56,7 @@ public interface RBlockingDequeReactive<V> extends RDequeReactive<V>, RBlockingQ
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Mono<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Adds value to the head of queue.

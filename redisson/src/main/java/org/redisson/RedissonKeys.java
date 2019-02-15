@@ -259,17 +259,17 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public long delete(String ... keys) {
+    public long delete(String... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
     
     @Override
-    public long delete(RObject ... objects) {
+    public long delete(RObject... objects) {
         return commandExecutor.get(deleteAsync(objects));
     }
 
     @Override
-    public RFuture<Long> deleteAsync(RObject ... objects) {
+    public RFuture<Long> deleteAsync(RObject... objects) {
         List<String> keys = new ArrayList<String>();
         for (RObject obj : objects) {
             keys.add(obj.getName());
@@ -279,21 +279,21 @@ public class RedissonKeys implements RKeys {
     }
     
     @Override
-    public long unlink(String ... keys) {
+    public long unlink(String... keys) {
         return commandExecutor.get(deleteAsync(keys));
     }
 
     @Override
-    public RFuture<Long> unlinkAsync(String ... keys) {
+    public RFuture<Long> unlinkAsync(String... keys) {
         return executeAsync(RedisCommands.UNLINK, keys);
     }
 
     @Override
-    public RFuture<Long> deleteAsync(String ... keys) {
+    public RFuture<Long> deleteAsync(String... keys) {
         return executeAsync(RedisCommands.DEL, keys);
     }
     
-    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, String ... keys) {
+    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, String... keys) {
         if (!commandExecutor.getConnectionManager().isClusterMode()) {
             return commandExecutor.writeAsync(null, command, keys);
         }

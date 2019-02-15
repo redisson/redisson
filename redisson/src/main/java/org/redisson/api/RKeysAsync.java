@@ -185,7 +185,7 @@ public interface RKeysAsync {
      * @param objects of Redisson
      * @return number of removed keys
      */
-    RFuture<Long> deleteAsync(RObject ... objects);
+    RFuture<Long> deleteAsync(RObject... objects);
     
     /**
      * Delete multiple objects by name
@@ -193,7 +193,7 @@ public interface RKeysAsync {
      * @param keys - object names
      * @return number of removed keys
      */
-    RFuture<Long> deleteAsync(String ... keys);
+    RFuture<Long> deleteAsync(String... keys);
 
     /**
      * Delete multiple objects by name.
@@ -204,7 +204,7 @@ public interface RKeysAsync {
      * @param keys - object names
      * @return number of removed keys
      */
-    RFuture<Long> unlinkAsync(String ... keys);
+    RFuture<Long> unlinkAsync(String... keys);
     
     /**
      * Returns the number of keys in the currently-selected database in async mode

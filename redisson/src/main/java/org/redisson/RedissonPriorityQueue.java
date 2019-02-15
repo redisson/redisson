@@ -288,7 +288,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return pollAsync(RedisCommands.LPOP, getName());
     }
 
-    protected <T> RFuture<V> pollAsync(RedisCommand<T> command, Object ... params) {
+    protected <T> RFuture<V> pollAsync(RedisCommand<T> command, Object... params) {
         long threadId = Thread.currentThread().getId();
         RPromise<V> result = new RedissonPromise<V>();
         lock.lockAsync(threadId).onComplete((r, exc) -> {

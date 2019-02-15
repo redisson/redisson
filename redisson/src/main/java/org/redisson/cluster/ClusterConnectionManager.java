@@ -529,7 +529,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             RFuture<Collection<RFuture<Void>>> future = addMasterEntry(newPart, cfg);
             future.onComplete((res, e) -> {
                 if (e == null) {
-                    futures.addAll(future.getNow());
+                    futures.addAll(res);
                 }
                 
                 if (masters.decrementAndGet() == 0) {

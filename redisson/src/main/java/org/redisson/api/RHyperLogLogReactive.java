@@ -61,7 +61,7 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @param otherLogNames - name of instances
      * @return number
      */
-    Mono<Long> countWith(String ... otherLogNames);
+    Mono<Long> countWith(String... otherLogNames);
 
     /**
      * Merges multiple instances into this instance.
@@ -69,6 +69,6 @@ public interface RHyperLogLogReactive<V> extends RExpirableReactive {
      * @param otherLogNames - name of instances
      * @return void
      */
-    Mono<Void> mergeWith(String ... otherLogNames);
+    Mono<Void> mergeWith(String... otherLogNames);
 
 }
