@@ -59,8 +59,8 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     public static class LFUCachedValue extends StdCachedValue {
 
-        Long id;
-        long accessCount;
+        private final Long id;
+        private long accessCount;
         
         public LFUCachedValue(long id, Object key, Object value, long ttl, long maxIdleTime) {
             super(key, value, ttl, maxIdleTime);
@@ -87,13 +87,13 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     
     @Override
     protected void onValueCreate(CachedValue value) {
-        MapKey key = toKey((LFUCachedValue)value);
-        accessMap.put(key, (LFUCachedValue)value);
+        MapKey key = toKey((LFUCachedValue) value);
+        accessMap.put(key, (LFUCachedValue) value);
     }
     
     @Override
     protected void onValueRead(CachedValue value) {
-        addAccessCount((LFUCachedValue)value, 1);
+        addAccessCount((LFUCachedValue) value, 1);
     }
     
     private MapKey toKey(LFUCachedValue value) {
@@ -103,7 +103,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     @Override
     protected void onValueRemove(CachedValue value) {
         synchronized (value) {
-            MapKey key = toKey((LFUCachedValue)value);
+            MapKey key = toKey((LFUCachedValue) value);
             accessMap.remove(key);
         }
     }

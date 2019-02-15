@@ -300,7 +300,7 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
     
     abstract class MapIterator<M> implements Iterator<M> {
 
-        final Iterator<Map.Entry<K, CachedValue<K, V>>> keyIterator = map.entrySet().iterator();
+        private final Iterator<Map.Entry<K, CachedValue<K, V>>> keyIterator = map.entrySet().iterator();
         
         Map.Entry<K, CachedValue<K, V>> mapEntry;
         
@@ -416,12 +416,12 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     }
 
-    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+    final class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
-        public final Iterator<Map.Entry<K,V>> iterator() {
-            return new MapIterator<Map.Entry<K,V>>() {
+        public Iterator<Map.Entry<K, V>> iterator() {
+            return new MapIterator<Map.Entry<K, V>>() {
                 @Override
-                public Map.Entry<K,V> next() {
+                public Map.Entry<K, V> next() {
                     if (mapEntry == null) {
                         throw new NoSuchElementException();
                     }
@@ -442,18 +442,18 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             };
         }
 
-        public final boolean contains(Object o) {
+        public boolean contains(Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             Object key = e.getKey();
             V value = get(key);
             return value != null && value.equals(e);
         }
 
-        public final boolean remove(Object o) {
+        public boolean remove(Object o) {
             if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
                 Object key = e.getKey();
                 Object value = e.getValue();
                 return AbstractCacheMap.this.map.remove(key, value);
@@ -461,11 +461,11 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             return false;
         }
 
-        public final int size() {
+        public int size() {
             return AbstractCacheMap.this.size();
         }
 
-        public final void clear() {
+        public void clear() {
             AbstractCacheMap.this.clear();
         }
 

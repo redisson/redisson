@@ -111,38 +111,7 @@ public abstract class LocalCacheListener {
                             // check if instance has already been used
                             && lastInvalidate > 0) {
 
-                        if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
-                            cache.clear();
-                            return;
-                        }
-                        
-                        object.isExistsAsync().onComplete((res, e) -> {
-                            if (e != null) {
-                                log.error("Can't check existance", e);
-                                return;
-                            }
-
-                            if (!res) {                                        
-                                cache.clear();
-                                return;
-                            }
-                            
-                            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
-                            logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
-                            .onComplete((r, ex) -> {
-                                if (ex != null) {
-                                    log.error("Can't load update log", ex);
-                                    return;
-                                }
-                                
-                                for (byte[] entry : r) {
-                                    byte[] keyHash = Arrays.copyOf(entry, 16);
-                                    CacheKey key = new CacheKey(keyHash);
-                                    cache.remove(key);
-                                }
-                            });
-                        });
-                        
+                        loadAfterReconnection();
                     }
                 }
             });
@@ -181,7 +150,7 @@ public abstract class LocalCacheListener {
                     }
                     
                     if (msg instanceof LocalCachedMapInvalidate) {
-                        LocalCachedMapInvalidate invalidateMsg = (LocalCachedMapInvalidate)msg;
+                        LocalCachedMapInvalidate invalidateMsg = (LocalCachedMapInvalidate) msg;
                         if (!Arrays.equals(invalidateMsg.getExcludedId(), instanceId)) {
                             for (byte[] keyHash : invalidateMsg.getKeyHashes()) {
                                 CacheKey key = new CacheKey(keyHash);
@@ -280,6 +249,40 @@ public abstract class LocalCacheListener {
 
     public String getUpdatesLogName() {
         return RedissonObject.prefixName("redisson__cache_updates_log", name);
+    }
+
+    private void loadAfterReconnection() {
+        if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
+            cache.clear();
+            return;
+        }
+        
+        object.isExistsAsync().onComplete((res, e) -> {
+            if (e != null) {
+                log.error("Can't check existance", e);
+                return;
+            }
+
+            if (!res) {                                        
+                cache.clear();
+                return;
+            }
+            
+            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
+            logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
+            .onComplete((r, ex) -> {
+                if (ex != null) {
+                    log.error("Can't load update log", ex);
+                    return;
+                }
+                
+                for (byte[] entry : r) {
+                    byte[] keyHash = Arrays.copyOf(entry, 16);
+                    CacheKey key = new CacheKey(keyHash);
+                    cache.remove(key);
+                }
+            });
+        });
     }
 
 }

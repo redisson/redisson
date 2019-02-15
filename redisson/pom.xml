@@ -360,7 +360,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <includes>**/org/redisson/api/**/*.java</includes>
+                    <includes>**/org/redisson/api/**/*.java,**/org/redisson/cache/**/*.java</includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
