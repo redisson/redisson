@@ -57,11 +57,18 @@ public class Injector {
 
             Class<?> fieldType = field.getType();
             RInject rInject = field.getAnnotation(RInject.class);
-            Object obj = injectionContext.resolve(target, field, rInject);
             try {
-                ClassUtils.trySetFieldWithSetter(target, field, obj);
-            } catch (IllegalStateException | IllegalArgumentException e) {
-                throw new IllegalStateException("Failed to set instance of type " + fieldType.getName() + " for field named " + field.getName(), e);
+                Object obj = injectionContext.resolve(fieldType, rInject);
+                try {
+                    ClassUtils.trySetFieldWithSetter(target, field, obj);
+                } catch (IllegalStateException | IllegalArgumentException e) {
+                    throw new IllegalStateException("Failed to set instance of type " + fieldType.getName() + " for field named " + field.getName(), e);
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "Unable to resolve RedissonObjects for field \"" + field.getName()
+                                + "\" in class " + target.getClass().getName()
+                                + " with annotation " + rInject, e);
             }
         }
     }

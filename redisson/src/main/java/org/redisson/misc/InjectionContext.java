@@ -25,5 +25,12 @@ import java.lang.reflect.Field;
  *
  */
 public interface InjectionContext {
-    Object resolve(Object target, Field field, RInject rInject);
+
+    /**
+     * Resolves an Object of targetType with information from RInject annotation
+     * @param targetType desired type
+     * @param rInject annotation instance
+     * @return Object of targetType
+     */
+    <T> T resolve(Class<T> targetType, RInject rInject);
 }

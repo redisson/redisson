@@ -44,8 +44,7 @@ public abstract class AbstractInjectionContext implements InjectionContext {
     private static final Pattern redissonExpressionPattern = Pattern.compile("^([A-Za-z]+)\\('([^'()]+)'\\)$");
 
     @Override
-    public Object resolve(Object target, Field field, RInject rInject) {
-        Class<?> fieldType = field.getType();
+    public <T> T resolve(Class<T> fieldType, RInject rInject) {
         String name = rInject.name();
         if ("".equals(name)) {
             name = rInject.value();
@@ -53,7 +52,7 @@ public abstract class AbstractInjectionContext implements InjectionContext {
         RedissonClient redissonClient = resolveRedisson(name, fieldType, rInject);
 
         if (RedissonClient.class.isAssignableFrom(fieldType)) {
-            return redissonClient;
+            return (T) redissonClient;
         }
         if ("".equals(name)) {
             throw new IllegalStateException("Name in RInject is required for class " + fieldType.getName());
@@ -62,14 +61,8 @@ public abstract class AbstractInjectionContext implements InjectionContext {
         if (redissonClient == null) {
             return null;
         }
-        try {
-            return resolveRedissonObjects(redissonClient, fieldType, name, rInject.codec());
-        } catch (Exception e) {
-            throw new IllegalStateException(
-                    "Unable to resolve RedissonObjects for field \"" + field.getName()
-                            + "\" in class " + target.getClass().getName()
-                            + " with annotation " + rInject, e);
-        }
+
+        return resolveRedissonObjects(redissonClient, fieldType, name, rInject.codec());
     }
 
     protected abstract RedissonClient resolveRedisson(String expectedName, Class targetType, RInject rInject);
