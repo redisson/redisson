@@ -20,7 +20,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 import org.redisson.misc.AbstractInjectionContext;
-import org.redisson.misc.RedissonObjectBuilder;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
@@ -45,7 +44,6 @@ import org.springframework.expression.spel.support.StandardTypeLocator;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
