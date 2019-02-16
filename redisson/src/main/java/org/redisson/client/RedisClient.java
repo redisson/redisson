@@ -58,7 +58,7 @@ import io.netty.util.concurrent.FutureListener;
  * @author Nikita Koksharov
  *
  */
-public class RedisClient {
+public final class RedisClient {
 
     private final AtomicReference<RFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<RFuture<InetSocketAddress>>();
     private final Bootstrap bootstrap;

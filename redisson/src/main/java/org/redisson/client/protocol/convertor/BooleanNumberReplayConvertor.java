@@ -31,7 +31,7 @@ public class BooleanNumberReplayConvertor implements Convertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {
-        return (Long)obj != number;
+        return (Long) obj != number;
     }
 
 

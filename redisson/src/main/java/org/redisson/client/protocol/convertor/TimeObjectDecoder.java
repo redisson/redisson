@@ -37,7 +37,7 @@ public class TimeObjectDecoder implements MultiDecoder<Time> {
 
     @Override
     public Time decode(List<Object> parts, State state) {
-        return new Time(((Long)parts.get(0)).intValue(), ((Long)parts.get(1)).intValue());
+        return new Time(((Long) parts.get(0)).intValue(), ((Long) parts.get(1)).intValue());
     }
     
 }

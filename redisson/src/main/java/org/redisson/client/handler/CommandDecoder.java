@@ -102,7 +102,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
 
-    protected final Logger log = LoggerFactory.getLogger(getClass());
+    final Logger log = LoggerFactory.getLogger(getClass());
 
     private static final char CR = '\r';
     private static final char LF = '\n';
@@ -181,7 +181,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data) throws Exception {
         if (data instanceof CommandData) {
-            CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+            CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
             try {
                 decode(in, cmd, null, channel, false, null);
                 sendNext(channel, data);
@@ -193,7 +193,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 throw e;
             }
         } else if (data instanceof CommandsData) {
-            CommandsData commands = (CommandsData)data;
+            CommandsData commands = (CommandsData) data;
             try {
                 decodeCommandBatch(channel, in, data, commands);
             } catch (Exception e) {
@@ -364,7 +364,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             handleResult(data, parts, result, false, channel);
         } else if (code == '*') {
             long size = readLong(in);
-            List<Object> respParts = new ArrayList<Object>(Math.max((int)size, 0));
+            List<Object> respParts = new ArrayList<Object>(Math.max((int) size, 0));
             
             state.get().incLevel();
             

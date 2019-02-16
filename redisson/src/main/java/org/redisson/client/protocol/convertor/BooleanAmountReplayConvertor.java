@@ -24,7 +24,7 @@ public class BooleanAmountReplayConvertor implements Convertor<Boolean> {
 
     @Override
     public Boolean convert(Object obj) {
-        return (Long)obj > 0;
+        return (Long) obj > 0;
     }
 
 

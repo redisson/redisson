@@ -31,7 +31,7 @@ public class IntegerCodec extends StringCodec {
 
     public static final IntegerCodec INSTANCE = new IntegerCodec();
 
-    public final Decoder<Object> decoder = new Decoder<Object>() {
+    private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             String str = (String) IntegerCodec.super.getValueDecoder().decode(buf, state);

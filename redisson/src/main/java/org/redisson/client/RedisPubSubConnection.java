@@ -99,14 +99,14 @@ public class RedisPubSubConnection extends RedisConnection {
         async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channels);
     }
 
-    public void unsubscribe(final ChannelName... channels) {
+    public void unsubscribe(ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 this.channels.remove(ch);
                 unsubscibedChannels.add(ch);
             }
         }
-        ChannelFuture future = async((MultiDecoder)null, RedisCommands.UNSUBSCRIBE, channels);
+        ChannelFuture future = async((MultiDecoder) null, RedisCommands.UNSUBSCRIBE, channels);
         future.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {
@@ -145,14 +145,14 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
     
-    public void punsubscribe(final ChannelName... channels) {
+    public void punsubscribe(ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 patternChannels.remove(ch);
                 punsubscibedChannels.add(ch);
             }
         }
-        ChannelFuture future = async((MultiDecoder)null, RedisCommands.PUNSUBSCRIBE, channels);
+        ChannelFuture future = async((MultiDecoder) null, RedisCommands.PUNSUBSCRIBE, channels);
         future.addListener(new FutureListener<Void>() {
             @Override
             public void operationComplete(Future<Void> future) throws Exception {

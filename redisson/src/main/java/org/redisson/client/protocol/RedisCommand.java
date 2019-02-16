@@ -63,16 +63,16 @@ public class RedisCommand<R> {
     }
 
     public RedisCommand(String name) {
-        this(name, (String)null);
+        this(name, (String) null);
     }
 
     public RedisCommand(String name, ValueType outParamType) {
-        this(name, (String)null);
+        this(name, (String) null);
         this.outParamType = outParamType;
     }
 
     public RedisCommand(String name, ValueType outParamType, Convertor<R> convertor) {
-        this(name, (String)null);
+        this(name, (String) null);
         this.outParamType = outParamType;
         this.convertor = convertor;
     }

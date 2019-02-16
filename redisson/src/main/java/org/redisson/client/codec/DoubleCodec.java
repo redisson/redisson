@@ -31,7 +31,7 @@ public class DoubleCodec extends StringCodec {
 
     public static final DoubleCodec INSTANCE = new DoubleCodec();
 
-    public final Decoder<Object> decoder = new Decoder<Object>() {
+    private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             String str = (String) DoubleCodec.super.getValueDecoder().decode(buf, state);

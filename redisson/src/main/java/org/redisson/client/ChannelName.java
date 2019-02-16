@@ -60,7 +60,7 @@ public class ChannelName implements CharSequence {
             return true;
         }
         if (obj instanceof ChannelName) {
-            return Arrays.equals(name, ((ChannelName)obj).name);
+            return Arrays.equals(name, ((ChannelName) obj).name);
         }
         if (obj instanceof CharSequence) {
             return toString().equals(obj);

@@ -119,13 +119,13 @@ public class CommandEncoder extends MessageToByteEncoder<CommandData<?, ?>> {
 
     private ByteBuf encode(Object in) {
         if (in instanceof byte[]) {
-            return Unpooled.wrappedBuffer((byte[])in);
+            return Unpooled.wrappedBuffer((byte[]) in);
         }
         if (in instanceof ByteBuf) {
             return (ByteBuf) in;
         }
         if (in instanceof ChannelName) {
-            return Unpooled.wrappedBuffer(((ChannelName)in).getName());
+            return Unpooled.wrappedBuffer(((ChannelName) in).getName());
         }
 
         String payload = in.toString();

@@ -46,7 +46,7 @@ public class RedisConnection implements RedisCommands {
 
     private static final AttributeKey<RedisConnection> CONNECTION = AttributeKey.valueOf("connection");
 
-    protected final RedisClient redisClient;
+    final RedisClient redisClient;
 
     private volatile RPromise<Void> fastReconnect;
     private volatile boolean closed;
@@ -97,10 +97,10 @@ public class RedisConnection implements RedisCommands {
         return (C) channel.attr(RedisConnection.CONNECTION).get();
     }
 
-    public CommandData getCurrentCommand() {
+    public CommandData<?, ?> getCurrentCommand() {
         QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
         if (command instanceof CommandData) {
-            return (CommandData)command;
+            return (CommandData<?, ?>) command;
         }
         return null;
     }
@@ -143,7 +143,7 @@ public class RedisConnection implements RedisCommands {
         
         try {
             if (!l.await(redisClient.getCommandTimeout(), TimeUnit.MILLISECONDS)) {
-                RPromise<R> promise = (RPromise<R>)future;
+                RPromise<R> promise = (RPromise<R>) future;
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for " + redisClient.getAddr());
                 promise.tryFailure(ex);
                 throw ex;

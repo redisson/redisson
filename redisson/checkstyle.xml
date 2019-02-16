@@ -19,7 +19,7 @@
 
 <!DOCTYPE module PUBLIC
         "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
-        "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
 
@@ -49,6 +49,7 @@
 -->
 
 <module name="Checker">
+    <property name="charset" value="UTF-8"/>
 
     <!-- Checks whether files end with a new line.                        -->
     <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
@@ -170,7 +171,7 @@
         <module name="SimplifyBooleanReturn"/>
         <module name="StringLiteralEquality"/>
         <module name="NestedIfDepth">
-           <property name="max" value="2"/>
+           <property name="max" value="3"/>
         </module>
         <module name="NestedTryDepth"/>
         <module name="SuperClone"/>
@@ -187,7 +188,6 @@
         <!--module name="DesignForExtension"/-->
         <module name="FinalClass"/>
         <!--module name="HideUtilityClassConstructor"/-->
-        <module name="InterfaceIsType"/>
         <module name="VisibilityModifier">
           <property name="packageAllowed" value="true"/>
         </module>
@@ -216,6 +216,7 @@
         <!--module name="TodoComment"/-->
         <module name="UpperEll"/>
 
+	<module name="BooleanExpressionComplexity"/>
     </module>
 
 </module>

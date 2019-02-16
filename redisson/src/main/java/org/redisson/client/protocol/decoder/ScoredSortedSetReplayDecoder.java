@@ -41,9 +41,9 @@ public class ScoredSortedSetReplayDecoder<T> implements MultiDecoder<List<Scored
     
     @Override
     public List<ScoredEntry<T>> decode(List<Object> parts, State state) {
-        List<ScoredEntry<T>> result = new ArrayList<ScoredEntry<T>>();
+        List<ScoredEntry<T>> result = new ArrayList<>();
         for (int i = 0; i < parts.size(); i += 2) {
-            result.add(new ScoredEntry<T>(((Number)parts.get(i+1)).doubleValue(), (T)parts.get(i)));
+            result.add(new ScoredEntry<T>(((Number) parts.get(i+1)).doubleValue(), (T) parts.get(i)));
         }
         return result;
     }

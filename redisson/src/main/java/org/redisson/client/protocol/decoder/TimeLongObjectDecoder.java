@@ -19,7 +19,6 @@ import java.util.List;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
 
 /**
  * 
@@ -36,7 +35,7 @@ public class TimeLongObjectDecoder implements MultiDecoder<Long> {
 
     @Override
     public Long decode(List<Object> parts, State state) {
-        return ((Long)parts.get(0)) * 1000L + ((Long)parts.get(1)) / 1000L;
+        return ((Long) parts.get(0)) * 1000L + ((Long) parts.get(1)) / 1000L;
     }
     
 }

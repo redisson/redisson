@@ -67,8 +67,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run(Timeout timeout) throws Exception {
                 CommandData<?, ?> commandData = connection.getCurrentCommand();
-                if ((commandData == null || !commandData.isBlockingCommand()) && 
-                        (future.cancel(false) || !future.isSuccess())) {
+                if ((commandData == null || !commandData.isBlockingCommand()) 
+                        && (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                 } else {

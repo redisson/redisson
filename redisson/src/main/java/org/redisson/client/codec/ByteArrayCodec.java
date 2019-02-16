@@ -36,7 +36,7 @@ public class ByteArrayCodec extends BaseCodec {
     private final Encoder encoder = new Encoder() {
         @Override
         public ByteBuf encode(Object in) throws IOException {
-            return Unpooled.wrappedBuffer((byte[])in);
+            return Unpooled.wrappedBuffer((byte[]) in);
         }
     };
 
