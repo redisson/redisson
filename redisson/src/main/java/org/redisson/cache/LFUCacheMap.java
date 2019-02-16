@@ -57,7 +57,7 @@ public class LFUCacheMap<K, V> extends AbstractCacheMap<K, V> {
         
     }
     
-    public static class LFUCachedValue extends StdCachedValue {
+    public static class LFUCachedValue extends StdCachedValue<Object, Object> {
 
         private final Long id;
         private long accessCount;
