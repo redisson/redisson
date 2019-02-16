@@ -28,8 +28,9 @@ public interface InjectionContext {
 
     /**
      * Resolves an Object of targetType with information from RInject annotation
-     * @param targetType desired type
+     * @param targetType class of desired type
      * @param rInject annotation instance
+     * @param <T> desired type
      * @return Object of targetType
      */
     <T> T resolve(Class<T> targetType, RInject rInject);
