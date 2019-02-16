@@ -101,6 +101,15 @@ public final class ClassUtils {
         }
     }
 
+    public static void trySetFieldWithSetter(Object obj, String fieldName, Object value) {
+        try {
+            Field field = getDeclaredField(obj.getClass(), fieldName);
+            trySetFieldWithSetter(obj, field, value);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     public static boolean isGetter(Method method, String fieldName) {
         return method.getName().equals("get" + getFieldNameAsSuffix(fieldName))
                 || method.getName().equals("is" + getFieldNameAsSuffix(fieldName));
