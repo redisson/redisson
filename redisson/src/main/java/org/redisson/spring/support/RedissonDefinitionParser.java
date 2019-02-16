@@ -15,8 +15,6 @@
  */
 package org.redisson.spring.support;
 
-import java.util.List;
-
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -28,12 +26,11 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.Conventions;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
+
+import java.util.List;
 
 /**
  *
@@ -140,7 +137,7 @@ public final class RedissonDefinitionParser
     }
     
     @Override
-    public BeanDefinition parse(Element element, ParserContext parserContext) {        
+    public BeanDefinition parse(Element element, ParserContext parserContext) {
         //Sort out the Config Class
         BeanDefinitionBuilder configBuilder 
                 = helper.createBeanDefinitionBuilder(element, parserContext,
