@@ -18,21 +18,29 @@ package org.redisson.spring.support;
 import org.redisson.api.RDestroyable;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
-import org.redisson.misc.Injector;
 import org.redisson.misc.InjectionContext;
+import org.redisson.misc.Injector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
-import org.springframework.beans.factory.BeanInitializationException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.config.DestructionAwareBeanPostProcessor;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessorAdapter;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
+import org.springframework.util.ClassUtils;
 
 import java.lang.annotation.Annotation;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.redisson.misc.ClassUtils.getField;
+import static org.redisson.misc.ClassUtils.setField;
 
 /**
  *
@@ -40,7 +48,16 @@ import java.lang.annotation.Annotation;
  *
  */
 public class RInjectBeanPostProcessor extends InstantiationAwareBeanPostProcessorAdapter
-        implements DestructionAwareBeanPostProcessor, PriorityOrdered, BeanFactoryAware {
+        implements DestructionAwareBeanPostProcessor, PriorityOrdered, BeanFactoryAware,
+        ApplicationListener<ContextRefreshedEvent> {
+
+    private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private static final String requestMappingHandlerAdapterClass
+            = "org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter";
+    private static final boolean isMvcUsed = ClassUtils.isPresent(requestMappingHandlerAdapterClass,
+            RInjectBeanPostProcessor.class.getClassLoader());
+    private static boolean handlerApplied = false;
 
     private final Class<? extends Annotation> rInject = RInject.class;
     private final int order = Ordered.LOWEST_PRECEDENCE - 1;
@@ -68,6 +85,42 @@ public class RInjectBeanPostProcessor extends InstantiationAwareBeanPostProcesso
             throws BeansException {
         Injector.inject(bean, injectionContext);
         return bean;
+    }
+
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        if (isMvcUsed && !handlerApplied) {
+            if(event.getApplicationContext().getParent() == null){
+                patchHandlerMethodArgumentResolver();
+            }
+        }
+    }
+
+    private void patchHandlerMethodArgumentResolver() {
+        handlerApplied = true;//we should only try it once regardless of the result.
+        try {
+            Class<?> adapterClass = Class.forName(requestMappingHandlerAdapterClass);
+            Object bean = beanFactory.getBean(adapterClass);
+            List resolvers;
+            Object handlerMethodArgumentResolverComposite
+                    = getField(bean, "argumentResolvers");
+            resolvers = getField(handlerMethodArgumentResolverComposite, "argumentResolvers");
+
+            /**
+             * We need to be make sure RInjectHandlerMethodArgumentResolver is evaluated before {@link org.springframework.web.method.annotation.MapMethodProcessor}
+             */
+            LinkedList newResolvers = new LinkedList();
+            newResolvers.add(new RInjectHandlerMethodArgumentResolver(injectionContext));
+            newResolvers.addAll(resolvers);
+            setField(handlerMethodArgumentResolverComposite, "argumentResolvers", newResolvers);
+            log.info("Successfully patched the argumentResolvers list from " + requestMappingHandlerAdapterClass + " bean. The RInjectHandlerMethodArgumentResolver feature is now ENABLED.");
+        } catch (ClassNotFoundException e) {
+            //some how class is not found after isMvcUsed has checked its existence. lets ignore it.
+        } catch (BeansException e) {
+            log.warn("Can't obtain the " + requestMappingHandlerAdapterClass + " bean. The RInjectHandlerMethodArgumentResolver feature is DISABLED.", e);
+        } catch (IllegalArgumentException e) {
+            log.warn("Unable to get or set the argumentResolvers list from " + requestMappingHandlerAdapterClass + " bean. The RInjectHandlerMethodArgumentResolver feature is DISABLED.", e);
+        }
     }
 
     /**
