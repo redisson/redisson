@@ -51,13 +51,13 @@ public interface CommandAsyncExecutor {
     
     boolean isRedissonReferenceSupportEnabled();
     
-    <V> RedisException convertException(RFuture<V> RFuture);
+    <V> RedisException convertException(RFuture<V> future);
 
-    boolean await(RFuture<?> RFuture, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
+    boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
     
     void syncSubscription(RFuture<?> future);
     
-    <V> V get(RFuture<V> RFuture);
+    <V> V get(RFuture<V> future);
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
     

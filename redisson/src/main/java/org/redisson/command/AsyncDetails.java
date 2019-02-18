@@ -15,7 +15,6 @@
  */
 package org.redisson.command;
 
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 
 import org.redisson.api.RFuture;
@@ -31,8 +30,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.Timeout;
 
 public class AsyncDetails<V, R> {
-
-    static final ConcurrentLinkedQueue<AsyncDetails> queue = new ConcurrentLinkedQueue<AsyncDetails>();
 
     RFuture<RedisConnection> connectionFuture;
     ConnectionManager connectionManager;

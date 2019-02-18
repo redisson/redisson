@@ -44,7 +44,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.RedissonReactiveClient;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.cache.LRUCacheMap;
-import org.redisson.cache.LocalCachedMessageCodec;
 import org.redisson.cache.ReferenceCacheMap;
 import org.redisson.client.RedisAskException;
 import org.redisson.client.RedisClient;
@@ -57,8 +56,7 @@ import org.redisson.client.RedisResponseTimeoutException;
 import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.RedisTryAgainException;
 import org.redisson.client.WriteRedisConnectionException;
-import org.redisson.client.codec.BitSetCodec;
-import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
@@ -75,7 +73,6 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
-import org.redisson.jcache.JCacheEventCodec;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
@@ -167,7 +164,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         try {
             int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
             if (!future.await(timeout)) {
-                ((RPromise<?>)future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+                ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -517,9 +514,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (!keys.isEmpty()) {
             Object key = keys.get(0);
             if (key instanceof byte[]) {
-                return writeAsync((byte[])key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+                return writeAsync((byte[]) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
             }
-            return writeAsync((String)key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+            return writeAsync((String) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
         }
         
         return writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
@@ -540,16 +537,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return getConnectionManager().getCfg().isUseScriptCache();
     }
     
-    private static final Map<String, String> shaCache = new LRUCacheMap<String, String>(500, 0, 0);
+    private static final Map<String, String> SHA_CACHE = new LRUCacheMap<String, String>(500, 0, 0);
     
     private String calcSHA(String script) {
-        String digest = shaCache.get(script);
+        String digest = SHA_CACHE.get(script);
         if (digest == null) {
             try {
                 MessageDigest mdigest = MessageDigest.getInstance("SHA-1");
                 byte[] s = mdigest.digest(script.getBytes());
                 digest = ByteBufUtil.hexDump(s);
-                shaCache.put(script, digest);
+                SHA_CACHE.put(script, digest);
             } catch (Exception e) {
                 throw new IllegalStateException(e);
             }
@@ -561,7 +558,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         List<Object> result = new ArrayList<Object>();
         for (Object object : params) {
             if (object instanceof ByteBuf) {
-                ByteBuf b = ((ByteBuf) object);
+                ByteBuf b = (ByteBuf) object;
                 ByteBuf nb = ByteBufAllocator.DEFAULT.buffer(b.readableBytes());
                 int ri = b.readerIndex();
                 nb.writeBytes(b);
@@ -651,6 +648,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
     
+    @SuppressWarnings({"NestedIfDepth"})
     public <V, R> void async(final boolean readOnlyMode, final NodeSource source, final Codec codec,
             final RedisCommand<V> command, final Object[] params, final RPromise<R> mainPromise, final int attempt, 
             final boolean ignoreRedirect) {
@@ -802,28 +800,29 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
     }
     
-    private static final Map<ClassLoader, Map<Codec, Codec>> codecs = ReferenceCacheMap.weak(0, 0);
+    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.weak(0, 0);
 
     protected Codec getCodec(Codec codec) {
-        if (codec instanceof StringCodec
-                || codec instanceof ByteArrayCodec
-                    || codec instanceof LocalCachedMessageCodec
-                        || codec instanceof BitSetCodec
-                            || codec instanceof JCacheEventCodec
-                                || codec == null) {
+        if (codec == null) {
             return codec;
         }
-        
+
+        for (Class<?> clazz : BaseCodec.SKIPPED_CODECS) {
+            if (clazz.isAssignableFrom(codec.getClass())) {
+                return codec;
+            }
+        }
+
         Codec codecToUse = codec;
         ClassLoader threadClassLoader = Thread.currentThread().getContextClassLoader();
         if (threadClassLoader != null) {
-            Map<Codec, Codec> map = codecs.get(threadClassLoader);
+            Map<Codec, Codec> map = CODECS.get(threadClassLoader);
             if (map == null) {
-                synchronized (codecs) {
-                    map = codecs.get(threadClassLoader);
+                synchronized (CODECS) {
+                    map = CODECS.get(threadClassLoader);
                     if (map == null) {
                         map = new ConcurrentHashMap<Codec, Codec>();
-                        codecs.put(threadClassLoader, map);
+                        CODECS.put(threadClassLoader, map);
                     }
                 }
             }
@@ -1079,9 +1078,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             
             AsyncDetails.release(details);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             handleError(details, details.getMainPromise(), e);
-			throw e;
+            throw e;
         }
     }
 
@@ -1197,7 +1196,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (o instanceof RedissonReference) {
             return fromReference(o);
         } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
-            ScoredEntry<?> se = ((ScoredEntry<?>) o);
+            ScoredEntry<?> se = (ScoredEntry<?>) o;
             return new ScoredEntry(se.getScore(), fromReference(se.getValue()));
         } else if (o instanceof Map.Entry) {
             Map.Entry old = (Map.Entry) o;
