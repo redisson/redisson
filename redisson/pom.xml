@@ -366,7 +366,11 @@
                               **/org/redisson/client/**/*.java,
                               **/org/redisson/cluster/**/*.java,
                               **/org/redisson/codec/**/*.java,
-                              **/org/redisson/command/**/*.java
+                              **/org/redisson/command/**/*.java,
+                              **/org/redisson/config/**/*.java,
+                              **/org/redisson/connection/**/*.java,
+                              **/org/redisson/eviction/**/*.java,
+                              **/org/redisson/executor/**/*.java,
                     </includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>

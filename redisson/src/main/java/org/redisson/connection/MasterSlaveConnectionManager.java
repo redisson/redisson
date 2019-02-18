@@ -347,7 +347,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             
             startDNSMonitoring(f.getNow());
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             stopThreads();
             throw e;
         }
@@ -555,9 +555,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return RedissonPromise.newFailedFuture(ex);
         }
         // fix for https://github.com/redisson/redisson/issues/1548
-        if (source.getRedirect() != null &&
-                !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) &&
-                entry.hasSlave(source.getAddr())) {
+        if (source.getRedirect() != null 
+                && !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) 
+                    && entry.hasSlave(source.getAddr())) {
             return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }
         return entry.connectionWriteOp(command);
@@ -619,7 +619,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdown(0, 2, TimeUnit.SECONDS);//default netty value
+        shutdown(0, 2, TimeUnit.SECONDS); //default netty value
     }
 
     @Override

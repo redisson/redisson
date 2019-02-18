@@ -529,7 +529,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig res = super.create(cfg);
-        res.setDatabase(((SentinelServersConfig)cfg).getDatabase());
+        res.setDatabase(((SentinelServersConfig) cfg).getDatabase());
         return res;
     }
     

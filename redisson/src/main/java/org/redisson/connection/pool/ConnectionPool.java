@@ -19,7 +19,6 @@ import java.net.InetSocketAddress;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,7 +62,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
 
     final MasterSlaveEntry masterSlaveEntry;
 
-    public ConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
+    ConnectionPool(MasterSlaveServersConfig config, ConnectionManager connectionManager, MasterSlaveEntry masterSlaveEntry) {
         this.config = config;
         this.masterSlaveEntry = masterSlaveEntry;
         this.connectionManager = connectionManager;
@@ -189,8 +188,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
         List<ClientConnectionsEntry> entriesCopy = new LinkedList<ClientConnectionsEntry>(entries);
         for (Iterator<ClientConnectionsEntry> iterator = entriesCopy.iterator(); iterator.hasNext();) {
             ClientConnectionsEntry entry = iterator.next();
-            if (!((!entry.isFreezed() || entry.isMasterForRead()) && 
-                    tryAcquireConnection(entry))) {
+            if (!((!entry.isFreezed() || entry.isMasterForRead()) 
+                    && tryAcquireConnection(entry))) {
                 iterator.remove();
             }
         }
@@ -225,7 +224,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
             return acquireConnection(command, entry);
         }
 
-    public static abstract class AcquireCallback<T> implements Runnable, BiConsumer<T, Throwable> {
+    public abstract static class AcquireCallback<T> implements Runnable, BiConsumer<T, Throwable> {
         
     }
     

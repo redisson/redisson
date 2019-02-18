@@ -107,7 +107,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig res = super.create(cfg);
-        res.setDatabase(((ReplicatedServersConfig)cfg).getDatabase());
+        res.setDatabase(((ReplicatedServersConfig) cfg).getDatabase());
         return res;
     }
     

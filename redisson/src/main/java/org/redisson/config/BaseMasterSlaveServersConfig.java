@@ -102,7 +102,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     public T setSlaveConnectionPoolSize(int slaveConnectionPoolSize) {
         this.slaveConnectionPoolSize = slaveConnectionPoolSize;
-        return (T)this;
+        return (T) this;
     }
     public int getSlaveConnectionPoolSize() {
         return slaveConnectionPoolSize;
@@ -162,7 +162,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     public T setMasterConnectionPoolSize(int masterConnectionPoolSize) {
         this.masterConnectionPoolSize = masterConnectionPoolSize;
-        return (T)this;
+        return (T) this;
     }
     public int getMasterConnectionPoolSize() {
         return masterConnectionPoolSize;
@@ -181,7 +181,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     public T setLoadBalancer(LoadBalancer loadBalancer) {
         this.loadBalancer = loadBalancer;
-        return (T)this;
+        return (T) this;
     }
     public LoadBalancer getLoadBalancer() {
         return loadBalancer;
@@ -214,7 +214,7 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
      */
     public T setSubscriptionConnectionPoolSize(int subscriptionConnectionPoolSize) {
         this.subscriptionConnectionPoolSize = subscriptionConnectionPoolSize;
-        return (T)this;
+        return (T) this;
     }
     public int getSubscriptionConnectionPoolSize() {
         return subscriptionConnectionPoolSize;

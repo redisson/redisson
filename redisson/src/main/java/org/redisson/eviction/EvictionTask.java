@@ -70,7 +70,7 @@ abstract class EvictionTask implements Runnable {
             if (sizeHistory.size() == 2) {
                 if (sizeHistory.peekFirst() > sizeHistory.peekLast()
                         && sizeHistory.peekLast() > size) {
-                    delay = Math.min(maxDelay, (int)(delay*1.5));
+                    delay = Math.min(maxDelay, (int) (delay*1.5));
                 }
 
 //                    if (sizeHistory.peekFirst() < sizeHistory.peekLast()
@@ -84,7 +84,7 @@ abstract class EvictionTask implements Runnable {
                         delay = Math.max(minDelay, delay/4);
                     }
                     if (size == 0) {
-                        delay = Math.min(maxDelay, (int)(delay*1.5));
+                        delay = Math.min(maxDelay, (int) (delay*1.5));
                     }
                 }
 

@@ -64,7 +64,7 @@ import io.netty.util.TimerTask;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private static final Map<HashValue, Codec> codecs = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
+    private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
     
     private final Codec codec;
     private final String name;
@@ -125,7 +125,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
         try {
             executeRunnable(params);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             // cancel task if it throws an exception
             future.cancel(true);
             throw e;
@@ -145,7 +145,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
         try {
             executeRunnable(params, nextStartDate == null);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             // cancel task if it throws an exception
             if (future != null) {
                 future.cancel(true);
@@ -216,7 +216,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     protected void scheduleRetryTimeRenewal(final String requestId) {
-        ((Redisson)redisson).getConnectionManager().newTimeout(new TimerTask() {
+        ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 renewRetryTime(requestId);
@@ -263,13 +263,13 @@ public class TasksRunnerService implements RemoteExecutorService {
         ByteBuf stateBuf = Unpooled.wrappedBuffer(params.getState());
         try {
             HashValue hash = new HashValue(Hash.hash128(classBodyBuf));
-            Codec classLoaderCodec = codecs.get(hash);
+            Codec classLoaderCodec = CODECS.get(hash);
             if (classLoaderCodec == null) {
                 RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
                 cl.loadClass(params.getClassName(), params.getClassBody());
                 
                 classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
-                codecs.put(hash, classLoaderCodec);
+                CODECS.put(hash, classLoaderCodec);
             }
             
             T task;
