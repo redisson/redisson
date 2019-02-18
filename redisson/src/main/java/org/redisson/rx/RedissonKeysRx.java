@@ -35,7 +35,6 @@ import io.reactivex.processors.ReplayProcessor;
 public class RedissonKeysRx {
 
     private final CommandRxExecutor commandExecutor;
-
     private final RedissonKeys instance;
 
     public RedissonKeysRx(CommandRxExecutor commandExecutor) {
@@ -81,7 +80,7 @@ public class RedissonKeysRx {
                     client = res.getRedisClient();
                     long prevIterPos = nextIterPos;
                     if (nextIterPos == 0 && firstValues == null) {
-                        firstValues = (List<String>)(Object)res.getValues();
+                        firstValues = (List<String>) (Object) res.getValues();
                     } else if (res.getValues().equals(firstValues)) {
                         p.onComplete();
                         currentIndex = 0;
@@ -93,7 +92,7 @@ public class RedissonKeysRx {
                         nextIterPos = -1;
                     }
                     for (Object val : res.getValues()) {
-                        p.onNext((String)val);
+                        p.onNext((String) val);
                         currentIndex--;
                         if (currentIndex == 0) {
                             p.onComplete();

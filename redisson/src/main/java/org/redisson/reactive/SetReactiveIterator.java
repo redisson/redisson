@@ -71,7 +71,7 @@ public abstract class SetReactiveIterator<V> implements Consumer<FluxSink<V>> {
                     nextIterPos = res.getPos();
 
                     for (Object val : res.getValues()) {
-                        emitter.next((V)val);
+                        emitter.next((V) val);
                         elementsRead.incrementAndGet();
                     }
                     

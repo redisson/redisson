@@ -15,10 +15,7 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.api.RBlockingQueueAsync;
-import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
 import io.reactivex.Flowable;

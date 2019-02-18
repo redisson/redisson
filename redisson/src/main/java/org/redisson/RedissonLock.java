@@ -421,7 +421,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 + "else "
                 + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     @Override
@@ -486,7 +486,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     "return 1; "+
                 "end; " +
                 "return nil;",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId));
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
 
     }
     

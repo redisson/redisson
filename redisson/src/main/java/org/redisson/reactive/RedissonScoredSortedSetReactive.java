@@ -70,17 +70,17 @@ public class RedissonScoredSortedSetReactive<V>  {
         });
     }
 
-    private Flux<V> scanIteratorReactive(final String pattern, final int count) {
+    private Flux<V> scanIteratorReactive(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                return ((RedissonScoredSortedSet<V>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });
     }
 
     public String getName() {
-        return ((RedissonScoredSortedSet<V>)instance).getName();
+        return ((RedissonScoredSortedSet<V>) instance).getName();
     }
     
     public Flux<V> iterator() {

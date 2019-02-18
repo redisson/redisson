@@ -15,8 +15,6 @@
  */
 package org.redisson.misc;
 
-import java.util.function.BiConsumer;
-
 import org.redisson.api.RFuture;
 
 /**

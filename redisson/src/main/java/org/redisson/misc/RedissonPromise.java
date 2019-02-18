@@ -34,12 +34,12 @@ import io.netty.util.concurrent.Promise;
  */
 public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise<T> {
 
-    private static final Field listenersField;
+    private static final Field LISTENERS_FIELD;
 
     static {
         try {
-            listenersField = DefaultPromise.class.getDeclaredField("listeners");
-            listenersField.setAccessible(true);
+            LISTENERS_FIELD = DefaultPromise.class.getDeclaredField("listeners");
+            LISTENERS_FIELD.setAccessible(true);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -165,7 +165,7 @@ public class RedissonPromise<T> extends CompletableFuture<T> implements RPromise
     @Override
     public boolean hasListeners() {
         try {
-            return listenersField.get(promise) != null || getNumberOfDependents() > 0;
+            return LISTENERS_FIELD.get(promise) != null || getNumberOfDependents() > 0;
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }

@@ -15,8 +15,6 @@
  */
 package org.redisson.remote;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -51,6 +49,7 @@ public class RemoteServiceKey {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -76,7 +75,7 @@ public class RemoteServiceKey {
             return false;
         } else if (!signatures.equals(other.signatures)) {
             return false;
-        } if (serviceInterface == null) {
+        } else if (serviceInterface == null) {
             if (other.serviceInterface != null)
                 return false;
         } else if (!serviceInterface.equals(other.serviceInterface))

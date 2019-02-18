@@ -118,7 +118,7 @@ public class RedissonListReactive<V> {
 
             @Override
             public RFuture<Boolean> add(Object o) {
-                return instance.addAsync((V)o);
+                return instance.addAsync((V) o);
             }
 
         }.addAll(c);

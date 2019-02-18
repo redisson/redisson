@@ -60,7 +60,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     M mapper;
     long timeout;
     
-    public MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
+    MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
         this.objectName = object.getName();
         this.objectCodec = object.getCodec();
         this.objectClass = object.getClass();

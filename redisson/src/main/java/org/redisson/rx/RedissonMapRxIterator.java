@@ -115,7 +115,7 @@ public class RedissonMapRxIterator<K, V, M> {
     }
 
     M getValue(Entry<Object, Object> entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey(), (V)entry.getValue()) {
+        return (M) new AbstractMap.SimpleEntry<K, V>((K) entry.getKey(), (V) entry.getValue()) {
 
             @Override
             public V setValue(V value) {

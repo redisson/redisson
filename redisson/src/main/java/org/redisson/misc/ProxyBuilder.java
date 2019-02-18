@@ -42,13 +42,14 @@ public class ProxyBuilder {
         Method method;
         Class<?> instanceClass;
         
-        public CacheKey(Method method, Class<?> instanceClass) {
+        CacheKey(Method method, Class<?> instanceClass) {
             super();
             this.method = method;
             this.instanceClass = instanceClass;
         }
 
         @Override
+        @SuppressWarnings("AvoidInlineConditionals")
         public int hashCode() {
             final int prime = 31;
             int result = 1;
@@ -81,14 +82,14 @@ public class ProxyBuilder {
         
     }
     
-    private static final ConcurrentMap<CacheKey, Method> methodsMapping = new ConcurrentHashMap<CacheKey, Method>();
+    private static final ConcurrentMap<CacheKey, Method> METHODS_MAPPING = new ConcurrentHashMap<CacheKey, Method>();
     
     public static <T> T create(final Callback commandExecutor, final Object instance, final Object implementation, final Class<T> clazz) {
         InvocationHandler handler = new InvocationHandler() {
             @Override
             public Object invoke(Object proxy, Method method, final Object[] args) throws Throwable {
                 CacheKey key = new CacheKey(method, instance.getClass());
-                Method instanceMethod = methodsMapping.get(key);
+                Method instanceMethod = METHODS_MAPPING.get(key);
                 if (instanceMethod == null) {
                     if (implementation != null) {
                         try {
@@ -108,7 +109,7 @@ public class ProxyBuilder {
                         }
                     }
                     
-                    methodsMapping.put(key, instanceMethod);
+                    METHODS_MAPPING.put(key, instanceMethod);
                 }
                 final Method mm = instanceMethod;
                 if (instanceMethod.getName().endsWith("Async")) {

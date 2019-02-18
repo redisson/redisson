@@ -86,7 +86,7 @@ public class RedissonKeysReactive {
                             client = res.getRedisClient();
                             long prevIterPos = nextIterPos;
                             if (nextIterPos == 0 && firstValues == null) {
-                                firstValues = (List<String>)(Object)res.getValues();
+                                firstValues = (List<String>) (Object) res.getValues();
                             } else if (res.getValues().equals(firstValues)) {
                                 emitter.complete();
                                 currentIndex = 0;
@@ -98,7 +98,7 @@ public class RedissonKeysReactive {
                                 nextIterPos = -1;
                             }
                             for (Object val : res.getValues()) {
-                                emitter.next((String)val);
+                                emitter.next((String) val);
                                 currentIndex--;
                                 if (currentIndex == 0) {
                                     emitter.complete();

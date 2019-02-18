@@ -112,13 +112,13 @@ public class PubSubConnectionEntry {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
         for (RedisPubSubListener<?> listener : listeners) {
             if (listener instanceof PubSubMessageListener) {
-                if (((PubSubMessageListener)listener).getListener() == msgListener) {
+                if (((PubSubMessageListener<?>) listener).getListener() == msgListener) {
                     removeListener(channelName, listener);
                     return true;
                 }
             }
             if (listener instanceof PubSubPatternMessageListener) {
-                if (((PubSubPatternMessageListener)listener).getListener() == msgListener) {
+                if (((PubSubPatternMessageListener<?>) listener).getListener() == msgListener) {
                     removeListener(channelName, listener);
                     return true;
                 }

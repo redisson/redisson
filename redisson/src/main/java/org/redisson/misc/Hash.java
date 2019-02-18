@@ -25,7 +25,7 @@ import io.netty.util.CharsetUtil;
  * @author Nikita Koksharov
  *
  */
-public class Hash {
+public final class Hash {
 
     private static final long[] KEY = {0x9e3779b97f4a7c15L, 0xf39cc0605cedc834L, 0x1082276bf3a27251L, 0xf86c6a11d0c18e95L};
 

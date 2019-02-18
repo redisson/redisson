@@ -120,7 +120,7 @@ abstract class PublishSubscribe<E extends PubSubEntry<E>> {
                     return;
                 }
 
-                PublishSubscribe.this.onMessage(value, (Long)message);
+                PublishSubscribe.this.onMessage(value, (Long) message);
             }
 
             @Override

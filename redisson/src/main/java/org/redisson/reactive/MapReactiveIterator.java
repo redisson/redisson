@@ -115,8 +115,8 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
         return false;
     }
 
-    M getValue(final Entry<Object, Object> entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey(), (V)entry.getValue()) {
+    M getValue(Entry<Object, Object> entry) {
+        return (M) new AbstractMap.SimpleEntry<K, V>((K) entry.getKey(), (V) entry.getValue()) {
 
             @Override
             public V setValue(V value) {

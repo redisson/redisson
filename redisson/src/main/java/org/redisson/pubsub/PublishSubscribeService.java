@@ -245,7 +245,7 @@ public class PublishSubscribeService {
         RFuture<RedisPubSubConnection> connFuture = nextPubSubConnection(slot);
         promise.onComplete((res, e) -> {
             if (e != null) {
-                ((RPromise<RedisPubSubConnection>)connFuture).tryFailure(e);
+                ((RPromise<RedisPubSubConnection>) connFuture).tryFailure(e);
             }
         });
         connFuture.onComplete((conn, e) -> {

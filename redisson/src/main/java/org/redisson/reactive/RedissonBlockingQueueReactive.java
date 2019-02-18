@@ -34,7 +34,7 @@ public class RedissonBlockingQueueReactive<V> extends RedissonListReactive<V> {
     private final RBlockingQueue<V> queue;
     
     public RedissonBlockingQueueReactive(RBlockingQueue<V> queue) {
-        super((RListAsync<V>)queue);
+        super((RListAsync<V>) queue);
         this.queue = queue;
     }
 

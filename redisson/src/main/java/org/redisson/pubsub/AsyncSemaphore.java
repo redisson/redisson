@@ -33,7 +33,7 @@ public class AsyncSemaphore {
         private Runnable runnable;
         private int permits;
         
-        public Entry(Runnable runnable, int permits) {
+        Entry(Runnable runnable, int permits) {
             super();
             this.runnable = runnable;
             this.permits = permits;
@@ -48,6 +48,7 @@ public class AsyncSemaphore {
         }
 
         @Override
+        @SuppressWarnings("AvoidInlineConditionals")
         public int hashCode() {
             final int prime = 31;
             int result = 1;

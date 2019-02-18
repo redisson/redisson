@@ -71,7 +71,7 @@ public abstract class SetRxIterator<V> {
                     nextIterPos = res.getPos();
 
                     for (Object val : res.getValues()) {
-                        p.onNext((V)val);
+                        p.onNext((V) val);
                         elementsRead.incrementAndGet();
                     }
                     
