@@ -42,7 +42,7 @@ public class JCacheConfiguration<K, V> implements CompleteConfiguration<K, V> {
     public JCacheConfiguration(Configuration<K, V> configuration) {
         if (configuration != null) {
             if (configuration instanceof RedissonConfiguration) {
-                configuration = ((RedissonConfiguration<K, V>)configuration).getJcacheConfig();
+                configuration = ((RedissonConfiguration<K, V>) configuration).getJcacheConfig();
             }
             
             if (configuration instanceof CompleteConfiguration) {

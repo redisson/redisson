@@ -833,7 +833,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                         if (completionListener != null) {
                             completionListener.onException(e);
                         }
-                        return;
+                        throw e;
                     }
                 }
                 if (completionListener != null) {

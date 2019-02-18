@@ -371,6 +371,7 @@
                               **/org/redisson/connection/**/*.java,
                               **/org/redisson/eviction/**/*.java,
                               **/org/redisson/executor/**/*.java,
+                              **/org/redisson/jcache/**/*.java,
                     </includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
