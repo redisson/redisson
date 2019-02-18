@@ -231,7 +231,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
             if (state == NULL) {
                 return RedissonPromise.newSucceededFuture(null);
             } else {
-                return RedissonPromise.newSucceededFuture((V)state);
+                return RedissonPromise.newSucceededFuture((V) state);
             }
         }
         

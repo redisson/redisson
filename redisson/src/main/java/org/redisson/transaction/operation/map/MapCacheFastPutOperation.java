@@ -45,7 +45,7 @@ public class MapCacheFastPutOperation extends MapOperation {
     
     @Override
     public void commit(RMap<Object, Object> map) {
-        ((RMapCache<Object, Object>)map).fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+        ((RMapCache<Object, Object>) map).fastPutAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
     }
 
     public long getTTL() {

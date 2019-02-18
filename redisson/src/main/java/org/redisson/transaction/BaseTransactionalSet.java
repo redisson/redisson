@@ -78,7 +78,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
 
     private HashValue toHash(Object value) {
-        ByteBuf state = ((RedissonObject)set).encode(value);
+        ByteBuf state = ((RedissonObject) set).encode(value);
         try {
             return new HashValue(Hash.hash128(state));
         } finally {
@@ -330,7 +330,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     
     public RFuture<Boolean> removeAsync(Object value) {
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        executeLocked(result, (V)value, new Runnable() {
+        executeLocked(result, (V) value, new Runnable() {
             @Override
             public void run() {
                 HashValue keyHash = toHash(value);
@@ -508,8 +508,8 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     private boolean isEqual(Object value, Object oldValue) {
-        ByteBuf valueBuf = ((RedissonObject)set).encode(value);
-        ByteBuf oldValueBuf = ((RedissonObject)set).encode(oldValue);
+        ByteBuf valueBuf = ((RedissonObject) set).encode(value);
+        ByteBuf oldValueBuf = ((RedissonObject) set).encode(oldValue);
         
         try {
             return valueBuf.equals(oldValueBuf);
