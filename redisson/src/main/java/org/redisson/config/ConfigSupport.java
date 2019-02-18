@@ -61,7 +61,17 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  *
  */
 public class ConfigSupport {
-
+    
+    private final EnvProvider env;
+    
+    public ConfigSupport() {
+        this(new SystemEnvProvider());
+    }
+    
+    public ConfigSupport(EnvProvider env) {
+        this.env = env;
+    }
+    
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
@@ -135,14 +145,16 @@ public class ConfigSupport {
         }
     }
     
-    private String resolveEnvParams(String content) {
-        Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\}");
+    public String resolveEnvParams(String content) {
+        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
-            String s = m.group(1);
-            String v = System.getenv(s);
+            String[] parts = m.group(1).split(":-");
+            String v = env.get(parts[0]);
             if (v != null) {
                 content = content.replace(m.group(), v);
+            } else if (parts.length == 2) {
+                content = content.replace(m.group(), parts[1]);
             }
         }
         return content;
