@@ -394,9 +394,10 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     public <V> RedisException convertException(RFuture<V> future) {
-        return future.cause() instanceof RedisException
-                ? (RedisException) future.cause()
-                : new RedisException("Unexpected exception while processing command", future.cause());
+        if (future.cause() instanceof RedisException) {
+            return (RedisException) future.cause();
+        }
+        return new RedisException("Unexpected exception while processing command", future.cause());
     }
 
     private NodeSource getNodeSource(String key) {
@@ -1112,12 +1113,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
             return o;
         } else if (o instanceof Set) {
-            Set set, r = (Set) o;
+            Set<Object> set = (Set<Object>) o;
+            Set<Object> r = (Set<Object>) o;
             boolean useNewSet = o instanceof LinkedHashSet;
             try {
-                set = (Set) o.getClass().getConstructor().newInstance();
+                set = (Set<Object>) o.getClass().getConstructor().newInstance();
             } catch (Exception exception) {
-                set = new LinkedHashSet();
+                set = new LinkedHashSet<Object>();
             }
             for (Object i : r) {
                 Object ref = tryHandleReference0(i);
@@ -1202,12 +1204,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             Map.Entry old = (Map.Entry) o;
             Object key = tryHandleReference0(old.getKey());
             Object value = tryHandleReference0(old.getValue());
-            return value != old.getValue() || key != old.getKey()
-                    ? new AbstractMap.SimpleEntry(key, value)
-                    : o;
-        } else {
-            return o;
+            if (value != old.getValue() || key != old.getKey()) {
+                return new AbstractMap.SimpleEntry(key, value);
+            }
         }
+        return o;
     }
 
     private Object fromReference(Object res) {

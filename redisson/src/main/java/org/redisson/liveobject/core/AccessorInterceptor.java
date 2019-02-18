@@ -88,7 +88,7 @@ public class AccessorInterceptor {
             
             if (result != null && fieldType.isEnum()) {
                 if (result instanceof String) {
-                    return Enum.valueOf((Class)fieldType, (String)result);
+                    return Enum.valueOf((Class) fieldType, (String) result);
                 }
                 return result;
             }
@@ -139,7 +139,7 @@ public class AccessorInterceptor {
             }
             
             if (arg instanceof RObject) {
-                objectBuilder.store((RObject)arg, fieldName, liveMap);
+                objectBuilder.store((RObject) arg, fieldName, liveMap);
                 return me;
             }
 
@@ -176,7 +176,10 @@ public class AccessorInterceptor {
 
     private String getFieldName(Method method) {
         String name = method.getName();
-        int i = name.startsWith("is") ? 3 : 4;
+        int i = 4;
+        if (name.startsWith("is")) {
+            i = 3;
+        }
         return name.substring(i - 1, i).toLowerCase() + name.substring(i);
     }
 

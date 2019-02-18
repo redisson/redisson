@@ -159,26 +159,35 @@
 
         <!-- Checks for common coding problems               -->
         <!-- See http://checkstyle.sf.net/config_coding.html -->
-        <!--module name="AvoidInlineConditionals"/-->
+        <module name="ArrayTrailingComma"/>
+        <module name="AvoidInlineConditionals"/>
+        <module name="CovariantEquals"/>
         <!-- MY FAVOURITE -->
         <module name="EmptyStatement"/>
         <module name="EqualsHashCode"/>
+        <module name="EqualsAvoidNull"/>
         <!--module name="HiddenField"/-->
         <module name="IllegalInstantiation"/>
+        <module name="IllegalThrows"/>
         <module name="InnerAssignment"/>
+        <module name="MultipleVariableDeclarations"/>
         <!--module name="MagicNumber"/-->
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
         <module name="StringLiteralEquality"/>
+        <module name="NestedForDepth">
+           <property name="max" value="2"/>
+        </module>
         <module name="NestedIfDepth">
            <property name="max" value="3"/>
         </module>
         <module name="NestedTryDepth"/>
-        <module name="SuperClone"/>
+        <module name="NoClone"/>
+        <module name="NoFinalizer"/>
+        <module name="OneStatementPerLine"/>
         <module name="IllegalCatch">
            <property name="illegalClassNames" value=" java.lang.Throwable, java.lang.RuntimeException"/>
         </module>
-        <!--module name="IllegalThrows"/-->
         <module name="FallThrough"/>
         <module name="UnnecessaryParentheses"/>
         <!--module name="FinalLocalVariable"/-->

@@ -372,6 +372,7 @@
                               **/org/redisson/eviction/**/*.java,
                               **/org/redisson/executor/**/*.java,
                               **/org/redisson/jcache/**/*.java,
+                              **/org/redisson/liveobject/**/*.java,
                     </includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>

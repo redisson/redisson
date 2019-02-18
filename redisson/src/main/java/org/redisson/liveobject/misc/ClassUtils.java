@@ -119,22 +119,22 @@ public class ClassUtils {
         throw new NoSuchFieldException("No such field: " + fieldName);
     }
     
-    private static final Map<Class<?>, Boolean> annotatedClasses = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
+    private static final Map<Class<?>, Boolean> ANNOTATED_CLASSES = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
 
     public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
         if (clazz.getName().startsWith("java.")) {
             return false;
         }
         
-        Boolean isAnnotated = annotatedClasses.get(clazz);
+        Boolean isAnnotated = ANNOTATED_CLASSES.get(clazz);
         if (isAnnotated == null) {
             for (Class<?> c : getClassHierarchy(clazz)) {
                 if (c.isAnnotationPresent(annotation)) {
-                    annotatedClasses.put(clazz, true);
+                    ANNOTATED_CLASSES.put(clazz, true);
                     return true;
                 }
             }
-            annotatedClasses.put(clazz, false);
+            ANNOTATED_CLASSES.put(clazz, false);
             return false;
         }
         return isAnnotated;

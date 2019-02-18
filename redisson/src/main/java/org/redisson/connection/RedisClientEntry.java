@@ -82,6 +82,7 @@ public class RedisClientEntry implements ClusterNode {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;

@@ -119,6 +119,7 @@ public class MapCacheEventCodec implements Codec {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;

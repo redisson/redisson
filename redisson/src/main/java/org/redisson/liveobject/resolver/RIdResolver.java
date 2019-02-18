@@ -35,6 +35,7 @@ public interface RIdResolver<A extends RId, V> extends Resolver<Class<?>, A, V>{
      * @param redisson instance
      * @return resolved RId field value.
      */
-    public V resolve(Class<?> cls, A annotation, String idFieldName, RedissonClient redisson);
+    @Override
+    V resolve(Class<?> cls, A annotation, String idFieldName, RedissonClient redisson);
 
 }

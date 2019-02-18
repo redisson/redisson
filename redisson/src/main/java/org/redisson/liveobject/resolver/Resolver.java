@@ -40,6 +40,6 @@ public interface Resolver<T, A extends Annotation, V> {
      * @param redisson instance
      * @return resolved value
      */
-    public V resolve(T value, A annotation, String idFieldName, RedissonClient redisson);
+    V resolve(T value, A annotation, String idFieldName, RedissonClient redisson);
 
 }

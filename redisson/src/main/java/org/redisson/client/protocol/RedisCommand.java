@@ -145,9 +145,14 @@ public class RedisCommand<R> {
         return outParamType;
     }
 
-    @Override
     public String toString() {
-        return "(" + name + (subName != null ? " " + subName : "") + ")";
+        StringBuilder str = new StringBuilder();
+        str.append("(").append(name);
+        if (subName != null) {
+            str.append(" ").append(subName);
+        }
+        str.append(")");
+        return str.toString();
     }
 
 }

@@ -52,7 +52,8 @@ import java.util.TreeSet;
  */
 @SuppressWarnings({"EmptyStatement", "InnerAssignment", "ConstantName", 
     "BooleanExpressionComplexity", "NestedIfDepth", "ParenPad", 
-    "MethodLength", "WhitespaceAfter", "SuperClone", "UnnecessaryParentheses"})
+    "MethodLength", "WhitespaceAfter", "NoClone", "UnnecessaryParentheses", "AvoidInlineConditionals",
+    "EqualsAvoidNull", "OneStatementPerLine"})
 public final class CronExpression implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 12423409423L;

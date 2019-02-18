@@ -352,7 +352,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         slaveDown(ip, port);
                         continue;
                     }
-                    if (masterHost.equals("?") || !isUseSameMaster(ip, port, masterHost, masterPort)) {
+                    if ("?".equals(masterHost) || !isUseSameMaster(ip, port, masterHost, masterPort)) {
                         continue;
                     }
                     
