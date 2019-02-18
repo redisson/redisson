@@ -49,7 +49,7 @@ public class RedissonMultiLockDefinitionParser
             String localName = elt.getLocalName();
             if (BeanDefinitionParserDelegate
                     .QUALIFIER_ELEMENT.equals(localName)) {
-                continue;//parsed elsewhere
+                continue; //parsed elsewhere
             }
             String id;
             if (BeanDefinitionParserDelegate.REF_ELEMENT.equals(localName)){

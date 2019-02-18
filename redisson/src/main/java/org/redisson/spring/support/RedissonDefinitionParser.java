@@ -28,12 +28,9 @@ import org.springframework.beans.factory.xml.BeanDefinitionParser;
 import org.springframework.beans.factory.xml.BeanDefinitionParserDelegate;
 import org.springframework.beans.factory.xml.ParserContext;
 import org.springframework.core.Conventions;
-import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
-import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
-import org.w3c.dom.NamedNodeMap;
 
 /**
  *
@@ -47,7 +44,7 @@ public final class RedissonDefinitionParser
     private static final String REF_SUFFIX = "-ref";
     private static final String REDISSON_REF = "redisson-ref";
     
-    static enum ConfigType {
+    enum ConfigType {
         singleServer,
         sentinelServers,
         replicatedServers,
@@ -64,7 +61,7 @@ public final class RedissonDefinitionParser
         }
     }
 
-    static enum AddressType {
+    enum AddressType {
         slaveAddress,
         sentinelAddress,
         nodeAddress;
@@ -93,9 +90,8 @@ public final class RedissonDefinitionParser
             parserContext.pushContainingComponent(compositeDef);
             List<Element> childElts = DomUtils.getChildElements(element);
             for (Element elt : childElts) {
-                if(BeanDefinitionParserDelegate
-                        .QUALIFIER_ELEMENT.equals(elt.getLocalName())) {
-                    continue;//parsed elsewhere
+                if (BeanDefinitionParserDelegate.QUALIFIER_ELEMENT.equals(elt.getLocalName())) {
+                    continue; //parsed elsewhere
                 }
                 String localName = parserContext.getDelegate().getLocalName(elt);
                 localName = Conventions.attributeNameToPropertyName(localName);

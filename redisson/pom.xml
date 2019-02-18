@@ -379,7 +379,9 @@
                               **/org/redisson/reactive/**/*.java,
                               **/org/redisson/remote/**/*.java,
                               **/org/redisson/rx/**/*.java,
+                              **/org/redisson/spring/**/*.java,
                     </includes>
+
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
