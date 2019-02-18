@@ -145,7 +145,7 @@ public class ConfigSupport {
         }
     }
     
-    public String resolveEnvParams(String content) {
+    private String resolveEnvParams(String content) {
         Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
