@@ -355,12 +355,18 @@
                     <execution>
                         <phase>verify</phase>
                         <goals>
-                            <goal>check</goal>
+                            <goal>checkstyle</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <includes>**/org/redisson/api/**/*.java,**/org/redisson/cache/**/*.java,**/org/redisson/client/**/*.java</includes>
+                    <includes>
+                              **/org/redisson/api/**/*.java,
+                              **/org/redisson/cache/**/*.java,
+                              **/org/redisson/client/**/*.java,
+                              **/org/redisson/cluster/**/*.java,
+                              **/org/redisson/codec/**/*.java
+                    </includes>
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>

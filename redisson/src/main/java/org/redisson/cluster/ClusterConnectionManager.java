@@ -664,9 +664,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return 0;
         }
 
-        int start = indexOf(key, (byte)'{');
+        int start = indexOf(key, (byte) '{');
         if (start != -1) {
-            int end = indexOf(key, (byte)'}');
+            int end = indexOf(key, (byte) '}');
             key = Arrays.copyOfRange(key, start+1, end);
         }
         

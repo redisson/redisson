@@ -19,11 +19,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
-import org.redisson.codec.JsonJacksonCodec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,7 +46,7 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapObjectMapper.writeValue((OutputStream)os, in);
+                mapObjectMapper.writeValue((OutputStream) os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();
@@ -62,12 +60,12 @@ public class TypedJsonJacksonCodec extends JsonJacksonCodec {
             @Override
             public Object decode(ByteBuf buf, State state) throws IOException {
                 if (valueClass != null) {
-                    return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueClass);
+                    return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueClass);
                 }
                 if (valueTypeReference != null) {
-                    return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueTypeReference);
+                    return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueTypeReference);
                 }
-                return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), Object.class);
+                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), Object.class);
             }
         };
     }

@@ -30,7 +30,7 @@ import org.redisson.liveobject.misc.ClassUtils;
  */
 public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
 
-    public transient final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<Class<? extends Codec>, Codec> codecCache = PlatformDependent.newConcurrentHashMap();
 
     @Override
     public <T extends Codec> T getCodec(Class<T> codecClass) {
