@@ -1254,9 +1254,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
         params.add(count);
 
-        RedisCommand<MapCacheScanResult<Object, Object>> EVAL_HSCAN = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
+        RedisCommand<MapCacheScanResult<Object, Object>> command = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
                 new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(codec), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
-        RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, EVAL_HSCAN,
+        RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, command,
                 "local result = {}; "
                 + "local idleKeys = {}; "
                 + "local res; "
@@ -1329,7 +1329,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             }
         });
 
-        return (RFuture<MapScanResult<Object, Object>>)(Object)f;
+        return (RFuture<MapScanResult<Object, Object>>) (Object) f;
     }
 
     @Override
@@ -1477,21 +1477,21 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
-	public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit) {
-		return fastPutIfAbsent(key, value, ttl, ttlUnit, 0, null);
-	}
-
-    @Override
-    public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
-    	return get(fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit) {
+        return fastPutIfAbsent(key, value, ttl, ttlUnit, 0, null);
     }
 
     @Override
-	public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+    public boolean fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
+        return get(fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit));
+    }
+
+    @Override
+    public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
         checkKey(key);
         checkValue(value);
 
-		if (ttl < 0) {
+        if (ttl < 0) {
             throw new IllegalArgumentException("ttl can't be negative");
         }
         if (maxIdleTime < 0) {
@@ -1902,7 +1902,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
         
         if (isWindows == null) {
-            RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String)null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+            RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
             serverFuture.syncUninterruptibly();
             String os = serverFuture.getNow().get("os");
             isWindows = os.contains("Windows");
@@ -1913,7 +1913,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K)msg.get(0), (V)msg.get(1), null);
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.REMOVED, (K) msg.get(0), (V) msg.get(1), null);
                     ((EntryRemovedListener<K, V>) listener).onRemoved(event);
                 }
             });
@@ -1924,7 +1924,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K)msg.get(0), (V)msg.get(1), null);
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.CREATED, (K) msg.get(0), (V) msg.get(1), null);
                     ((EntryCreatedListener<K, V>) listener).onCreated(event);
                 }
             });
@@ -1935,7 +1935,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K)msg.get(0), (V)msg.get(1), (V)msg.get(2));
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.UPDATED, (K) msg.get(0), (V) msg.get(1), (V) msg.get(2));
                     ((EntryUpdatedListener<K, V>) listener).onUpdated(event);
                 }
             });
@@ -1946,7 +1946,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
-                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K)msg.get(0), (V)msg.get(1), null);
+                    EntryEvent<K, V> event = new EntryEvent<K, V>(RedissonMapCache.this, EntryEvent.Type.EXPIRED, (K) msg.get(0), (V) msg.get(1), null);
                     ((EntryExpiredListener<K, V>) listener).onExpired(event);
                 }
             });

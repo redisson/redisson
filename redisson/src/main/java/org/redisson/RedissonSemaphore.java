@@ -287,7 +287,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
             return true;
         }
 
-        time -= (System.currentTimeMillis() - current);
+        time -= System.currentTimeMillis() - current;
         if (time <= 0) {
             return false;
         }
@@ -299,7 +299,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
         }
 
         try {
-            time -= (System.currentTimeMillis() - current);
+            time -= System.currentTimeMillis() - current;
             if (time <= 0) {
                 return false;
             }
@@ -310,7 +310,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
                     return true;
                 }
 
-                time -= (System.currentTimeMillis() - current);
+                time -= System.currentTimeMillis() - current;
                 if (time <= 0) {
                     return false;
                 }
@@ -320,7 +320,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
                 getEntry().getLatch().tryAcquire(permits, time, TimeUnit.MILLISECONDS);
 
-                time -= (System.currentTimeMillis() - current);
+                time -= System.currentTimeMillis() - current;
                 if (time <= 0) {
                     return false;
                 }

@@ -122,7 +122,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
             @Override
             protected void remove(Object value) {
-                RedissonSet.this.remove((V)value);
+                RedissonSet.this.remove((V) value);
             }
             
         };
@@ -212,7 +212,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public boolean remove(Object value) {
-        return get(removeAsync((V)value));
+        return get(removeAsync((V) value));
     }
 
     @Override
@@ -388,6 +388,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -446,7 +447,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -456,7 +457,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -486,12 +487,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -619,13 +620,13 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
         String lockName = getLockName(value, "permitexpirablesemaphore");
-        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
 
     @Override
     public RSemaphore getSemaphore(V value) {
         String lockName = getLockName(value, "semaphore");
-        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
     
     @Override

@@ -113,7 +113,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
 
     @Override
     public boolean pingAll() {
-        List<RedisClientEntry> clients = new ArrayList<RedisClientEntry>((Collection<RedisClientEntry>)getNodes());
+        List<RedisClientEntry> clients = new ArrayList<>((Collection<RedisClientEntry>) getNodes());
         Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<>(clients.size());
         CountDownLatch latch = new CountDownLatch(clients.size());
         for (RedisClientEntry entry : clients) {

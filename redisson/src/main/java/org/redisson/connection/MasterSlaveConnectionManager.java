@@ -656,6 +656,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
+        
     }
 
     @Override

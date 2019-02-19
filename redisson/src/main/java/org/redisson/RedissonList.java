@@ -343,7 +343,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return get(setAsync(index, element));
         } catch (RedisException e) {
             if (e.getCause() instanceof IndexOutOfBoundsException) {
-                throw (IndexOutOfBoundsException)e.getCause();
+                throw (IndexOutOfBoundsException) e.getCause();
             }
             throw e;
         }
@@ -613,6 +613,8 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return new RedissonSubList<V>(codec, commandExecutor, getName(), fromIndex, toIndex);
     }
 
+    @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -630,6 +632,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -648,6 +651,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {
@@ -718,7 +722,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -728,7 +732,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -778,7 +782,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
@@ -788,7 +792,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override

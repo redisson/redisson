@@ -15,9 +15,7 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingDeque;

@@ -60,12 +60,12 @@ public class RedissonMultimapCache<K> {
                 + "return 0; "
               + "end",
             Arrays.<Object>asList(object.getName(), timeoutSetName), 
-            ttlTimeout, ((RedissonObject)object).encodeMapKey(key));
+            ttlTimeout, ((RedissonObject) object).encodeMapKey(key));
     }
     
     public RFuture<Long> sizeInMemoryAsync() {
         List<Object> keys = Arrays.<Object>asList(object.getName(), timeoutSetName);
-        return ((RedissonObject)object).sizeInMemoryAsync(keys);
+        return ((RedissonObject) object).sizeInMemoryAsync(keys);
     }
     
     public RFuture<Boolean> deleteAsync() {

@@ -15,9 +15,6 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.RedisPubSubListener;
 import org.redisson.client.protocol.pubsub.PubSubType;
@@ -46,6 +43,7 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;
@@ -78,7 +76,7 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     public void onMessage(CharSequence channel, Object message) {
         // could be subscribed to multiple channels
         if (name.equals(channel.toString()) && type.isInstance(message)) {
-            listener.onMessage(channel, (V)message);
+            listener.onMessage(channel, (V) message);
         }
     }
 
@@ -86,7 +84,7 @@ public class PubSubMessageListener<V> implements RedisPubSubListener<Object> {
     public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
         // could be subscribed to multiple channels
         if (name.equals(pattern.toString()) && type.isInstance(message)) {
-            listener.onMessage(channel, (V)message);
+            listener.onMessage(channel, (V) message);
         }
     }
 

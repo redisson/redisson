@@ -33,14 +33,13 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.ThreadLocalRandom;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RedissonNode {
+public final class RedissonNode {
 
     private static final Logger log = LoggerFactory.getLogger(RedissonNode.class);
     
@@ -156,10 +155,10 @@ public class RedissonNode {
     }
 
     private void retrieveAddresses() {
-        ConnectionManager connectionManager = ((Redisson)redisson).getConnectionManager();
+        ConnectionManager connectionManager = ((Redisson) redisson).getConnectionManager();
         for (MasterSlaveEntry entry : connectionManager.getEntrySet()) {
             RFuture<RedisConnection> readFuture = entry.connectionReadOp(null);
-            if (readFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout()) 
+            if (readFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout()) 
                     && readFuture.isSuccess()) {
                 RedisConnection connection = readFuture.getNow();
                 entry.releaseRead(connection);
@@ -168,7 +167,7 @@ public class RedissonNode {
                 return;
             }
             RFuture<RedisConnection> writeFuture = entry.connectionWriteOp(null);
-            if (writeFuture.awaitUninterruptibly((long)connectionManager.getConfig().getConnectTimeout())
+            if (writeFuture.awaitUninterruptibly((long) connectionManager.getConfig().getConnectTimeout())
                     && writeFuture.isSuccess()) {
                 RedisConnection connection = writeFuture.getNow();
                 entry.releaseWrite(connection);

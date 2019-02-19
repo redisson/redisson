@@ -422,7 +422,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
             return permitId;
         }
 
-        time -= (System.currentTimeMillis() - current);
+        time -= System.currentTimeMillis() - current;
         if (time <= 0) {
             return null;
         }
@@ -434,7 +434,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         }
 
         try {
-            time -= (System.currentTimeMillis() - current);
+            time -= System.currentTimeMillis() - current;
             if (time <= 0) {
                 return null;
             }
@@ -453,7 +453,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                     nearestTimeout = null;
                 }
                 
-                time -= (System.currentTimeMillis() - current);
+                time -= System.currentTimeMillis() - current;
                 if (time <= 0) {
                     return null;
                 }

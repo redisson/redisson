@@ -81,6 +81,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
         
+    @SuppressWarnings("EqualsHashCode")
     public static class CacheValue implements Serializable {
         
         private final Object key;
@@ -99,7 +100,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         public Object getValue() {
             return value;
         }
-
+        
         @Override
         public boolean equals(Object obj) {
             if (this == obj)
@@ -240,16 +241,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     @Override
-    public RFuture<V> getAsync(final Object key) {
+    public RFuture<V> getAsync(Object key) {
         checkKey(key);
 
-        final CacheKey cacheKey = toCacheKey(key);
+        CacheKey cacheKey = toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
         if (cacheValue != null && cacheValue.getValue() != null) {
-            return RedissonPromise.newSucceededFuture((V)cacheValue.getValue());
+            return RedissonPromise.newSucceededFuture((V) cacheValue.getValue());
         }
 
-        RFuture<V> future = super.getAsync((K)key);
+        RFuture<V> future = super.getAsync((K) key);
         future.onComplete((value, e) -> {
             if (e != null) {
                 return;
@@ -543,19 +544,19 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             return RedissonPromise.newSucceededFuture(Collections.<K, V>emptyMap());
         }
 
-        final Map<K, V> result = new HashMap<K, V>();
+        Map<K, V> result = new HashMap<K, V>();
         Set<K> mapKeys = new HashSet<K>(keys);
         for (Iterator<K> iterator = mapKeys.iterator(); iterator.hasNext();) {
             K key = iterator.next();
-            final CacheKey cacheKey = toCacheKey(key);
+            CacheKey cacheKey = toCacheKey(key);
             CacheValue value = cache.get(cacheKey);
             if (value != null) {
-                result.put(key, (V)value.getValue());
+                result.put(key, (V) value.getValue());
                 iterator.remove();
             }
         }
         
-        final RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
+        RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
         RFuture<Map<K, V>> future = super.getAllAsync(mapKeys);
         future.onComplete((map, e) -> {
             if (e != null) {
@@ -580,7 +581,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    protected RFuture<Void> putAllOperationAsync(final Map<? extends K, ? extends V> map) {
+    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> map) {
         List<Object> params = new ArrayList<Object>(map.size()*3);
         params.add(invalidateEntryOnChange);
         params.add(map.size()*2);
@@ -624,7 +625,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             params.add(msgEncoded);
         }
 
-        final RPromise<Void> result = new RedissonPromise<Void>();
+        RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<Void> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                   "for i=3, tonumber(ARGV[2]) + 2, 5000 do "
                     + "redis.call('hmset', KEYS[1], unpack(ARGV, i, math.min(i+4999, tonumber(ARGV[2]) + 2))); "
@@ -654,7 +655,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    protected RFuture<V> addAndGetOperationAsync(final K key, Number value) {
+    protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         ByteBuf keyState = encodeMapKey(key);
         CacheKey cacheKey = toCacheKey(keyState);
         ByteBuf msg = encode(new LocalCachedMapInvalidate(instanceId, cacheKey.getKeyHash()));
@@ -682,7 +683,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Boolean> fastPutIfAbsentAsync(final K key, final V value) {
+    public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value) {
         RFuture<Boolean> future = super.fastPutIfAbsentAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -699,14 +700,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
-        final List<V> result = new ArrayList<V>();
-        final List<Object> mapKeys = new ArrayList<Object>();
+        List<V> result = new ArrayList<V>();
+        List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
             mapKeys.add(encodeMapKey(value.getKey()));
             result.add((V) value.getValue());
         }
         
-        final RPromise<Collection<V>> promise = new RedissonPromise<Collection<V>>();
+        RPromise<Collection<V>> promise = new RedissonPromise<Collection<V>>();
         RFuture<Collection<V>> future = commandExecutor.evalReadAsync(getName(), codec, ALL_KEYS,
                 "local entries = redis.call('hgetall', KEYS[1]); "
               + "local result = {};"
@@ -742,14 +743,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<Map<K, V>> readAllMapAsync() {
-        final Map<K, V> result = new HashMap<K, V>();
+        Map<K, V> result = new HashMap<K, V>();
         List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
             mapKeys.add(encodeMapKey(value.getKey()));
-            result.put((K)value.getKey(), (V)value.getValue());
+            result.put((K) value.getKey(), (V) value.getValue());
         }
 
-        final RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
+        RPromise<Map<K, V>> promise = new RedissonPromise<Map<K, V>>();
         RFuture<Map<K, V>> future = readAll(ALL_MAP, mapKeys, result);
         
         future.onComplete((res, e) -> {
@@ -775,7 +776,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         //  add anything found into the cache.  This does not guarantee to find
         //  entries added during the warmUp, but statistically the cache will have
         //  few misses after this process
-        for(Entry<K,V> entry : super.entrySet()) {
+        for (Entry<K, V> entry : super.entrySet()) {
             CacheKey cacheKey = toCacheKey(entry.getKey());
             cachePut(cacheKey, entry.getKey(), entry.getValue());
         }
@@ -793,14 +794,14 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
-        final Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();
+        Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();
         List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
             mapKeys.add(encodeMapKey(value.getKey()));
-            result.add(new AbstractMap.SimpleEntry<K, V>((K)value.getKey(), (V)value.getValue()));
+            result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
 
-        final RPromise<Set<Entry<K, V>>> promise = new RedissonPromise<Set<Entry<K, V>>>();
+        RPromise<Set<Entry<K, V>>> promise = new RedissonPromise<Set<Entry<K, V>>>();
         RFuture<Set<Entry<K, V>>> future = readAll(ALL_ENTRIES, mapKeys, result);
         
         future.onComplete((res, e) -> {
@@ -844,7 +845,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Boolean> fastReplaceAsync(final K key, final V value) {
+    public RFuture<Boolean> fastReplaceAsync(K key, V value) {
         RFuture<Boolean> future = super.fastReplaceAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -916,7 +917,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
     
     @Override
-    public RFuture<V> replaceAsync(final K key, final V value) {
+    public RFuture<V> replaceAsync(K key, V value) {
         RFuture<V> future = super.replaceAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {
@@ -959,8 +960,8 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     }
 
     @Override
-    public RFuture<Boolean> replaceAsync(final K key, V oldValue, final V newValue) {
-        final CacheKey cacheKey = toCacheKey(key);
+    public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
+        CacheKey cacheKey = toCacheKey(key);
         
         RFuture<Boolean> future = super.replaceAsync(key, oldValue, newValue);
         future.onComplete((res, e) -> {
@@ -1003,7 +1004,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public RFuture<Boolean> removeAsync(Object key, Object value) {
-        final CacheKey cacheKey = toCacheKey(key);
+        CacheKey cacheKey = toCacheKey(key);
         RFuture<Boolean> future = super.removeAsync(key, value);
 
         future.onComplete((res, e) -> {
@@ -1020,7 +1021,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
 
     @Override
-    public RFuture<V> putIfAbsentAsync(final K key, final V value) {
+    public RFuture<V> putIfAbsentAsync(K key, V value) {
         RFuture<V> future = super.putIfAbsentAsync(key, value);
         future.onComplete((res, e) -> {
             if (e != null) {

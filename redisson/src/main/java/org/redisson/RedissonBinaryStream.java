@@ -44,7 +44,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
         @Override
         public void write(int b) throws IOException {
-            writeBytes(new byte[] {(byte)b});
+            writeBytes(new byte[] {(byte) b});
         }
         
         private void writeBytes(byte[] bytes) {
@@ -104,7 +104,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
         @Override
         public int available() throws IOException {
-            return (int)(size() - index);
+            return (int) (size() - index);
         }
         
         @Override
@@ -134,7 +134,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
                 throw new IndexOutOfBoundsException();
             }
             
-            return (Integer)get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
+            return (Integer) get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
                                 @Override
                                 public Integer decode(ByteBuf buf, State state) {
                                     if (buf.readableBytes() == 0) {

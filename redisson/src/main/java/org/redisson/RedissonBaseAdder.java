@@ -42,7 +42,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         
         private final RPromise<Void> result;
 
-        private ResetListener(RPromise<Void> result) {
+        ResetListener(RPromise<Void> result) {
             this.result = result;
         }
 
@@ -72,7 +72,7 @@ public abstract class RedissonBaseAdder<T extends Number> extends RedissonExpira
         
         private final RPromise<T> result;
 
-        private SumListener(RPromise<T> result) {
+        SumListener(RPromise<T> result) {
             this.result = result;
         }
 

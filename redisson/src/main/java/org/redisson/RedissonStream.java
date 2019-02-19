@@ -232,7 +232,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
         return readGroupAsync(groupName, consumerName, 0, id, keyToId);
     }
     

@@ -38,7 +38,7 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
     private V headValue;
     private V tailValue;
 
-    public RedissonSubSortedSet(RedissonSortedSet<V> redissonSortedSet, ConnectionManager connectionManager, V headValue, V tailValue) {
+    RedissonSubSortedSet(RedissonSortedSet<V> redissonSortedSet, ConnectionManager connectionManager, V headValue, V tailValue) {
         super();
         this.headValue = headValue;
         this.tailValue = tailValue;
@@ -317,6 +317,8 @@ class RedissonSubSortedSet<V> implements SortedSet<V> {
 //        }
     }
 
+    @SuppressWarnings("AvoidInlineConditionals")
+    @Override
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())

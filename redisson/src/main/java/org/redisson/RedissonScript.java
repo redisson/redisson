@@ -29,7 +29,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
 
 import io.netty.buffer.ByteBuf;
 
@@ -198,7 +197,7 @@ public class RedissonScript implements RScript {
             public List<Boolean> onFinish() {
                 return new ArrayList<Boolean>(result);
             }
-        }, (Object[])shaDigests);
+        }, (Object[]) shaDigests);
     }
 
     public List<Boolean> scriptExists(String key, String... shaDigests) {
@@ -292,13 +291,13 @@ public class RedissonScript implements RScript {
     @Override
     public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>)evalShaAsync(key, mode, shaDigest, returnType, keys, values));
+        return commandExecutor.get((RFuture<R>) evalShaAsync(key, mode, shaDigest, returnType, keys, values));
     }
 
     @Override
     public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>)evalAsync(key, mode, luaScript, returnType, keys, values));
+        return commandExecutor.get((RFuture<R>) evalAsync(key, mode, luaScript, returnType, keys, values));
     }
 
 }

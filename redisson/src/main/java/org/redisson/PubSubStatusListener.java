@@ -40,6 +40,7 @@ public class PubSubStatusListener implements RedisPubSubListener<Object> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;

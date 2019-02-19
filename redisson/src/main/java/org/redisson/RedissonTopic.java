@@ -104,14 +104,14 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
-        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, (MessageListener<M>)listener, name);
+        PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, (MessageListener<M>) listener, name);
         return addListener(pubSubListener);
     }
     
     @Override
     public RFuture<Integer> addListenerAsync(StatusListener listener) {
         PubSubStatusListener pubSubListener = new PubSubStatusListener(listener, name);
-        return addListenerAsync((RedisPubSubListener<?>)pubSubListener);
+        return addListenerAsync((RedisPubSubListener<?>) pubSubListener);
     }
     
     @Override

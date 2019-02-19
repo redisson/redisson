@@ -194,7 +194,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean contains(final Object o) {
-        return binarySearch((V)o, codec).getIndex() >= 0;
+        return binarySearch((V) o, codec).getIndex() >= 0;
     }
 
     @Override
@@ -298,7 +298,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 return false;
             }
 
-            list.remove((int)res.getIndex());
+            list.remove((int) res.getIndex());
             return true;
         } finally {
             lock.unlock();
@@ -447,6 +447,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return indexRes;
     }
 
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())

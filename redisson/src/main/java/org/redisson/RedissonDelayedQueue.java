@@ -106,8 +106,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
               + "local v = redis.call('zrange', KEYS[2], 0, 0); "
               + "if v[1] == value then "
                  + "redis.call('publish', KEYS[4], ARGV[1]); "
-              + "end;"
-                 ,
+              + "end;",
               Arrays.<Object>asList(getName(), timeoutSetName, queueName, channelName), 
               timeout, randomId, encode(e));
     }
@@ -166,7 +165,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     V getValue(int index) {
-        return (V)get(commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
+        return (V) get(commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); "
               + "if v ~= false then "
                   + "local randomId, value = struct.unpack('dLc0', v);"

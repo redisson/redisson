@@ -80,7 +80,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     
     private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
-    private static final ConcurrentMap<String, ExpirationEntry> expirationRenewalMap = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = PlatformDependent.newConcurrentHashMap();
     protected long internalLockLeaseTime;
 
     final UUID id;
@@ -213,7 +213,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     private void scheduleExpirationRenewal(long threadId) {
-        if (expirationRenewalMap.containsKey(getEntryName())) {
+        if (EXPIRATION_RENEWAL_MAP.containsKey(getEntryName())) {
             return;
         }
 
@@ -223,7 +223,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
                 future.onComplete((res, e) -> {
-                    expirationRenewalMap.remove(getEntryName());
+                    EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                     if (e != null) {
                         log.error("Can't update lock " + getName() + " expiration", e);
                         return;
@@ -238,7 +238,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
 
-        if (expirationRenewalMap.putIfAbsent(getEntryName(), new ExpirationEntry(threadId, task)) != null) {
+        if (EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), new ExpirationEntry(threadId, task)) != null) {
             task.cancel();
         }
     }
@@ -255,9 +255,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     void cancelExpirationRenewal(Long threadId) {
-        ExpirationEntry task = expirationRenewalMap.get(getEntryName());
+        ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
         if (task != null && (threadId == null || task.getThreadId() == threadId)) {
-            expirationRenewalMap.remove(getEntryName());
+            EXPIRATION_RENEWAL_MAP.remove(getEntryName());
             task.getTimeout().cancel();
         }
     }
@@ -299,7 +299,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             return true;
         }
         
-        time -= (System.currentTimeMillis() - current);
+        time -= System.currentTimeMillis() - current;
         if (time <= 0) {
             acquireFailed(threadId);
             return false;
@@ -320,7 +320,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         try {
-            time -= (System.currentTimeMillis() - current);
+            time -= System.currentTimeMillis() - current;
             if (time <= 0) {
                 acquireFailed(threadId);
                 return false;
@@ -334,7 +334,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     return true;
                 }
 
-                time -= (System.currentTimeMillis() - currentTime);
+                time -= System.currentTimeMillis() - currentTime;
                 if (time <= 0) {
                     acquireFailed(threadId);
                     return false;
@@ -348,7 +348,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                     getEntry(threadId).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
 
-                time -= (System.currentTimeMillis() - currentTime);
+                time -= System.currentTimeMillis() - currentTime;
                 if (time <= 0) {
                     acquireFailed(threadId);
                     return false;
@@ -383,7 +383,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             get(unlockAsync(Thread.currentThread().getId()));
         } catch (RedisException e) {
             if (e.getCause() instanceof IllegalMonitorStateException) {
-                throw (IllegalMonitorStateException)e.getCause();
+                throw (IllegalMonitorStateException) e.getCause();
             } else {
                 throw e;
             }
@@ -796,4 +796,3 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
 
 }
-;

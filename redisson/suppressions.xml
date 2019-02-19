@@ -6,7 +6,7 @@
 
 <suppressions>
   <suppress checks="FileLength"
-            files="JCache.java"/>
+            files="JCache.java|RedissonMapCache.java"/>
   <suppress checks="NestedTryDepth"
             files="JCache.java"
             lines="785-845"/>

@@ -111,13 +111,13 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
         String lockName = getLockName(key, "permitexpirablesemaphore");
-        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
 
     @Override
     public RSemaphore getSemaphore(K key) {
         String lockName = getLockName(key, "semaphore");
-        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
     
     @Override
@@ -270,7 +270,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public V get(Object key) {
-        return get(getAsync((K)key));
+        return get(getAsync((K) key));
     }
 
     @Override
@@ -280,7 +280,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     @Override
     public V remove(Object key) {
-        return get(removeAsync((K)key));
+        return get(removeAsync((K) key));
     }
 
     @Override
@@ -297,7 +297,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map, int batchSize) {
         Map<K, V> batch = new HashMap<K, V>();
         AtomicInteger counter = new AtomicInteger();
-        Iterator<Entry<K, V>> iter = ((Map<K, V>)map).entrySet().iterator();
+        Iterator<Entry<K, V>> iter = ((Map<K, V>) map).entrySet().iterator();
         
         RPromise<Void> promise = new RedissonPromise<Void>();
         putAllAsync(batch, iter, counter, batchSize, promise);
@@ -828,7 +828,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RFuture<Void> loadAllAsync(Set<? extends K> keys, boolean replaceExistingValues, int parallelism) {
-        return loadAllAsync((Iterable<K>)keys, replaceExistingValues, parallelism, null);
+        return loadAllAsync((Iterable<K>) keys, replaceExistingValues, parallelism, null);
     }
     
     private RFuture<Void> loadAllAsync(Iterable<? extends K> keys, boolean replaceExistingValues, int parallelism, Map<K, V> loadedEntires) {
@@ -1062,7 +1062,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             }
             
             if (options.getWriteMode() == WriteMode.WRITE_BEHIND) {
-                result.trySuccess((long)deletedKeys.size());
+                result.trySuccess((long) deletedKeys.size());
                 
                 MapWriterTask<List<Long>> listener = new MapWriterTask<List<Long>>() {
                     @Override
@@ -1076,7 +1076,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                     @Override
                     public void run() {
                         options.getWriter().deleteAll(deletedKeys);
-                        result.trySuccess((long)deletedKeys.size());
+                        result.trySuccess((long) deletedKeys.size());
                     }
                 });
             }
@@ -1172,14 +1172,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         if (!(o instanceof Map))
             return false;
-        Map<?,?> m = (Map<?,?>) o;
+        Map<?, ?> m = (Map<?, ?>) o;
         if (m.size() != size())
             return false;
 
         try {
-            Iterator<Entry<K,V>> i = entrySet().iterator();
+            Iterator<Entry<K, V>> i = entrySet().iterator();
             while (i.hasNext()) {
-                Entry<K,V> e = i.next();
+                Entry<K, V> e = i.next();
                 K key = e.getKey();
                 V value = e.getValue();
                 if (value == null) {
@@ -1202,9 +1202,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public int hashCode() {
         int h = 0;
-        Iterator<Entry<K,V>> i = entrySet().iterator();
-        while (i.hasNext())
+        Iterator<Entry<K, V>> i = entrySet().iterator();
+        while (i.hasNext()) {
             h += i.next().hashCode();
+        }
         return h;
     }
 
@@ -1217,12 +1218,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         };
     }
     
-    class KeySet extends AbstractSet<K> {
+    final class KeySet extends AbstractSet<K> {
 
         private final String pattern;
         private final int count;
         
-        public KeySet(String pattern, int count) {
+        KeySet(String pattern, int count) {
             this.pattern = pattern;
             this.count = count;
         }
@@ -1239,7 +1240,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
         @Override
         public boolean remove(Object o) {
-            return RedissonMap.this.fastRemove((K)o) == 1;
+            return RedissonMap.this.fastRemove((K) o) == 1;
         }
 
         @Override
@@ -1275,7 +1276,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         private final String keyPattern;
         private final int count;
         
-        public Values(String keyPattern, int count) {
+        Values(String keyPattern, int count) {
             this.keyPattern = keyPattern;
             this.count = count;
         }
@@ -1310,7 +1311,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     }
 
-    protected Iterator<Map.Entry<K,V>> entryIterator(String pattern, int count) {
+    protected Iterator<Map.Entry<K, V>> entryIterator(String pattern, int count) {
         return new RedissonMapIterator<Map.Entry<K, V>>(RedissonMap.this, pattern, count);
     }
 
@@ -1389,32 +1390,35 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         });
     }
 
-    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+    final class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
         private final String keyPattern;
         private final int count;
         
-        public EntrySet(String keyPattern, int count) {
+        EntrySet(String keyPattern, int count) {
             this.keyPattern = keyPattern;
             this.count = count;
         }
 
-        public final Iterator<Map.Entry<K,V>> iterator() {
+        @Override
+        public Iterator<Map.Entry<K, V>> iterator() {
             return entryIterator(keyPattern, count);
         }
 
-        public final boolean contains(Object o) {
+        @Override
+        public boolean contains(Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             Object key = e.getKey();
             V value = get(key);
             return value != null && value.equals(e);
         }
 
-        public final boolean remove(Object o) {
+        @Override
+        public boolean remove(Object o) {
             if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
                 Object key = e.getKey();
                 Object value = e.getValue();
                 return RedissonMap.this.remove(key, value);
@@ -1422,7 +1426,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return false;
         }
 
-        public final int size() {
+        @Override
+        public int size() {
             if (keyPattern != null) {
                 int size = 0;
                 for (Entry val : this) {
@@ -1434,7 +1439,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
             return RedissonMap.this.size();
         }
 
-        public final void clear() {
+        @Override
+        public void clear() {
             RedissonMap.this.clear();
         }
 

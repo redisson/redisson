@@ -165,7 +165,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     @Override
     public boolean contains(Object o) {
-        return binarySearch((V)o, codec).getIndex() >= 0;
+        return binarySearch((V) o, codec).getIndex() >= 0;
     }
 
     @Override
@@ -222,7 +222,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
                 return false;
             }
 
-            remove((int)res.getIndex());
+            remove((int) res.getIndex());
             return true;
         } finally {
             lock.unlock();
@@ -411,6 +411,8 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return indexRes;
     }
 
+    @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())

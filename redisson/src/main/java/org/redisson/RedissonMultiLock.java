@@ -41,6 +41,7 @@ import io.netty.util.internal.ThreadLocalRandom;
  * @author Nikita Koksharov
  *
  */
+@SuppressWarnings("ParameterNumber")
 public class RedissonMultiLock implements Lock {
 
     final List<RLock> locks = new ArrayList<RLock>();
@@ -260,7 +261,7 @@ public class RedissonMultiLock implements Lock {
             }
             
             if (remainTime != -1) {
-                remainTime -= (System.currentTimeMillis() - time);
+                remainTime -= System.currentTimeMillis() - time;
                 time = System.currentTimeMillis();
                 if (remainTime <= 0) {
                     unlockInner(acquiredLocks);
@@ -300,7 +301,7 @@ public class RedissonMultiLock implements Lock {
         } else {
             long awaitTime = Math.min(lockWaitTime, remainTime.get());
             lock.tryLockAsync(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS, threadId)
-                .onComplete(new TransferListener<Boolean>(lockAcquiredFuture));;
+                .onComplete(new TransferListener<Boolean>(lockAcquiredFuture));
         }
         
         lockAcquiredFuture.onComplete((res, e) -> {
@@ -383,7 +384,7 @@ public class RedissonMultiLock implements Lock {
             AtomicLong remainTime, AtomicLong time, AtomicInteger failedLocksLimit, TimeUnit unit, long threadId) {
         if (remainTime.get() != -1) {
             remainTime.addAndGet(-(System.currentTimeMillis() - time.get()));
-            time.set(System.currentTimeMillis());;
+            time.set(System.currentTimeMillis());
             if (remainTime.get() <= 0) {
                 unlockInnerAsync(acquiredLocks, threadId).onComplete((res, e) -> {
                     if (e != null) {

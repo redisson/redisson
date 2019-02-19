@@ -33,10 +33,10 @@ public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatc
 
     @Override
     protected void onMessage(RedissonCountDownLatchEntry value, Long message) {
-        if (message.equals(RedissonCountDownLatch.zeroCountMessage)) {
+        if (message.equals(RedissonCountDownLatch.ZERO_COUNT_MESSAGE)) {
             value.getLatch().open();
         }
-        if (message.equals(RedissonCountDownLatch.newCountMessage)) {
+        if (message.equals(RedissonCountDownLatch.NEW_COUNT_MESSAGE)) {
             value.getLatch().close();
         }
     }

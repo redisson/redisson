@@ -184,7 +184,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
             @Override
             protected void remove(Object value) {
-                RedissonSetCache.this.remove((V)value);
+                RedissonSetCache.this.remove((V) value);
             }
             
         };
@@ -265,7 +265,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public boolean remove(Object value) {
-        return get(removeAsync((V)value));
+        return get(removeAsync((V) value));
     }
 
     @Override
@@ -336,7 +336,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<Object>(c.size()*2);
         for (Object object : c) {
             params.add(score);
-            params.add(encode((V)object));
+            params.add(encode((V) object));
         }
         
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -383,13 +383,13 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
         String lockName = getLockName(value, "permitexpirablesemaphore");
-        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
 
     @Override
     public RSemaphore getSemaphore(V value) {
         String lockName = getLockName(value, "semaphore");
-        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson) redisson).getSemaphorePubSub());
     }
     
     @Override

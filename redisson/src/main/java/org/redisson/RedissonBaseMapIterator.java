@@ -28,8 +28,8 @@ import java.util.Map.Entry;
 public abstract class RedissonBaseMapIterator<V> extends BaseIterator<V, Map.Entry<Object, Object>> {
 
     @SuppressWarnings("unchecked")
-    protected V getValue(final Map.Entry<Object, Object> entry) {
-        return (V)new AbstractMap.SimpleEntry(entry.getKey(), entry.getValue()) {
+    protected V getValue(Map.Entry<Object, Object> entry) {
+        return (V) new AbstractMap.SimpleEntry(entry.getKey(), entry.getValue()) {
 
             @Override
             public Object setValue(Object value) {

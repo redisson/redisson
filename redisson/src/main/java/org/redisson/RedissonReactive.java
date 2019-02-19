@@ -208,7 +208,7 @@ public class RedissonReactive implements RedissonReactiveClient {
 
         List<RBucketReactive<V>> buckets = new ArrayList<RBucketReactive<V>>();
         for (Object key : keys) {
-            if(key != null) {
+            if (key != null) {
                 buckets.add(this.<V>getBucket(key.toString()));
             }
         }
@@ -342,7 +342,7 @@ public class RedissonReactive implements RedissonReactiveClient {
     @Override
     public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
-                new RedissonListReactive<V>(codec,commandExecutor, name), RQueueReactive.class);
+                new RedissonListReactive<V>(codec, commandExecutor, name), RQueueReactive.class);
     }
 
     @Override
