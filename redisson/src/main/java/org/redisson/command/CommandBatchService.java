@@ -287,7 +287,7 @@ public class CommandBatchService extends CommandAsyncService {
                 if (RedisCommands.EXEC.getName().equals(details.getCommand().getName())) {
                     Entry entry = commands.get(details.getSource().getEntry());
 
-                    List<CommandData<?, ?>> list = new LinkedList<CommandData<?, ?>>();
+                    List<CommandData<?, ?>> list = new ArrayList<>();
 
                     if (options.isSkipResult()) {
                         list.add(new CommandData<Void, Void>(new RedissonPromise<Void>(), details.getCodec(), RedisCommands.CLIENT_REPLY, new Object[]{ "OFF" }));
@@ -310,7 +310,7 @@ public class CommandBatchService extends CommandAsyncService {
                     details.setWriteFuture(future);
                 } else {
                     RPromise<Void> main = new RedissonPromise<Void>();
-                    List<CommandData<?, ?>> list = new LinkedList<CommandData<?, ?>>();
+                    List<CommandData<?, ?>> list = new ArrayList<>();
                     list.add(new CommandData<V, R>(details.getAttemptPromise(), details.getCodec(), details.getCommand(), details.getParams()));
                     ChannelFuture future = connection.send(new CommandsData(main, list, true));
                     details.setWriteFuture(future);
@@ -847,7 +847,7 @@ public class CommandBatchService extends CommandAsyncService {
         boolean isAtomic = executionMode != ExecutionMode.IN_MEMORY;
         boolean isQueued = executionMode == ExecutionMode.REDIS_READ_ATOMIC || executionMode == ExecutionMode.REDIS_WRITE_ATOMIC;
 
-        List<CommandData<?, ?>> list = new LinkedList<CommandData<?, ?>>();
+        List<CommandData<?, ?>> list = new ArrayList<>(entry.getCommands().size());
         if (source.getRedirect() == Redirect.ASK) {
             RPromise<Void> promise = new RedissonPromise<Void>();
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
