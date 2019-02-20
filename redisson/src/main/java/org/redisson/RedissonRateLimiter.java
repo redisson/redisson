@@ -17,15 +17,24 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
+import org.redisson.api.RateLimiterConfig;
 import org.redisson.api.RateType;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -211,6 +220,39 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
               + "redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
               + "return redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);",
                 Collections.<Object>singletonList(getName()), rate, unit.toMillis(rateInterval), type.ordinal());
+    }
+    
+    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MultiDecoder<RateLimiterConfig>() {
+        @Override
+        public Decoder<Object> getDecoder(int paramNum, State state) {
+            return null;
+        }
+
+        @Override
+        public RateLimiterConfig decode(List<Object> parts, State state) {
+            Map<String, String> map = new HashMap<>(parts.size()/2);
+            for (int i = 0; i < parts.size(); i++) {
+                if (i % 2 != 0) {
+                    map.put(parts.get(i-1).toString(), parts.get(i).toString());
+                }
+            }
+
+            RateType type = RateType.values()[Integer.valueOf(map.get("type"))];
+            Long rateInterval = Long.valueOf(map.get("interval"));
+            Long rate = Long.valueOf(map.get("rate"));
+            return new RateLimiterConfig(type, rateInterval, rate);
+        }
+        
+    }, ValueType.MAP);
+    
+    @Override
+    public RateLimiterConfig getConfig() {
+        return get(getConfigAsync());
+    }
+    
+    @Override
+    public RFuture<RateLimiterConfig> getConfigAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, HGETALL, getName());
     }
     
 }
