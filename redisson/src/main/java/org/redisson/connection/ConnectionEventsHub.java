@@ -17,17 +17,15 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import io.netty.util.internal.PlatformDependent;
 
 public class ConnectionEventsHub {
 
     public enum Status {CONNECTED, DISCONNECTED};
 
-    private final ConcurrentMap<InetSocketAddress, Status> maps = PlatformDependent.newConcurrentHashMap();
-
-    private final Map<Integer, ConnectionListener> listenersMap = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<InetSocketAddress, Status> maps = new ConcurrentHashMap<>();
+    private final Map<Integer, ConnectionListener> listenersMap = new ConcurrentHashMap<>();
 
     public int addListener(ConnectionListener listener) {
         int id = System.identityHashCode(listener);

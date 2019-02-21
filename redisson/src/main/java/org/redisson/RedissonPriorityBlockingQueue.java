@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -30,8 +31,6 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.PriorityBlockingQueue}.
@@ -96,7 +95,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
                         }
                     }
                     
-                    long del = PlatformDependent.threadLocalRandom().nextInt(2000000);
+                    long del = ThreadLocalRandom.current().nextInt(2000000);
                     if (timeoutInMicro > 0 && remain < 2000000) {
                         del = 0;
                     }

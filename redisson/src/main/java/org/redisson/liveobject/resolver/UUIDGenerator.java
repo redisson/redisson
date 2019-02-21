@@ -24,7 +24,7 @@ import org.redisson.api.annotation.RId;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public class UUIDGenerator implements RIdResolver<RId, String>{
+public class UUIDGenerator implements RIdResolver<String>{
 
     public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     

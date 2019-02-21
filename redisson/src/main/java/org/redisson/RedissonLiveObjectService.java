@@ -34,6 +34,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RCascadeType;
@@ -73,9 +74,8 @@ import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.resolver.Resolver;
+import org.redisson.liveobject.resolver.RIdResolver;
 
-import io.netty.util.internal.PlatformDependent;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
@@ -90,7 +90,7 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
-    private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> PROVIDER_CACHE = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<Class<? extends RIdResolver<?>>, RIdResolver<?>> PROVIDER_CACHE = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
     private final CommandAsyncExecutor commandExecutor;
@@ -120,12 +120,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
-        Resolver resolver = getResolver(entityClass, annotation.generator(), annotation);
+        RIdResolver<?> resolver = getResolver(entityClass, annotation.generator(), annotation);
         Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
         return id;
     }
     
-    private Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
+    private RIdResolver<?> getResolver(Class<?> cls, Class<? extends RIdResolver<?>> resolverClass, Annotation anno) {
         if (!PROVIDER_CACHE.containsKey(resolverClass)) {
             try {
                 PROVIDER_CACHE.putIfAbsent(resolverClass, resolverClass.newInstance());

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RDelayedQueue;
@@ -31,8 +32,6 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -96,7 +95,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         long delayInMs = timeUnit.toMillis(delay);
         long timeout = System.currentTimeMillis() + delayInMs;
      
-        long randomId = PlatformDependent.threadLocalRandom().nextLong();
+        long randomId = ThreadLocalRandom.current().nextLong();
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                 "local value = struct.pack('dLc0', tonumber(ARGV[2]), string.len(ARGV[3]), ARGV[3]);" 
               + "redis.call('zadd', KEYS[2], ARGV[1], value);"

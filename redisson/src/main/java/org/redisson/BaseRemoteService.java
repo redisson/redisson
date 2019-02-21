@@ -26,7 +26,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -65,7 +67,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.ScheduledFuture;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -76,8 +77,8 @@ public abstract class BaseRemoteService {
 
     private static final Logger log = LoggerFactory.getLogger(BaseRemoteService.class);
 
-    private final Map<Class<?>, String> requestQueueNameCache = PlatformDependent.newConcurrentHashMap();
-    private final ConcurrentMap<Method, List<String>> methodSignaturesCache = PlatformDependent.newConcurrentHashMap();
+    private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Method, List<String>> methodSignaturesCache = new ConcurrentHashMap<>();
 
     protected final Codec codec;
     protected final RedissonClient redisson;
@@ -412,7 +413,7 @@ public abstract class BaseRemoteService {
             Map<RequestId, List<Result>> entryResponses = entry.getResponses();
             List<Result> list = entryResponses.get(requestId);
             if (list == null) {
-                list = new ArrayList<Result>(3);
+                list = new ArrayList<>(3);
                 entryResponses.put(requestId, list);
             }
             
@@ -650,8 +651,7 @@ public abstract class BaseRemoteService {
 
     protected RequestId generateRequestId() {
         byte[] id = new byte[17];
-        // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        PlatformDependent.threadLocalRandom().nextBytes(id);
+        ThreadLocalRandom.current().nextBytes(id);
         id[0] = 00;
         return new RequestId(id);
     }
@@ -679,7 +679,7 @@ public abstract class BaseRemoteService {
     protected List<String> getMethodSignatures(Method method) {
         List<String> result = methodSignaturesCache.get(method);
         if (result == null) {
-            result = new ArrayList<String>(method.getParameterTypes().length);
+            result = new ArrayList<>(method.getParameterTypes().length);
             for (Class<?> t : method.getParameterTypes()) {
                 result.add(t.getName());
             }

@@ -18,6 +18,7 @@ package org.redisson;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
@@ -80,7 +80,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     
     private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
-    private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
     protected long internalLockLeaseTime;
 
     final UUID id;

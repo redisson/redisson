@@ -641,7 +641,7 @@ public class BaseTransactionalMap<K, V> {
     
     protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
         RPromise<Map<K, V>> result = new RedissonPromise<>();
-        Set<K> keysToLoad = new HashSet<K>(keys);
+        Set<K> keysToLoad = new HashSet<K>();
         Map<K, V> map = new HashMap<K, V>();
         for (K key : keys) {
             HashValue keyHash = toKeyHash(key);
@@ -656,6 +656,10 @@ public class BaseTransactionalMap<K, V> {
             }
         }
 
+        if (keysToLoad.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(map);
+        }
+        
         RFuture<Map<K, V>> future = ((RedissonMap<K, V>) this.map).getAllOperationAsync(keysToLoad);
         future.onComplete((res, e) -> {
             if (e != null) {

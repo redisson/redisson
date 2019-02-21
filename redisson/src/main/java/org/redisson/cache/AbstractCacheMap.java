@@ -23,10 +23,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -38,7 +37,7 @@ import io.netty.util.internal.PlatformDependent;
 public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     final int size;
-    final ConcurrentMap<K, CachedValue<K, V>> map = PlatformDependent.newConcurrentHashMap();
+    final ConcurrentMap<K, CachedValue<K, V>> map = new ConcurrentHashMap<>();
     private final long timeToLiveInMillis;
     private final long maxIdleInMillis;
 

@@ -18,6 +18,7 @@ package org.redisson;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -53,8 +54,6 @@ import org.redisson.remote.ResponseEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.internal.PlatformDependent;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -87,8 +86,8 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     
     private static final Logger log = LoggerFactory.getLogger(RedissonRemoteService.class);
 
-    private final Map<RemoteServiceKey, RemoteServiceMethod> beans = PlatformDependent.newConcurrentHashMap();
-    private final Map<Class<?>, Entry> remoteMap = PlatformDependent.newConcurrentHashMap();
+    private final Map<RemoteServiceKey, RemoteServiceMethod> beans = new ConcurrentHashMap<>();
+    private final Map<Class<?>, Entry> remoteMap = new ConcurrentHashMap<>();
 
     public RedissonRemoteService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
         super(codec, redisson, name, commandExecutor, executorId, responses);

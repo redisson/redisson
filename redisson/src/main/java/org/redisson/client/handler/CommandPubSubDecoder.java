@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.ChannelName;
@@ -41,7 +42,6 @@ import org.redisson.misc.LogHelper;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * Redis Publish Subscribe protocol decoder
@@ -53,8 +53,8 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe"));
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<ChannelName, PubSubEntry> entries = new HashMap<ChannelName, PubSubEntry>();
-    private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();
+    private final Map<ChannelName, PubSubEntry> entries = new HashMap<>();
+    private final Map<PubSubKey, CommandData<Object, Object>> commands = new ConcurrentHashMap<>();
 
     private final boolean keepOrder;
     

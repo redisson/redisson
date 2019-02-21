@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.redisson.client.codec.Codec;
@@ -40,7 +41,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -50,8 +50,8 @@ import io.netty.util.internal.PlatformDependent;
 public class RedisPubSubConnection extends RedisConnection {
 
     final Queue<RedisPubSubListener<Object>> listeners = new ConcurrentLinkedQueue<RedisPubSubListener<Object>>();
-    final Map<ChannelName, Codec> channels = PlatformDependent.newConcurrentHashMap();
-    final Map<ChannelName, Codec> patternChannels = PlatformDependent.newConcurrentHashMap();
+    final Map<ChannelName, Codec> channels = new ConcurrentHashMap<>();
+    final Map<ChannelName, Codec> patternChannels = new ConcurrentHashMap<>();
     final Set<ChannelName> unsubscibedChannels = new HashSet<ChannelName>();
     final Set<ChannelName> punsubscibedChannels = new HashSet<ChannelName>();
 

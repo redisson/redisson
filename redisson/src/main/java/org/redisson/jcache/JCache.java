@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -73,7 +74,6 @@ import org.redisson.jcache.configuration.JCacheConfiguration;
 import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * JCache implementation
@@ -241,7 +241,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
             List<Object> result = new ArrayList<Object>(3);
             result.add(value);
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
                   + "redis.call('hdel', KEYS[1], ARGV[3]); "
@@ -406,7 +406,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
     
     private boolean putValueLocked(K key, Object value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
         if (containsKey(key)) {
             Long updateTimeout = getUpdateTimeout();
@@ -480,7 +480,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
 
     private boolean putValue(K key, Object value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         Long creationTimeout = getCreationTimeout();
         Long updateTimeout = getUpdateTimeout();
         
@@ -949,7 +949,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     private List<Object> getAndPutValueLocked(K key, V value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         if (containsKey(key)) {
             Long updateTimeout = getUpdateTimeout();
             List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
@@ -1021,7 +1021,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
         Long updateTimeout = getUpdateTimeout();
         
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
         List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]);"
@@ -1351,7 +1351,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
     
     private boolean removeValue(K key) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
         List<Object> res = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
                 "local value = redis.call('hexists', KEYS[1], ARGV[2]); "
@@ -1588,7 +1588,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     private V getAndRemoveValue(K key) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
               + "if value == false then "
@@ -1704,7 +1704,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
              
        if (res == 1) {
            Long updateTimeout = getUpdateTimeout();
-           double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+           double syncId = ThreadLocalRandom.current().nextDouble();
            Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                          "if ARGV[2] == '0' then "
                            + "redis.call('hdel', KEYS[1], ARGV[4]); "
@@ -1745,7 +1745,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
            return -1;
        }
 
-       double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+       double syncId = ThreadLocalRandom.current().nextDouble();
        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
                 "if ARGV[1] == '0' then "
                   + "redis.call('hdel', KEYS[1], ARGV[4]); "
@@ -1904,7 +1904,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     private boolean replaceValueLocked(K key, V value) {
 
         if (containsKey(key)) {
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long updateTimeout = getUpdateTimeout();
         Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
@@ -2045,7 +2045,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
         if (oldValue != null) {
             Long updateTimeout = getUpdateTimeout();
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
                   + "local value = redis.call('hget', KEYS[1], ARGV[3]); "

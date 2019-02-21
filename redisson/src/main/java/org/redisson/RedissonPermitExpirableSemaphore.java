@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,7 +34,6 @@ import org.redisson.pubsub.SemaphorePubSub;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -365,8 +365,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
 
     protected String generateId() {
         byte[] id = new byte[16];
-        // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        PlatformDependent.threadLocalRandom().nextBytes(id);
+        ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
     

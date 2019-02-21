@@ -33,12 +33,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -90,7 +92,6 @@ import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -136,7 +137,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final ScheduledTasksService scheduledRemoteService;
     private final TasksService executorRemoteService;
     
-    private final Map<Class<?>, ClassBody> class2body = PlatformDependent.newConcurrentHashMap();
+    private final Map<Class<?>, ClassBody> class2body = new ConcurrentHashMap<>();
 
     private final String name;
     private final String requestQueueName;
@@ -145,8 +146,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String executorId;
     private final ConcurrentMap<String, ResponseEntry> responses;
 
-    private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<RExecutorFuture<?>>();
-    private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(PlatformDependent.<RedissonExecutorFutureReference, Boolean>newConcurrentHashMap());
+    private final ReferenceQueue<RExecutorFuture<?>> referenceDueue = new ReferenceQueue<>();
+    private final Collection<RedissonExecutorFutureReference> references = Collections.newSetFromMap(new ConcurrentHashMap<>());
     
     public RedissonExecutorService(Codec codec, CommandExecutor commandExecutor, Redisson redisson, 
             String name, QueueTransferService queueTransferService, ConcurrentMap<String, ResponseEntry> responses, ExecutorOptions options) {
@@ -211,8 +212,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     protected String generateRequestId() {
         byte[] id = new byte[16];
-        // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        PlatformDependent.threadLocalRandom().nextBytes(id);
+        ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
     
@@ -580,7 +580,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException("Tasks are not defined");
         }
 
-        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        List<RExecutorFuture<?>> result = new ArrayList<>();
         TasksBatchService executorRemoteService = createBatchService();
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         for (Callable<?> task : tasks) {
@@ -608,7 +608,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
         TasksBatchService executorRemoteService = createBatchService();
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
-        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        List<RExecutorFuture<?>> result = new ArrayList<>();
         for (Callable<?> task : tasks) {
             check(task);
             ClassBody classBody = getClassBody(task);
@@ -696,7 +696,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException("Tasks are not defined");
         }
 
-        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        List<RExecutorFuture<?>> result = new ArrayList<>();
         TasksBatchService executorRemoteService = createBatchService();
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         for (Runnable task : tasks) {
@@ -724,7 +724,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
         TasksBatchService executorRemoteService = createBatchService();
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
-        List<RExecutorFuture<?>> result = new ArrayList<RExecutorFuture<?>>();
+        List<RExecutorFuture<?>> result = new ArrayList<>();
         for (Runnable task : tasks) {
             check(task);
             ClassBody classBody = getClassBody(task);
@@ -1013,7 +1013,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             throw new NullPointerException();
         }
 
-        List<RExecutorFuture<?>> futures = new ArrayList<RExecutorFuture<?>>();
+        List<RExecutorFuture<?>> futures = new ArrayList<>();
         for (Callable<T> callable : tasks) {
             RExecutorFuture<T> future = submit(callable);
             futures.add(future);

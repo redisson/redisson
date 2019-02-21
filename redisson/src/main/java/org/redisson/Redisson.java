@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
@@ -89,8 +90,6 @@ import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.transaction.RedissonTransaction;
 
-import io.netty.util.internal.PlatformDependent;
-
 /**
  * Main infrastructure class allows to get access
  * to all Redisson objects on top of Redis server.
@@ -108,11 +107,11 @@ public class Redisson implements RedissonClient {
     protected final EvictionScheduler evictionScheduler;
     protected final ConnectionManager connectionManager;
 
-    protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = PlatformDependent.newConcurrentHashMap();
+    protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
     protected final Config config;
     protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
-    protected final ConcurrentMap<String, ResponseEntry> responses = PlatformDependent.newConcurrentHashMap();
+    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
     protected Redisson(Config config) {
         this.config = config;

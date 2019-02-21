@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +57,6 @@ import io.netty.resolver.AddressResolver;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -67,10 +67,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private final ConcurrentMap<String, RedisClient> sentinels = PlatformDependent.newConcurrentHashMap();
-    private final AtomicReference<String> currentMaster = new AtomicReference<String>();
+    private final ConcurrentMap<String, RedisClient> sentinels = new ConcurrentHashMap<>();
+    private final AtomicReference<String> currentMaster = new AtomicReference<>();
 
-    private final Set<URI> disconnectedSlaves = new HashSet<URI>();
+    private final Set<URI> disconnectedSlaves = new HashSet<>();
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
 
@@ -127,7 +127,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 
                 List<Map<String, String>> sentinelSentinels = connection.sync(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
-                List<RFuture<Void>> connectionFutures = new ArrayList<RFuture<Void>>(sentinelSentinels.size());
+                List<RFuture<Void>> connectionFutures = new ArrayList<>(sentinelSentinels.size());
                 for (Map<String, String> map : sentinelSentinels) {
                     if (map.isEmpty()) {
                         continue;
@@ -186,7 +186,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
-                List<RedisClient> sentinels = new ArrayList<RedisClient>(SentinelConnectionManager.this.sentinels.values());
+                List<RedisClient> sentinels = new ArrayList<>(SentinelConnectionManager.this.sentinels.values());
                 
                 final AtomicInteger sentinelsCounter = new AtomicInteger(sentinels.size());
                 FutureListener<List<InetSocketAddress>> commonListener = new FutureListener<List<InetSocketAddress>>() {
@@ -336,7 +336,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
                 
                 Set<String> currentSlaves = new HashSet<String>(slavesMap.size());
-                List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
+                List<RFuture<Void>> futures = new ArrayList<>();
                 for (Map<String, String> map : slavesMap) {
                     if (map.isEmpty()) {
                         continue;
@@ -543,7 +543,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             monitorFuture.cancel(true);
         }
         
-        List<RFuture<Void>> futures = new ArrayList<RFuture<Void>>();
+        List<RFuture<Void>> futures = new ArrayList<>();
         for (RedisClient sentinel : sentinels.values()) {
             RFuture<Void> future = sentinel.shutdownAsync();
             futures.add(future);

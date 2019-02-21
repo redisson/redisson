@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -128,8 +129,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected MasterSlaveServersConfig config;
 
-    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<MasterSlaveEntry>(MAX_SLOT);
-    private final Map<RedisClient, MasterSlaveEntry> client2entry = PlatformDependent.newConcurrentHashMap();
+    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
+    private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
     private final RPromise<Boolean> shutdownPromise;
 
@@ -149,7 +150,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private PublishSubscribeService subscribeService;
     
-    private final Map<Object, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
+    private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
         this(config, id);
