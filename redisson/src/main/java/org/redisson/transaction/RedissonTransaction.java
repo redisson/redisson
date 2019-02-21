@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,6 +37,7 @@ import org.redisson.RedissonTopic;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
@@ -65,7 +67,6 @@ import org.redisson.transaction.operation.map.MapOperation;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -78,8 +79,8 @@ public class RedissonTransaction implements RTransaction {
     private final AtomicBoolean executed = new AtomicBoolean();
     
     private final TransactionOptions options;
-    private List<TransactionalOperation> operations = new CopyOnWriteArrayList<TransactionalOperation>();
-    private Set<String> localCaches = new HashSet<String>();
+    private List<TransactionalOperation> operations = new CopyOnWriteArrayList<>();
+    private Set<String> localCaches = new HashSet<>();
     private final long startTime = System.currentTimeMillis();
     
     private final String id = generateId();
@@ -112,16 +113,30 @@ public class RedissonTransaction implements RTransaction {
     public <V> RBucket<V> getBucket(String name) {
         checkState();
         
-        return new RedissonTransactionalBucket<V>(commandExecutor, name, operations, executed, id);
+        return new RedissonTransactionalBucket<V>(commandExecutor, options.getTimeout(), name, operations, executed, id);
     }
     
     @Override
     public <V> RBucket<V> getBucket(String name, Codec codec) {
         checkState();
 
-        return new RedissonTransactionalBucket<V>(codec, commandExecutor, name, operations, executed, id);
+        return new RedissonTransactionalBucket<V>(codec, commandExecutor, options.getTimeout(), name, operations, executed, id);
     }
 
+    @Override
+    public RBuckets getBuckets() {
+        checkState();
+        
+        return new RedissonTransactionalBuckets(commandExecutor, options.getTimeout(), operations, executed, id);
+    }
+
+    @Override
+    public RBuckets getBuckets(Codec codec) {
+        checkState();
+        
+        return new RedissonTransactionalBuckets(codec, commandExecutor, options.getTimeout(), operations, executed, id);
+    }
+    
     @Override
     public <V> RSet<V> getSet(String name) {
         checkState();
@@ -328,7 +343,7 @@ public class RedissonTransaction implements RTransaction {
             return Collections.emptyMap();
         }
         
-        Map<HashKey, HashValue> hashes = new HashMap<HashKey, HashValue>(localCaches.size());
+        Map<HashKey, HashValue> hashes = new HashMap<>(localCaches.size());
         RedissonBatch batch = new RedissonBatch(null, commandExecutor.getConnectionManager(), BatchOptions.defaults());
         for (TransactionalOperation transactionalOperation : operations) {
             if (localCaches.contains(transactionalOperation.getName())) {
@@ -359,7 +374,7 @@ public class RedissonTransaction implements RTransaction {
         }
         
         CountDownLatch latch = new CountDownLatch(hashes.size());
-        List<RTopic> topics = new ArrayList<RTopic>();
+        List<RTopic> topics = new ArrayList<>();
         for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
             RTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
                     commandExecutor, RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX));
@@ -418,11 +433,11 @@ public class RedissonTransaction implements RTransaction {
     
     private RFuture<Map<HashKey, HashValue>> disableLocalCacheAsync(String requestId, Set<String> localCaches, List<TransactionalOperation> operations) {
         if (localCaches.isEmpty()) {
-            return RedissonPromise.newSucceededFuture(Collections.<HashKey, HashValue>emptyMap());
+            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
         }
         
-        RPromise<Map<HashKey, HashValue>> result = new RedissonPromise<Map<HashKey, HashValue>>();
-        Map<HashKey, HashValue> hashes = new HashMap<HashKey, HashValue>(localCaches.size());
+        RPromise<Map<HashKey, HashValue>> result = new RedissonPromise<>();
+        Map<HashKey, HashValue> hashes = new HashMap<>(localCaches.size());
         RedissonBatch batch = new RedissonBatch(null, commandExecutor.getConnectionManager(), BatchOptions.defaults());
         for (TransactionalOperation transactionalOperation : operations) {
             if (localCaches.contains(transactionalOperation.getName())) {
@@ -454,11 +469,11 @@ public class RedissonTransaction implements RTransaction {
                 }
                 
                 CountableListener<Map<HashKey, HashValue>> listener = 
-                                new CountableListener<Map<HashKey, HashValue>>(result, hashes, hashes.size());
-                RPromise<Void> subscriptionFuture = new RedissonPromise<Void>();
-                CountableListener<Void> subscribedFutures = new CountableListener<Void>(subscriptionFuture, null, hashes.size());
+                                new CountableListener<>(result, hashes, hashes.size());
+                RPromise<Void> subscriptionFuture = new RedissonPromise<>();
+                CountableListener<Void> subscribedFutures = new CountableListener<>(subscriptionFuture, null, hashes.size());
                 
-                List<RTopic> topics = new ArrayList<RTopic>();
+                List<RTopic> topics = new ArrayList<>();
                 for (Entry<HashKey, HashValue> entry : hashes.entrySet()) {
                     String disabledAckName = RedissonObject.suffixName(entry.getKey().getName(), requestId + RedissonLocalCachedMap.DISABLED_ACK_SUFFIX);
                     RTopic topic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, 
@@ -529,8 +544,7 @@ public class RedissonTransaction implements RTransaction {
     
     protected static String generateId() {
         byte[] id = new byte[16];
-        // TODO JDK UPGRADE replace to native ThreadLocalRandom
-        PlatformDependent.threadLocalRandom().nextBytes(id);
+        ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
 
@@ -566,7 +580,7 @@ public class RedissonTransaction implements RTransaction {
             transactionalOperation.rollback(executorService);
         }
 
-        RPromise<Void> result = new RedissonPromise<Void>();
+        RPromise<Void> result = new RedissonPromise<>();
         RFuture<List<?>> future = executorService.executeAsync();
         future.onComplete((res, e) -> {
             if (e != null) {

@@ -30,7 +30,7 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.misc.RedissonPromise;
 
@@ -41,14 +41,14 @@ import org.redisson.misc.RedissonPromise;
  */
 public class RedissonBuckets implements RBuckets {
 
-    private final Codec codec;
-    private final CommandExecutor commandExecutor;
+    protected final Codec codec;
+    protected final CommandAsyncExecutor commandExecutor;
     
-    public RedissonBuckets(CommandExecutor commandExecutor) {
+    public RedissonBuckets(CommandAsyncExecutor commandExecutor) {
         this(commandExecutor.getConnectionManager().getCodec(), commandExecutor);
     }
     
-    public RedissonBuckets(Codec codec, CommandExecutor commandExecutor) {
+    public RedissonBuckets(Codec codec, CommandAsyncExecutor commandExecutor) {
         super();
         this.codec = codec;
         this.commandExecutor = commandExecutor;
@@ -74,8 +74,7 @@ public class RedissonBuckets implements RBuckets {
     @Override
     public <V> RFuture<Map<String, V>> getAsync(String... keys) {
         if (keys.length == 0) {
-            Map<String, V> emptyMap = Collections.emptyMap();
-            return RedissonPromise.<Map<String, V>>newSucceededFuture(emptyMap);
+            return RedissonPromise.newSucceededFuture(Collections.emptyMap());
         }
 
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
@@ -118,6 +117,17 @@ public class RedissonBuckets implements RBuckets {
         }
 
         return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSET, params.toArray());
+    }
+
+    @Override
+    public RFuture<Long> deleteAsync(String... keys) {
+        RedissonKeys ks = new RedissonKeys(commandExecutor);
+        return ks.deleteAsync(keys);
+    }
+
+    @Override
+    public long delete(String... keys) {
+        return commandExecutor.get(deleteAsync(keys));
     }
 
 }

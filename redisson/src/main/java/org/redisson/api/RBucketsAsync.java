@@ -53,4 +53,12 @@ public interface RBucketsAsync {
      */
     RFuture<Void> setAsync(Map<String, ?> buckets);
     
+    /**
+     * Delete multiple objects by name
+     *
+     * @param keys - object names
+     * @return number of removed keys
+     */
+    RFuture<Long> deleteAsync(String... keys);
+    
 }
