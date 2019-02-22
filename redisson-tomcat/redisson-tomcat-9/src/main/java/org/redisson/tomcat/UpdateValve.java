@@ -35,7 +35,7 @@ public class UpdateValve extends ValveBase {
     private final RedissonSessionManager manager;
     
     public UpdateValve(RedissonSessionManager manager) {
-        super();
+        super(true);
         this.manager = manager;
     }
 
