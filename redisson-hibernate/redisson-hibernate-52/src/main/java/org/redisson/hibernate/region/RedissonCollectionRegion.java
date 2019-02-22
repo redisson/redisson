@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.CollectionRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.access.AccessType;
@@ -38,11 +39,17 @@ import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrate
 public class RedissonCollectionRegion extends BaseRegion implements CollectionRegion {
 
     private final Settings settings;
+    private final CacheKeysFactory cacheKeysFactory;
     
     public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
-            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
+            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
         super(mapCache, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
+        this.cacheKeysFactory = cacheKeysFactory;
+    }
+    
+    public CacheKeysFactory getCacheKeysFactory() {
+        return cacheKeysFactory;
     }
 
     @Override
