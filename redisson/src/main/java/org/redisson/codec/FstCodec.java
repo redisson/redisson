@@ -92,6 +92,8 @@ public class FstCodec extends BaseCodec {
                 throw e;
             } catch (Exception e) {
                 throw new IOException(e);
+            } finally {
+                config.getStreamCoderFactory().getInput().remove();
             }
         }
     };
@@ -113,6 +115,8 @@ public class FstCodec extends BaseCodec {
             } catch (Exception e) {
                 out.release();
                 throw new IOException(e);
+            } finally {
+                config.getStreamCoderFactory().getOutput().remove();
             }
         }
     };
