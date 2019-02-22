@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.Node;
 import org.redisson.api.NodeType;
@@ -57,12 +58,14 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         URI addr = URIBuilder.create(address);
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            if (masterSlaveEntry.getAllEntries().isEmpty() && URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() 
+                    && URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
                 return (N) new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
             }
 
             for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
-                if (URIBuilder.compare(entry.getClient().getAddr(), addr) && entry.getFreezeReason() != FreezeReason.MANAGER) {
+                if (URIBuilder.compare(entry.getClient().getAddr(), addr) 
+                        && entry.getFreezeReason() != FreezeReason.MANAGER) {
                     return (N) new RedisClientEntry(entry.getClient(), connectionManager.getCommandExecutor(), entry.getNodeType());
                 }
             }
@@ -75,13 +78,15 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
         List<N> result = new ArrayList<N>();
         for (MasterSlaveEntry masterSlaveEntry : entries) {
-            if (masterSlaveEntry.getAllEntries().isEmpty() && type == NodeType.MASTER) {
+            if (masterSlaveEntry.getAllEntries().isEmpty() 
+                    && type == NodeType.MASTER) {
                 RedisClientEntry entry = new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
                 result.add((N) entry);
             }
             
             for (ClientConnectionsEntry slaveEntry : masterSlaveEntry.getAllEntries()) {
-                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER && slaveEntry.getNodeType() == type) {
+                if (slaveEntry.getFreezeReason() != FreezeReason.MANAGER 
+                        && slaveEntry.getNodeType() == type) {
                     RedisClientEntry entry = new RedisClientEntry(slaveEntry.getClient(), connectionManager.getCommandExecutor(), slaveEntry.getNodeType());
                     result.add((N) entry);
                 }
@@ -112,7 +117,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     }
 
     @Override
-    public boolean pingAll() {
+    public boolean pingAll(long timeout, TimeUnit timeUnit) {
         List<RedisClientEntry> clients = new ArrayList<>((Collection<RedisClientEntry>) getNodes());
         Map<RedisConnection, RFuture<String>> result = new ConcurrentHashMap<>(clients.size());
         CountDownLatch latch = new CountDownLatch(clients.size());
@@ -120,7 +125,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
             RFuture<RedisConnection> f = entry.getClient().connectAsync();
             f.onComplete((c, e) -> {
                 if (c != null) {
-                    RFuture<String> r = c.async(connectionManager.getConfig().getPingTimeout(), RedisCommands.PING);
+                    RFuture<String> r = c.async(timeUnit.toMillis(timeout), RedisCommands.PING);
                     result.put(c, r);
                     latch.countDown();
                 } else {
@@ -154,8 +159,13 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
             entry.getKey().closeAsync();
         }
 
-        // true and no futures missed during client connection
+        // true and no futures were missed during client connection
         return res && result.size() == clients.size();
+    }
+    
+    @Override
+    public boolean pingAll() {
+        return pingAll(1, TimeUnit.SECONDS);
     }
 
     @Override

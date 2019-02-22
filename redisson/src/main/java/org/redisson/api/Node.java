@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.protocol.Time;
 
@@ -54,10 +55,20 @@ public interface Node extends NodeAsync {
     InetSocketAddress getAddr();
 
     /**
-     * Ping Redis node by PING command.
+     * Ping Redis node.
+     * Default timeout is 1000 milliseconds
      *
-     * @return <code>true</code> if PONG received, <code>false</code> otherwise
+     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
      */
     boolean ping();
+
+    /**
+     * Ping Redis node with specified timeout.
+     *
+     * @param timeout - ping timeout
+     * @param timeUnit - timeout unit
+     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     */
+    boolean ping(long timeout, TimeUnit timeUnit);
     
 }

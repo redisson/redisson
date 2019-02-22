@@ -136,7 +136,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <R> R await(RFuture<R> future) {
-        final CountDownLatch l = new CountDownLatch(1);
+        CountDownLatch l = new CountDownLatch(1);
         future.onComplete((res, e) -> {
             l.countDown();
         });
@@ -184,15 +184,15 @@ public class RedisConnection implements RedisCommands {
     }
     
     public <T, R> RFuture<R> async(long timeout, RedisCommand<T> command, Object... params) {
-        return async(null, command, params);
+        return async(timeout, null, command, params);
     }
 
     public <T, R> RFuture<R> async(Codec encoder, RedisCommand<T> command, Object... params) {
         return async(-1, encoder, command, params);
     }
 
-    public <T, R> RFuture<R> async(long timeout, Codec encoder, final RedisCommand<T> command, final Object... params) {
-        final RPromise<R> promise = new RedissonPromise<R>();
+    public <T, R> RFuture<R> async(long timeout, Codec encoder, RedisCommand<T> command, Object... params) {
+        RPromise<R> promise = new RedissonPromise<R>();
         if (timeout == -1) {
             timeout = redisClient.getCommandTimeout();
         }
@@ -202,7 +202,7 @@ public class RedisConnection implements RedisCommands {
             return RedissonPromise.newFailedFuture(cause);
         }
         
-        final ScheduledFuture<?> scheduledFuture = redisClient.getEventLoopGroup().schedule(new Runnable() {
+        ScheduledFuture<?> scheduledFuture = redisClient.getEventLoopGroup().schedule(new Runnable() {
             @Override
             public void run() {
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
@@ -251,7 +251,7 @@ public class RedisConnection implements RedisCommands {
     }
     
     private void close() {
-        CommandData command = getCurrentCommand();
+        CommandData<?, ?> command = getCurrentCommand();
         if (command != null && command.isBlockingCommand()) {
             channel.close();
         } else {
