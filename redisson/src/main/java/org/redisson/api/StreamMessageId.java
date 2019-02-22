@@ -26,26 +26,33 @@ public class StreamMessageId {
     /**
      * Defines id to receive Stream entries never delivered to any other consumer.
      * <p> 
-     * Used in {@link RStream#readGroup} and {@link RStreamAsync#readGroupAsync} methods
+     * Used in {@link RStream#readGroup} methods
      */
     public static final StreamMessageId NEVER_DELIVERED = new StreamMessageId(-1);
     
     /**
-     * Defines minimal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
+     * Defines minimal id. Used in {@link RStream#range} methods
      */
     public static final StreamMessageId MIN = new StreamMessageId(-1);
     
     /**
-     * Defines maximal id. Used in {@link RStream#range} and {@link RStreamAsync#rangeAsync} methods
+     * Defines maximal id. Used in {@link RStream#range} methods
      */
     public static final StreamMessageId MAX = new StreamMessageId(-1);
     
     /**
      * Defines id to receive Stream entries added since method invocation.
      * <p>
-     * Used  in {@link RStream#read} and {@link RStreamAsync#readAsync} methods
+     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
      */
     public static final StreamMessageId NEWEST = new StreamMessageId(-1);
+
+    /**
+     * Defines id to receive all Stream entries.
+     * <p>
+     * Used in {@link RStream#read}, {@link RStream#createGroup} methods
+     */
+    public static final StreamMessageId ALL = new StreamMessageId(-1);
     
     private long id0;
     private long id1;
@@ -117,6 +124,9 @@ public class StreamMessageId {
         }
         if (this == MAX) {
             return "+";
+        }
+        if (this == ALL) {
+            return "0";
         }
 
         return id0 + "-" + id1;

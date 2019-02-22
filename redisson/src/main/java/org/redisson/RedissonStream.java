@@ -79,7 +79,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<Void> createGroupAsync(String groupName, StreamMessageId id) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id, "MKSTREAM");
     }
     
     @Override

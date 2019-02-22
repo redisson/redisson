@@ -259,6 +259,15 @@ public class RedissonStreamTest extends BaseTest {
 //        assertThat(s2.size()).isEqualTo(3);
     }
         
+    @Test
+    public void testCreateEmpty() {
+        RStream<String, String> stream = redisson.getStream("test");
+        stream.createGroup("testGroup", StreamMessageId.ALL);
+        stream.add("1", "2");
+        
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s).hasSize(1);
+    }
     
     @Test
     public void testReadGroup() {
