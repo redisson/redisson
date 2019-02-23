@@ -81,7 +81,7 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
 
     SpringContextAwareInjectionContext(BeanFactory beanFactory) {
         final ConfigurableBeanFactory cbf = (ConfigurableBeanFactory) beanFactory;
-        springContext = new StandardEvaluationContext(new BeanExpressionContext(cbf, new SimpleThreadScope()));
+        springContext = new StandardEvaluationContext(new BeanExpressionContext(cbf, null));
         springContext.addPropertyAccessor(new BeanExpressionContextAccessor());
         springContext.addPropertyAccessor(new BeanFactoryAccessor());
         springContext.addPropertyAccessor(new MapAccessor());
