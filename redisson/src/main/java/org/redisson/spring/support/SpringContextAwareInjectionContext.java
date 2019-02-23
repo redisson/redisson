@@ -233,10 +233,10 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
 
     protected Expression parseExpression(String expr) {
         if (!cache.containsKey(expr.hashCode())) {
-            cache.putIfAbsent(expr.hashCode(),
-                    isSpELExpression(expr)
-                            ? parser.parseExpression(expr, SPEL_TEMP_CONTEXT)
-                            : parser.parseExpression(expr));
+            if (isSpELExpression(expr)) cache.putIfAbsent(expr.hashCode(),
+                    parser.parseExpression(expr, SPEL_TEMP_CONTEXT));
+            else cache.putIfAbsent(expr.hashCode(),
+                    parser.parseExpression(expr));
         }
         return cache.get(expr.hashCode());
     }

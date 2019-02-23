@@ -85,7 +85,9 @@ public abstract class AbstractInjectionContext implements InjectionContext {
             return redissonClient.getLiveObjectService().get(expected, name);
         } else {
             RedissonObjectBuilder builder = ((Redisson) redissonClient).getCommandExecutor().getObjectBuilder();
-            Codec codec = RInject.DefaultCodec.class.isAssignableFrom(codecClass) ? null : builder.getReferenceCodecProvider().getCodec(codecClass);
+            Codec codec;
+            if (RInject.DefaultCodec.class.isAssignableFrom(codecClass)) codec = null;
+            else codec = builder.getReferenceCodecProvider().getCodec(codecClass);
             try {
                 return (T) builder.createRObject(redissonClient, builder.tryTranslatedTypes(expected), name, codec);
             } catch (Exception e) {
