@@ -60,7 +60,7 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
      *  (#\{[^{}]+}) Matches start token "#{" and end toke "}". There should be no nested expressions.
      *  [^}]* There should not be another end token(s) "}" after the legitimate end.
      */
-    private static final Pattern spelExpressionPattern = Pattern.compile("^[^#${]*(#\\{[^{}]+})[^}]*$");
+    private static final Pattern SPEL_EXPRESSION_PATTERN = Pattern.compile("^[^#${]*(#\\{[^{}]+})[^}]*$");
 
     /**
      *  [^$]* There should not be a start of a property token "$" before the legitimate start token "${", other things're OK.
@@ -68,7 +68,7 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
      *  ([A-Za-z0-9.]+) one or more alphanumeric and period (.) are allowed and grouped in to a capture group
      *  }.*$ the expression end and anything additional is welcome.
      */
-    private static final Pattern propertyExpressionPattern = Pattern.compile("^[^$]*\\$\\{([A-Za-z0-9.]+)}.*$");
+    private static final Pattern PROPERTY_EXPRESSION_PATTERN = Pattern.compile("^[^$]*\\$\\{([A-Za-z0-9.]+)}.*$");
 
     private static final ParserContext SPEL_TEMP_CONTEXT = new TemplateParserContext();
 
@@ -242,11 +242,11 @@ class SpringContextAwareInjectionContext extends AbstractInjectionContext {
     }
 
     protected boolean isSpELExpression(String expr) {
-        return spelExpressionPattern.matcher(expr).matches();
+        return SPEL_EXPRESSION_PATTERN.matcher(expr).matches();
     }
 
     protected boolean isPropertyExpression(String expr) {
-        return propertyExpressionPattern.matcher(expr).matches();
+        return PROPERTY_EXPRESSION_PATTERN.matcher(expr).matches();
     }
 
 }

@@ -21,7 +21,6 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RInject;
 import org.redisson.client.codec.Codec;
 
-import java.lang.reflect.Field;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -41,7 +40,7 @@ public abstract class AbstractInjectionContext implements InjectionContext {
      *
      *  Example: RMap('myMap')
      */
-    private static final Pattern redissonExpressionPattern = Pattern.compile("^([A-Za-z]+)\\('([^'()]+)'\\)$");
+    private static final Pattern REDISSON_EXPRESSION_PATTERN = Pattern.compile("^([A-Za-z]+)\\('([^'()]+)'\\)$");
 
     @Override
     public <T> T resolve(Class<T> fieldType, RInject rInject) {
@@ -97,6 +96,6 @@ public abstract class AbstractInjectionContext implements InjectionContext {
     }
 
     protected Matcher getRedissonExpressionMatcher(String expr) {
-        return redissonExpressionPattern.matcher(expr);
+        return REDISSON_EXPRESSION_PATTERN.matcher(expr);
     }
 }
