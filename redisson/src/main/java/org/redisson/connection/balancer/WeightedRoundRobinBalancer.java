@@ -25,11 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.connection.ClientConnectionsEntry;
-
-import io.netty.util.internal.PlatformDependent;
 import org.redisson.misc.URIBuilder;
 
 /**
@@ -66,7 +65,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
 
     private final AtomicInteger index = new AtomicInteger(-1);
 
-    private final Map<InetSocketAddress, WeightEntry> weights = PlatformDependent.newConcurrentHashMap();
+    private final Map<InetSocketAddress, WeightEntry> weights = new ConcurrentHashMap<>();
 
     private final int defaultWeight;
 
@@ -93,7 +92,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
     }
 
     private Set<InetSocketAddress> getAddresses(List<ClientConnectionsEntry> clients) {
-        Set<InetSocketAddress> result = new HashSet<InetSocketAddress>();
+        Set<InetSocketAddress> result = new HashSet<>();
         for (ClientConnectionsEntry entry : clients) {
             if (entry.isFreezed()) {
                 continue;
@@ -108,14 +107,14 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
         Set<InetSocketAddress> addresses = getAddresses(clients);
 
         if (!addresses.equals(weights.keySet())) {
-            Set<InetSocketAddress> newAddresses = new HashSet<InetSocketAddress>(addresses);
+            Set<InetSocketAddress> newAddresses = new HashSet<>(addresses);
             newAddresses.removeAll(weights.keySet());
             for (InetSocketAddress addr : newAddresses) {
                 weights.put(addr, new WeightEntry(defaultWeight));
             }
         }
 
-        Map<InetSocketAddress, WeightEntry> weightsCopy = new HashMap<InetSocketAddress, WeightEntry>(weights);
+        Map<InetSocketAddress, WeightEntry> weightsCopy = new HashMap<>(weights);
 
 
         synchronized (this) {
@@ -158,7 +157,7 @@ public class WeightedRoundRobinBalancer implements LoadBalancer {
     }
 
     private List<ClientConnectionsEntry> findClients(List<ClientConnectionsEntry> clients, Map<InetSocketAddress, WeightEntry> weightsCopy) {
-        List<ClientConnectionsEntry> clientsCopy = new ArrayList<ClientConnectionsEntry>();
+        List<ClientConnectionsEntry> clientsCopy = new ArrayList<>();
         for (InetSocketAddress addr : weightsCopy.keySet()) {
             for (ClientConnectionsEntry clientConnectionsEntry : clients) {
                 if (clientConnectionsEntry.getClient().getAddr().equals(addr)

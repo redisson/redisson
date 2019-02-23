@@ -223,6 +223,51 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(s2.get("test1").keySet()).containsExactly(id12, id13);
         assertThat(s2.get("test2").keySet()).containsExactly(id22, id23);
     }
+
+    @Test
+    public void testReadGroupBlocking() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        StreamMessageId id0 = stream.add("0", "0");
+        
+        stream.createGroup("testGroup", id0);
+        
+        stream.add("1", "1");
+        stream.add("2", "2");
+        stream.add("3", "3");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1", 3, 5, TimeUnit.SECONDS);
+        assertThat(s.values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
+        assertThat(s.size()).isEqualTo(3);
+
+        stream.removeGroup("testGroup");
+        
+        stream.createGroup("testGroup", id0);
+        
+        stream.add("1", "1");
+        stream.add("2", "2");
+        stream.add("3", "3");
+
+        RStream<String, String> stream2 = redisson.getStream("test2");
+        
+        StreamMessageId id1 = stream2.add("0", "0");
+        
+        stream2.createGroup("testGroup", id1);
+        
+//        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream.readGroup("testGroup", "consumer1", 3, 5, TimeUnit.SECONDS, id0, Collections.singletonMap("test2", id1));
+//        assertThat(s2.values().iterator().next().values().iterator().next().keySet()).containsAnyOf("1", "2", "3");
+//        assertThat(s2.size()).isEqualTo(3);
+    }
+        
+    @Test
+    public void testCreateEmpty() {
+        RStream<String, String> stream = redisson.getStream("test");
+        stream.createGroup("testGroup", StreamMessageId.ALL);
+        stream.add("1", "2");
+        
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s).hasSize(1);
+    }
     
     @Test
     public void testReadGroup() {
@@ -355,10 +400,22 @@ public class RedissonStreamTest extends BaseTest {
         t.start();
         
         long start = System.currentTimeMillis();
-        Map<StreamMessageId, Map<String, String>> s = stream.read(2, 5, TimeUnit.SECONDS, new StreamMessageId(0));
+        Map<StreamMessageId, Map<String, String>> s = stream.read(2, 4, TimeUnit.SECONDS, new StreamMessageId(0));
         assertThat(System.currentTimeMillis() - start).isBetween(1900L, 2200L);
         assertThat(s).hasSize(1);
         assertThat(s.get(new StreamMessageId(1))).isEqualTo(entries1);
+        
+        StreamMessageId id0 = stream.add("11", "11");
+        stream.add("22", "22");
+
+        RStream<String, String> stream2 = redisson.getStream("test2");
+        
+        StreamMessageId id1 = stream2.add("33", "33");
+        stream2.add("44", "44");
+        
+        Map<String, Map<StreamMessageId, Map<String, String>>> s2 = stream.read(5, TimeUnit.SECONDS, id0, Collections.singletonMap("test2", id1));
+        assertThat(s2.values().iterator().next().values().iterator().next().keySet()).containsAnyOf("11", "22", "33", "44");
+        assertThat(s2.keySet()).containsExactlyInAnyOrder("test", "test2");
     }
     
     @Test

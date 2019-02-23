@@ -17,11 +17,13 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.ClusterNode;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -29,9 +31,6 @@ import org.redisson.client.protocol.Time;
 import org.redisson.command.CommandSyncService;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -65,20 +64,27 @@ public class RedisClientEntry implements ClusterNode {
         return client.getAddr();
     }
 
+    @Override
     public RFuture<Boolean> pingAsync() {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        return pingAsync(1, TimeUnit.SECONDS);
+    }
+    
+    @Override
+    public RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit) {
+        RPromise<Boolean> result = new RedissonPromise<>();
         RFuture<Boolean> f = commandExecutor.readAsync(client, null, RedisCommands.PING_BOOL);
-        f.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.trySuccess(false);
-                    return;
-                }
-                
-                result.trySuccess(future.getNow());
+        f.onComplete((res, e) -> {
+            if (e != null) {
+                result.trySuccess(false);
+                return;
             }
+            
+            result.trySuccess(res);
         });
+        commandExecutor.getConnectionManager().newTimeout(t -> {
+            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: PING, Redis client: " + client);
+            result.tryFailure(ex);
+        }, timeout, timeUnit);
         return result;
     }
     
@@ -86,8 +92,14 @@ public class RedisClientEntry implements ClusterNode {
     public boolean ping() {
         return commandExecutor.get(pingAsync());
     }
+    
+    @Override
+    public boolean ping(long timeout, TimeUnit timeUnit) {
+        return commandExecutor.get(pingAsync(timeout, timeUnit));
+    }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;

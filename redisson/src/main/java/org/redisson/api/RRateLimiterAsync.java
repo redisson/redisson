@@ -142,4 +142,11 @@ public interface RRateLimiterAsync extends RObjectAsync {
      */
     RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit);
     
+    /**
+     * Returns current configuration of this RateLimiter object.
+     * 
+     * @return config object
+     */
+    RFuture<RateLimiterConfig> getConfigAsync();
+    
 }

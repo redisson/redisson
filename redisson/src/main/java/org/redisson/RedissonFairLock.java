@@ -218,7 +218,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 "end; " +
                 "return 1; ",
                 Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName, getChannelName()), 
-                LockPubSub.unlockMessage, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());
+                LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());
     }
     
     @Override
@@ -296,7 +296,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 "end; " + 
                 "return 0;",
                 Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName, getChannelName()), 
-                LockPubSub.unlockMessage, System.currentTimeMillis());
+                LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
 
 }

@@ -59,7 +59,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         private final MapSession delegate;
         private RMap<String, Object> map;
 
-        public RedissonSession() {
+        RedissonSession() {
             this.delegate = new MapSession();
             map = redisson.getMap(keyPrefix + delegate.getId(), new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
             principalName = resolvePrincipal(delegate);
@@ -83,7 +83,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
         }
         
-        public RedissonSession(String sessionId) {
+        RedissonSession(String sessionId) {
             this.delegate = new MapSession(sessionId);
             map = redisson.getMap(keyPrefix + sessionId, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
             principalName = resolvePrincipal(delegate);
@@ -216,7 +216,14 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         @Override
         public String changeSessionId() {
             String id = delegate.changeSessionId();
-            map.rename(keyPrefix + id);
+            if (redisson.getConfig().isClusterConfig()) {
+                Map<String, Object> oldState = map.readAllMap();
+                map.delete();
+                map = redisson.getMap(keyPrefix + id, map.getCodec());
+                map.putAll(oldState);
+            } else {
+                map.rename(keyPrefix + id);
+            }
             return id;
         }
 

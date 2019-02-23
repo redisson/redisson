@@ -50,7 +50,7 @@ public class TasksBatchService extends TasksService {
     }
     
     public RFuture<List<Boolean>> executeAddAsync() {
-        return (RFuture<List<Boolean>>)(Object)batchCommandService.executeAsync();
+        return (RFuture<List<Boolean>>) (Object) batchCommandService.executeAsync();
     }
 
     

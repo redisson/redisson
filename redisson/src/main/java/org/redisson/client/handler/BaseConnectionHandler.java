@@ -32,8 +32,6 @@ import org.redisson.misc.RedissonPromise;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -96,29 +94,23 @@ public abstract class BaseConnectionHandler<C extends RedisConnection> extends C
         final AtomicBoolean retry = new AtomicBoolean();
         final AtomicInteger commandsCounter = new AtomicInteger(futures.size());
         for (RFuture<Object> future : futures) {
-            future.addListener(new FutureListener<Object>() {
-                @Override
-                public void operationComplete(Future<Object> future) throws Exception {
-                    if (!future.isSuccess()) {
-                        if (future.cause() instanceof RedisLoadingException) {
-                            if (retry.compareAndSet(false, true)) {
-                                ctx.executor().schedule(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        channelActive(ctx);
-                                    }
-                                }, 1, TimeUnit.SECONDS);
-                            }
-                            return;
+            future.onComplete((res, e) -> {
+                if (e != null) {
+                    if (e instanceof RedisLoadingException) {
+                        if (retry.compareAndSet(false, true)) {
+                            ctx.executor().schedule(() -> {
+                                channelActive(ctx);
+                            }, 1, TimeUnit.SECONDS);
                         }
-                        connection.closeAsync();
-                        connectionPromise.tryFailure(future.cause());
                         return;
                     }
-                    if (commandsCounter.decrementAndGet() == 0) {
-                        ctx.fireChannelActive();
-                        connectionPromise.trySuccess(connection);
-                    }
+                    connection.closeAsync();
+                    connectionPromise.tryFailure(e);
+                    return;
+                }
+                if (commandsCounter.decrementAndGet() == 0) {
+                    ctx.fireChannelActive();
+                    connectionPromise.trySuccess(connection);
                 }
             });
         }

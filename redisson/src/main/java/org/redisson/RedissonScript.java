@@ -175,12 +175,12 @@ public class RedissonScript implements RScript {
     }
 
     @Override
-    public List<Boolean> scriptExists(String ... shaDigests) {
+    public List<Boolean> scriptExists(String... shaDigests) {
         return commandExecutor.get(scriptExistsAsync(shaDigests));
     }
 
     @Override
-    public RFuture<List<Boolean>> scriptExistsAsync(final String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(final String... shaDigests) {
          return commandExecutor.writeAllAsync(RedisCommands.SCRIPT_EXISTS, new SlotCallback<List<Boolean>, List<Boolean>>() {
             volatile List<Boolean> result = new ArrayList<Boolean>(shaDigests.length);
             @Override
@@ -197,14 +197,14 @@ public class RedissonScript implements RScript {
             public List<Boolean> onFinish() {
                 return new ArrayList<Boolean>(result);
             }
-        }, (Object[])shaDigests);
+        }, (Object[]) shaDigests);
     }
 
-    public List<Boolean> scriptExists(String key, String ... shaDigests) {
+    public List<Boolean> scriptExists(String key, String... shaDigests) {
         return commandExecutor.get(scriptExistsAsync(key, shaDigests));
     }
 
-    public RFuture<List<Boolean>> scriptExistsAsync(String key, String ... shaDigests) {
+    public RFuture<List<Boolean>> scriptExistsAsync(String key, String... shaDigests) {
         return commandExecutor.writeAsync(key, RedisCommands.SCRIPT_EXISTS, shaDigests);
     }
 
@@ -291,13 +291,13 @@ public class RedissonScript implements RScript {
     @Override
     public <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>)evalShaAsync(key, mode, shaDigest, returnType, keys, values));
+        return commandExecutor.get((RFuture<R>) evalShaAsync(key, mode, shaDigest, returnType, keys, values));
     }
 
     @Override
     public <R> R eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys,
             Object... values) {
-        return commandExecutor.get((RFuture<R>)evalAsync(key, mode, luaScript, returnType, keys, values));
+        return commandExecutor.get((RFuture<R>) evalAsync(key, mode, luaScript, returnType, keys, values));
     }
 
 }

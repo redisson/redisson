@@ -21,14 +21,14 @@ package org.redisson.cache;
 
 public class StdCachedValue<K, V> implements CachedValue<K, V> {
 
-    protected final K key;
-    protected final V value;
+    private final K key;
+    private final V value;
 
-    long ttl;
-    long maxIdleTime;
+    private long ttl;
+    private long maxIdleTime;
 
-    long creationTime;
-    long lastAccess;
+    private long creationTime;
+    private long lastAccess;
 
     public StdCachedValue(K key, V value, long ttl, long maxIdleTime) {
         this.value = value;

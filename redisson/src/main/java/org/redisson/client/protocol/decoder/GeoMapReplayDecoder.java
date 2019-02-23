@@ -38,7 +38,7 @@ public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
     public Map<Object, Object> decode(List<Object> parts, State state) {
         Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size());
         for (Object object : parts) {
-            List<Object> vals = ((List<Object>) object);
+            List<Object> vals = (List<Object>) object;
             result.put(vals.get(0), vals.get(1));
         }
         return result;

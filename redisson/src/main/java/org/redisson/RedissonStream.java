@@ -79,7 +79,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<Void> createGroupAsync(String groupName, StreamMessageId id) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id, "MKSTREAM");
     }
     
     @Override
@@ -232,7 +232,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
         return readGroupAsync(groupName, consumerName, 0, id, keyToId);
     }
     
@@ -758,7 +758,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids) {
+    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId... ids) {
         return get(readAsync(count, ids));
     }
 

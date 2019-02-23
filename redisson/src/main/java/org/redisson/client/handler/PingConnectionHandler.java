@@ -31,8 +31,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -53,12 +51,9 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
-        connection.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                if (future.isSuccess()) {
-                    sendPing(ctx);
-                }
+        connection.getConnectionPromise().onComplete((res, e) -> {
+            if (e == null) {
+                sendPing(ctx);
             }
         });
         ctx.fireChannelActive();
@@ -72,8 +67,8 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
             @Override
             public void run(Timeout timeout) throws Exception {
                 CommandData<?, ?> commandData = connection.getCurrentCommand();
-                if ((commandData == null || !commandData.isBlockingCommand()) && 
-                        (future.cancel(false) || !future.isSuccess())) {
+                if ((commandData == null || !commandData.isBlockingCommand()) 
+                        && (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                 } else {

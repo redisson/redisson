@@ -129,7 +129,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                 "return 1; ",
                 Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, keyPrefix), 
-                LockPubSub.unlockMessage, getLockName(threadId));
+                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId));
     }
 
     protected String getKeyPrefix(long threadId, String timeoutPrefix) {
@@ -180,7 +180,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     "return 1; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     @Override

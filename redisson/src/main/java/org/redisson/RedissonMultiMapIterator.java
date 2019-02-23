@@ -55,8 +55,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
     final CommandAsyncExecutor commandExecutor;
     final Codec codec;
 
-
-    public RedissonMultiMapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
+    RedissonMultiMapIterator(RedissonMultimap<K, V> map, CommandAsyncExecutor commandExecutor, Codec codec) {
         this.map = map;
         this.commandExecutor = commandExecutor;
         this.codec = codec;
@@ -116,7 +115,7 @@ abstract class RedissonMultiMapIterator<K, V, M> implements Iterator<M> {
 
     @SuppressWarnings("unchecked")
     M getValue(V entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>(currentKey, entry) {
+        return (M) new AbstractMap.SimpleEntry<K, V>(currentKey, entry) {
 
             @Override
             public V setValue(V value) {

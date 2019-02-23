@@ -19,6 +19,7 @@ import java.util.Properties;
 
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
+import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.NaturalIdRegion;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.access.AccessType;
@@ -38,13 +39,19 @@ import org.redisson.hibernate.strategy.TransactionalNaturalIdRegionAccessStrateg
 public class RedissonNaturalIdRegion extends BaseRegion implements NaturalIdRegion {
 
     private final Settings settings;
+    private final CacheKeysFactory cacheKeysFactory;
     
     public RedissonNaturalIdRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
-            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
+            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey, CacheKeysFactory cacheKeysFactory) {
         super(mapCache, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
+        this.cacheKeysFactory = cacheKeysFactory;
     }
 
+    public CacheKeysFactory getCacheKeysFactory() {
+        return cacheKeysFactory;
+    }
+    
     @Override
     public NaturalIdRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

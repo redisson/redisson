@@ -41,6 +41,6 @@ public @interface RId {
      * @see UUIDGenerator
      * @see LongGenerator
      */
-    Class<? extends RIdResolver> generator() default RequiredIdResolver.class;
+    Class<? extends RIdResolver<?>> generator() default RequiredIdResolver.class;
     
 }

@@ -365,12 +365,12 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
-    public List<V> get(int ...indexes) {
+    public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
     
     @Override
-    public RFuture<List<V>> getAsync(int ...indexes) {
+    public RFuture<List<V>> getAsync(int...indexes) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(encodeMapKey(key));
@@ -656,6 +656,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -673,6 +674,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -691,6 +693,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {

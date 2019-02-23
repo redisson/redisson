@@ -15,9 +15,7 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBlockingDeque;
@@ -101,7 +99,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      * @see org.redisson.core.RBlockingQueue#pollFromAny(long, java.util.concurrent.TimeUnit, java.lang.String[])
      */
     @Override
-    public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return blockingQueue.pollFromAny(timeout, unit);
     }
 
@@ -110,7 +108,7 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
      * @see org.redisson.core.RBlockingQueueAsync#pollFromAnyAsync(long, java.util.concurrent.TimeUnit, java.lang.String[])
      */
     @Override
-    public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return blockingQueue.pollFromAnyAsync(timeout, unit);
     }
 
@@ -217,22 +215,22 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     }
 
     @Override
-    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return pollFromAnyAsync(timeout, unit, queueNames);
     }
 
     @Override
-    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BRPOP_VALUE, toSeconds(timeout, unit), queueNames);
     }
 

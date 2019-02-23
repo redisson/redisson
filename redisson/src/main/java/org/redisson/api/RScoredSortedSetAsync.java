@@ -45,7 +45,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *        {@code timeout} parameter
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
-    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
@@ -62,7 +62,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the head element, or {@code null} if all sorted sets are empty
      *  
      */
-    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.

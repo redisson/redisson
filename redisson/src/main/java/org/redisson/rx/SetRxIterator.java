@@ -21,8 +21,6 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
 import io.reactivex.functions.LongConsumer;
 import io.reactivex.processors.ReplayProcessor;
@@ -36,7 +34,7 @@ import io.reactivex.processors.ReplayProcessor;
 public abstract class SetRxIterator<V> {
 
     public Flowable<V> create() {
-        final ReplayProcessor<V> p = ReplayProcessor.create();
+        ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             
             private long nextIterPos;
@@ -57,45 +55,41 @@ public abstract class SetRxIterator<V> {
             }
             
             protected void nextValues() {
-                scanIterator(client, nextIterPos).addListener(new FutureListener<ListScanResult<Object>>() {
-                    @Override
-                    public void operationComplete(Future<ListScanResult<Object>> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            p.onError(future.cause());
-                            return;
-                        }
-                        
-                        if (finished) {
-                            client = null;
-                            nextIterPos = 0;
-                            return;
-                        }
-
-                        ListScanResult<Object> res = future.getNow();
-                        client = res.getRedisClient();
-                        nextIterPos = res.getPos();
-
-                        for (Object val : res.getValues()) {
-                            p.onNext((V)val);
-                            elementsRead.incrementAndGet();
-                        }
-                        
-                        if (elementsRead.get() >= readAmount.get()) {
-                            p.onComplete();
-                            elementsRead.set(0);
-                            completed = true;
-                            return;
-                        }
-                        if (res.getPos() == 0 && !tryAgain()) {
-                            finished = true;
-                            p.onComplete();
-                        }
-                        
-                        if (finished || completed) {
-                            return;
-                        }
-                        nextValues();
+                scanIterator(client, nextIterPos).onComplete((res, e) -> {
+                    if (e != null) {
+                        p.onError(e);
+                        return;
                     }
+                    
+                    if (finished) {
+                        client = null;
+                        nextIterPos = 0;
+                        return;
+                    }
+
+                    client = res.getRedisClient();
+                    nextIterPos = res.getPos();
+
+                    for (Object val : res.getValues()) {
+                        p.onNext((V) val);
+                        elementsRead.incrementAndGet();
+                    }
+                    
+                    if (elementsRead.get() >= readAmount.get()) {
+                        p.onComplete();
+                        elementsRead.set(0);
+                        completed = true;
+                        return;
+                    }
+                    if (res.getPos() == 0 && !tryAgain()) {
+                        finished = true;
+                        p.onComplete();
+                    }
+                    
+                    if (finished || completed) {
+                        return;
+                    }
+                    nextValues();
                 });
             }
         });

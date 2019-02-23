@@ -52,7 +52,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * @param addresses in <code>host:port</code> format
      * @return config
      */
-    public ClusterServersConfig addNodeAddress(String ... addresses) {
+    public ClusterServersConfig addNodeAddress(String... addresses) {
         for (String address : addresses) {
             nodeAddresses.add(URIBuilder.create(address));
         }

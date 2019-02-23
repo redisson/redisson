@@ -42,15 +42,15 @@ public class SlotsDecoder implements MultiDecoder<Object> {
     @Override
     public Object decode(List<Object> parts, State state) {
         if (parts.size() > 2 && parts.get(0) instanceof List) {
-            Map<ClusterSlotRange, Set<String>> result = new HashMap<ClusterSlotRange, Set<String>>();
-            List<List<Object>> rows = (List<List<Object>>)(Object)parts;
+            Map<ClusterSlotRange, Set<String>> result = new HashMap<>();
+            List<List<Object>> rows = (List<List<Object>>) (Object) parts;
             for (List<Object> row : rows) {
                 Iterator<Object> iterator = row.iterator();
-                Long startSlot = (Long)iterator.next();
-                Long endSlot = (Long)iterator.next();
+                Long startSlot = (Long) iterator.next();
+                Long endSlot = (Long) iterator.next();
                 ClusterSlotRange range = new ClusterSlotRange(startSlot.intValue(), endSlot.intValue());
-                Set<String> addresses = new HashSet<String>();
-                while(iterator.hasNext()) {
+                Set<String> addresses = new HashSet<>();
+                while (iterator.hasNext()) {
                     List<Object> addressParts = (List<Object>) iterator.next();
                     addresses.add(addressParts.get(0) + ":" + addressParts.get(1));
                 }

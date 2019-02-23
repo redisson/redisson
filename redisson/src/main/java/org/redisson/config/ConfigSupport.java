@@ -16,7 +16,6 @@
 package org.redisson.config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,7 +61,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  *
  */
 public class ConfigSupport {
-
+    
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
@@ -137,13 +136,15 @@ public class ConfigSupport {
     }
     
     private String resolveEnvParams(String content) {
-        Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\}");
+        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
-            String s = m.group(1);
-            String v = System.getenv(s);
+            String[] parts = m.group(1).split(":-");
+            String v = System.getenv(parts[0]);
             if (v != null) {
                 content = content.replace(m.group(), v);
+            } else if (parts.length == 2) {
+                content = content.replace(m.group(), parts[1]);
             }
         }
         return content;

@@ -15,12 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.function.Supplier;
-
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonSet;
 import org.redisson.api.RFuture;
@@ -56,7 +50,7 @@ public class RedissonSetReactive<V> {
         return new PublisherAdder<Object>() {
             @Override
             public RFuture<Boolean> add(Object e) {
-                return instance.addAsync((V)e);
+                return instance.addAsync((V) e);
             }
         }.addAll(c);
     }
@@ -69,11 +63,11 @@ public class RedissonSetReactive<V> {
         return iterator(pattern, 10);
     }
 
-    public Publisher<V> iterator(final String pattern, final int count) {
+    public Publisher<V> iterator(String pattern, int count) {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonSet)instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
+                return ((RedissonSet) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
             }
         });
     }
@@ -83,27 +77,27 @@ public class RedissonSetReactive<V> {
 }
     
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(V value) {
-        String name = ((RedissonSet<V>)instance).getLockName(value, "permitexpirablesemaphore");
+        String name = ((RedissonSet<V>) instance).getLockName(value, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
     public RSemaphoreReactive getSemaphore(V value) {
-        String name = ((RedissonSet<V>)instance).getLockName(value, "semaphore");
+        String name = ((RedissonSet<V>) instance).getLockName(value, "semaphore");
         return redisson.getSemaphore(name);
     }
     
     public RLockReactive getFairLock(V value) {
-        String name = ((RedissonSet<V>)instance).getLockName(value, "fairlock");
+        String name = ((RedissonSet<V>) instance).getLockName(value, "fairlock");
         return redisson.getFairLock(name);
     }
     
     public RReadWriteLockReactive getReadWriteLock(V value) {
-        String name = ((RedissonSet<V>)instance).getLockName(value, "rw_lock");
+        String name = ((RedissonSet<V>) instance).getLockName(value, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
     public RLockReactive getLock(V value) {
-        String name = ((RedissonSet<V>)instance).getLockName(value, "lock");
+        String name = ((RedissonSet<V>) instance).getLockName(value, "lock");
         return redisson.getLock(name);
     }
     

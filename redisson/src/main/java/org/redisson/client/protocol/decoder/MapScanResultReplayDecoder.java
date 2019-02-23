@@ -35,7 +35,7 @@ public class MapScanResultReplayDecoder implements MultiDecoder<MapScanResult<Ob
     
     @Override
     public MapScanResult<Object, Object> decode(List<Object> parts, State state) {
-        return new MapScanResult<Object, Object>((Long)parts.get(0), (Map<Object, Object>)parts.get(1));
+        return new MapScanResult<Object, Object>((Long) parts.get(0), (Map<Object, Object>) parts.get(1));
     }
 
 }

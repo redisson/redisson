@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
@@ -30,10 +31,6 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * <p>Distributed and concurrent implementation of {@link java.util.concurrent.PriorityBlockingQueue}.
@@ -70,47 +67,41 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
         return result;
     }
 
-    protected <T> void takeAsync(final RPromise<V> result, final long delay, final long timeoutInMicro, final RedisCommand<T> command, final Object ... params) {
-        final long start = System.currentTimeMillis();
-        commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RFuture<V> future = pollAsync(command, params);
-                future.addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess() && !(future.cause() instanceof RedisConnectionException)) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        if (future.getNow() != null) {
-                            result.trySuccess(future.getNow());
-                            return;
-                        }
-                        
-                        if (result.isCancelled()) {
-                            return;
-                        }
-                        
-                        long remain = 0;
-                        if (timeoutInMicro > 0) {
-                            remain = timeoutInMicro - ((System.currentTimeMillis() - start))*1000;
-                            if (remain <= 0) {
-                                result.trySuccess(null);
-                                return;
-                            }
-                        }
-                        
-                        long delay = PlatformDependent.threadLocalRandom().nextInt(2000000);
-                        if (timeoutInMicro > 0 && remain < 2000000) {
-                            delay = 0;
-                        }
-                        
-                        takeAsync(result, delay, remain, command, params);
+    protected <T> void takeAsync(RPromise<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
+        long start = System.currentTimeMillis();
+        commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+            RFuture<V> future = pollAsync(command, params);
+            future.onComplete((res, e) -> {
+                    if (e != null && !(e instanceof RedisConnectionException)) {
+                        result.tryFailure(e);
+                        return;
                     }
-                });
-            }
+                    
+                    if (res != null) {
+                        result.trySuccess(res);
+                        return;
+                    }
+                    
+                    if (result.isCancelled()) {
+                        return;
+                    }
+                    
+                    long remain = 0;
+                    if (timeoutInMicro > 0) {
+                        remain = timeoutInMicro - ((System.currentTimeMillis() - start))*1000;
+                        if (remain <= 0) {
+                            result.trySuccess(null);
+                            return;
+                        }
+                    }
+                    
+                    long del = ThreadLocalRandom.current().nextInt(2000000);
+                    if (timeoutInMicro > 0 && remain < 2000000) {
+                        del = 0;
+                    }
+                    
+                    takeAsync(result, del, remain, command, params);
+            });
         }, delay, TimeUnit.MICROSECONDS);
     }
 
@@ -131,7 +122,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     }
 
     @Override
-    public V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException {
+    public V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         throw new UnsupportedOperationException("use poll method");
     }
 

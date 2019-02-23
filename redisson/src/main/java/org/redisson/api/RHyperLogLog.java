@@ -58,13 +58,13 @@ public interface RHyperLogLog<V> extends RExpirable, RHyperLogLogAsync<V> {
      * @param otherLogNames - name of instances
      * @return number
      */
-    long countWith(String ... otherLogNames);
+    long countWith(String... otherLogNames);
 
     /**
      * Merges multiple instances into this instance.
      * 
      * @param otherLogNames - name of instances
      */
-    void mergeWith(String ... otherLogNames);
+    void mergeWith(String... otherLogNames);
 
 }

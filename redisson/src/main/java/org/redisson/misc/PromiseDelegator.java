@@ -26,8 +26,12 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import io.netty.util.concurrent.FutureListener;
-
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type
+ */
 public class PromiseDelegator<T> implements RPromise<T> {
 
     private final RPromise<T> promise;
@@ -75,22 +79,6 @@ public class PromiseDelegator<T> implements RPromise<T> {
 
     public boolean await(long timeoutMillis) throws InterruptedException {
         return promise.await(timeoutMillis);
-    }
-
-    public RPromise<T> addListener(FutureListener<? super T> listener) {
-        return promise.addListener(listener);
-    }
-
-    public RPromise<T> addListeners(FutureListener<? super T>... listeners) {
-        return promise.addListeners(listeners);
-    }
-
-    public RPromise<T> removeListener(FutureListener<? super T> listener) {
-        return promise.removeListener(listener);
-    }
-
-    public RPromise<T> removeListeners(FutureListener<? super T>... listeners) {
-        return promise.removeListeners(listeners);
     }
 
     public RPromise<T> await() throws InterruptedException {
@@ -301,6 +289,11 @@ public class PromiseDelegator<T> implements RPromise<T> {
 
     public CompletableFuture<T> toCompletableFuture() {
         return promise.toCompletableFuture();
+    }
+
+    @Override
+    public void onComplete(BiConsumer<? super T, ? super Throwable> action) {
+        promise.onComplete(action);
     }
 
 }

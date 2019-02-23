@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -72,8 +73,6 @@ import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -130,8 +129,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected MasterSlaveServersConfig config;
 
-    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<MasterSlaveEntry>(MAX_SLOT);
-    private final Map<RedisClient, MasterSlaveEntry> client2entry = PlatformDependent.newConcurrentHashMap();
+    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
+    private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
     private final RPromise<Boolean> shutdownPromise;
 
@@ -151,7 +150,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     private PublishSubscribeService subscribeService;
     
-    private final Map<Object, RedisConnection> nodeConnections = PlatformDependent.newConcurrentHashMap();
+    private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
     public MasterSlaveConnectionManager(MasterSlaveServersConfig cfg, Config config, UUID id) {
         this(config, id);
@@ -181,7 +180,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         } else if (cfg.getTransportMode() == TransportMode.KQUEUE) {
             if (cfg.getEventLoopGroup() == null) {
                 this.group = new KQueueEventLoopGroup(cfg.getNettyThreads(), new DefaultThreadFactory("redisson-netty"));
-        } else {
+            } else {
                 this.group = cfg.getEventLoopGroup();
             }
 
@@ -240,20 +239,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     }
     
-    protected RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg, final URI addr, RedisClient client, String sslHostname) {
+    protected RFuture<RedisConnection> connectToNode(BaseMasterSlaveServersConfig<?> cfg,  URI addr, RedisClient client, String sslHostname) {
         final Object key;
         if (client != null) {
             key = client;
         } else {
             key = addr;
         }
-        RedisConnection connection = nodeConnections.get(key);
-        if (connection != null) {
-            if (!connection.isActive()) {
+        RedisConnection conn = nodeConnections.get(key);
+        if (conn != null) {
+            if (!conn.isActive()) {
                 nodeConnections.remove(key);
-                connection.closeAsync();
+                conn.closeAsync();
             } else {
-                return RedissonPromise.newSucceededFuture(connection);
+                return RedissonPromise.newSucceededFuture(conn);
             }
         }
 
@@ -262,22 +261,18 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         final RPromise<RedisConnection> result = new RedissonPromise<RedisConnection>();
         RFuture<RedisConnection> future = client.connectAsync();
-        future.addListener(new FutureListener<RedisConnection>() {
-            @Override
-            public void operationComplete(Future<RedisConnection> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
+        future.onComplete((connection, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
 
-                RedisConnection connection = future.getNow();
-                if (connection.isActive()) {
-                    nodeConnections.put(key, connection);
-                    result.trySuccess(connection);
-                } else {
-                    connection.closeAsync();
-                    result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
-                }
+            if (connection.isActive()) {
+                nodeConnections.put(key, connection);
+                result.trySuccess(connection);
+            } else {
+                connection.closeAsync();
+                result.tryFailure(new RedisException("Connection to " + connection.getRedisClient().getAddr() + " is not active!"));
             }
         });
 
@@ -353,7 +348,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             }
             
             startDNSMonitoring(f.getNow());
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             stopThreads();
             throw e;
         }
@@ -457,6 +452,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
               .setClientName(config.getClientName())
+              .setDecodeInExecutor(cfg.isDecodeInExecutor())
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())
               .setKeepAlive(config.isKeepAlive())
@@ -527,13 +523,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         final MasterSlaveEntry entry = getEntry(slot);
         final RedisClient oldClient = entry.getClient();
         RFuture<RedisClient> future = entry.changeMaster(address);
-        future.addListener(new FutureListener<RedisClient>() {
-            @Override
-            public void operationComplete(Future<RedisClient> future) throws Exception {
-                if (future.isSuccess()) {
-                    client2entry.remove(oldClient);
-                    client2entry.put(entry.getClient(), entry);
-                }
+        future.onComplete((res, e) -> {
+            if (e == null) {
+                client2entry.remove(oldClient);
+                client2entry.put(entry.getClient(), entry);
             }
         });
         return future;
@@ -563,9 +556,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return RedissonPromise.newFailedFuture(ex);
         }
         // fix for https://github.com/redisson/redisson/issues/1548
-        if (source.getRedirect() != null &&
-                !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) &&
-                entry.hasSlave(source.getAddr())) {
+        if (source.getRedirect() != null 
+                && !URIBuilder.compare(entry.getClient().getAddr(), source.getAddr()) 
+                    && entry.hasSlave(source.getAddr())) {
             return entry.redirectedConnectionWriteOp(command, source.getAddr());
         }
         return entry.connectionWriteOp(command);
@@ -627,7 +620,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public void shutdown() {
-        shutdown(0, 2, TimeUnit.SECONDS);//default netty value
+        shutdown(0, 2, TimeUnit.SECONDS); //default netty value
     }
 
     @Override
@@ -650,7 +643,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
         for (MasterSlaveEntry entry : getEntrySet()) {
-            entry.shutdownAsync().addListener(listener);
+            entry.shutdownAsync().onComplete(listener);
         }
         
         result.awaitUninterruptibly(timeout, unit);
@@ -664,6 +657,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (cfg.getEventLoopGroup() == null) {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
+        
     }
 
     @Override

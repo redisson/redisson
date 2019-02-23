@@ -22,16 +22,15 @@ import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommands;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
 
 /**
  * @author Philipp Marx
  */
-public class LogHelper {
+public final class LogHelper {
 
     private static final int MAX_COLLECTION_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxCollectionLogSize", "10"));
     private static final int MAX_STRING_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxStringLogSize", "100"));
-    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "10000"));
+//    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "1000"));
 
     private LogHelper() {
     }
@@ -46,20 +45,21 @@ public class LogHelper {
         } else if (object instanceof Collection) {
             return toCollectionString((Collection<?>) object);
         } else if (object instanceof CommandData) {
-            CommandData<?, ?> cd = (CommandData<?, ?>)object;
+            CommandData<?, ?> cd = (CommandData<?, ?>) object;
             if (RedisCommands.AUTH.equals(cd.getCommand())) {
                 return cd.getCommand() + ", params: (password masked)";
             }
             return cd.getCommand() + ", params: " + LogHelper.toString(cd.getParams());
         } else if (object instanceof ByteBuf) {
             final ByteBuf byteBuf = (ByteBuf) object;
-            if (byteBuf.refCnt() > 0) {
-                if (byteBuf.writerIndex() > MAX_BYTEBUF_LOG_SIZE) {
-                    return new StringBuilder(byteBuf.toString(0, MAX_BYTEBUF_LOG_SIZE, CharsetUtil.UTF_8)).append("...").toString();
-                } else {
-                    return byteBuf.toString(0, byteBuf.writerIndex(), CharsetUtil.UTF_8);
-                }
-            }
+            // can't be used due to Buffer Leak error is appeared in log
+//            if (byteBuf.refCnt() > 0) {
+//                if (byteBuf.writerIndex() > MAX_BYTEBUF_LOG_SIZE) {
+//                    return new StringBuilder(byteBuf.toString(0, MAX_BYTEBUF_LOG_SIZE, CharsetUtil.UTF_8)).append("...").toString();
+//                } else {
+//                    return byteBuf.toString(0, byteBuf.writerIndex(), CharsetUtil.UTF_8);
+//                }
+//            }
             return byteBuf.toString();
         } else {
             return String.valueOf(object);

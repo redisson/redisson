@@ -242,7 +242,7 @@ public interface RMultimap<K, V> extends RExpirable, RMultimapAsync<K, V> {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    long fastRemove(K ... keys);
+    long fastRemove(K... keys);
 
     /**
      * Read all keys at once

@@ -112,13 +112,13 @@ public class ListMultiDecoder<T> implements MultiDecoder<Object> {
         return ds;
     }
     
-    public ListMultiDecoder(MultiDecoder<?> ... decoders) {
+    public ListMultiDecoder(MultiDecoder<?>... decoders) {
         this.decoders = decoders;
     }
     
     private Integer fixedIndex;
     
-    public ListMultiDecoder(Integer fixedIndex, MultiDecoder<?> ... decoders) {
+    public ListMultiDecoder(Integer fixedIndex, MultiDecoder<?>... decoders) {
         this.fixedIndex = fixedIndex;
         this.decoders = decoders;
     }

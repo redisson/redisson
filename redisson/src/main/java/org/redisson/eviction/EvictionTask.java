@@ -22,9 +22,6 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -59,47 +56,43 @@ abstract class EvictionTask implements Runnable {
         }
         
         RFuture<Integer> future = execute();
-        future.addListener(new FutureListener<Integer>() {
-            @Override
-            public void operationComplete(Future<Integer> future) throws Exception {
-                if (!future.isSuccess()) {
-                    schedule();
-                    return;
-                }
+        future.onComplete((size, e) -> {
+            if (e != null) {
+                schedule();
+                return;
+            }
 
-                Integer size = future.getNow();
-                if (size == -1) {
-                    schedule();
-                    return;
-                }
+            if (size == -1) {
+                schedule();
+                return;
+            }
 
-                if (sizeHistory.size() == 2) {
-                    if (sizeHistory.peekFirst() > sizeHistory.peekLast()
-                            && sizeHistory.peekLast() > size) {
-                        delay = Math.min(maxDelay, (int)(delay*1.5));
-                    }
+            if (sizeHistory.size() == 2) {
+                if (sizeHistory.peekFirst() > sizeHistory.peekLast()
+                        && sizeHistory.peekLast() > size) {
+                    delay = Math.min(maxDelay, (int) (delay*1.5));
+                }
 
 //                    if (sizeHistory.peekFirst() < sizeHistory.peekLast()
 //                            && sizeHistory.peekLast() < size) {
 //                        prevDelay = Math.max(minDelay, prevDelay/2);
 //                    }
 
-                    if (sizeHistory.peekFirst().intValue() == sizeHistory.peekLast()
-                            && sizeHistory.peekLast().intValue() == size) {
-                        if (size == keysLimit) {
-                            delay = Math.max(minDelay, delay/4);
-                        }
-                        if (size == 0) {
-                            delay = Math.min(maxDelay, (int)(delay*1.5));
-                        }
+                if (sizeHistory.peekFirst().intValue() == sizeHistory.peekLast()
+                        && sizeHistory.peekLast().intValue() == size) {
+                    if (size == keysLimit) {
+                        delay = Math.max(minDelay, delay/4);
                     }
-
-                    sizeHistory.pollFirst();
+                    if (size == 0) {
+                        delay = Math.min(maxDelay, (int) (delay*1.5));
+                    }
                 }
 
-                sizeHistory.add(size);
-                schedule();
+                sizeHistory.pollFirst();
             }
+
+            sizeHistory.add(size);
+            schedule();
         });
     }
 

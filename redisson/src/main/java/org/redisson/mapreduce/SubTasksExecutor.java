@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RFuture;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -33,7 +31,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class SubTasksExecutor {
 
-    public static class LatchListener implements FutureListener<Object> {
+    public static class LatchListener implements BiConsumer<Object, Throwable> {
 
         private CountDownLatch latch;
         
@@ -46,7 +44,7 @@ public class SubTasksExecutor {
         }
 
         @Override
-        public void operationComplete(Future<Object> future) throws Exception {
+        public void accept(Object t, Throwable u) {
             latch.countDown();
         }
         
@@ -67,7 +65,7 @@ public class SubTasksExecutor {
     
     public void submit(Runnable runnable) {
         RFuture<?> future = executor.submitAsync(runnable);
-        future.addListener(new LatchListener(latch));
+        future.onComplete(new LatchListener(latch));
         futures.add(future);
     }
     

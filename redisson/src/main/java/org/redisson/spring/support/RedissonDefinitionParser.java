@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.support;
 
+import java.util.List;
+
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -29,8 +31,6 @@ import org.springframework.core.Conventions;
 import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 import org.w3c.dom.Element;
-
-import java.util.List;
 
 /**
  *
@@ -90,9 +90,8 @@ public final class RedissonDefinitionParser
             parserContext.pushContainingComponent(compositeDef);
             List<Element> childElts = DomUtils.getChildElements(element);
             for (Element elt : childElts) {
-                if(BeanDefinitionParserDelegate
-                        .QUALIFIER_ELEMENT.equals(elt.getLocalName())) {
-                    continue;//parsed elsewhere
+                if (BeanDefinitionParserDelegate.QUALIFIER_ELEMENT.equals(elt.getLocalName())) {
+                    continue; //parsed elsewhere
                 }
                 String localName = parserContext.getDelegate().getLocalName(elt);
                 localName = Conventions.attributeNameToPropertyName(localName);

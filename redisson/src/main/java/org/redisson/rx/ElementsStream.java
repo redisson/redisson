@@ -15,14 +15,12 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.redisson.api.RFuture;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.LongConsumer;
@@ -35,13 +33,13 @@ import io.reactivex.processors.ReplayProcessor;
  */
 public class ElementsStream {
 
-    public static <V> Flowable<V> takeElements(final Callable<RFuture<V>> callable) {
-        final ReplayProcessor<V> p = ReplayProcessor.create();
+    public static <V> Flowable<V> takeElements(Supplier<RFuture<V>> callable) {
+        ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long n) throws Exception {
-                final AtomicLong counter = new AtomicLong(n);
-                final AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
+                AtomicLong counter = new AtomicLong(n);
+                AtomicReference<RFuture<V>> futureRef = new AtomicReference<RFuture<V>>();
                 
                 take(callable, p, counter, futureRef);
 
@@ -55,24 +53,21 @@ public class ElementsStream {
         });
     }
     
-    private static <V> void take(final Callable<RFuture<V>> factory, final ReplayProcessor<V> p, final AtomicLong counter, final AtomicReference<RFuture<V>> futureRef) throws Exception {
-        RFuture<V> future = factory.call();
+    private static <V> void take(Supplier<RFuture<V>> factory, ReplayProcessor<V> p, AtomicLong counter, AtomicReference<RFuture<V>> futureRef) {
+        RFuture<V> future = factory.get();
         futureRef.set(future);
-        future.addListener(new FutureListener<V>() {
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    p.onError(future.cause());
-                    return;
-                }
-                
-                p.onNext(future.getNow());
-                if (counter.decrementAndGet() == 0) {
-                    p.onComplete();
-                }
-                
-                take(factory, p, counter, futureRef);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                p.onError(e);
+                return;
             }
+            
+            p.onNext(res);
+            if (counter.decrementAndGet() == 0) {
+                p.onComplete();
+            }
+            
+            take(factory, p, counter, futureRef);
         });
     }
     

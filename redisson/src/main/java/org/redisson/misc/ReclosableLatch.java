@@ -27,6 +27,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * @author Manik Surtani (<a href="mailto:manik@jboss.org">manik@jboss.org</a>)
  * @since 4.0
  */
+@SuppressWarnings({"MultipleVariableDeclarations", "AvoidInlineConditionals", "UpperEll"})
 public class ReclosableLatch extends AbstractQueuedSynchronizer {
 
    private static final long serialVersionUID = 1744280161777661090l;

@@ -49,39 +49,41 @@ public class Config {
     private ClusterServersConfig clusterServersConfig;
 
     private ReplicatedServersConfig replicatedServersConfig;
-    
-    private  ConnectionManager connectionManager;
+
+    private ConnectionManager connectionManager;
 
     /**
      * Threads amount shared between all redis node clients
      */
-    private int threads = 0; // 0 = current_processors_amount * 2
-    
-    private int nettyThreads = 0; // 0 = current_processors_amount * 2
+    private int threads = 16;
+
+    private int nettyThreads = 32;
 
     /**
      * Redis key/value codec. JsonJacksonCodec used by default
      */
     private Codec codec;
-    
+
     private ExecutorService executor;
-    
+
     /**
      * Config option for enabling Redisson Reference feature.
      * Default value is TRUE
      */
     private boolean referenceEnabled = true;
-    
+
     private TransportMode transportMode = TransportMode.NIO;
 
     private EventLoopGroup eventLoopGroup;
 
     private long lockWatchdogTimeout = 30 * 1000;
-    
+
     private boolean keepPubSubOrder = true;
-    
+
+    private boolean decodeInExecutor = false;
+
     private boolean useScriptCache = false;
-    
+
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
@@ -89,7 +91,7 @@ public class Config {
 
     public Config() {
     }
-    
+
     static {
         URIBuilder.patchUriObject();
     }
@@ -102,6 +104,7 @@ public class Config {
             oldConf.setCodec(new FstCodec());
         }
 
+        setDecodeInExecutor(oldConf.isDecodeInExecutor());
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
@@ -129,7 +132,7 @@ public class Config {
             setReplicatedServersConfig(new ReplicatedServersConfig(oldConf.getReplicatedServersConfig()));
         }
         if (oldConf.getConnectionManager() != null) {
-        	useCustomServers(oldConf.getConnectionManager());
+            useCustomServers(oldConf.getConnectionManager());
         }
 
     }
@@ -150,7 +153,7 @@ public class Config {
     public Codec getCodec() {
         return codec;
     }
-    
+
     /**
      * Config option indicate whether Redisson Reference feature is enabled.
      * <p>
@@ -172,7 +175,7 @@ public class Config {
     public void setReferenceEnabled(boolean redissonReferenceEnabled) {
         this.referenceEnabled = redissonReferenceEnabled;
     }
-    
+
     /**
      * Init cluster servers configuration
      *
@@ -231,28 +234,27 @@ public class Config {
     void setReplicatedServersConfig(ReplicatedServersConfig replicatedServersConfig) {
         this.replicatedServersConfig = replicatedServersConfig;
     }
-    
+
     /**
-	 * Returns the connection manager if supplied via
-	 * {@link #useCustomServers(ConnectionManager)}
-	 * 
-	 * @return ConnectionManager
-	 */
+     * Returns the connection manager if supplied via
+     * {@link #useCustomServers(ConnectionManager)}
+     * 
+     * @return ConnectionManager
+     */
     ConnectionManager getConnectionManager() {
         return connectionManager;
     }
 
     /**
-	 * This is an extension point to supply custom connection manager.
-	 * 
-	 * @see ReplicatedConnectionManager on how to implement a connection
-	 *      manager.
-	 * @param connectionManager for supply
-	 */
+     * This is an extension point to supply custom connection manager.
+     * 
+     * @see ReplicatedConnectionManager on how to implement a connection
+     *      manager.
+     * @param connectionManager for supply
+     */
     public void useCustomServers(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
     }
-    
 
     /**
      * Init single server configuration.
@@ -344,7 +346,7 @@ public class Config {
     public boolean isClusterConfig() {
         return clusterServersConfig != null;
     }
-    
+
     public boolean isSentinelConfig() {
         return sentinelServersConfig != null;
     }
@@ -358,7 +360,7 @@ public class Config {
      * invocation handlers of <code>RRemoteService</code> object  
      * and <code>RExecutorService</code> tasks.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>16</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
@@ -412,14 +414,15 @@ public class Config {
         this.transportMode = transportMode;
         return this;
     }
+
     public TransportMode getTransportMode() {
         return transportMode;
     }
-    
+
     /**
      * Threads amount shared between all redis clients used by Redisson.
      * <p>
-     * Default is <code>0</code>.
+     * Default is <code>32</code>.
      * <p>
      * <code>0</code> means <code>current_processors_amount * 2</code>
      *
@@ -430,11 +433,11 @@ public class Config {
         this.nettyThreads = nettyThreads;
         return this;
     }
-    
+
     public int getNettyThreads() {
         return nettyThreads;
     }
-    
+
     /**
      * Use external ExecutorService. ExecutorService processes 
      * all listeners of <code>RTopic</code>, 
@@ -450,7 +453,7 @@ public class Config {
         this.executor = executor;
         return this;
     }
-    
+
     public ExecutorService getExecutor() {
         return executor;
     }
@@ -497,6 +500,7 @@ public class Config {
         this.lockWatchdogTimeout = lockWatchdogTimeout;
         return this;
     }
+
     public long getLockWatchdogTimeout() {
         return lockWatchdogTimeout;
     }
@@ -516,6 +520,7 @@ public class Config {
         this.keepPubSubOrder = keepPubSubOrder;
         return this;
     }
+
     public boolean isKeepPubSubOrder() {
         return keepPubSubOrder;
     }
@@ -531,6 +536,7 @@ public class Config {
         this.addressResolverGroupFactory = addressResolverGroupFactory;
         return this;
     }
+
     public AddressResolverGroupFactory getAddressResolverGroupFactory() {
         return addressResolverGroupFactory;
     }
@@ -652,7 +658,7 @@ public class Config {
     public static Config fromYAML(File file) throws IOException {
         return fromYAML(file, null);
     }
-    
+
     public static Config fromYAML(File file, ClassLoader classLoader) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromYAML(file, Config.class, classLoader);
@@ -710,9 +716,27 @@ public class Config {
         this.useScriptCache = useScriptCache;
         return this;
     }
+
     public boolean isUseScriptCache() {
         return useScriptCache;
     }
 
-    
+    public boolean isDecodeInExecutor() {
+        return decodeInExecutor;
+    }
+
+    /**
+     * Defines whether to decode data by <code>codec</code> in executor's threads or netty's threads. 
+     * If decoding data process takes long time and netty thread is used then `RedisTimeoutException` could arise time to time.
+     * <p>
+     * Default is <code>false</code>.
+     * 
+     * @param decodeInExecutor - <code>true</code> to use executor's threads, <code>false</code> to use netty's threads.
+     * @return config
+     */
+    public Config setDecodeInExecutor(boolean decodeInExecutor) {
+        this.decodeInExecutor = decodeInExecutor;
+        return this;
+    }
+
 }

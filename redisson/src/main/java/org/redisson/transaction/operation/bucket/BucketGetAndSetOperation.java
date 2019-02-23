@@ -19,6 +19,7 @@ import org.redisson.RedissonBucket;
 import org.redisson.RedissonLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
@@ -31,24 +32,26 @@ public class BucketGetAndSetOperation<V> extends TransactionalOperation {
 
     private Object value;
     private String lockName;
+    private String transactionId;
     
-    public BucketGetAndSetOperation(String name, String lockName, Codec codec, Object value) {
+    public BucketGetAndSetOperation(String name, String lockName, Codec codec, Object value, String transactionId) {
         super(name, codec);
         this.value = value;
         this.lockName = lockName;
+        this.transactionId = transactionId;
     }
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
         RedissonBucket<V> bucket = new RedissonBucket<V>(codec, commandExecutor, name);
         bucket.getAndSetAsync((V) value);
-        RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+        RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
         lock.unlockAsync();
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
-        RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+        RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
         lock.unlockAsync();
     }
     

@@ -52,7 +52,7 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
                 ByteBufOutputStream os = new ByteBufOutputStream(out);
-                mapObjectMapper.writeValue((OutputStream)os, in);
+                mapObjectMapper.writeValue((OutputStream) os, in);
                 return os.buffer();
             } catch (IOException e) {
                 out.release();
@@ -65,9 +65,9 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             if (valueClass != null) {
-                return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueClass);
+                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueClass);
             }
-            return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), valueTypeReference);
+            return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), valueTypeReference);
         }
     };
     
@@ -75,9 +75,9 @@ public class JsonJacksonMapCodec extends JsonJacksonCodec {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             if (keyClass != null) {
-                return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), keyClass);
+                return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), keyClass);
             }
-            return mapObjectMapper.readValue((InputStream)new ByteBufInputStream(buf), keyTypeReference);
+            return mapObjectMapper.readValue((InputStream) new ByteBufInputStream(buf), keyTypeReference);
         }
     };
 

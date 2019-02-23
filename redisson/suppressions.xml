@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE suppressions PUBLIC
+  "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+  "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+  <suppress checks="FileLength"
+            files="JCache.java|RedissonMapCache.java"/>
+  <suppress checks="NestedTryDepth"
+            files="JCache.java"
+            lines="785-845"/>
+</suppressions>

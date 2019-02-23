@@ -43,8 +43,8 @@ public class PubSubPatternMessageDecoder implements MultiDecoder<Object> {
     
     @Override
     public PubSubPatternMessage decode(List<Object> parts, State state) {
-        ChannelName patternName = new ChannelName((byte[])parts.get(1));
-        ChannelName name = new ChannelName((byte[])parts.get(2));
+        ChannelName patternName = new ChannelName((byte[]) parts.get(1));
+        ChannelName name = new ChannelName((byte[]) parts.get(2));
         return new PubSubPatternMessage(patternName, name, parts.get(3));
     }
 

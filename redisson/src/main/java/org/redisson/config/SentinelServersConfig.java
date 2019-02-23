@@ -72,7 +72,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      * @param addresses of Redis
      * @return config
      */
-    public SentinelServersConfig addSentinelAddress(String ... addresses) {
+    public SentinelServersConfig addSentinelAddress(String... addresses) {
         for (String address : addresses) {
             sentinelAddresses.add(URIBuilder.create(address));
         }

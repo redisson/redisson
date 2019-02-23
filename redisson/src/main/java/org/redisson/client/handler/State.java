@@ -33,16 +33,10 @@ public class State {
 
     private int level = -1;
     private List<StateLevel> levels;
-    private final boolean makeCheckpoint;
 
-    public State(boolean makeCheckpoint) {
-        this.makeCheckpoint = makeCheckpoint;
+    public State() {
     }
 
-    public boolean isMakeCheckpoint() {
-        return makeCheckpoint;
-    }
-    
     public int getLevel() {
         return level;
     }

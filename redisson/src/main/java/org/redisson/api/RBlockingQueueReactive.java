@@ -42,7 +42,7 @@ public interface RBlockingQueueReactive<V> extends RQueueReactive<V> {
      * @return Mono object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Mono<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Mono<V> pollFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Removes at most the given number of available elements from

@@ -66,8 +66,8 @@ public class KryoCodec extends BaseCodec {
         }
 
         public Kryo get() {
-            Kryo kryo;
-            if ((kryo = objects.poll()) == null) {
+            Kryo kryo = objects.poll();
+            if (kryo == null) {
                 kryo = createInstance();
             }
             return kryo;

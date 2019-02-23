@@ -40,7 +40,7 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    V pollFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
+    V pollFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
     /**
      * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,

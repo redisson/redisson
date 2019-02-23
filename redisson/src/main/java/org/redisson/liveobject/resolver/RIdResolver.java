@@ -21,10 +21,9 @@ import org.redisson.api.annotation.RId;
 /**
  *
  * @author Rui Gu (https://github.com/jackygurui)
- * @param <A> RId annotation to resolve
  * @param <V> Value type
  */
-public interface RIdResolver<A extends RId, V> extends Resolver<Class<?>, A, V>{
+public interface RIdResolver<V> {
 
     /**
      * RLiveObjectService instantiate the class and invokes this method to get
@@ -32,9 +31,10 @@ public interface RIdResolver<A extends RId, V> extends Resolver<Class<?>, A, V>{
      * 
      * @param cls the class of the LiveObject.
      * @param annotation the RId annotation used in the class.
+     * @param idFieldName field id
      * @param redisson instance
      * @return resolved RId field value.
      */
-    public V resolve(Class<?> cls, A annotation, String idFieldName, RedissonClient redisson);
+    V resolve(Class<?> cls, RId annotation, String idFieldName, RedissonClient redisson);
 
 }

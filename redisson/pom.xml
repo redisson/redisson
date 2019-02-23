@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.10.2-SNAPSHOT</version>
+        <version>3.10.3-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -75,7 +75,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.2.3.RELEASE</version>
+            <version>3.2.6.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
@@ -92,7 +92,7 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>3.1.2</version>
+            <version>3.1.6</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -117,25 +117,19 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.0.48</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-logging-juli</artifactId>
-            <version>8.0.48</version>
+            <version>8.5.34</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>8.0.48</version>
+            <version>8.5.34</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>8.0.48</version>
+            <version>8.5.34</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -323,23 +317,13 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.5</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-eclipse-plugin</artifactId>
-                <version>2.10</version>
-                <configuration>
-                    <downloadSources>true</downloadSources>
-                    <forceRecheck>true</forceRecheck>
-                </configuration>
+                <version>2.7</version>
             </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.9.0</version>
+                <version>3.11.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -365,7 +349,7 @@
                     <execution>
                         <phase>verify</phase>
                         <goals>
-                            <goal>checkstyle</goal>
+                            <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -374,6 +358,13 @@
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
                 </configuration>
+                <dependencies>
+                    <dependency>
+                       <groupId>com.puppycrawl.tools</groupId>
+                       <artifactId>checkstyle</artifactId>
+                       <version>8.17</version>
+                  </dependency>
+                </dependencies>
             </plugin>
 
             <plugin>

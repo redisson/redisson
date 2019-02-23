@@ -19,6 +19,7 @@ package org.redisson.misc;
  * HighwayHash algorithm. See <a href="https://github.com/google/highwayhash">
  * HighwayHash on GitHub</a>
  */
+@SuppressWarnings({"OperatorWrap", "BooleanExpressionComplexity", "UnnecessaryParentheses", "WhitespaceAfter", "ParameterName", "LocalVariableName"})
 public final class HighwayHash {
   private final long[] v0 = new long[4];
   private final long[] v1 = new long[4];

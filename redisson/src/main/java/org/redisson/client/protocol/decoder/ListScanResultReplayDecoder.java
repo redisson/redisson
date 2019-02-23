@@ -34,7 +34,7 @@ public class ListScanResultReplayDecoder implements MultiDecoder<ListScanResult<
     
     @Override
     public ListScanResult<Object> decode(List<Object> parts, State state) {
-        return new ListScanResult<Object>((Long)parts.get(0), (List<Object>)parts.get(1));
+        return new ListScanResult<Object>((Long) parts.get(0), (List<Object>) parts.get(1));
     }
 
 }

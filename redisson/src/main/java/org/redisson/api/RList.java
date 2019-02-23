@@ -35,7 +35,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @param indexes of elements
      * @return list of elements
      */
-    List<V> get(int ...indexes);
+    List<V> get(int...indexes);
     
     /**
      * Returns <code>RMapReduce</code> object associated with this map

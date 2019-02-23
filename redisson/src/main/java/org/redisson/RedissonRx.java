@@ -312,7 +312,7 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public <V> RQueueRx<V> getQueue(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
-                new RedissonListRx<V>(new RedissonList<V>(codec,commandExecutor, name, null)), RQueueRx.class);
+                new RedissonListRx<V>(new RedissonList<V>(codec, commandExecutor, name, null)), RQueueRx.class);
     }
 
     @Override

@@ -45,7 +45,7 @@ public class PendingResultDecoder implements MultiDecoder<Object> {
         for (List<String> mapping : customerParts) {
             consumerNames.put(mapping.get(0), Long.valueOf(mapping.get(1)));
         }
-        return new PendingResult((Long)parts.get(0), convertor.convert(parts.get(1)), convertor.convert(parts.get(2)), consumerNames);
+        return new PendingResult((Long) parts.get(0), convertor.convert(parts.get(1)), convertor.convert(parts.get(2)), consumerNames);
     }
 
 }

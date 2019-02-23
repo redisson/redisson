@@ -40,7 +40,7 @@ public interface RBlockingQueueAsync<V> extends RQueueAsync<V> {
      * @return Future object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Removes at most the given number of available elements from

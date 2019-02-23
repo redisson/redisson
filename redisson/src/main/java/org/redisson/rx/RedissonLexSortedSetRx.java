@@ -41,16 +41,16 @@ public class RedissonLexSortedSetRx {
         return new PublisherAdder<String>() {
             @Override
             public RFuture<Boolean> add(Object e) {
-                return instance.addAsync((String)e);
+                return instance.addAsync((String) e);
             }
         }.addAll(c);
     }
     
-    private Flowable<String> scanIteratorReactive(final String pattern, final int count) {
+    private Flowable<String> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<String>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                return ((RedissonScoredSortedSet<String>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((RedissonScoredSortedSet<String>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         }.create();
     }

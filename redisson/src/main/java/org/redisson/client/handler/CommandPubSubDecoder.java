@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.ChannelName;
@@ -40,9 +41,7 @@ import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.misc.LogHelper;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.CharsetUtil;
-import io.netty.util.internal.PlatformDependent;
+import io.netty.channel.Channel;
 
 /**
  * Redis Publish Subscribe protocol decoder
@@ -54,14 +53,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     private static final Set<String> MESSAGES = new HashSet<String>(Arrays.asList("subscribe", "psubscribe", "punsubscribe", "unsubscribe"));
     // It is not needed to use concurrent map because responses are coming consecutive
-    private final Map<ChannelName, PubSubEntry> entries = new HashMap<ChannelName, PubSubEntry>();
-    private final Map<PubSubKey, CommandData<Object, Object>> commands = PlatformDependent.newConcurrentHashMap();
+    private final Map<ChannelName, PubSubEntry> entries = new HashMap<>();
+    private final Map<PubSubKey, CommandData<Object, Object>> commands = new ConcurrentHashMap<>();
 
-    private final ExecutorService executor;
     private final boolean keepOrder;
     
-    public CommandPubSubDecoder(ExecutorService executor, boolean keepOrder) {
-        this.executor = executor;
+    public CommandPubSubDecoder(ExecutorService executor, boolean keepOrder, boolean decodeInExecutor) {
+        super(executor, decodeInExecutor);
         this.keepOrder = keepOrder;
     }
 
@@ -71,41 +69,37 @@ public class CommandPubSubDecoder extends CommandDecoder {
     }
 
     @Override
-    protected void decodeCommand(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data) throws Exception {
+    protected void decodeCommand(Channel channel, ByteBuf in, QueueCommand data) throws Exception {
         if (data == null) {
             try {
                 while (in.writerIndex() > in.readerIndex()) {
-                    decode(in, null, null, ctx, false);
+                    decode(in, null, null, channel, false, null);
                 }
-                sendNext(ctx);
+                sendNext(channel);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + ctx.channel() + ", reply: " + LogHelper.toString(in), e);
-                sendNext(ctx);
+                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
+                sendNext(channel);
                 throw e;
             }
         } else if (data instanceof CommandData) {
-            CommandData<Object, Object> cmd = (CommandData<Object, Object>)data;
+            CommandData<Object, Object> cmd = (CommandData<Object, Object>) data;
             try {
-                if (state().isMakeCheckpoint()) {
-                    decodeFromCheckpoint(ctx, in, data, cmd);
-                } else {
-                    while (in.writerIndex() > in.readerIndex()) {
-                        decode(in, cmd, null, ctx, false);
-                    }
+                while (in.writerIndex() > in.readerIndex()) {
+                    decode(in, cmd, null, channel, false, null);
                 }
-                sendNext(ctx, data);
+                sendNext(channel, data);
             } catch (Exception e) {
-                log.error("Unable to decode data. channel: " + ctx.channel() + ", reply: " + LogHelper.toString(in), e);
+                log.error("Unable to decode data. channel: " + channel + ", reply: " + LogHelper.toString(in), e);
                 cmd.tryFailure(e);
-                sendNext(ctx);
+                sendNext(channel);
                 throw e;
             }
         }
     }
     
     @Override
-    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, ChannelHandlerContext ctx,
-            final Object result) throws IOException {
+    protected void decodeResult(CommandData<Object, Object> data, List<Object> parts, Channel channel,
+            Object result) throws IOException {
         if (executor.isShutdown()) {
             return;
         }
@@ -113,7 +107,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         if (result instanceof Message) {
             checkpoint();
 
-            final RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(ctx.channel());
+            RedisPubSubConnection pubSubConnection = RedisPubSubConnection.getFrom(channel);
             ChannelName channelName = ((Message) result).getChannel();
             if (result instanceof PubSubStatusMessage) {
                 String operation = ((PubSubStatusMessage) result).getType().name().toLowerCase();
@@ -127,7 +121,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 if (Arrays.asList(RedisCommands.PUNSUBSCRIBE.getName(), RedisCommands.UNSUBSCRIBE.getName()).contains(d.getCommand().getName())) {
                     commands.remove(key);
                     if (result instanceof PubSubPatternMessage) {
-                        channelName = ((PubSubPatternMessage)result).getPattern();
+                        channelName = ((PubSubPatternMessage) result).getPattern();
                     }
                     PubSubEntry entry = entries.remove(channelName);
                     if (keepOrder) {
@@ -139,7 +133,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
             
             if (keepOrder) {
                 if (result instanceof PubSubPatternMessage) {
-                    channelName = ((PubSubPatternMessage)result).getPattern();
+                    channelName = ((PubSubPatternMessage) result).getPattern();
                 }
                 PubSubEntry entry = entries.get(channelName);
                 if (entry != null) {
@@ -161,40 +155,37 @@ public class CommandPubSubDecoder extends CommandDecoder {
             }
         } else {
             if (data != null && data.getCommand().getName().equals("PING")) {
-                super.decodeResult(data, parts, ctx, result);
+                super.decodeResult(data, parts, channel, result);
             }
         }
     }
 
-    private void enqueueMessage(Object result, final RedisPubSubConnection pubSubConnection, final PubSubEntry entry) {
-        if (result != null) {
-            entry.getQueue().add((Message)result);
+    private void enqueueMessage(Object res, RedisPubSubConnection pubSubConnection, PubSubEntry entry) {
+        if (res != null) {
+            entry.getQueue().add((Message) res);
         }
         
         if (entry.getSent().compareAndSet(false, true)) {
-            executor.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        while (true) {
-                            Message result = entry.getQueue().poll();
-                            if (result != null) {
-                                if (result instanceof PubSubStatusMessage) {
-                                    pubSubConnection.onMessage((PubSubStatusMessage) result);
-                                } else if (result instanceof PubSubMessage) {
-                                    pubSubConnection.onMessage((PubSubMessage) result);
-                                } else if (result instanceof PubSubPatternMessage) {
-                                    pubSubConnection.onMessage((PubSubPatternMessage) result);
-                                }
-                            } else {
-                                break;
+            executor.execute(() -> {
+                try {
+                    while (true) {
+                        Message result = entry.getQueue().poll();
+                        if (result != null) {
+                            if (result instanceof PubSubStatusMessage) {
+                                pubSubConnection.onMessage((PubSubStatusMessage) result);
+                            } else if (result instanceof PubSubMessage) {
+                                pubSubConnection.onMessage((PubSubMessage) result);
+                            } else if (result instanceof PubSubPatternMessage) {
+                                pubSubConnection.onMessage((PubSubPatternMessage) result);
                             }
+                        } else {
+                            break;
                         }
-                    } finally {
-                        entry.getSent().set(false);
-                        if (!entry.getQueue().isEmpty()) {
-                            enqueueMessage(null, pubSubConnection, entry);
-                        }
+                    }
+                } finally {
+                    entry.getSent().set(false);
+                    if (!entry.getQueue().isEmpty()) {
+                        enqueueMessage(null, pubSubConnection, entry);
                     }
                 }
             });
@@ -215,13 +206,13 @@ public class CommandPubSubDecoder extends CommandDecoder {
                 return null;
             }
             return commandData.getCommand().getReplayMultiDecoder();
-        } else if (command.equals("message")) {
+        } else if ("message".equals(command)) {
             byte[] channelName = (byte[]) parts.get(1);
             return entries.get(new ChannelName(channelName)).getDecoder();
-        } else if (command.equals("pmessage")) {
+        } else if ("pmessage".equals(command)) {
             byte[] patternName = (byte[]) parts.get(1);
             return entries.get(new ChannelName(patternName)).getDecoder();
-        } else if (command.equals("pong")) {
+        } else if ("pong".equals(command)) {
             return new ListObjectDecoder<Object>(0);
         }
 

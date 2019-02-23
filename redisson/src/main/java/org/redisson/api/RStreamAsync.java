@@ -136,7 +136,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - stream ids
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Transfers ownership of pending messages by id to a new consumer 
@@ -149,7 +149,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - Stream Message IDs
      * @return list of Stream Message IDs
      */
-    RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -159,7 +159,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -170,7 +170,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -183,7 +183,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -197,7 +197,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -208,7 +208,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -462,7 +462,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -471,7 +471,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId... ids);
 
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -482,7 +482,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -494,7 +494,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data by specified stream name including this stream.

@@ -46,7 +46,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
     public List<ClusterNodeInfo> decode(ByteBuf buf, State state) throws IOException {
         String response = buf.toString(CharsetUtil.UTF_8);
         
-        List<ClusterNodeInfo> nodes = new ArrayList<ClusterNodeInfo>();
+        List<ClusterNodeInfo> nodes = new ArrayList<>();
         for (String nodeInfo : response.split("\n")) {
             ClusterNodeInfo node = new ClusterNodeInfo(nodeInfo);
             String[] params = nodeInfo.split(" ");
@@ -89,9 +89,9 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
                     }
 
                     String[] parts = slots.split("-");
-                    if(parts.length == 1) {
+                    if (parts.length == 1) {
                         node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[0])));
-                    } else if(parts.length == 2) {
+                    } else if (parts.length == 2) {
                         node.addSlotRange(new ClusterSlotRange(Integer.valueOf(parts[0]), Integer.valueOf(parts[1])));
                     }
                 }

@@ -45,7 +45,7 @@ import io.netty.buffer.ByteBuf;
 public abstract class RedissonObject implements RObject {
 
     protected final CommandAsyncExecutor commandExecutor;
-    private final String name;
+    private String name;
     protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
@@ -113,7 +113,7 @@ public abstract class RedissonObject implements RObject {
     }
     
     public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
-        return commandExecutor.evalWriteAsync((String)keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                   "local total = 0;"
                 + "for j = 1, #KEYS, 1 do "
                     + "local size = redis.call('memory', 'usage', KEYS[j]); "
@@ -132,7 +132,13 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
+        RFuture<Void> f = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
+        f.onComplete((r, e) -> {
+            if (e == null) {
+                this.name = newName;
+            }
+        });
+        return f;
     }
 
     @Override
@@ -172,7 +178,14 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getName(), newName);
+        RFuture<Boolean> f = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getName(), newName);
+        f.onComplete((value, e) -> {
+            if (e == null && value) {
+                this.name = newName;
+            }
+        });
+        return f;
+
     }
 
     @Override

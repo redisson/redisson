@@ -32,12 +32,12 @@ import org.w3c.dom.Element;
 public class RedissonGenericObjectDefinitionParser
         extends AbstractRedissonNamespaceDefinitionParser {
     
-    private final static String KEY_ATTRIBUTE = "key";
-    private final static String TOPIC_ATTRIBUTE = "topic";
-    private final static String PATTERN_ATTRIBUTE = "pattern";
-    private final static String SERVICE_ATTRIBUTE = "service";
-    private final static String CODEC_REF_ATTRIBUTE = "codec-ref";
-    private final static String FAIL_LOCK = "fairLock";
+    private static final String KEY_ATTRIBUTE = "key";
+    private static final String TOPIC_ATTRIBUTE = "topic";
+    private static final String PATTERN_ATTRIBUTE = "pattern";
+    private static final String SERVICE_ATTRIBUTE = "service";
+    private static final String CODEC_REF_ATTRIBUTE = "codec-ref";
+    private static final String FAIL_LOCK = "fairLock";
 
     RedissonGenericObjectDefinitionParser(RedissonNamespaceParserSupport helper) {
         super(helper, RedissonNamespaceParserSupport.REDISSON_REF_ATTRIBUTE);
@@ -78,10 +78,14 @@ public class RedissonGenericObjectDefinitionParser
                 = Conventions.attributeNameToPropertyName(
                         element.getLocalName());
         try {
-            return Class.forName(RedissonNamespaceParserSupport.API_CLASS_PATH_PREFIX
-                    + (StringUtils.capitalize(FAIL_LOCK.equals(elementName)
-                            ? "lock"
-                            : elementName)));
+            String name = RedissonNamespaceParserSupport.API_CLASS_PATH_PREFIX;
+            if (FAIL_LOCK.equals(elementName)) {
+                name += StringUtils.capitalize("lock");
+            } else {
+                name += StringUtils.capitalize(elementName);
+            }
+            
+            return Class.forName(name);
         } catch (ClassNotFoundException ex) {
             throw new IllegalArgumentException(ex);
         }

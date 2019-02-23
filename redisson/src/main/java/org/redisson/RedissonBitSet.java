@@ -83,7 +83,16 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Boolean> setAsync(long bitIndex, boolean value) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT, getName(), bitIndex, value ? 1 : 0);
+        int val = toInt(value);
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT, getName(), bitIndex, val);
+    }
+
+    protected int toInt(boolean value) {
+        int val = 0;
+        if (value) {
+            val = 1;
+        }
+        return val;
     }
 
     @Override
@@ -199,9 +208,10 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     @Override
     public RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value) {
+        int val = toInt(value);
         CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
         for (long i = fromIndex; i < toIndex; i++) {
-            executorService.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getName(), i, value ? 1 : 0);
+            executorService.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.SETBIT_VOID, getName(), i, val);
         }
         return executorService.executeAsyncVoid();
     }

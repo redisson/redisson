@@ -91,7 +91,7 @@ public class CommandData<T, R> implements QueueCommand {
     @Override
     public List<CommandData<Object, Object>> getPubSubOperations() {
         if (RedisCommands.PUBSUB_COMMANDS.contains(getCommand().getName())) {
-            return Collections.singletonList((CommandData<Object, Object>)this);
+            return Collections.singletonList((CommandData<Object, Object>) this);
         }
         return Collections.emptyList();
     }

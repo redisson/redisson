@@ -17,6 +17,7 @@ package org.redisson.executor;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
@@ -32,8 +33,6 @@ import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * 
@@ -136,8 +135,7 @@ public class ScheduledTasksService extends TasksService {
     protected RequestId generateRequestId() {
         if (requestId == null) {
             byte[] id = new byte[17];
-            // TODO JDK UPGRADE replace to native ThreadLocalRandom
-            PlatformDependent.threadLocalRandom().nextBytes(id);
+            ThreadLocalRandom.current().nextBytes(id);
             id[0] = 1;
             return new RequestId(id);
         }

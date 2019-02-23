@@ -42,7 +42,7 @@ public class RedissonLexSortedSetReactive {
         return new PublisherAdder<String>() {
             @Override
             public RFuture<Boolean> add(Object e) {
-                return instance.addAsync((String)e);
+                return instance.addAsync((String) e);
             }
         }.addAll(c);
     }
@@ -51,7 +51,7 @@ public class RedissonLexSortedSetReactive {
         return Flux.create(new SetReactiveIterator<String>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                return ((RedissonScoredSortedSet<String>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+                return ((RedissonScoredSortedSet<String>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         });
     }

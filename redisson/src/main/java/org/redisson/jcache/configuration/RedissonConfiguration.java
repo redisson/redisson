@@ -18,7 +18,6 @@ package org.redisson.jcache.configuration;
 import javax.cache.configuration.Configuration;
 import javax.cache.configuration.MutableConfiguration;
 
-import org.redisson.Redisson;
 import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 

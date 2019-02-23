@@ -25,6 +25,7 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
  * @author Nikita Koksharov
  */
 // TODO refactor to AbstractQueuedLongSynchronizer
+@SuppressWarnings({"MultipleVariableDeclarations", "AvoidInlineConditionals", "UpperEll"})
 public class InfinitySemaphoreLatch extends AbstractQueuedSynchronizer {
 
     private static final long serialVersionUID = 1744280161777661090l;

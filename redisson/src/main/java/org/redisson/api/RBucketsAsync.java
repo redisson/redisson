@@ -33,7 +33,7 @@ public interface RBucketsAsync {
      * @param keys - keys
      * @return Map with name of bucket as key and bucket as value
      */
-    <V> RFuture<Map<String, V>> getAsync(String ... keys);
+    <V> RFuture<Map<String, V>> getAsync(String... keys);
 
     /**
      * Try to save objects mapped by Redis key.
@@ -52,5 +52,13 @@ public interface RBucketsAsync {
      * @return void
      */
     RFuture<Void> setAsync(Map<String, ?> buckets);
+    
+    /**
+     * Delete multiple objects by name
+     *
+     * @param keys - object names
+     * @return number of removed keys
+     */
+    RFuture<Long> deleteAsync(String... keys);
     
 }

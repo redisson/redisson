@@ -39,9 +39,6 @@ import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -101,21 +98,18 @@ public class TasksService extends BaseRemoteService {
         RFuture<Boolean> future = addAsync(requestQueueName, request);
         result.setAddFuture(future);
         
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                if (!future.getNow()) {
-                    promise.cancel(true);
-                    return;
-                }
-                
-                promise.trySuccess(true);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            if (!res) {
+                promise.cancel(true);
+                return;
+            }
+            
+            promise.trySuccess(true);
         });
         
         return promise;
@@ -189,40 +183,35 @@ public class TasksService extends BaseRemoteService {
         
         String requestQueueName = getRequestQueueName(RemoteExecutorService.class);
         RFuture<Boolean> removeFuture = removeAsync(requestQueueName, requestId);
-        removeFuture.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
+        removeFuture.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            
+            if (res) {
+                result.trySuccess(true);
+                return;
+            }
+            
+            RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
+            canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
+            canceledRequests.expireAsync(60, TimeUnit.SECONDS);
+            
+            final RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<RemoteServiceCancelResponse>();
+            scheduleCheck(cancelResponseMapName, requestId, response);
+            response.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
                     return;
                 }
                 
-                if (future.getNow()) {
-                    result.trySuccess(true);
-                } else {
-                    RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
-                    canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
-                    canceledRequests.expireAsync(60, TimeUnit.SECONDS);
-                    
-                    final RPromise<RemoteServiceCancelResponse> response = new RedissonPromise<RemoteServiceCancelResponse>();
-                    scheduleCheck(cancelResponseMapName, requestId, response);
-                    response.addListener(new FutureListener<RemoteServiceCancelResponse>() {
-                        @Override
-                        public void operationComplete(Future<RemoteServiceCancelResponse> future) throws Exception {
-                            if (!future.isSuccess()) {
-                                result.tryFailure(future.cause());
-                                return;
-                            }
-                            
-                            if (response.getNow() == null) {
-                                result.trySuccess(false);
-                                return;
-                            }
-                            result.trySuccess(response.getNow().isCanceled());
-                        }
-                    });
+                if (response.getNow() == null) {
+                    result.trySuccess(false);
+                    return;
                 }
-            }
+                result.trySuccess(response.getNow().isCanceled());
+            });
         });
 
         return result;

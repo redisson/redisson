@@ -21,11 +21,8 @@ import java.util.List;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonKeys;
 import org.redisson.client.RedisClient;
-import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.connection.MasterSlaveEntry;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
 import io.reactivex.functions.LongConsumer;
 import io.reactivex.processors.ReplayProcessor;
@@ -38,7 +35,6 @@ import io.reactivex.processors.ReplayProcessor;
 public class RedissonKeysRx {
 
     private final CommandRxExecutor commandExecutor;
-
     private final RedissonKeys instance;
 
     public RedissonKeysRx(CommandRxExecutor commandExecutor) {
@@ -58,8 +54,8 @@ public class RedissonKeysRx {
         return Flowable.merge(publishers);
     }
 
-    private Publisher<String> createKeysIterator(final MasterSlaveEntry entry, final String pattern, final int count) {
-        final ReplayProcessor<String> p = ReplayProcessor.create();
+    private Publisher<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count) {
+        ReplayProcessor<String> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
 
             private RedisClient client;
@@ -75,49 +71,43 @@ public class RedissonKeysRx {
             }
             
             protected void nextValues() {
-                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).addListener(new FutureListener<ListScanResult<Object>>() {
-
-                    @Override
-                    public void operationComplete(Future<ListScanResult<Object>> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            p.onError(future.cause());
-                            return;
-                        }
-                        
-                        ListScanResult<Object> res = future.get();
-                        client = res.getRedisClient();
-                        long prevIterPos = nextIterPos;
-                        if (nextIterPos == 0 && firstValues == null) {
-                            firstValues = (List<String>)(Object)res.getValues();
-                        } else if (res.getValues().equals(firstValues)) {
-                            p.onComplete();
-                            currentIndex = 0;
-                            return;
-                        }
-
-                        nextIterPos = res.getPos();
-                        if (prevIterPos == nextIterPos) {
-                            nextIterPos = -1;
-                        }
-                        for (Object val : res.getValues()) {
-                            p.onNext((String)val);
-                            currentIndex--;
-                            if (currentIndex == 0) {
-                                p.onComplete();
-                                return;
-                            }
-                        }
-                        if (nextIterPos == -1) {
-                            p.onComplete();
-                            currentIndex = 0;
-                        }
-                        
-                        if (currentIndex == 0) {
-                            return;
-                        }
-                        nextValues();
+                instance.scanIteratorAsync(client, entry, nextIterPos, pattern, count).onComplete((res, e) -> {
+                    if (e != null) {
+                        p.onError(e);
+                        return;
                     }
                     
+                    client = res.getRedisClient();
+                    long prevIterPos = nextIterPos;
+                    if (nextIterPos == 0 && firstValues == null) {
+                        firstValues = (List<String>) (Object) res.getValues();
+                    } else if (res.getValues().equals(firstValues)) {
+                        p.onComplete();
+                        currentIndex = 0;
+                        return;
+                    }
+
+                    nextIterPos = res.getPos();
+                    if (prevIterPos == nextIterPos) {
+                        nextIterPos = -1;
+                    }
+                    for (Object val : res.getValues()) {
+                        p.onNext((String) val);
+                        currentIndex--;
+                        if (currentIndex == 0) {
+                            p.onComplete();
+                            return;
+                        }
+                    }
+                    if (nextIterPos == -1) {
+                        p.onComplete();
+                        currentIndex = 0;
+                    }
+                    
+                    if (currentIndex == 0) {
+                        return;
+                    }
+                    nextValues();
                 });
             }
         });

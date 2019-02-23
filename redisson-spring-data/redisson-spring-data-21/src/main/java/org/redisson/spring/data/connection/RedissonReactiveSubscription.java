@@ -63,8 +63,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, channels.length);
         for (ByteBuffer channel : channels) {
             RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, toChannelName(channel));
-            f.addListener(e -> RedissonReactiveSubscription.this.channels.put(channel, e.getNow()));
-            f.addListener(listener);
+            f.onComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(channel, res));
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -79,8 +79,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, patterns.length);
         for (ByteBuffer channel : patterns) {
             RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(toChannelName(channel), ByteArrayCodec.INSTANCE);
-            f.addListener(e -> RedissonReactiveSubscription.this.patterns.put(channel, e.getNow()));
-            f.addListener(listener);
+            f.onComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(channel, res));
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -96,7 +96,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, channels.length);
         for (ByteBuffer channel : channels) {
             RFuture<Codec> f = subscribeService.unsubscribe(toChannelName(channel), PubSubType.UNSUBSCRIBE);
-            f.addListener(listener);
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -112,7 +112,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, patterns.length);
         for (ByteBuffer channel : patterns) {
             RFuture<Codec> f = subscribeService.unsubscribe(toChannelName(channel), PubSubType.PUNSUBSCRIBE);
-            f.addListener(listener);
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
