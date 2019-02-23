@@ -159,7 +159,7 @@ public class RedissonObjectBuilder {
             || RObjectRx.class.isAssignableFrom(cls)) {
             return cls;
         }
-        for (Entry<Class<?>, Class<? extends RObject>> entrySet : translatableTypeMapping.entrySet()) {
+        for (Entry<Class<?>, Class<? extends RObject>> entrySet : TRANSLATABLE_TYPE_MAPPING.entrySet()) {
             if (entrySet.getKey().isAssignableFrom(cls)) {
                 return entrySet.getValue();
             }
@@ -168,7 +168,7 @@ public class RedissonObjectBuilder {
     }
 
     public static Class<?> getSupportedTypes(String simpleName) {
-        return supportedTypes.get(simpleName);
+        return SUPPORTED_TYPES.get(simpleName);
     }
 
     public Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
@@ -279,8 +279,8 @@ public class RedissonObjectBuilder {
         }
         for (Class<?> iType : interfaces) {
             if (REFERENCES.containsKey(iType)) {// user cache to speed up things a little.
-                Method builder = REFERENCES.get(iType).get(codec != null);
-                if (codec != null) {
+                Method builder = REFERENCES.get(iType).get(codec == null);
+                if (codec == null) {
                     return (T) builder.invoke(redisson, name);
                 }
                 return (T) builder.invoke(redisson, name, codec);
