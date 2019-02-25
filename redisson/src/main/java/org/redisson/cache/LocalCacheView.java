@@ -25,6 +25,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.redisson.RedissonLocalCachedMap.CacheValue;
+import org.redisson.misc.Hash;
 import org.redisson.RedissonObject;
 
 import io.netty.buffer.ByteBuf;
@@ -252,6 +253,8 @@ public class LocalCacheView<K, V> {
         }
     }
 
-
+    private CacheKey toCacheKey(ByteBuf encodedKey) {
+        return new CacheKey(Hash.hash128toArray(encodedKey));
+    }
     
 }
