@@ -152,7 +152,6 @@ public class FstCodec extends BaseCodec {
 
     public FstCodec(FSTConfiguration fstConfiguration) {
         config = fstConfiguration;
-        config.setShareReferences(false);
         config.setStreamCoderFactory(new FSTDefaultStreamCoderFactory(config));
     }
 
