@@ -80,8 +80,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private static final char LF = '\n';
     private static final char ZERO = '0';
     
-    public enum Status {NORMAL, FILL_BUFFER, DECODE_BUFFER}
-
     final ExecutorService executor;
     private final boolean decodeInExecutor;
     

@@ -78,7 +78,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             
             if (type == 0x3) {
                 byte len = buf.readByte();
-                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
+                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.US_ASCII);
                 long timeout = buf.readLong();
                 int hashesCount = buf.readInt();
                 byte[][] hashes = new byte[hashesCount][];
