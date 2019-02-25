@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,8 +41,16 @@ public class PendingResultDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        Map<String, Long> consumerNames = new LinkedHashMap<String, Long>();
+        if (parts.isEmpty()) {
+            return null;            
+        }
+        
         List<List<String>> customerParts = (List<List<String>>) parts.get(3);
+        if (customerParts == null) {
+            return new PendingResult(0, null, null, Collections.emptyMap());
+        }
+        
+        Map<String, Long> consumerNames = new LinkedHashMap<String, Long>();
         for (List<String> mapping : customerParts) {
             consumerNames.put(mapping.get(0), Long.valueOf(mapping.get(1)));
         }
