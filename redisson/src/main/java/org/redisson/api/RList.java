@@ -99,6 +99,14 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      */
     void fastRemove(int index);
     
-    boolean remove(Object o, int count);
+    /**
+     * Removes up to <code>count</code> occurrences of <code>element</code> 
+     * 
+     * @param element - element to find
+     * @param count - amount occurrences
+     * @return {@code true} if at least one element removed; 
+     *      or {@code false} if element isn't found
+     */
+    boolean remove(Object element, int count);
     
 }

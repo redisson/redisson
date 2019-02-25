@@ -63,20 +63,79 @@ public interface RListReactive<V> extends RCollectionReactive<V>, RSortableReact
 
     Flux<V> iterator(int startIndex);
 
-    Mono<Integer> lastIndexOf(Object o);
+    /**
+     * Returns last index of <code>element</code> or 
+     * -1 if element isn't found
+     * 
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    Mono<Integer> lastIndexOf(Object element);
 
-    Mono<Integer> indexOf(Object o);
+    /**
+     * Returns last index of <code>element</code> or 
+     * -1 if element isn't found
+     * 
+     * @param element to find
+     * @return index of -1 if element isn't found
+     */
+    Mono<Integer> indexOf(Object element);
 
+    /**
+     * Inserts <code>element</code> at <code>index</code>. 
+     * Subsequent elements are shifted. 
+     * 
+     * @param index - index number
+     * @param element - element to insert
+     * @return {@code true} if list was changed
+     */
     Mono<Void> add(int index, V element);
 
-    Mono<Boolean> addAll(int index, Collection<? extends V> coll);
+    /**
+     * Inserts <code>elements</code> at <code>index</code>. 
+     * Subsequent elements are shifted. 
+     * 
+     * @param index - index number
+     * @param elements - elements to insert
+     * @return {@code true} if list changed
+     *      or {@code false} if element isn't found
+     */
+    Mono<Boolean> addAll(int index, Collection<? extends V> elements);
 
+    /**
+     * Set <code>element</code> at <code>index</code>.
+     * Works faster than {@link #set(int, Object)} but 
+     * doesn't return previous element.
+     * 
+     * @param index - index of object
+     * @param element - object
+     * @return void
+     */
     Mono<Void> fastSet(int index, V element);
 
+    /**
+     * Set <code>element</code> at <code>index</code> and returns previous element.
+     * 
+     * @param index - index of object
+     * @param element - object
+     * @return previous element or <code>null</code> if element wasn't set.
+     */
     Mono<V> set(int index, V element);
 
+    /**
+     * Get element at <code>index</code>
+     * 
+     * @param index - index of object
+     * @return element
+     */
     Mono<V> get(int index);
 
+    /**
+     * Removes element at <code>index</code>.
+     * 
+     * @param index - index of object
+     * @return element or <code>null</code> if element wasn't set.
+     */
     Mono<V> remove(int index);
     
     /**
