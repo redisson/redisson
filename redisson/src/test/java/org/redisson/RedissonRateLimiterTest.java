@@ -17,6 +17,16 @@ import org.redisson.api.RateType;
 
 public class RedissonRateLimiterTest extends BaseTest {
 
+    @Test
+    public void testRateConfig() {
+        RRateLimiter rr = redisson.getRateLimiter("acquire");
+        assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
+        
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        assertThat(rr.getConfig().getRateInterval()).isEqualTo(5000);
+        assertThat(rr.getConfig().getRateType()).isEqualTo(RateType.OVERALL);
+    }
+    
     @Test(timeout = 1500)
     public void testTryAcquire() {
         RRateLimiter rr = redisson.getRateLimiter("acquire");
