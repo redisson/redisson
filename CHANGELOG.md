@@ -4,6 +4,22 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 26-Feb-2018 - versions 3.10.3 released  
+Feature - `RTransaction.getBuckets` method added  
+Feature - ability to redefine `CacheKeysFactory` in Hibernate Cache Factory  
+Feautre - ability to specify default values for environment variable (thanks to [aaabramov](https://github.com/aaabramov))  
+Feature - `RRateLimiter.getConfig` method added  
+Feature - `ping` and `pingAll` methods with timeout added to `Node` object  
+Improvement - create Redis stream group if it doesn't exist  
+Improvement - response decoding optimization  
+Fixed - `RStream.listPending` throws `IndexOutOfBoundsException`  
+Fixed - `LocalCacheView.toCacheKey` method throws `StackOverflowError`  
+Fixed - `RedissonSessionManager` doesn't support async servlets (thanks to [dnouls](https://github.com/dnouls))  
+Fixed - FSTCodec memory leak  
+Fixed - rename and renamenx methods don't change name of current object  
+Fixed - performance regression of RBatch result decoding (since 2.12.2 / 3.7.2 version)  
+Fixed - Transactional RBucket object doesn't respect transaction timeout  
+
 ### 07-Feb-2018 - versions 2.15.2 and 3.10.2 released  
 Feature - `StreamMessageId.NEVER_DELIVERED` added  
 Feature - [decodeInExecutor](https://github.com/redisson/redisson/wiki/2.-Configuration#decodeinexecutor) setting added  
