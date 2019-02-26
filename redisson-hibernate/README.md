@@ -27,8 +27,6 @@ Hibernate Cache Usage
 
 ### 1.  Add `redisson-hibernate` dependency into your project:
 
-1. __For JDK 1.8+__  
-
      Maven
      ```xml
      <dependency>
@@ -41,43 +39,21 @@ Hibernate Cache Usage
          <artifactId>redisson-hibernate-52</artifactId>
          <!-- for Hibernate v5.3.x - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.10.2</version>
+         <version>3.10.3</version>
      </dependency>
      ```
      Gradle
 
      ```java
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.10.2'
+     compile 'org.redisson:redisson-hibernate-4:3.10.3'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.10.2'
+     compile 'org.redisson:redisson-hibernate-5:3.10.3'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.10.2'
+     compile 'org.redisson:redisson-hibernate-52:3.10.3'
      // for Hibernate v5.3.x - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.10.2'
+     compile 'org.redisson:redisson-hibernate-53:3.10.3'
      ```  
-
-2. __For JDK 1.6+__  
-
-     Maven
-     ```xml
-     <dependency>
-         <groupId>org.redisson</groupId>
-         <!-- for Hibernate v4.x -->
-         <artifactId>redisson-hibernate-4</artifactId>
-         <!-- for Hibernate v5.0.x - v5.1.x -->
-         <artifactId>redisson-hibernate-5</artifactId>
-         <version>2.15.2</version>
-     </dependency>
-     ```
-     Gradle
-
-     ```java
-     // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:2.15.2'
-     // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:2.15.2'
-     ``` 
 
 
 ### 2. Specify hibernate cache settings
