@@ -37,7 +37,9 @@ import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodeType;
 import org.redisson.api.NodesGroup;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
@@ -66,11 +68,38 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
+import net.bytebuddy.utility.RandomString;
 
 public class RedissonTest {
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
+    
+//    @Test
+    public void testLeak() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient localRedisson = Redisson.create(config);
+
+        String key = RandomString.make(120);
+        for (int i = 0; i < 500; i++) {
+            RMapCache<String, String> cache = localRedisson.getMapCache("mycache");
+            RLock keyLock = cache.getLock(key);
+            keyLock.lockInterruptibly(10, TimeUnit.SECONDS);
+            try {
+                cache.get(key);
+                cache.put(key, RandomString.make(4*1024*1024), 5, TimeUnit.SECONDS);
+            } finally {
+                if (keyLock != null) {
+                    keyLock.unlock();
+                }
+            }
+        }
+        
+
+    }
     
     @Test
     public void testDecoderError() {
