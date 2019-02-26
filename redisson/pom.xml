@@ -80,7 +80,7 @@
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
             <artifactId>rxjava</artifactId>
-            <version>2.1.13</version>
+            <version>2.2.7</version>
         </dependency>
 
         <dependency>
@@ -181,7 +181,7 @@
         <dependency>
             <groupId>de.ruedigermoeller</groupId>
             <artifactId>fst</artifactId>
-            <version>2.56</version>
+            <version>2.57</version>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
@@ -243,12 +243,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.9.6</version>
+            <version>1.9.10</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
-            <version>3.7.1</version>
+            <version>5.0.8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
