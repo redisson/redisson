@@ -63,7 +63,7 @@ Each RedissonSessionManager created per Web Application and thus creates own Red
          jndiName="bean/redisson" />
 ```
 
-**2** Copy two jars into `TOMCAT_BASE/lib` directory:
+### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
   
 [redisson-all-3.10.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.10.3&e=jar)
   
