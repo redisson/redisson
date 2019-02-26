@@ -5,44 +5,27 @@ Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](htt
 
 Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x, 2.1.x
 
-<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
+<sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
 Usage
 ===
 
 ### 1.  Add `redisson-spring-boot-starter` dependency into your project:
 
-1. __For JDK 1.8+__  
+Maven
 
-     Maven
-     ```xml
+```xml
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.10.2</version>
+         <version>3.10.3</version>
      </dependency>
-     ```
-     Gradle
+```
 
-     ```java
-     compile 'org.redisson:redisson-spring-boot-starter:3.10.2'
-     ```  
-
-2. __For JDK 1.6+__  
-
-     Maven
-     ```xml
-     <dependency>
-         <groupId>org.redisson</groupId>
-         <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>2.15.2</version>
-     </dependency>
-     ```
-     Gradle
-
-     ```java
-     compile 'org.redisson:redisson-spring-boot-starter:2.15.2'
-     ```  
+Gradle
+```java
+     compile 'org.redisson:redisson-spring-boot-starter:3.10.3'
+```  
 
 ### 2. Add settings into `application.settings` file
 
