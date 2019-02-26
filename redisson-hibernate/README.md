@@ -27,8 +27,8 @@ Hibernate Cache Usage
 
 ### 1.  Add `redisson-hibernate` dependency into your project:
 
-     Maven
-     ```xml
+Maven
+```xml
      <dependency>
          <groupId>org.redisson</groupId>
          <!-- for Hibernate v4.x -->
@@ -41,10 +41,11 @@ Hibernate Cache Usage
          <artifactId>redisson-hibernate-53</artifactId>
          <version>3.10.3</version>
      </dependency>
-     ```
-     Gradle
+```
 
-     ```java
+Gradle
+
+```java
      // for Hibernate v4.x
      compile 'org.redisson:redisson-hibernate-4:3.10.3'
      // for Hibernate v5.0.x - v5.1.x
@@ -53,7 +54,7 @@ Hibernate Cache Usage
      compile 'org.redisson:redisson-hibernate-52:3.10.3'
      // for Hibernate v5.3.x - v5.4.x
      compile 'org.redisson:redisson-hibernate-53:3.10.3'
-     ```  
+```  
 
 
 ### 2. Specify hibernate cache settings
