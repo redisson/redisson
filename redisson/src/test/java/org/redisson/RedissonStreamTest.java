@@ -19,6 +19,17 @@ import org.redisson.client.RedisException;
 public class RedissonStreamTest extends BaseTest {
 
     @Test
+    public void testPendingEmpty() {
+        RStream<Object, Object> stream = redisson.getStream("test");
+        stream.createGroup("testGroup");
+        PendingResult result = stream.listPending("testGroup");
+        assertThat(result.getTotal()).isZero();
+        assertThat(result.getHighestId()).isNull();
+        assertThat(result.getLowestId()).isNull();
+        assertThat(result.getConsumerNames()).isEmpty();
+    }
+    
+    @Test
     public void testUpdateGroupMessageId() {
         RStream<String, String> stream = redisson.getStream("test");
 
