@@ -106,7 +106,6 @@ Quick start
 ===============================
 
 #### Maven 
-    <!-- JDK 1.8+ compatible -->
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
@@ -115,7 +114,6 @@ Quick start
 
 
 #### Gradle
-    // JDK 1.8+ compatible
     compile 'org.redisson:redisson:3.10.3'  
 
 #### Java
