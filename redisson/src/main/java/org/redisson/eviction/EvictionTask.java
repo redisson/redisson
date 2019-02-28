@@ -80,7 +80,7 @@ abstract class EvictionTask implements Runnable {
 
                 if (sizeHistory.peekFirst().intValue() == sizeHistory.peekLast()
                         && sizeHistory.peekLast().intValue() == size) {
-                    if (size == keysLimit) {
+                    if (size >= keysLimit) {
                         delay = Math.max(minDelay, delay/4);
                     }
                     if (size == 0) {
