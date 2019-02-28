@@ -485,7 +485,7 @@ public class Config {
 
     /**
      * This parameter is only used if lock has been acquired without leaseTimeout parameter definition. 
-     * Lock will be expired after <code>lockWatchdogTimeout</code> if watchdog 
+     * Lock expires after <code>lockWatchdogTimeout</code> if watchdog 
      * didn't extend it to next <code>lockWatchdogTimeout</code> time interval.
      * <p>  
      * This prevents against infinity locked locks due to Redisson client crush or 
