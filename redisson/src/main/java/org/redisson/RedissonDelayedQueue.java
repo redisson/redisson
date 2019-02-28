@@ -87,11 +87,17 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         this.queueTransferService = queueTransferService;
     }
 
+    @Override
     public void offer(V e, long delay, TimeUnit timeUnit) {
         get(offerAsync(e, delay, timeUnit));
     }
     
+    @Override
     public RFuture<Void> offerAsync(V e, long delay, TimeUnit timeUnit) {
+        if (delay < 0) {
+            throw new IllegalArgumentException("Delay can't be negative");
+        }
+        
         long delayInMs = timeUnit.toMillis(delay);
         long timeout = System.currentTimeMillis() + delayInMs;
      
