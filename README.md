@@ -136,7 +136,7 @@ RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 ```
 
-<sub>Please consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
+Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
 Downloads
 ===============================
