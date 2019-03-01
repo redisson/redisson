@@ -84,6 +84,9 @@ public class Config {
 
     private boolean useScriptCache = false;
 
+    private int minCleanUpDelay = 5;
+    private int maxCleanUpDelay = 30*60;
+    
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
@@ -104,6 +107,8 @@ public class Config {
             oldConf.setCodec(new FstCodec());
         }
 
+        setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
+        setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
         setDecodeInExecutor(oldConf.isDecodeInExecutor());
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
@@ -739,4 +744,40 @@ public class Config {
         return this;
     }
 
+    public int getMinCleanUpDelay() {
+        return minCleanUpDelay;
+    }
+    
+    /**
+     * Defines minimal delay of clean up process for expired entries.
+     * <p>
+     * Used in JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects
+     * 
+     * @param minCleanUpDelay - delay in seconds
+     * @return config
+     */
+    public Config setMinCleanUpDelay(int minCleanUpDelay) {
+        this.minCleanUpDelay = minCleanUpDelay;
+        return this;
+    }
+
+    public int getMaxCleanUpDelay() {
+        return maxCleanUpDelay;
+    }
+    
+    /**
+     * Defines maximal delay of clean up process for expired entries.
+     * <p>
+     * Used in JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects
+     * 
+     * @param maxCleanUpDelay - delay in seconds
+     * @return config
+     */
+    public Config setMaxCleanUpDelay(int maxCleanUpDelay) {
+        this.maxCleanUpDelay = maxCleanUpDelay;
+        return this;
+    }
+
+    
+    
 }

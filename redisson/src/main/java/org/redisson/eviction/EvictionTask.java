@@ -30,8 +30,8 @@ import org.redisson.command.CommandAsyncExecutor;
 abstract class EvictionTask implements Runnable {
 
     final Deque<Integer> sizeHistory = new LinkedList<Integer>();
-    final int minDelay = 5;
-    final int maxDelay = 30*60;
+    final int minDelay;
+    final int maxDelay;
     final int keysLimit = 100;
     
     int delay = 5;
@@ -41,6 +41,8 @@ abstract class EvictionTask implements Runnable {
     EvictionTask(CommandAsyncExecutor executor) {
         super();
         this.executor = executor;
+        this.minDelay = executor.getConnectionManager().getCfg().getMinCleanUpDelay();
+        this.maxDelay = executor.getConnectionManager().getCfg().getMaxCleanUpDelay();
     }
 
     public void schedule() {
