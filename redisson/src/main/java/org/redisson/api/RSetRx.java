@@ -20,7 +20,7 @@ import java.util.Set;
 import io.reactivex.Flowable;
 
 /**
- * RxJava2 interface for RSetCache object
+ * RxJava2 interface for RSet object
  *
  * @author Nikita Koksharov
  *
