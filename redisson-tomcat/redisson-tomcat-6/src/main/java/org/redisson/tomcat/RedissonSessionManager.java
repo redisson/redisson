@@ -176,18 +176,20 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                         attrs = getMap(id).getAll(RedissonSession.ATTRS);
                     }
                 } catch (Exception e) {
-                    log.error("Can't read session object by id " + id, e);
-                }
-                
-                if (attrs.isEmpty() || !Boolean.valueOf(String.valueOf(attrs.get("session:isValid")))) {
-                    log.info("Session " + id + " can't be found");
-                    return null;
+                    throw new IOException(e);
                 }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
+                session.load(attrs);
                 session.setId(id);
                 session.setManager(this);
-                session.load(attrs);
+                
+                if (session.isValid()) {
+                    if (session.isNew()) {
+                        session.tellNew();
+                    }
+                    super.add(session);
+                }
                 
                 session.access();
                 session.endAccess();
