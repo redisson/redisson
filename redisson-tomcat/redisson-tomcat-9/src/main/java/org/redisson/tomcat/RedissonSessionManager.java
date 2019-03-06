@@ -35,6 +35,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
@@ -213,6 +214,16 @@ public class RedissonSessionManager extends ManagerBase {
             applicationClassLoader = getClass().getClassLoader();
         }
         
+        Codec codec = redisson.getConfig().getCodec();
+        Codec codecToUse;
+        try {
+            codecToUse = codec.getClass()
+                    .getConstructor(ClassLoader.class, codec.getClass())
+                    .newInstance(applicationClassLoader, codec);
+        } catch (Exception e) {
+            throw new LifecycleException(e);
+        }
+        
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
@@ -237,14 +248,14 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs(applicationClassLoader).entrySet()) {
+                                for (Entry<String, Object> entry : m.getAttrs(codecToUse.getMapValueDecoder()).entrySet()) {
                                     session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(applicationClassLoader), true);
+                                session.superSetAttribute(m.getName(), m.getValue(codecToUse.getMapValueDecoder()), true);
                             }
                         }
                     } catch (Exception e) {

@@ -17,6 +17,9 @@ package org.redisson.tomcat;
 
 import java.io.IOException;
 
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.Encoder;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -30,18 +33,18 @@ public class AttributeUpdateMessage extends AttributeMessage {
     public AttributeUpdateMessage() {
     }
     
-    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value) throws IOException {
+    public AttributeUpdateMessage(String nodeId, String sessionId, String name, Object value, Encoder encoder) throws IOException {
         super(nodeId, sessionId);
         this.name = name;
-		this.value = toByteArray(value);
+		this.value = toByteArray(encoder, value);
     }
 
     public String getName() {
         return name;
     }
     
-    public Object getValue(ClassLoader classLoader) throws IOException, ClassNotFoundException {
-    	return toObject(classLoader, value);
+    public Object getValue(Decoder<?> decoder) throws IOException, ClassNotFoundException {
+    	return toObject(decoder, value);
     }
     
 }

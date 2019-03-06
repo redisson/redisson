@@ -187,7 +187,7 @@ public class RedissonSession extends StandardSession {
             map.put(entry.getKey(), entry.getValue());
         }
         try {
-            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map);
+            return new AttributesPutAllMessage(redissonManager.getNodeId(), getId(), map, this.map.getCodec().getMapValueEncoder());
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }
@@ -207,7 +207,7 @@ public class RedissonSession extends StandardSession {
         map.fastPut(name, value);
         if (readMode == ReadMode.MEMORY) {
             try {
-                topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value));
+                topic.publish(new AttributeUpdateMessage(redissonManager.getNodeId(), getId(), name, value, this.map.getCodec().getMapValueEncoder()));
             } catch (IOException e) {
                 throw new IllegalStateException(e);
             }

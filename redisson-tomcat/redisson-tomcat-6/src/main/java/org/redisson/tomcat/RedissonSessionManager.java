@@ -235,6 +235,16 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             applicationClassLoader = getClass().getClassLoader();
         }
         
+        Codec codec = redisson.getConfig().getCodec();
+        Codec codecToUse;
+        try {
+            codecToUse = codec.getClass()
+                    .getConstructor(ClassLoader.class, codec.getClass())
+                    .newInstance(applicationClassLoader, codec);
+        } catch (Exception e) {
+            throw new LifecycleException(e);
+        }
+        
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
@@ -259,14 +269,14 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs(applicationClassLoader).entrySet()) {
+                                for (Entry<String, Object> entry : m.getAttrs(codecToUse.getMapValueDecoder()).entrySet()) {
                                     session.superSetAttribute(entry.getKey(), entry.getValue(), true);
                                 }
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
-                                session.superSetAttribute(m.getName(), m.getValue(applicationClassLoader), true);
+                                session.superSetAttribute(m.getName(), m.getValue(codecToUse.getMapValueDecoder()), true);
                             }
                         }
                     } catch (Exception e) {
@@ -294,15 +304,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
         
         try {
-            try {
-            Config c = new Config(config);
-            Codec codec = c.getCodec().getClass().getConstructor(ClassLoader.class)
-                            .newInstance(Thread.currentThread().getContextClassLoader());
-            config.setCodec(codec);
-            } catch (Exception e) {
-                throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);
-            }
-            
             return Redisson.create(config);
         } catch (Exception e) {
             throw new LifecycleException(e);
