@@ -51,6 +51,7 @@ public class RedissonSession extends StandardSession {
     public static final Set<String> ATTRS = new HashSet<String>(Arrays.asList(IS_NEW_ATTR, IS_VALID_ATTR, 
             THIS_ACCESSED_TIME_ATTR, MAX_INACTIVE_INTERVAL_ATTR, LAST_ACCESSED_TIME_ATTR, CREATION_TIME_ATTR));
     
+    private boolean loaded;
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
@@ -87,6 +88,17 @@ public class RedissonSession extends StandardSession {
             }
 
             return map.get(name);
+        } else {
+            if (!loaded) {
+                synchronized (this) {
+                    if (!loaded) {
+                        Map<String, Object> storedAttrs = map.readAllMap();
+                        
+                        load(storedAttrs);
+                        loaded = true;
+                    }
+                }
+            }
         }
 
         return super.getAttribute(name);

@@ -147,13 +147,9 @@ public class RedissonSessionManager extends ManagerBase {
             if (id != null) {
                 Map<String, Object> attrs = new HashMap<String, Object>();
                 try {
-                    if (readMode == ReadMode.MEMORY) {
-                        attrs = getMap(id).readAllMap();
-                    } else {
-                        attrs = getMap(id).getAll(RedissonSession.ATTRS);
-                    }
+                    attrs = getMap(id).getAll(RedissonSession.ATTRS);
                 } catch (Exception e) {
-                    throw new IOException(e);
+                    log.error("Can't read session object by id: " + id, e);
                 }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
