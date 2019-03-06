@@ -52,6 +52,7 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ObjectListDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapDecoder;
 import org.redisson.codec.MapCacheEventCodec;
+import org.redisson.codec.MapCacheEventCodec.OSType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
@@ -1893,7 +1894,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             params.toArray());
     }
 
-    private Boolean isWindows;
+    private MapCacheEventCodec.OSType osType;
     
     @Override
     public int addListener(MapEntryListener listener) {
@@ -1901,15 +1902,19 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             throw new NullPointerException();
         }
         
-        if (isWindows == null) {
+        if (osType == null) {
             RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
             serverFuture.syncUninterruptibly();
             String os = serverFuture.getNow().get("os");
-            isWindows = os.contains("Windows");
+            if (os.contains("Windows")) {
+                osType = OSType.WINDOWS;
+            } else if (os.contains("NONSTOP")) {
+                osType = OSType.HPNONSTOP;
+            }
         }
 
         if (listener instanceof EntryRemovedListener) {
-            RTopic topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, isWindows));
+            RTopic topic = redisson.getTopic(getRemovedChannelName(), new MapCacheEventCodec(codec, osType));
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -1920,7 +1925,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryCreatedListener) {
-            RTopic topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, isWindows));
+            RTopic topic = redisson.getTopic(getCreatedChannelName(), new MapCacheEventCodec(codec, osType));
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -1931,7 +1936,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryUpdatedListener) {
-            RTopic topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, isWindows));
+            RTopic topic = redisson.getTopic(getUpdatedChannelName(), new MapCacheEventCodec(codec, osType));
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -1942,7 +1947,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         if (listener instanceof EntryExpiredListener) {
-            RTopic topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, isWindows));
+            RTopic topic = redisson.getTopic(getExpiredChannelName(), new MapCacheEventCodec(codec, osType));
             return topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
