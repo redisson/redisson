@@ -695,6 +695,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         List<V> result = new ArrayList<V>();
         List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
+            if (value == null) {
+                continue;
+            }
+
             mapKeys.add(encodeMapKey(value.getKey()));
             result.add((V) value.getValue());
         }
@@ -738,6 +742,9 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         Map<K, V> result = new HashMap<K, V>();
         List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
+            if (value == null) {
+                continue;
+            }
             mapKeys.add(encodeMapKey(value.getKey()));
             result.put((K) value.getKey(), (V) value.getValue());
         }
@@ -789,6 +796,10 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         Set<Entry<K, V>> result = new HashSet<Entry<K, V>>();
         List<Object> mapKeys = new ArrayList<Object>();
         for (CacheValue value : cache.values()) {
+            if (value == null) {
+                continue;
+            }
+
             mapKeys.add(encodeMapKey(value.getKey()));
             result.add(new AbstractMap.SimpleEntry<K, V>((K) value.getKey(), (V) value.getValue()));
         }
