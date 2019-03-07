@@ -66,7 +66,7 @@ public class SnappyCodec extends BaseCodec {
         this(new FstCodec(classLoader));
     }
     
-    public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) {
+    public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     

@@ -33,7 +33,7 @@ public abstract class BaseCodec implements Codec {
     public static final List<Class<?>> SKIPPED_CODECS = Arrays.asList(StringCodec.class, 
             ByteArrayCodec.class, LocalCachedMessageCodec.class, BitSetCodec.class, JCacheEventCodec.class);
     
-    public static Codec copy(ClassLoader classLoader, Codec codec) {
+    public static Codec copy(ClassLoader classLoader, Codec codec) throws ReflectiveOperationException {
         if (codec == null) {
             return codec;
         }
@@ -44,11 +44,7 @@ public abstract class BaseCodec implements Codec {
             }
         }
 
-        try {
-            return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
-        }
+        return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
     }
     
     @Override
