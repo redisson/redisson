@@ -333,6 +333,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     @Override
     public void destroy() {
+        cache.clear();
         listener.remove();
     }
 
