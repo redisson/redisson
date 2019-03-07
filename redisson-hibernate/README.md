@@ -132,16 +132,16 @@ _Please note: `*.localcache.*` settings are available for `RedissonClusteredLoca
 
 ```xml
 <!-- cache definition applied to all caches in entity region -->
-<property name="hibernate.cache.redisson.entry.eviction.max_entries" value="10000" />
-<property name="hibernate.cache.redisson.entry.expiration.time_to_live" value="600000" />
-<property name="hibernate.cache.redisson.entry.expiration.max_idle_time" value="300000" />
+<property name="hibernate.cache.redisson.entity.eviction.max_entries" value="10000" />
+<property name="hibernate.cache.redisson.entity.expiration.time_to_live" value="600000" />
+<property name="hibernate.cache.redisson.entity.expiration.max_idle_time" value="300000" />
 
-<property name="hibernate.cache.redisson.entry.localcache.max_idle_time" value="300000" />
-<property name="hibernate.cache.redisson.entry.localcache.time_to_live" value="300000" />
-<property name="hibernate.cache.redisson.entry.localcache.eviction_policy" value="LRU" />
-<property name="hibernate.cache.redisson.entry.localcache.sync_strategy" value="INVALIDATE" />
-<property name="hibernate.cache.redisson.entry.localcache.reconnection_strategy" value="CLEAR" />
-<property name="hibernate.cache.redisson.entry.localcache.size" value="5000" />
+<property name="hibernate.cache.redisson.entity.localcache.max_idle_time" value="300000" />
+<property name="hibernate.cache.redisson.entity.localcache.time_to_live" value="300000" />
+<property name="hibernate.cache.redisson.entity.localcache.eviction_policy" value="LRU" />
+<property name="hibernate.cache.redisson.entity.localcache.sync_strategy" value="INVALIDATE" />
+<property name="hibernate.cache.redisson.entity.localcache.reconnection_strategy" value="CLEAR" />
+<property name="hibernate.cache.redisson.entity.localcache.size" value="5000" />
 
 <!-- cache definition applied to all caches in collection region -->
 <property name="hibernate.cache.redisson.collection.eviction.max_entries" value="10000" />
