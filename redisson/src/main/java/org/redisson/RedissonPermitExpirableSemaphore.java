@@ -50,11 +50,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     
     private final long nonExpirableTimeout = 922337203685477L;
 
-    public RedissonPermitExpirableSemaphore(CommandAsyncExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
+    public RedissonPermitExpirableSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.timeoutName = suffixName(name, "timeout");
         this.commandExecutor = commandExecutor;
-        this.semaphorePubSub = semaphorePubSub;
+        this.semaphorePubSub = commandExecutor.getConnectionManager().getSubscribeService().getSemaphorePubSub();
     }
 
     String getChannelName() {
@@ -546,11 +546,11 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
     }
 
     private RFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        return semaphorePubSub.subscribe(getName(), getChannelName());
     }
 
     private void unsubscribe(RFuture<RedissonLockEntry> future) {
-        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName());
     }
 
     @Override

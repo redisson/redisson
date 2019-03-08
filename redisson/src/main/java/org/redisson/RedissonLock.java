@@ -86,7 +86,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     final UUID id;
     final String entryName;
 
-    protected static final LockPubSub PUBSUB = new LockPubSub();
+    protected final LockPubSub pubSub;
 
     final CommandAsyncExecutor commandExecutor;
 
@@ -96,6 +96,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         this.id = commandExecutor.getConnectionManager().getId();
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
         this.entryName = id + ":" + name;
+        this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
     }
 
     protected String getEntryName() {
@@ -361,15 +362,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     protected RedissonLockEntry getEntry(long threadId) {
-        return PUBSUB.getEntry(getEntryName());
+        return pubSub.getEntry(getEntryName());
     }
 
     protected RFuture<RedissonLockEntry> subscribe(long threadId) {
-        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        return pubSub.subscribe(getEntryName(), getChannelName());
     }
 
     protected void unsubscribe(RFuture<RedissonLockEntry> future, long threadId) {
-        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        pubSub.unsubscribe(future.getNow(), getEntryName(), getChannelName());
     }
 
     @Override

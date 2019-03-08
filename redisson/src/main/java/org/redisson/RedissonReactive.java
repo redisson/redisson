@@ -64,7 +64,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.reactive.CommandReactiveService;
 import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.reactive.RedissonBatchReactive;
@@ -98,8 +97,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
 
-    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
-
     protected RedissonReactive(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
@@ -119,10 +116,6 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     public CommandReactiveService getCommandExecutor() {
         return commandExecutor;
-    }
-    
-    public SemaphorePubSub getSemaphorePubSub() {
-        return semaphorePubSub;
     }
     
     @Override
@@ -159,12 +152,12 @@ public class RedissonReactive implements RedissonReactiveClient {
     
     @Override
     public RSemaphoreReactive getSemaphore(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name, semaphorePubSub), RSemaphoreReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreReactive.class);
     }
 
     @Override
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(String name) {
-        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub), RPermitExpirableSemaphoreReactive.class);
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name), RPermitExpirableSemaphoreReactive.class);
     }
 
     @Override

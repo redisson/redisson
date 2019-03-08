@@ -60,7 +60,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.rx.CommandRxExecutor;
 import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RedissonBatchRx;
@@ -94,8 +93,6 @@ public class RedissonRx implements RedissonRxClient {
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
     protected final Config config;
-
-    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected RedissonRx(Config config) {
         this.config = config;
@@ -142,12 +139,12 @@ public class RedissonRx implements RedissonRxClient {
     
     @Override
     public RSemaphoreRx getSemaphore(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name, semaphorePubSub), RSemaphoreRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreRx.class);
     }
 
     @Override
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name, semaphorePubSub), RPermitExpirableSemaphoreRx.class);
+        return RxProxyBuilder.create(commandExecutor, new RedissonPermitExpirableSemaphore(commandExecutor, name), RPermitExpirableSemaphoreRx.class);
     }
 
     @Override

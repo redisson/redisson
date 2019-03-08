@@ -60,10 +60,16 @@ public class PublishSubscribeService {
     
     private final AsyncSemaphore freePubSubLock = new AsyncSemaphore(1);
     
-    protected final ConcurrentMap<ChannelName, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
+    private final ConcurrentMap<ChannelName, PubSubConnectionEntry> name2PubSubConnection = new ConcurrentHashMap<>();
     
-    protected final Queue<PubSubConnectionEntry> freePubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
+    private final Queue<PubSubConnectionEntry> freePubSubConnections = new ConcurrentLinkedQueue<PubSubConnectionEntry>();
 
+    private final SemaphorePubSub semaphorePubSub = new SemaphorePubSub(this);
+    
+    private final CountDownLatchPubSub countDownLatchPubSub = new CountDownLatchPubSub(this);
+    
+    private final LockPubSub lockPubSub = new LockPubSub(this);
+    
     public PublishSubscribeService(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
         super();
         this.connectionManager = connectionManager;
@@ -71,6 +77,18 @@ public class PublishSubscribeService {
         for (int i = 0; i < locks.length; i++) {
             locks[i] = new AsyncSemaphore(1);
         }
+    }
+    
+    public LockPubSub getLockPubSub() {
+        return lockPubSub;
+    }
+    
+    public CountDownLatchPubSub getCountDownLatchPubSub() {
+        return countDownLatchPubSub;
+    }
+    
+    public SemaphorePubSub getSemaphorePubSub() {
+        return semaphorePubSub;
     }
 
     public PubSubConnectionEntry getPubSubEntry(ChannelName channelName) {

@@ -32,7 +32,6 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.connection.decoder.ListDrainToDecoder;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.SemaphorePubSub;
 
 /**
  * <p>Distributed and concurrent implementation of bounded {@link java.util.concurrent.BlockingQueue}.
@@ -42,17 +41,14 @@ import org.redisson.pubsub.SemaphorePubSub;
 public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements RBoundedBlockingQueue<V> {
 
     private final CommandExecutor commandExecutor;
-    private final SemaphorePubSub semaphorePubSub;
     
-    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonBoundedBlockingQueue(CommandExecutor commandExecutor, String name, RedissonClient redisson) {
         super(commandExecutor, name, redisson);
-        this.semaphorePubSub = semaphorePubSub;
         this.commandExecutor = commandExecutor;
     }
 
-    protected RedissonBoundedBlockingQueue(SemaphorePubSub semaphorePubSub, Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
+    protected RedissonBoundedBlockingQueue(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
         super(codec, commandExecutor, name, redisson);
-        this.semaphorePubSub = semaphorePubSub;
         this.commandExecutor = commandExecutor;
     }
     
@@ -90,7 +86,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
     }
 
     private RedissonQueueSemaphore createSemaphore(V e) {
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), semaphorePubSub);
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
         semaphore.setQueueName(getName());
         semaphore.setValue(e);
         return semaphore;
@@ -386,7 +382,7 @@ public class RedissonBoundedBlockingQueue<V> extends RedissonQueue<V> implements
             return RedissonPromise.newSucceededFuture(false);
         }
 
-        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName(), semaphorePubSub);
+        RedissonQueueSemaphore semaphore = new RedissonQueueSemaphore(commandExecutor, getSemaphoreName());
         semaphore.setQueueName(getName());
         semaphore.setValues(c);
         return semaphore.tryAcquireAsync();

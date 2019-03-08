@@ -49,10 +49,10 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonSemaphore(CommandAsyncExecutor commandExecutor, String name, SemaphorePubSub semaphorePubSub) {
+    public RedissonSemaphore(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
-        this.semaphorePubSub = semaphorePubSub;
+        this.semaphorePubSub = commandExecutor.getConnectionManager().getSubscribeService().getSemaphorePubSub();
     }
 
     String getChannelName() {
@@ -404,11 +404,11 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     private RFuture<RedissonLockEntry> subscribe() {
-        return semaphorePubSub.subscribe(getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        return semaphorePubSub.subscribe(getName(), getChannelName());
     }
 
     private void unsubscribe(RFuture<RedissonLockEntry> future) {
-        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        semaphorePubSub.unsubscribe(future.getNow(), getName(), getChannelName());
     }
 
     @Override

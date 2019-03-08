@@ -54,19 +54,19 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     
     @Override
     protected RedissonLockEntry getEntry(long threadId) {
-        return PUBSUB.getEntry(getEntryName() + ":" + threadId);
+        return pubSub.getEntry(getEntryName() + ":" + threadId);
     }
 
     @Override
     protected RFuture<RedissonLockEntry> subscribe(long threadId) {
-        return PUBSUB.subscribe(getEntryName() + ":" + threadId, 
-                getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager().getSubscribeService());
+        return pubSub.subscribe(getEntryName() + ":" + threadId, 
+                getChannelName() + ":" + getLockName(threadId));
     }
 
     @Override
     protected void unsubscribe(RFuture<RedissonLockEntry> future, long threadId) {
-        PUBSUB.unsubscribe(future.getNow(), getEntryName() + ":" + threadId, 
-                getChannelName() + ":" + getLockName(threadId), commandExecutor.getConnectionManager().getSubscribeService());
+        pubSub.unsubscribe(future.getNow(), getEntryName() + ":" + threadId, 
+                getChannelName() + ":" + getLockName(threadId));
     }
 
     @Override

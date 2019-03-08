@@ -23,7 +23,6 @@ import java.util.List;
 import org.redisson.api.RFuture;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
-import org.redisson.pubsub.SemaphorePubSub;
 
 /**
  * 
@@ -36,9 +35,8 @@ public class RedissonQueueSemaphore extends RedissonSemaphore {
     private Object value;
     private Collection<?> values;
     
-    public RedissonQueueSemaphore(CommandExecutor commandExecutor, String name, 
-            SemaphorePubSub semaphorePubSub) {
-        super(commandExecutor, name, semaphorePubSub);
+    public RedissonQueueSemaphore(CommandExecutor commandExecutor, String name) {
+        super(commandExecutor, name);
     }
     
     public void setQueueName(String queueName) {

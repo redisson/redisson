@@ -86,7 +86,6 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.pubsub.SemaphorePubSub;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.transaction.RedissonTransaction;
 
@@ -109,7 +108,6 @@ public class Redisson implements RedissonClient {
 
     protected final ConcurrentMap<Class<?>, Class<?>> liveObjectClassCache = new ConcurrentHashMap<>();
     protected final Config config;
-    protected final SemaphorePubSub semaphorePubSub = new SemaphorePubSub();
 
     protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
 
@@ -121,10 +119,6 @@ public class Redisson implements RedissonClient {
         evictionScheduler = new EvictionScheduler(connectionManager.getCommandExecutor());
     }
 
-    public SemaphorePubSub getSemaphorePubSub() {
-        return semaphorePubSub;
-    }
-    
     public EvictionScheduler getEvictionScheduler() {
         return evictionScheduler;
     }
@@ -550,12 +544,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name) {
-        return new RedissonBoundedBlockingQueue<V>(semaphorePubSub, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonBoundedBlockingQueue<V>(connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
     public <V> RBoundedBlockingQueue<V> getBoundedBlockingQueue(String name, Codec codec) {
-        return new RedissonBoundedBlockingQueue<V>(semaphorePubSub, codec, connectionManager.getCommandExecutor(), name, this);
+        return new RedissonBoundedBlockingQueue<V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
 
     @Override
@@ -610,12 +604,12 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RSemaphore getSemaphore(String name) {
-        return new RedissonSemaphore(connectionManager.getCommandExecutor(), name, semaphorePubSub);
+        return new RedissonSemaphore(connectionManager.getCommandExecutor(), name);
     }
 
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(String name) {
-        return new RedissonPermitExpirableSemaphore(connectionManager.getCommandExecutor(), name, semaphorePubSub);
+        return new RedissonPermitExpirableSemaphore(connectionManager.getCommandExecutor(), name);
     }
 
     @Override

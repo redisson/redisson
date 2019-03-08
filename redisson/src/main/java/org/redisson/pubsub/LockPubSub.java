@@ -28,6 +28,10 @@ public class LockPubSub extends PublishSubscribe<RedissonLockEntry> {
     public static final Long UNLOCK_MESSAGE = 0L;
     public static final Long READ_UNLOCK_MESSAGE = 1L;
 
+    public LockPubSub(PublishSubscribeService service) {
+        super(service);
+    }
+    
     @Override
     protected RedissonLockEntry createEntry(RPromise<RedissonLockEntry> newPromise) {
         return new RedissonLockEntry(newPromise);
