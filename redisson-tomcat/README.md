@@ -37,7 +37,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 
 #### Shared Redisson instance
 
-Each RedissonSessionManager created per Web Application and thus creates own Redisson instance. For multiple applications, using the same Redis setup, amount of Redisson instances could be reduced using JNDI registry:
+`RedissonSessionManager` is created per Web Application and thus creates own Redisson instance. For multiple applications, which use the same Redis setup, amount of Redisson instances could be reduced using JNDI registry:
 
 1. Add shared redisson instance produced by `JndiRedissonFactory` into `tomcat/conf/server.xml` in `GlobalNamingResources` tag area:
 
