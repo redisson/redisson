@@ -4,7 +4,20 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
-### 26-Feb-2018 - versions 3.10.3 released  
+### 08-Mar-2019 - versions 3.10.4 released  
+Feature - `getCountDownLatch`, `getPermitExpirableSemaphore`, `getSemaphore`, `getFairLock` methods added to `RMultimap` object  
+Feature - `maxCleanUpDelay` and `minCleanUpDelay` settings added to `Config` object  
+Fixed - `RLocalCachedMap.destroy` method doesn't clear local cache  
+Fixed - HP NONSTOP OS is not supported by MapCacheEventCodec  
+Fixed - `RedissonLocalCachedMap.readAll*` methods throw NPE if `evictionPolicy = WEAK` used  
+Fixed - codec provided in Redisson configuration isn't used for attribute messages serialization  
+Fixed - ClassNotFoundException is thrown by Tomcat Session Manager in `readMode = MEMORY`  
+Fixed - fresh Tomcat instance unable to load session stored in Redis  
+Fixed - negative delay shouldn't be allowed to define for `RDelayedQueue.offer` method  
+Fixed - eviction delay for `RMapCache` object is not decreased  
+Fixed - `RMultiLock.tryLockAsync` and `RMultiLock.lockAsync` methods may hang during invcation  
+
+### 26-Feb-2019 - versions 3.10.3 released  
 Feature - `RTransaction.getBuckets` method added  
 Feature - ability to redefine `CacheKeysFactory` in Hibernate Cache Factory  
 Feautre - ability to specify default values for environment variable (thanks to [aaabramov](https://github.com/aaabramov))  
@@ -20,7 +33,7 @@ Fixed - rename and renamenx methods don't change name of current object
 Fixed - performance regression of RBatch result decoding (since 2.12.2 / 3.7.2 version)  
 Fixed - Transactional RBucket object doesn't respect transaction timeout  
 
-### 07-Feb-2018 - versions 2.15.2 and 3.10.2 released  
+### 07-Feb-2019 - versions 2.15.2 and 3.10.2 released  
 Feature - `StreamMessageId.NEVER_DELIVERED` added  
 Feature - [decodeInExecutor](https://github.com/redisson/redisson/wiki/2.-Configuration#decodeinexecutor) setting added  
 Feature - `lockAsync` and `tryLockAsync` methods with threadId param added to RedissonMultiLock object  
@@ -44,7 +57,7 @@ Fixed - class files should be excluded from META-INF folder
 Fixed - `JndiRedissonSessionManager` shouldn't shutdown Redisson instance (thanks to [jchobantonov](https://github.com/jchobantonov))  
 Fixed - `RDestroyable` interface should be implemented by RMapCache and RSetCache rx/reactive objects  
 
-### 21-Jan-2018 - versions 2.15.1 and 3.10.1 released  
+### 21-Jan-2019 - versions 2.15.1 and 3.10.1 released  
 Feature - `cachedKeySet`, `cachedValues`, `cachedEntrySet` and `getCachedMap` methods added to `RLocalCachedMap` object  
 Feature - __Hibernate 5.4__ support  
 Feature - [search LiveObjects](https://github.com/redisson/redisson/wiki/9.-Distributed-services#rindex) by field  
