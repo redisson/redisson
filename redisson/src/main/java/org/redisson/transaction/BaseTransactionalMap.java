@@ -867,7 +867,7 @@ public class BaseTransactionalMap<K, V> {
     }
 
     protected RLock getLock(K key) {
-        String lockName = ((RedissonMap<K, V>) map).getLockName(key, "lock");
+        String lockName = ((RedissonMap<K, V>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 

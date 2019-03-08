@@ -82,7 +82,7 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
 
     @Override
     protected RLock getLock(RCollectionAsync<V> set, V value) {
-        String lockName = ((RedissonSetCache<V>) set).getLockName(value, "lock");
+        String lockName = ((RedissonSetCache<V>) set).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     

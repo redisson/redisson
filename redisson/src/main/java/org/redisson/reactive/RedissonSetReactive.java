@@ -77,27 +77,27 @@ public class RedissonSetReactive<V> {
 }
     
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(V value) {
-        String name = ((RedissonSet<V>) instance).getLockName(value, "permitexpirablesemaphore");
+        String name = ((RedissonSet<V>) instance).getLockByValue(value, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
     public RSemaphoreReactive getSemaphore(V value) {
-        String name = ((RedissonSet<V>) instance).getLockName(value, "semaphore");
+        String name = ((RedissonSet<V>) instance).getLockByValue(value, "semaphore");
         return redisson.getSemaphore(name);
     }
     
     public RLockReactive getFairLock(V value) {
-        String name = ((RedissonSet<V>) instance).getLockName(value, "fairlock");
+        String name = ((RedissonSet<V>) instance).getLockByValue(value, "fairlock");
         return redisson.getFairLock(name);
     }
     
     public RReadWriteLockReactive getReadWriteLock(V value) {
-        String name = ((RedissonSet<V>) instance).getLockName(value, "rw_lock");
+        String name = ((RedissonSet<V>) instance).getLockByValue(value, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
     public RLockReactive getLock(V value) {
-        String name = ((RedissonSet<V>) instance).getLockName(value, "lock");
+        String name = ((RedissonSet<V>) instance).getLockByValue(value, "lock");
         return redisson.getLock(name);
     }
     

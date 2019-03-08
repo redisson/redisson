@@ -55,7 +55,6 @@ import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.mapreduce.RedissonMapReduce;
-import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
@@ -110,47 +109,38 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
-        String lockName = getLockName(key, "permitexpirablesemaphore");
+        String lockName = getLockByMapKey(key, "permitexpirablesemaphore");
         return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
     }
 
     @Override
     public RSemaphore getSemaphore(K key) {
-        String lockName = getLockName(key, "semaphore");
+        String lockName = getLockByMapKey(key, "semaphore");
         return new RedissonSemaphore(commandExecutor, lockName);
     }
     
     @Override
     public RCountDownLatch getCountDownLatch(K key) {
-        String lockName = getLockName(key, "countdownlatch");
+        String lockName = getLockByMapKey(key, "countdownlatch");
         return new RedissonCountDownLatch(commandExecutor, lockName);
     }
     
     @Override
     public RLock getFairLock(K key) {
-        String lockName = getLockName(key, "fairlock");
+        String lockName = getLockByMapKey(key, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);
     }
     
     @Override
     public RLock getLock(K key) {
-        String lockName = getLockName(key, "lock");
+        String lockName = getLockByMapKey(key, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
-        String lockName = getLockName(key, "rw_lock");
+        String lockName = getLockByMapKey(key, "rw_lock");
         return new RedissonReadWriteLock(commandExecutor, lockName);
-    }
-    
-    public String getLockName(Object key, String suffix) {
-        ByteBuf keyState = encodeMapKey(key);
-        try {
-            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
-        } finally {
-            keyState.release();
-        }
     }
     
     @Override

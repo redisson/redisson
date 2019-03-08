@@ -107,27 +107,27 @@ public class RedissonMapReactive<K, V> {
     }
     
     public RPermitExpirableSemaphoreReactive getPermitExpirableSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockName(key, "permitexpirablesemaphore");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
     public RSemaphoreReactive getSemaphore(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockName(key, "semaphore");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "semaphore");
         return redisson.getSemaphore(name);
     }
     
     public RLockReactive getFairLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockName(key, "fairlock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "fairlock");
         return redisson.getFairLock(name);
     }
     
     public RReadWriteLockReactive getReadWriteLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockName(key, "rw_lock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
     public RLockReactive getLock(K key) {
-        String name = ((RedissonMap<K, V>) instance).getLockName(key, "lock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "lock");
         return redisson.getLock(name);
     }
 

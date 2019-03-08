@@ -77,7 +77,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
 
     @Override
     protected RLock getLock(RCollectionAsync<V> set, V value) {
-        String lockName = ((RedissonSet<V>) set).getLockName(value, "lock");
+        String lockName = ((RedissonSet<V>) set).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     

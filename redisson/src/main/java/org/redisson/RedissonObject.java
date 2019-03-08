@@ -33,6 +33,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
 
@@ -244,6 +245,24 @@ public abstract class RedissonObject implements RObject {
     public void encode(Collection<Object> params, Collection<?> values) {
         for (Object object : values) {
             params.add(encode(object));
+        }
+    }
+    
+    public String getLockByMapKey(Object key, String suffix) {
+        ByteBuf keyState = encodeMapKey(key);
+        try {
+            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
+        } finally {
+            keyState.release();
+        }
+    }
+
+    public String getLockByValue(Object key, String suffix) {
+        ByteBuf keyState = encode(key);
+        try {
+            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
+        } finally {
+            keyState.release();
         }
     }
     

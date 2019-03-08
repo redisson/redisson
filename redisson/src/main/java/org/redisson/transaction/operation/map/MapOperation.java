@@ -82,7 +82,7 @@ public abstract class MapOperation extends TransactionalOperation {
     }
 
     protected RLock getLock(RMap<?, ?> map, CommandAsyncExecutor commandExecutor, Object key) {
-        String lockName = ((RedissonMap<?, ?>) map).getLockName(key, "lock");
+        String lockName = ((RedissonMap<?, ?>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     
