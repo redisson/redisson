@@ -25,8 +25,15 @@ import io.reactivex.Flowable;
  * @author Nikita Koksharov
  *
  */
-public interface RLockRx extends RExpirableRx {
+public interface RLockRx {
 
+    /**
+     * Returns name of object
+     *
+     * @return name - name of object
+     */
+    String getName();
+    
     /**
      * Unlocks the lock independently of state
      *

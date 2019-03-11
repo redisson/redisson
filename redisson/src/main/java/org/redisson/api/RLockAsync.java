@@ -23,12 +23,12 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RLockAsync extends RExpirableAsync {
+public interface RLockAsync {
 
     /**
      * Unlocks the lock independently of state
      *
-     * @return <code>true</code> if unlocked otherwise <code>false</code>
+     * @return <code>true</code> if lock existed and now unlocked otherwise <code>false</code>
      */
     RFuture<Boolean> forceUnlockAsync();
     

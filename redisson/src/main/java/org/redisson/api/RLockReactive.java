@@ -25,8 +25,15 @@ import reactor.core.publisher.Mono;
  * @author Nikita Koksharov
  *
  */
-public interface RLockReactive extends RExpirableReactive {
+public interface RLockReactive {
 
+    /**
+     * Returns name of object
+     *
+     * @return name - name of object
+     */
+    String getName();
+    
     /**
      * Unlocks the lock independently of state
      *
