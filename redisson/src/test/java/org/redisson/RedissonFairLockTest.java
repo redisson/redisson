@@ -190,15 +190,6 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     }
     
     @Test
-    public void testDelete() {
-        RLock lock = redisson.getFairLock("lock");
-        Assert.assertFalse(lock.delete());
-
-        lock.lock();
-        Assert.assertTrue(lock.delete());
-    }
-
-    @Test
     public void testForceUnlock() {
         RLock lock = redisson.getFairLock("lock");
         lock.lock();

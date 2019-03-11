@@ -324,13 +324,13 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         Assert.assertFalse(lock.writeLock().tryLock());
         Assert.assertFalse(lock.writeLock().isLocked());
         Assert.assertFalse(lock.writeLock().isHeldByCurrentThread());
-        lock.writeLock().delete();
+        lock.writeLock().forceUnlock();
     }
 
     @Test
     public void testMultiRead() throws InterruptedException {
         final RReadWriteLock lock = redisson.getReadWriteLock("lock");
-        Assert.assertFalse(lock.readLock().delete());
+        Assert.assertFalse(lock.readLock().forceUnlock());
 
         final RLock readLock1 = lock.readLock();
         readLock1.lock();
@@ -374,16 +374,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         Assert.assertFalse(lock.writeLock().isLocked());
         Assert.assertFalse(lock.writeLock().isHeldByCurrentThread());
         Assert.assertTrue(lock.writeLock().tryLock());
-        lock.writeLock().delete();
-    }
-
-    @Test
-    public void testDelete() {
-        RReadWriteLock lock = redisson.getReadWriteLock("lock");
-        Assert.assertFalse(lock.readLock().delete());
-
-        lock.readLock().lock();
-        Assert.assertTrue(lock.readLock().delete());
+        lock.writeLock().forceUnlock();
     }
 
     @Test
@@ -594,7 +585,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
             lock.unlock();
         } finally {
             // clear scheduler
-            lock.delete();
+            lock.forceUnlock();
         }
     }
 

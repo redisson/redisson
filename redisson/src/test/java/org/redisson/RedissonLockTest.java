@@ -31,15 +31,6 @@ public class RedissonLockTest extends BaseConcurrentTest {
     }
     
     @Test
-    public void testDelete() {
-        RLock lock = redisson.getLock("lock");
-        Assert.assertFalse(lock.delete());
-
-        lock.lock();
-        Assert.assertTrue(lock.delete());
-    }
-
-    @Test
     public void testForceUnlock() {
         RLock lock = redisson.getLock("lock");
         lock.lock();

@@ -252,7 +252,7 @@ public class RedissonRedLockTest {
         t.start();
         t.join(1000);
 
-        lockFirst.delete();
+        lockFirst.forceUnlock();
         
         RedissonMultiLock lock = new RedissonRedLock(lock1, lock2, lock3);
         lock.lock();
