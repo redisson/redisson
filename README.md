@@ -1,12 +1,12 @@
 Redisson: Redis Java client and In-Memory Data Grid
 ====
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.10.1) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.10.3) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 
 | Stable <br/> Release Version | Release Date | JDK Version<br/> compatibility | `CompletionStage` <br/> support | `ProjectReactor` version<br/> compatibility |
 | ------------- | ------------- | ------------| -----------| -----------|
-| 3.10.3 | 26.02.2019 | 1.8 - 11, Android | Yes | 3.x.x |
+| 3.10.4 | 08.03.2019 | 1.8 - 11, Android | Yes | 3.x.x |
 | 2.15.2 | 07.02.2019 | 1.6 - 11, Android | No | 2.0.8 |
 
 
@@ -109,12 +109,12 @@ Quick start
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.10.3</version>
+       <version>3.10.4</version>
     </dependency>  
 
 
 #### Gradle
-    compile 'org.redisson:redisson:3.10.3'  
+    compile 'org.redisson:redisson:3.10.4'  
 
 #### Java
 
@@ -141,8 +141,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 Downloads
 ===============================
    
-[Redisson 3.10.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.10.3&e=jar),
-[Redisson node 3.10.3](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.10.3&e=jar)  
+[Redisson 3.10.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.10.4&e=jar),
+[Redisson node 3.10.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.10.4&e=jar)  
 
 FAQs
 ===============================

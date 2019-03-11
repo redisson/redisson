@@ -1,7 +1,7 @@
 Spring Data Redis integration
 ===
 
-Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces, so you could work with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
+Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
 
 Supports Spring Data Redis 1.6.x, 1.7.x, 1.8.x, 2.0.x, 2.1.x
 
@@ -27,7 +27,7 @@ Maven
          <artifactId>redisson-spring-data-20</artifactId>
          <!-- for Spring Data Redis v.2.1.x -->
          <artifactId>redisson-spring-data-21</artifactId>
-         <version>3.10.3</version>
+         <version>3.10.4</version>
      </dependency>
 ```
 
@@ -35,15 +35,15 @@ Gradle
 
 ```java
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.10.3'
+     compile 'org.redisson:redisson-spring-data-16:3.10.4'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.10.3'
+     compile 'org.redisson:redisson-spring-data-17:3.10.4'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.10.3'
+     compile 'org.redisson:redisson-spring-data-18:3.10.4'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.10.3'
+     compile 'org.redisson:redisson-spring-data-20:3.10.4'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.10.3'
+     compile 'org.redisson:redisson-spring-data-21:3.10.4'
 ```  
 
 ### 2. Register `RedissonConnectionFactory` in Spring context

@@ -39,7 +39,7 @@ Maven
          <artifactId>redisson-hibernate-52</artifactId>
          <!-- for Hibernate v5.3.x - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.10.3</version>
+         <version>3.10.4</version>
      </dependency>
 ```
 
@@ -47,13 +47,13 @@ Gradle
 
 ```java
      // for Hibernate v4.x
-     compile 'org.redisson:redisson-hibernate-4:3.10.3'
+     compile 'org.redisson:redisson-hibernate-4:3.10.4'
      // for Hibernate v5.0.x - v5.1.x
-     compile 'org.redisson:redisson-hibernate-5:3.10.3'
+     compile 'org.redisson:redisson-hibernate-5:3.10.4'
      // for Hibernate v5.2.x
-     compile 'org.redisson:redisson-hibernate-52:3.10.3'
+     compile 'org.redisson:redisson-hibernate-52:3.10.4'
      // for Hibernate v5.3.x - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.10.3'
+     compile 'org.redisson:redisson-hibernate-53:3.10.4'
 ```  
 
 
