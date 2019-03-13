@@ -206,7 +206,7 @@ public class RedisConnection implements RedisCommands {
             @Override
             public void run() {
                 RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
-                        + command + ", command params: " + LogHelper.toString(params) 
+                        + LogHelper.toString(command, params)
                         + ", Redis client: " + redisClient);
                 promise.tryFailure(ex);
             }

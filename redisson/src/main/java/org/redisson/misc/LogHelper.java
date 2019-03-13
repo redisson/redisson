@@ -19,6 +19,7 @@ import java.lang.reflect.Array;
 import java.util.Collection;
 
 import org.redisson.client.protocol.CommandData;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 
 import io.netty.buffer.ByteBuf;
@@ -33,6 +34,13 @@ public final class LogHelper {
 //    private static final int MAX_BYTEBUF_LOG_SIZE = Integer.valueOf(System.getProperty("redisson.maxByteBufLogSize", "1000"));
 
     private LogHelper() {
+    }
+    
+    public static String toString(RedisCommand<?> command, Object... params) {
+        if (RedisCommands.AUTH.equals(command)) {
+            return command + ", params: (password masked)";
+        }
+        return command + ", params: " + LogHelper.toString(params);
     }
     
     public static String toString(Object object) {

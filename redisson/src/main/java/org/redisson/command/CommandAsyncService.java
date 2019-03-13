@@ -699,7 +699,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     if (details.getException() == null) {
                         details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and 'connection pool' settings or set decodeInExecutor = true and increase 'threads' setting"
                                     + "Node source: " + source
-                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                    + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + details.getAttempt() + " retry attempts"));
                     }
                 } else {
@@ -711,7 +711,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                         details.setException(new RedisTimeoutException("Unable to send command! "
                                                     + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow()
                                                     + ", current command in queue: " + details.getConnectionFuture().getNow().getCurrentCommand() 
-                                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                                    + ", command: " + LogHelper.toString(command, details.getParams())
                                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
                                     details.getAttemptPromise().tryFailure(details.getException());
@@ -741,7 +741,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
                         details.setException(new RedisTimeoutException("Unable to send command! Node source: " + source 
-                                    + ", command: " + command + ", command params: " + LogHelper.toString(details.getParams()) 
+                                    + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
                     details.getAttemptPromise().tryFailure(details.getException());
@@ -869,7 +869,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         if (!future.isSuccess()) {
             details.setException(new WriteRedisConnectionException(
                     "Unable to send command! Node source: " + details.getSource() + ", connection: " + connection + 
-                    ", command: " + details.getCommand() + ", command params: " + LogHelper.toString(details.getParams())
+                    ", command: " + LogHelper.toString(details.getCommand(), details.getParams())
                     + " after " + details.getAttempt() + " retry attempts", future.cause()));
             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                 if (!details.getAttemptPromise().tryFailure(details.getException())) {
@@ -931,8 +931,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 
                 details.getAttemptPromise().tryFailure(
                         new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                                + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts. Command: " + details.getCommand()
-                                + ", params: " + LogHelper.toString(details.getParams()) + ", channel: " + connection.getChannel()));
+                                + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts. Command: " 
+                                + LogHelper.toString(details.getCommand(), details.getParams()) + ", channel: " + connection.getChannel()));
             }
         };
 
