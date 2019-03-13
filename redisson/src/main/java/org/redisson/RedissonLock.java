@@ -17,6 +17,8 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -59,19 +61,48 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     public static class ExpirationEntry {
         
-        private long threadId;
-        private Timeout timeout;
+        private final Map<Long, Integer> threadIds = new LinkedHashMap<>();
+        private volatile Timeout timeout;
         
-        public ExpirationEntry(long threadId, Timeout timeout) {
+        public ExpirationEntry() {
             super();
-            this.threadId = threadId;
+        }
+        
+        public void addThreadId(long threadId) {
+            Integer counter = threadIds.get(threadId);
+            if (counter == null) {
+                counter = 1;
+            } else {
+                counter++;
+            }
+            threadIds.put(threadId, counter);
+        }
+        public boolean hasNoThreads() {
+            return threadIds.isEmpty();
+        }
+        public Long getFirstThreadId() {
+            if (threadIds.isEmpty()) {
+                return null;
+            }
+            return threadIds.keySet().iterator().next();
+        }
+        public void removeThreadId(long threadId) {
+            Integer counter = threadIds.get(threadId);
+            if (counter == null) {
+                return;
+            }
+            counter--;
+            if (counter == 0) {
+                threadIds.remove(threadId);
+            } else {
+                threadIds.put(threadId, counter);
+            }
+        }
+        
+        
+        public void setTimeout(Timeout timeout) {
             this.timeout = timeout;
         }
-        
-        public long getThreadId() {
-            return threadId;
-        }
-        
         public Timeout getTimeout() {
             return timeout;
         }
@@ -213,34 +244,48 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         return get(tryLockAsync());
     }
 
-    private void scheduleExpirationRenewal(long threadId) {
-        if (EXPIRATION_RENEWAL_MAP.containsKey(getEntryName())) {
+    private void renewExpiration() {
+        ExpirationEntry ee = EXPIRATION_RENEWAL_MAP.get(getEntryName());
+        if (ee == null) {
             return;
         }
-
+        
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
+                ExpirationEntry ent = EXPIRATION_RENEWAL_MAP.get(getEntryName());
+                if (ent == null) {
+                    return;
+                }
+                Long threadId = ent.getFirstThreadId();
+                if (threadId == null) {
+                    return;
+                }
                 
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
                 future.onComplete((res, e) -> {
-                    EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                     if (e != null) {
                         log.error("Can't update lock " + getName() + " expiration", e);
                         return;
                     }
                     
-                    if (res) {
-                        // reschedule itself
-                        scheduleExpirationRenewal(threadId);
-                    }
+                    // reschedule itself
+                    renewExpiration();
                 });
             }
-
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
-
-        if (EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), new ExpirationEntry(threadId, task)) != null) {
-            task.cancel();
+        
+        ee.setTimeout(task);
+    }
+    
+    private void scheduleExpirationRenewal(long threadId) {
+        ExpirationEntry entry = new ExpirationEntry();
+        ExpirationEntry oldEntry = EXPIRATION_RENEWAL_MAP.putIfAbsent(getEntryName(), entry);
+        if (oldEntry != null) {
+            oldEntry.addThreadId(threadId);
+        } else {
+            entry.addThreadId(threadId);
+            renewExpiration();
         }
     }
 
@@ -257,9 +302,17 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     void cancelExpirationRenewal(Long threadId) {
         ExpirationEntry task = EXPIRATION_RENEWAL_MAP.get(getEntryName());
-        if (task != null && (threadId == null || task.getThreadId() == threadId)) {
-            EXPIRATION_RENEWAL_MAP.remove(getEntryName());
+        if (task == null) {
+            return;
+        }
+        
+        if (threadId != null) {
+            task.removeThreadId(threadId);
+        }
+        
+        if (threadId == null || task.hasNoThreads()) {
             task.getTimeout().cancel();
+            EXPIRATION_RENEWAL_MAP.remove(getEntryName());
         }
     }
 
@@ -509,9 +562,8 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 result.tryFailure(cause);
                 return;
             }
-            if (opStatus) {
-                cancelExpirationRenewal(null);
-            }
+            
+            cancelExpirationRenewal(threadId);
             result.trySuccess(null);
         });
 
