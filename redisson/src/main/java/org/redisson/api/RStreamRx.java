@@ -695,4 +695,26 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      */
     Flowable<Long> trimNonStrict(int size);
     
+    /**
+     * Returns information about this stream.
+     * 
+     * @return info object
+     */
+    Flowable<StreamInfo<K, V>> getInfo();
+    
+    /**
+     * Returns list of objects with information about groups belonging to this stream.
+     * 
+     * @return list of info objects 
+     */
+    Flowable<List<StreamGroup>> listGroups();
+
+    /**
+     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 
+     * @param groupName - name of group
+     * @return list of info objects
+     */
+    Flowable<List<StreamConsumer>> listConsumers(String groupName);
+    
 }

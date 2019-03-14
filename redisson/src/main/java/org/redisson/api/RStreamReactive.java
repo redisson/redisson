@@ -694,5 +694,27 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @return number of deleted messages
      */
     Mono<Long> trimNonStrict(int size);
+
+    /**
+     * Returns information about this stream.
+     * 
+     * @return info object
+     */
+    Mono<StreamInfo<K, V>> getInfo();
     
+    /**
+     * Returns list of objects with information about groups belonging to this stream.
+     * 
+     * @return list of info objects 
+     */
+    Mono<List<StreamGroup>> listGroups();
+
+    /**
+     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 
+     * @param groupName - name of group
+     * @return list of info objects
+     */
+    Mono<List<StreamConsumer>> listConsumers(String groupName);
+
 }

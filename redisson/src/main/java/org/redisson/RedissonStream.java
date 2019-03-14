@@ -27,10 +27,18 @@ import org.redisson.api.PendingEntry;
 import org.redisson.api.PendingResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RStream;
+import org.redisson.api.StreamConsumer;
+import org.redisson.api.StreamGroup;
+import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListMultiDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.StreamInfoDecoder;
+import org.redisson.client.protocol.decoder.StreamInfoMapDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -42,12 +50,18 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K, V> {
 
+    private final RedisCommand<StreamInfo<Object, Object>> xinfoStreamCommand;
+    
     public RedissonStream(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
+                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     public RedissonStream(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
+                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     protected void checkKey(Object key) {
@@ -934,5 +948,35 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public void updateGroupMessageId(String groupName, StreamMessageId id) {
         get(updateGroupMessageIdAsync(groupName, id));
     }
+    
+    @Override
+    public StreamInfo<K, V> getInfo() {
+        return get(getInfoAsync());
+    }
 
+    @Override
+    public RFuture<StreamInfo<K, V>> getInfoAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, xinfoStreamCommand, getName());
+    }
+
+    @Override
+    public List<StreamGroup> listGroups() {
+        return get(listGroupsAsync());
+    }
+
+    @Override
+    public RFuture<List<StreamGroup>> listGroupsAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_GROUPS, getName());
+    }
+
+    @Override
+    public List<StreamConsumer> listConsumers(String groupName) {
+        return get(listConsumersAsync(groupName));
+    }
+
+    @Override
+    public RFuture<List<StreamConsumer>> listConsumersAsync(String groupName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_CONSUMERS, getName(), groupName);
+    }
+    
 }

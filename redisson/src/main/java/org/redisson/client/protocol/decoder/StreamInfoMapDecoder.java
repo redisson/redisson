@@ -13,23 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.client.protocol.convertor;
+package org.redisson.client.protocol.decoder;
 
-import org.redisson.api.StreamMessageId;
+import org.redisson.client.codec.Codec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StreamIdConvertor implements Convertor<StreamMessageId> {
+public class StreamInfoMapDecoder extends ObjectMapDecoder {
 
-    public static final StreamIdConvertor INSTANCE = new StreamIdConvertor();
+    public StreamInfoMapDecoder(Codec codec) {
+        super(codec);
+    }
     
     @Override
-    public StreamMessageId convert(Object id) {
-        String[] parts = id.toString().split("-");
-        return new StreamMessageId(Long.valueOf(parts[0]), Long.valueOf(parts[1]));
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (state.getLevel() == 2) {
+            return super.getDecoder(paramNum, state);
+        }
+        return null;
     }
 
 }

@@ -716,4 +716,26 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      */
     long trimNonStrict(int size);
 
+    /**
+     * Returns information about this stream.
+     * 
+     * @return info object
+     */
+    StreamInfo<K, V> getInfo();
+    
+    /**
+     * Returns list of objects with information about groups belonging to this stream.
+     * 
+     * @return list of info objects 
+     */
+    List<StreamGroup> listGroups();
+
+    /**
+     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 
+     * @param groupName - name of group
+     * @return list of info objects
+     */
+    List<StreamConsumer> listConsumers(String groupName);
+    
 }

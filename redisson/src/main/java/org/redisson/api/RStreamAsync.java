@@ -706,4 +706,26 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      */
     RFuture<Long> trimNonStrictAsync(int size);
     
+    /**
+     * Returns information about this stream.
+     * 
+     * @return info object
+     */
+    RFuture<StreamInfo<K, V>> getInfoAsync();
+    
+    /**
+     * Returns list of objects with information about groups belonging to this stream.
+     * 
+     * @return list of info objects 
+     */
+    RFuture<List<StreamGroup>> listGroupsAsync();
+
+    /**
+     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 
+     * @param groupName - name of group
+     * @return list of info objects
+     */
+    RFuture<List<StreamConsumer>> listConsumersAsync(String groupName);
+    
 }
