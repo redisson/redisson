@@ -107,7 +107,7 @@ public class MapCacheEventCodec implements Codec {
         int keyLen;
         if (osType == OSType.WINDOWS) {
             keyLen = buf.readIntLE();
-        } else if (osType == OSType.WINDOWS) {
+        } else if (osType == OSType.HPNONSTOP) {
             keyLen = (int) buf.readLong();
         } else {
             keyLen = (int) buf.readLongLE();
