@@ -102,17 +102,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         if (data == null) {
             while (in.writerIndex() > in.readerIndex()) {
-                in.markReaderIndex();
                 skipCommand(in);
-                in.resetReaderIndex();
 
                 decode(ctx, in, data);
             }
         } else {
             if (!(data instanceof CommandsData)) {
-                in.markReaderIndex();
                 skipCommand(in);
-                in.resetReaderIndex();
             }
             
             decode(ctx, in, data);
@@ -155,7 +151,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
     
     protected void skipCommand(ByteBuf in) throws Exception {
+        in.markReaderIndex();
         skipDecode(in);
+        in.resetReaderIndex();
     }
     
     protected void skipDecode(ByteBuf in) throws IOException{
@@ -245,9 +243,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 checkpoint();
                 state.get().setBatchIndex(i);
                 
-                in.markReaderIndex();
                 skipCommand(in);
-                in.resetReaderIndex();
                 
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
                 boolean skipConvertor = commandBatch.isQueued();
