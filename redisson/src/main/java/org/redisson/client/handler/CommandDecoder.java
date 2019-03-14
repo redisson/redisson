@@ -94,10 +94,6 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     protected final void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
         QueueCommand data = ctx.channel().attr(CommandsQueue.CURRENT_COMMAND).get();
 
-        if (log.isTraceEnabled()) {
-            log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
-        }
-
         if (state.get() == null) {
             state.set(new State());
         }
@@ -109,7 +105,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 in.markReaderIndex();
                 skipCommand(in);
                 in.resetReaderIndex();
-                
+
                 decode(ctx, in, data);
             }
         } else {
@@ -124,6 +120,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     private void decode(ChannelHandlerContext ctx, ByteBuf in, QueueCommand data) throws Exception {
+        if (log.isTraceEnabled()) {
+            log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
+        }
+
         if (decodeInExecutor && !(data instanceof CommandsData)) {
             ByteBuf copy = in.copy(in.readerIndex(), in.writerIndex() - in.readerIndex());
             in.skipBytes(in.writerIndex() - in.readerIndex());
@@ -442,7 +442,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
     protected void completeResponse(CommandData<Object, Object> data, Object result, Channel channel) {
         if (data != null && !data.getPromise().trySuccess(result) && data.cause() instanceof RedisTimeoutException) {
-            log.warn("response has been skipped due to timeout! channel: {}, command: {}, result: {}", channel, LogHelper.toString(data), LogHelper.toString(result));
+            log.warn("response has been skipped due to timeout! channel: {}, command: {}", channel, LogHelper.toString(data));
         }
     }
 
