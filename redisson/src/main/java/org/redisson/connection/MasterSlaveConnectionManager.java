@@ -456,11 +456,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())
               .setKeepAlive(config.isKeepAlive())
-              .setTcpNoDelay(config.isTcpNoDelay());
+              .setTcpNoDelay(config.isTcpNoDelay())
+              .setPassword(config.getPassword());
         
         if (type != NodeType.SENTINEL) {
             redisConfig.setDatabase(config.getDatabase());
-            redisConfig.setPassword(config.getPassword());
         }
         
         return redisConfig;
