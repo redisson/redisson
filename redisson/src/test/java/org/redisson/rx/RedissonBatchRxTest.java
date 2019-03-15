@@ -53,7 +53,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     public static Iterable<Object[]> data() {
         return Arrays.asList(new Object[][] {
             {BatchOptions.defaults().executionMode(ExecutionMode.IN_MEMORY)},
-//            {BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC)}
+            {BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC)}
             });
     }
 
@@ -131,7 +131,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         }
     }
     
-//    @Test
+    @Test
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = BaseTest.createConfig();
         config.useSingleServer()
@@ -143,7 +143,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 3000; i++) {
+        for (int i = 0; i < 300000; i++) {
             batch.getBucket("test").set(123);
         }
         
@@ -227,7 +227,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     }
 
     @Test
-    public void testWriteTimeout() {
+    public void testWriteTimeout() throws InterruptedException {
         Config config = BaseTest.createConfig();
         config.useSingleServer().setTimeout(3000);
         RedissonRxClient redisson = Redisson.createRx(config);
@@ -236,9 +236,11 @@ public class RedissonBatchRxTest extends BaseRxTest {
         RMapCacheRx<String, String> map = batch.getMapCache("test");
         int total = 200000;
         for (int i = 0; i < total; i++) {
-            Maybe<String> f = map.put("" + i, "" + i, 5, TimeUnit.MINUTES);
+            map.put("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
-                f.blockingGet();
+                if (i % 100 == 0) {
+                    Thread.sleep(5);
+                }
             }
         }
         

@@ -92,7 +92,7 @@ public class RedissonBatchRx implements RBatchRx {
     
     public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandRxBatchService(connectionManager);
+        this.executorService = new CommandRxBatchService(connectionManager, options);
         this.commandExecutor = commandExecutor;
         this.options = options;
     }

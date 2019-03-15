@@ -15,9 +15,7 @@
  */
 package org.redisson.rx;
 
-import java.util.Queue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
@@ -41,17 +39,16 @@ import io.reactivex.Flowable;
 public class CommandRxBatchService extends CommandRxService {
 
     private final CommandBatchService batchService;
-    private final Queue<Flowable<?>> publishers = new ConcurrentLinkedQueue<>();
 
-    public CommandRxBatchService(ConnectionManager connectionManager) {
+    public CommandRxBatchService(ConnectionManager connectionManager, BatchOptions options) {
         super(connectionManager);
-        batchService = new CommandBatchService(connectionManager);
+        batchService = new CommandBatchService(connectionManager, options);
     }
     
     @Override
     public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
         Flowable<R> flowable = super.flowable(new Callable<RFuture<R>>() {
-            RFuture<R> future;
+            volatile RFuture<R> future;
             @Override
             public  RFuture<R> call() throws Exception {
                 if (future == null) {
@@ -64,8 +61,13 @@ public class CommandRxBatchService extends CommandRxService {
                 return future;
             }
         });
-        publishers.add(flowable);
+        flowable.subscribe();
         return flowable;
+    }
+    
+    @Override
+    protected <R> RPromise<R> createPromise() {
+        return batchService.createPromise();
     }
     
     @Override
@@ -75,10 +77,6 @@ public class CommandRxBatchService extends CommandRxService {
     }
 
     public RFuture<BatchResult<?>> executeAsync(BatchOptions options) {
-        for (Flowable<?> element : publishers) {
-            element.subscribe();
-        }
-        
         return batchService.executeAsync(options);
     }
 

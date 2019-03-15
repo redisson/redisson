@@ -188,7 +188,7 @@ public class CommandBatchService extends CommandAsyncService {
     AsyncSemaphore semaphore = new AsyncSemaphore(0);
     
     @Override
-    protected <R> RPromise<R> createPromise() {
+    public <R> RPromise<R> createPromise() {
         if (isRedisBasedQueue()) {
             return new BatchPromise<R>(executed);
         }

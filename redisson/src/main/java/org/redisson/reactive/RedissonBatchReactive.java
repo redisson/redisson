@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.redisson.RedissonAtomicDouble;
 import org.redisson.RedissonAtomicLong;
@@ -51,7 +50,6 @@ import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
-import org.redisson.api.RFuture;
 import org.redisson.api.RGeoReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
@@ -91,7 +89,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandReactiveBatchService(connectionManager);
+        this.executorService = new CommandReactiveBatchService(connectionManager, options);
         this.commandExecutor = commandExecutor;
         this.options = options;
     }
@@ -287,12 +285,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Mono<BatchResult<?>> execute() {
-        return commandExecutor.reactive(new Supplier<RFuture<BatchResult<?>>>() {
-            @Override
-            public RFuture<BatchResult<?>> get() {
-                return executorService.executeAsync(options);
-            }
-        });
+        return commandExecutor.reactive(() -> executorService.executeAsync(options));
     }
 
     public RBatchReactive atomic() {
