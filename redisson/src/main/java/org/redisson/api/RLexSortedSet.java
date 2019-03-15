@@ -156,6 +156,8 @@ public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, R
      * @param fromInclusive - start element inclusive
      * @param toElement - end element
      * @param toInclusive - end element inclusive
+     * @param offset - offset of result collection
+     * @param count - amount of result collection
      * @return collection of elements
      */
     Collection<String> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
@@ -221,6 +223,8 @@ public interface RLexSortedSet extends RLexSortedSetAsync, RSortedSet<String>, R
      * @param fromInclusive - start element inclusive
      * @param toElement - end element
      * @param toInclusive - end element inclusive
+     * @param offset - offset of result collection
+     * @param count - amount of result collection
      * @return collection of elements
      */
     Collection<String> rangeReversed(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);

@@ -44,7 +44,7 @@ public interface RLockAsync {
      * if lock isn't locked by thread with specified <code>threadId</code>.
      * 
      * @param threadId id of thread
-     * @return
+     * @return void
      */
     RFuture<Void> unlockAsync(long threadId);
 

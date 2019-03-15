@@ -109,8 +109,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Removes and returns the head elements or {@code null} if this sorted set is empty.
      *
      * @param count - elements amount
-     * @return the head element, 
-     *         or {@code null} if this sorted set is empty
+     * @return the head elements
      */
     RFuture<Collection<V>> pollFirstAsync(int count);
 
@@ -118,7 +117,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Removes and returns the tail elements or {@code null} if this sorted set is empty.
      *
      * @param count - elements amount
-     * @return the tail element or {@code null} if this sorted set is empty
+     * @return the tail elements
      */
     RFuture<Collection<V>> pollLastAsync(int count);
 
@@ -196,7 +195,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * 
      * @param startIndex - start index 
      * @param endIndex - end index
-     * @return
+     * @return number of elements removed
      */
     RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 

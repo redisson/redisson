@@ -135,6 +135,8 @@ public interface RLexSortedSetReactive extends RScoredSortedSetReactive<String>,
      * @param fromInclusive - start element inclusive
      * @param toElement - end element
      * @param toInclusive - end element inclusive
+     * @param offset - offset of result collection
+     * @param count - amount of result collection
      * @return collection of elements
      */
     Mono<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);

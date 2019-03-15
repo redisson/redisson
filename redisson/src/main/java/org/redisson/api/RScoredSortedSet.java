@@ -374,6 +374,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Returns this sorted set in array of defined type.
      * 
+     * @param <T> type of element
      * @param a - instance of array
      * @return array of values
      */

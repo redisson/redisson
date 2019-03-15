@@ -607,10 +607,14 @@ public interface RedissonReactiveClient {
      */
     RBatchReactive createBatch(BatchOptions options);
 
-    /*
-     * Use createBatch(BatchOptions)
+    /**
+     * Return batch object which executes group of
+     * command in pipeline.
+     *
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @return Batch object
      */
-    @Deprecated
     RBatchReactive createBatch();
 
     /**

@@ -62,6 +62,7 @@ public interface RLiveObjectService {
      * 
      * @see Conditions
      * 
+     * @param <T> Entity type
      * @param entityClass - entity class
      * @param condition - condition object 
      * @return collection of live objects or empty collection.

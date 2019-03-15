@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * Stream ID used by Redis Stream 
+ * Stream Message ID object 
  * 
  * @author Nikita Koksharov
  *
