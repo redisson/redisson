@@ -23,6 +23,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * 
@@ -37,7 +38,7 @@ public class RedissonLexSortedSetRx {
         this.instance = instance;
     }
 
-    public Flowable<Boolean> addAll(Publisher<? extends String> c) {
+    public Single<Boolean> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>() {
             @Override
             public RFuture<Boolean> add(Object e) {

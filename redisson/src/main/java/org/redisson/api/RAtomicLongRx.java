@@ -15,7 +15,8 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for AtomicLong object
@@ -34,7 +35,7 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @return true if successful; or false if the actual value
      *         was not equal to the expected value.
      */
-    Flowable<Boolean> compareAndSet(long expect, long update);
+    Single<Boolean> compareAndSet(long expect, long update);
 
     /**
      * Atomically adds the given value to the current value.
@@ -42,28 +43,28 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param delta the value to add
      * @return the updated value
      */
-    Flowable<Long> addAndGet(long delta);
+    Single<Long> addAndGet(long delta);
 
     /**
      * Atomically decrements the current value by one.
      *
      * @return the updated value
      */
-    Flowable<Long> decrementAndGet();
+    Single<Long> decrementAndGet();
 
     /**
      * Returns current value.
      *
      * @return the current value
      */
-    Flowable<Long> get();
+    Single<Long> get();
 
     /**
      * Returns and deletes object
      * 
      * @return the current value
      */
-    Flowable<Long> getAndDelete();
+    Single<Long> getAndDelete();
     
     /**
      * Atomically adds the given value to the current value.
@@ -71,7 +72,7 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param delta the value to add
      * @return the old value before the add
      */
-    Flowable<Long> getAndAdd(long delta);
+    Single<Long> getAndAdd(long delta);
 
     /**
      * Atomically sets the given value and returns the old value.
@@ -79,28 +80,28 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param newValue the new value
      * @return the old value
      */
-    Flowable<Long> getAndSet(long newValue);
+    Single<Long> getAndSet(long newValue);
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the updated value
      */
-    Flowable<Long> incrementAndGet();
+    Single<Long> incrementAndGet();
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the old value
      */
-    Flowable<Long> getAndIncrement();
+    Single<Long> getAndIncrement();
 
     /**
      * Atomically decrements by one the current value.
      *
      * @return the previous value
      */
-    Flowable<Long> getAndDecrement();
+    Single<Long> getAndDecrement();
 
     /**
      * Atomically sets the given value.
@@ -108,6 +109,6 @@ public interface RAtomicLongRx extends RExpirableRx {
      * @param newValue the new value
      * @return void
      */
-    Flowable<Void> set(long newValue);
+    Completable set(long newValue);
 
 }

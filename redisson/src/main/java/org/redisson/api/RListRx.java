@@ -18,7 +18,10 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.List;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  *  list functions
@@ -36,7 +39,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param indexes of elements
      * @return elements
      */
-    Flowable<List<V>> get(int...indexes);
+    Single<List<V>> get(int...indexes);
     
     /**
      * Add <code>element</code> after <code>elementToFind</code>
@@ -45,7 +48,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element - object to add
      * @return new list size
      */
-    Flowable<Integer> addAfter(V elementToFind, V element);
+    Single<Integer> addAfter(V elementToFind, V element);
     
     /**
      * Add <code>element</code> before <code>elementToFind</code>
@@ -54,7 +57,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element - object to add
      * @return new list size
      */
-    Flowable<Integer> addBefore(V elementToFind, V element);
+    Single<Integer> addBefore(V elementToFind, V element);
     
     Flowable<V> descendingIterator();
 
@@ -69,7 +72,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element to find
      * @return index of -1 if element isn't found
      */
-    Flowable<Integer> lastIndexOf(Object element);
+    Single<Integer> lastIndexOf(Object element);
 
     /**
      * Returns last index of <code>element</code> or 
@@ -78,7 +81,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element to find
      * @return index of -1 if element isn't found
      */
-    Flowable<Integer> indexOf(Object element);
+    Single<Integer> indexOf(Object element);
 
     /**
      * Inserts <code>element</code> at <code>index</code>. 
@@ -88,7 +91,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element - element to insert
      * @return {@code true} if list was changed
      */
-    Flowable<Void> add(int index, V element);
+    Completable add(int index, V element);
 
     /**
      * Inserts <code>elements</code> at <code>index</code>. 
@@ -99,7 +102,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @return {@code true} if list changed
      *      or {@code false} if element isn't found
      */
-    Flowable<Boolean> addAll(int index, Collection<? extends V> elements);
+    Single<Boolean> addAll(int index, Collection<? extends V> elements);
 
     /**
      * Set <code>element</code> at <code>index</code>.
@@ -110,7 +113,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element - object
      * @return void
      */
-    Flowable<Void> fastSet(int index, V element);
+    Completable fastSet(int index, V element);
 
     /**
      * Set <code>element</code> at <code>index</code> and returns previous element.
@@ -119,7 +122,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param element - object
      * @return previous element or <code>null</code> if element wasn't set.
      */
-    Flowable<V> set(int index, V element);
+    Maybe<V> set(int index, V element);
 
     /**
      * Get element at <code>index</code>
@@ -127,7 +130,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param index - index of object
      * @return element
      */
-    Flowable<V> get(int index);
+    Maybe<V> get(int index);
 
     /**
      * Removes element at <code>index</code>.
@@ -135,14 +138,14 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param index - index of object
      * @return element or <code>null</code> if element wasn't set.
      */
-    Flowable<V> remove(int index);
+    Maybe<V> remove(int index);
     
     /**
      * Read all elements at once
      *
      * @return list of values
      */
-    Flowable<List<V>> readAll();
+    Single<List<V>> readAll();
 
     /**
      * Trim list and remains elements only in specified range
@@ -152,7 +155,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param toIndex - to index
      * @return void
      */
-    Flowable<Void> trim(int fromIndex, int toIndex);
+    Completable trim(int fromIndex, int toIndex);
 
     /**
      * Remove object by specified index
@@ -160,6 +163,6 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @param index - index of object
      * @return void
      */
-    Flowable<Void> fastRemove(int index);
+    Completable fastRemove(int index);
     
 }

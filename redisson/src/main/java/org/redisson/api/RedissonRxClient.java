@@ -596,6 +596,16 @@ public interface RedissonRxClient {
     RBatchRx createBatch(BatchOptions options);
 
     /**
+     * Return batch object which executes group of
+     * command in pipeline.
+     *
+     * See <a href="http://redis.io/topics/pipelining">http://redis.io/topics/pipelining</a>
+     *
+     * @return Batch object
+     */
+    RBatchRx createBatch();
+
+    /**
      * Returns keys operations.
      * Each of Redis/Redisson object associated with own key
      *

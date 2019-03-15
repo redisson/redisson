@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * Base  interface for all Redisson objects
@@ -37,7 +37,7 @@ public interface RExpirableRx extends RObjectRx {
      * @param timeUnit - timeout time unit
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Flowable<Boolean> expire(long timeToLive, TimeUnit timeUnit);
+    Single<Boolean> expire(long timeToLive, TimeUnit timeUnit);
 
     /**
      * Set an expire date for object in  mode. When expire date comes
@@ -46,7 +46,7 @@ public interface RExpirableRx extends RObjectRx {
      * @param timestamp - expire date
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Flowable<Boolean> expireAt(Date timestamp);
+    Single<Boolean> expireAt(Date timestamp);
 
     /**
      * Set an expire date for object in  mode. When expire date comes
@@ -55,7 +55,7 @@ public interface RExpirableRx extends RObjectRx {
      * @param timestamp - expire date in milliseconds (Unix timestamp)
      * @return <code>true</code> if the timeout was set and <code>false</code> if not
      */
-    Flowable<Boolean> expireAt(long timestamp);
+    Single<Boolean> expireAt(long timestamp);
 
     /**
      * Clear an expire timeout or expire date for object in  mode.
@@ -63,7 +63,7 @@ public interface RExpirableRx extends RObjectRx {
      *
      * @return <code>true</code> if the timeout was cleared and <code>false</code> if not
      */
-    Flowable<Boolean> clearExpire();
+    Single<Boolean> clearExpire();
 
     /**
      * Get remaining time to live of object in milliseconds.
@@ -72,6 +72,6 @@ public interface RExpirableRx extends RObjectRx {
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
-    Flowable<Long> remainTimeToLive();
+    Single<Long> remainTimeToLive();
 
 }

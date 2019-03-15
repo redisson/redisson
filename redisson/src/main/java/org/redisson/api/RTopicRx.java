@@ -21,6 +21,7 @@ import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Publish Subscribe object. Messages are delivered to all message listeners across Redis cluster.
@@ -43,7 +44,7 @@ public interface RTopicRx {
      * @param message to send
      * @return the <code>Future</code> object with number of clients that received the message
      */
-    Flowable<Long> publish(Object message);
+    Single<Long> publish(Object message);
 
     /**
      * Subscribes to status changes of this topic
@@ -52,7 +53,7 @@ public interface RTopicRx {
      * @return listener id
      * @see org.redisson.api.listener.StatusListener
      */
-    Flowable<Integer> addListener(StatusListener listener);
+    Single<Integer> addListener(StatusListener listener);
 
     /**
      * Subscribes to this topic.
@@ -65,7 +66,7 @@ public interface RTopicRx {
      * @return locally unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <M> Flowable<Integer> addListener(Class<M> type, MessageListener<M> listener);
+    <M> Single<Integer> addListener(Class<M> type, MessageListener<M> listener);
 
     /**
      * Removes the listener by <code>id</code> for listening this topic
@@ -89,6 +90,6 @@ public interface RTopicRx {
      * 
      * @return amount of subscribers
      */
-    Flowable<Long> countSubscribers();
+    Single<Long> countSubscribers();
     
 }

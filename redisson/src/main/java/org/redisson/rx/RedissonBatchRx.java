@@ -74,8 +74,9 @@ import org.redisson.api.RedissonRxClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.misc.RedissonPromise;
 
-import io.reactivex.Flowable;
+import io.reactivex.Maybe;
 
 /**
  * 
@@ -86,11 +87,13 @@ public class RedissonBatchRx implements RBatchRx {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandRxBatchService executorService;
+    private final CommandRxExecutor commandExecutor;
     private final BatchOptions options;
     
-    public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, BatchOptions options) {
+    public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandRxBatchService(connectionManager);
+        this.commandExecutor = commandExecutor;
         this.options = options;
     }
 
@@ -294,13 +297,17 @@ public class RedissonBatchRx implements RBatchRx {
     }
 
     @Override
-    public Flowable<BatchResult<?>> execute() {
-        return executorService.flowable(new Callable<RFuture<BatchResult<?>>>() {
+    public Maybe<BatchResult<?>> execute() {
+        return commandExecutor.flowable(new Callable<RFuture<BatchResult<?>>>() {
             @Override
             public RFuture<BatchResult<?>> call() {
-                return executorService.executeAsync(options);
+                try {
+                    return executorService.executeAsync(options);
+                } catch (Exception e) {
+                    return RedissonPromise.newFailedFuture(e);
+                }
             }
-        });
+        }).singleElement();
     }
     
     public RBatchRx atomic() {

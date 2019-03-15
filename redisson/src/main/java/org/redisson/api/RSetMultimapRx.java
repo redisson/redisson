@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Set based Multimap
@@ -49,7 +49,7 @@ public interface RSetMultimapRx<K, V> extends RMultimapRx<K, V> {
      * @param key - map key
      * @return set of values 
      */
-    Flowable<Set<V>> getAll(K key);
+    Single<Set<V>> getAll(K key);
     
     /**
      * Removes all values associated with the key {@code key}.
@@ -62,7 +62,7 @@ public interface RSetMultimapRx<K, V> extends RMultimapRx<K, V> {
      *     set <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
      */
-    Flowable<Set<V>> removeAll(Object key);
+    Single<Set<V>> removeAll(Object key);
     
     /**
      * Stores a collection of values with the same key, replacing any existing
@@ -78,6 +78,6 @@ public interface RSetMultimapRx<K, V> extends RMultimapRx<K, V> {
      *     <i>may</i> be modifiable, but updating it will have no effect on the
      *     multimap.
      */
-    Flowable<Set<V>> replaceValues(K key, Iterable<? extends V> values);
+    Single<Set<V>> replaceValues(K key, Iterable<? extends V> values);
     
 }

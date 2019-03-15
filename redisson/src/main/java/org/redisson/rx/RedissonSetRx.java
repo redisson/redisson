@@ -28,6 +28,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -46,7 +47,7 @@ public class RedissonSetRx<V> {
         this.redisson = redisson;
     }
     
-    public Flowable<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<Object>() {
             @Override
             public RFuture<Boolean> add(Object e) {

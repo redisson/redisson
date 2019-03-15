@@ -36,8 +36,9 @@ public class ReactiveProxyBuilder {
     public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
         return ProxyBuilder.create(new Callback() {
             @Override
-            public Object execute(Method mm, Object instance, Object[] args) {
+            public Object execute(Method mm, Object instance, Method instanceMethod, Object[] args) {
                 return commandExecutor.reactive(new Supplier<RFuture<Object>>() {
+                    @SuppressWarnings("unchecked")
                     @Override
                     public RFuture<Object> get() {
                         try {

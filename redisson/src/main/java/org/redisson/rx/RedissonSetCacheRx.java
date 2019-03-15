@@ -28,6 +28,8 @@ import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
+import io.reactivex.Single;
+
 /**
  *
  * @author Nikita Koksharov
@@ -53,7 +55,7 @@ public class RedissonSetCacheRx<V> {
         }.create();
     }
 
-    public Publisher<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
             @Override
             public RFuture<Boolean> add(Object o) {

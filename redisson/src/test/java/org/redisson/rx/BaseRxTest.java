@@ -2,12 +2,10 @@ package org.redisson.rx;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.reactivestreams.Publisher;
 import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
@@ -16,7 +14,10 @@ import org.redisson.api.RScoredSortedSetRx;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 public abstract class BaseRxTest {
 
@@ -43,6 +44,18 @@ public abstract class BaseRxTest {
         sync(redisson.getKeys().flushall());
     }
 
+    public static <V> V sync(Maybe<V> maybe) {
+        return maybe.blockingGet();
+    }
+    
+    public static void sync(Completable completable) {
+        completable.blockingGet();
+    }
+
+    public static <V> V sync(Single<V> single) {
+        return single.blockingGet();
+    }
+    
     public static <V> Iterable<V> sync(RScoredSortedSetRx<V> list) {
         return list.iterator().toList().blockingGet();
     }
@@ -51,20 +64,8 @@ public abstract class BaseRxTest {
         return list.iterator().toList().blockingGet();
     }
 
-    public static <V> Iterator<V> toIterator(Publisher<V> pub) {
-        return Flowable.fromPublisher(pub).toList().blockingGet().iterator();
-    }
-
-    public static <V> Iterable<V> toIterable(Publisher<V> pub) {
-        return Flowable.fromPublisher(pub).toList().blockingGet();
-    }
-
-    public static <V> V sync(Flowable<V> ob) {
-        try {
-            return ob.blockingSingle();
-        } catch (NoSuchElementException e) {
-            return null;
-        }
+    public static <V> Iterator<V> toIterator(Flowable<V> flowable) {
+        return flowable.toList().blockingGet().iterator();
     }
 
     public static RedissonRxClient createInstance() {

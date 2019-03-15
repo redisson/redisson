@@ -380,8 +380,13 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RBatchRx createBatch() {
+        return createBatch(BatchOptions.defaults());
+    }
+    
+    @Override
     public RBatchRx createBatch(BatchOptions options) {
-        RedissonBatchRx batch = new RedissonBatchRx(evictionScheduler, connectionManager, options);
+        RedissonBatchRx batch = new RedissonBatchRx(evictionScheduler, connectionManager, commandExecutor, options);
         if (config.isReferenceEnabled()) {
             batch.enableRedissonReferenceSupport(this);
         }

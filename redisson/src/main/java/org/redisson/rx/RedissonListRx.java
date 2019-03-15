@@ -19,6 +19,7 @@ import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
+import io.reactivex.Single;
 import io.reactivex.functions.LongConsumer;
 import io.reactivex.processors.ReplayProcessor;
 
@@ -93,7 +94,7 @@ public class RedissonListRx<V> {
         });
     }
     
-    public Publisher<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
 
             @Override

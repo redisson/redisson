@@ -102,14 +102,14 @@ public class RedissonSetRxTest extends BaseRxTest {
 
         Assert.assertTrue(sync(set.remove(1)));
         Assert.assertFalse(sync(set.contains(1)));
-        assertThat(sync(set)).containsExactly(3, 7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(3, 7);
 
         Assert.assertFalse(sync(set.remove(1)));
-        assertThat(sync(set)).containsExactly(3, 7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(3, 7);
 
         sync(set.remove(3));
         Assert.assertFalse(sync(set.contains(3)));
-        assertThat(sync(set)).containsExactly(7);
+        assertThat(sync(set)).containsExactlyInAnyOrder(7);
     }
 
     @Test
@@ -234,7 +234,7 @@ public class RedissonSetRxTest extends BaseRxTest {
         sync(set.add(2));
 
         Assert.assertFalse(sync(set.retainAll(Arrays.asList(1, 2)))); // nothing changed
-        assertThat(sync(set)).containsExactly(1, 2);
+        assertThat(sync(set)).containsExactlyInAnyOrder(1, 2);
     }
 
 

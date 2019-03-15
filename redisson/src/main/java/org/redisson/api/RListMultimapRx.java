@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.List;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for List based Multimap object
@@ -49,7 +49,7 @@ public interface RListMultimapRx<K, V> extends RMultimapRx<K, V> {
      * @param key - map key
      * @return list of values 
      */
-    Flowable<List<V>> getAll(K key);
+    Single<List<V>> getAll(K key);
     
     /**
      * Removes all values associated with the key {@code key}.
@@ -62,7 +62,7 @@ public interface RListMultimapRx<K, V> extends RMultimapRx<K, V> {
      *     list <i>may</i> be modifiable, but updating it will have no
      *     effect on the multimap.
      */
-    Flowable<List<V>> removeAll(Object key);
+    Single<List<V>> removeAll(Object key);
     
     /**
      * Stores a collection of values with the same key, replacing any existing
@@ -78,6 +78,6 @@ public interface RListMultimapRx<K, V> extends RMultimapRx<K, V> {
      *     <i>may</i> be modifiable, but updating it will have no effect on the
      *     multimap.
      */
-    Flowable<List<V>> replaceValues(K key, Iterable<? extends V> values);
+    Single<List<V>> replaceValues(K key, Iterable<? extends V> values);
     
 }

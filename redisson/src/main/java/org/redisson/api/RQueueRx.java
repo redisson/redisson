@@ -15,7 +15,8 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Queue object
@@ -26,12 +27,12 @@ import io.reactivex.Flowable;
  */
 public interface RQueueRx<V> extends RCollectionRx<V> {
 
-    Flowable<V> peek();
+    Maybe<V> peek();
 
-    Flowable<V> poll();
+    Maybe<V> poll();
 
-    Flowable<Boolean> offer(V e);
+    Single<Boolean> offer(V e);
 
-    Flowable<V> pollLastAndOfferFirstTo(String queueName);
+    Maybe<V> pollLastAndOfferFirstTo(String queueName);
 
 }

@@ -19,7 +19,6 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.reactivestreams.Publisher;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
@@ -42,22 +41,31 @@ import io.reactivex.Flowable;
 public class CommandRxBatchService extends CommandRxService {
 
     private final CommandBatchService batchService;
-    private final Queue<Publisher<?>> publishers = new ConcurrentLinkedQueue<Publisher<?>>();
+    private final Queue<Flowable<?>> publishers = new ConcurrentLinkedQueue<>();
 
     public CommandRxBatchService(ConnectionManager connectionManager) {
         super(connectionManager);
         batchService = new CommandBatchService(connectionManager);
     }
-
+    
     @Override
     public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
-        Flowable<R> flowable = super.flowable(supplier);
+        Flowable<R> flowable = super.flowable(new Callable<RFuture<R>>() {
+            RFuture<R> future;
+            @Override
+            public  RFuture<R> call() throws Exception {
+                if (future == null) {
+                    synchronized (this) {
+                        if (future == null) {
+                            future = supplier.call();
+                        }
+                    }
+                }
+                return future;
+            }
+        });
         publishers.add(flowable);
         return flowable;
-    }
-    
-    public <R> Flowable<R> superReactive(Callable<RFuture<R>> supplier) {
-        return super.flowable(supplier);
     }
     
     @Override
@@ -67,6 +75,10 @@ public class CommandRxBatchService extends CommandRxService {
     }
 
     public RFuture<BatchResult<?>> executeAsync(BatchOptions options) {
+        for (Flowable<?> element : publishers) {
+            element.subscribe();
+        }
+        
         return batchService.executeAsync(options);
     }
 

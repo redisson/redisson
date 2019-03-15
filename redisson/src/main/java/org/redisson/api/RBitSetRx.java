@@ -17,7 +17,8 @@ package org.redisson.api;
 
 import java.util.BitSet;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for BitSet object
@@ -27,7 +28,7 @@ import io.reactivex.Flowable;
  */
 public interface RBitSetRx extends RExpirableRx {
 
-    Flowable<byte[]> toByteArray();
+    Single<byte[]> toByteArray();
 
     /**
      * Returns "logical size" = index of highest set bit plus one.
@@ -35,7 +36,7 @@ public interface RBitSetRx extends RExpirableRx {
      * 
      * @return "logical size" = index of highest set bit plus one
      */
-    Flowable<Long> length();
+    Single<Long> length();
 
     /**
      * Set all bits to <code>value</code> from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -46,7 +47,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @return void
      * 
      */
-    Flowable<Void> set(long fromIndex, long toIndex, boolean value);
+    Completable set(long fromIndex, long toIndex, boolean value);
 
     /**
      * Set all bits to zero from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -56,7 +57,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @return void
      * 
      */
-    Flowable<Void> clear(long fromIndex, long toIndex);
+    Completable clear(long fromIndex, long toIndex);
 
     /**
      * Copy bits state of source BitSet object to this object
@@ -64,14 +65,14 @@ public interface RBitSetRx extends RExpirableRx {
      * @param bs - BitSet source
      * @return void
      */
-    Flowable<Void> set(BitSet bs);
+    Completable set(BitSet bs);
 
     /**
      * Executes NOT operation over all bits
      * 
      * @return void
      */
-    Flowable<Void> not();
+    Completable not();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
@@ -80,14 +81,14 @@ public interface RBitSetRx extends RExpirableRx {
      * @param toIndex exclusive
      * @return void
      */
-    Flowable<Void> set(long fromIndex, long toIndex);
+    Completable set(long fromIndex, long toIndex);
 
     /**
      * Returns number of set bits.
      * 
      * @return number of set bits.
      */
-    Flowable<Long> size();
+    Single<Long> size();
 
     /**
      * Returns <code>true</code> if bit set to one and <code>false</code> overwise.
@@ -95,7 +96,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @param bitIndex - index of bit
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
-    Flowable<Boolean> get(long bitIndex);
+    Single<Boolean> get(long bitIndex);
 
     /**
      * Set bit to one at specified bitIndex
@@ -104,7 +105,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @return <code>true</code> - if previous value was true, 
      * <code>false</code> - if previous value was false
      */
-    Flowable<Boolean> set(long bitIndex);
+    Single<Boolean> set(long bitIndex);
 
     /**
      * Set bit to <code>value</code> at specified <code>bitIndex</code>
@@ -114,14 +115,14 @@ public interface RBitSetRx extends RExpirableRx {
      * @return <code>true</code> - if previous value was true, 
      * <code>false</code> - if previous value was false
      */
-    Flowable<Boolean> set(long bitIndex, boolean value);
+    Single<Boolean> set(long bitIndex, boolean value);
 
     /**
      * Returns the number of bits set to one.
      * 
      * @return number of bits
      */
-    Flowable<Long> cardinality();
+    Single<Long> cardinality();
 
     /**
      * Set bit to zero at specified <code>bitIndex</code>
@@ -130,14 +131,14 @@ public interface RBitSetRx extends RExpirableRx {
      * @return <code>true</code> - if previous value was true, 
      * <code>false</code> - if previous value was false
      */
-    Flowable<Boolean> clear(long bitIndex);
+    Single<Boolean> clear(long bitIndex);
 
     /**
      * Set all bits to zero
      * 
      * @return void
      */
-    Flowable<Void> clear();
+    Completable clear();
 
     /**
      * Executes OR operation over this object and specified bitsets.
@@ -146,7 +147,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @param bitSetNames - name of stored bitsets
      * @return void
      */
-    Flowable<Void> or(String... bitSetNames);
+    Completable or(String... bitSetNames);
 
     /**
      * Executes AND operation over this object and specified bitsets.
@@ -155,7 +156,7 @@ public interface RBitSetRx extends RExpirableRx {
      * @param bitSetNames - name of stored bitsets
      * @return void
      */
-    Flowable<Void> and(String... bitSetNames);
+    Completable and(String... bitSetNames);
 
     /**
      * Executes XOR operation over this object and specified bitsets.
@@ -164,6 +165,6 @@ public interface RBitSetRx extends RExpirableRx {
      * @param bitSetNames - name of stored bitsets
      * @return void
      */
-    Flowable<Void> xor(String... bitSetNames);
+    Completable xor(String... bitSetNames);
 
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.client.codec.Codec;
 
-import io.reactivex.Flowable;
+import io.reactivex.Maybe;
 
 /**
  * RxJava2 interface for Redis pipeline feature.
@@ -366,7 +366,7 @@ public interface RBatchRx {
      *
      * @return List with result object for each command
      */
-    Flowable<BatchResult<?>> execute();
+    Maybe<BatchResult<?>> execute();
 
     /*
      * Use BatchOptions#atomic

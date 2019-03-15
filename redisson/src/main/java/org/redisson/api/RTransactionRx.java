@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
 
 /**
  * RxJava2 interface for transaction object allows to execute transactions over Redisson objects.
@@ -150,12 +150,12 @@ public interface RTransactionRx {
      * 
      * @return void
      */
-    Flowable<Void> commit();
+    Completable commit();
     
     /**
      * Rollback all changes made on this transaction.
      * @return void
      */
-    Flowable<Void> rollback();
+    Completable rollback();
 
 }

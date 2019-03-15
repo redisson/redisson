@@ -17,7 +17,8 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Lock object
@@ -39,37 +40,37 @@ public interface RLockRx {
      *
      * @return <code>true</code> if unlocked otherwise <code>false</code>
      */
-    Flowable<Boolean> forceUnlock();
+    Single<Boolean> forceUnlock();
 
     /**
      * Unlocks the lock 
      * 
      * @return void
      */
-    Flowable<Void> unlock();
+    Completable unlock();
 
     /**
      * Unlocks the lock. Throws {@link IllegalMonitorStateException} 
      * if lock isn't locked by thread with specified <code>threadId</code>.
      * 
      * @param threadId id of thread
-     * @return
+     * @return void
      */
-    Flowable<Void> unlock(long threadId);
+    Completable unlock(long threadId);
 
     /**
      * Tries to acquire the lock.
      * 
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
-    Flowable<Boolean> tryLock();
+    Single<Boolean> tryLock();
 
     /**
      * Acquires the lock.
      * 
      * @return void
      */
-    Flowable<Void> lock();
+    Completable lock();
 
     /**
      * Acquires the lock by thread with specified <code>threadId</code>.
@@ -77,7 +78,7 @@ public interface RLockRx {
      * @param threadId id of thread
      * @return void
      */
-    Flowable<Void> lock(long threadId);
+    Completable lock(long threadId);
 
     /**
      * Acquires the lock.
@@ -96,7 +97,7 @@ public interface RLockRx {
      * @param unit the time unit of the {@code leaseTime} argument
      * @return void
      */
-    Flowable<Void> lock(long leaseTime, TimeUnit unit);
+    Completable lock(long leaseTime, TimeUnit unit);
 
     /**
      * Acquires the lock by thread with specified <code>threadId</code>.
@@ -116,7 +117,7 @@ public interface RLockRx {
      * @param threadId id of thread
      * @return void
      */
-    Flowable<Void> lock(long leaseTime, TimeUnit unit, long threadId);
+    Completable lock(long leaseTime, TimeUnit unit, long threadId);
 
     /**
      * Tries to acquire the lock by thread with specified <code>threadId</code>.
@@ -124,7 +125,7 @@ public interface RLockRx {
      * @param threadId id of thread
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
-    Flowable<Boolean> tryLock(long threadId);
+    Single<Boolean> tryLock(long threadId);
 
     /**
      * Tries to acquire the lock. If the lock is not available waits up 
@@ -134,7 +135,7 @@ public interface RLockRx {
      * @param unit the time unit of the {@code waitTime} argument
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
-    Flowable<Boolean> tryLock(long waitTime, TimeUnit unit);
+    Single<Boolean> tryLock(long waitTime, TimeUnit unit);
 
     /**
      * Tries to acquire the lock. If the lock is not available waits 
@@ -146,7 +147,7 @@ public interface RLockRx {
      * @param unit the time unit of the {@code waitTime} and {@code leaseTime} arguments
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
-    Flowable<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
+    Single<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
 
     /**
      * Tries to acquire the lock by thread with specified <code>threadId</code>. If the lock is not available waits 
@@ -159,13 +160,13 @@ public interface RLockRx {
      * @param unit the time unit of the {@code waitTime} and {@code leaseTime} arguments
      * @return <code>true</code> if lock acquired otherwise <code>false</code>
      */
-    Flowable<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+    Single<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
 
     /**
      * Number of holds on this lock by the current thread
      *
      * @return holds or <code>0</code> if this lock is not held by current thread
      */
-    Flowable<Integer> getHoldCount();
+    Single<Integer> getHoldCount();
     
 }

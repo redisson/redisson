@@ -15,7 +15,10 @@
  */
 package org.redisson.api;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Deque object
@@ -34,7 +37,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param o - element
      * @return <code>true</code> if object has been removed otherwise <code>false</code>
      */
-    Flowable<Boolean> removeLastOccurrence(Object o);
+    Single<Boolean> removeLastOccurrence(Object o);
 
     /**
      * Retrieves and removes the last element of deque.
@@ -42,7 +45,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> removeLast();
+    Maybe<V> removeLast();
 
     /**
      * Retrieves and removes the first element of deque.
@@ -50,7 +53,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> removeFirst();
+    Maybe<V> removeFirst();
 
     /**
      * Removes first occurrence of element <code>o</code>
@@ -58,7 +61,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param o - element to remove
      * @return <code>true</code> if object has been removed otherwise <code>false</code>
      */
-    Flowable<Boolean> removeFirstOccurrence(Object o);
+    Single<Boolean> removeFirstOccurrence(Object o);
 
     /**
      * Adds element at the head of this deque.
@@ -66,7 +69,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param e - element to add
      * @return void
      */
-    Flowable<Void> push(V e);
+    Completable push(V e);
 
     /**
      * Retrieves and removes element at the head of this deque.
@@ -74,7 +77,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> pop();
+    Maybe<V> pop();
 
     /**
      * Retrieves and removes element at the tail of this deque.
@@ -82,7 +85,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> pollLast();
+    Maybe<V> pollLast();
 
     /**
      * Retrieves and removes element at the head of this deque.
@@ -90,7 +93,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> pollFirst();
+    Maybe<V> pollFirst();
 
     /**
      * Returns element at the tail of this deque 
@@ -98,7 +101,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> peekLast();
+    Maybe<V> peekLast();
 
     /**
      * Returns element at the head of this deque 
@@ -106,7 +109,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> peekFirst();
+    Maybe<V> peekFirst();
 
     /**
      * Adds element at the tail of this deque.
@@ -114,7 +117,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param e - element to add
      * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
      */
-    Flowable<Boolean> offerLast(V e);
+    Single<Boolean> offerLast(V e);
 
     /**
      * Returns element at the tail of this deque 
@@ -122,7 +125,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * 
      * @return element
      */
-    Flowable<V> getLast();
+    Maybe<V> getLast();
 
     /**
      * Adds element at the tail of this deque.
@@ -130,7 +133,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param e - element to add
      * @return void
      */
-    Flowable<Void> addLast(V e);
+    Completable addLast(V e);
 
     /**
      * Adds element at the head of this deque.
@@ -138,7 +141,7 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param e - element to add
      * @return void
      */
-    Flowable<Void> addFirst(V e);
+    Completable addFirst(V e);
 
     /**
      * Adds element at the head of this deque.
@@ -146,6 +149,6 @@ public interface RDequeRx<V> extends RQueueRx<V> {
      * @param e - element to add
      * @return <code>true</code> if element was added to this deque otherwise <code>false</code>
      */
-    Flowable<Boolean> offerFirst(V e);
+    Single<Boolean> offerFirst(V e);
 
 }

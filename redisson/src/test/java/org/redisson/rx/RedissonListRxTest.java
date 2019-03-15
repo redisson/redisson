@@ -13,8 +13,6 @@ import org.redisson.TestObject;
 import org.redisson.api.RListRx;
 import org.redisson.client.RedisException;
 
-import reactor.core.publisher.BaseSubscriber;
-
 public class RedissonListRxTest extends BaseRxTest {
 
     @Test
@@ -44,27 +42,20 @@ public class RedissonListRxTest extends BaseRxTest {
     public void testAddAllWithIndex() throws InterruptedException {
         final RListRx<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe(new BaseSubscriber<Boolean>() {
-
-            @Override
-            public void hookOnNext(Boolean element) {
-                list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe(new BaseSubscriber<Boolean>() {
-                    @Override
-                    public void hookOnNext(Boolean value) {
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void hookOnError(Throwable error) {
-                        Assert.fail(error.getMessage());
-                    }
-                });
-            }
-
-            @Override
-            public void hookOnError(Throwable error) {
+        list.addAll(Arrays.asList(1L, 2L, 3L)).subscribe((Boolean element, Throwable error) -> {
+            if (error != null) {
                 Assert.fail(error.getMessage());
+                return;
             }
+            
+            list.addAll(Arrays.asList(1L, 24L, 3L)).subscribe((Boolean value, Throwable err) -> {
+                if (err != null) {
+                    Assert.fail(err.getMessage());
+                    return;
+                }
+                
+                latch.countDown();
+            });
         });
 
         latch.await();
@@ -76,26 +67,20 @@ public class RedissonListRxTest extends BaseRxTest {
     public void testAdd() throws InterruptedException {
         final RListRx<Long> list = redisson.getList("list");
         final CountDownLatch latch = new CountDownLatch(1);
-        list.add(1L).subscribe(new BaseSubscriber<Boolean>() {
-            @Override
-            public void hookOnNext(Boolean value) {
-                list.add(2L).subscribe(new BaseSubscriber<Boolean>() {
-                    @Override
-                    public void hookOnNext(Boolean value) {
-                        latch.countDown();
-                    }
-
-                    @Override
-                    public void hookOnError(Throwable error) {
-                        Assert.fail(error.getMessage());
-                    }
-                });
-            }
-
-            @Override
-            public void hookOnError(Throwable error) {
+        list.add(1L).subscribe((Boolean value, Throwable error) -> {
+            if (error != null) {
                 Assert.fail(error.getMessage());
+                return;
             }
+            
+            list.add(2L).subscribe((Boolean va, Throwable err) -> {
+                if (err != null) {
+                    Assert.fail(err.getMessage());
+                    return;
+                }
+
+                latch.countDown();
+            });
         });
 
         latch.await();
