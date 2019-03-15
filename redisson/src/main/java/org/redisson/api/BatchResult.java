@@ -37,18 +37,18 @@ public class BatchResult<E> implements List<E> {
     }
     
     /**
-     * Returns list with result object for each command
+     * Returns list of result objects for each command
      * 
-     * @return list
+     * @return list of objects
      */
     public List<?> getResponses() {
         return responses;
     }
 
     /**
-     * Returns synchronized slaves amount involved during batch execution
+     * Returns amount of successfully synchronized slaves during batch execution
      * 
-     * @return slaves
+     * @return slaves amount
      */
     public int getSyncedSlaves() {
         return syncedSlaves;
