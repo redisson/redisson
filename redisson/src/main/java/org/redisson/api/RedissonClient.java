@@ -441,7 +441,7 @@ public interface RedissonClient {
     RPermitExpirableSemaphore getPermitExpirableSemaphore(String name);
 
     /**
-     * Returns lock instance by name.
+     * Returns Lock instance by name.
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      *
@@ -451,7 +451,23 @@ public interface RedissonClient {
     RLock getLock(String name);
 
     /**
-     * Returns lock instance by name.
+     * Returns MultiLock instance associated with specified <code>locks</code>
+     * 
+     * @param locks - collection of locks
+     * @return MultiLock object
+     */
+    RLock getMultiLock(RLock... locks);
+    
+    /**
+     * Returns RedLock instance associated with specified <code>locks</code>
+     * 
+     * @param locks - collection of locks
+     * @return RedLock object
+     */
+    RLock getRedLock(RLock... locks);
+    
+    /**
+     * Returns Lock instance by name.
      * <p>
      * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
      * 
@@ -461,7 +477,7 @@ public interface RedissonClient {
     RLock getFairLock(String name);
     
     /**
-     * Returns readWriteLock instance by name.
+     * Returns ReadWriteLock instance by name.
      *
      * @param name - name of object
      * @return Lock object

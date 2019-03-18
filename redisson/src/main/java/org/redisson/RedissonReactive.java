@@ -38,6 +38,7 @@ import org.redisson.api.RKeysReactive;
 import org.redisson.api.RLexSortedSetReactive;
 import org.redisson.api.RListMultimapReactive;
 import org.redisson.api.RListReactive;
+import org.redisson.api.RLock;
 import org.redisson.api.RLockReactive;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheReactive;
@@ -170,6 +171,16 @@ public class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockReactive.class);
     }
 
+    @Override
+    public RLockReactive getMultiLock(RLock... locks) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockReactive.class);
+    }
+    
+    @Override
+    public RLockReactive getRedLock(RLock... locks) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonRedLock(locks), RLockReactive.class);
+    }
+    
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
         RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null);

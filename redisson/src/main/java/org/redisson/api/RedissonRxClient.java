@@ -127,6 +127,22 @@ public interface RedissonRxClient {
     RLockRx getLock(String name);
     
     /**
+     * Returns MultiLock instance associated with specified <code>locks</code>
+     * 
+     * @param locks - collection of locks
+     * @return MultiLock object
+     */
+    RLockRx getMultiLock(RLock... locks);
+    
+    /**
+     * Returns RedLock instance associated with specified <code>locks</code>
+     * 
+     * @param locks - collection of locks
+     * @return RedLock object
+     */
+    RLockRx getRedLock(RLock... locks);
+    
+    /**
      * Returns set-based cache instance by <code>name</code>.
      * Supports value eviction with a given TTL value.
      *

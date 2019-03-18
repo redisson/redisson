@@ -34,6 +34,7 @@ import org.redisson.api.RKeysRx;
 import org.redisson.api.RLexSortedSetRx;
 import org.redisson.api.RListMultimapRx;
 import org.redisson.api.RListRx;
+import org.redisson.api.RLock;
 import org.redisson.api.RLockRx;
 import org.redisson.api.RMapCacheRx;
 import org.redisson.api.RMapRx;
@@ -155,6 +156,16 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RLockRx getLock(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonLock(commandExecutor, name), RLockRx.class);
+    }
+    
+    @Override
+    public RLockRx getMultiLock(RLock... locks) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonMultiLock(locks), RLockRx.class);
+    }
+    
+    @Override
+    public RLockRx getRedLock(RLock... locks) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonRedLock(locks), RLockRx.class);
     }
 
     @Override

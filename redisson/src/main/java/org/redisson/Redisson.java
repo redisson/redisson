@@ -386,6 +386,16 @@ public class Redisson implements RedissonClient {
     public RLock getLock(String name) {
         return new RedissonLock(connectionManager.getCommandExecutor(), name);
     }
+    
+    @Override
+    public RLock getMultiLock(RLock... locks) {
+        return new RedissonMultiLock(locks);
+    }
+    
+    @Override
+    public RLock getRedLock(RLock... locks) {
+        return new RedissonRedLock(locks);
+    }
 
     @Override
     public RLock getFairLock(String name) {
