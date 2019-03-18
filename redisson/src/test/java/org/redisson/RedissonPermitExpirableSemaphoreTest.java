@@ -262,4 +262,55 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         assertThat(lockedCounter.get()).isEqualTo(16 * iterations);
     }
 
+    @Test
+    public void testAcquireMultiplePermits() throws InterruptedException {
+        RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+        s.trySetPermits(3);
+        String permitId = s.tryAcquire(1, 1, 3, TimeUnit.SECONDS);
+        String permitId2 = s.tryAcquire(1, 1, 3, TimeUnit.SECONDS);
+        assertThat(permitId).hasSize(32);
+        assertThat(permitId2).hasSize(32);
+
+        Thread t = new Thread() {
+            @Override
+            public void run() {
+                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                s.release(permitId2);
+            }
+        };
+
+        Thread t2 = new Thread() {
+            @Override
+            public void run() {
+                RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");
+                try {
+                    Thread.sleep(800);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                s.release(permitId);
+            }
+        };
+
+
+        t.start();
+        t2.start();
+        t.join(1);
+        t2.join(1);
+
+
+        long startTime = System.currentTimeMillis();
+        String permitId3 = s.tryAcquire(3, 3, 3, TimeUnit.SECONDS);
+        assertThat(permitId3).hasSize(32);
+        assertThat(System.currentTimeMillis() - startTime).isBetween(750L, 900L);
+        assertThat(s.availablePermits()).isEqualTo(0);
+    }
+
 }

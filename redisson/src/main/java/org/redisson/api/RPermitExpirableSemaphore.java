@@ -76,7 +76,34 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * @throws InterruptedException if the current thread is interrupted
      */
     String acquire(long leaseTime, TimeUnit unit) throws InterruptedException;
-    
+
+    /**
+     * Acquires the given number of permits with defined lease time from this semaphore,
+     * blocking until all are available,
+     * or the thread is {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires the given number of permits, if all are available and returns its id,
+     * reducing the number of available permits by the given number.
+     *
+     * <p>If not all permits are available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of two things happens:
+     * <ul>
+     * <li>Some other thread invokes the {@link #release} method for this
+     * semaphore and the current thread is next to be assigned permits and the
+     * number of available permits satisfies this request ; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread.
+     * </ul>
+     *
+     * @param permits - the number of permits to acquire
+     * @param leaseTime - permit lease time
+     * @param unit - time unit
+     * @return permit id
+     * @throws InterruptedException if the current thread is interrupted
+     */
+    String acquire(int permits, long leaseTime, TimeUnit unit) throws InterruptedException;
+
     /**
      * Acquires a permit only if one is available at the
      * time of invocation.
@@ -128,7 +155,45 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
     String tryAcquire(long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
-     * Acquires a permit with defined lease time from this semaphore,
+     * Acquires the given number of permits with defined lease time from this semaphore,
+     * if all are available
+     * within the given waiting time and the current thread has not
+     * been {@linkplain Thread#interrupt interrupted}.
+     *
+     * <p>Acquires the given number of permits, if all are available and returns immediately,
+     * with the permit id,
+     * reducing the number of available permits by the given number.
+     *
+     * <p>If not all permit are available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until
+     * one of three things happens:
+     * <ul>
+     * <li>Some other threads invokes the {@link #release} method for this
+     * semaphore and the current thread is next to be assigned permits and the
+     * number of available permits satisfies this request ; or
+     * <li>Some other thread {@linkplain Thread#interrupt interrupts}
+     * the current thread; or
+     * <li>The specified waiting time elapses.
+     * </ul>
+     *
+     * <p>If all permits are acquired then the permit id is returned.
+     *
+     * <p>If the specified waiting time elapses then the value {@code null}
+     * is returned. If the time is less than or equal to zero, the method
+     * will not wait at all.
+     *
+     * @param permits the number of permits to acquire
+     * @param waitTime the maximum time to wait for a permit
+     * @param leaseTime permit lease time, use -1 to make it permanent
+     * @param unit the time unit of the {@code timeout} argument
+     * @return permit id if a permit was acquired and {@code null}
+     *         if the waiting time elapsed before a permit was acquired
+     * @throws InterruptedException if the current thread is interrupted
+     */
+    String tryAcquire(int permits, long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException;
+
+    /**
+     * Acquires  permit with defined lease time from this semaphore,
      * if one becomes available
      * within the given waiting time and the current thread has not
      * been {@linkplain Thread#interrupt interrupted}.
@@ -153,7 +218,7 @@ public interface RPermitExpirableSemaphore extends RExpirable, RPermitExpirableS
      * <p>If the specified waiting time elapses then the value {@code null}
      * is returned. If the time is less than or equal to zero, the method
      * will not wait at all.
-     * 
+     *
      * @param waitTime the maximum time to wait for a permit
      * @param leaseTime permit lease time, use -1 to make it permanent
      * @param unit the time unit of the {@code timeout} argument
