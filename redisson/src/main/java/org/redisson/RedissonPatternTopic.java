@@ -111,6 +111,29 @@ public class RedissonPatternTopic implements RPatternTopic {
         }
     }
     
+    
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RPromise<Void> result = new RedissonPromise<>();
+        AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
+        semaphore.acquire(() -> {
+            PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
+            if (entry == null) {
+                semaphore.release();
+                result.trySuccess(null);
+                return;
+            }
+            
+            entry.removeListener(channelName, listenerId);
+            if (!entry.hasListeners(channelName)) {
+                subscribeService.punsubscribe(channelName, semaphore);
+            } else {
+                semaphore.release();
+                result.trySuccess(null);
+            }
+        });
+        return result;
+    }
+    
     @Override
     public void removeListener(int listenerId) {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
