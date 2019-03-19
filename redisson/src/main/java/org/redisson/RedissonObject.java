@@ -462,7 +462,7 @@ public abstract class RedissonObject implements RObject {
         RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
         expiredTopic.removeListenerAsync(listenerId).onComplete(listener);
         
-        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
         deletedTopic.removeListenerAsync(listenerId).onComplete(listener);
         return result;
     }
