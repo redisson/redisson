@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -250,7 +251,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 AtomicReference<Throwable> lastException = new AtomicReference<Throwable>();
                 Iterator<RedisClient> iter = iterator;
                 if (iter == null) {
-                    iter = sentinels.values().iterator();
+                    // Shuffle the list so all clients don't prefer the same sentinel
+                    List<RedisClient> clients = new ArrayList<>(sentinels.values());
+                    Collections.shuffle(clients);
+                    iter = clients.iterator();
                 }
                 checkState(cfg, iter, lastException);
             }
