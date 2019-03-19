@@ -94,7 +94,7 @@ public class RedissonRegionFactory implements RegionFactory {
         
         StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
-                                properties.get(Environment.CACHE_KEYS_FACTORY), DefaultCacheKeysFactory.INSTANCE);
+                                properties.get(Environment.CACHE_KEYS_FACTORY), new DefaultCacheKeysFactory());
     }
 
     protected RedissonClient createRedissonClient(Properties properties) {
