@@ -248,7 +248,7 @@
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
-            <version>5.0.8</version>
+            <version>5.0.10</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -267,7 +267,7 @@
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-tx</artifactId>
-            <version>[3.1,5.0)</version>
+            <version>[3.1,)</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
