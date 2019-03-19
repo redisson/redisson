@@ -96,8 +96,8 @@ public class DNSMonitor {
         }, dnsMonitoringInterval, TimeUnit.MILLISECONDS);
     }
 
-    private void monitorMasters(final AtomicInteger counter) {
-        for (final Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
+    private void monitorMasters(AtomicInteger counter) {
+        for (Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override
@@ -118,7 +118,11 @@ public class DNSMonitor {
                                 entry.getKey(), currentMasterAddr.getAddress().getHostAddress(), newMasterAddr.getAddress().getHostAddress());
                         MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
                         if (masterSlaveEntry == null) {
-                            log.error("Unable to find master entry for {}", currentMasterAddr);
+                            if (connectionManager instanceof SingleConnectionManager) {
+                                log.error("Unable to find master entry for {}. Multiple IP bindings for single hostname supported only in Redisson PRO!", currentMasterAddr);
+                            } else {
+                                log.error("Unable to find master entry for {}", currentMasterAddr);
+                            }
                             return;
                         }
                         masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
@@ -129,8 +133,8 @@ public class DNSMonitor {
         }
     }
 
-    private void monitorSlaves(final AtomicInteger counter) {
-        for (final Entry<URI, InetSocketAddress> entry : slaves.entrySet()) {
+    private void monitorSlaves(AtomicInteger counter) {
+        for (Entry<URI, InetSocketAddress> entry : slaves.entrySet()) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override
@@ -144,12 +148,12 @@ public class DNSMonitor {
                         return;
                     }
                     
-                    final InetSocketAddress currentSlaveAddr = entry.getValue();
-                    final InetSocketAddress newSlaveAddr = future.getNow();
+                    InetSocketAddress currentSlaveAddr = entry.getValue();
+                    InetSocketAddress newSlaveAddr = future.getNow();
                     if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
                         log.info("Detected DNS change. Slave {} has changed ip from {} to {}", 
                                 entry.getKey().getHost(), currentSlaveAddr.getAddress().getHostAddress(), newSlaveAddr.getAddress().getHostAddress());
-                        for (final MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
+                        for (MasterSlaveEntry masterSlaveEntry : connectionManager.getEntrySet()) {
                             if (!masterSlaveEntry.hasSlave(currentSlaveAddr)) {
                                 continue;
                             }
