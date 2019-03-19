@@ -77,6 +77,16 @@ public interface RBucketRx<V> extends RExpirableRx {
      * @return previous value
      */
     Maybe<V> getAndSet(V newValue);
+    
+    /**
+     * Retrieves current element in the holder and replaces it with <code>newValue</code> with defined <code>timeToLive</code> interval. 
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return previous value
+     */
+    Maybe<V> getAndSet(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
      * Retrieves element stored in the holder.

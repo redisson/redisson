@@ -288,8 +288,17 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     }
     
     @Override
+    public RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit) {
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, timeToLive, timeUnit, transactionId));
+    }
+    
+    @Override
+    public RFuture<V> getAndSetAsync(V value) {
+        return getAndSet(value, new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), value, transactionId));
+    }
+    
     @SuppressWarnings("unchecked")
-    public RFuture<V> getAndSetAsync(V newValue) {
+    private RFuture<V> getAndSet(V newValue, TransactionalOperation operation) {
         checkState();
         RPromise<V> result = new RedissonPromise<V>();
         executeLocked(result, new Runnable() {
@@ -302,7 +311,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     } else {
                         prevValue = state;
                     }
-                    operations.add(new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+                    operations.add(operation);
                     if (newValue == null) {
                         state = NULL;
                     } else {
@@ -323,7 +332,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                     } else {
                         state = newValue;
                     }
-                    operations.add(new BucketGetAndSetOperation<V>(getName(), getLockName(), getCodec(), newValue, transactionId));
+                    operations.add(operation);
                     result.trySuccess(res);
                 });
             }

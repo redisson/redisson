@@ -164,6 +164,18 @@ public class RedissonBucketTest extends BaseTest {
     }
 
     @Test
+    public void testGetAndSetTTL() throws InterruptedException {
+        RBucket<String> r1 = redisson.getBucket("getAndSetTTL");
+        r1.set("value1");
+        assertThat(r1.getAndSet("value2", 500, TimeUnit.MILLISECONDS)).isEqualTo("value1");
+        assertThat(r1.get()).isEqualTo("value2");
+
+        Thread.sleep(1000);
+
+        assertThat(r1.get()).isNull();
+    }
+    
+    @Test
     public void testGetAndSet() {
         RBucket<List<String>> r1 = redisson.getBucket("testGetAndSet");
         assertThat(r1.getAndSet(Arrays.asList("81"))).isNull();
