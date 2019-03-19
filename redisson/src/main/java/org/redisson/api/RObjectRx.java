@@ -157,4 +157,22 @@ public interface RObjectRx {
      */
     Single<Boolean> isExists();
 
+    /**
+     * Adds object event listener
+     * 
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * 
+     * @param listener - object event listener
+     * @return listener id
+     */
+    Single<Integer> addListener(ObjectListener listener);
+
+    /**
+     * Removes object event listener
+     * 
+     * @param listenerId - listener id
+     */
+    Completable removeListener(int listenerId);
+
 }

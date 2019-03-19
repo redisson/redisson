@@ -1962,6 +1962,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
     @Override
     public void removeListener(int listenerId) {
+        super.removeListener(listenerId);
+        
         RTopic removedTopic = redisson.getTopic(getRemovedChannelName());
         removedTopic.removeListener(listenerId);
 
