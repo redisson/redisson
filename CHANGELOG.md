@@ -4,6 +4,23 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 20-Mar-2019 - versions 3.10.5 released  
+Feature - `getMultiLock`, `getRedLock` methods added to `RedissonClient`, `RedissonRxClient` and `RedissonReactiveClient` interfaces  
+Feature - `getInfo`, `listGroups`, `listConsumers` methods added to `RStream`, `RStreamRx`, `RStreamReactive` interfaces  
+Feature - `RPatternTopic.removeListenerAsync` method added  
+Feature - `getAndSet` method with TTL support added `RBucket`, `RBucketAsync`, `RBucketReactive`, `RBucketRx` interfaces  
+Feature - `addListener` and `removeListener` methods added to `RObject`, `RObjectAsync`, `RObjectReactive`, `RObjectRx` objects. It allows to add and remove listeners for Deleted and Expired keyspace events published by Redis  
+Improvement - shuffle list of sentinels to distribute load (thanks to [hrakaroo](https://github.com/hrakaroo))  
+Improvement - methods of RxJava2 interfaces should use full set of result objects: `Single`, `Maybe` or `Completable`  
+Fixed - compatibility with hibernate 5.2.0 - 5.2.4 versions  
+Fixed - ClassCastException during `RBatchReactive` and `RBatchRx` execution in `exectionMode` = `REDIS_WRITE_ATOMIC` or `REDIS_READ_ATOMIC`  
+Fixed - sentinel mode doesn't support AUTH command  
+Fixed - response shouldn't be printed in case of response timeout error  
+Fixed - HP NONSTOP OS is not supported by `MapCacheEventCodec`  
+Fixed - RStream.readGroup method doesn't handle empty result properly with Redis 5.0.3  
+Fixed - AUTH password included in exceptions  
+Fixed - locked lock isn't unlocked after disconnect to Redis  
+
 ### 08-Mar-2019 - versions 3.10.4 released  
 Feature - `getCountDownLatch`, `getPermitExpirableSemaphore`, `getSemaphore`, `getFairLock` methods added to `RMultimap` object  
 Feature - `maxCleanUpDelay` and `minCleanUpDelay` settings added to `Config` object  
