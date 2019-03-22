@@ -171,6 +171,7 @@ public interface RObjectReactive {
      * Removes object event listener
      * 
      * @param listenerId - listener id
+     * @return void
      */
     Mono<Void> removeListener(int listenerId);
     
