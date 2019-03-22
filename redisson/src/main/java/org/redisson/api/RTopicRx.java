@@ -20,6 +20,7 @@ import java.util.List;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.StatusListener;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 
@@ -71,9 +72,18 @@ public interface RTopicRx {
     /**
      * Removes the listener by <code>id</code> for listening this topic
      *
-     * @param listenerId - listener id
+     * @param listenerIds - message listener ids
+     * @return void
      */
-    void removeListener(int listenerId);
+    Completable removeListener(Integer... listenerIds);
+
+    /**
+     * Removes the listener by <code>instance</code> for listening this topic
+     *
+     * @param listener - message listener
+     * @return void
+     */
+    Completable removeListener(MessageListener<?> listener);
     
     /**
      * Returns stream of messages.

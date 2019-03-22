@@ -71,11 +71,19 @@ public interface RTopicReactive {
     /**
      * Removes the listener by <code>id</code> for listening this topic
      *
-     * @param listenerId - listener id
+     * @param listenerIds - message listener ids
      * @return void
      */
-    Mono<Void> removeListener(int listenerId);
-    
+    Mono<Void> removeListener(Integer... listenerIds);
+
+    /**
+     * Removes the listener by <code>instance</code> for listening this topic
+     *
+     * @param listener - message listener
+     * @return void
+     */
+    Mono<Void> removeListener(MessageListener<?> listener);
+
     /**
      * Returns stream of messages.
      * 
