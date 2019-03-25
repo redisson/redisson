@@ -25,6 +25,7 @@ Features
 * Single Redis server mode  
 * Thread-safe implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
+* [RxJava2](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
 * Asynchronous connection pool  
 * Lua scripting  
