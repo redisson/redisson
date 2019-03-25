@@ -173,7 +173,7 @@ public class RedissonCache implements Cache {
 
     private <T> Object putValue(Object key, Callable<T> valueLoader, Object value) {
         try {
-            value = toStoreValue(valueLoader.call());
+            value = valueLoader.call();
         } catch (Exception ex) {
             RuntimeException exception;
             try {
