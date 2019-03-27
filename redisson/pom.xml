@@ -360,10 +360,10 @@
                 </configuration>
                 <dependencies>
                     <dependency>
-                       <groupId>com.puppycrawl.tools</groupId>
-                       <artifactId>checkstyle</artifactId>
-                       <version>[8.18,)</version>
-                  </dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>8.17</version>
+                    </dependency>
                 </dependencies>
             </plugin>
 

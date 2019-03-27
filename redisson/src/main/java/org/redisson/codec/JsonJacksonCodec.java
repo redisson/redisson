@@ -41,7 +41,6 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.TypeResolverBuilder;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -109,8 +108,9 @@ public class JsonJacksonCodec extends BaseCodec {
     }
     
     protected static ObjectMapper createObjectMapper(ClassLoader classLoader, ObjectMapper om) {
-        TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
-        om.setTypeFactory(tf);
+        // Should not change the class loader, this changes the behavior of the ObjectMapper and cannot deserialize Optionals, for example
+//        TypeFactory tf = TypeFactory.defaultInstance().withClassLoader(classLoader);
+//        om.setTypeFactory(tf);
         return om;
     }
 
