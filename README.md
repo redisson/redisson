@@ -1,3 +1,7 @@
+Differences from official Redisson
+====
+Due to this issue: https://github.com/redisson/redisson/issues/2010, we ignore class loader changes for object mappers.
+
 Redisson: Redis Java client and In-Memory Data Grid
 ====
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.10.3) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new) | **[Redisson PRO](https://redisson.pro)**
