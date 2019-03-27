@@ -28,7 +28,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RFuture;
 import org.redisson.api.RPatternTopic;
@@ -38,9 +38,14 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.listener.PatternMessageListener;
+import org.redisson.api.listener.PatternStatusListener;
 import org.redisson.api.listener.StatusListener;
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.config.Config;
 import org.redisson.config.SubscriptionMode;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -820,8 +825,9 @@ public class RedissonTopicTest {
         slave2.stop();
     }
 
-    protected void sendCommands(RedissonClient redisson, String topicName) {
+    protected Thread sendCommands(RedissonClient redisson, String topicName) {
         Thread t = new Thread() {
+            @Override
             public void run() {
                 List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
                 
@@ -840,6 +846,7 @@ public class RedissonTopicTest {
             };
         };
         t.start();
+        return t;
     }
     
     @Test
@@ -980,4 +987,78 @@ public class RedissonTopicTest {
         process.shutdown();
     }
 
+    @Test
+    public void testReattachPatternTopicListenersOnClusterFailover() throws Exception {
+        final KEYSPACE_EVENTS_OPTIONS keyspaceEvents[] =
+                {KEYSPACE_EVENTS_OPTIONS.K, KEYSPACE_EVENTS_OPTIONS.E, KEYSPACE_EVENTS_OPTIONS.A};
+        final RedisRunner master = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(keyspaceEvents);
+        final RedisRunner slave = new RedisRunner().randomPort().randomDir().nosave()
+                .notifyKeyspaceEvents(keyspaceEvents);
+
+        final ClusterRunner clusterRunner = new ClusterRunner().addNode(master, slave);
+        final ClusterProcesses process = clusterRunner.run();
+
+        final Config config = new Config();
+        config.useClusterServers().addNodeAddress(
+                process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+
+        final RedissonClient redisson = Redisson.create(config);
+
+        final AtomicInteger subscriptions = new AtomicInteger();
+        final AtomicInteger messagesReceived = new AtomicInteger();
+
+        final RPatternTopic topic =
+                redisson.getPatternTopic("__keyspace*__:i*", StringCodec.INSTANCE);
+        topic.addListener(new PatternStatusListener() {
+            @Override
+            public void onPUnsubscribe(String pattern) {}
+
+            @Override
+            public void onPSubscribe(String pattern) {
+                subscriptions.incrementAndGet();
+            }
+        });
+        topic.addListener(String.class,
+                (pattern, channel, msg) -> messagesReceived.incrementAndGet());
+        Assert.assertEquals(1, subscriptions.get());
+
+        sendCommands(redisson, "dummy").join();
+        await().atMost(30, TimeUnit.SECONDS).until(() -> messagesReceived.get() == 100);
+
+        failover(process, master, slave);
+
+        redisson.getBucket("i100").set("");
+        await().atMost(30, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> messagesReceived.get() == 101);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
+    private void failover(ClusterProcesses processes, RedisRunner master, RedisRunner slave)
+            throws InterruptedException {
+        final RedisClient masterClient = connect(processes, master);
+        try {
+            masterClient.connect().sync(new RedisStrictCommand<Void>("DEBUG", "SEGFAULT"));
+        } catch (RedisTimeoutException e) {
+            // node goes down, so this command times out waiting for the response
+        }
+        Thread.sleep(java.time.Duration.ofSeconds(15).toMillis());
+
+        final RedisClient slaveClient = connect(processes, slave);
+        slaveClient.connect().sync(new RedisStrictCommand<Void>("CLUSTER", "FAILOVER"), "TAKEOVER");
+        Thread.sleep(java.time.Duration.ofSeconds(15).toMillis());
+    }
+
+    private RedisClient connect(ClusterProcesses processes, RedisRunner runner) {
+        return RedisClient.create(new RedisClientConfig()
+                .setAddress(processes.getNodes().stream()
+                        .filter(node -> node.getRedisServerPort() == runner.getPort())
+                        .findFirst()
+                        .map(RedisProcess::getRedisServerAddressAndPort)
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Failed to find node running at port: " + runner.getPort()
+                                        + " in cluster processes"))));
+    }
 }
