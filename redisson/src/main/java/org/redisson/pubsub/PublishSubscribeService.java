@@ -466,7 +466,7 @@ public class PublishSubscribeService {
                 return;
             }
             
-            log.debug("resubscribed listeners for '{}' channel-pattern to '{}'", channelName, res.getConnection().getRedisClient());
+            log.info("resubscribed listeners for '{}' channel-pattern to '{}'", channelName, res.getConnection().getRedisClient());
         });
     }
     
