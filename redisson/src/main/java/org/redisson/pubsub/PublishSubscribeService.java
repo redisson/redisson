@@ -352,7 +352,12 @@ public class PublishSubscribeService {
                         freePubSubConnections.remove(entry);
                         freePubSubLock.release();
                         
-                        final Codec entryCodec = entry.getConnection().getChannels().get(channelName);
+                        final Codec entryCodec;
+                        if (topicType == PubSubType.PUNSUBSCRIBE) {
+                            entryCodec = entry.getConnection().getPatternChannels().get(channelName);
+                        } else {
+                            entryCodec = entry.getConnection().getChannels().get(channelName);
+                        }
                         RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
                             @Override
