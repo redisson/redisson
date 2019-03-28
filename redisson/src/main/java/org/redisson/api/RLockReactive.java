@@ -175,4 +175,13 @@ public interface RLockReactive {
      */
     Mono<Boolean> isLocked();
 
+    /**
+     * Remaining time to live of this lock 
+     *
+     * @return time in milliseconds
+     *          -2 if the lock does not exist.
+     *          -1 if the lock exists but has no associated expire.
+     */
+    Mono<Long> remainTimeToLive();
+    
 }

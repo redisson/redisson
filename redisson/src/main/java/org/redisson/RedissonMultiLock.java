@@ -547,4 +547,14 @@ public class RedissonMultiLock implements RLock {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public RFuture<Long> remainTimeToLiveAsync() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long remainTimeToLive() {
+        throw new UnsupportedOperationException();
+    }
+
 }

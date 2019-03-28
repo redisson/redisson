@@ -166,4 +166,13 @@ public interface RLockAsync {
      */
     RFuture<Boolean> isLockedAsync();
     
+    /**
+     * Remaining time to live of this lock 
+     *
+     * @return time in milliseconds
+     *          -2 if the lock does not exist.
+     *          -1 if the lock exists but has no associated expire.
+     */
+    RFuture<Long> remainTimeToLiveAsync();
+    
 }
