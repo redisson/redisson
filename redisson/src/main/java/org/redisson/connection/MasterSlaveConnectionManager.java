@@ -715,4 +715,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public URI getLastClusterNode() {
         return null;
     }
+
+    @Override
+    public URI applyNatMap(URI address) {
+        return address;
+    }
 }

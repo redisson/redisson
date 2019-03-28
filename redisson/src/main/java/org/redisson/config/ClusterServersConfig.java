@@ -17,7 +17,11 @@ package org.redisson.config;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 import org.redisson.misc.URIBuilder;
 
 /**
@@ -27,6 +31,8 @@ import org.redisson.misc.URIBuilder;
  */
 public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
 
+    private Map<String, String> natMap = Collections.emptyMap();
+    
     /**
      * Redis cluster node urls list
      */
@@ -44,6 +50,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
+        setNatMap(new HashMap<>(config.getNatMap()));
     }
 
     /**
@@ -80,5 +87,20 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         this.scanInterval = scanInterval;
         return this;
     }
+
+    public Map<String, String> getNatMap() {
+        return natMap;
+    }
+    /**
+     * Defines NAT mapping. Address as a map key is replaced with mapped address as value.
+     * 
+     * @param natMap - nat mapping
+     * @return config
+     */
+    public ClusterServersConfig setNatMap(Map<String, String> natMap) {
+        this.natMap = natMap;
+        return this;
+    }
+    
 
 }

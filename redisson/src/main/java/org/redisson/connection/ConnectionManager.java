@@ -45,6 +45,8 @@ import io.netty.util.TimerTask;
  */
 public interface ConnectionManager {
     
+    URI applyNatMap(URI address);
+    
     UUID getId();
     
     CommandSyncService getCommandExecutor();

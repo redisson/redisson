@@ -87,15 +87,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     private String configEndpointHostName;
     
-    private boolean isConfigEndpoint;
-
+    private final Map<String, String> natMap;
+    
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
         super(config, id);
 
         if (cfg.getNodeAddresses().isEmpty()) {
             throw new IllegalArgumentException("At least one cluster node should be defined!");
         }
-        
+
+        natMap = cfg.getNatMap();
         this.config = create(cfg);
         initTimer(this.config);
         
@@ -108,7 +109,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
                 if (cfg.getNodeAddresses().size() == 1 && NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null) {
                     configEndpointHostName = addr.getHost();
-                    isConfigEndpoint = true;
                 }
                 
                 clusterNodesCommand = RedisCommands.CLUSTER_NODES;
@@ -278,7 +278,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         monitorFuture = group.schedule(new Runnable() {
             @Override
             public void run() {
-                if (isConfigEndpoint) {
+                if (configEndpointHostName != null) {
                     URI uri = cfg.getNodeAddresses().iterator().next();
                     AddressResolver<InetSocketAddress> resolver = resolverGroup.getResolver(getGroup().next());
                     Future<List<InetSocketAddress>> allNodes = resolver.resolveAll(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
@@ -294,7 +294,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                             List<URI> nodes = new ArrayList<URI>();
                             for (InetSocketAddress addr : future.getNow()) {
                                 URI node = URIBuilder.create(uri.getScheme() + "://" + addr.getAddress().getHostAddress() + ":" + addr.getPort());
-                                nodes.add(node);
+                                URI address = applyNatMap(node);
+                                nodes.add(address);
                             }
                             
                             Iterator<URI> nodesIterator = nodes.iterator();
@@ -691,6 +692,14 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    public URI applyNatMap(URI address) {
+        String mappedAddress = natMap.get(address.getHost() + ":" + address.getPort());
+        if (mappedAddress != null) {
+            return URIBuilder.create(address.getScheme() + "://" + mappedAddress);
+        }
+        return address;
+    }
+    
     private Collection<ClusterPartition> parsePartitions(List<ClusterNodeInfo> nodes) {
         Map<String, ClusterPartition> partitions = new HashMap<String, ClusterPartition>();
         for (ClusterNodeInfo clusterNodeInfo : nodes) {
@@ -708,16 +717,17 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             ClusterPartition partition = getPartition(partitions, id);
 
+            URI address = applyNatMap(clusterNodeInfo.getAddress());
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
                 slavePartition.setParent(partition);
                 
-                partition.addSlaveAddress(clusterNodeInfo.getAddress());
+                partition.addSlaveAddress(address);
                 if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                    partition.addFailedSlaveAddress(clusterNodeInfo.getAddress());
+                    partition.addFailedSlaveAddress(address);
                 }
             } else {
                 partition.addSlotRanges(clusterNodeInfo.getSlotRanges());
-                partition.setMasterAddress(clusterNodeInfo.getAddress());
+                partition.setMasterAddress(address);
                 partition.setType(Type.MASTER);
                 if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
                     partition.setMasterFail(true);
@@ -772,7 +782,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private Set<ClusterPartition> getLastPartitions() {
-        return new HashSet<ClusterPartition>(lastPartitions.values());
+        return new HashSet<>(lastPartitions.values());
     }
     
     @Override

@@ -1036,7 +1036,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     return;
                 }
                 
-                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.MOVED), details.getCodec(),
+                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.MOVED), details.getCodec(),
                         details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
                 AsyncDetails.release(details);
                 return;
@@ -1044,7 +1044,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             
             if (future.cause() instanceof RedisAskException && !ignoreRedirect) {
                 RedisAskException ex = (RedisAskException) future.cause();
-                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), ex.getUrl(), Redirect.ASK), details.getCodec(),
+                async(details.isReadOnlyMode(), new NodeSource(ex.getSlot(), connectionManager.applyNatMap(ex.getUrl()), Redirect.ASK), details.getCodec(),
                         details.getCommand(), details.getParams(), details.getMainPromise(), details.getAttempt(), ignoreRedirect);
                 AsyncDetails.release(details);
                 return;
