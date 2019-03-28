@@ -526,6 +526,11 @@ public class RedissonMultiLock implements RLock {
     public boolean isLocked() {
         throw new UnsupportedOperationException();
     }
+    
+    @Override
+    public RFuture<Boolean> isLockedAsync() {
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public boolean isHeldByThread(long threadId) {

@@ -159,4 +159,11 @@ public interface RLockAsync {
      */
     RFuture<Integer> getHoldCountAsync();
     
+    /**
+     * Checks if this lock locked by any thread
+     *
+     * @return <code>true</code> if locked otherwise <code>false</code>
+     */
+    RFuture<Boolean> isLockedAsync();
+    
 }

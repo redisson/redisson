@@ -482,6 +482,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     public boolean isLocked() {
         return isExists();
     }
+    
+    @Override
+    public RFuture<Boolean> isLockedAsync() {
+        return isExistsAsync();
+    }
 
     @Override
     public RFuture<Boolean> isExistsAsync() {
