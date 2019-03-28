@@ -60,7 +60,7 @@ public class RedissonSession extends StandardSession {
     private final RedissonSessionManager.ReadMode readMode;
     private final UpdateMode updateMode;
     
-    private Set<String> removedAttributes;
+    private Set<String> removedAttributes = Collections.emptySet();
     
     public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode, UpdateMode updateMode) {
         super(manager);
