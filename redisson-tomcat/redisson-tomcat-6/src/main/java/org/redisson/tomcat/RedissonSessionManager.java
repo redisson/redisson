@@ -260,7 +260,9 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                         RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
                         if (session != null && !msg.getNodeId().equals(nodeId)) {
                             if (msg instanceof AttributeRemoveMessage) {
-                                session.superRemoveAttributeInternal(((AttributeRemoveMessage)msg).getName(), true);
+                                for (String name : ((AttributeRemoveMessage)msg).getNames()) {
+                                    session.superRemoveAttributeInternal(name, true);
+                                }
                             }
 
                             if (msg instanceof AttributesClearMessage) {
@@ -332,11 +334,11 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             return;
         }
         
-        if (updateMode == UpdateMode.AFTER_REQUEST) {
-            RedissonSession sess = (RedissonSession) super.findSession(session.getId());
-            if (sess != null) {
-                sess.save();
-            }
+        RedissonSession sess = (RedissonSession) super.findSession(session.getId());
+        if (sess != null) {
+            sess.access();
+            sess.endAccess();
+            sess.save();
         }
     }
     

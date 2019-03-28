@@ -19,7 +19,6 @@ import java.io.IOException;
 
 import javax.servlet.ServletException;
 
-import org.apache.catalina.Session;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
@@ -41,19 +40,6 @@ public class UpdateValve extends ValveBase {
 
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
-        String sessionId = request.getRequestedSessionId();
-        Session session = request.getContext().getManager().findSession(sessionId);
-        if (session != null) {
-            if (!session.isValid()) {
-                session.expire();
-                request.getContext().getManager().remove(session);
-            } else {
-                manager.add(session);
-                session.access();
-                session.endAccess();
-            }
-        }
-        
         try {
             getNext().invoke(request, response);
         } finally {
