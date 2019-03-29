@@ -29,6 +29,8 @@ import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
 import org.apache.catalina.Session;
+import org.apache.catalina.SessionEvent;
+import org.apache.catalina.SessionListener;
 import org.apache.catalina.session.ManagerBase;
 import org.apache.catalina.util.LifecycleSupport;
 import org.apache.juli.logging.Log;
@@ -63,6 +65,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     private ReadMode readMode = ReadMode.REDIS;
     private UpdateMode updateMode = UpdateMode.DEFAULT;
     private String keyPrefix = "";
+    private boolean broadcastSessionEvents = false;
 
     private final String nodeId = UUID.randomUUID().toString();
 
@@ -74,6 +77,14 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     public void setUpdateMode(String updateMode) {
         this.updateMode = UpdateMode.valueOf(updateMode);
+    }
+    
+    public boolean isBroadcastSessionEvents() {
+        return broadcastSessionEvents;
+    }
+    
+    public void setBroadcastSessionEvents(boolean replicateSessionEvents) {
+        this.broadcastSessionEvents = replicateSessionEvents;
     }
 
     public String getReadMode() {
@@ -134,20 +145,19 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     @Override
     public Session createSession(String sessionId) {
-        RedissonSession session = (RedissonSession) createEmptySession();
+        Session session = super.createSession(sessionId);
         
-        session.setNew(true);
-        session.setValid(true);
-        session.setCreationTime(System.currentTimeMillis());
-        session.setMaxInactiveInterval(((Context) getContainer()).getSessionTimeout() * 60);
-
-        if (sessionId == null) {
-            sessionId = generateSessionId();
+        if (broadcastSessionEvents) {
+            getTopic().publish(new SessionCreatedMessage(getNodeId(), session.getId()));
+            session.addSessionListener(new SessionListener() {
+                @Override
+                public void sessionEvent(SessionEvent event) {
+                    if (event.getType() == Session.SESSION_DESTROYED_EVENT) {
+                        getTopic().publish(new SessionDestroyedMessage(getNodeId(), session.getId()));
+                    }
+                }
+            });
         }
-        
-        session.setManager(this);
-        session.setId(sessionId);
-        
         return session;
     }
 
@@ -178,14 +188,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                 RedissonSession session = (RedissonSession) createEmptySession();
                 session.load(attrs);
                 session.setId(id);
-                session.setManager(this);
-                
-                if (session.isValid()) {
-                    if (session.isNew()) {
-                        session.tellNew();
-                    }
-                    super.add(session);
-                }
                 
                 session.access();
                 session.endAccess();
@@ -249,16 +251,23 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             getEngine().getPipeline().addValve(new UpdateValve(this));
         }
         
-        if (readMode == ReadMode.MEMORY) {
+        if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
             updatesTopic.addListener(AttributeMessage.class, new MessageListener<AttributeMessage>() {
                 
                 @Override
                 public void onMessage(CharSequence channel, AttributeMessage msg) {
                     try {
-                        // TODO make it thread-safe
+                        if (msg.getNodeId().equals(nodeId)) {
+                            return;
+                        }
+
                         RedissonSession session = (RedissonSession) RedissonSessionManager.super.findSession(msg.getSessionId());
-                        if (session != null && !msg.getNodeId().equals(nodeId)) {
+                        if (session != null) {
+                            if (msg instanceof SessionDestroyedMessage) {
+                                session.expire();
+                            }
+                            
                             if (msg instanceof AttributeRemoveMessage) {
                                 for (String name : ((AttributeRemoveMessage)msg).getNames()) {
                                     session.superRemoveAttributeInternal(name, true);
@@ -280,9 +289,17 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                                 AttributeUpdateMessage m = (AttributeUpdateMessage)msg;
                                 session.superSetAttribute(m.getName(), m.getValue(codecToUse.getMapValueDecoder()), true);
                             }
+                        } else {
+                            if (msg instanceof SessionCreatedMessage) {
+                                Session s = findSession(msg.getSessionId());
+                                if (s == null) {
+                                    throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
+                                }
+                            }
                         }
+
                     } catch (Exception e) {
-                        log.error("Can't handle topic message", e);
+                        log.error("Unable to handle topic message", e);
                     }
                 }
             });

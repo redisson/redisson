@@ -2,6 +2,7 @@
 <Context>
 
 	<Manager className="org.redisson.tomcat.RedissonSessionManager"
-	         configPath="${catalina.base}/src/test/webapp/WEB-INF/redisson.yaml" />
+	         configPath="${catalina.base}/src/test/webapp/WEB-INF/redisson.yaml" 
+	         broadcastSessionEvents="true"/>
 
 </Context>
