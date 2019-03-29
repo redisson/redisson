@@ -1,6 +1,6 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -60,7 +60,9 @@ public class RedissonLockTest extends BaseConcurrentTest {
         t.start();
         t.join();
 
-        lock.unlock();
+        assertThatThrownBy(() -> {
+            lock.unlock();
+        }).isInstanceOf(IllegalMonitorStateException.class);
     }
 
     @Test

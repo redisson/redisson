@@ -528,10 +528,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if (redis.call('exists', KEYS[1]) == 0) then " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return 1; " +
-                "end;" +
                 "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
                     "return nil;" +
                 "end; " +
