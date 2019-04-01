@@ -259,9 +259,8 @@ public class RedissonSessionManager extends ManagerBase {
                             
                             if (msg instanceof AttributesPutAllMessage) {
                                 AttributesPutAllMessage m = (AttributesPutAllMessage) msg;
-                                for (Entry<String, Object> entry : m.getAttrs(codecToUse.getMapValueDecoder()).entrySet()) {
-                                    session.superSetAttribute(entry.getKey(), entry.getValue(), true);
-                                }
+                                Map<String, Object> attrs = m.getAttrs(codecToUse.getMapValueDecoder());
+                                session.load(attrs);
                             }
                             
                             if (msg instanceof AttributeUpdateMessage) {
