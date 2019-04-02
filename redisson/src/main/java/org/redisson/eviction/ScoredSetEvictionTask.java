@@ -37,6 +37,11 @@ public class ScoredSetEvictionTask extends EvictionTask {
     }
 
     @Override
+    String getName() {
+        return name;
+    }
+    
+    @Override
     RFuture<Integer> execute() {
         return executor.writeAsync(name, LongCodec.INSTANCE, RedisCommands.ZREMRANGEBYSCORE, name, 0, System.currentTimeMillis() - shiftInMilliseconds);
     }

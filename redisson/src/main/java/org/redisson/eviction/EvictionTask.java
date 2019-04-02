@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -29,6 +31,8 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 abstract class EvictionTask implements Runnable {
 
+    private final Logger log = LoggerFactory.getLogger(getClass());
+    
     final Deque<Integer> sizeHistory = new LinkedList<Integer>();
     final int minDelay;
     final int maxDelay;
@@ -51,6 +55,8 @@ abstract class EvictionTask implements Runnable {
 
     abstract RFuture<Integer> execute();
     
+    abstract String getName();
+    
     @Override
     public void run() {
         if (executor.getConnectionManager().isShuttingDown()) {
@@ -64,6 +70,8 @@ abstract class EvictionTask implements Runnable {
                 return;
             }
 
+            log.debug("{} elements evicted. Object name: {}", size, getName());
+            
             if (size == -1) {
                 schedule();
                 return;

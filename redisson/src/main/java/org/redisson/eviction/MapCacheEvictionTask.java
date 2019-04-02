@@ -49,6 +49,11 @@ public class MapCacheEvictionTask extends EvictionTask {
     }
     
     @Override
+    String getName() {
+        return name;
+    }
+    
+    @Override
     RFuture<Integer> execute() {
         int latchExpireTime = Math.min(delay, 30);
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
