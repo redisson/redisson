@@ -145,29 +145,33 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     @Override
     public void lock() {
         try {
-            lockInterruptibly();
+            lock(-1, null, false);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            throw new IllegalStateException();
         }
     }
 
     @Override
     public void lock(long leaseTime, TimeUnit unit) {
         try {
-            lockInterruptibly(leaseTime, unit);
+            lock(leaseTime, unit, false);
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            throw new IllegalStateException();
         }
     }
 
 
     @Override
     public void lockInterruptibly() throws InterruptedException {
-        lockInterruptibly(-1, null);
+        lock(-1, null, true);
     }
 
     @Override
     public void lockInterruptibly(long leaseTime, TimeUnit unit) throws InterruptedException {
+        lock(leaseTime, unit, true);
+    }
+
+    private void lock(long leaseTime, TimeUnit unit, boolean interruptibly) throws InterruptedException {
         long threadId = Thread.currentThread().getId();
         Long ttl = tryAcquire(leaseTime, unit, threadId);
         // lock acquired
@@ -188,9 +192,20 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // waiting for message
                 if (ttl >= 0) {
-                    getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    try {
+                        getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    } catch (InterruptedException e) {
+                        if (interruptibly) {
+                            throw e;
+                        }
+                        getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    }
                 } else {
-                    getEntry(threadId).getLatch().acquire();
+                    if (interruptibly) {
+                        getEntry(threadId).getLatch().acquire();
+                    } else {
+                        getEntry(threadId).getLatch().acquireUninterruptibly();
+                    }
                 }
             }
         } finally {

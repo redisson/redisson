@@ -9,6 +9,7 @@ import java.util.concurrent.locks.Lock;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.Test1.LockWithoutBoolean;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
@@ -16,6 +17,36 @@ import static org.awaitility.Awaitility.*;
 
 public class RedissonLockTest extends BaseConcurrentTest {
 
+    static class LockWithoutBoolean extends Thread {
+        private CountDownLatch latch;
+        private RedissonClient redisson;
+
+        public LockWithoutBoolean(String name, CountDownLatch latch, RedissonClient redisson) {
+            super(name);
+            this.latch = latch;
+            this.redisson = redisson;
+        }
+
+        public void run() {
+            RLock lock = redisson.getLock("lock");
+            lock.lock(10, TimeUnit.MINUTES);
+            System.out.println(Thread.currentThread().getName() + " gets lock. and interrupt: " + Thread.currentThread().isInterrupted());
+            try {
+                TimeUnit.MINUTES.sleep(1);
+            } catch (InterruptedException e) {
+                latch.countDown();
+                Thread.currentThread().interrupt();
+            } finally {
+                try {
+                    lock.unlock();
+                } finally {
+                    latch.countDown();
+                }
+            }
+            System.out.println(Thread.currentThread().getName() + " ends.");
+        }
+    }
+    
     @Test
     public void testTryLockWait() throws InterruptedException {
         testSingleInstanceConcurrency(1, r -> {
@@ -28,6 +59,21 @@ public class RedissonLockTest extends BaseConcurrentTest {
         long startTime = System.currentTimeMillis();
         lock.tryLock(3, TimeUnit.SECONDS);
         assertThat(System.currentTimeMillis() - startTime).isBetween(2990L, 3100L);
+    }
+    
+    @Test
+    public void testLockUninterruptibly() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(2);
+        Thread thread_1 = new LockWithoutBoolean("thread-1", latch, redisson);
+        Thread thread_2 = new LockWithoutBoolean("thread-2", latch, redisson);
+        thread_1.start();
+
+        TimeUnit.SECONDS.sleep(1); // let thread-1 get the lock
+        thread_2.start();
+        TimeUnit.SECONDS.sleep(1); // let thread_2 waiting for the lock
+        thread_2.interrupt(); // interrupte the thread-2
+        boolean res = latch.await(2, TimeUnit.SECONDS);
+        assertThat(res).isFalse();
     }
     
     @Test
