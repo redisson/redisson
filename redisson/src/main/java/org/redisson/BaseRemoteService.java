@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
@@ -47,6 +48,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
+import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.remote.RRemoteServiceResponse;
@@ -64,6 +66,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.util.CharsetUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -78,7 +82,7 @@ public abstract class BaseRemoteService {
     private static final Logger log = LoggerFactory.getLogger(BaseRemoteService.class);
 
     private final Map<Class<?>, String> requestQueueNameCache = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Method, List<String>> methodSignaturesCache = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Method, long[]> methodSignaturesCache = new ConcurrentHashMap<>();
 
     protected final Codec codec;
     protected final RedissonClient redisson;
@@ -200,7 +204,7 @@ public abstract class BaseRemoteService {
                 Long ackTimeout = optionsCopy.getAckTimeoutInMillis();
                 
 
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args,
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignature(method), args,
                         optionsCopy, System.currentTimeMillis());
 
                 final RFuture<RemoteServiceAck> ackFuture;
@@ -507,7 +511,7 @@ public abstract class BaseRemoteService {
                 RequestId requestId = generateRequestId();
 
                 String requestQueueName = getRequestQueueName(remoteInterface);
-                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignatures(method), args, optionsCopy,
+                RemoteServiceRequest request = new RemoteServiceRequest(executorId, requestId.toString(), method.getName(), getMethodSignature(method), args, optionsCopy,
                         System.currentTimeMillis());
                 
                 final RFuture<RemoteServiceAck> ackFuture;
@@ -676,16 +680,19 @@ public abstract class BaseRemoteService {
         }
     }
 
-    protected List<String> getMethodSignatures(Method method) {
-        List<String> result = methodSignaturesCache.get(method);
+    
+    protected long[] getMethodSignature(Method method) {
+        long[] result = methodSignaturesCache.get(method);
         if (result == null) {
-            result = new ArrayList<>(method.getParameterTypes().length);
-            for (Class<?> t : method.getParameterTypes()) {
-                result.add(t.getName());
-            }
-            List<String> oldList = methodSignaturesCache.putIfAbsent(method, result);
-            if (oldList != null) {
-                result = oldList;
+            String str = Arrays.stream(method.getParameterTypes())
+                                .map(c -> c.getName())
+                                .collect(Collectors.joining());
+            ByteBuf buf = Unpooled.copiedBuffer(str, CharsetUtil.UTF_8);
+            result = Hash.hash128(buf);
+            buf.release();
+            long[] oldResult = methodSignaturesCache.putIfAbsent(method, result);
+            if (oldResult != null) {
+                return oldResult;
             }
         }
         
