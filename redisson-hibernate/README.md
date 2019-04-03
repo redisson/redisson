@@ -9,7 +9,7 @@ Compatible with Hibernate 4.x, 5.x. (5.3.0, 5.3.1 and 5.3.2 versions aren't supp
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
-**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation.  
+**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event. 
 
 **data partitioning** - data partitioning in cluster mode. It allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.  
 
