@@ -73,6 +73,34 @@ public class JCacheTest extends BaseTest {
         cache.close();
         runner.stop();
     }
+
+    @Test
+    public void testGetAllHighVolume() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        Map<String, String> m = new HashMap<>();
+        for (int i = 0; i < 10000; i++) {
+            m.put("" + i, "" + i);
+        }
+        cache.putAll(m);
+        
+        Map<String, String> entries = cache.getAll(m.keySet());
+        assertThat(entries).isEqualTo(m);
+        
+        cache.close();
+        runner.stop();
+    }
     
     @Test
     public void testGetAll() throws Exception {
