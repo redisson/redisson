@@ -9,7 +9,6 @@ import java.util.concurrent.locks.Lock;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.redisson.Test1.LockWithoutBoolean;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 

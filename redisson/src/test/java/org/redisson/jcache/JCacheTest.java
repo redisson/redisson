@@ -35,6 +35,7 @@ import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.client.codec.JsonJacksonMapCodec;
+import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
 
@@ -142,7 +143,7 @@ public class JCacheTest extends BaseTest {
         Config cfg = Config.fromJSON(configUrl);
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
-        cfg.setCodec(new JsonJacksonMapCodec(String.class, LocalDateTime.class, objectMapper));
+        cfg.setCodec(new TypedJsonJacksonCodec(String.class, LocalDateTime.class, objectMapper));
         
         Configuration<String, LocalDateTime> config = RedissonConfiguration.fromConfig(cfg);
         Cache<String, LocalDateTime> cache = Caching.getCachingProvider().getCacheManager()
