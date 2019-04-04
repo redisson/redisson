@@ -979,6 +979,8 @@ public abstract class BaseMapTest extends BaseTest {
     
     protected abstract <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map);
     
+    protected abstract <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map);
+    
     protected abstract <K, V> RMap<K, V> getLoaderTestMap(String name, Map<K, V> map);
 
     @Test
@@ -996,7 +998,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
-    public void testWriterAddAndGet() {
+    public void testWriterAddAndGet() throws InterruptedException {
         Map<String, Integer> store = new HashMap<>();
         RMap<String, Integer> map = getWriterTestMap("test", store);
 
@@ -1005,6 +1007,26 @@ public abstract class BaseMapTest extends BaseTest {
         
         Map<String, Integer> expected = new HashMap<>();
         expected.put("1", 18);
+        assertThat(store).isEqualTo(expected);
+        destroy(map);
+    }
+
+    @Test
+    public void testWriteBehindFastRemove() throws InterruptedException {
+        Map<String, String> store = new HashMap<>();
+        RMap<String, String> map = getWriteBehindTestMap("test", store);
+
+        map.put("1", "11");
+        map.put("2", "22");
+        map.put("3", "33");
+        
+        Thread.sleep(1400);
+        
+        map.fastRemove("1", "2", "4");
+        
+        Map<String, String> expected = new HashMap<>();
+        expected.put("3", "33");
+        Thread.sleep(1400);
         assertThat(store).isEqualTo(expected);
         destroy(map);
     }
@@ -1232,25 +1254,17 @@ public abstract class BaseMapTest extends BaseTest {
         return new MapWriter<K, V>() {
 
             @Override
-            public void write(K key, V value) {
-                map.put(key, value);
-            }
-
-            @Override
-            public void writeAll(Map<K, V> values) {
+            public void write(Map<K, V> values) {
                 map.putAll(values);
+                System.out.println("map " + map);
             }
 
             @Override
-            public void delete(K key) {
-                map.remove(key);
-            }
-
-            @Override
-            public void deleteAll(Collection<K> keys) {
+            public void delete(Collection<K> keys) {
                 for (K key : keys) {
                     map.remove(key);
                 }
+                System.out.println("delete " + keys + " map " + map);
             }
             
         };

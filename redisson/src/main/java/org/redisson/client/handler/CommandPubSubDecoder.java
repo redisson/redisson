@@ -169,31 +169,33 @@ public class CommandPubSubDecoder extends CommandDecoder {
             entry.getQueue().add((Message) res);
         }
         
-        if (entry.getSent().compareAndSet(false, true)) {
-            executor.execute(() -> {
-                try {
-                    while (true) {
-                        Message result = entry.getQueue().poll();
-                        if (result != null) {
-                            if (result instanceof PubSubStatusMessage) {
-                                pubSubConnection.onMessage((PubSubStatusMessage) result);
-                            } else if (result instanceof PubSubMessage) {
-                                pubSubConnection.onMessage((PubSubMessage) result);
-                            } else if (result instanceof PubSubPatternMessage) {
-                                pubSubConnection.onMessage((PubSubPatternMessage) result);
-                            }
-                        } else {
-                            break;
+        if (!entry.getSent().compareAndSet(false, true)) {
+            return;
+        }
+        
+        executor.execute(() -> {
+            try {
+                while (true) {
+                    Message result = entry.getQueue().poll();
+                    if (result != null) {
+                        if (result instanceof PubSubStatusMessage) {
+                            pubSubConnection.onMessage((PubSubStatusMessage) result);
+                        } else if (result instanceof PubSubMessage) {
+                            pubSubConnection.onMessage((PubSubMessage) result);
+                        } else if (result instanceof PubSubPatternMessage) {
+                            pubSubConnection.onMessage((PubSubPatternMessage) result);
                         }
-                    }
-                } finally {
-                    entry.getSent().set(false);
-                    if (!entry.getQueue().isEmpty()) {
-                        enqueueMessage(null, pubSubConnection, entry);
+                    } else {
+                        break;
                     }
                 }
-            });
-        }
+            } finally {
+                entry.getSent().set(false);
+                if (!entry.getQueue().isEmpty()) {
+                    enqueueMessage(null, pubSubConnection, entry);
+                }
+            }
+        });
     }
     
     @Override

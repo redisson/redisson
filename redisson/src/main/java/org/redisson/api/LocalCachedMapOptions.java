@@ -270,13 +270,18 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     @Override
-    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
-        return (LocalCachedMapOptions<K, V>) super.writer(writer);
+    public LocalCachedMapOptions<K, V> writeBehindBatchSize(int writeBehindBatchSize) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindBatchSize(writeBehindBatchSize);
     }
     
     @Override
-    public LocalCachedMapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
-        return (LocalCachedMapOptions<K, V>) super.writeBehindThreads(writeBehindThreads);
+    public LocalCachedMapOptions<K, V> writeBehindDelay(int writeBehindDelay) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindDelay(writeBehindDelay);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writer(writer);
     }
     
     @Override

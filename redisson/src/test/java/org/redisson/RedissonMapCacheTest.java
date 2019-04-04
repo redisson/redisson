@@ -23,6 +23,7 @@ import org.junit.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -64,6 +65,14 @@ public class RedissonMapCacheTest extends BaseMapTest {
     @Override
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
         MapOptions<K, V> options = MapOptions.<K, V>defaults().writer(createMapWriter(map));
+        return redisson.getMapCache("test", options);        
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+                                    .writer(createMapWriter(map))
+                                    .writeMode(WriteMode.WRITE_BEHIND);
         return redisson.getMapCache("test", options);        
     }
     

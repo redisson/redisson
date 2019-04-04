@@ -90,6 +90,7 @@ import org.redisson.rx.RxProxyBuilder;
  */
 public class RedissonRx implements RedissonRxClient {
 
+    protected final WriteBehindService writeBehindService;
     protected final EvictionScheduler evictionScheduler;
     protected final CommandRxExecutor commandExecutor;
     protected final ConnectionManager connectionManager;
@@ -102,6 +103,7 @@ public class RedissonRx implements RedissonRxClient {
         connectionManager = ConfigSupport.createConnectionManager(configCopy);
         commandExecutor = new CommandRxService(connectionManager);
         evictionScheduler = new EvictionScheduler(commandExecutor);
+        writeBehindService = new WriteBehindService(commandExecutor);
     }
     
     @Override
@@ -170,14 +172,14 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec) {
-        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null);
+        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
     }
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name) {
-        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null);
+        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
     }
@@ -242,14 +244,14 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, null, null);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
@@ -448,7 +450,7 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, Codec codec, MapOptions<K, V> options) {
-        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options);
+        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
     }
@@ -456,14 +458,14 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RMapCacheRx<K, V> getMapCache(String name, MapOptions<K, V> options) {
-        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options);
+        RedissonMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapCacheRx<K, V>(map), RMapCacheRx.class);
     }
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, MapOptions<K, V> options) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }
@@ -471,7 +473,7 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RMapRx<K, V> getMap(String name, Codec codec, MapOptions<K, V> options) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, commandExecutor, name, null, options, writeBehindService);
         return RxProxyBuilder.create(commandExecutor, map, 
                 new RedissonMapRx<K, V>(map, this), RMapRx.class);
     }

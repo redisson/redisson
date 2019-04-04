@@ -13,9 +13,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.RedissonLocalCachedMap.CacheValue;
 import org.redisson.api.LocalCachedMapOptions;
+import org.redisson.api.MapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RMap;
 import org.redisson.cache.Cache;
@@ -108,6 +110,14 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
     protected <K, V> RMap<K, V> getWriterTestMap(String name, Map<K, V> map) {
         LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults().writer(createMapWriter(map));
         return redisson.getLocalCachedMap(name, options);        
+    }
+    
+    @Override
+    protected <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map) {
+        LocalCachedMapOptions<K, V> options = LocalCachedMapOptions.<K, V>defaults()
+                                    .writer(createMapWriter(map))
+                                    .writeMode(WriteMode.WRITE_BEHIND);
+        return redisson.getLocalCachedMap("test", options);        
     }
         
     @Override

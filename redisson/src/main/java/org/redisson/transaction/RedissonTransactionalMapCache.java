@@ -51,17 +51,17 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
     
     public RedissonTransactionalMapCache(CommandAsyncExecutor commandExecutor, String name, 
             List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
-        super(null, commandExecutor, name, null, null);
+        super(null, commandExecutor, name, null, null, null);
         this.executed = executed;
-        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(null, commandExecutor, name, null, null);
+        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(null, commandExecutor, name, null, null, null);
         this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
 
     public RedissonTransactionalMapCache(Codec codec, CommandAsyncExecutor commandExecutor, String name,
             List<TransactionalOperation> operations, long timeout, AtomicBoolean executed, String transactionId) {
-        super(codec, null, commandExecutor, name, null, null);
+        super(codec, null, commandExecutor, name, null, null, null);
         this.executed = executed;
-        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(codec, null, commandExecutor, name, null, null);
+        RedissonMapCache<K, V> innerMap = new RedissonMapCache<K, V>(codec, null, commandExecutor, name, null, null, null);
         this.transactionalMap = new BaseTransactionalMapCache<K, V>(commandExecutor, timeout, operations, innerMap, transactionId);
     }
     

@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.redisson.api.MapOptions;
 import org.redisson.api.RFuture;
@@ -84,8 +85,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     private EvictionScheduler evictionScheduler;
     
     public RedissonMapCache(EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
-                            String name, RedissonClient redisson, MapOptions<K, V> options) {
-        super(commandExecutor, name, redisson, options);
+                            String name, RedissonClient redisson, MapOptions<K, V> options, WriteBehindService writeBehindService) {
+        super(commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
             evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
         }
@@ -93,8 +94,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     public RedissonMapCache(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor commandExecutor,
-                            String name, RedissonClient redisson, MapOptions<K, V> options) {
-        super(codec, commandExecutor, name, redisson, options);
+                            String name, RedissonClient redisson, MapOptions<K, V> options, WriteBehindService writeBehindService) {
+        super(codec, commandExecutor, name, redisson, options, writeBehindService);
         if (evictionScheduler != null) {
             evictionScheduler.schedule(getName(), getTimeoutSetName(), getIdleSetName(), getExpiredChannelName(), getLastAccessTimeSetName());
         }
@@ -395,18 +396,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        MapWriterTask<V> listener = new MapWriterTask<V>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-
-            @Override
-            protected boolean condition(V res) {
-                return res == null;
-            }
-        };
-        return mapWriterFuture(future, listener);
+        MapWriterTask.Add task = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, task, r -> r == null);
     }
 
     @Override
@@ -636,12 +627,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        MapWriterTask<Void> listener = new MapWriterTask<Void>() {
-            @Override
-            public void execute() {
-                options.getWriter().writeAll((Map<K, V>) map);
-            }
-        };
+        MapWriterTask listener = new MapWriterTask.Add(map);
         return mapWriterFuture(future, listener);
     }
 
@@ -765,13 +751,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-        };
-        return mapWriterFuture(future, listener);
+        return mapWriterFuture(future, new MapWriterTask.Add(key, value));
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {
@@ -916,12 +896,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        MapWriterTask<V> listener = new MapWriterTask<V>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-        };
+        MapWriterTask.Add listener = new MapWriterTask.Add(key, value);
         return mapWriterFuture(future, listener);
     }
 
@@ -1600,17 +1575,8 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             return future;
         }
 
-        MapWriterTask<Boolean> listener = new MapWriterTask<Boolean>() {
-            @Override
-            protected void execute() {
-                options.getWriter().write(key, value);
-            }
-            @Override
-            protected boolean condition(Boolean res) {
-                return res;
-            }
-        };
-        return mapWriterFuture(future, listener);
+        MapWriterTask.Add listener = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, listener, Function.identity());
     }
 
     @Override
@@ -2169,6 +2135,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public void destroy() {
         if (evictionScheduler != null) {
             evictionScheduler.remove(getName());
+        }
+        if (writeBehindService != null) {
+            writeBehindService.stop(getName());
         }
     }
 }

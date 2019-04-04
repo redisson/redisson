@@ -132,13 +132,15 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private LocalCacheListener listener;
     private LocalCacheView<K, V> localCacheView;
     
-    public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(commandExecutor, name, redisson, options);
+    public RedissonLocalCachedMap(CommandAsyncExecutor commandExecutor, String name, LocalCachedMapOptions<K, V> options, 
+            EvictionScheduler evictionScheduler, RedissonClient redisson, WriteBehindService writeBehindService) {
+        super(commandExecutor, name, redisson, options, writeBehindService);
         init(name, options, redisson, evictionScheduler);
     }
 
-    public RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, EvictionScheduler evictionScheduler, RedissonClient redisson) {
-        super(codec, connectionManager, name, redisson, options);
+    public RedissonLocalCachedMap(Codec codec, CommandAsyncExecutor connectionManager, String name, LocalCachedMapOptions<K, V> options, 
+            EvictionScheduler evictionScheduler, RedissonClient redisson, WriteBehindService writeBehindService) {
+        super(codec, connectionManager, name, redisson, options, writeBehindService);
         init(name, options, redisson, evictionScheduler);
     }
 
