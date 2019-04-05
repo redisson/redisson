@@ -102,7 +102,7 @@ public class MapWriteBehindTask {
                     enqueueTask();
                 }
             });
-        }, options.getWriteBehindDelay(), TimeUnit.SECONDS);
+        }, options.getWriteBehindDelay(), TimeUnit.MILLISECONDS);
     }
 
     public void addTask(MapWriterTask task) {

@@ -49,7 +49,7 @@ public class MapOptions<K, V> {
     private MapWriter<K, V> writer;
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindBatchSize = 50;
-    private int writeBehindDelay = 1;
+    private int writeBehindDelay = 1000;
     
     protected MapOptions() {
     }
@@ -110,9 +110,9 @@ public class MapOptions<K, V> {
     /**
      * Sets write behind tasks execution delay. All updates would be applied with lag not more than specified delay.   
      * <p>
-     * Default is <code>1</code> second
+     * Default is <code>1000</code> milliseconds
      * 
-     * @param writeBehindDelay - delay in seconds
+     * @param writeBehindDelay - delay in milliseconds
      * @return MapOptions instance
      */
     public MapOptions<K, V> writeBehindDelay(int writeBehindDelay) {
