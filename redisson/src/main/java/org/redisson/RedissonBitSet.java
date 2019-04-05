@@ -166,6 +166,10 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     //Copied from: https://github.com/xetorthio/jedis/issues/301
     private static BitSet fromByteArrayReverse(byte[] bytes) {
+        if (bytes == null) {
+            return new BitSet();
+        }
+
         BitSet bits = new BitSet();
         for (int i = 0; i < bytes.length * 8; i++) {
             if ((bytes[i / 8] & (1 << (7 - (i % 8)))) != 0) {
