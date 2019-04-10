@@ -4,6 +4,26 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 05-Apr-2019 - versions 3.10.6 released  
+Feature - `broadcastSessionEvents` setting added to Tomcat Session Manager  
+Feature - `remainTimeToLive` method added to `RLock`, `RLockAsync`, `RLockRx` and `RLockReactive` interfaces  
+Feature - NAT mapping support for cluster mode  
+Feature - `isLock` method added to `RLockAsync`, `RLockRx`, `RLockReactive` interfaces  
+Feature - `writeBehindDelay` and `writeBehindBatchSize` settings added to `MapOptions` object  
+Improvement - Eviction task logging added  
+Improvement - `MapWriter` interface retains only two methods for handling batch updates  
+Improvement - `MapOptions.writeBehindThreads` parameter removed  
+Fixed - `RBitSet.asBitSet` methods throws NPE if RBitSet object doesn't exist  
+Fixed - `JCache.getAll` method throws `RedisException: too many results to unpack`  
+Fixed - `RLock.lock` method can be interrupted with `Thread.interrupt` method  
+Fixed - Tomcat Session parameters aren't updated completely in `readMode=MEMORY`  
+Fixed - `RLock.unlock` method returns true if lock doesn't exist  
+Fixed - Tomcat Session Manager doesn't remove session attributes in `updateMode=AFTER_REQUEST`  
+Fixed - Pattern topic listeners fail to re-attach on cluster failover (thanks to [shailender-bathula](https://github.com/shailender-bathula))  
+Fixed - `CommandPubSubDecoder.decodeResult` throws `IllegalStateException` in JBOSS environment  
+Fixed - NullValue object shouldn't be stored if `RedissonSpringCacheManager.allowNullValues = false`  
+Fixed - `removeListener` method of `RTopicReactive` and `RTopicRx` interfaces throws NoSuchMethodException  
+
 ### 20-Mar-2019 - versions 3.10.5 released  
 Feature - `getMultiLock`, `getRedLock` methods added to `RedissonClient`, `RedissonRxClient` and `RedissonReactiveClient` interfaces  
 Feature - `getInfo`, `listGroups`, `listConsumers` methods added to `RStream`, `RStreamRx`, `RStreamReactive` interfaces  
