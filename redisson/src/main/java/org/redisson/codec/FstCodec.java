@@ -17,12 +17,20 @@ package org.redisson.codec;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.nustaq.serialization.FSTBasicObjectSerializer;
+import org.nustaq.serialization.FSTClazzInfo;
 import org.nustaq.serialization.FSTConfiguration;
 import org.nustaq.serialization.FSTDecoder;
 import org.nustaq.serialization.FSTEncoder;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
+import org.nustaq.serialization.FSTSerializerRegistry;
 import org.nustaq.serialization.coders.FSTStreamDecoder;
 import org.nustaq.serialization.coders.FSTStreamEncoder;
 import org.redisson.client.codec.BaseCodec;
@@ -46,6 +54,57 @@ import io.netty.buffer.ByteBufOutputStream;
  */
 public class FstCodec extends BaseCodec {
 
+    static class FSTMapSerializerV2 extends FSTBasicObjectSerializer {
+
+        @Override
+        public void writeObject(FSTObjectOutput out, Object toWrite, FSTClazzInfo clzInfo,
+                FSTClazzInfo.FSTFieldInfo referencedBy, int streamPosition) throws IOException {
+            Map col = (Map) toWrite;
+            out.writeInt(col.size());
+            FSTClazzInfo lastKClzI = null;
+            FSTClazzInfo lastVClzI = null;
+            Class lastKClz = null;
+            Class lastVClz = null;
+            for (Iterator iterator = col.entrySet().iterator(); iterator.hasNext();) {
+                Map.Entry next = (Map.Entry) iterator.next();
+                Object key = next.getKey();
+                Object value = next.getValue();
+                if (key != null && value != null) {
+                    lastKClzI = out.writeObjectInternal(key, key.getClass() == lastKClz ? lastKClzI : null, null);
+                    lastVClzI = out.writeObjectInternal(value, value.getClass() == lastVClz ? lastVClzI : null, null);
+                    lastKClz = key.getClass();
+                    lastVClz = value.getClass();
+                } else {
+                    out.writeObjectInternal(key, null, null);
+                    out.writeObjectInternal(value, null, null);
+                }
+
+            }
+        }
+
+        @Override
+        public Object instantiate(Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo,
+                FSTClazzInfo.FSTFieldInfo referencee, int streamPosition) throws Exception {
+            Object res = null;
+            int len = in.readInt();
+            if (objectClass == HashMap.class) {
+                res = new HashMap(len);
+            } else if (objectClass == Hashtable.class) {
+                res = new Hashtable(len);
+            } else {
+                res = serializationInfo.newInstance(true);
+            }
+            in.registerObject(res, streamPosition, serializationInfo, referencee);
+            Map col = (Map) res;
+            for (int i = 0; i < len; i++) {
+                Object key = in.readObjectInternal(null);
+                Object val = in.readObjectInternal(null);
+                col.put(key, val);
+            }
+            return res;
+        }
+    }
+    
     static class FSTDefaultStreamCoderFactory implements FSTConfiguration.StreamCoderFactory {
 
         Field chBufField;
@@ -152,6 +211,10 @@ public class FstCodec extends BaseCodec {
 
     public FstCodec(FSTConfiguration fstConfiguration) {
         config = fstConfiguration;
+        FSTSerializerRegistry reg = config.getCLInfoRegistry().getSerializerRegistry();
+        reg.putSerializer(Hashtable.class, new FSTMapSerializerV2(), true);
+        reg.putSerializer(ConcurrentHashMap.class, new FSTMapSerializerV2(), true);
+
         config.setStreamCoderFactory(new FSTDefaultStreamCoderFactory(config));
     }
 
