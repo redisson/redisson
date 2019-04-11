@@ -18,7 +18,7 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.10.5</version>
+         <version>3.10.6</version>
      </dependency>
 ```
 
