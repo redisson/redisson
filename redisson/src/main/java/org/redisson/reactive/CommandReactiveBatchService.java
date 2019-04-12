@@ -15,7 +15,7 @@
  */
 package org.redisson.reactive;
 
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchResult;
@@ -46,15 +46,15 @@ public class CommandReactiveBatchService extends CommandReactiveService {
     }
 
     @Override
-    public <R> Mono<R> reactive(Supplier<RFuture<R>> supplier) {
-        Mono<R> mono = super.reactive(new Supplier<RFuture<R>>() {
+    public <R> Mono<R> reactive(Callable<RFuture<R>> supplier) {
+        Mono<R> mono = super.reactive(new Callable<RFuture<R>>() {
             volatile RFuture<R> future;
             @Override
-            public RFuture<R> get() {
+            public RFuture<R> call() throws Exception {
                 if (future == null) {
                     synchronized (this) {
                         if (future == null) {
-                            future = supplier.get();
+                            future = supplier.call();
                         }
                     }
                 }

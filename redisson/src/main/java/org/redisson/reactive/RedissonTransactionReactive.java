@@ -15,10 +15,7 @@
  */
 package org.redisson.reactive;
 
-import java.util.function.Supplier;
-
 import org.redisson.api.RBucketReactive;
-import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheReactive;
@@ -118,22 +115,12 @@ public class RedissonTransactionReactive implements RTransactionReactive {
 
     @Override
     public Mono<Void> commit() {
-        return executorService.reactive(new Supplier<RFuture<Void>>() {
-            @Override
-            public RFuture<Void> get() {
-                return transaction.commitAsync();
-            }
-        });
+        return executorService.reactive(() -> transaction.commitAsync());
     }
 
     @Override
     public Mono<Void> rollback() {
-        return executorService.reactive(new Supplier<RFuture<Void>>() {
-            @Override
-            public RFuture<Void> get() {
-                return transaction.rollbackAsync();
-            }
-        });
+        return executorService.reactive(() -> transaction.rollbackAsync());
     }
     
 }

@@ -42,14 +42,9 @@ public class RxProxyBuilder {
             @Override
             public Object execute(Method mm, Object instance, Method instanceMethod, Object[] args) {
                 Flowable<Object> flowable = commandExecutor.flowable(new Callable<RFuture<Object>>() {
-                    @SuppressWarnings("unchecked")
                     @Override
-                    public RFuture<Object> call() {
-                        try {
-                            return (RFuture<Object>) mm.invoke(instance, args);
-                        } catch (Exception e) {
-                            throw new IllegalStateException(e);
-                        }
+                    public RFuture<Object> call() throws Exception {
+                        return (RFuture<Object>) mm.invoke(instance, args);
                     }
                 });
                 

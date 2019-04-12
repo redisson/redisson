@@ -54,6 +54,7 @@ import io.netty.buffer.ByteBufOutputStream;
  */
 public class FstCodec extends BaseCodec {
 
+    @SuppressWarnings("AvoidInlineConditionals")
     static class FSTMapSerializerV2 extends FSTBasicObjectSerializer {
 
         @Override

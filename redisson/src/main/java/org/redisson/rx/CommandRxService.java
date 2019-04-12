@@ -43,7 +43,13 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long t) throws Exception {
-                RFuture<R> future = supplier.call();
+                RFuture<R> future;
+                try {
+                    future = supplier.call();
+                } catch (Exception e) {
+                    p.onError(e);
+                    return;
+                }
                 future.onComplete((res, e) -> {
                    if (e != null) {
                        p.onError(e);
