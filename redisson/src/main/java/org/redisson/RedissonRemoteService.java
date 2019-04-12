@@ -41,6 +41,7 @@ import org.redisson.command.CommandExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.remote.BaseRemoteService;
 import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceAck;
 import org.redisson.remote.RemoteServiceCancelRequest;

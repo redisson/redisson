@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.BaseRemoteService;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -33,6 +32,7 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.remote.BaseRemoteService;
 import org.redisson.remote.RemoteServiceCancelRequest;
 import org.redisson.remote.RemoteServiceCancelResponse;
 import org.redisson.remote.RemoteServiceRequest;

@@ -28,8 +28,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.executor.params.ScheduledParameters;
-import org.redisson.misc.RPromise;
-import org.redisson.remote.RRemoteServiceResponse;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
@@ -121,15 +119,13 @@ public class ScheduledTasksService extends TasksService {
     }
     
     @Override
-    protected <T extends RRemoteServiceResponse> RPromise<T> pollResultResponse(long timeout, RequestId requestId,
-            RemoteServiceRequest request) {
+    protected long getTimeout(Long executionTimeoutInMillis, RemoteServiceRequest request) {
         if (request.getArgs()[0].getClass() == ScheduledParameters.class) {
             ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
-            timeout += params.getStartTime() - System.currentTimeMillis();
+            return executionTimeoutInMillis + params.getStartTime() - System.currentTimeMillis();
         }
-        return super.pollResultResponse(timeout, requestId, request);
+        return executionTimeoutInMillis;
     }
-    
     
     @Override
     protected RequestId generateRequestId() {

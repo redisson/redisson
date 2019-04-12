@@ -88,7 +88,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledExecutorService executorService = client.getExecutorService("JobA");
         executorService.schedule(new TestTask() , CronSchedule.of("0/1 * * * * ?"));
         
-        TimeUnit.MILLISECONDS.sleep(4800);
+        TimeUnit.MILLISECONDS.sleep(4900);
         
         assertThat(client.getAtomicLong("counter").get()).isEqualTo(4);
         
@@ -155,7 +155,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         long start = System.currentTimeMillis();
         RExecutorFuture<?> f = executor.schedule(new IncrementRunnableTask("counter"), 1, TimeUnit.SECONDS);
         f.syncUninterruptibly();
-        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1200L);
+        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1300L);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
         Thread.sleep(2000);
         node.shutdown();
