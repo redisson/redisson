@@ -35,6 +35,7 @@ import org.redisson.remote.RemoteServiceTimeoutException;
 
 import io.reactivex.Completable;
 import io.reactivex.Single;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
 public class RedissonRemoteServiceTest extends BaseTest {
@@ -317,6 +318,30 @@ public class RedissonRemoteServiceTest extends BaseTest {
         assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
     }
 
+    @Test
+    public void testCancelReactive() throws InterruptedException {
+        RedissonReactiveClient r1 = Redisson.createReactive(createConfig());
+        AtomicInteger iterations = new AtomicInteger();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        r1.getKeys().flushall();
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
+        
+        RedissonReactiveClient r2 = Redisson.createReactive(createConfig());
+        RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
+        
+        Mono<Void> f = ri.cancelMethod();
+        Disposable t = f.doOnSubscribe(s -> s.request(1)).subscribe();
+        Thread.sleep(500);
+        t.dispose();
+        
+        executor.shutdown();
+        r1.shutdown();
+        r2.shutdown();
+        
+        assertThat(iterations.get()).isLessThan(Integer.MAX_VALUE / 2);
+        
+        assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
+    }
     
     @Test(expected = IllegalArgumentException.class)
     public void testWrongMethodAsync() throws InterruptedException {

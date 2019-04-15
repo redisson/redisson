@@ -46,16 +46,17 @@ public class CommandReactiveService extends CommandAsyncService implements Comma
                     emitter.error(e);
                     return;
                 }
+                
+                emitter.onDispose(() -> {
+                    future.cancel(true);
+                });
+
                 future.onComplete((v, e) -> {
                     if (e != null) {
                         emitter.error(e);
                         return;
                     }
 
-                    emitter.onDispose(() -> {
-                        future.cancel(true);
-                    });
-                    
                     if (v != null) {
                         emitter.next(v);
                     }

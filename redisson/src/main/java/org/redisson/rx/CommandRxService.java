@@ -50,18 +50,18 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
                     p.onError(e);
                     return;
                 }
+                p.doOnCancel(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                        future.cancel(true);
+                    }
+                });
+                
                 future.onComplete((res, e) -> {
                    if (e != null) {
                        p.onError(e);
                        return;
                    }
-                   
-                   p.doOnCancel(new Action() {
-                       @Override
-                       public void run() throws Exception {
-                           future.cancel(true);
-                       }
-                   });
                    
                    if (res != null) {
                        p.onNext(res);

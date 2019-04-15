@@ -25,10 +25,12 @@ import java.lang.annotation.Target;
  * client interface for remote service interface. 
  * <p>
  * All method signatures must match with remote service interface,
- * but return type must be <code>io.netty.util.concurrent.Future</code>.
+ * but return type must be <code>org.redisson.api.RFuture</code>.
  * <p>
  * It's not necessary to add all methods from remote service.
  * Add only those which are needed. 
+ * 
+ * @see org.redisson.api.RFuture
  * 
  * @author Nikita Koksharov
  *
