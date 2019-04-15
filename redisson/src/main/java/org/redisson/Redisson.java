@@ -480,7 +480,7 @@ public class Redisson implements RedissonClient {
         } else {
             executorId = connectionManager.getId() + ":" + name;
         }
-        return new RedissonRemoteService(codec, this, name, connectionManager.getCommandExecutor(), executorId, responses);
+        return new RedissonRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
     }
 
     @Override

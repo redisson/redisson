@@ -166,7 +166,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             this.executorId = connectionManager.getId().toString() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
-        remoteService = new RedissonExecutorRemoteService(codec, redisson, name, connectionManager.getCommandExecutor(), executorId, responses);
+        remoteService = new RedissonExecutorRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
         requestQueueName = ((RedissonRemoteService) remoteService).getRequestQueueName(RemoteExecutorService.class);
         responseQueueName = ((RedissonRemoteService) remoteService).getResponseQueueName(executorId);
         String objectName = requestQueueName;
@@ -185,7 +185,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         
         workersTopic = redisson.getTopic(workersChannelName);
         
-        executorRemoteService = new TasksService(codec, redisson, name, commandExecutor, executorId, responses);
+        executorRemoteService = new TasksService(codec, name, commandExecutor, executorId, responses);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
@@ -197,7 +197,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         
-        scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor, executorId, responses);
+        scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId, responses);
         scheduledRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);
@@ -350,7 +350,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     private TasksBatchService createBatchService() {
-        TasksBatchService executorRemoteService = new TasksBatchService(codec, redisson, name, commandExecutor, executorId, responses);
+        TasksBatchService executorRemoteService = new TasksBatchService(codec, name, commandExecutor, executorId, responses);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);

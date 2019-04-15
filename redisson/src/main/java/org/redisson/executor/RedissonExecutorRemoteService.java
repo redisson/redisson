@@ -20,9 +20,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.redisson.RedissonRemoteService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
-import org.redisson.command.CommandExecutor;
+import org.redisson.command.CommandAsyncService;
 import org.redisson.remote.RemoteServiceRequest;
 import org.redisson.remote.ResponseEntry;
 
@@ -33,9 +32,9 @@ import org.redisson.remote.ResponseEntry;
  */
 public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
-    public RedissonExecutorRemoteService(Codec codec, RedissonClient redisson, String name,
-            CommandExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, redisson, name, commandExecutor, executorId, responses);
+    public RedissonExecutorRemoteService(Codec codec, String name,
+            CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, name, commandExecutor, executorId, responses);
     }
 
     @Override
