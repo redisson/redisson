@@ -284,8 +284,10 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         return;
                     }
                     
-                    // reschedule itself
-                    renewExpiration();
+                    if (res) {
+                        // reschedule itself
+                        renewExpiration();
+                    }
                 });
             }
         }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
