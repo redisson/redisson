@@ -99,6 +99,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+                if (master.isEmpty()) {
+                    throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
+                }
+                
                 String masterHost = createAddress(master.get(0), master.get(1));
                 this.config.setMasterAddress(masterHost);
                 currentMaster.set(masterHost);

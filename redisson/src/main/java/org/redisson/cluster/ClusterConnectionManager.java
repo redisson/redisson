@@ -376,7 +376,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     for (ClusterNodeInfo clusterNodeInfo : nodes) {
                         nodesValue.append(clusterNodeInfo.getNodeInfo()).append("\n");
                     }
-                    log.debug("cluster nodes state from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
+                    log.debug("cluster nodes state got from {}:\n{}", connection.getRedisClient().getAddr(), nodesValue);
                 }
 
                 Collection<ClusterPartition> newPartitions = parsePartitions(nodes);

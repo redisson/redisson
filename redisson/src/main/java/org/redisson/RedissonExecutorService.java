@@ -321,10 +321,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public void execute(Runnable task) {
         check(task);
-        ClassBody classBody = getClassBody(task);
-        byte[] state = encode(task);
         RemotePromise<Void> promise = (RemotePromise<Void>) asyncServiceWithoutResult.executeRunnable(
-                                            new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+                                            createTaskParameters(task));
         syncExecute(promise);
     }
     
@@ -338,9 +336,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RemoteExecutorServiceAsync asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         for (Runnable task : tasks) {
             check(task);
-            ClassBody classBody = getClassBody(task);
-            byte[] state = encode(task);
-            asyncServiceWithoutResult.executeRunnable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+            asyncServiceWithoutResult.executeRunnable(createTaskParameters(task));
         }
         
         List<Boolean> result = (List<Boolean>) executorRemoteService.executeAdd();
@@ -567,9 +563,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public <T> RExecutorFuture<T> submitAsync(Callable<T> task) {
         check(task);
-        ClassBody classBody = getClassBody(task);
-        byte[] state = encode(task);
-        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(createTaskParameters(task));
         addListener(result);
         return createFuture(result);
     }
@@ -585,9 +579,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         for (Callable<?> task : tasks) {
             check(task);
-            ClassBody classBody = getClassBody(task);
-            byte[] state = encode(task);
-            RemotePromise<?> promise = (RemotePromise<?>) asyncService.executeCallable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+            RemotePromise<?> promise = (RemotePromise<?>) asyncService.executeCallable(createTaskParameters(task));
             RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise);
             result.add(executorFuture);
         }
@@ -599,7 +591,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         
         return new RedissonExecutorBatchFuture(result);
     }
+
+    protected TaskParameters createTaskParameters(Callable<?> task) {
+        ClassBody classBody = getClassBody(task);
+        byte[] state = encode(task);
+        return new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
+    }
     
+    protected TaskParameters createTaskParameters(Runnable task) {
+        ClassBody classBody = getClassBody(task);
+        byte[] state = encode(task);
+        return new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state);
+    }
+
     @Override
     public RExecutorBatchFuture submitAsync(Callable<?>...tasks) {
         if (tasks.length == 0) {
@@ -611,9 +615,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         List<RExecutorFuture<?>> result = new ArrayList<>();
         for (Callable<?> task : tasks) {
             check(task);
-            ClassBody classBody = getClassBody(task);
-            byte[] state = encode(task);
-            RemotePromise<?> promise = (RemotePromise<?>) asyncService.executeCallable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+            RemotePromise<?> promise = (RemotePromise<?>) asyncService.executeCallable(createTaskParameters(task));
             RedissonExecutorFuture<?> executorFuture = new RedissonExecutorFuture(promise);
             result.add(executorFuture);
         }
@@ -701,9 +703,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RemoteExecutorServiceAsync asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         for (Runnable task : tasks) {
             check(task);
-            ClassBody classBody = getClassBody(task);
-            byte[] state = encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeRunnable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+            RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeRunnable(createTaskParameters(task));
             RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise);
             result.add(executorFuture);
         }
@@ -727,9 +727,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         List<RExecutorFuture<?>> result = new ArrayList<>();
         for (Runnable task : tasks) {
             check(task);
-            ClassBody classBody = getClassBody(task);
-            byte[] state = encode(task);
-            RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeRunnable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+            RemotePromise<Void> promise = (RemotePromise<Void>) asyncService.executeRunnable(createTaskParameters(task));
             RedissonExecutorFuture<Void> executorFuture = new RedissonExecutorFuture<Void>(promise);
             result.add(executorFuture);
         }
@@ -767,9 +765,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     @Override
     public RExecutorFuture<?> submitAsync(Runnable task) {
         check(task);
-        ClassBody classBody = getClassBody(task);
-        byte[] state = encode(task);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(new TaskParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state));
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(createTaskParameters(task));
         addListener(result);
         return createFuture(result);
     }
