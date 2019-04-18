@@ -357,6 +357,7 @@
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
+                    <propertyExpansion>checkstyle.config.path=${basedir}</propertyExpansion>
                 </configuration>
                 <dependencies>
                     <dependency>
