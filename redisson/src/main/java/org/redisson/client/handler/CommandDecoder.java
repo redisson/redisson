@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.RedisAskException;
+import org.redisson.client.RedisAuthRequiredException;
 import org.redisson.client.RedisException;
 import org.redisson.client.RedisLoadingException;
 import org.redisson.client.RedisMovedException;
@@ -345,6 +346,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                         + ". channel: " + channel + " data: " + data));
             } else if (error.contains("-OOM ")) {
                 data.tryFailure(new RedisOutOfMemoryException(error.split("-OOM ")[1]
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("NOAUTH")) {
+                data.tryFailure(new RedisAuthRequiredException(error
                         + ". channel: " + channel + " data: " + data));
             } else {
                 if (data != null) {

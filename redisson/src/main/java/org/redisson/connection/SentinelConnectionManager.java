@@ -36,7 +36,9 @@ import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
+import org.redisson.client.RedisAuthRequiredException;
 import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.codec.StringCodec;
@@ -75,6 +77,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
 
+    private boolean usePassword = false;
+
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
         
@@ -89,6 +93,22 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         initTimer(this.config);
         
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
+        
+        for (URI addr : cfg.getSentinelAddresses()) {
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
+            try {
+                RedisConnection c = client.connect();
+                try {
+                    c.sync(RedisCommands.PING);
+                } catch (RedisAuthRequiredException e) {
+                    usePassword = true;
+                }
+                client.shutdown();
+                break;
+            } catch (Exception e) {
+                // skip
+            }
+        }
         
         for (URI addr : cfg.getSentinelAddresses()) {
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
@@ -185,6 +205,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
         
         scheduleSentinelDNSCheck();
+    }
+    
+    @Override
+    protected RedisClientConfig createRedisConfig(NodeType type, URI address, int timeout, int commandTimeout,
+            String sslHostname) {
+        RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
+        if (type == NodeType.SENTINEL && !usePassword) {
+            result.setPassword(null);
+        }
+        return result;
     }
 
     private void scheduleSentinelDNSCheck() {
