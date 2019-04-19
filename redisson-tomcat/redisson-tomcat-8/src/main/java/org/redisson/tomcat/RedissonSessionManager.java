@@ -232,7 +232,7 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-			Pipeline pipeline = getEngine().getPipeline();
+            Pipeline pipeline = getEngine().getPipeline();
             if (updateValve != null) { // in case startInternal is called without stopInternal cleaning the updateValve
                 pipeline.removeValve(updateValve);
             }
