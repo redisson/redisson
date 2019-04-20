@@ -43,7 +43,14 @@ public class UpdateValve extends ValveBase {
         try {
             getNext().invoke(request, response);
         } finally {
-            manager.store(request.getSession(false));
+            final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            try {
+                ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
+                Thread.currentThread().setContextClassLoader(applicationClassLoader);
+                manager.store(request.getSession(false));
+            } finally {
+                Thread.currentThread().setContextClassLoader(classLoader);
+            }
         }
     }
 
