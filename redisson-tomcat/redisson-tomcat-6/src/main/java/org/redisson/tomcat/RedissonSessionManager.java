@@ -28,6 +28,7 @@ import org.apache.catalina.Context;
 import org.apache.catalina.Lifecycle;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleListener;
+import org.apache.catalina.Pipeline;
 import org.apache.catalina.Session;
 import org.apache.catalina.SessionEvent;
 import org.apache.catalina.SessionListener;
@@ -68,6 +69,8 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     private boolean broadcastSessionEvents = false;
 
     private final String nodeId = UUID.randomUUID().toString();
+
+    private UpdateValve updateValve;
 
     public String getNodeId() { return nodeId; }
 
@@ -231,7 +234,9 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         redisson = buildClient();
         
         final ClassLoader applicationClassLoader;
-        if (Thread.currentThread().getContextClassLoader() != null) {
+        if (getContainer().getLoader().getClassLoader() != null) {
+            applicationClassLoader = getContainer().getLoader().getClassLoader();
+        } else if (Thread.currentThread().getContextClassLoader() != null) {
             applicationClassLoader = Thread.currentThread().getContextClassLoader();
         } else {
             applicationClassLoader = getClass().getClassLoader();
@@ -248,7 +253,12 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            getEngine().getPipeline().addValve(new UpdateValve(this));
+            Pipeline pipeline = getEngine().getPipeline();
+            if (updateValve != null) { // in case startInternal is called without stopInternal cleaning the updateValve
+                pipeline.removeValve(updateValve);
+            }
+            updateValve = new UpdateValve(this);
+            pipeline.addValve(updateValve);			
         }
         
         if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
@@ -330,6 +340,11 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     @Override
     public void stop() throws LifecycleException {
+        if (updateValve != null) {
+            getEngine().getPipeline().removeValve(updateValve);
+            updateValve = null;
+        }
+		
         try {
             shutdownRedisson();
         } catch (Exception e) {
