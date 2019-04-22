@@ -332,11 +332,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
 
-    Long getAccessTimeout() {
+    Long getAccessTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForAccess() == null) {
             return -1L;
         }
-        Long accessTimeout = config.getExpiryPolicy().getExpiryForAccess().getAdjustedTime(System.currentTimeMillis());
+        Long accessTimeout = config.getExpiryPolicy().getExpiryForAccess().getAdjustedTime(baseTime);
 
         if (config.getExpiryPolicy().getExpiryForAccess().isZero()) {
             accessTimeout = 0L;
@@ -346,6 +346,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return accessTimeout;
     }
 
+    Long getAccessTimeout() {
+        return getAccessTimeout(System.currentTimeMillis());
+    }
+    
     V load(K key) {
         RLock lock = getLockedLock(key);
         try {
@@ -484,7 +488,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
 
-    private boolean putValue(K key, Object value) {
+    boolean putValue(K key, Object value) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         Long creationTimeout = getCreationTimeout();
         Long updateTimeout = getUpdateTimeout();
@@ -546,12 +550,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return (Long) res.get(0) == 1;
     }
 
-    private Long getUpdateTimeout() {
+    Long getUpdateTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForUpdate() == null) {
             return -1L;
         }
         
-        Long updateTimeout = config.getExpiryPolicy().getExpiryForUpdate().getAdjustedTime(System.currentTimeMillis());
+        Long updateTimeout = config.getExpiryPolicy().getExpiryForUpdate().getAdjustedTime(baseTime);
         if (config.getExpiryPolicy().getExpiryForUpdate().isZero()) {
             updateTimeout = 0L;
         } else if (updateTimeout.longValue() == Long.MAX_VALUE) {
@@ -559,12 +563,16 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         return updateTimeout;
     }
+    
+    Long getUpdateTimeout() {
+        return getUpdateTimeout(System.currentTimeMillis());
+    }
 
-    private Long getCreationTimeout() {
+    Long getCreationTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForCreation() == null) {
             return -1L;
         }
-        Long creationTimeout = config.getExpiryPolicy().getExpiryForCreation().getAdjustedTime(System.currentTimeMillis());
+        Long creationTimeout = config.getExpiryPolicy().getExpiryForCreation().getAdjustedTime(baseTime);
         if (config.getExpiryPolicy().getExpiryForCreation().isZero()) {
             creationTimeout = 0L;
         } else if (creationTimeout.longValue() == Long.MAX_VALUE) {
@@ -573,7 +581,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return creationTimeout;
     }
     
-    private boolean putIfAbsentValue(K key, Object value) {
+    Long getCreationTimeout() {
+        return getCreationTimeout(System.currentTimeMillis());
+    }
+    
+    boolean putIfAbsentValue(K key, Object value) {
         Long creationTimeout = getCreationTimeout();
         if (creationTimeout == 0) {
             return false;
@@ -901,7 +913,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                     return;
                 }
                 
-                if (Long.valueOf(1).equals(added)) {
+                if (added >= 1) {
                     try {
                         cacheWriter.write(new JCacheEntry<K, V>(key, value));
                     } catch (CacheWriterException e) {
@@ -949,13 +961,24 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
     }
     
-    private long removeValues(Object... keys) {
+    long removeValues(Object... keys) {
         List<Object> params = new ArrayList<Object>(keys.length);
         encodeMapKeys(params, Arrays.asList(keys));
         return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
-                  "redis.call('zrem', KEYS[2], unpack(ARGV)); "
-                + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), params.toArray());
+                  "local counter = 0;"
+                + "for i=1, #ARGV do "
+                      + "local value = redis.call('hget', KEYS[1], ARGV[i]); "
+                      + "if value ~= false then "
+                          + "redis.call('hdel', KEYS[1], ARGV[i]); "
+                          + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                          + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value)); "
+                          + "redis.call('publish', KEYS[3], msg); "
+                          + "counter = counter + 1;"
+                      + "end;"
+                + "end; "
+                + "return counter;",
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getRemovedSyncChannelName()), 
+                params.toArray());
     }
 
     private List<Object> getAndPutValueLocked(K key, V value) {
@@ -1026,7 +1049,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return result;
     }
     
-    private List<Object> getAndPutValue(K key, V value) {
+    List<Object> getAndPutValue(K key, V value) {
         Long creationTimeout = getCreationTimeout();
         
         Long updateTimeout = getUpdateTimeout();
@@ -1125,7 +1148,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                     return (V) result.get(1);
                 }
                 
-                if (Long.valueOf(1).equals(added)) {
+                if (added >= 1) {
                     try {
                         cacheWriter.write(new JCacheEntry<K, V>(key, value));
                     } catch (CacheWriterException e) {
@@ -1223,7 +1246,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                     continue;
                 }
                 
-                if (Long.valueOf(1).equals(added)) {
+                if (added >= 1) {
                     addedEntries.put(key, new JCacheEntry<K, V>(key, value));
                 } else {
                     V val = null;
@@ -1354,7 +1377,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private boolean removeValue(K key) {
+    boolean removeValue(K key) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         
         List<Object> res = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
@@ -1484,7 +1507,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return result;
     }
     
-    private boolean removeValue(K key, V value) {
+    boolean removeValue(K key, V value) {
         Long accessTimeout = getAccessTimeout();
         
         return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -1587,7 +1610,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
 
-    private V getAndRemoveValue(K key) {
+    V getAndRemoveValue(K key) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
@@ -1767,7 +1790,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     
-    private long replaceValue(K key, V oldValue, V newValue) {
+    long replaceValue(K key, V oldValue, V newValue) {
         Long accessTimeout = getAccessTimeout();
         
         Long updateTimeout = getUpdateTimeout();
@@ -1813,7 +1836,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                   + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(value), value); "
                   + "redis.call('publish', KEYS[3], msg); "                  
               + "elseif ARGV[1] ~= '-1' then " 
-                  + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
+                  + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[4]); "
                   + "return 0;"
               + "end; "
               + "return -1; ",
@@ -1939,7 +1962,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     
-    private boolean replaceValue(K key, V value) {
+    boolean replaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
         return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -1979,7 +2002,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
     }
     
-    private V getAndReplaceValue(K key, V value) {
+    V getAndReplaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
         return evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
