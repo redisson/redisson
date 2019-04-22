@@ -85,10 +85,10 @@ import io.netty.buffer.ByteBuf;
  */
 public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
-    private final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
+    final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
     
-    private final JCacheManager cacheManager;
-    private final JCacheConfiguration<K, V> config;
+    final JCacheManager cacheManager;
+    final JCacheConfiguration<K, V> config;
     private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = 
                                         new ConcurrentHashMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>>();
     private final Redisson redisson;
@@ -133,7 +133,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private void checkNotClosed() {
+    void checkNotClosed() {
         if (closed) {
             throw new IllegalStateException();
         }
@@ -175,19 +175,24 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return "jcache_removed_channel:{" + getName() + "}";
     }
 
-    private long currentNanoTime() {
+    long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
             return System.nanoTime();
         }
         return 0;
     }
 
-    @Override
-    public V get(K key) {
-        checkNotClosed();
+    protected void checkKey(Object key) {
         if (key == null) {
             throw new NullPointerException();
         }
+    }
+    
+    @Override
+    public V get(K key) {
+        checkNotClosed();
+        checkKey(key);
+
         long startTime = currentNanoTime();
         RLock lock = getLockedLock(key);
         try {
@@ -270,7 +275,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
 
-    private V getValue(K key) {
+    V getValue(K key) {
         Long accessTimeout = getAccessTimeout();
         
         if (accessTimeout == -1) {
@@ -327,7 +332,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
 
-    private Long getAccessTimeout() {
+    Long getAccessTimeout() {
         if (config.getExpiryPolicy().getExpiryForAccess() == null) {
             return -1L;
         }
@@ -359,7 +364,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
 
-    private V loadValue(K key) {
+    V loadValue(K key) {
         V value = null;
         try {
             value = cacheLoader.load(key);
@@ -387,7 +392,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+    <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);
@@ -396,7 +401,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+    <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalReadAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);
@@ -638,13 +643,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             throw new NullPointerException();
         }
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
 
         long startTime = currentNanoTime();
-        if (!config.isReadThrough()) {
+        if (!atomicExecution && !config.isReadThrough()) {
             boolean exists = false;
             for (K key : keys) {
                 if (containsKey(key)) {
@@ -772,9 +775,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean containsKey(K key) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         return evalRead(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
@@ -803,9 +804,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
 
         if (cacheLoader == null) {
@@ -856,7 +855,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         });
     }
     
-    private RLock getLockedLock(K key) {
+    RLock getLockedLock(K key) {
         if (atomicExecution) {
             return DUMMY_LOCK;
         }
@@ -875,9 +874,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public void put(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -1097,9 +1094,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public V getAndPut(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -1198,9 +1193,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
         for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
             K key = entry.getKey();
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
             V value = entry.getValue();
             if (value == null) {
                 throw new NullPointerException();
@@ -1309,9 +1302,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean putIfAbsent(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -1403,9 +1394,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean remove(K key) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         long startTime = System.currentTimeMillis();
         if (config.isWriteThrough()) {
@@ -1539,9 +1528,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean remove(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -1642,9 +1629,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public V getAndRemove(K key) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         long startTime = currentNanoTime();
         if (config.isWriteThrough()) {
@@ -1840,9 +1825,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (oldValue == null) {
             throw new NullPointerException();
         }
@@ -2096,9 +2079,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public boolean replace(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -2159,9 +2140,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public V getAndReplace(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
@@ -2227,9 +2206,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         Map<K, V> deletedKeys = new HashMap<K, V>();
         
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
         
         List<RLock> lockedLocks = new ArrayList<RLock>();
@@ -2356,9 +2333,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
             throws EntryProcessorException {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (entryProcessor == null) {
             throw new NullPointerException();
         }
