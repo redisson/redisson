@@ -37,6 +37,7 @@ import org.redisson.pubsub.PublishSubscribeService;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.Future;
 
 /**
  *
@@ -109,6 +110,6 @@ public interface ConnectionManager {
 
     InfinitySemaphoreLatch getShutdownLatch();
     
-    RFuture<Boolean> getShutdownPromise();
+    Future<Void> getShutdownPromise();
 
 }

@@ -73,6 +73,9 @@ import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.ImmediateEventExecutor;
+import io.netty.util.concurrent.Promise;
 import io.netty.util.internal.PlatformDependent;
 
 /**
@@ -132,7 +135,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
     private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
 
-    private final RPromise<Boolean> shutdownPromise;
+    private final Promise<Void> shutdownPromise = ImmediateEventExecutor.INSTANCE.newPromise();
 
     private final InfinitySemaphoreLatch shutdownLatch = new InfinitySemaphoreLatch();
 
@@ -217,7 +220,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         this.cfg = cfg;
         this.codec = cfg.getCodec();
-        this.shutdownPromise = new RedissonPromise<Boolean>();
         this.commandExecutor = new CommandSyncService(this);
     }
     
@@ -651,7 +653,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         timer.stop();
         shutdownLatch.close();
-        shutdownPromise.trySuccess(true);
+        shutdownPromise.trySuccess(null);
         shutdownLatch.awaitUninterruptibly();
         
         if (cfg.getEventLoopGroup() == null) {
@@ -691,7 +693,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     @Override
-    public RFuture<Boolean> getShutdownPromise() {
+    public Future<Void> getShutdownPromise() {
         return shutdownPromise;
     }
 
