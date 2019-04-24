@@ -98,7 +98,13 @@
         <dependency>
            <groupId>org.jmockit</groupId>
            <artifactId>jmockit</artifactId>
-           <version>1.41</version>
+           <version>1.46</version>
+           <scope>test</scope>
+        </dependency>
+        <dependency>
+           <groupId>org.jooq</groupId>
+           <artifactId>joor-java-8</artifactId>
+           <version>0.9.11</version>
            <scope>test</scope>
         </dependency>
         <dependency>
