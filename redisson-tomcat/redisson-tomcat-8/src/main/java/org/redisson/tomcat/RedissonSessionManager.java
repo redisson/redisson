@@ -159,13 +159,21 @@ public class RedissonSessionManager extends ManagerBase {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
-                Map<String, Object> attrs = new HashMap<String, Object>();
+                Map<String, Object> attrs = null;
                 try {
-                    attrs = getMap(id).getAll(RedissonSession.ATTRS);
+                    RMap map = getMap(id);
+                    if (map.isExists()) {
+                        attrs = map.getAll(RedissonSession.ATTRS);
+                    }
                 } catch (Exception e) {
                     log.error("Can't read session object by id: " + id, e);
                 }
-                
+
+                if (attrs == null) {	
+                    log.info("Session " + id + " can't be found");
+                    return null;	
+                }
+
                 RedissonSession session = (RedissonSession) createEmptySession();
                 session.load(attrs);
                 session.setId(id);
