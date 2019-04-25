@@ -51,7 +51,7 @@ public class CompositeCodec implements Codec {
     
     @Override
     public Decoder<Object> getMapValueDecoder() {
-        return mapValueCodec.getMapKeyDecoder();
+        return mapValueCodec.getMapValueDecoder();
     }
 
     @Override
