@@ -326,7 +326,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     }
                 } else if (rObject instanceof Map) {
                     Map<Object, Object> rMap = (Map<Object, Object>) rObject;
-                    Map<?, ?> map = (Map<?, ?>) rObject;
+                    Map<?, ?> map = (Map<?, ?>) object;
                     for (Entry<?, ?> entry : map.entrySet()) {
                         Object key = entry.getKey();
                         Object value = entry.getValue();
