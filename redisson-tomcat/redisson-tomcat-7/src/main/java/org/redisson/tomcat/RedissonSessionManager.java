@@ -166,6 +166,11 @@ public class RedissonSessionManager extends ManagerBase {
                 } catch (Exception e) {
                     log.error("Can't read session object by id: " + id, e);
                 }
+
+                if (attrs.isEmpty()) {	
+                    log.info("Session " + id + " can't be found");
+                    return null;	
+                }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
                 session.load(attrs);
