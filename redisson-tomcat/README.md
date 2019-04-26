@@ -21,7 +21,8 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
-	         configPath="${catalina.base}/redisson.conf" readMode="REDIS" updateMode="DEFAULT"/>
+	 configPath="${catalina.base}/redisson.conf" 
+	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"/>
    ```
    `readMode` - read Session attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
