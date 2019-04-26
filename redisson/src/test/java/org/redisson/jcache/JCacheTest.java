@@ -34,7 +34,6 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.client.codec.JsonJacksonMapCodec;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
@@ -44,6 +43,38 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JCacheTest extends BaseTest {
 
+    @Test
+    public void testPutAll() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+        
+        Map<String, String> map = new HashMap<>();
+        for (int i = 0; i < 10000; i++) {
+            map.put("" + i, "" + i);
+        }
+        
+        long start = System.currentTimeMillis();
+        cache.putAll(map);
+        System.out.println(System.currentTimeMillis() - start);
+        
+        for (int i = 0; i < 10000; i++) {
+            assertThat(cache.containsKey("" + i)).isTrue();
+        }
+        
+        cache.close();
+        runner.stop();
+    }
+    
     @Test
     public void testRemoveAll() throws Exception {
         RedisProcess runner = new RedisRunner()

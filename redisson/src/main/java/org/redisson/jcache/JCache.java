@@ -488,6 +488,66 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
 
+    long putAllValues(Map<? extends K, ? extends V> map) {
+        Long creationTimeout = getCreationTimeout();
+        Long updateTimeout = getUpdateTimeout();
+
+        List<Object> params = new ArrayList<>();
+        params.add(creationTimeout);
+        params.add(updateTimeout);
+        params.add(System.currentTimeMillis());
+        
+        for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
+            params.add(encodeMapKey(entry.getKey()));
+            params.add(encodeMapValue(entry.getValue()));
+        }
+        
+        return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
+              "local added = 0; "
+            + "for i = 4, #ARGV, 2 do "
+              + "if redis.call('hexists', KEYS[1], ARGV[i]) == 1 then "
+                + "if ARGV[2] == '0' then "
+                    + "redis.call('hdel', KEYS[1], ARGV[i]); "
+                    + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                    + "local value = redis.call('hget', KEYS[1], ARGV[i]);"
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value)); "
+                    + "redis.call('publish', KEYS[4], msg); "
+                + "elseif ARGV[2] ~= '-1' then "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[i]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "                      
+                    + "redis.call('publish', KEYS[5], msg); "
+                    + "added = added + 1;"
+                + "else "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[5], msg); "
+                    + "added = added + 1;"
+                + "end; "
+            + "else "
+                + "if ARGV[1] == '0' then "
+                    + "return {0};"
+                + "elseif ARGV[1] ~= '-1' then "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[i]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[3], msg); "
+                    + "added = added + 1;"
+                + "else "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[3], msg); "
+                    + "added = added + 1;"
+                + "end; "
+            + "end; "
+          + "end; "
+          + "return added;",
+             Arrays.<Object>asList(getName(), getTimeoutSetName(), getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(),
+                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     params.toArray());
+        
+    }
+    
     boolean putValue(K key, Object value) {
         double syncId = ThreadLocalRandom.current().nextDouble();
         Long creationTimeout = getCreationTimeout();
@@ -1258,13 +1318,17 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 }
                 cacheManager.getStatBean(this).addPuts(1);
                 waitSync(result);
+                
+                cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
             } else {
-                boolean result = putValue(key, value);
-                if (result) {
-                    cacheManager.getStatBean(this).addPuts(1);
+                if (!atomicExecution) {
+                    boolean result = putValue(key, value);
+                    if (result) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                    }
+                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
                 }
             }
-            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
         }
         
         if (config.isWriteThrough()) {
@@ -1300,6 +1364,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 for (RLock lock : lockedLocks) {
                     lock.unlock();
                 }
+            }
+        } else {
+            if (atomicExecution) {
+                long startTime = currentNanoTime();
+                long result = putAllValues(map);
+                cacheManager.getStatBean(this).addPuts(result);
+                cacheManager.getStatBean(this).addPutTime((currentNanoTime() - startTime) / result);
             }
         }
     }
