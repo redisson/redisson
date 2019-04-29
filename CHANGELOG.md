@@ -5,7 +5,7 @@ Redisson Releases History
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
 ### 29-Apr-2019 - versions 3.10.7 released  
-Feature - Add support for Reactive and RxJava2 interfaces for RemoteService object  
+Feature - Add support for Reactive and RxJava2 interfaces to RemoteService object  
 Feature - MILLISECONDS option added to RRateLimiter.RateIntervalUnit object  
 Feature - range method added to RList, RListReactive and RListRx interfaces  
 Improvement - `JCache.getAll` execution optimization for non-existing keys  
