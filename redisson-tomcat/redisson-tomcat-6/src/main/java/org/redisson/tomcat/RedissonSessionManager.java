@@ -72,6 +72,8 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     private UpdateValve updateValve;
 
+    private Codec codecToUse;
+
     public String getNodeId() { return nodeId; }
 
     public String getUpdateMode() {
@@ -167,7 +169,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     public RMap<String, Object> getMap(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
-        return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, codecToUse, codecToUse));
     }
 
     public RTopic getTopic() {
@@ -248,7 +250,6 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         }
         
         Codec codec = redisson.getConfig().getCodec();
-        Codec codecToUse;
         try {
             codecToUse = codec.getClass()
                     .getConstructor(ClassLoader.class, codec.getClass())
@@ -349,7 +350,9 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             getEngine().getPipeline().removeValve(updateValve);
             updateValve = null;
         }
-		
+
+        codecToUse = null;
+
         try {
             shutdownRedisson();
         } catch (Exception e) {
