@@ -236,6 +236,20 @@ public class RedissonListMultimapTest extends BaseTest {
     }
 
     @Test
+    public void testRange() {
+        RListMultimap<Integer, Integer> map = redisson.getListMultimap("test1");
+        map.put(1, 1);
+        map.put(1, 2);
+        map.put(1, 3);
+        map.put(1, 4);
+        map.put(1, 5);
+
+        assertThat(map.get(1).range(1)).containsExactly(1, 2);
+        assertThat(map.get(1).range(1, 3)).containsExactly(2, 3, 4);
+    }
+
+    
+    @Test
     public void testRemove() {
         RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));

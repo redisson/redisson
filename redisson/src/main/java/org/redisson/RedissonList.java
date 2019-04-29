@@ -915,4 +915,24 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, params.toArray());
     }
 
+    @Override
+    public RFuture<List<V>> rangeAsync(int toIndex) {
+        return rangeAsync(0, toIndex);
+    }
+
+    @Override
+    public RFuture<List<V>> rangeAsync(int fromIndex, int toIndex) {
+        return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), fromIndex, toIndex);
+    }
+
+    @Override
+    public List<V> range(int toIndex) {
+        return get(rangeAsync(toIndex));
+    }
+
+    @Override
+    public List<V> range(int fromIndex, int toIndex) {
+        return get(rangeAsync(fromIndex, toIndex));
+    }
+
 }

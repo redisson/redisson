@@ -93,6 +93,25 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
     void trim(int fromIndex, int toIndex);
 
     /**
+     * Returns range of values from 0 index to <code>toIndex</code>. Indexes are zero based. 
+     * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param toIndex - end index
+     * @return
+     */
+    List<V> range(int toIndex);
+    
+    /**
+     * Returns range of values from <code>fromIndex</code> to <code>toIndex</code> index including.
+     * Indexes are zero based. <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param fromIndex - start index
+     * @param toIndex - end index
+     * @return
+     */
+    List<V> range(int fromIndex, int toIndex);
+    
+    /**
      * Remove object by specified index
      * 
      * @param index - index of object

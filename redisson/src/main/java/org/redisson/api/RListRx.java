@@ -164,5 +164,24 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * @return void
      */
     Completable fastRemove(int index);
+
+    /**
+     * Returns range of values from 0 index to <code>toIndex</code>. Indexes are zero based. 
+     * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param toIndex - end index
+     * @return
+     */
+    Single<List<V>> range(int toIndex);
+    
+    /**
+     * Returns range of values from <code>fromIndex</code> to <code>toIndex</code> index including.
+     * Indexes are zero based. <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param fromIndex - start index
+     * @param toIndex - end index
+     * @return
+     */
+    Single<List<V>> range(int fromIndex, int toIndex);
     
 }
