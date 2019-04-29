@@ -25,9 +25,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
+import org.redisson.RedissonBlockingQueue;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -54,19 +54,17 @@ public abstract class BaseRemoteProxy {
     private final String name;
     final String responseQueueName;
     private final ConcurrentMap<String, ResponseEntry> responses;
-    final RedissonClient redisson;
     final Codec codec;
     final String executorId;
     final BaseRemoteService remoteService;
     
     BaseRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, RedissonClient redisson, Codec codec, String executorId, BaseRemoteService remoteService) {
+            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService) {
         super();
         this.commandExecutor = commandExecutor;
         this.name = name;
         this.responseQueueName = responseQueueName;
         this.responses = responses;
-        this.redisson = redisson;
         this.codec = codec;
         this.executorId = executorId;
         this.remoteService = remoteService;
@@ -203,12 +201,16 @@ public abstract class BaseRemoteProxy {
         return responseFuture;
     }
 
+    private <V> RBlockingQueue<V> getBlockingQueue(String name, Codec codec) {
+        return new RedissonBlockingQueue<V>(codec, commandExecutor, name, null);
+    }
+    
     private void pollResponse(ResponseEntry ent) {
         if (!ent.getStarted().compareAndSet(false, true)) {
             return;
         }
         
-        RBlockingQueue<RRemoteServiceResponse> queue = redisson.getBlockingQueue(responseQueueName, codec);
+        RBlockingQueue<RRemoteServiceResponse> queue = getBlockingQueue(responseQueueName, codec);
         RFuture<RRemoteServiceResponse> future = queue.takeAsync();
         future.onComplete(createResponseListener());
     }
@@ -230,7 +232,7 @@ public abstract class BaseRemoteProxy {
                 RequestId key = new RequestId(response.getId());
                 List<Result> list = entry.getResponses().get(key);
                 if (list == null) {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
+                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
                     responseQueue.takeAsync().onComplete(createResponseListener());
                     return;
                 }
@@ -246,7 +248,7 @@ public abstract class BaseRemoteProxy {
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);
                 } else {
-                    RBlockingQueue<RRemoteServiceResponse> responseQueue = redisson.getBlockingQueue(responseQueueName, codec);
+                    RBlockingQueue<RRemoteServiceResponse> responseQueue = getBlockingQueue(responseQueueName, codec);
                     responseQueue.takeAsync().onComplete(createResponseListener());
                 }
             }

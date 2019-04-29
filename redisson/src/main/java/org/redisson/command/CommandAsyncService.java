@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -88,6 +87,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
+import io.netty.util.concurrent.FutureListener;
 
 /**
  *
@@ -697,7 +697,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getConnectionFuture().cancel(false)) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and 'connection pool' settings or set decodeInExecutor = true and increase 'threads' setting"
+                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and/or connection pool size settings"
                                     + "Node source: " + source
                                     + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + details.getAttempt() + " retry attempts"));
@@ -708,7 +708,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                                 if (details.getWriteFuture() != null && details.getWriteFuture().cancel(false)) {
                                     if (details.getException() == null) {
-                                        details.setException(new RedisTimeoutException("Unable to send command! "
+                                        details.setException(new RedisTimeoutException("Unable to send command! Try to increase 'nettyThreads' and/or connection pool size settings "
                                                     + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow()
                                                     + ", current command in queue: " + details.getConnectionFuture().getNow().getCurrentCommand() 
                                                     + ", command: " + LogHelper.toString(command, details.getParams())
@@ -740,7 +740,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to send command! Node source: " + source 
+                        details.setException(new RedisTimeoutException("Unable to send command! Try to increase 'nettyThreads' and/or connection pool size settings. Node source: " + source 
                                     + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
@@ -941,15 +941,8 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     private <R, V> void handleBlockingOperations(AsyncDetails<V, R> details, RedisConnection connection, Long popTimeout) {
-        AtomicBoolean skip = new AtomicBoolean();
-        BiConsumer<Boolean, Throwable> listener = new BiConsumer<Boolean, Throwable>() {
-            @Override
-            public void accept(Boolean t, Throwable u) {
-                if (skip.get()) {
-                    return;
-                }
-                details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
-            }
+        FutureListener<Void> listener = f -> {
+            details.getMainPromise().tryFailure(new RedissonShutdownException("Redisson is shutdown"));
         };
 
         Timeout scheduledFuture;
@@ -973,7 +966,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             }
 
             synchronized (listener) {
-                skip.set(true);
+                connectionManager.getShutdownPromise().removeListener(listener);
             }
 
             // handling cancel operation for blocking commands
@@ -992,7 +985,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         synchronized (listener) {
             if (!details.getMainPromise().isDone()) {
-                connectionManager.getShutdownPromise().onComplete(listener);
+                connectionManager.getShutdownPromise().addListener(listener);
             }
         }
     }

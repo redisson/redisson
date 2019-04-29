@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.assertj.core.api.Assertions;
 import org.junit.Test;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
@@ -25,6 +27,15 @@ public class RedissonRateLimiterTest extends BaseTest {
         assertThat(rr.getConfig().getRate()).isEqualTo(1);
         assertThat(rr.getConfig().getRateInterval()).isEqualTo(5000);
         assertThat(rr.getConfig().getRateType()).isEqualTo(RateType.OVERALL);
+    }
+    
+    @Test
+    public void testPermitsExceeding() throws InterruptedException {
+        RRateLimiter limiter = redisson.getRateLimiter("myLimiter");
+        limiter.trySetRate(RateType.PER_CLIENT, 1, 1, RateIntervalUnit.SECONDS);
+        
+        Assertions.assertThatThrownBy(() -> limiter.tryAcquire(20)).hasMessageContaining("Requested permits amount could not exceed defined rate");
+        assertThat(limiter.tryAcquire()).isTrue();
     }
     
     @Test(timeout = 1500)

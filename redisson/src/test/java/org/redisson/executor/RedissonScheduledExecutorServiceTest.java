@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.joor.Reflect;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -105,7 +106,8 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(f.isSuccess()).isTrue();
         assertThat(System.currentTimeMillis() - start).isBetween(11000L, 11500L);
         
-        Deencapsulation.setField(RedissonExecutorService.class, "RESULT_OPTIONS", RemoteInvocationOptions.defaults().noAck().expectResultWithin(3, TimeUnit.SECONDS));
+        Reflect.onClass(RedissonExecutorService.class).set("RESULT_OPTIONS", RemoteInvocationOptions.defaults().noAck().expectResultWithin(3, TimeUnit.SECONDS));
+    
         executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(5, TimeUnit.SECONDS));
         start = System.currentTimeMillis();
         RScheduledFuture<?> f1 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);

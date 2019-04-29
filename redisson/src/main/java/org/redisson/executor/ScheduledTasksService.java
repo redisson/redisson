@@ -21,7 +21,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -41,8 +40,8 @@ public class ScheduledTasksService extends TasksService {
 
     private RequestId requestId;
     
-    public ScheduledTasksService(Codec codec, RedissonClient redisson, String name, CommandExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, redisson, name, commandExecutor, redissonId, responses);
+    public ScheduledTasksService(Codec codec, String name, CommandExecutor commandExecutor, String redissonId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, name, commandExecutor, redissonId, responses);
     }
     
     public void setRequestId(RequestId requestId) {

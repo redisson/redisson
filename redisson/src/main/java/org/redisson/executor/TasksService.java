@@ -22,12 +22,10 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.RPromise;
@@ -55,8 +53,8 @@ public class TasksService extends BaseRemoteService {
     protected String tasksRetryIntervalName;
     protected long tasksRetryInterval;
     
-    public TasksService(Codec codec, RedissonClient redisson, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
-        super(codec, redisson, name, commandExecutor, executorId, responses);
+    public TasksService(Codec codec, String name, CommandAsyncExecutor commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
+        super(codec, name, commandExecutor, executorId, responses);
     }
     
     public void setTasksRetryIntervalName(String tasksRetryIntervalName) {
@@ -194,7 +192,7 @@ public class TasksService extends BaseRemoteService {
                 return;
             }
             
-            RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
+            RMap<String, RemoteServiceCancelRequest> canceledRequests = getMap(cancelRequestMapName);
             canceledRequests.putAsync(requestId.toString(), new RemoteServiceCancelRequest(true, true));
             canceledRequests.expireAsync(60, TimeUnit.SECONDS);
             

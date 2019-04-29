@@ -23,13 +23,16 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonListMultimapCache;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonTopic;
+import org.redisson.RedissonLocalCachedMap.CacheValue;
 import org.redisson.api.LocalCachedMapOptions;
+import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.RFuture;
@@ -70,7 +73,7 @@ public abstract class LocalCacheListener {
     private CommandAsyncExecutor commandExecutor;
     private Cache<?, ?> cache;
     private RObject object;
-    private byte[] instanceId;
+    private byte[] instanceId = new byte[16];
     private Codec codec;
     private LocalCachedMapOptions<?, ?> options;
     
@@ -80,24 +83,48 @@ public abstract class LocalCacheListener {
     private int syncListenerId;
     private int reconnectionListenerId;
     
-    public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor, Cache<?, ?> cache,
-            RObject object, byte[] instanceId, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
+    public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor,
+            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
         super();
         this.name = name;
         this.commandExecutor = commandExecutor;
-        this.cache = cache;
         this.object = object;
-        this.instanceId = instanceId;
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
     }
-
+    
+    public byte[] generateId() {
+        ThreadLocalRandom.current().nextBytes(instanceId);
+        return instanceId;
+    }
+    
+    public Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+        if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
+            return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LRU) {
+            return new LRUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
+            return new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
+            return ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.WEAK) {
+            return ReferenceCacheMap.weak(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
+    }
+    
     public boolean isDisabled(Object key) {
         return disabledKeys.containsKey(key);
     }
     
-    public void add() {
+    public void add(Cache<?, ?> cache) {
+        this.cache = cache;
+        
         invalidationTopic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {

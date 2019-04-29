@@ -19,14 +19,17 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.RedissonBucket;
+import org.redisson.RedissonList;
+import org.redisson.RedissonMap;
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RMap;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
@@ -48,13 +51,40 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     protected final String cancelRequestMapName;
     
     public AsyncRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, RedissonClient redisson, Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
-        super(commandExecutor, name, responseQueueName, responses, redisson, codec, executorId, remoteService);
+            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, String cancelRequestMapName, BaseRemoteService remoteService) {
+        super(commandExecutor, name, responseQueueName, responses, codec, executorId, remoteService);
         this.cancelRequestMapName = cancelRequestMapName;
+    }
+    
+    protected List<Class<?>> permittedClasses() {
+        return Arrays.asList(RFuture.class);
     }
     
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options,
             Class<?> syncInterface) {
+        for (Method m : remoteInterface.getMethods()) {
+            try {
+                syncInterface.getMethod(m.getName(), m.getParameterTypes());
+            } catch (NoSuchMethodException e) {
+                throw new IllegalArgumentException("Method '" + m.getName() + "' with params '"
+                        + Arrays.toString(m.getParameterTypes()) + "' isn't defined in " + syncInterface);
+            } catch (SecurityException e) {
+                throw new IllegalArgumentException(e);
+            }
+            
+            boolean permitted = false;
+            for (Class<?> clazz : permittedClasses()) {
+                if (clazz.isAssignableFrom(m.getReturnType())) {
+                    permitted = true;
+                    break;
+                }
+            }
+            if (!permitted) {
+                throw new IllegalArgumentException(
+                        m.getReturnType().getClass() + " isn't allowed as return type");
+            }
+        }
+        
         // local copy of the options, to prevent mutation
         RemoteInvocationOptions optionsCopy = new RemoteInvocationOptions(options);
         InvocationHandler handler = new InvocationHandler() {
@@ -165,16 +195,20 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                                 }
                         });
 
-                return result;
+                return convertResult(result, method.getReturnType());
             }
 
         };
         return (T) Proxy.newProxyInstance(remoteInterface.getClassLoader(), new Class[] { remoteInterface }, handler);
     }
+
+    protected Object convertResult(RemotePromise<Object> result, Class<?> returnType) {
+        return result;
+    }
     
     private void awaitResultAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> result,
             String ackName, RFuture<RRemoteServiceResponse> responseFuture) {
-        RFuture<Boolean> deleteFuture = redisson.getBucket(ackName).deleteAsync();
+        RFuture<Boolean> deleteFuture = new RedissonBucket<>(commandExecutor, ackName).deleteAsync();
         deleteFuture.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
@@ -252,7 +286,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     
                     boolean ackNotSent = commandExecutor.get(future);
                     if (ackNotSent) {
-                        RList<Object> list = redisson.getList(requestQueueName, LongCodec.INSTANCE);
+                        RList<Object> list = new RedissonList<>(LongCodec.INSTANCE, commandExecutor, requestQueueName, null);
                         list.remove(requestId.toString());
                         super.cancel(mayInterruptIfRunning);
                         return true;
@@ -294,7 +328,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
     
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
             boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise) {
-        RMap<String, RemoteServiceCancelRequest> canceledRequests = redisson.getMap(cancelRequestMapName, new CompositeCodec(StringCodec.INSTANCE, codec, codec));
+        RMap<String, RemoteServiceCancelRequest> canceledRequests = new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, cancelRequestMapName, null, null, null);
         canceledRequests.fastPutAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);
         

@@ -15,6 +15,9 @@
  */
 package org.redisson;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.redisson.api.BatchOptions;
 import org.redisson.api.ClusterNode;
 import org.redisson.api.MapOptions;
@@ -43,6 +46,7 @@ import org.redisson.api.RPermitExpirableSemaphoreRx;
 import org.redisson.api.RQueueRx;
 import org.redisson.api.RRateLimiterRx;
 import org.redisson.api.RReadWriteLockRx;
+import org.redisson.api.RRemoteService;
 import org.redisson.api.RScoredSortedSetRx;
 import org.redisson.api.RScriptRx;
 import org.redisson.api.RSemaphoreRx;
@@ -61,6 +65,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
+import org.redisson.remote.ResponseEntry;
 import org.redisson.rx.CommandRxExecutor;
 import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RedissonBatchRx;
@@ -96,6 +101,8 @@ public class RedissonRx implements RedissonRxClient {
     protected final ConnectionManager connectionManager;
     protected final Config config;
 
+    protected final ConcurrentMap<String, ResponseEntry> responses = new ConcurrentHashMap<>();
+    
     protected RedissonRx(Config config) {
         this.config = config;
         Config configCopy = new Config(config);
@@ -375,6 +382,32 @@ public class RedissonRx implements RedissonRxClient {
     @Override
     public RAtomicDoubleRx getAtomicDouble(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonAtomicDouble(commandExecutor, name), RAtomicDoubleRx.class);
+    }
+    
+    @Override
+    public RRemoteService getRemoteService() {
+        return getRemoteService("redisson_rs", connectionManager.getCodec());
+    }
+
+    @Override
+    public RRemoteService getRemoteService(String name) {
+        return getRemoteService(name, connectionManager.getCodec());
+    }
+
+    @Override
+    public RRemoteService getRemoteService(Codec codec) {
+        return getRemoteService("redisson_rs", codec);
+    }
+
+    @Override
+    public RRemoteService getRemoteService(String name, Codec codec) {
+        String executorId;
+        if (codec == connectionManager.getCodec()) {
+            executorId = connectionManager.getId().toString();
+        } else {
+            executorId = connectionManager.getId() + ":" + name;
+        }
+        return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
     }
 
     @Override

@@ -22,12 +22,21 @@ import org.junit.Test;
 import org.redisson.api.RFuture;
 import org.redisson.api.RRemoteService;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.RedissonReactiveClient;
+import org.redisson.api.RedissonRxClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.api.annotation.RRemoteAsync;
+import org.redisson.api.annotation.RRemoteReactive;
+import org.redisson.api.annotation.RRemoteRx;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
+
+import io.reactivex.Completable;
+import io.reactivex.Single;
+import reactor.core.Disposable;
+import reactor.core.publisher.Mono;
 
 public class RedissonRemoteServiceTest extends BaseTest {
 
@@ -85,6 +94,40 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RFuture<Void> errorMethodWithCause();
         
         RFuture<Void> timeoutMethod();
+        
+    }
+
+    @RRemoteReactive(RemoteInterface.class)
+    public interface RemoteInterfaceReactive {
+        
+        Mono<Void> cancelMethod();
+        
+        Mono<Void> voidMethod(String name, Long param);
+        
+        Mono<Long> resultMethod(Long value);
+        
+        Mono<Void> errorMethod();
+        
+        Mono<Void> errorMethodWithCause();
+        
+        Mono<Void> timeoutMethod();
+        
+    }
+
+    @RRemoteRx(RemoteInterface.class)
+    public interface RemoteInterfaceRx {
+        
+        Completable cancelMethod();
+        
+        Completable voidMethod(String name, Long param);
+        
+        Single<Long> resultMethod(Long value);
+        
+        Completable errorMethod();
+        
+        Completable errorMethodWithCause();
+        
+        Completable timeoutMethod();
         
     }
     
@@ -272,9 +315,33 @@ public class RedissonRemoteServiceTest extends BaseTest {
         
         assertThat(iterations.get()).isLessThan(Integer.MAX_VALUE / 2);
         
-        assertThat(executor.awaitTermination(1, TimeUnit.SECONDS)).isTrue();
+        assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
     }
 
+    @Test
+    public void testCancelReactive() throws InterruptedException {
+        RedissonReactiveClient r1 = Redisson.createReactive(createConfig());
+        AtomicInteger iterations = new AtomicInteger();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        r1.getKeys().flushall();
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl(iterations), 1, executor);
+        
+        RedissonReactiveClient r2 = Redisson.createReactive(createConfig());
+        RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
+        
+        Mono<Void> f = ri.cancelMethod();
+        Disposable t = f.doOnSubscribe(s -> s.request(1)).subscribe();
+        Thread.sleep(500);
+        t.dispose();
+        
+        executor.shutdown();
+        r1.shutdown();
+        r2.shutdown();
+        
+        assertThat(iterations.get()).isLessThan(Integer.MAX_VALUE / 2);
+        
+        assertThat(executor.awaitTermination(2, TimeUnit.SECONDS)).isTrue();
+    }
     
     @Test(expected = IllegalArgumentException.class)
     public void testWrongMethodAsync() throws InterruptedException {
@@ -299,6 +366,40 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RFuture<Long> resFuture = ri.resultMethod(100L);
         resFuture.sync();
         assertThat(resFuture.getNow()).isEqualTo(200);
+
+        r1.shutdown();
+        r2.shutdown();
+    }
+
+    @Test
+    public void testReactive() throws InterruptedException {
+        RedissonReactiveClient r1 = Redisson.createReactive(createConfig());
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
+        
+        RedissonReactiveClient r2 = Redisson.createReactive(createConfig());
+        RemoteInterfaceReactive ri = r2.getRemoteService().get(RemoteInterfaceReactive.class);
+        
+        Mono<Void> f = ri.voidMethod("someName", 100L);
+        f.block();
+        Mono<Long> resFuture = ri.resultMethod(100L);
+        assertThat(resFuture.block()).isEqualTo(200);
+
+        r1.shutdown();
+        r2.shutdown();
+    }
+
+    @Test
+    public void testRx() throws InterruptedException {
+        RedissonRxClient r1 = Redisson.createRx(createConfig());
+        r1.getRemoteService().register(RemoteInterface.class, new RemoteImpl());
+        
+        RedissonRxClient r2 = Redisson.createRx(createConfig());
+        RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
+        
+        Completable f = ri.voidMethod("someName", 100L);
+        f.blockingGet();
+        Single<Long> resFuture = ri.resultMethod(100L);
+        assertThat(resFuture.blockingGet()).isEqualTo(200);
 
         r1.shutdown();
         r2.shutdown();

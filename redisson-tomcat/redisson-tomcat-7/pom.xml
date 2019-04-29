@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-tomcat</artifactId>
-        <version>3.10.7-SNAPSHOT</version>
+        <version>3.10.8-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -17,25 +17,25 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>7.0.91</version>
+            <version>7.0.94</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-logging-juli</artifactId>
-            <version>7.0.91</version>
+            <version>7.0.94</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>7.0.91</version>
+            <version>7.0.94</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>7.0.91</version>
+            <version>7.0.94</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

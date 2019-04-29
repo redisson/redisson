@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.10.7-SNAPSHOT</version>
+        <version>3.10.8-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -98,7 +98,13 @@
         <dependency>
            <groupId>org.jmockit</groupId>
            <artifactId>jmockit</artifactId>
-           <version>1.41</version>
+           <version>1.46</version>
+           <scope>test</scope>
+        </dependency>
+        <dependency>
+           <groupId>org.jooq</groupId>
+           <artifactId>joor-java-8</artifactId>
+           <version>0.9.11</version>
            <scope>test</scope>
         </dependency>
         <dependency>
@@ -117,19 +123,19 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.34</version>
+            <version>[8.5.40,)</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>8.5.34</version>
+            <version>[8.5.40,)</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>8.5.34</version>
+            <version>[8.5.40,)</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -357,6 +363,7 @@
                     <consoleOutput>true</consoleOutput>
                     <enableRSS>false</enableRSS>
                     <configLocation>/checkstyle.xml</configLocation>
+                    <propertyExpansion>checkstyle.config.path=${basedir}</propertyExpansion>
                 </configuration>
                 <dependencies>
                     <dependency>

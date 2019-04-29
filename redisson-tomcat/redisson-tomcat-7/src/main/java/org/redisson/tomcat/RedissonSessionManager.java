@@ -27,6 +27,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
+import org.apache.catalina.Pipeline;
 import org.apache.catalina.Session;
 import org.apache.catalina.SessionEvent;
 import org.apache.catalina.SessionListener;
@@ -66,6 +67,10 @@ public class RedissonSessionManager extends ManagerBase {
     private boolean broadcastSessionEvents = false;
 
     private final String nodeId = UUID.randomUUID().toString();
+
+    private UpdateValve updateValve;
+
+    private Codec codecToUse;
 
     public String getNodeId() { return nodeId; }
 
@@ -143,7 +148,7 @@ public class RedissonSessionManager extends ManagerBase {
     public RMap<String, Object> getMap(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
-        return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, redisson.getConfig().getCodec()));
+        return redisson.getMap(name, new CompositeCodec(StringCodec.INSTANCE, codecToUse, codecToUse));
     }
 
     public RTopic getTopic() {
@@ -162,6 +167,11 @@ public class RedissonSessionManager extends ManagerBase {
                     attrs = getMap(id).getAll(RedissonSession.ATTRS);
                 } catch (Exception e) {
                     log.error("Can't read session object by id: " + id, e);
+                }
+
+                if (attrs.isEmpty()) {	
+                    log.info("Session " + id + " can't be found");
+                    return null;	
                 }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
@@ -211,14 +221,15 @@ public class RedissonSessionManager extends ManagerBase {
         redisson = buildClient();
         
         final ClassLoader applicationClassLoader;
-        if (Thread.currentThread().getContextClassLoader() != null) {
+        if (getContainer().getLoader().getClassLoader() != null) {
+            applicationClassLoader = getContainer().getLoader().getClassLoader();
+        } else if (Thread.currentThread().getContextClassLoader() != null) {
             applicationClassLoader = Thread.currentThread().getContextClassLoader();
         } else {
             applicationClassLoader = getClass().getClassLoader();
         }
         
         Codec codec = redisson.getConfig().getCodec();
-        Codec codecToUse;
         try {
             codecToUse = codec.getClass()
                     .getConstructor(ClassLoader.class, codec.getClass())
@@ -228,7 +239,12 @@ public class RedissonSessionManager extends ManagerBase {
         }
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
-            getEngine().getPipeline().addValve(new UpdateValve(this));
+            Pipeline pipeline = getEngine().getPipeline();
+            if (updateValve != null) { // in case startInternal is called without stopInternal cleaning the updateValve
+                pipeline.removeValve(updateValve);
+            }
+            updateValve = new UpdateValve(this);
+            pipeline.addValve(updateValve);			
         }
         
         if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
@@ -314,6 +330,13 @@ public class RedissonSessionManager extends ManagerBase {
         
         setState(LifecycleState.STOPPING);
         
+        if (updateValve != null) {
+            getEngine().getPipeline().removeValve(updateValve);
+            updateValve = null;
+        }
+
+        codecToUse = null;
+
         try {
             shutdownRedisson();
         } catch (Exception e) {

@@ -200,6 +200,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                          + "return nil; "
                      + "end; "
               + "else "
+                     + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
                      + "redis.call('set', valueName, rate, 'px', interval); "
                      + "redis.call('decrby', valueName, ARGV[1]); "
                      + "return nil; "

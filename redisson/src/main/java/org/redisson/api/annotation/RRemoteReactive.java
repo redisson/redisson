@@ -21,23 +21,23 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation used to mark interface as asynchronous 
+ * Annotation used to mark interface as Reactive 
  * client interface for remote service interface. 
  * <p>
  * All method signatures must match with remote service interface,
- * but return type must be <code>org.redisson.api.RFuture</code>.
+ * but return type must be <code>reactor.core.publisher.Mono</code>.
  * <p>
  * It's not necessary to add all methods from remote service.
  * Add only those which are needed. 
  * 
- * @see org.redisson.api.RFuture
+ * @see reactor.core.publisher.Mono
  * 
  * @author Nikita Koksharov
  *
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RRemoteAsync {
+public @interface RRemoteReactive {
 
     /**
      * Remote interface class used to register

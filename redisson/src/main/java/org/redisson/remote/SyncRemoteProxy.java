@@ -20,8 +20,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.concurrent.ConcurrentMap;
 
+import org.redisson.RedissonBucket;
 import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
@@ -37,8 +37,8 @@ import org.redisson.misc.RPromise;
 public class SyncRemoteProxy extends BaseRemoteProxy {
 
     public SyncRemoteProxy(CommandAsyncExecutor commandExecutor, String name, String responseQueueName,
-            ConcurrentMap<String, ResponseEntry> responses, RedissonClient redisson, Codec codec, String executorId, BaseRemoteService remoteService) {
-        super(commandExecutor, name, responseQueueName, responses, redisson, codec, executorId, remoteService);
+            ConcurrentMap<String, ResponseEntry> responses, Codec codec, String executorId, BaseRemoteService remoteService) {
+        super(commandExecutor, name, responseQueueName, responses, codec, executorId, remoteService);
     }
 
     public <T> T create(Class<T> remoteInterface, RemoteInvocationOptions options) {
@@ -120,7 +120,7 @@ public class SyncRemoteProxy extends BaseRemoteProxy {
                                     + optionsCopy.getAckTimeoutInMillis() + "ms for request: " + request);
                         }
                     }
-                    redisson.getBucket(ackName).delete();
+                    new RedissonBucket<>(commandExecutor, ackName).delete();
                 }
 
                 // poll for the response only if expected
