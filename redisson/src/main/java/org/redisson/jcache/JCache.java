@@ -869,6 +869,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     @Override
+    @SuppressWarnings("NestedTryDepth")
     public void loadAll(final Set<? extends K> keys, final boolean replaceExistingValues, final CompletionListener completionListener) {
         checkNotClosed();
         if (keys == null) {
