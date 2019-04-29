@@ -4,6 +4,25 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 29-Apr-2019 - versions 3.10.7 released  
+Feature - Add support for Reactive and RxJava2 interfaces for RemoteService object  
+Feature - MILLISECONDS option added to RRateLimiter.RateIntervalUnit object  
+Feature - range method added to RList, RListReactive and RListRx interfaces  
+Improvement - `JCache.getAll` execution optimization for non-existing keys  
+Improvement - 10X Performance boost for `JCache.putAll` method  
+Fixed - disconnected sentinels shouldn't be used in sentinel list  
+Fixed - Apache Tomcat `RedissonSessionManager` doesn't use classloader aware codec for session Map object (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - LiveObject field with Map type couldn't be persisted  
+Fixed - `RRateLimiter` allows permits limit exceeding  
+Fixed - `CompositeCodec.getMapValueDecoder` method uses `MapKeyDecoder` instead of `MapValueDecoder`  
+Fixed - memory leak during blocking methods invocation of Queue objects  
+Fixed - Apache Tomcat `RedissonSessionManager.findSession` shouldn't create a new one session (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - `JCache.removeAll` method doesn't notify Cache listeners  
+Fixed - `UpdateValve` sould be removed from pipeline in Apache Tomcat `RedissonSessionManager.stopInternal` method (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - Redis Sentinel prior 5.0.1 version doesn't require password. Regression since 3.10.5 version  
+Fixed - Redisson tries to renewed Lock expiration even if lock doesn't exist. Regression since 3.10.5 version  
+Fixed - FstCodec can't deserialize ConcurrentHashMap based object with package visibility  
+
 ### 05-Apr-2019 - versions 3.10.6 released  
 Feature - `broadcastSessionEvents` setting added to Tomcat Session Manager  
 Feature - `remainTimeToLive` method added to `RLock`, `RLockAsync`, `RLockRx` and `RLockReactive` interfaces  
