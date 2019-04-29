@@ -1,24 +1,21 @@
-Redis based Tomcat Session Manager
-===
+# Redis based Tomcat Session Manager
 
-Stores session of [Apache Tomcat](http://tomcat.apache.org) in Redis and allows to distribute requests across a cluster of Tomcat servers. Implements non-sticky session management backed by Redis.  
+Stores session of [Apache Tomcat](http://tomcat.apache.org) in Redis and allows to distribute requests across a cluster of Tomcat servers. Implements non-sticky session management backed by Redis.
 
 Supports Apache Tomcat 6.x, 7.x, 8.x, 9.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
-Advantages
-===
+## Advantages
 
 Current implementation differs from any other Redis based Tomcat Session Manager in terms of efficient storage and optimized writes. Each session attribute is written into Redis during each `HttpSession.setAttribute` invocation. While other solutions serialize whole session each time.
 
-Usage
-===
+## Usage
 
 ### 1. Add `RedissonSessionManager`
 
 Add `RedissonSessionManager` into `tomcat/conf/context.xml`
-   
+
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	 configPath="${catalina.base}/redisson.conf" 
@@ -28,9 +25,9 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
    * `REDIS` - stores attributes into Redis only.  Default mode.
    <br/>
-   
+
    `broadcastSessionEvents` - if `true` then `sessionCreated` and `sessionDestroyed` events broadcasted across all Tomcat instances and trigger all registered HttpSessionListeners. Default is `false`.
-   
+
    `updateMode` - Session attributes update mode. Two modes are available:
    * `DEFAULT` - session attributes are stored into Redis only through setAttribute method. Default mode.
    * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
@@ -46,7 +43,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 
 ```xml
   <GlobalNamingResources>
-    <Resource name="bean/redisson" 
+    <Resource name="bean/redisson"
 	      auth="Container"
               factory="org.redisson.JndiRedissonFactory"
               configPath="${catalina.base}/conf/redisson.yaml"
@@ -67,6 +64,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 ```
 
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
+
   
 [redisson-all-3.10.7.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.10.7&e=jar)
   
@@ -78,4 +76,4 @@ for Tomcat 8.x
 [redisson-tomcat-8-3.10.7.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.10.7&e=jar)  
 for Tomcat 9.x  
 [redisson-tomcat-9-3.10.7.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.10.7&e=jar)  
-  
+
