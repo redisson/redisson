@@ -697,7 +697,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getConnectionFuture().cancel(false)) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and 'connection pool' settings or set decodeInExecutor = true and increase 'threads' setting"
+                        details.setException(new RedisTimeoutException("Unable to get connection! Try to increase 'nettyThreads' and/or connection pool size settings"
                                     + "Node source: " + source
                                     + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + details.getAttempt() + " retry attempts"));
@@ -708,7 +708,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                                 if (details.getWriteFuture() != null && details.getWriteFuture().cancel(false)) {
                                     if (details.getException() == null) {
-                                        details.setException(new RedisTimeoutException("Unable to send command! "
+                                        details.setException(new RedisTimeoutException("Unable to send command! Try to increase 'nettyThreads' and/or connection pool size settings "
                                                     + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow()
                                                     + ", current command in queue: " + details.getConnectionFuture().getNow().getCurrentCommand() 
                                                     + ", command: " + LogHelper.toString(command, details.getParams())
@@ -740,7 +740,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
                 if (details.getAttempt() == connectionManager.getConfig().getRetryAttempts()) {
                     if (details.getException() == null) {
-                        details.setException(new RedisTimeoutException("Unable to send command! Node source: " + source 
+                        details.setException(new RedisTimeoutException("Unable to send command! Try to increase 'nettyThreads' and/or connection pool size settings. Node source: " + source 
                                     + ", command: " + LogHelper.toString(command, details.getParams()) 
                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                     }
