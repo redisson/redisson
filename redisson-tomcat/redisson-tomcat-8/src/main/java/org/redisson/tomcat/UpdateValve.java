@@ -31,6 +31,7 @@ import org.apache.catalina.valves.ValveBase;
  */
 public class UpdateValve extends ValveBase {
 
+    private static final String ALREADY_FILTERED_NOTE = UpdateValve.class.getName() + ".ALREADY_FILTERED_NOTE";
     private final RedissonSessionManager manager;
     
     public UpdateValve(RedissonSessionManager manager) {
@@ -40,17 +41,24 @@ public class UpdateValve extends ValveBase {
 
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
-        try {
-            getNext().invoke(request, response);
-        } finally {
-            final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        //check if we already filtered/processed this request 
+        if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
+            request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             try {
-                ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
-                Thread.currentThread().setContextClassLoader(applicationClassLoader);
-                manager.store(request.getSession(false));
+                getNext().invoke(request, response);
             } finally {
-                Thread.currentThread().setContextClassLoader(classLoader);
+                request.removeNote(ALREADY_FILTERED_NOTE);
+                final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+                try {
+                    ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
+                    Thread.currentThread().setContextClassLoader(applicationClassLoader);
+                    manager.store(request.getSession(false));
+                } finally {
+                    Thread.currentThread().setContextClassLoader(classLoader);
+                }
             }
+        } else {
+            getNext().invoke(request, response);
         }
     }
 
