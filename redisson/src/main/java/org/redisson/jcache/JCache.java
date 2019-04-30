@@ -350,24 +350,6 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return getAccessTimeout(System.currentTimeMillis());
     }
     
-    V load(K key) {
-        RLock lock = getLockedLock(key);
-        try {
-            V value;
-            if (atomicExecution) {
-                value = getValue(key);
-            } else {
-                value = getValueLocked(key);
-            }
-            if (value == null) {
-                value = loadValue(key);
-            }
-            return value;
-        } finally {
-            lock.unlock();
-        }
-    }
-
     V loadValue(K key) {
         V value = null;
         try {
@@ -829,9 +811,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 cacheManager.getStatBean(this).addHits(1);
                 result.put(entry.getKey(), entry.getValue());
             } else {
+                cacheManager.getStatBean(this).addMisses(1);
                 if (config.isReadThrough()) {
-                    cacheManager.getStatBean(this).addMisses(1);
-                    V value = load(entry.getKey());
+                    V value = loadValue(entry.getKey());
                     if (value != null) {
                         result.put(entry.getKey(), value);
                     }
