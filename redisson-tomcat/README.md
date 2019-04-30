@@ -26,7 +26,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    * `REDIS` - stores attributes into Redis only.  Default mode.
    <br/>
 
-   `broadcastSessionEvents` - if `true` then `sessionCreated` and `sessionDestroyed` events broadcasted across all Tomcat instances and trigger all registered HttpSessionListeners. Default is `false`.
+   `broadcastSessionEvents` - if `true` then `sessionCreated` and `sessionDestroyed` events broadcasted across all Tomcat instances and causes all registered HttpSessionListeners to be triggered. Default is `false`.
 
    `updateMode` - Session attributes update mode. Two modes are available:
    * `DEFAULT` - session attributes are stored into Redis only through setAttribute method. Default mode.
