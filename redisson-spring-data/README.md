@@ -1,5 +1,4 @@
-Spring Data Redis integration
-===
+# Spring Data Redis integration
 
 Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
 
@@ -7,10 +6,9 @@ Supports Spring Data Redis 1.6.x, 1.7.x, 1.8.x, 2.0.x, 2.1.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
-Usage
-===
+## Usage
 
-### 1.  Add `redisson-spring-data` dependency into your project:
+### 1. Add `redisson-spring-data` dependency into your project:
 
 Maven
 
@@ -33,7 +31,7 @@ Maven
 
 Gradle
 
-```java
+```groovy
      // for Spring Data Redis v.1.6.x
      compile 'org.redisson:redisson-spring-data-16:3.10.6'
      // for Spring Data Redis v.1.7.x
@@ -44,24 +42,24 @@ Gradle
      compile 'org.redisson:redisson-spring-data-20:3.10.6'
      // for Spring Data Redis v.2.1.x
      compile 'org.redisson:redisson-spring-data-21:3.10.6'
-```  
+```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
 
-```java   
+```java
  @Configuration
  public class RedissonSpringDataConfig {
-    
+
     @Bean
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
         return new RedissonConnectionFactory(redisson);
     }
-    
+
     @Bean(destroyMethod = "shutdown")
     public RedissonClient redisson(@Value("classpath:/redisson.yaml") Resource configFile) throws IOException {
         Config config = Config.fromYAML(configFile.getInputStream());
         return Redisson.create(config);
     }
-    
+
  }
 ```

@@ -1,19 +1,18 @@
-Redis based Hibernate Cache implementation
-===
+# Redis based Hibernate Cache implementation
 
-Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.  
-Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
+Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/5.4/userguide/html_single/Hibernate_User_Guide.html#caching) provider based on Redis.
+Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.
 It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
 Compatible with Hibernate 4.x, 5.x. (5.3.0, 5.3.1 and 5.3.2 versions aren't supported)
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
-**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event. 
+**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event.
 
-**data partitioning** - data partitioning in cluster mode. It allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.  
+**data partitioning** - data partitioning in cluster mode. It allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
 
-Below is the list of all available factories with local cache and/or data partitioning support:  
+Below is the list of all available factories with local cache and/or data partitioning support:
 
 |Class name | Local cache <br/> support<br/>(up to 5x faster) | Data partitioning <br/> support |
 | ------------- | ------------- | ------------|
@@ -22,12 +21,12 @@ Below is the list of all available factories with local cache and/or data partit
 |RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | No | **Yes** |
 |RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | **Yes** | **Yes** |
 
-Hibernate Cache Usage
-===
+## Hibernate Cache Usage
 
-### 1.  Add `redisson-hibernate` dependency into your project:
+### 1. Add `redisson-hibernate` dependency into your project:
 
 Maven
+
 ```xml
      <dependency>
          <groupId>org.redisson</groupId>
@@ -45,7 +44,7 @@ Maven
 
 Gradle
 
-```java
+```groovy
      // for Hibernate v4.x
      compile 'org.redisson:redisson-hibernate-4:3.10.6'
      // for Hibernate v5.0.x - v5.1.x
@@ -54,8 +53,7 @@ Gradle
      compile 'org.redisson:redisson-hibernate-52:3.10.6'
      // for Hibernate v5.3.3+ - v5.4.x
      compile 'org.redisson:redisson-hibernate-53:3.10.6'
-```  
-
+```
 
 ### 2. Specify hibernate cache settings
 
@@ -71,7 +69,9 @@ Define Redisson Region Cache Factory:
 <!-- or -->
 <property name="hibernate.cache.region.factory_class" value="org.redisson.hibernate.RedissonClusteredLocalCachedRegionFactory" />
 ```
+
 By default each Region Factory creates own Redisson instance. For multiple applications, using the same Redis setup and deployed in the same JVM, amount of Redisson instances could be reduced using JNDI registry:
+
 ```xml
 <!-- name of Redisson instance registered in JNDI -->
 <property name="hibernate.cache.region.jndi_name" value="redisson_instance" />
@@ -96,33 +96,33 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 <property name="hibernate.cache.redisson.config" value="/redisson.json" />
 ```
 
-#### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:  
+#### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:
 
-`hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` - max size of cache. Superfluous entries in Redis are evicted using LRU algorithm. `0` value means unbounded cache. Default value: 0  
+`hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` - max size of cache. Superfluous entries in Redis are evicted using LRU algorithm. `0` value means unbounded cache. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].expiration.time_to_live` - time to live per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+`hibernate.cache.redisson.[REGION_NAME].expiration.time_to_live` - time to live per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].expiration.max_idle_time` - max idle time per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+`hibernate.cache.redisson.[REGION_NAME].expiration.max_idle_time` - max idle time per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.max_idle_time` - max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+`hibernate.cache.redisson.[REGION_NAME].localcache.max_idle_time` - max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.time_to_live` - time to live per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0  
+`hibernate.cache.redisson.[REGION_NAME].localcache.time_to_live` - time to live per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` - eviction policy applied to local cache entries when cache size limit reached. LFU, LRU, SOFT, WEAK and NONE policies are available. Default value: NONE  
+`hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` - eviction policy applied to local cache entries when cache size limit reached. LFU, LRU, SOFT, WEAK and NONE policies are available. Default value: NONE
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` - sync strategy used to synchronize local cache changes across all instances. Follow sync strategies are available:  
-INVALIDATE - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change  
-UPDATE - Update cache entry across all LocalCachedMap instances on map entry change  
-NONE - No synchronizations on map changes  
+`hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` - sync strategy used to synchronize local cache changes across all instances. Follow sync strategies are available:
+INVALIDATE - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change
+UPDATE - Update cache entry across all LocalCachedMap instances on map entry change
+NONE - No synchronizations on map changes
 
 Default value: INVALIDATE
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed updates through Hibernate during any connection failures to Redis. Since, local cache updates can't be get in absence of connection to Redis. Follow reconnection strategies are available:  
-CLEAR - Clear local cache if map instance has been disconnected for a while.  
-LOAD - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.  
-NONE - Default. No reconnection handling  
+`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed updates through Hibernate during any connection failures to Redis. Since, local cache updates can't be get in absence of connection to Redis. Follow reconnection strategies are available:
+CLEAR - Clear local cache if map instance has been disconnected for a while.
+LOAD - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.
+NONE - Default. No reconnection handling
 
-Default value: NONE  
+Default value: NONE
 
 `hibernate.cache.redisson.[REGION_NAME].localcache.size` - max size of local cache. Superfluous entries in Redis are evicted using defined eviction policy.  `0` value means unbounded cache. Default value: 0
 

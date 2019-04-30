@@ -1,5 +1,4 @@
-Spring Boot Starter
-===
+# Spring Boot Starter
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
 
@@ -7,10 +6,9 @@ Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x, 2.1.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
-Usage
-===
+## Usage
 
-### 1.  Add `redisson-spring-boot-starter` dependency into your project:
+### 1. Add `redisson-spring-boot-starter` dependency into your project:
 
 Maven
 
@@ -23,9 +21,10 @@ Maven
 ```
 
 Gradle
-```java
+
+```groovy
      compile 'org.redisson:redisson-spring-boot-starter:3.10.6'
-```  
+```
 
 ### 2. Add settings into `application.settings` file
 
