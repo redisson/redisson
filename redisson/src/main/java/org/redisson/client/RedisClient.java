@@ -368,11 +368,6 @@ public final class RedisClient {
     }
 
     @Override
-    public int  hashCode() {
-        return uri.hashCode();
-    }
-
-    @Override
     public String toString() {
         return "[addr=" + uri + "]";
     }
