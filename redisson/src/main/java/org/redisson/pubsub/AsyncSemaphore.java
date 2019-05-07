@@ -162,7 +162,7 @@ public class AsyncSemaphore {
             Iterator<Entry> iter = listeners.iterator();
             if (iter.hasNext()) {
                 Entry entry = iter.next();
-                if (entry.getPermits() >= counter) {
+                if (entry.getPermits() <= counter) {
                     iter.remove();
                     entryToAcquire = entry;
                 }
