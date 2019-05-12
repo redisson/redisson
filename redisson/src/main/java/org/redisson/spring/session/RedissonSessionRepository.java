@@ -136,10 +136,9 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             if (map != null) {
                 map.fastPut(attributeName, attributeValue);
                 
-                String principalSessionAttr = getSessionAttrNameKey(PRINCIPAL_NAME_INDEX_NAME);
                 String securityPrincipalSessionAttr = getSessionAttrNameKey(SPRING_SECURITY_CONTEXT);
                 
-                if (attributeName.equals(principalSessionAttr)
+                if (attributeName.equals(PRINCIPAL_NAME_INDEX_NAME)
                         || attributeName.equals(securityPrincipalSessionAttr)) {
                     // remove old
                     if (principalName != null) {
