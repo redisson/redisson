@@ -34,6 +34,8 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.CacheReactive;
+import org.redisson.api.CacheRx;
 import org.redisson.codec.TypedJsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.jcache.configuration.RedissonConfiguration;
@@ -43,6 +45,52 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JCacheTest extends BaseTest {
 
+    @Test
+    public void testReactive() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        CacheReactive<String, String> reactive = cache.unwrap(CacheReactive.class);
+        reactive.put("1", "2").block();
+        assertThat(reactive.get("1").block()).isEqualTo("2");
+        
+        cache.close();
+        runner.stop();
+    }
+    
+    @Test
+    public void testRx() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        CacheRx<String, String> reactive = cache.unwrap(CacheRx.class);
+        reactive.put("1", "2").blockingAwait();
+        assertThat(reactive.get("1").blockingGet()).isEqualTo("2");
+        
+        cache.close();
+        runner.stop();
+    }
+    
     @Test
     public void testPutAll() throws Exception {
         RedisProcess runner = new RedisRunner()
