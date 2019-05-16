@@ -72,6 +72,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final Set<URI> disconnectedSlaves = new HashSet<URI>();
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
+    
+    private final Map<String, String> natMap;
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
@@ -85,6 +87,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
         this.config = create(cfg);
         initTimer(this.config);
+        
+        this.natMap=cfg.getNatMap();
         
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
         
@@ -438,7 +442,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private String createAddress(String host, Object port) {
         if (host.contains(":") && !host.startsWith("[")) {
-            host = "[" + host + "]";
+        	String[] splittedHost= host.split(":");
+            host = "[" + applyNatMap(splittedHost[0]) + splittedHost[1] + "]";
+        }else {
+        	host=applyNatMap(host);
         }
         return "redis://" + host + ":" + port;
     }
@@ -581,6 +588,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
         
         super.shutdown();
+    }
+    
+    private String applyNatMap(String ip) {
+        String mappedAddress = natMap.get(ip);
+        if (mappedAddress != null) {
+            return mappedAddress;
+        }
+        return ip;
     }
 }
 
