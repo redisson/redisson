@@ -289,8 +289,7 @@ public class RedisConnection implements RedisCommands {
 
     @Override
     public String toString() {
-        QueueCommand command = channel.attr(CommandsQueue.CURRENT_COMMAND).get();
-        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", command=" + command + "]";
+        return getClass().getSimpleName() + "@" + System.identityHashCode(this) + " [redisClient=" + redisClient + ", channel=" + channel + ", currentCommand=" + getCurrentCommand() + "]";
     }
 
 }

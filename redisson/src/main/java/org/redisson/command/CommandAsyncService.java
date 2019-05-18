@@ -710,7 +710,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                     if (details.getException() == null) {
                                         details.setException(new RedisTimeoutException("Unable to send command! Try to increase 'nettyThreads' and/or connection pool size settings "
                                                     + "Node source: " + source + ", connection: " + details.getConnectionFuture().getNow()
-                                                    + ", current command in queue: " + details.getConnectionFuture().getNow().getCurrentCommand() 
                                                     + ", command: " + LogHelper.toString(command, details.getParams())
                                                     + " after " + connectionManager.getConfig().getRetryAttempts() + " retry attempts"));
                                     }
