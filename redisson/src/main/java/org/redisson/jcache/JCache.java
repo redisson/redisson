@@ -103,7 +103,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
     final JCacheConfiguration<K, V> config;
     private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = 
                                         new ConcurrentHashMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>>();
-    private final Redisson redisson;
+    final Redisson redisson;
 
     private CacheLoader<K, V> cacheLoader;
     private CacheWriter<K, V> cacheWriter;
@@ -696,7 +696,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 r.add(syncId);
                 
                 if (r.size() < 2) {
-                    result.trySuccess((Long) r.get(0) == 1);
+                    result.trySuccess((Long) r.get(0) >= 1);
                     return;
                 }
                 
@@ -713,11 +713,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                 result.tryFailure(new CacheException(exc));
                                 return;
                             }
-                            result.trySuccess((Long) r.get(0) == 1);
+                            result.trySuccess((Long) r.get(0) >= 1);
                         });
                     });
                 } else {
-                    result.trySuccess((Long) r.get(0) == 1);
+                    result.trySuccess((Long) r.get(0) >= 1);
                 }
             });
         } else {
@@ -726,7 +726,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
             List<Object> r = res.getNow();
             r.add(syncId);
             waitSync(r);
-            result.trySuccess((Long) r.get(0) == 1);
+            result.trySuccess((Long) r.get(0) >= 1);
         }
         return result;
     }
