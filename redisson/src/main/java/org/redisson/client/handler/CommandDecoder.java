@@ -103,16 +103,29 @@ public class CommandDecoder extends ReplayingDecoder<State> {
 
         if (data == null) {
             while (in.writerIndex() > in.readerIndex()) {
-                skipCommand(in);
+                int endIndex = skipCommand(in);
 
-                decode(ctx, in, data);
+                try {
+                    decode(ctx, in, data);
+                } catch (Exception e) {
+                    in.readerIndex(endIndex);
+                    throw e;
+                }
             }
         } else {
+            int endIndex = 0;
             if (!(data instanceof CommandsData)) {
-                skipCommand(in);
+                endIndex = skipCommand(in);
             }
             
-            decode(ctx, in, data);
+            try {
+                decode(ctx, in, data);
+            } catch (Exception e) {
+                if (!(data instanceof CommandsData)) {
+                    in.readerIndex(endIndex);
+                }
+                throw e;
+            }
         }
     }
 
@@ -151,10 +164,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         }
     }
     
-    protected void skipCommand(ByteBuf in) throws Exception {
+    protected int skipCommand(ByteBuf in) throws Exception {
         in.markReaderIndex();
         skipDecode(in);
+        int res = in.readerIndex();
         in.resetReaderIndex();
+        return res;
     }
     
     protected void skipDecode(ByteBuf in) throws IOException{
@@ -240,11 +255,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
         Throwable error = null;
         while (in.writerIndex() > in.readerIndex()) {
             CommandData<Object, Object> commandData = null;
+
+            checkpoint();
+            state.get().setBatchIndex(i);
+            
+            int endIndex = skipCommand(in);
             try {
-                checkpoint();
-                state.get().setBatchIndex(i);
-                
-                skipCommand(in);
                 
                 RedisCommand<?> cmd = commandBatch.getCommands().get(i).getCommand();
                 boolean skipConvertor = commandBatch.isQueued();
@@ -286,10 +302,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     }
                 }
             } catch (Exception e) {
+                in.readerIndex(endIndex);
                 if (commandData != null) {
                     commandData.tryFailure(e);
                 }
-                throw e;
             }
             i++;
             if (commandData != null && !commandData.isSuccess()) {

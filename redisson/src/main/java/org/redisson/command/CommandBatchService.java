@@ -304,7 +304,7 @@ public class CommandBatchService extends CommandAsyncService {
                     }
 
                     RPromise<Void> main = new RedissonPromise<Void>();
-                    ChannelFuture future = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands())));
+                    ChannelFuture future = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands()), options.isSkipResult(), false, true));
                     details.setWriteFuture(future);
                 } else {
                     RPromise<Void> main = new RedissonPromise<Void>();

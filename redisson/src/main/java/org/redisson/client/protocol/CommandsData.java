@@ -38,10 +38,6 @@ public class CommandsData implements QueueCommand {
         this(promise, commands, null, false, false, queued);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands) {
-        this(promise, commands, attachedCommands, false, false, true);
-    }
-    
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued) {
         this(promise, commands, null, skipResult, atomic, queued);
     }

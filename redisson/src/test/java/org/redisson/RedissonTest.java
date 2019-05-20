@@ -36,6 +36,8 @@ import org.redisson.api.Node;
 import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodeType;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMap;
@@ -189,6 +191,46 @@ public class RedissonTest {
     
     public static class Dummy {
         private String field;
+    }
+    
+    @Test
+    public void testNextResponseAfterDecoderError() throws Exception {
+        Config config = new Config();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+        
+        setJSONValue(redisson, "test1", "test1");
+        setStringValue(redisson, "test2", "test2");
+        setJSONValue(redisson, "test3", "test3");
+        try {
+            RBuckets buckets = redisson.getBuckets(new JsonJacksonCodec());
+            buckets.get("test2", "test1");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertThat(getStringValue(redisson, "test3")).isEqualTo("\"test3\"");
+        
+        redisson.shutdown();
+    }
+
+    public void setJSONValue(RedissonClient redisson, String key, Object t) {
+        RBucket<Object> test1 = redisson.getBucket(key, new JsonJacksonCodec());
+        test1.set(t);
+    }
+
+    public void setStringValue(RedissonClient redisson, String key, Object t) {
+        RBucket<Object> test1 = redisson.getBucket(key, new StringCodec());
+        test1.set(t);
+    }
+
+
+    public Object getStringValue(RedissonClient redisson, String key) {
+        RBucket<Object> test1 = redisson.getBucket(key, new StringCodec());
+        return test1.get();
     }
 
     @Test(expected = IllegalArgumentException.class)
