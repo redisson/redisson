@@ -16,6 +16,7 @@
 package org.redisson.cluster;
 
 import java.net.URI;
+import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,7 +38,7 @@ public class ClusterPartition {
     private final Set<URI> slaveAddresses = new HashSet<URI>();
     private final Set<URI> failedSlaves = new HashSet<URI>();
     
-    private final Set<Integer> slots = new HashSet<Integer>();
+    private final BitSet slots = new BitSet();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
 
     private ClusterPartition parent;
@@ -74,18 +75,18 @@ public class ClusterPartition {
         return masterFail;
     }
 
-    public void addSlots(Set<Integer> slots) {
-        this.slots.addAll(slots);
+    public void addSlots(BitSet slots) {
+        this.slots.or(slots);
     }
 
-    public void removeSlots(Set<Integer> slots) {
-        this.slots.removeAll(slots);
+    public void removeSlots(BitSet slots) {
+        this.slots.andNot(slots);
     }
 
     public void addSlotRanges(Set<ClusterSlotRange> ranges) {
         for (ClusterSlotRange clusterSlotRange : ranges) {
             for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
-                slots.add(i);
+                slots.set(i);
             }
         }
         slotRanges.addAll(ranges);
@@ -93,7 +94,7 @@ public class ClusterPartition {
     public void removeSlotRanges(Set<ClusterSlotRange> ranges) {
         for (ClusterSlotRange clusterSlotRange : ranges) {
             for (int i = clusterSlotRange.getStartSlot(); i < clusterSlotRange.getEndSlot() + 1; i++) {
-                slots.remove(i);
+                slots.clear(i);
             }
         }
         slotRanges.removeAll(ranges);
@@ -101,8 +102,25 @@ public class ClusterPartition {
     public Set<ClusterSlotRange> getSlotRanges() {
         return slotRanges;
     }
-    public Set<Integer> getSlots() {
+    
+    public Iterable<Integer> getSlots() {
+        return (Iterable<Integer>) slots.stream()::iterator;
+    }
+    
+    public BitSet slots() {
         return slots;
+    }
+    
+    public BitSet copySlots() {
+        return (BitSet) slots.clone();
+    }
+    
+    public boolean hasSlot(int slot) {
+        return slots.get(slot);
+    }
+    
+    public int getSlotsAmount() {
+        return slots.cardinality();
     }
 
     public URI getMasterAddress() {

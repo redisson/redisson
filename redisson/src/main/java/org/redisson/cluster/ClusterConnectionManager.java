@@ -19,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -399,7 +400,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
 
-                MasterSlaveEntry entry = getEntry(currentPart.getSlots().iterator().next());
+                MasterSlaveEntry entry = getEntry(currentPart.slots().nextSetBit(0));
                 // should be invoked first in order to remove stale failedSlaveAddresses
                 Set<URI> addedSlaves = addRemoveSlaves(entry, currentPart, newPart);
                 // Do some slaves have changed state from failed to alive?
@@ -464,7 +465,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private int slotsAmount(Collection<ClusterPartition> partitions) {
         int result = 0;
         for (ClusterPartition clusterPartition : partitions) {
-            result += clusterPartition.getSlots().size();
+            result += clusterPartition.getSlotsAmount();
         }
         return result;
     }
@@ -558,7 +559,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (Integer slot : lastPartitions.keySet()) {
             boolean found = false;
             for (ClusterPartition clusterPartition : newPartitions) {
-                if (clusterPartition.getSlots().contains(slot)) {
+                if (clusterPartition.hasSlot(slot)) {
                     found = true;
                     break;
                 }
@@ -580,34 +581,34 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        Set<Integer> addedSlots = new HashSet<Integer>();
+        BitSet addedSlots = new BitSet();
         for (ClusterPartition clusterPartition : newPartitions) {
             for (Integer slot : clusterPartition.getSlots()) {
                 if (!lastPartitions.containsKey(slot)) {
-                    addedSlots.add(slot);
+                    addedSlots.set(slot);
                 }
             }
         }
         if (!addedSlots.isEmpty()) {
             log.info("{} slots found to add", addedSlots.size());
         }
-        for (Integer slot : addedSlots) {
+        for (Integer slot : (Iterable<Integer>) addedSlots.stream()::iterator) {
             ClusterPartition partition = find(newPartitions, slot);
             
-            Set<Integer> oldSlots = new HashSet<Integer>(partition.getSlots());
-            oldSlots.removeAll(addedSlots);
+            BitSet oldSlots = partition.copySlots();
+            oldSlots.andNot(addedSlots);
             if (oldSlots.isEmpty()) {
                 continue;
             }
             
-            MasterSlaveEntry entry = getEntry(oldSlots.iterator().next());
+            MasterSlaveEntry entry = getEntry(oldSlots.nextSetBit(0));
             if (entry != null) {
                 addEntry(slot, entry);
                 lastPartitions.put(slot, partition);
             }
         }
     }
-
+    
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
         for (ClusterPartition currentPartition : getLastPartitions()) {
             for (ClusterPartition newPartition : newPartitions) {
@@ -615,13 +616,13 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 
-                MasterSlaveEntry entry = getEntry(currentPartition.getSlots().iterator().next());
-                Set<Integer> addedSlots = new HashSet<Integer>(newPartition.getSlots());
-                addedSlots.removeAll(currentPartition.getSlots());
+                MasterSlaveEntry entry = getEntry(currentPartition.slots().nextSetBit(0));
+                BitSet addedSlots = newPartition.copySlots();
+                addedSlots.andNot(currentPartition.slots());
                 currentPartition.addSlots(addedSlots);
                 
 
-                for (Integer slot : addedSlots) {
+                for (Integer slot : (Iterable<Integer>) addedSlots.stream()::iterator) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
                 }
@@ -629,9 +630,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     log.info("{} slots added to {}", addedSlots.size(), currentPartition.getMasterAddress());
                 }
 
-                Set<Integer> removedSlots = new HashSet<Integer>(currentPartition.getSlots());
-                removedSlots.removeAll(newPartition.getSlots());
-                for (Integer removeSlot : removedSlots) {
+                BitSet removedSlots = currentPartition.copySlots();
+                removedSlots.andNot(newPartition.slots());
+                for (Integer removeSlot : (Iterable<Integer>) removedSlots.stream()::iterator) {
                     if (lastPartitions.remove(removeSlot, currentPartition)) {
                         removeEntry(removeSlot);
                     }
