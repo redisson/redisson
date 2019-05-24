@@ -64,6 +64,7 @@ import org.redisson.api.RQueue;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RReadWriteLock;
 import org.redisson.api.RRemoteService;
+import org.redisson.api.RRingBuffer;
 import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RScript;
@@ -546,6 +547,16 @@ public class Redisson implements RedissonClient {
         return new RedissonQueue<V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
 
+    @Override
+    public <V> RRingBuffer<V> getRingBuffer(String name) {
+        return new RedissonRingBuffer<V>(connectionManager.getCommandExecutor(), name, this);
+    }
+    
+    @Override
+    public <V> RRingBuffer<V> getRingBuffer(String name, Codec codec) {
+        return new RedissonRingBuffer<V>(codec, connectionManager.getCommandExecutor(), name, this);
+    }
+    
     @Override
     public <V> RBlockingQueue<V> getBlockingQueue(String name) {
         return new RedissonBlockingQueue<V>(connectionManager.getCommandExecutor(), name, this);

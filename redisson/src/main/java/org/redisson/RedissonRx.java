@@ -47,6 +47,7 @@ import org.redisson.api.RQueueRx;
 import org.redisson.api.RRateLimiterRx;
 import org.redisson.api.RReadWriteLockRx;
 import org.redisson.api.RRemoteService;
+import org.redisson.api.RRingBufferRx;
 import org.redisson.api.RScoredSortedSetRx;
 import org.redisson.api.RScriptRx;
 import org.redisson.api.RSemaphoreRx;
@@ -330,6 +331,16 @@ public class RedissonRx implements RedissonRxClient {
     public <V> RQueueRx<V> getQueue(String name, Codec codec) {
         return RxProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
                 new RedissonListRx<V>(new RedissonList<V>(codec, commandExecutor, name, null)), RQueueRx.class);
+    }
+
+    @Override
+    public <V> RRingBufferRx<V> getRingBuffer(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(commandExecutor, name, null), RRingBufferRx.class);
+    }
+
+    @Override
+    public <V> RRingBufferRx<V> getRingBuffer(String name, Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(codec, commandExecutor, name, null), RRingBufferRx.class);
     }
 
     @Override

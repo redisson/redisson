@@ -51,6 +51,7 @@ import org.redisson.api.RQueueReactive;
 import org.redisson.api.RRateLimiterReactive;
 import org.redisson.api.RReadWriteLockReactive;
 import org.redisson.api.RRemoteService;
+import org.redisson.api.RRingBufferReactive;
 import org.redisson.api.RScoredSortedSetReactive;
 import org.redisson.api.RScriptReactive;
 import org.redisson.api.RSemaphoreReactive;
@@ -355,6 +356,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     public <V> RQueueReactive<V> getQueue(String name, Codec codec) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonQueue<V>(codec, commandExecutor, name, null), 
                 new RedissonListReactive<V>(codec, commandExecutor, name), RQueueReactive.class);
+    }
+    
+    @Override
+    public <V> RRingBufferReactive<V> getRingBuffer(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(commandExecutor, name, null), RRingBufferReactive.class);
+    }
+
+    @Override
+    public <V> RRingBufferReactive<V> getRingBuffer(String name, Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonRingBuffer<V>(codec, commandExecutor, name, null), RRingBufferReactive.class);
     }
 
     @Override

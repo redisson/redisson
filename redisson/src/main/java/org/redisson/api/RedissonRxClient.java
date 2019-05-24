@@ -494,6 +494,25 @@ public interface RedissonRxClient {
     <V> RQueueRx<V> getQueue(String name, Codec codec);
 
     /**
+     * Returns RingBuffer based queue.
+     * 
+     * @param <V> value type
+     * @param name - name of object
+     * @return RingBuffer object
+     */
+    <V> RRingBufferRx<V> getRingBuffer(String name);
+    
+    /**
+     * Returns RingBuffer based queue.
+     * 
+     * @param <V> value type
+     * @param name - name of object
+     * @param codec - codec for values
+     * @return RingBuffer object
+     */
+    <V> RRingBufferRx<V> getRingBuffer(String name, Codec codec);
+    
+    /**
      * Returns blocking queue instance by name.
      * 
      * @param <V> type of values
