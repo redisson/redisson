@@ -123,25 +123,25 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>[8.5.40,)</version>
+            <version>8.5.40</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>[8.5.40,)</version>
+            <version>8.5.40</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>[8.5.40,)</version>
+            <version>8.5.40</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -205,44 +205,44 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
         </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-ion</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-cbor</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-smile</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-avro</artifactId>
-            <version>2.9.8</version>
+            <version>2.9.9</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
