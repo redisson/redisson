@@ -30,6 +30,8 @@ import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RedissonClient;
+import org.redisson.codec.FstCodec;
+import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -273,7 +275,19 @@ public class RedissonExecutorServiceTest extends BaseTest {
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();
     }
-    
+
+    @Test
+    public void testInjectables() {
+        RExecutorService e = redisson.getExecutorService("test");
+        e.execute(new InjectablesInTask());
+
+        await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 6);
+        assertThat(redisson.getAtomicLong("myCounter").get()).isEqualTo(6);
+        assertThat(redisson.getBucket("myBucket").get()).isEqualTo("ABC");
+        assertThat(redisson.getSet("mySet", new FstCodec()).iterator().next()).isEqualTo(1);
+        assertThat(redisson.getMap("myMap", new JsonJacksonCodec()).get("1")).isEqualTo("999");
+    }
+
     @Test
     public void testCancelAndInterrupt() throws InterruptedException, ExecutionException {
         RExecutorService executor = redisson.getExecutorService("test");

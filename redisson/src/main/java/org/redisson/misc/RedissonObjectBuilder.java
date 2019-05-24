@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.liveobject.core;
+package org.redisson.misc;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +45,7 @@ import org.redisson.RedissonSortedSet;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
+import org.redisson.api.RObjectAsync;
 import org.redisson.api.RObjectReactive;
 import org.redisson.api.RObjectRx;
 import org.redisson.api.RedissonClient;
@@ -57,74 +58,59 @@ import org.redisson.client.codec.Codec;
 import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
-import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 /**
- * 
- * @author Rui Gu
+ *
+ * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
  *
  */
 public class RedissonObjectBuilder {
 
-    private static final Map<Class<?>, Class<? extends RObject>> SUPPORTED_CLASS_MAPPING = new LinkedHashMap<>();
-    
+    private static final Map<Class<?>, Class<? extends RObject>> TRANSLATABLE_TYPE_MAPPING = new LinkedHashMap<Class<?>, Class<? extends RObject>>();
+
     static {
-        SUPPORTED_CLASS_MAPPING.put(SortedSet.class,      RedissonSortedSet.class);
-        SUPPORTED_CLASS_MAPPING.put(Set.class,            RedissonSet.class);
-        SUPPORTED_CLASS_MAPPING.put(ConcurrentMap.class,  RedissonMap.class);
-        SUPPORTED_CLASS_MAPPING.put(Map.class,            RedissonMap.class);
-        SUPPORTED_CLASS_MAPPING.put(BlockingDeque.class,  RedissonBlockingDeque.class);
-        SUPPORTED_CLASS_MAPPING.put(Deque.class,          RedissonDeque.class);
-        SUPPORTED_CLASS_MAPPING.put(BlockingQueue.class,  RedissonBlockingQueue.class);
-        SUPPORTED_CLASS_MAPPING.put(Queue.class,          RedissonQueue.class);
-        SUPPORTED_CLASS_MAPPING.put(List.class,           RedissonList.class);
+        TRANSLATABLE_TYPE_MAPPING.put(SortedSet.class,      RedissonSortedSet.class);
+        TRANSLATABLE_TYPE_MAPPING.put(Set.class,            RedissonSet.class);
+        TRANSLATABLE_TYPE_MAPPING.put(ConcurrentMap.class,  RedissonMap.class);
+        TRANSLATABLE_TYPE_MAPPING.put(Map.class,            RedissonMap.class);
+        TRANSLATABLE_TYPE_MAPPING.put(BlockingDeque.class,  RedissonBlockingDeque.class);
+        TRANSLATABLE_TYPE_MAPPING.put(Deque.class,          RedissonDeque.class);
+        TRANSLATABLE_TYPE_MAPPING.put(BlockingQueue.class,  RedissonBlockingQueue.class);
+        TRANSLATABLE_TYPE_MAPPING.put(Queue.class,          RedissonQueue.class);
+        TRANSLATABLE_TYPE_MAPPING.put(List.class,           RedissonList.class);
     }
 
     private final Config config;
     
-    public static class CodecMethodRef {
+    private static final Map<Class<?>, RedissonIntrospector.CodecMethodRef> REFERENCES = RedissonIntrospector.getObjectBuilderMethods();
+    private static final Map<String, Class<?>> SUPPORTED_TYPES = RedissonIntrospector.getSupportedTypes();
 
-        Method defaultCodecMethod;
-        Method customCodecMethod;
-
-        Method get(boolean value) {
-            if (value) {
-                return defaultCodecMethod;
-            }
-            return customCodecMethod;
-        }
-    }
-    
-    private static final Map<Class<?>, CodecMethodRef> REFERENCES = new HashMap<>();
-    
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
     public RedissonObjectBuilder(Config config) {
         super();
         this.config = config;
-        fillCodecMethods(REFERENCES, RedissonClient.class, RObject.class);
-        fillCodecMethods(REFERENCES, RedissonReactiveClient.class, RObjectReactive.class);
-        fillCodecMethods(REFERENCES, RedissonRxClient.class, RObjectRx.class);
     }
 
     public ReferenceCodecProvider getReferenceCodecProvider() {
         return codecProvider;
     }
     
-    public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
-        Codec codec = ar.getCodec();
+    public void store(Object ar, String fieldName, RMap<String, Object> liveMap) {
+        Codec codec = ClassUtils.tryGetFieldWithGetter(ar, "codec");
+        String name = ClassUtils.tryGetFieldWithGetter(ar, "name");
         if (codec != null) {
             codecProvider.registerCodec((Class) codec.getClass(), codec);
         }
         liveMap.fastPut(fieldName,
-                new RedissonReference(ar.getClass(), ar.getName(), codec));
+                new RedissonReference(ar.getClass(), name, codec));
     }
     
-    public RObject createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, RedissonClient redisson) {
-        Class<? extends RObject> mappedClass = getMappedClass(fieldType);
+    public Object createObject(Object id, Class<?> clazz, Class<?> fieldType, String fieldName, RedissonClient redisson) {
+        Class<?> mappedClass = tryTranslatedTypes(fieldType);
         try {
             if (mappedClass != null) {
                 Codec fieldCodec = getFieldCodec(clazz, mappedClass, fieldName);
@@ -142,7 +128,7 @@ public class RedissonObjectBuilder {
     /**
      * WARNING: rEntity has to be the class of @This object.
      */
-    private Codec getFieldCodec(Class<?> rEntity, Class<? extends RObject> rObjectClass, String fieldName) throws Exception {
+    private Codec getFieldCodec(Class<?> rEntity, Class<?> rObjectClass, String fieldName) throws Exception {
         Field field = ClassUtils.getDeclaredField(rEntity, fieldName);
         if (field.isAnnotationPresent(RObjectField.class)) {
             RObjectField anno = field.getAnnotation(RObjectField.class);
@@ -168,33 +154,21 @@ public class RedissonObjectBuilder {
         }
     }
 
-    private Class<? extends RObject> getMappedClass(Class<?> cls) {
-        for (Entry<Class<?>, Class<? extends RObject>> entrySet : SUPPORTED_CLASS_MAPPING.entrySet()) {
+    public static Class<?> tryTranslatedTypes(Class<?> cls) {
+        if (RObjectAsync.class.isAssignableFrom(cls)
+            || RObjectRx.class.isAssignableFrom(cls)) {
+            return cls;
+        }
+        for (Entry<Class<?>, Class<? extends RObject>> entrySet : TRANSLATABLE_TYPE_MAPPING.entrySet()) {
             if (entrySet.getKey().isAssignableFrom(cls)) {
                 return entrySet.getValue();
             }
         }
         return null;
     }
-    
-    private void fillCodecMethods(Map<Class<?>, CodecMethodRef> map, Class<?> clientClazz, Class<?> objectClazz) {
-        for (Method method : clientClazz.getDeclaredMethods()) {
-            if (!method.getReturnType().equals(Void.TYPE)
-                    && objectClazz.isAssignableFrom(method.getReturnType())
-                    && method.getName().startsWith("get")) {
-                Class<?> cls = method.getReturnType();
-                if (!map.containsKey(cls)) {
-                    map.put(cls, new CodecMethodRef());
-                }
-                CodecMethodRef builder = map.get(cls);
-                if (method.getParameterTypes().length == 2 //first param is name, second param is codec.
-                        && Codec.class.isAssignableFrom(method.getParameterTypes()[1])) {
-                    builder.customCodecMethod = method;
-                } else if (method.getParameterTypes().length == 1) {
-                    builder.defaultCodecMethod = method;
-                }
-            }
-        }
+
+    public static Class<?> getSupportedTypes(String simpleName) {
+        return SUPPORTED_TYPES.get(simpleName);
     }
 
     public Object fromReference(RedissonClient redisson, RedissonReference rr) throws Exception {
@@ -216,7 +190,7 @@ public class RedissonObjectBuilder {
             ReferenceCodecProvider codecProvider)
             throws IllegalAccessException, InvocationTargetException, Exception, ClassNotFoundException {
         if (type != null) {
-            CodecMethodRef b = REFERENCES.get(type);
+            RedissonIntrospector.CodecMethodRef b = REFERENCES.get(type);
             if (b == null && type.getInterfaces().length > 0) {
                 type = type.getInterfaces()[0];
             }
@@ -294,12 +268,19 @@ public class RedissonObjectBuilder {
         return null;
     }
 
-    public <T extends RObject, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
-        List<Class<?>> interfaces = Arrays.asList(expectedType.getInterfaces());
+    public <T, K extends Codec> T createRObject(RedissonClient redisson, Class<T> expectedType, String name, K codec) throws Exception {
+
+        List<Class<?>> interfaces;
+        if (expectedType.isInterface()) {
+            interfaces = new ArrayList<>();
+            interfaces.add(expectedType);
+        } else {
+            interfaces = Arrays.asList(expectedType.getInterfaces());
+        }
         for (Class<?> iType : interfaces) {
             if (REFERENCES.containsKey(iType)) {// user cache to speed up things a little.
-                Method builder = REFERENCES.get(iType).get(codec != null);
-                if (codec != null) {
+                Method builder = REFERENCES.get(iType).get(codec == null);
+                if (codec == null) {
                     return (T) builder.invoke(redisson, name);
                 }
                 return (T) builder.invoke(redisson, name, codec);
@@ -316,5 +297,6 @@ public class RedissonObjectBuilder {
         }
         throw new ClassNotFoundException("No RObject is found to match class type of " + type + " with codec type of " + codecName);
     }
-    
+
+
 }

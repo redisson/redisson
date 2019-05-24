@@ -15,22 +15,22 @@
  */
 package org.redisson.misc;
 
+import org.redisson.api.annotation.RInject;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.redisson.api.RedissonClient;
-import org.redisson.api.annotation.RInject;
-
 /**
  * 
  * @author Nikita Koksharov
+ * @author Rui Gu (https://github.com/jackygurui)
  *
  */
 public class Injector {
 
-    public static void inject(Object task, RedissonClient redisson) {
+    public static void inject(Object task, InjectionContext injectionContext) {
         List<Field> allFields = new ArrayList<Field>();
         Class<?> clazz = task.getClass();
         while (true) {
@@ -46,16 +46,29 @@ public class Injector {
                 clazz = null;
             }
         }
-        
-        for (Field field : allFields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
-                    && field.isAnnotationPresent(RInject.class)) {
-                field.setAccessible(true);
+        doInjection(allFields, task, injectionContext);
+    }
+
+    private static void doInjection(List<Field> fields, Object target, InjectionContext injectionContext) {
+        for (Field field : fields) {
+            if (!field.isAnnotationPresent(RInject.class)) {
+                continue;
+            }
+
+            Class<?> fieldType = field.getType();
+            RInject rInject = field.getAnnotation(RInject.class);
+            try {
+                Object obj = injectionContext.resolve(fieldType, rInject);
                 try {
-                    field.set(task, redisson);
-                } catch (IllegalAccessException e) {
-                    throw new IllegalStateException(e);
+                    ClassUtils.trySetFieldWithSetter(target, field, obj);
+                } catch (IllegalStateException | IllegalArgumentException e) {
+                    throw new IllegalStateException("Failed to set instance of type " + fieldType.getName() + " for field named " + field.getName(), e);
                 }
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                        "Unable to resolve RedissonObjects for field \"" + field.getName()
+                                + "\" in class " + target.getClass().getName()
+                                + " with annotation " + rInject, e);
             }
         }
     }

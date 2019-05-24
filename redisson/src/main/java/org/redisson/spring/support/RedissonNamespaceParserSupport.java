@@ -161,7 +161,11 @@ public class RedissonNamespaceParserSupport {
         parserContext.registerComponent(componentDefinition);
         return componentDefinition;
     }
-    
+
+    public boolean containsBeanDefinition(String beanName, ParserContext parserContext) {
+        return parserContext.getRegistry().containsBeanDefinition(beanName);
+    }
+
     public void addConstructorArgs(Element element, String attribute, Class<?> type, BeanDefinition bd) {
         if (element.hasAttribute(attribute)) {
             addConstructorArgs(element.getAttribute(attribute), type, bd);

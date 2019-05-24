@@ -1,5 +1,12 @@
 package org.redisson;
 
+import org.redisson.client.RedisClient;
+import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisConnection;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
@@ -19,12 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
 
 /**
  *
@@ -190,7 +191,7 @@ public class RedisRunner {
     }
     
     private final LinkedHashMap<REDIS_OPTIONS, String> options = new LinkedHashMap<>();
-    protected static RedisRunner.RedisProcess defaultRedisInstance;
+    protected static RedisProcess defaultRedisInstance;
     private static int defaultRedisInstanceExitCode;
 
     private String path = "";
@@ -270,7 +271,7 @@ public class RedisRunner {
             return runAndCheck();
         }
     }
-    
+
     public RedisProcess runAndCheck() throws IOException, InterruptedException, FailedToStartRedisException {
         List<String> args = new ArrayList(options.values());
         if (sentinelFile != null && sentinelFile.length() > 0) {
@@ -300,7 +301,7 @@ public class RedisRunner {
     public boolean hasOption(REDIS_OPTIONS option) {
         return options.containsKey(option);
     }
-    
+
     private void addConfigOption(REDIS_OPTIONS option, Object... args) {
         StringBuilder sb = new StringBuilder("--")
                 .append(option.toString()
@@ -336,18 +337,18 @@ public class RedisRunner {
         addConfigOption(REDIS_OPTIONS.PORT, port);
         return this;
     }
-    
+
     public RedisRunner randomPort() {
         return randomPort(Integer.MAX_VALUE);
     }
-    
+
     public RedisRunner randomPort(int retryCount) {
         this.randomPort = true;
         this.retryCount = retryCount;
         options.remove(REDIS_OPTIONS.PORT);
         return this;
     }
-    
+
     public int getPort() {
         return this.port;
     }
@@ -671,10 +672,10 @@ public class RedisRunner {
 
     public RedisRunner notifyKeyspaceEvents(KEYSPACE_EVENTS_OPTIONS... notifyKeyspaceEvents) {
         String existing = this.options.getOrDefault(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS, "");
-        
+
         String events = Arrays.stream(notifyKeyspaceEvents)
                             .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append).toString();
-        
+
         addConfigOption(REDIS_OPTIONS.NOTIFY_KEYSPACE_EVENTS,
                 existing.contains(events)
                 ? existing
@@ -751,57 +752,57 @@ public class RedisRunner {
         addConfigOption(REDIS_OPTIONS.AOF_REWRITE_INCREMENTAL_FSYNC, convertBoolean(aofRewriteIncrementalFsync));
         return this;
     }
-    
+
     public RedisRunner protectedMode(boolean protectedMode) {
         addConfigOption(REDIS_OPTIONS.PROTECTED_MODE, convertBoolean(protectedMode));
         return this;
     }
-    
+
     public RedisRunner sentinel() {
         sentinelFile = "sentinel_conf_" + UUID.randomUUID() + ".conf";
         return this;
     }
-    
+
     public RedisRunner sentinelAnnounceIP(String sentinelAnnounceIP) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$ANNOUNCE_IP, sentinelAnnounceIP);
         return this;
     }
-    
+
     public RedisRunner sentinelAnnouncePort(int sentinelAnnouncePort) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$ANNOUNCE_PORT, sentinelAnnouncePort);
         return this;
     }
-    
+
     public RedisRunner sentinelMonitor(String masterName, String ip, int port, int quorum) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$MONITOR, masterName, ip, port, quorum);
         return this;
     }
-    
+
     public RedisRunner sentinelAuthPass(String masterName, String password) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$AUTH_PASS, masterName, password);
         return this;
     }
-    
+
     public RedisRunner sentinelDownAfterMilliseconds(String masterName, long downAfterMilliseconds) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$DOWN_AFTER_MILLISECONDS, masterName, downAfterMilliseconds);
         return this;
     }
-    
+
     public RedisRunner sentinelParallelSyncs(String masterName, int numSlaves) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$PARALLEL_SYNCS, masterName, numSlaves);
         return this;
     }
-    
+
     public RedisRunner sentinelFailoverTimeout(String masterName, long failoverTimeout) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$FAILOVER_TIMEOUT, masterName, failoverTimeout);
         return this;
     }
-    
+
     public RedisRunner sentinelNotificationScript(String masterName, String scriptPath) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$NOTIFICATION_SCRIPT, masterName, scriptPath);
         return this;
     }
-    
+
     public RedisRunner sentinelClientReconfigScript(String masterName, String scriptPath) {
         addConfigOption(REDIS_OPTIONS.SENTINEL$CLIENT_RECONFIG_SCRIPT, masterName, scriptPath);
         return this;
@@ -814,7 +815,7 @@ public class RedisRunner {
     public boolean isCluster() {
         return this.clusterFile != null;
     }
-    
+
     public boolean isRandomDir() {
         return this.randomDir;
     }
@@ -826,7 +827,7 @@ public class RedisRunner {
     public String defaultDir() {
         return this.defaultDir;
     }
-    
+
     public String dir() {
         return isRandomDir() ? defaultDir() : this.path;
     }
@@ -881,7 +882,7 @@ public class RedisRunner {
         private Process redisProcess;
         private final RedisRunner runner;
         private RedisVersion redisVersion;
-        
+
         private RedisProcess(Process redisProcess, RedisRunner runner) {
             this.redisProcess = redisProcess;
             this.runner = runner;
@@ -911,7 +912,7 @@ public class RedisRunner {
             if (!normalTermination) {
                 p = p.destroyForcibly();
             }
-            
+
             Executors.newScheduledThreadPool(1).schedule(() -> {
                 try {
                     redisProcess = runner.run().redisProcess;
@@ -920,7 +921,7 @@ public class RedisRunner {
                 }
             }, startTimeout, TimeUnit.SECONDS);
         }
-        
+
         public int stop() {
             if (runner.isNosave() && !runner.isRandomDir()) {
                 RedisClient c = createDefaultRedisClientInstance();
@@ -961,11 +962,11 @@ public class RedisRunner {
                 runner.deleteDBfileDir();
             }
         }
-        
+
         public String getDefaultDir() {
             return runner.getDefaultDir();
         }
-        
+
         public Process getRedisProcess() {
             return redisProcess;
         }
@@ -988,25 +989,25 @@ public class RedisRunner {
             }
             return redisVersion;
         }
-        
+
         public int getRedisServerPort() {
             return runner.getPort();
         }
-        
+
         public String getRedisServerBindAddress() {
             return runner.getInitialBindAddr();
         }
-        
+
         public String getRedisServerAddressAndPort() {
             return "redis://" + getRedisServerBindAddress() + ":" + getRedisServerPort();
         }
-        
+
         public boolean isAlive() {
             return redisProcess.isAlive();
         }
     }
 
-    public static RedisRunner.RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException, FailedToStartRedisException {
+    public static RedisProcess startDefaultRedisServerInstance() throws IOException, InterruptedException, FailedToStartRedisException {
         if (defaultRedisInstance == null) {
             System.out.println("REDIS RUNNER: Starting up default instance...");
             defaultRedisInstance = new RedisRunner().nosave().randomDir().randomPort().run();
@@ -1039,8 +1040,8 @@ public class RedisRunner {
     public String getDefaultDir() {
         return defaultDir;
     }
-    
-    public static RedisRunner.RedisProcess getDefaultRedisServerInstance() {
+
+    public static RedisProcess getDefaultRedisServerInstance() {
         return defaultRedisInstance;
     }
 

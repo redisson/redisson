@@ -29,10 +29,8 @@ import org.redisson.api.RSetMultimap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.REntity.TransformationMode;
-import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RIndex;
-import org.redisson.liveobject.misc.ClassUtils;
-import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.misc.ClassUtils;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
@@ -41,6 +39,7 @@ import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.SuperCall;
 import net.bytebuddy.implementation.bind.annotation.This;
+import org.redisson.misc.RedissonObjectBuilder;
 
 /**
  * This class is going to be instantiated and becomes a <b>static</b> field of
@@ -64,10 +63,11 @@ public class AccessorInterceptor {
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
             @AllArguments Object[] args, @This Object me,
             @FieldValue("liveObjectLiveMap") RMap<String, Object> liveMap) throws Exception {
-        if (isGetter(method, getREntityIdFieldName(me))) {
+        String entityIdFieldName = ClassUtils.getREntityIdFieldName(me);
+        if (ClassUtils.isGetter(method, entityIdFieldName)) {
             return ((RLiveObject) me).getLiveObjectId();
         }
-        if (isSetter(method, getREntityIdFieldName(me))) {
+        if (ClassUtils.isSetter(method, entityIdFieldName)) {
             ((RLiveObject) me).setLiveObjectId(args[0]);
             return null;
         }
@@ -76,10 +76,10 @@ public class AccessorInterceptor {
         Field field = ClassUtils.getDeclaredField(me.getClass().getSuperclass(), fieldName);
         Class<?> fieldType = field.getType();
         
-        if (isGetter(method, fieldName)) {
+        if (ClassUtils.isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName, redisson);
+                Object ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName, redisson);
                 if (ar != null) {
                     objectBuilder.store(ar, fieldName, liveMap);
                     return ar;
@@ -97,7 +97,7 @@ public class AccessorInterceptor {
             }
             return result;
         }
-        if (isSetter(method, fieldName)) {
+        if (ClassUtils.isSetter(method, fieldName)) {
             Object arg = args[0];
             if (arg != null && ClassUtils.isAnnotationPresent(arg.getClass(), REntity.class)) {
                 throw new IllegalStateException("REntity object should be attached to Redisson first");
@@ -111,7 +111,7 @@ public class AccessorInterceptor {
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
                 NamingScheme ns = objectBuilder.getNamingScheme(rEntity);
                 liveMap.fastPut(fieldName, new RedissonReference(rEntity,
-                        ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
+                        ns.getName(rEntity, fieldType, ClassUtils.getREntityIdFieldName(liveObject),
                                 liveObject.getLiveObjectId())));
                 return me;
             }
@@ -121,7 +121,7 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
                             REntity.class).fieldTransformation())) {
-                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName, redisson);
+                Object rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName, redisson);
                 if (arg != null) {
                     if (rObject instanceof Collection) {
                         Collection<?> c = (Collection<?>) rObject;
@@ -181,26 +181,6 @@ public class AccessorInterceptor {
             i = 3;
         }
         return name.substring(i - 1, i).toLowerCase() + name.substring(i);
-    }
-
-    private boolean isGetter(Method method, String fieldName) {
-        return method.getName().equals("get" + getFieldNameSuffix(fieldName))
-                || method.getName().equals("is" + getFieldNameSuffix(fieldName));
-    }
-
-    private boolean isSetter(Method method, String fieldName) {
-        return method.getName().equals("set" + getFieldNameSuffix(fieldName));
-    }
-
-    private static String getFieldNameSuffix(String fieldName) {
-        return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
-    }
-
-    private static String getREntityIdFieldName(Object o) throws Exception {
-        return Introspectior
-                .getFieldsWithAnnotation(o.getClass().getSuperclass(), RId.class)
-                .getOnly()
-                .getName();
     }
 
 }

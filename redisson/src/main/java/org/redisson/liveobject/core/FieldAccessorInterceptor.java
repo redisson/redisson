@@ -18,7 +18,7 @@ package org.redisson.liveobject.core;
 import java.lang.reflect.Method;
 
 import org.redisson.api.RMap;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;

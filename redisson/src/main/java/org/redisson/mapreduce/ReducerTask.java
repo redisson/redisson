@@ -25,6 +25,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RReducer;
 import org.redisson.client.codec.Codec;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Injector;
 
 /**
@@ -67,7 +68,7 @@ public class ReducerTask<KOut, VOut> implements Runnable, Serializable {
             throw new IllegalArgumentException(e);
         }
         
-        Injector.inject(reducer, redisson);
+        Injector.inject(reducer, new DefaultInjectionContext(redisson));
         
         RMap<KOut, VOut> map = redisson.getMap(resultMapName);
         RListMultimap<KOut, VOut> multimap = redisson.getListMultimap(name, codec);

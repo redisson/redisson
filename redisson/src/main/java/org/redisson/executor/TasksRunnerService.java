@@ -45,6 +45,7 @@ import org.redisson.executor.params.ScheduledCronExpressionParameters;
 import org.redisson.executor.params.ScheduledParameters;
 import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
 import org.redisson.executor.params.TaskParameters;
+import org.redisson.misc.DefaultInjectionContext;
 import org.redisson.misc.Hash;
 import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
@@ -282,7 +283,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                 task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
             }
             
-            Injector.inject(task, redisson);
+            Injector.inject(task, new DefaultInjectionContext(redisson));
             return task;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);

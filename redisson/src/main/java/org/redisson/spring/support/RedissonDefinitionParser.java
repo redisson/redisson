@@ -44,7 +44,7 @@ public final class RedissonDefinitionParser
     private static final String REF_SUFFIX = "-ref";
     private static final String REDISSON_REF = "redisson-ref";
     
-    enum ConfigType {
+    static enum ConfigType {
         singleServer,
         sentinelServers,
         replicatedServers,
@@ -61,7 +61,7 @@ public final class RedissonDefinitionParser
         }
     }
 
-    enum AddressType {
+    static enum AddressType {
         slaveAddress,
         sentinelAddress,
         nodeAddress;
@@ -136,7 +136,7 @@ public final class RedissonDefinitionParser
     }
     
     @Override
-    public BeanDefinition parse(Element element, ParserContext parserContext) {        
+    public BeanDefinition parse(Element element, ParserContext parserContext) {
         //Sort out the Config Class
         BeanDefinitionBuilder configBuilder 
                 = helper.createBeanDefinitionBuilder(element, parserContext,
@@ -145,7 +145,16 @@ public final class RedissonDefinitionParser
         helper.parseAttributes(element, parserContext, configBuilder);
         helper.registerBeanDefinition(configBuilder, configId,
                 null, parserContext);
-        
+
+        //Do the RInjectBeanPostProcessor
+        String processorId = RInjectBeanPostProcessor.class.getSimpleName();
+        if (!helper.containsBeanDefinition(processorId, parserContext)) {
+            BeanDefinitionBuilder processorBuilder
+                    = helper.createBeanDefinitionBuilder(null, parserContext, RInjectBeanPostProcessor.class);
+            processorBuilder.setScope(BeanDefinition.SCOPE_SINGLETON);
+            helper.registerBeanDefinition(processorBuilder, processorId, null, parserContext);
+        }
+
         //Do the main Redisson bean
         BeanDefinitionBuilder builder 
                 = helper.createBeanDefinitionBuilder(element, parserContext,

@@ -66,7 +66,7 @@ public interface ReferenceCodecProvider {
      * 
      * @return the cached codec instance.
      */
-    <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config);
+    <T extends Codec, K> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config);
 
     /**
      * Register a codec by its class or super class.

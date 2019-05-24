@@ -25,7 +25,7 @@ import org.redisson.api.RMultimapAsync;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.client.RedisException;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
@@ -37,6 +37,7 @@ import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import net.bytebuddy.implementation.bind.annotation.This;
+import org.redisson.misc.RedissonObjectBuilder;
 
 /**
  *

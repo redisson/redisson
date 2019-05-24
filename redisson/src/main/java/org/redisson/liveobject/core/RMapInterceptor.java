@@ -21,7 +21,7 @@ import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
 import org.redisson.api.RMap;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 
 /**
  *

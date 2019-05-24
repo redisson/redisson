@@ -23,7 +23,7 @@ import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
-import org.redisson.liveobject.misc.ClassUtils;
+import org.redisson.misc.ClassUtils;
 
 /**
  *
@@ -64,7 +64,7 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
     }
 
     @Override
-    public <T extends Codec, K extends RObject> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config) {
+    public <T extends Codec, K> T getCodec(RObjectField anno, Class<?> cls, Class<K> rObjectClass, String fieldName, Config config) {
         try {
             if (!ClassUtils.getDeclaredField(cls, fieldName).isAnnotationPresent(anno.getClass())) {
                 throw new IllegalArgumentException("Annotation RObjectField does not present on field " + fieldName + " of type [" + cls.getCanonicalName() + "]");

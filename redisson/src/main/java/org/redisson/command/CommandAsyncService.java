@@ -72,7 +72,7 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
-import org.redisson.liveobject.core.RedissonObjectBuilder;
+import org.redisson.misc.RedissonObjectBuilder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;

@@ -1,11 +1,7 @@
 package org.redisson.spring.support;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.AfterClass;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -23,6 +19,10 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.junit.Assert.*;
 
 /**
  *
@@ -61,7 +61,7 @@ public class SpringNamespaceTest extends BaseTest {
     }
 
     public static void startContext() throws Exception {
-        System.setProperty("redisAddress", "redis://" + RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        System.setProperty("redisAddress", RedisRunner.getDefaultRedisServerBindAddressAndPort());
         
         //Needs a instance running on the default port, launch it if there isn't one already
         if (RedisRunner.isFreePort(6379)) {
@@ -79,7 +79,7 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort())
                 .run();
-        System.setProperty("slave1Address", "redis://" + slave1.getRedisServerAddressAndPort());
+        System.setProperty("slave1Address", slave1.getRedisServerAddressAndPort());
         
         RedisRunner.RedisProcess slave2 = new RedisRunner()
                 .nosave()
@@ -89,7 +89,7 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort())
                 .run();
-        System.setProperty("slave2Address", "redis://" + slave2.getRedisServerAddressAndPort());
+        System.setProperty("slave2Address", slave2.getRedisServerAddressAndPort());
         
         RedisRunner.RedisProcess sentinel1 = new RedisRunner()
                 .nosave()
@@ -101,7 +101,7 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
                         2).run();
-        System.setProperty("sentinel1Address", "redis://" + sentinel1.getRedisServerAddressAndPort());
+        System.setProperty("sentinel1Address", sentinel1.getRedisServerAddressAndPort());
         
         RedisRunner.RedisProcess sentinel2 = new RedisRunner()
                 .nosave()
@@ -113,7 +113,7 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
                         2).run();
-        System.setProperty("sentinel2Address", "redis://" + sentinel2.getRedisServerAddressAndPort());
+        System.setProperty("sentinel2Address", sentinel2.getRedisServerAddressAndPort());
         
         RedisRunner.RedisProcess sentinel3 = new RedisRunner()
                 .nosave()
@@ -125,7 +125,7 @@ public class SpringNamespaceTest extends BaseTest {
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerBindAddress(),
                         RedisRunner.getDefaultRedisServerInstance().getRedisServerPort(),
                         2).run();
-        System.setProperty("sentinel3Address", "redis://" + sentinel3.getRedisServerAddressAndPort());
+        System.setProperty("sentinel3Address", sentinel3.getRedisServerAddressAndPort());
         RedisRunner slave = new RedisRunner().randomPort().randomDir().nosave();
         ClusterRunner clusterRunner = new ClusterRunner()
                 .addNode(new RedisRunner().randomPort().randomDir().nosave(),//master1
@@ -143,7 +143,7 @@ public class SpringNamespaceTest extends BaseTest {
                         new RedisRunner().randomPort().randomDir().nosave());//slave1-3-2
         final AtomicLong index = new AtomicLong(0);
         clusterRunner.run().getNodes().stream().forEach((node) -> {
-            System.setProperty("node" + (index.incrementAndGet()) + "Address", "redis://" + node.getRedisServerAddressAndPort());
+            System.setProperty("node" + (index.incrementAndGet()) + "Address", node.getRedisServerAddressAndPort());
         });
         
         context = new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/namespace.xml");
@@ -305,6 +305,11 @@ public class SpringNamespaceTest extends BaseTest {
     public void testNamespace() {
         Object bean = context.getBean("myRedisson1");
         assertTrue(bean instanceof Redisson);
+    }
+
+    @Test
+    public void testRInjectPostProcessorCreation() {
+        assertNotNull(context.getBean(RInjectBeanPostProcessor.class));
     }
 
     @Test
