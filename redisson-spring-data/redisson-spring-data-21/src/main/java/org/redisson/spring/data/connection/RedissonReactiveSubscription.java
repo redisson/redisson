@@ -132,7 +132,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
 
     @Override
     public Flux<Message<ByteBuffer, ByteBuffer>> receive() {
-        if (flux.get() == null) {
+        if (flux.get() != null) {
             return flux.get();
         }
         
