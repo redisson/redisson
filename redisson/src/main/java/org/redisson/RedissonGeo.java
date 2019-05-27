@@ -512,4 +512,79 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
                 encode(member), radius, geoUnit, geoOrder, "COUNT", count, "STORE", destName);
     }
 
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
+            GeoUnit geoUnit) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+                convert(longitude), convert(latitude), radius, geoUnit, "STOREDIST", destName);
+    }
+
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
+            GeoUnit geoUnit, int count) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+                convert(longitude), convert(latitude), radius, geoUnit, "COUNT", count, "STOREDIST", destName);
+    }
+
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, double longitude, double latitude, double radius,
+            GeoUnit geoUnit, GeoOrder geoOrder, int count) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GEORADIUS_STORE, getName(),
+                convert(longitude), convert(latitude), radius, geoUnit, geoOrder, "COUNT", count, "STOREDIST", destName);
+    }
+
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+                encode(member), radius, geoUnit, "STOREDIST", destName);
+    }
+
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit,
+            int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+                encode(member), radius, geoUnit, "COUNT", count, "STOREDIST", destName);
+    }
+
+    @Override
+    public RFuture<Long> radiusStoreSortedToAsync(String destName, V member, double radius, GeoUnit geoUnit,
+            GeoOrder geoOrder, int count) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEORADIUSBYMEMBER_STORE, getName(),
+                encode(member), radius, geoUnit, geoOrder, "COUNT", count, "STOREDIST", destName);
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, double longitude, double latitude, double radius,
+            GeoUnit geoUnit) {
+        return get(radiusStoreSortedToAsync(destName, longitude, latitude, radius, geoUnit));
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit,
+            int count) {
+        return get(radiusStoreSortedToAsync(destName, longitude, latitude, radius, geoUnit, count));
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit,
+            GeoOrder geoOrder, int count) {
+        return get(radiusStoreSortedToAsync(destName, longitude, latitude, radius, geoUnit, geoOrder, count));
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit) {
+        return get(radiusStoreSortedToAsync(destName, member, radius, geoUnit));
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit, int count) {
+        return get(radiusStoreSortedToAsync(destName, member, radius, geoUnit));
+    }
+
+    @Override
+    public long radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder,
+            int count) {
+        return get(radiusStoreSortedToAsync(destName, member, radius, geoUnit));
+    }
+
 }
