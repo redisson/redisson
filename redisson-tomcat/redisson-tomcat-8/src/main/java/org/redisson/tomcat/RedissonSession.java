@@ -62,12 +62,15 @@ public class RedissonSession extends StandardSession {
     
     private Set<String> removedAttributes = Collections.emptySet();
     
-    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode, UpdateMode updateMode) {
+    private final boolean broadcastSessionEvents;
+    
+    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents) {
         super(manager);
         this.redissonManager = manager;
         this.readMode = readMode;
         this.updateMode = updateMode;
         this.topic = redissonManager.getTopic();
+        this.broadcastSessionEvents = broadcastSessionEvents;
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -143,7 +146,11 @@ public class RedissonSession extends StandardSession {
             map = redissonManager.getMap(id);
         }
         
-        map.delete();
+        if (broadcastSessionEvents) {
+            map.expire(60, TimeUnit.SECONDS);
+        } else {
+            map.delete();
+        }
         if (readMode == ReadMode.MEMORY) {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
@@ -187,7 +194,7 @@ public class RedissonSession extends StandardSession {
             map.expire(maxInactiveInterval + 60, TimeUnit.SECONDS);
         }
     }
-    
+
     protected AttributesPutAllMessage createPutAllMessage(Map<String, Object> newMap) {
         Map<String, Object> map = new HashMap<String, Object>();
         for (Entry<String, Object> entry : newMap.entrySet()) {

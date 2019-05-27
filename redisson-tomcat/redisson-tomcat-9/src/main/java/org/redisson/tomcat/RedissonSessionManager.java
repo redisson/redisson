@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import javax.servlet.http.HttpSession;
@@ -158,6 +157,10 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session findSession(String id) throws IOException {
+        return findSession(id, true);
+    }
+    
+    private Session findSession(String id, boolean notify) throws IOException {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
@@ -168,14 +171,14 @@ public class RedissonSessionManager extends ManagerBase {
                     log.error("Can't read session object by id: " + id, e);
                 }
 
-                if (attrs.isEmpty()) {	
+                if (attrs.isEmpty()) {  
                     log.info("Session " + id + " can't be found");
-                    return null;	
+                    return null;    
                 }
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
                 session.load(attrs);
-                session.setId(id);
+                session.setId(id, notify);
                 
                 session.access();
                 session.endAccess();
@@ -192,7 +195,7 @@ public class RedissonSessionManager extends ManagerBase {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this, readMode, updateMode);
+        return new RedissonSession(this, readMode, updateMode, broadcastSessionEvents);
     }
     
     @Override
@@ -289,7 +292,16 @@ public class RedissonSessionManager extends ManagerBase {
                                 if (s == null) {
                                     throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
                                 }
-                        }
+                            }
+                            
+                            if (msg instanceof SessionDestroyedMessage) {
+                                Session s = findSession(msg.getSessionId(), false);
+                                if (s == null) {
+                                    throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
+                                }
+                                s.expire();
+                            }
+                            
                         }
 
                     } catch (Exception e) {

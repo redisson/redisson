@@ -180,6 +180,10 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     
     @Override
     public Session findSession(String id) throws IOException {
+        return findSession(id, true);
+    }
+    
+    private Session findSession(String id, boolean notify) throws IOException {
         Session result = super.findSession(id);
         if (result == null) {
             if (id != null) {
@@ -197,7 +201,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                 
                 RedissonSession session = (RedissonSession) createEmptySession();
                 session.load(attrs);
-                session.setId(id);
+                session.setId(id, notify);
                 
                 session.access();
                 session.endAccess();
@@ -214,7 +218,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
     
     @Override
     public Session createEmptySession() {
-        return new RedissonSession(this, readMode, updateMode);
+        return new RedissonSession(this, readMode, updateMode, broadcastSessionEvents);
     }
     
     @Override
@@ -310,6 +314,14 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
                                 if (s == null) {
                                     throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
                                 }
+                            }
+                            
+                            if (msg instanceof SessionDestroyedMessage) {
+                                Session s = findSession(msg.getSessionId(), false);
+                                if (s == null) {
+                                    throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
+                                }
+                                s.expire();
                             }
                         }
 
