@@ -16,7 +16,7 @@
 package org.redisson.api;
 
 /**
- * This RingBuffer based queue evicts elements from the head if queue capacity became full.
+ * RingBuffer based queue evicts elements from the head if queue capacity became full.
  * <p>
  * The head element removed if new element added and queue is full. 
  * <p>
