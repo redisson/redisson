@@ -34,6 +34,7 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.RedisProcess;
+import org.redisson.api.CacheAsync;
 import org.redisson.api.CacheReactive;
 import org.redisson.api.CacheRx;
 import org.redisson.codec.TypedJsonJacksonCodec;
@@ -45,6 +46,29 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JCacheTest extends BaseTest {
 
+    @Test
+    public void testAsync() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+        
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+        
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        CacheAsync<String, String> async = cache.unwrap(CacheAsync.class);
+        async.putAsync("1", "2").get();
+        assertThat(async.getAsync("1").get()).isEqualTo("2");
+        
+        cache.close();
+        runner.stop();
+    }
+    
     @Test
     public void testReactive() throws Exception {
         RedisProcess runner = new RedisRunner()
@@ -83,9 +107,9 @@ public class JCacheTest extends BaseTest {
         Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
                 .createCache("test", config);
 
-        CacheRx<String, String> reactive = cache.unwrap(CacheRx.class);
-        reactive.put("1", "2").blockingAwait();
-        assertThat(reactive.get("1").blockingGet()).isEqualTo("2");
+        CacheRx<String, String> rx = cache.unwrap(CacheRx.class);
+        rx.put("1", "2").blockingAwait();
+        assertThat(rx.get("1").blockingGet()).isEqualTo("2");
         
         cache.close();
         runner.stop();
