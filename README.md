@@ -51,7 +51,7 @@ JDK compatibility:  1.8 - 12, Android
 * Supports OSGi  
 * Supports SSL  
 * Supports many popular codecs ([Jackson JSON](https://github.com/FasterXML/jackson), [Avro](http://avro.apache.org/), [Smile](http://wiki.fasterxml.com/SmileFormatSpec), [CBOR](http://cbor.io/), [MsgPack](http://msgpack.org/), [Kryo](https://github.com/EsotericSoftware/kryo), [Amazon Ion](https://amzn.github.io/ion-docs/), [FST](https://github.com/RuedigerMoeller/fast-serialization), [LZ4](https://github.com/jpountz/lz4-java), [Snappy](https://github.com/xerial/snappy-java) and JDK Serialization)
-* With over 1800 unit tests  
+* With over 2000 unit tests  
 <!--
 Used by
 ================================
@@ -103,12 +103,12 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.10.7</version>
+       <version>3.11.0</version>
     </dependency>  
 
 
 #### Gradle
-    compile 'org.redisson:redisson:3.10.7'  
+    compile 'org.redisson:redisson:3.11.0'  
 
 #### Java
 
@@ -166,8 +166,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.10.7](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.10.7&e=jar),
-[Redisson node 3.10.7](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.10.7&e=jar)  
+[Redisson 3.11.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.11.0&e=jar),
+[Redisson node 3.11.0](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.11.0&e=jar)  
 
 ## FAQs
 
