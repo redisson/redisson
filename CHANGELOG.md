@@ -6,6 +6,7 @@ Redisson Releases History
 
 ### 28-May-2019 - 3.11.0 released  
 Feature - `radiusStoreSortedTo` methods added to `RGeo`, `RGeoAsync`, `RGeoRx`, `RGeoReactive` interfaces  
+Feature - Local cache for `JCache` added. Read the [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#1442-jcache-api-local-cache) for more details  
 Feature - `Async`, `Reactive`, `RxJava2` interfaces added to `JCache`. Read the [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#1441-jcache-api-asynchronous-reactive-and-rxjava2-interfaces) for more details  
 Feature - `RRingBuffer` object added. Read the [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#721-ring-buffer) for more details  
 
