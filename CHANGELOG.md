@@ -10,6 +10,7 @@ Feature - `Async`, `Reactive`, `RxJava2` interfaces added to `JCache`. Read the 
 Feature - `RRingBuffer` object added. Read the [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#721-ring-buffer) for more details  
 
 Improvement - reduced memory consumption by ClusterConnectionManager  
+Improvement - UpdateValve needs to execute manager.store only once at the end of the request (thanks to [jchobantonov](https://github.com/jchobantonov))  
 
 Fixed - `HttpSessionListener.sessionDestoyed` method isn't invoked if session wasn't loaded by Tomcat instance  
 Fixed - redisson-spring-data `ReactiveSubscription.receive` method throws NPE  
@@ -18,7 +19,7 @@ Fixed - Spring Session PRINCIPAL_NAME_INDEX_NAME session attribute has incorrect
 Fixed - internal `AsyncSemaphore` object doesn't notify sleeping threads with permits more than one  
 Fixed - `RedisTemplate.radius` and `RedisConnection.geoRadius` methods throws `IllegalArgumentException` during response decoding  
 Fixed - `RedissonNodeConfig.mapReduceWorkers` setting couldn't be set (thanks to xiaoxuan.bai)  
-Improvement - UpdateValve needs to execute manager.store only once at the end of the request (thanks to [jchobantonov](https://github.com/jchobantonov))  
+
 
 ### 29-Apr-2019 - 3.10.7 released  
 Feature - Add support for [Reactive and RxJava2 interfaces](https://github.com/redisson/redisson/wiki/9.-distributed-services#913-remote-service-asynchronous-reactive-and-rxjava2-calls) to RemoteService object  
