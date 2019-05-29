@@ -275,9 +275,18 @@ public class TasksRunnerService implements RemoteExecutorService {
             T task;
             if (params.getLambdaBody() != null) {
                 ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
-                ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
-                task = (T) oo.readObject();
-                oo.close();
+                
+                //set thread context class loader to be the classLoaderCodec.getClassLoader() variable as there could be reflection
+                //done while reading from input stream which reflection will use thread class loader to load classes on demand
+                ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();                
+                try {
+                    Thread.currentThread().setContextClassLoader(classLoaderCodec.getClassLoader());
+                    ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
+                    task = (T) oo.readObject();
+                    oo.close();
+                } finally {
+                    Thread.currentThread().setContextClassLoader(currentThreadClassLoader);
+                }
             } else {
                 task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
             }
