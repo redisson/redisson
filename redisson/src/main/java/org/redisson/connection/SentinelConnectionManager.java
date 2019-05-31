@@ -441,9 +441,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private String createAddress(String host, Object port) {
-        if (host.contains(":") && !host.startsWith("[")) {
-        	String[] splittedHost= host.split(":");
-            host = "[" + applyNatMap(splittedHost[0]) + splittedHost[1] + "]";
+        if (host.contains(":")){
+		String pureHost = host.replaceAll("[\\[\\]]","");
+		host = applyNatMap(pureHost);
+		if(host.contains(":")){
+	            	host = "[" + host + "]";
+		}
         }else {
         	host=applyNatMap(host);
         }
