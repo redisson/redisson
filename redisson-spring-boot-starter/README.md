@@ -16,14 +16,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.10.7</version>
+         <version>3.11.0</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.10.7'
+     compile 'org.redisson:redisson-spring-boot-starter:3.11.0'
 ```
 
 ### 2. Add settings into `application.settings` file
