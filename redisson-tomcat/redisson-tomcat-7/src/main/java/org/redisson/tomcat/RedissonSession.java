@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.tomcat.RedissonSessionManager.ReadMode;
 import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
@@ -152,6 +153,9 @@ public class RedissonSession extends StandardSession {
         }
         
         if (broadcastSessionEvents) {
+            RSet<String> set = redissonManager.getNotifiedNodes(id);
+            set.add(redissonManager.getNodeId());
+            set.expire(60, TimeUnit.SECONDS);
             map.fastPut(IS_EXPIRATION_LOCKED, true);
             map.expire(60, TimeUnit.SECONDS);
         } else {
