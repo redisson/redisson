@@ -70,6 +70,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
 public class RedissonObjectBuilder {
 
     private static final Map<Class<?>, Class<? extends RObject>> SUPPORTED_CLASS_MAPPING = new LinkedHashMap<>();
+    private static final Map<Class<?>, CodecMethodRef> REFERENCES = new HashMap<>();
     
     static {
         SUPPORTED_CLASS_MAPPING.put(SortedSet.class,      RedissonSortedSet.class);
@@ -81,6 +82,10 @@ public class RedissonObjectBuilder {
         SUPPORTED_CLASS_MAPPING.put(BlockingQueue.class,  RedissonBlockingQueue.class);
         SUPPORTED_CLASS_MAPPING.put(Queue.class,          RedissonQueue.class);
         SUPPORTED_CLASS_MAPPING.put(List.class,           RedissonList.class);
+        
+        fillCodecMethods(REFERENCES, RedissonClient.class, RObject.class);
+        fillCodecMethods(REFERENCES, RedissonReactiveClient.class, RObjectReactive.class);
+        fillCodecMethods(REFERENCES, RedissonRxClient.class, RObjectRx.class);
     }
 
     private final Config config;
@@ -98,16 +103,11 @@ public class RedissonObjectBuilder {
         }
     }
     
-    private static final Map<Class<?>, CodecMethodRef> REFERENCES = new HashMap<>();
-    
     private final ReferenceCodecProvider codecProvider = new DefaultReferenceCodecProvider();
     
     public RedissonObjectBuilder(Config config) {
         super();
         this.config = config;
-        fillCodecMethods(REFERENCES, RedissonClient.class, RObject.class);
-        fillCodecMethods(REFERENCES, RedissonReactiveClient.class, RObjectReactive.class);
-        fillCodecMethods(REFERENCES, RedissonRxClient.class, RObjectRx.class);
     }
 
     public ReferenceCodecProvider getReferenceCodecProvider() {
@@ -177,7 +177,7 @@ public class RedissonObjectBuilder {
         return null;
     }
     
-    private void fillCodecMethods(Map<Class<?>, CodecMethodRef> map, Class<?> clientClazz, Class<?> objectClazz) {
+    private static void fillCodecMethods(Map<Class<?>, CodecMethodRef> map, Class<?> clientClazz, Class<?> objectClazz) {
         for (Method method : clientClazz.getDeclaredMethods()) {
             if (!method.getReturnType().equals(Void.TYPE)
                     && objectClazz.isAssignableFrom(method.getReturnType())
