@@ -136,7 +136,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     
     @Override
     public int getFreeWorkers(Class<?> remoteInterface) {
-        Entry entry = remoteMap.remove(remoteInterface);
+        Entry entry = remoteMap.get(remoteInterface);
         if (entry == null) {
             return 0;
         }
