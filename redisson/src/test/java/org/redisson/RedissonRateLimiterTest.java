@@ -37,6 +37,39 @@ public class RedissonRateLimiterTest extends BaseTest {
         Assertions.assertThatThrownBy(() -> limiter.tryAcquire(20)).hasMessageContaining("Requested permits amount could not exceed defined rate");
         assertThat(limiter.tryAcquire()).isTrue();
     }
+
+    @Test
+    public void testZeroTimeout() throws InterruptedException {
+        RRateLimiter limiter = redisson.getRateLimiter("myLimiter");
+        limiter.trySetRate(RateType.OVERALL, 5, 1, RateIntervalUnit.SECONDS);
+        
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        
+        Thread.sleep(1000);
+        
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+        assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
+    }
+    
     
     @Test(timeout = 1500)
     public void testTryAcquire() {
