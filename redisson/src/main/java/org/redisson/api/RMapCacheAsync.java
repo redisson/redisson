@@ -231,4 +231,17 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
      */
     RFuture<Long> remainTimeToLiveAsync(K key);
     
+    /**
+     * sets whether to update the Ttl on a replace
+     * @param updateTtl
+     * @return
+     */
+    RFuture<Void> setUpdateTtlAsync(boolean updateTtl);
+    
+    /**
+     * tries to sets whether to update the Ttl on a replace
+     * @param updateTtl
+     * @return
+     */
+    RFuture<Boolean> trySetUpdateTtlAsync(boolean updateTtl);
 }

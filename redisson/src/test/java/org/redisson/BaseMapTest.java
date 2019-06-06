@@ -18,6 +18,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.redisson.api.RDestroyable;
 import org.redisson.api.RLocalCachedMap;
@@ -803,6 +804,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
+    @Ignore
     public void testKeySetIteratorRemoveHighVolume() throws InterruptedException {
         RMap<Integer, Integer> map = getMap("simpleMap");
         for (int i = 0; i < 10000; i++) {

@@ -1,0 +1,22 @@
+{
+   "singleServerConfig":{
+      "idleConnectionTimeout":10000,
+      "pingTimeout":3000,
+      "connectTimeout":10000,
+      "timeout":10000,
+      "retryAttempts":20,
+      "retryInterval":1500,
+      "password":null,
+      "subscriptionsPerConnection":15,
+      "clientName":null,
+      "subscriptionConnectionMinimumIdleSize":1,
+      "subscriptionConnectionPoolSize":50,
+      "connectionMinimumIdleSize":32,
+      "connectionPoolSize":64,
+      "database":3,
+      "address": "redis://redis.devnotag.us-west-1.bobdev.pgi.com:6379"
+   },
+   "threads":40,
+   "nettyThreads": 40,
+   "codec":null
+}
