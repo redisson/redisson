@@ -640,7 +640,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Map<String, Map<StreamMessageId, Map<K, V>>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
-     * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -649,7 +649,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Map<StreamMessageId, Map<K, V>>> range(StreamMessageId startId, StreamMessageId endId);
 
     /**
-     * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -659,7 +659,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Map<StreamMessageId, Map<K, V>>> range(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -668,7 +668,7 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Map<StreamMessageId, Map<K, V>>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -723,4 +723,39 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      */
     Mono<List<StreamConsumer>> listConsumers(String groupName);
 
+    /**
+     * Returns stream data of pending messages by group name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPending
+     * 
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
+    
+    /**
+     * Returns stream data of pending messages by group and customer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPending
+     * 
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+    
 }
