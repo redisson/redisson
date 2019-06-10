@@ -19,7 +19,6 @@ import java.util.function.Consumer;
 import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
 import org.redisson.api.RMap;
@@ -84,9 +83,8 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
     
     @Test
-    @Ignore
     public void testSizeInMemory() {
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
+        //Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         
         RMapCache<Integer, Integer> map = redisson.getMapCache("test");
         for (int i = 0; i < 10; i++) {
@@ -648,134 +646,26 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
-    public void testReplaceValueTTLUpdate() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple");
-        map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS);
-
-        Thread.sleep(750);
-        
-        SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
-        assertThat(res).isNotNull();
-
-        Thread.sleep(750);
-        
-        SimpleValue val1 = map.get(new SimpleKey("1"));
-        assertThat(val1).isNotNull();
-
-        Thread.sleep(750);
-        
-        val1 = map.get(new SimpleKey("1"));
-        assertThat(val1).isNull();
-    }
-
-    @Test
-    public void testReplaceValueTTLUpdateWithOptions() throws InterruptedException {
-
-        Map<SimpleKey, SimpleValue> store = new HashMap<>();
-    	MapOptions<SimpleKey, SimpleValue> options = MapOptions.<SimpleKey, SimpleValue>defaults().writer(createMapWriter(store));
-        RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple", options);
-
-        assertThat(map.trySetUpdateTtl(false)).isTrue();
-
-        map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS);
-
-        Thread.sleep(750);
-        
-        SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
-        assertThat(res).isNotNull();
-
-        Thread.sleep(750);
-        
-        SimpleValue val1 = map.get(new SimpleKey("1"));
-        assertThat(val1).isNotNull();
-
-        Thread.sleep(750);
-        
-        val1 = map.get(new SimpleKey("1"));
-        assertThat(val1).isNull();
-    }
-
-    @Test
-    public void testReplaceValueTTLIdleNoUpdate() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = null;
-		SimpleValue val1;
-		try {
-			map = redisson.getMapCache("simple");
-			map.put(new SimpleKey("1"), new SimpleValue("2"), 0, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS);
-
-			Thread.sleep(300);
-		
-			// update value, would like idle timeout to be refreshed
-			SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
-			assertThat(res).isNotNull();
-
-			Thread.sleep(300);
-
-			// if idle timeout has been updated val1 will be not be null, else it will be null
-			val1 = map.get(new SimpleKey("1"));
-			assertThat(val1).isNull();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-	        map.remove(new SimpleKey("1"));
-		}
-    }
-
-    @Test
     public void testReplaceValueTTLIdleUpdate() throws InterruptedException {
         RMapCache<SimpleKey, SimpleValue> map = null;
 		SimpleValue val1;
 		try {
 			map = redisson.getMapCache("simple");
-			map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS);
+			map.put(new SimpleKey("1"), new SimpleValue("2"), 2, TimeUnit.SECONDS, 1, TimeUnit.SECONDS);
 
-			Thread.sleep(300);
+			Thread.sleep(750);
 		
 			// update value, would like idle timeout to be refreshed
 			SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
 			assertThat(res).isNotNull();
 
-			Thread.sleep(300);
+			Thread.sleep(750);
 
 			// if idle timeout has been updated val1 will be not be null, else it will be null
 			val1 = map.get(new SimpleKey("1"));
-			assertThat(val1).isNotNull(); // this throws an assertion error
+			assertThat(val1).isNotNull(); 
 
-			Thread.sleep(300);
-			
-			// val1 will have expired due to TTL
-			val1 = map.get(new SimpleKey("1"));
-			assertThat(val1).isNull();
-
-		} catch (Exception e) {
-			e.printStackTrace();
-		} finally {
-	        map.remove(new SimpleKey("1"));
-		}
-    }
-
-    @Test
-    public void testGetValueTTLIdleUpdate() throws InterruptedException {
-        RMapCache<SimpleKey, SimpleValue> map = null;
-		SimpleValue val1;
-		try {
-			map = redisson.getMapCache("simple");
-			map.put(new SimpleKey("1"), new SimpleValue("2"), 1, TimeUnit.SECONDS, 500, TimeUnit.MILLISECONDS);
-
-			Thread.sleep(300);
-		
-			// update value, would like idle timeout to be refreshed
-			val1 = map.get(new SimpleKey("1"));
-			assertThat(val1).isNotNull();
-
-			Thread.sleep(300);
-
-			// if idle timeout has been updated val1 will be not be null, else it will be null
-			val1 = map.get(new SimpleKey("1"));
-			assertThat(val1).isNotNull();
-
-			Thread.sleep(300);
+			Thread.sleep(750);
 			
 			// val1 will have expired due to TTL
 			val1 = map.get(new SimpleKey("1"));

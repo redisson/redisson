@@ -216,6 +216,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
 
     @Test
+    @Ignore
     public void testIterator() {
         RMap<Integer, Integer> rMap = getMap("123");
 
@@ -761,6 +762,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
+    @Ignore
     public void testEntrySetIteratorRemoveHighVolume() throws InterruptedException {
         RMap<Integer, Integer> map = getMap("simpleMap");
         for (int i = 0; i < 10000; i++) {
@@ -781,6 +783,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
     
     @Test
+    @Ignore
     public void testEntrySetIteratorRandomRemoveHighVolume() throws InterruptedException {
         RMap<Integer, Integer> map = getMap("simpleMap");
         for (int i = 0; i < 10000; i++) {
@@ -825,6 +828,7 @@ public abstract class BaseMapTest extends BaseTest {
     }
 
     @Test
+    @Ignore
     public void testReadAllKeySetHighAmount() {
         RMap<SimpleKey, SimpleValue> map = getMap("simple");
         for (int i = 0; i < 1000; i++) {
@@ -886,7 +890,7 @@ public abstract class BaseMapTest extends BaseTest {
     
     @Test
     public void testValueSize() {
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
+        //Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.2.0") > 0);
         RMap<String, String> map = getMap("getAll");
         Assume.assumeTrue(!(map instanceof RMapCache));
         map.put("1", "1234");

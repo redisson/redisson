@@ -300,19 +300,4 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      */
     long remainTimeToLive(K key);
     
-    /**
-     * set whether to update Ttl on a replace 
-     * 
-     * @param updateTtl - update ttl on a replace
-     */
-    void setUpdateTtl(boolean updateTtl);
-    
-    /**
-     * Tries to set whether to update Ttl on a replace 
-     *
-     * @param updateTtl - update ttl on a replace
-     * @return <code>true</code> if updateTtl has been successfully set, otherwise <code>false</code>.
-     */
-    boolean trySetUpdateTtl(boolean updateTtl);
-    
 }
