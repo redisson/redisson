@@ -83,17 +83,23 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return marked messages amount
      */
     long ack(String groupName, StreamMessageId... ids);
-    
+
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    PendingResult getPendingInfo(String groupName);
+    
+    /*
+     * Use #getPendingInfo method
+     */
+    @Deprecated
     PendingResult listPending(String groupName);
     
     /**
-     * Returns list of pending messages by group name.
+     * Returns list of common info about pending messages by group name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
@@ -108,7 +114,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
-     * Returns list of pending messages by group name and consumer name.
+     * Returns list of common info about pending messages by group and consumer name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
@@ -724,14 +730,14 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     StreamInfo<K, V> getInfo();
     
     /**
-     * Returns list of objects with information about groups belonging to this stream.
+     * Returns list of common info about groups belonging to this stream.
      * 
      * @return list of info objects 
      */
     List<StreamGroup> listGroups();
 
     /**
-     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * Returns list of common info about group customers for specified <code>groupName</code>.
      * 
      * @param groupName - name of group
      * @return list of info objects

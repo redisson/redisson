@@ -85,13 +85,19 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return marked messages amount
      */
     RFuture<Long> ackAsync(String groupName, StreamMessageId... ids);
-    
+
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    RFuture<PendingResult> getPendingInfoAsync(String groupName);
+
+    /*
+     * Use #getPendingInfoAsync method
+     */
+    @Deprecated
     RFuture<PendingResult> listPendingAsync(String groupName);
 
     /**

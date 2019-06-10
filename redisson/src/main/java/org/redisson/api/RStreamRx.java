@@ -90,11 +90,17 @@ public interface RStreamRx<K, V> extends RExpirableRx {
     Single<Long> ack(String groupName, StreamMessageId... ids);
     
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    Single<PendingResult> getPendingInfo(String groupName);
+
+    /*
+     * Use #getPendingInfo method
+     */
+    @Deprecated
     Single<PendingResult> listPending(String groupName);
 
     /**

@@ -89,11 +89,17 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
     Mono<Long> ack(String groupName, StreamMessageId... ids);
     
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    Mono<PendingResult> getPendingInfo(String groupName);
+
+    /*
+     * Use #getPendingInfo method
+     */
+    @Deprecated
     Mono<PendingResult> listPending(String groupName);
 
     /**

@@ -115,14 +115,24 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<PendingResult> listPendingAsync(String groupName) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+        return getPendingInfoAsync(groupName);
     }
 
     @Override
     public PendingResult listPending(String groupName) {
-        return get(listPendingAsync(groupName));
+        return getPendingInfo(groupName);
     }
 
+    @Override
+    public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+    }
+
+    @Override
+    public PendingResult getPendingInfo(String groupName) {
+        return get(listPendingAsync(groupName));
+    }
+    
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count, consumerName);
