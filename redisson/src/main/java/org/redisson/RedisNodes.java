@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,7 +36,7 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.RedisClientEntry;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.RedisURI;
 
 /**
  * 
@@ -56,15 +55,15 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
     @Override
     public N getNode(String address) {
         Collection<MasterSlaveEntry> entries = connectionManager.getEntrySet();
-        URI addr = URIBuilder.create(address);
+        RedisURI addr = new RedisURI(address);
         for (MasterSlaveEntry masterSlaveEntry : entries) {
             if (masterSlaveEntry.getAllEntries().isEmpty() 
-                    && URIBuilder.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
+                    && RedisURI.compare(masterSlaveEntry.getClient().getAddr(), addr)) {
                 return (N) new RedisClientEntry(masterSlaveEntry.getClient(), connectionManager.getCommandExecutor(), NodeType.MASTER);
             }
 
             for (ClientConnectionsEntry entry : masterSlaveEntry.getAllEntries()) {
-                if (URIBuilder.compare(entry.getClient().getAddr(), addr) 
+                if (RedisURI.compare(entry.getClient().getAddr(), addr) 
                         && entry.getFreezeReason() != FreezeReason.MANAGER) {
                     return (N) new RedisClientEntry(entry.getClient(), connectionManager.getCommandExecutor(), entry.getNodeType());
                 }

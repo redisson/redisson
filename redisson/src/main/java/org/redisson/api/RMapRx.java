@@ -264,7 +264,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      *  
      * @return iterator
      */
-    Single<Map.Entry<K, V>> entryIterator();
+    Flowable<Map.Entry<K, V>> entryIterator();
     
     /**
      * Returns iterator over map entries collection.
@@ -275,7 +275,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param count - size of entries batch
      * @return iterator
      */
-    Single<Map.Entry<K, V>> entryIterator(int count);
+    Flowable<Map.Entry<K, V>> entryIterator(int count);
     
     /**
      * Returns iterator over map entries collection.
@@ -295,7 +295,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param pattern - key pattern
      * @return iterator
      */
-    Single<Map.Entry<K, V>> entryIterator(String pattern);
+    Flowable<Map.Entry<K, V>> entryIterator(String pattern);
     
     /**
      * Returns iterator over map entries collection.
@@ -316,7 +316,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param count - size of entries batch
      * @return iterator
      */
-    Single<Map.Entry<K, V>> entryIterator(String pattern, int count);
+    Flowable<Map.Entry<K, V>> entryIterator(String pattern, int count);
 
     /**
      * Returns iterator over values collection of this map. 

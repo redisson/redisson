@@ -83,21 +83,29 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return marked messages amount
      */
     long ack(String groupName, StreamMessageId... ids);
-    
+
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    PendingResult getPendingInfo(String groupName);
+    
+    /*
+     * Use #getPendingInfo method
+     */
+    @Deprecated
     PendingResult listPending(String groupName);
     
     /**
-     * Returns list of pending messages by group name.
+     * Returns list of common info about pending messages by group name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #pendingRangeAsync
      * 
      * @param groupName - name of group
      * @param startId - start Stream Message ID
@@ -108,11 +116,13 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
 
     /**
-     * Returns list of pending messages by group name and consumer name.
+     * Returns list of common info about pending messages by group and consumer name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #pendingRangeAsync
      * 
      * @param consumerName - name of consumer
      * @param groupName - name of group
@@ -123,6 +133,41 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      */
     List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
 
+    /**
+     * Returns stream data of pending messages by group name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPending
+     * 
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
+
+    /**
+     * Returns stream data of pending messages by group and customer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPending
+     * 
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+    
     /**
      * Transfers ownership of pending messages by id to a new consumer 
      * by name if idle time of messages is greater than defined value. 
@@ -655,7 +700,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     Map<String, Map<StreamMessageId, Map<K, V>>> read(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
 
     /**
-     * Read stream data in range by specified start Stream Message ID (included) and end Stream Message ID (included).
+     * Returns stream data in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
@@ -664,7 +709,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     Map<StreamMessageId, Map<K, V>> range(StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in range by specified start Stream Message ID (included) and end Stream Message ID (included).
+     * Returns stream data in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream Message ID
@@ -674,7 +719,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     Map<StreamMessageId, Map<K, V>> range(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
+     * Returns stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
@@ -683,7 +728,7 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     Map<StreamMessageId, Map<K, V>> rangeReversed(StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
+     * Returns stream data in reverse order in range by specified start Stream Message ID (included) and end Stream Message ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream Message ID
@@ -724,14 +769,14 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     StreamInfo<K, V> getInfo();
     
     /**
-     * Returns list of objects with information about groups belonging to this stream.
+     * Returns list of common info about groups belonging to this stream.
      * 
      * @return list of info objects 
      */
     List<StreamGroup> listGroups();
 
     /**
-     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * Returns list of common info about group customers for specified <code>groupName</code>.
      * 
      * @param groupName - name of group
      * @return list of info objects

@@ -15,10 +15,12 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import org.redisson.misc.URIBuilder;
+import java.util.Map;
 
 /**
  * 
@@ -27,7 +29,9 @@ import org.redisson.misc.URIBuilder;
  */
 public class SentinelServersConfig extends BaseMasterSlaveServersConfig<SentinelServersConfig> {
 
-    private List<URI> sentinelAddresses = new ArrayList<URI>();
+    private List<String> sentinelAddresses = new ArrayList<>();
+    
+    private Map<String, String> natMap = Collections.emptyMap();
 
     private String masterName;
 
@@ -50,6 +54,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setMasterName(config.getMasterName());
         setDatabase(config.getDatabase());
         setScanInterval(config.getScanInterval());
+        setNatMap(new HashMap<>(config.getNatMap()));
     }
 
     /**
@@ -73,15 +78,13 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      * @return config
      */
     public SentinelServersConfig addSentinelAddress(String... addresses) {
-        for (String address : addresses) {
-            sentinelAddresses.add(URIBuilder.create(address));
-        }
+        sentinelAddresses.addAll(Arrays.asList(addresses));
         return this;
     }
-    public List<URI> getSentinelAddresses() {
+    public List<String> getSentinelAddresses() {
         return sentinelAddresses;
     }
-    void setSentinelAddresses(List<URI> sentinelAddresses) {
+    void setSentinelAddresses(List<String> sentinelAddresses) {
         this.sentinelAddresses = sentinelAddresses;
     }
 
@@ -111,6 +114,21 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     public SentinelServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
+        return this;
+    }
+    
+    public Map<String, String> getNatMap() {
+        return natMap;
+    }
+    
+    /**
+     * Defines NAT mapping. Address as a map key is replaced with mapped address as value.
+     * 
+     * @param natMap - nat mapping
+     * @return config
+     */
+    public SentinelServersConfig setNatMap(Map<String, String> natMap) {
+        this.natMap = natMap;
         return this;
     }
     

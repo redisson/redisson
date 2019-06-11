@@ -44,6 +44,7 @@ import org.springframework.session.Session;
 import org.springframework.session.events.SessionCreatedEvent;
 import org.springframework.session.events.SessionDeletedEvent;
 import org.springframework.session.events.SessionExpiredEvent;
+import org.springframework.util.StringUtils;
 
 /**
  * 
@@ -242,19 +243,26 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
     
     private String keyPrefix = "spring:session:";
     private Integer defaultMaxInactiveInterval;
-    
-    public RedissonSessionRepository(RedissonClient redissonClient, ApplicationEventPublisher eventPublisher) {
+
+    public RedissonSessionRepository(RedissonClient redissonClient, ApplicationEventPublisher eventPublisher, String keyPrefix) {
         this.redisson = redissonClient;
         this.eventPublisher = eventPublisher;
-        
-        deletedTopic = redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
+        if (StringUtils.hasText(keyPrefix)) {
+            this.keyPrefix = keyPrefix;
+        }
+
+        deletedTopic = this.redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
         deletedTopic.addListener(String.class, this);
-        expiredTopic = redisson.getPatternTopic("__keyevent@*:expired", StringCodec.INSTANCE);
+        expiredTopic = this.redisson.getPatternTopic("__keyevent@*:expired", StringCodec.INSTANCE);
         expiredTopic.addListener(String.class, this);
-        createdTopic = redisson.getPatternTopic(getEventsChannelPrefix() + "*", StringCodec.INSTANCE);
+        createdTopic = this.redisson.getPatternTopic(getEventsChannelPrefix() + "*", StringCodec.INSTANCE);
         createdTopic.addListener(String.class, this);
     }
-    
+
+    public RedissonSessionRepository(RedissonClient redissonClient, ApplicationEventPublisher eventPublisher) {
+        this(redissonClient, eventPublisher, null);
+    }
+
     @Override
     public void onMessage(CharSequence pattern, CharSequence channel, String body) {
         if (createdTopic.getPatternNames().contains(pattern.toString())) {

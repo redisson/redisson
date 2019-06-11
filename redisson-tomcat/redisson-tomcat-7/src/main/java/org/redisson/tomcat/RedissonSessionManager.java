@@ -35,6 +35,7 @@ import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
@@ -144,6 +145,12 @@ public class RedissonSessionManager extends ManagerBase {
         return session;
     }
     
+    public RSet<String> getNotifiedNodes(String sessionId) {
+        String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
+        String name = keyPrefix + separator + "redisson:tomcat_notified_nodes:" + sessionId;
+        return redisson.getSet(name, StringCodec.INSTANCE);
+    }
+    
     public RMap<String, Object> getMap(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_session:" + sessionId;
@@ -172,7 +179,7 @@ public class RedissonSessionManager extends ManagerBase {
                     log.error("Can't read session object by id: " + id, e);
                 }
 
-                if (attrs.isEmpty()) {  
+                if (attrs.isEmpty() || (broadcastSessionEvents && getNotifiedNodes(id).contains(nodeId))) {  
                     log.info("Session " + id + " can't be found");
                     return null;    
                 }
@@ -302,6 +309,8 @@ public class RedissonSessionManager extends ManagerBase {
                                     throw new IllegalStateException("Unable to find session: " + msg.getSessionId());
                                 }
                                 s.expire();
+                                RSet<String> set = getNotifiedNodes(msg.getSessionId());
+                                set.add(nodeId);
                             }
                             
                         }

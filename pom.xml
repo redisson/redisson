@@ -3,7 +3,7 @@
 
     <groupId>org.redisson</groupId>
     <artifactId>redisson-parent</artifactId>
-    <version>3.11.0.1507-SNAPSHOT</version>
+    <version>3.11.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Redisson</name>
@@ -22,13 +22,14 @@
         <test.source.version>1.8</test.source.version>
         <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <checkstyle.skip>true</checkstyle.skip>
     </properties>
 
     <scm>
         <url>scm:git:git@github.com:redisson/redisson.git</url>
         <connection>scm:git:git@github.com:redisson/redisson.git</connection>
         <developerConnection>scm:git:git@github.com:redisson/redisson.git</developerConnection>
-        <tag>redisson-3.11.0.1507-SNAPSHOT</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <prerequisites>
@@ -55,19 +56,6 @@
             <timezone>+4</timezone>
         </developer>
     </developers>
-
-	<distributionManagement> 
-		<repository>
-			<id>deployment</id>
-			<name>Internal Releases</name>
-			<url>http://maven.bobdev.pgi.com:9090/nexus/content/repositories/release/</url>
-		</repository>
-		<snapshotRepository>
-			<id>deployment</id>
-			<name>Internal snapshots</name>
-			<url>http://maven.bobdev.pgi.com:9090/nexus/content/repositories/snapshots/</url>
-		</snapshotRepository>
-   	</distributionManagement>
 
     <modules>
         <module>redisson</module>
@@ -161,7 +149,7 @@
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
 
         <plugins>	
-<!-- 
+
        	<plugin>
        		<groupId>org.sonatype.plugins</groupId>
        		<artifactId>nexus-staging-maven-plugin</artifactId>
@@ -173,7 +161,7 @@
        			<autoReleaseAfterClose>true</autoReleaseAfterClose>
        		</configuration>
        	</plugin>
- -->
+
 <!--
             <plugin>
                 <groupId>com.github.spotbugs</groupId>

@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.catalina.session.StandardSession;
+import org.redisson.api.RSet;
 import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.tomcat.RedissonSessionManager.ReadMode;
@@ -48,10 +49,15 @@ public class RedissonSession extends StandardSession {
     private static final String MAX_INACTIVE_INTERVAL_ATTR = "session:maxInactiveInterval";
     private static final String LAST_ACCESSED_TIME_ATTR = "session:lastAccessedTime";
     private static final String CREATION_TIME_ATTR = "session:creationTime";
+    private static final String IS_EXPIRATION_LOCKED = "session:isExpirationLocked";
     
-    public static final Set<String> ATTRS = new HashSet<String>(Arrays.asList(IS_NEW_ATTR, IS_VALID_ATTR, 
-            THIS_ACCESSED_TIME_ATTR, MAX_INACTIVE_INTERVAL_ATTR, LAST_ACCESSED_TIME_ATTR, CREATION_TIME_ATTR));
+    public static final Set<String> ATTRS = new HashSet<String>(Arrays.asList(
+            IS_NEW_ATTR, IS_VALID_ATTR, 
+            THIS_ACCESSED_TIME_ATTR, MAX_INACTIVE_INTERVAL_ATTR, 
+            LAST_ACCESSED_TIME_ATTR, CREATION_TIME_ATTR, IS_EXPIRATION_LOCKED
+            ));
     
+    private boolean isExpirationLocked;
     private boolean loaded;
     private final RedissonSessionManager redissonManager;
     private final Map<String, Object> attrs;
@@ -147,6 +153,10 @@ public class RedissonSession extends StandardSession {
         }
         
         if (broadcastSessionEvents) {
+            RSet<String> set = redissonManager.getNotifiedNodes(id);
+            set.add(redissonManager.getNodeId());
+            set.expire(60, TimeUnit.SECONDS);
+            map.fastPut(IS_EXPIRATION_LOCKED, true);
             map.expire(60, TimeUnit.SECONDS);
         } else {
             map.delete();
@@ -190,6 +200,9 @@ public class RedissonSession extends StandardSession {
     }
 
     protected void expireSession() {
+        if (isExpirationLocked) {
+            return;
+        }
         if (maxInactiveInterval >= 0) {
             map.expire(maxInactiveInterval + 60, TimeUnit.SECONDS);
         }
@@ -307,6 +320,9 @@ public class RedissonSession extends StandardSession {
         newMap.put(MAX_INACTIVE_INTERVAL_ATTR, maxInactiveInterval);
         newMap.put(IS_VALID_ATTR, isValid);
         newMap.put(IS_NEW_ATTR, isNew);
+        if (broadcastSessionEvents) {
+            newMap.put(IS_EXPIRATION_LOCKED, isExpirationLocked);
+        }
         
         if (attrs != null) {
             for (Entry<String, Object> entry : attrs.entrySet()) {
@@ -355,6 +371,10 @@ public class RedissonSession extends StandardSession {
         Boolean isNew = (Boolean) attrs.remove(IS_NEW_ATTR);
         if (isNew != null) {
             this.isNew = isNew;
+        }
+        Boolean isExpirationLocked = (Boolean) attrs.remove(IS_EXPIRATION_LOCKED);
+        if (isExpirationLocked != null) {
+            this.isExpirationLocked = isExpirationLocked;
         }
 
         for (Entry<String, Object> entry : attrs.entrySet()) {

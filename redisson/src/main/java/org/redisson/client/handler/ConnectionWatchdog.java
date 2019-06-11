@@ -177,14 +177,12 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        log.debug("blocking queue sent " + connection);
         ChannelFuture future = connection.send(currentCommand);
-        final CommandData<?, ?> cd = currentCommand;
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("Can't reconnect blocking queue to new connection. {}", cd);
+                    log.error("Can't reconnect blocking queue by command: {} using connection: {}", currentCommand, connection);
                 }
             }
         });

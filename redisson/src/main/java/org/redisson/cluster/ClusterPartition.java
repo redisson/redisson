@@ -15,11 +15,12 @@
  */
 package org.redisson.cluster;
 
-import java.net.URI;
 import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.redisson.misc.RedisURI;
 
 /**
  * 
@@ -34,9 +35,9 @@ public class ClusterPartition {
     
     private final String nodeId;
     private boolean masterFail;
-    private URI masterAddress;
-    private final Set<URI> slaveAddresses = new HashSet<URI>();
-    private final Set<URI> failedSlaves = new HashSet<URI>();
+    private RedisURI masterAddress;
+    private final Set<RedisURI> slaveAddresses = new HashSet<>();
+    private final Set<RedisURI> failedSlaves = new HashSet<>();
     
     private final BitSet slots = new BitSet();
     private final Set<ClusterSlotRange> slotRanges = new HashSet<ClusterSlotRange>();
@@ -123,30 +124,30 @@ public class ClusterPartition {
         return slots.cardinality();
     }
 
-    public URI getMasterAddress() {
+    public RedisURI getMasterAddress() {
         return masterAddress;
     }
-    public void setMasterAddress(URI masterAddress) {
+    public void setMasterAddress(RedisURI masterAddress) {
         this.masterAddress = masterAddress;
     }
 
-    public void addFailedSlaveAddress(URI address) {
+    public void addFailedSlaveAddress(RedisURI address) {
         failedSlaves.add(address);
     }
-    public Set<URI> getFailedSlaveAddresses() {
+    public Set<RedisURI> getFailedSlaveAddresses() {
         return Collections.unmodifiableSet(failedSlaves);
     }
-    public void removeFailedSlaveAddress(URI uri) {
+    public void removeFailedSlaveAddress(RedisURI uri) {
         failedSlaves.remove(uri);
     }
 
-    public void addSlaveAddress(URI address) {
+    public void addSlaveAddress(RedisURI address) {
         slaveAddresses.add(address);
     }
-    public Set<URI> getSlaveAddresses() {
+    public Set<RedisURI> getSlaveAddresses() {
         return Collections.unmodifiableSet(slaveAddresses);
     }
-    public void removeSlaveAddress(URI uri) {
+    public void removeSlaveAddress(RedisURI uri) {
         slaveAddresses.remove(uri);
         failedSlaves.remove(uri);
     }

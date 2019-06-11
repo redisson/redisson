@@ -16,7 +16,6 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -32,6 +31,7 @@ import org.redisson.command.CommandSyncService;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.misc.InfinitySemaphoreLatch;
+import org.redisson.misc.RedisURI;
 import org.redisson.pubsub.PublishSubscribeService;
 
 import io.netty.channel.EventLoopGroup;
@@ -46,7 +46,7 @@ import io.netty.util.concurrent.Future;
  */
 public interface ConnectionManager {
     
-    URI applyNatMap(URI address);
+    RedisURI applyNatMap(RedisURI address);
     
     UUID getId();
     
@@ -56,7 +56,7 @@ public interface ConnectionManager {
     
     ExecutorService getExecutor();
     
-    URI getLastClusterNode();
+    RedisURI getLastClusterNode();
     
     Config getCfg();
 
@@ -92,11 +92,11 @@ public interface ConnectionManager {
 
     RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command);
 
-    RedisClient createClient(NodeType type, URI address, int timeout, int commandTimeout, String sslHostname);
+    RedisClient createClient(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname);
 
-    RedisClient createClient(NodeType type, InetSocketAddress address, URI uri, String sslHostname);
+    RedisClient createClient(NodeType type, InetSocketAddress address, RedisURI uri, String sslHostname);
     
-    RedisClient createClient(NodeType type, URI address, String sslHostname);
+    RedisClient createClient(NodeType type, RedisURI address, String sslHostname);
 
     MasterSlaveEntry getEntry(RedisClient redisClient);
     
