@@ -22,7 +22,6 @@
         <test.source.version>1.8</test.source.version>
         <release.version>8</release.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <checkstyle.skip>true</checkstyle.skip>
     </properties>
 
     <scm>

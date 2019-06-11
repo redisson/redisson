@@ -50,7 +50,6 @@ public class MapOptions<K, V> {
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
     private int writeBehindBatchSize = 50;
     private int writeBehindDelay = 1000;
-    private boolean updateTtl = true;
     
     protected MapOptions() {
     }
@@ -153,14 +152,5 @@ public class MapOptions<K, V> {
     public MapLoader<K, V> getLoader() {
         return loader;
     }
-
-	public boolean isUpdateTtl() {
-		return updateTtl;
-	}
-
-	public MapOptions<K, V> updateTtl(boolean updateTtl) {
-		this.updateTtl = updateTtl;
-		return this;
-	}
 
 }
