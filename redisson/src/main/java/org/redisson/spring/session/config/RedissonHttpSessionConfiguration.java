@@ -17,6 +17,7 @@ package org.redisson.spring.session.config;
 
 import java.util.Map;
 
+import net.bytebuddy.build.ToStringPlugin;
 import org.redisson.api.RedissonClient;
 import org.redisson.spring.session.RedissonSessionRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -47,10 +48,7 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
     @Bean
     public RedissonSessionRepository sessionRepository(
             RedissonClient redissonClient, ApplicationEventPublisher eventPublisher) {
-        RedissonSessionRepository repository = new RedissonSessionRepository(redissonClient, eventPublisher);
-        if (StringUtils.hasText(keyPrefix)) {
-            repository.setKeyPrefix(keyPrefix);
-        }
+        RedissonSessionRepository repository = new RedissonSessionRepository(redissonClient, eventPublisher, keyPrefix);
         repository.setDefaultMaxInactiveInterval(maxInactiveIntervalInSeconds);
         return repository;
     }
