@@ -20,7 +20,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.config.SslProvider;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.RedisURI;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
@@ -35,7 +35,7 @@ import io.netty.util.Timer;
  */
 public class RedisClientConfig {
 
-    private URI address;
+    private RedisURI address;
     private InetSocketAddress addr;
     
     private Timer timer;
@@ -105,23 +105,23 @@ public class RedisClientConfig {
     }
 
     public RedisClientConfig setAddress(String host, int port) {
-        this.address = URIBuilder.create("redis://" + host + ":" + port);
+        this.address = new RedisURI("redis://" + host + ":" + port);
         return this;
     }
     public RedisClientConfig setAddress(String address) {
-        this.address = URIBuilder.create(address);
+        this.address = new RedisURI(address);
         return this;
     }
-    public RedisClientConfig setAddress(InetSocketAddress addr, URI address) {
+    public RedisClientConfig setAddress(InetSocketAddress addr, RedisURI address) {
         this.addr = addr;
         this.address = address;
         return this;
     }
-    public RedisClientConfig setAddress(URI address) {
+    public RedisClientConfig setAddress(RedisURI address) {
         this.address = address;
         return this;
     }
-    public URI getAddress() {
+    public RedisURI getAddress() {
         return address;
     }
     public InetSocketAddress getAddr() {

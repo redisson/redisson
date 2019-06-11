@@ -16,7 +16,6 @@
 package org.redisson.connection.balancer;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -39,8 +38,8 @@ import org.redisson.connection.pool.PubSubConnectionPool;
 import org.redisson.connection.pool.SlaveConnectionPool;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,7 +106,7 @@ public class LoadBalancerManager {
         return count;
     }
 
-    public boolean unfreeze(URI address, FreezeReason freezeReason) {
+    public boolean unfreeze(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = getEntry(address);
         if (entry == null) {
             throw new IllegalStateException("Can't find " + address + " in slaves!");
@@ -145,7 +144,7 @@ public class LoadBalancerManager {
         return false;
     }
     
-    public ClientConnectionsEntry freeze(URI address, FreezeReason freezeReason) {
+    public ClientConnectionsEntry freeze(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry connectionEntry = getEntry(address);
         return freeze(connectionEntry, freezeReason);
     }
@@ -190,12 +189,12 @@ public class LoadBalancerManager {
         return getEntry(addr) != null;
     }
 
-    public boolean isUnfreezed(URI addr) {
+    public boolean isUnfreezed(RedisURI addr) {
         ClientConnectionsEntry entry = getEntry(addr);
         return !entry.isFreezed();
     }
     
-    public boolean contains(URI addr) {
+    public boolean contains(RedisURI addr) {
         return getEntry(addr) != null;
     }
 
@@ -203,10 +202,10 @@ public class LoadBalancerManager {
         return getEntry(redisClient) != null;
     }
 
-    private ClientConnectionsEntry getEntry(URI addr) {
+    private ClientConnectionsEntry getEntry(RedisURI addr) {
         for (ClientConnectionsEntry entry : client2Entry.values()) {
             InetSocketAddress entryAddr = entry.getClient().getAddr();
-            if (URIBuilder.compare(entryAddr, addr)) {
+            if (RedisURI.compare(entryAddr, addr)) {
                 return entry;
             }
         }
@@ -227,7 +226,7 @@ public class LoadBalancerManager {
         return client2Entry.get(redisClient);
     }
 
-    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, URI addr) {
+    public RFuture<RedisConnection> getConnection(RedisCommand<?> command, RedisURI addr) {
         ClientConnectionsEntry entry = getEntry(addr);
         if (entry != null) {
             return slaveConnectionPool.get(command, entry);

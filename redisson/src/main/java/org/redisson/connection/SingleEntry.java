@@ -15,12 +15,11 @@
  */
 package org.redisson.connection;
 
-import java.net.URI;
-
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.config.MasterSlaveServersConfig;
+import org.redisson.misc.RedisURI;
 
 /**
  * 
@@ -34,7 +33,7 @@ public class SingleEntry extends MasterSlaveEntry {
     }
 
     @Override
-    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, URI addr) {
+    public RFuture<RedisConnection> connectionReadOp(RedisCommand<?> command, RedisURI addr) {
         return super.connectionWriteOp(command);
     }
 

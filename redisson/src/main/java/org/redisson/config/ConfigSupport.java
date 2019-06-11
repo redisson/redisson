@@ -21,9 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URI;
 import java.net.URL;
-import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -42,7 +40,6 @@ import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -65,38 +62,6 @@ public class ConfigSupport {
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
-
-    }
-
-    public abstract static class SingleSeverConfigMixIn {
-
-        @JsonProperty
-        List<URI> address;
-
-        @JsonIgnore
-        abstract SingleServerConfig setAddress(String address);
-
-        @JsonIgnore
-        abstract URI getAddress();
-
-        @JsonIgnore
-        abstract void setAddress(URI address);
-
-    }
-
-    public abstract static class MasterSlaveServersConfigMixIn {
-
-        @JsonProperty
-        List<URI> masterAddress;
-
-        @JsonIgnore
-        abstract MasterSlaveServersConfig setMasterAddress(String masterAddress);
-
-        @JsonIgnore
-        abstract URI getMasterAddress();
-
-        @JsonIgnore
-        abstract void setMasterAddress(URI masterAddress);
 
     }
 
@@ -264,8 +229,6 @@ public class ConfigSupport {
     private ObjectMapper createMapper(JsonFactory mapping, ClassLoader classLoader) {
         ObjectMapper mapper = new ObjectMapper(mapping);
         
-        mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
-        mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
         mapper.addMixIn(AddressResolverGroupFactory.class, ClassMixIn.class);

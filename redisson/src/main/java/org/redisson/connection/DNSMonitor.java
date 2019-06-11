@@ -16,7 +16,6 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,19 +48,19 @@ public class DNSMonitor {
 
     private final AddressResolver<InetSocketAddress> resolver;
     private final ConnectionManager connectionManager;
-    private final Map<URI, InetSocketAddress> masters = new HashMap<URI, InetSocketAddress>();
-    private final Map<URI, InetSocketAddress> slaves = new HashMap<URI, InetSocketAddress>();
+    private final Map<RedisURI, InetSocketAddress> masters = new HashMap<>();
+    private final Map<RedisURI, InetSocketAddress> slaves = new HashMap<>();
     
     private ScheduledFuture<?> dnsMonitorFuture;
     private long dnsMonitoringInterval;
 
-    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<URI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
+    public DNSMonitor(ConnectionManager connectionManager, RedisClient masterHost, Collection<RedisURI> slaveHosts, long dnsMonitoringInterval, AddressResolverGroup<InetSocketAddress> resolverGroup) {
         this.resolver = resolverGroup.getResolver(connectionManager.getGroup().next());
         
         masterHost.resolveAddr().syncUninterruptibly();
         masters.put(masterHost.getConfig().getAddress(), masterHost.getAddr());
         
-        for (URI host : slaveHosts) {
+        for (RedisURI host : slaveHosts) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
             resolveFuture.syncUninterruptibly();
             slaves.put(host, resolveFuture.getNow());
@@ -97,7 +97,7 @@ public class DNSMonitor {
     }
 
     private void monitorMasters(AtomicInteger counter) {
-        for (Entry<URI, InetSocketAddress> entry : masters.entrySet()) {
+        for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override
@@ -134,7 +134,7 @@ public class DNSMonitor {
     }
 
     private void monitorSlaves(AtomicInteger counter) {
-        for (Entry<URI, InetSocketAddress> entry : slaves.entrySet()) {
+        for (Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override

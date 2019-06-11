@@ -17,7 +17,6 @@ package org.redisson.client;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -28,6 +27,7 @@ import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.bootstrap.Bootstrap;
@@ -63,7 +63,7 @@ public final class RedisClient {
     private final AtomicReference<RFuture<InetSocketAddress>> resolvedAddrFuture = new AtomicReference<RFuture<InetSocketAddress>>();
     private final Bootstrap bootstrap;
     private final Bootstrap pubSubBootstrap;
-    private final URI uri;
+    private final RedisURI uri;
     private InetSocketAddress resolvedAddr;
     private final ChannelGroup channels;
 
