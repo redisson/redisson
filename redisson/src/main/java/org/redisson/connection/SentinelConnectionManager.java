@@ -474,13 +474,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private String createAddress(String host, Object port) {
         if (host.contains(":")){
-		String pureHost = host.replaceAll("[\\[\\]]","");
-		host = applyNatMap(pureHost);
-		if(host.contains(":")){
-	            	host = "[" + host + "]";
-		}
-        }else {
-        	host=applyNatMap(host);
+            String pureHost = host.replaceAll("[\\[\\]]", "");
+            host = applyNatMap(pureHost);
+            if (host.contains(":")) {
+                host = "[" + host + "]";
+            }
+        } else {
+            host = applyNatMap(host);
         }
         return "redis://" + host + ":" + port;
     }
