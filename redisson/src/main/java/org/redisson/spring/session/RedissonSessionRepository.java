@@ -83,6 +83,7 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         private void updateExpiration() {
             if (delegate.getMaxInactiveInterval().getSeconds() > 0) {
                 redisson.getBucket(getExpiredKey(delegate.getId())).set("", delegate.getMaxInactiveInterval().getSeconds(), TimeUnit.SECONDS);
+                map.expire(delegate.getMaxInactiveInterval().getSeconds() + 60, TimeUnit.SECONDS);
             }
         }
         
