@@ -313,6 +313,8 @@ public class RedissonRemoteServiceTest extends BaseTest {
 
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.MINUTES);
+        
+        rs.deregister(RemoteInterface.class);
     }
     
     @Test
