@@ -61,11 +61,15 @@ public class RedissonMultiLock implements RLock {
             this.threadId = threadId;
             
             if (leaseTime != -1) {
-                newLeaseTime = unit.toMillis(waitTime)*2;
+                if (waitTime == -1) {
+                    newLeaseTime = unit.toMillis(leaseTime);
+                } else {
+                    newLeaseTime = unit.toMillis(waitTime)*2;
+                }
             } else {
                 newLeaseTime = -1;
             }
-            
+
             remainTime = -1;
             if (waitTime != -1) {
                 remainTime = unit.toMillis(waitTime);
@@ -118,7 +122,7 @@ public class RedissonMultiLock implements RLock {
                                 return;
                             }
                             
-                            if (waitTime == -1 && leaseTime == -1) {
+                            if (waitTime == -1) {
                                 result.trySuccess(false);
                                 return;
                             }
@@ -336,7 +340,6 @@ public class RedissonMultiLock implements RLock {
         return result;
     }
 
-
     @Override
     public boolean tryLock(long waitTime, TimeUnit unit) throws InterruptedException {
         return tryLock(waitTime, -1, unit);
@@ -346,6 +349,7 @@ public class RedissonMultiLock implements RLock {
         return 0;
     }
     
+    @Override
     public boolean tryLock(long waitTime, long leaseTime, TimeUnit unit) throws InterruptedException {
 //        try {
 //            return tryLockAsync(waitTime, leaseTime, unit).get();
@@ -354,7 +358,11 @@ public class RedissonMultiLock implements RLock {
 //        }
         long newLeaseTime = -1;
         if (leaseTime != -1) {
-            newLeaseTime = unit.toMillis(waitTime)*2;
+            if (waitTime == -1) {
+                newLeaseTime = unit.toMillis(leaseTime);
+            } else {
+                newLeaseTime = unit.toMillis(waitTime)*2;
+            }
         }
         
         long time = System.currentTimeMillis();
@@ -392,7 +400,7 @@ public class RedissonMultiLock implements RLock {
 
                 if (failedLocksLimit == 0) {
                     unlockInner(acquiredLocks);
-                    if (waitTime == -1 && leaseTime == -1) {
+                    if (waitTime == -1) {
                         return false;
                     }
                     failedLocksLimit = failedLocksLimit();
