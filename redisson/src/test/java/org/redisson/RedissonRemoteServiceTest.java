@@ -294,6 +294,28 @@ public class RedissonRemoteServiceTest extends BaseTest {
     }
 
     @Test
+    public void testPendingInvocations() throws InterruptedException, ExecutionException {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        RRemoteService rs = redisson.getRemoteService();
+        rs.register(RemoteInterface.class, new RemoteImpl(), 1, executor);
+        
+        assertThat(rs.getPendingInvocations(RemoteInterface.class)).isEqualTo(0);
+        
+        RemoteInterfaceAsync ri = redisson.getRemoteService().get(RemoteInterfaceAsync.class);
+        
+        for (int i = 0; i < 5; i++) {
+            ri.timeoutMethod();
+        }
+        Thread.sleep(1000);
+        assertThat(rs.getPendingInvocations(RemoteInterface.class)).isEqualTo(4);
+        Thread.sleep(9000);
+        assertThat(rs.getPendingInvocations(RemoteInterface.class)).isEqualTo(0);
+
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+    }
+    
+    @Test
     public void testFreeWorkers() throws InterruptedException, ExecutionException {
         RedissonClient r1 = createInstance();
         ExecutorService executor = Executors.newSingleThreadExecutor();

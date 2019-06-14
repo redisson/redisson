@@ -135,6 +135,13 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
     
     @Override
+    public int getPendingInvocations(Class<?> remoteInterface) {
+        String requestQueueName = getRequestQueueName(remoteInterface);
+        RBlockingQueue<String> requestQueue = getBlockingQueue(requestQueueName, StringCodec.INSTANCE);
+        return requestQueue.size();
+    }
+    
+    @Override
     public int getFreeWorkers(Class<?> remoteInterface) {
         Entry entry = remoteMap.get(remoteInterface);
         if (entry == null) {
