@@ -97,7 +97,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
      * 
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     List<V> range(int toIndex);
     
@@ -107,7 +107,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * 
      * @param fromIndex - start index
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     List<V> range(int fromIndex, int toIndex);
     

@@ -171,7 +171,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<
      * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
      * 
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     RFuture<List<V>> rangeAsync(int toIndex);
     
@@ -181,7 +181,7 @@ public interface RListAsync<V> extends RCollectionAsync<V>, RSortableAsync<List<
      * 
      * @param fromIndex - start index
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     RFuture<List<V>> rangeAsync(int fromIndex, int toIndex);
     

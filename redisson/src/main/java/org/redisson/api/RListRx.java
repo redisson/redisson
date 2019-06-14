@@ -170,7 +170,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
      * 
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     Single<List<V>> range(int toIndex);
     
@@ -180,7 +180,7 @@ public interface RListRx<V> extends RCollectionRx<V>, RSortableRx<List<V>> {
      * 
      * @param fromIndex - start index
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     Single<List<V>> range(int fromIndex, int toIndex);
     

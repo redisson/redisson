@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.List;
+
 import reactor.core.publisher.Mono;
 
 /**
@@ -26,12 +28,45 @@ import reactor.core.publisher.Mono;
  */
 public interface RQueueReactive<V> extends RCollectionReactive<V> {
 
+    /**
+     * Retrieves the head of this queue in async mode.
+     * 
+     * @return the head of this queue, or {@code null}
+     */
     Mono<V> peek();
 
+    /**
+     * Retrieves and removes the head of this queue in async mode.
+     *
+     * @return the head of this queue, or {@code null}
+     */
     Mono<V> poll();
 
+    /**
+     * Inserts the specified element into this queue.
+     *
+     * @param e the element to add
+     * @return {@code true} if successful, or {@code false}
+     * @throws ClassCastException if the class of the specified element
+     *         prevents it from being added to this queue
+     * @throws NullPointerException if the specified element is null
+     */
     Mono<Boolean> offer(V e);
 
+    /**
+     * Retrieves and removes last available tail element of this queue queue and adds it at the head of <code>queueName</code>.
+     *
+     * @param queueName - names of destination queue
+     * @return the tail of this queue, or {@code null} if the
+     *         specified waiting time elapses before an element is available
+     */
     Mono<V> pollLastAndOfferFirstTo(String queueName);
+    
+    /**
+     * Returns all queue elements at once
+     * 
+     * @return elements
+     */
+    Mono<List<V>> readAll();
 
 }

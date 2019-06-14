@@ -168,7 +168,7 @@ public interface RListReactive<V> extends RCollectionReactive<V>, RSortableReact
      * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
      * 
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     Mono<List<V>> range(int toIndex);
     
@@ -178,7 +178,7 @@ public interface RListReactive<V> extends RCollectionReactive<V>, RSortableReact
      * 
      * @param fromIndex - start index
      * @param toIndex - end index
-     * @return
+     * @return elements
      */
     Mono<List<V>> range(int fromIndex, int toIndex);
     
