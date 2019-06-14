@@ -125,7 +125,7 @@ public class RedissonSessionManagerTest {
 
     @Test
     public void testExpire() throws Exception {
-        Initializer.CONFIG_CLASS = ConfigTimeout.class;
+        HttpInitializer.CONFIG_CLASS = HttpConfigTimeout.class;
         // start the server at http://localhost:8080/myapp
         TomcatServer server = new TomcatServer("myapp", 8080, "src/test/");
         server.start();
