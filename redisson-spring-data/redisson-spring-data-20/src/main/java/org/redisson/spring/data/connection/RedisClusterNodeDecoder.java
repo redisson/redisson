@@ -16,7 +16,6 @@
 package org.redisson.spring.data.connection;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -25,7 +24,7 @@ import java.util.Set;
 
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.misc.URIBuilder;
+import org.redisson.misc.RedisURI;
 import org.springframework.data.redis.connection.RedisClusterNode;
 import org.springframework.data.redis.connection.RedisClusterNode.Flag;
 import org.springframework.data.redis.connection.RedisClusterNode.LinkState;
@@ -60,10 +59,10 @@ public class RedisClusterNodeDecoder implements Decoder<List<RedisClusterNode>> 
                 flags.add(Flag.valueOf(flagValue));
             }
             
-            URI address = null;
+            RedisURI address = null;
             if (!flags.contains(Flag.NOADDR)) {
                 String addr = params[1].split("@")[0];
-                address = URIBuilder.create("redis://" + addr);
+                address = new RedisURI("redis://" + addr);
             }
 
             String masterId = params[3];
