@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.io.IOException;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -40,6 +39,7 @@ import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RedissonClient;
 import org.redisson.cache.Cache;
 import org.redisson.cache.CacheKey;
+import org.redisson.cache.CacheValue;
 import org.redisson.cache.LocalCacheListener;
 import org.redisson.cache.LocalCacheView;
 import org.redisson.cache.LocalCachedMapClear;
@@ -69,50 +69,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public static final String TOPIC_SUFFIX = "topic";
     public static final String DISABLED_KEYS_SUFFIX = "disabled-keys";
     public static final String DISABLED_ACK_SUFFIX = ":topic";
-        
-    @SuppressWarnings("EqualsHashCode")
-    public static class CacheValue implements Serializable {
-        
-        private final Object key;
-        private final Object value;
-        
-        public CacheValue(Object key, Object value) {
-            super();
-            this.key = key;
-            this.value = value;
-        }
-        
-        public Object getKey() {
-            return key;
-        }
-        
-        public Object getValue() {
-            return value;
-        }
-        
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            CacheValue other = (CacheValue) obj;
-            if (value == null) {
-                if (other.value != null)
-                    return false;
-            } else if (!value.equals(other.value))
-                return false;
-            return true;
-        }
-
-        @Override
-        public String toString() {
-            return "CacheValue [key=" + key + ", value=" + value + "]";
-        }
-        
-    }
 
     private static final RedisCommand<Set<Object>> ALL_KEYS = new RedisCommand<Set<Object>>("EVAL", new ObjectSetReplayDecoder<Object>(), ValueType.MAP_KEY);
     private static final RedisCommand<Set<Entry<Object, Object>>> ALL_ENTRIES = new RedisCommand<Set<Entry<Object, Object>>>("EVAL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);

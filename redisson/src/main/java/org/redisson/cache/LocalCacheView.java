@@ -24,9 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.redisson.RedissonLocalCachedMap.CacheValue;
-import org.redisson.misc.Hash;
 import org.redisson.RedissonObject;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
 

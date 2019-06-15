@@ -30,7 +30,6 @@ import org.redisson.RedissonListMultimapCache;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonTopic;
-import org.redisson.RedissonLocalCachedMap.CacheValue;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
