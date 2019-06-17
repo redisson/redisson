@@ -13,12 +13,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
+import org.joor.Reflect;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RSetCache;
 import org.redisson.eviction.EvictionScheduler;
-
-import mockit.Deencapsulation;
 
 public class RedissonSetCacheTest extends BaseTest {
 
@@ -41,7 +40,7 @@ public class RedissonSetCacheTest extends BaseTest {
         RSetCache<String> cache = redisson.getSetCache("test");
         
         EvictionScheduler evictionScheduler = ((Redisson)redisson).getEvictionScheduler();
-        Map<?, ?> map = Deencapsulation.getField(evictionScheduler, "tasks");
+        Map<?, ?> map = Reflect.on(evictionScheduler).get("tasks");
         assertThat(map.isEmpty()).isFalse();
         cache.destroy();
         assertThat(map.isEmpty()).isTrue();

@@ -33,7 +33,6 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
-import mockit.Deencapsulation;
 import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;

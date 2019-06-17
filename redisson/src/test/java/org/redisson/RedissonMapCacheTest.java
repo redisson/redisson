@@ -17,13 +17,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.awaitility.Duration;
+import org.joor.Reflect;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
-import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -37,8 +38,6 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.eviction.EvictionScheduler;
 
-import mockit.Deencapsulation;
-
 public class RedissonMapCacheTest extends BaseMapTest {
 
     @Test
@@ -46,7 +45,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         RMapCache<String, String> cache = redisson.getMapCache("test");
         
         EvictionScheduler evictionScheduler = ((Redisson)redisson).getEvictionScheduler();
-        Map<?, ?> map = Deencapsulation.getField(evictionScheduler, "tasks");
+        Map<?, ?> map = Reflect.on(evictionScheduler).get("tasks");
         assertThat(map.isEmpty()).isFalse();
         cache.destroy();
         assertThat(map.isEmpty()).isTrue();
