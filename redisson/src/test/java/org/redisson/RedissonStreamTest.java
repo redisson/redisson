@@ -660,6 +660,14 @@ public class RedissonStreamTest extends BaseTest {
         assertThat(s2.get(1).getLastDeliveredId()).isEqualTo(id2);
     }
 
+    @Test
+    public void testStreamInfoEmpty() {
+        RStream<String, String> stream = redisson.getStream("test1");
+        StreamMessageId id1 = new StreamMessageId(12, 44);
+        stream.createGroup("testGroup", id1);
+        
+        StreamInfo<String, String> s = stream.getInfo();
+    }
     
     @Test
     public void testStreamInfo() {

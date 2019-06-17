@@ -15,6 +15,8 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.List;
+
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -24,18 +26,33 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class StreamInfoMapDecoder extends ObjectMapDecoder {
+public class StreamInfoMapDecoder implements MultiDecoder<Object> {
 
+    boolean hasNonZeroLevel = false;
+    final StreamInfoDecoder streamInfo = new StreamInfoDecoder();
+    final ObjectMapDecoder decoder;
+    
     public StreamInfoMapDecoder(Codec codec) {
-        super(codec);
+        decoder = new ObjectMapDecoder(codec);
     }
     
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (state.getLevel() > 0) {
+            hasNonZeroLevel = true;
+        }
         if (state.getLevel() == 2) {
-            return super.getDecoder(paramNum, state);
+            return decoder.getDecoder(paramNum, state);
         }
         return null;
+    }
+    
+    @Override
+    public Object decode(List<Object> parts, State state) {
+        if (hasNonZeroLevel) {
+            return decoder.decode(parts, state);
+        }
+        return streamInfo.decode(parts, state);
     }
 
 }
