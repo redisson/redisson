@@ -19,6 +19,7 @@ import java.io.IOException;
 
 import javax.servlet.ServletException;
 
+import org.apache.catalina.Manager;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
@@ -32,11 +33,9 @@ import org.apache.catalina.valves.ValveBase;
 public class UpdateValve extends ValveBase {
 
     private static final String ALREADY_FILTERED_NOTE = UpdateValve.class.getName() + ".ALREADY_FILTERED_NOTE";
-    private final RedissonSessionManager manager;
     
-    public UpdateValve(RedissonSessionManager manager) {
+    public UpdateValve() {
         super();
-        this.manager = manager;
     }
 
     @Override
@@ -52,7 +51,10 @@ public class UpdateValve extends ValveBase {
                 try {
                     ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
                     Thread.currentThread().setContextClassLoader(applicationClassLoader);
-                    manager.store(request.getSession(false));
+                    Manager manager = request.getContext().getManager();
+                    if (manager instanceof RedissonSessionManager) {
+                    	((RedissonSessionManager)manager).store(request.getSession(false));
+                    }
                 } finally {
                     Thread.currentThread().setContextClassLoader(classLoader);
                 }
