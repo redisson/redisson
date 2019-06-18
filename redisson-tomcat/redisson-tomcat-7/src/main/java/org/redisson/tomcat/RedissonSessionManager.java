@@ -259,13 +259,13 @@ public class RedissonSessionManager extends ManagerBase {
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
             contextInUse.add(((Context) getContainer()).getName());
-	        if (updateMode == UpdateMode.AFTER_REQUEST) {
-	            if (updateValve == null) {
-		            updateValve = new UpdateValve();
-		            pipeline.addValve(updateValve);
-	            }
-	        }
-        }		
+            if (updateMode == UpdateMode.AFTER_REQUEST) {
+                if (updateValve == null) {
+                    updateValve = new UpdateValve();
+                    pipeline.addValve(updateValve);
+                }
+            }
+        }
         
         if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
@@ -366,18 +366,18 @@ public class RedissonSessionManager extends ManagerBase {
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
             contextInUse.remove(((Context) getContainer()).getName());
-	        //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
-	        if (contextInUse.size() == 0) {
-		        if (updateValve != null) {
-		        	pipeline.removeValve(updateValve);
-		            updateValve = null;
-		        }
-	        }
+            //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
+            if (contextInUse.size() == 0) {
+                if (updateValve != null) {
+                    pipeline.removeValve(updateValve);
+                    updateValve = null;
+                }
+            }
         }
         
         if (messageListener != null) {
-        	 RTopic updatesTopic = getTopic();
-        	 updatesTopic.removeListener(messageListener);
+             RTopic updatesTopic = getTopic();
+             updatesTopic.removeListener(messageListener);
         }
 
         codecToUse = null;
