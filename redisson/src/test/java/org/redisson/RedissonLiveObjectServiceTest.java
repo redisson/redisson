@@ -1385,7 +1385,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         
         assertThat(c.getOrders().size()).isEqualTo(2);
 
-        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        assertThat(redisson.getKeys().count()).isEqualTo(7);
         
         List<Order> list = new ArrayList<>();
         Order o3 = new Order(c);
