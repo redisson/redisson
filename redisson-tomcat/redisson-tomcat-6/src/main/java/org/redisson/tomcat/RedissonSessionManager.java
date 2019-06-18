@@ -76,7 +76,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     private static UpdateValve updateValve;
 
-    private static Set<String> contextWithInstalledValves = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+    private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private MessageListener messageListener;
     
@@ -276,15 +276,16 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
             throw new LifecycleException(e);
         }
         
-        if (updateMode == UpdateMode.AFTER_REQUEST) {
-            Pipeline pipeline = getEngine().getPipeline();
-            synchronized (pipeline) {
-            	contextWithInstalledValves.add(((Context) getContainer()).getName());
-            	
-	            updateValve = new UpdateValve();
-	            pipeline.addValve(updateValve);
-            }
-        }
+        Pipeline pipeline = getEngine().getPipeline();
+        synchronized (pipeline) {
+            contextInUse.add(((Context) getContainer()).getName());
+	        if (updateMode == UpdateMode.AFTER_REQUEST) {
+	            if (updateValve == null) {
+		            updateValve = new UpdateValve();
+		            pipeline.addValve(updateValve);
+	            }
+	        }
+        }		
         
         if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
@@ -377,16 +378,16 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
 
     @Override
     public void stop() throws LifecycleException {
-        if (updateValve != null) {
-            Pipeline pipeline = getEngine().getPipeline();
-            synchronized (pipeline) {
-            	contextWithInstalledValves.remove(((Context) getContainer()).getName());
-            	//remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
-    	        if (contextWithInstalledValves.size() == 0) {
-	            	pipeline.removeValve(updateValve);
+        Pipeline pipeline = getEngine().getPipeline();
+        synchronized (pipeline) {
+            contextInUse.remove(((Context) getContainer()).getName());
+	        //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
+	        if (contextInUse.size() == 0) {
+		        if (updateValve != null) {
+		        	pipeline.removeValve(updateValve);
 		            updateValve = null;
-    	        }
-            }
+		        }
+	        }
         }
         
         if (messageListener != null) {
