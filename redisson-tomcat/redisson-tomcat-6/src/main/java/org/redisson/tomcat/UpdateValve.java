@@ -52,9 +52,7 @@ public class UpdateValve extends ValveBase {
                     ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
                     Thread.currentThread().setContextClassLoader(applicationClassLoader);
                     Manager manager = request.getContext().getManager();
-                    if (manager instanceof RedissonSessionManager) {
-                    	((RedissonSessionManager)manager).store(request.getSession(false));
-                    }
+                    ((RedissonSessionManager)manager).store(request.getSession(false));
                 } finally {
                     Thread.currentThread().setContextClassLoader(classLoader);
                 }
