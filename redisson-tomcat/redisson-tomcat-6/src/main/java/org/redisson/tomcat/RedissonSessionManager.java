@@ -382,7 +382,7 @@ public class RedissonSessionManager extends ManagerBase implements Lifecycle {
         synchronized (pipeline) {
             contextInUse.remove(((Context) getContainer()).getName());
             //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
-            if (contextInUse.size() == 0) {
+            if (contextInUse.isEmpty()) {
                 if (updateValve != null) {
                     pipeline.removeValve(updateValve);
                     updateValve = null;
