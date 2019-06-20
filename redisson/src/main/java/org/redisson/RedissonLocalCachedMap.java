@@ -110,7 +110,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
             
         };
         cache = listener.createCache(options);
-        instanceId = listener.generateId();
+        instanceId = listener.getInstanceId();
         listener.add(cache);
         localCacheView = new LocalCacheView(cache, this);
 
@@ -446,7 +446,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     @Override
     public RFuture<Boolean> deleteAsync() {
         cache.clear();
-        ByteBuf msgEncoded = encode(new LocalCachedMapClear());
+        ByteBuf msgEncoded = encode(new LocalCachedMapClear(listener.generateId()));
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('del', KEYS[1], KEYS[3]) > 0 and ARGV[2] ~= '0' then "
                 + "redis.call('publish', KEYS[2], ARGV[1]); "

@@ -27,6 +27,9 @@ public class LocalCachedMapDisable implements Serializable {
     private byte[][] keyHashes;
     private long timeout;
     private String requestId;
+    
+    public LocalCachedMapDisable() {
+    }
 
     public LocalCachedMapDisable(String requestId, byte[][] keyHashes, long timeout) {
         super();

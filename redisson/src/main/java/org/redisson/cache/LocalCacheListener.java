@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.RedissonListMultimapCache;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.RedissonSemaphore;
 import org.redisson.RedissonTopic;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
@@ -38,6 +39,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RObject;
 import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
@@ -91,10 +93,17 @@ public abstract class LocalCacheListener {
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
+        
+        ThreadLocalRandom.current().nextBytes(instanceId);
     }
     
     public byte[] generateId() {
-        ThreadLocalRandom.current().nextBytes(instanceId);
+        byte[] id = new byte[16];
+        ThreadLocalRandom.current().nextBytes(id);
+        return id;
+    }
+    
+    public byte[] getInstanceId() {
         return instanceId;
     }
     
@@ -172,7 +181,11 @@ public abstract class LocalCacheListener {
                     }
                     
                     if (msg instanceof LocalCachedMapClear) {
+                        LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
                         cache.clear();
+
+                        RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
+                        semaphore.releaseAsync();
                     }
                     
                     if (msg instanceof LocalCachedMapInvalidate) {
@@ -226,15 +239,24 @@ public abstract class LocalCacheListener {
     }
     
     public RFuture<Void> clearLocalCacheAsync() {
-        final RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear());
+        RPromise<Void> result = new RedissonPromise<Void>();
+        byte[] id = generateId();
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id));
         future.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;
             }
 
-            result.trySuccess(null);
+            RSemaphore semaphore = getClearSemaphore(id);
+            semaphore.acquireAsync(res.intValue()).onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+                
+                result.trySuccess(null);
+            });
         });
         
         return result;
@@ -309,6 +331,12 @@ public abstract class LocalCacheListener {
                 }
             });
         });
+    }
+
+    protected RSemaphore getClearSemaphore(byte[] requestId) {
+        String id = ByteBufUtil.hexDump(requestId);
+        RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
+        return semaphore;
     }
 
 }
