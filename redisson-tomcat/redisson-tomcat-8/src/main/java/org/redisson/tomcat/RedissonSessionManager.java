@@ -17,9 +17,12 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpSession;
 
@@ -67,8 +70,12 @@ public class RedissonSessionManager extends ManagerBase {
 
     private final String nodeId = UUID.randomUUID().toString();
 
-    private UpdateValve updateValve;
+    private static UpdateValve updateValve;
 
+    private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+
+    private MessageListener messageListener;
+    
     private Codec codecToUse;
 
     public String getNodeId() { return nodeId; }
@@ -247,18 +254,20 @@ public class RedissonSessionManager extends ManagerBase {
             throw new LifecycleException(e);
         }
         
-        if (updateMode == UpdateMode.AFTER_REQUEST) {
-            Pipeline pipeline = getEngine().getPipeline();
-            if (updateValve != null) { // in case startInternal is called without stopInternal cleaning the updateValve
-                pipeline.removeValve(updateValve);
+        Pipeline pipeline = getEngine().getPipeline();
+        synchronized (pipeline) {
+            contextInUse.add(getContext().getName());
+            if (updateMode == UpdateMode.AFTER_REQUEST) {
+                if (updateValve == null) {
+                    updateValve = new UpdateValve();
+                    pipeline.addValve(updateValve);
+                }
             }
-            updateValve = new UpdateValve(this);
-            pipeline.addValve(updateValve);			
         }
         
         if (readMode == ReadMode.MEMORY || broadcastSessionEvents) {
             RTopic updatesTopic = getTopic();
-            updatesTopic.addListener(AttributeMessage.class, new MessageListener<AttributeMessage>() {
+            messageListener = new MessageListener<AttributeMessage>() {
                 
                 @Override
                 public void onMessage(CharSequence channel, AttributeMessage msg) {
@@ -317,7 +326,9 @@ public class RedissonSessionManager extends ManagerBase {
                         log.error("Unable to handle topic message", e);
                     }
                 }
-            });
+            };
+            
+            updatesTopic.addListener(AttributeMessage.class, messageListener);
         }
         
         setState(LifecycleState.STARTING);
@@ -350,9 +361,21 @@ public class RedissonSessionManager extends ManagerBase {
         
         setState(LifecycleState.STOPPING);
         
-        if (updateValve != null) {
-            getEngine().getPipeline().removeValve(updateValve);
-            updateValve = null;
+        Pipeline pipeline = getEngine().getPipeline();
+        synchronized (pipeline) {
+            contextInUse.remove(getContext().getName());
+            //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
+            if (contextInUse.isEmpty()) {
+                if (updateValve != null) {
+                    pipeline.removeValve(updateValve);
+                    updateValve = null;
+                }
+            }
+        }
+        
+        if (messageListener != null) {
+             RTopic updatesTopic = getTopic();
+             updatesTopic.removeListener(messageListener);
         }
 
         codecToUse = null;
