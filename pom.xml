@@ -147,7 +147,7 @@
       <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
 
-        <plugins>	
+        <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -160,21 +160,21 @@
                         </manifest>
                         <manifestEntries>
                           <Build-Time>${maven.build.timestamp}</Build-Time>
-                        </manifestEntries>						
+                        </manifestEntries>
                     </archive>
                 </configuration>
             </plugin>
-       	<plugin>
-       		<groupId>org.sonatype.plugins</groupId>
-       		<artifactId>nexus-staging-maven-plugin</artifactId>
-       		<version>1.6.8</version>
-       		<extensions>true</extensions>
-       		<configuration>
-       			<serverId>ossrepo</serverId>
-       			<nexusUrl>https://oss.sonatype.org/</nexusUrl>
-       			<autoReleaseAfterClose>true</autoReleaseAfterClose>
-       		</configuration>
-       	</plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.8</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrepo</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
 
 <!--
             <plugin>
@@ -221,16 +221,16 @@
             </plugin>
 -->
 
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-release-plugin</artifactId>
-            <version>2.5.3</version>
-   		<configuration>
-   			<autoVersionSubmodules>true</autoVersionSubmodules>
-   			<useReleaseProfile>true</useReleaseProfile>
-   			<releaseProfiles>release</releaseProfiles>
-   			<goals>deploy</goals>
-   		</configuration>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <autoVersionSubmodules>true</autoVersionSubmodules>
+                    <useReleaseProfile>true</useReleaseProfile>
+                    <releaseProfiles>release</releaseProfiles>
+                    <goals>deploy</goals>
+                </configuration>
             </plugin>
 
             <plugin>
@@ -262,17 +262,17 @@
             </plugin>
 
             <plugin>
-         	<groupId>org.apache.maven.plugins</groupId>
-         	<artifactId>maven-javadoc-plugin</artifactId>
-         	<version>3.0.1</version>
-         	<executions>
-                   <execution>
-                     <id>attach-javadocs</id>
-                     <goals>
-                         <goal>jar</goal>
-                     </goals>
-                   </execution>
-         	</executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
                 <configuration>
                     <level>public</level>
                     <additionalparam>-Xdoclint:none</additionalparam>
