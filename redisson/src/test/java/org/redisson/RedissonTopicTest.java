@@ -825,6 +825,163 @@ public class RedissonTopicTest {
         slave2.stop();
     }
 
+    @Test
+    public void testReattachInSentinel2() throws Exception {
+        RedisRunner.RedisProcess master = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .run();
+        RedisRunner.RedisProcess slave1 = new RedisRunner()
+                .port(6380)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .run();
+        RedisRunner.RedisProcess slave2 = new RedisRunner()
+                .port(6381)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .run();
+        RedisRunner.RedisProcess sentinel1 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26379)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+        RedisRunner.RedisProcess sentinel2 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26380)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+        RedisRunner.RedisProcess sentinel3 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26381)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .run();
+        
+        Thread.sleep(5000); 
+        
+        Config config = new Config();
+        config.useSentinelServers()
+            .setLoadBalancer(new RandomLoadBalancer())
+            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
+        RedissonClient redisson = Redisson.create(config);
+        
+        final AtomicBoolean executed = new AtomicBoolean();
+        final AtomicInteger subscriptions = new AtomicInteger();
+        
+        RTopic topic = redisson.getTopic("topic");
+        topic.addListener(new StatusListener() {
+            
+            @Override
+            public void onUnsubscribe(String channel) {
+            }
+            
+            @Override
+            public void onSubscribe(String channel) {
+                subscriptions.incrementAndGet();
+            }
+        });
+        topic.addListener(Integer.class, new MessageListener<Integer>() {
+            @Override
+            public void onMessage(CharSequence channel, Integer msg) {
+                executed.set(true);
+            }
+        });
+        
+        sendCommands(redisson, "topic");
+        
+        sentinel1.stop();
+        sentinel2.stop();
+        sentinel3.stop();
+        master.stop();
+        slave1.stop();
+        slave2.stop();
+        
+        Thread.sleep(TimeUnit.SECONDS.toMillis(20));
+        
+        topic.removeAllListeners();
+        long t = System.currentTimeMillis();
+        topic.addListenerAsync(new StatusListener() {
+            
+            @Override
+            public void onUnsubscribe(String channel) {
+            }
+            
+            @Override
+            public void onSubscribe(String channel) {
+                System.out.println("onSubscribe " + (System.currentTimeMillis() - t));
+                subscriptions.incrementAndGet();
+            }
+        });
+        topic.addListenerAsync(Integer.class, new MessageListener<Integer>() {
+            @Override
+            public void onMessage(CharSequence channel, Integer msg) {
+                executed.set(true);
+            }
+        });
+        
+        Thread.sleep(TimeUnit.SECONDS.toMillis(5));
+        
+        master = new RedisRunner()
+                .port(6390)
+                .nosave()
+                .randomDir()
+                .run();
+        slave1 = new RedisRunner()
+                .port(6391)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6390)
+                .run();
+        slave2 = new RedisRunner()
+                .port(6392)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6390)
+                .run();
+        sentinel1 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26379)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6390, 2)
+                .run();
+        sentinel2 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26380)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6390, 2)
+                .run();
+        sentinel3 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26381)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6390, 2)
+                .run();
+        
+        redisson.getTopic("topic").publish(1);
+        
+        await().atMost(20, TimeUnit.SECONDS).until(() -> subscriptions.get() == 2);
+        Assert.assertTrue(executed.get());
+        
+        redisson.shutdown();
+        sentinel1.stop();
+        sentinel2.stop();
+        sentinel3.stop();
+        master.stop();
+        slave1.stop();
+        slave2.stop();
+    }
+    
     protected Thread sendCommands(RedissonClient redisson, String topicName) {
         Thread t = new Thread() {
             @Override

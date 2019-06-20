@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.redisson.api.RFuture;
 import org.redisson.client.BaseRedisPubSubListener;
@@ -28,9 +29,9 @@ import org.redisson.client.ChannelName;
 import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.RedisPubSubListener;
-import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.client.protocol.pubsub.PubSubType;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
@@ -40,6 +41,8 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 
@@ -193,19 +196,39 @@ public class PublishSubscribeService {
                 }
                 freePubSubLock.release();
                 
-                addListeners(channelName, promise, type, lock, freeEntry, listeners);
+                RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, freeEntry, listeners);
                 
+                ChannelFuture future;
                 if (PubSubType.PSUBSCRIBE == type) {
-                    freeEntry.psubscribe(codec, channelName);
+                    future = freeEntry.psubscribe(codec, channelName);
                 } else {
-                    freeEntry.subscribe(codec, channelName);
+                    future = freeEntry.subscribe(codec, channelName);
                 }
+                
+                future.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture future) throws Exception {
+                        if (!future.isSuccess()) {
+                            if (!promise.isDone()) {
+                                subscribeFuture.cancel(false);
+                            }
+                            return;
+                        }
+                        
+                        connectionManager.newTimeout(new TimerTask() {
+                            @Override
+                            public void run(Timeout timeout) throws Exception {
+                                subscribeFuture.cancel(false);
+                            }
+                        }, config.getTimeout(), TimeUnit.MILLISECONDS);
+                    }
+                });
             }
             
         });
     }
 
-    private void addListeners(ChannelName channelName, RPromise<PubSubConnectionEntry> promise,
+    private RFuture<Void> addListeners(ChannelName channelName, RPromise<PubSubConnectionEntry> promise,
             PubSubType type, AsyncSemaphore lock, PubSubConnectionEntry connEntry,
             RedisPubSubListener<?>... listeners) {
         for (RedisPubSubListener<?> listener : listeners) {
@@ -229,14 +252,7 @@ public class PublishSubscribeService {
             }
         });
 
-        connectionManager.newTimeout(new TimerTask() {
-            @Override
-            public void run(Timeout timeout) throws Exception {
-                if (promise.tryFailure(new RedisTimeoutException())) {
-                    subscribeFuture.cancel(false);
-                }
-            }
-        }, config.getRetryInterval(), TimeUnit.MILLISECONDS);
+        return subscribeFuture;
     }
 
     private void releaseSubscribeConnection(int slot, PubSubConnectionEntry pubSubEntry) {
@@ -275,7 +291,7 @@ public class PublishSubscribeService {
             }
             
             PubSubConnectionEntry entry = new PubSubConnectionEntry(conn, config.getSubscriptionsPerConnection());
-            entry.tryAcquire();
+            int remainFreeAmount = entry.tryAcquire();
             
             PubSubConnectionEntry oldEntry = name2PubSubConnection.putIfAbsent(channelName, entry);
             if (oldEntry != null) {
@@ -287,16 +303,38 @@ public class PublishSubscribeService {
                 return;
             }
             
-            freePubSubConnections.add(entry);
+            if (remainFreeAmount > 0) {
+                freePubSubConnections.add(entry);
+            }
             freePubSubLock.release();
             
-            addListeners(channelName, promise, type, lock, entry, listeners);
+            RFuture<Void> subscribeFuture = addListeners(channelName, promise, type, lock, entry, listeners);
             
+            ChannelFuture future;
             if (PubSubType.PSUBSCRIBE == type) {
-                entry.psubscribe(codec, channelName);
+                future = entry.psubscribe(codec, channelName);
             } else {
-                entry.subscribe(codec, channelName);
+                future = entry.subscribe(codec, channelName);
             }
+            
+            future.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        if (!promise.isDone()) {
+                            subscribeFuture.cancel(false);
+                        }
+                        return;
+                    }
+                    
+                    connectionManager.newTimeout(new TimerTask() {
+                        @Override
+                        public void run(Timeout timeout) throws Exception {
+                            subscribeFuture.cancel(false);
+                        }
+                    }, config.getTimeout(), TimeUnit.MILLISECONDS);
+                }
+            });
         });
     }
     
@@ -307,12 +345,14 @@ public class PublishSubscribeService {
             return RedissonPromise.newSucceededFuture(null);
         }
         
+        AtomicBoolean executed = new AtomicBoolean();
         RedissonPromise<Void> result = new RedissonPromise<Void>();
-        entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
+        ChannelFuture future = entry.unsubscribe(channelName, new BaseRedisPubSubListener() {
             
             @Override
             public boolean onStatus(PubSubType type, CharSequence channel) {
                 if (type == PubSubType.UNSUBSCRIBE && channel.equals(channelName)) {
+                    executed.set(true);
                     
                     if (entry.release() == 1) {
                         freePubSubConnections.add(entry);
@@ -326,6 +366,26 @@ public class PublishSubscribeService {
             }
             
         });
+        
+        future.addListener(new ChannelFutureListener() {
+            @Override
+            public void operationComplete(ChannelFuture future) throws Exception {
+                if (!future.isSuccess()) {
+                    return;
+                }
+                
+                connectionManager.newTimeout(new TimerTask() {
+                    @Override
+                    public void run(Timeout timeout) throws Exception {
+                        if (executed.get()) {
+                            return;
+                        }
+                        entry.getConnection().onMessage(new PubSubStatusMessage(PubSubType.UNSUBSCRIBE, channelName));
+                    }
+                }, config.getTimeout(), TimeUnit.MILLISECONDS);
+            }
+        });
+        
         return result;
     }
     
@@ -358,11 +418,15 @@ public class PublishSubscribeService {
                         } else {
                             entryCodec = entry.getConnection().getChannels().get(channelName);
                         }
+                        
+                        AtomicBoolean executed = new AtomicBoolean();
                         RedisPubSubListener<Object> listener = new BaseRedisPubSubListener() {
 
                             @Override
                             public boolean onStatus(PubSubType type, CharSequence channel) {
                                 if (type == topicType && channel.equals(channelName)) {
+                                    executed.set(true);
+                                    
                                     lock.release();
                                     result.trySuccess(entryCodec);
                                     return true;
@@ -372,11 +436,31 @@ public class PublishSubscribeService {
 
                         };
 
+                        ChannelFuture future;
                         if (topicType == PubSubType.PUNSUBSCRIBE) {
-                            entry.punsubscribe(channelName, listener);
+                            future = entry.punsubscribe(channelName, listener);
                         } else {
-                            entry.unsubscribe(channelName, listener);
+                            future = entry.unsubscribe(channelName, listener);
                         }
+                        
+                        future.addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(ChannelFuture future) throws Exception {
+                                if (!future.isSuccess()) {
+                                    return;
+                                }
+                                
+                                connectionManager.newTimeout(new TimerTask() {
+                                    @Override
+                                    public void run(Timeout timeout) throws Exception {
+                                        if (executed.get()) {
+                                            return;
+                                        }
+                                        entry.getConnection().onMessage(new PubSubStatusMessage(topicType, channelName));
+                                    }
+                                }, config.getTimeout(), TimeUnit.MILLISECONDS);
+                            }
+                        });
                     }
                 });
             }
@@ -387,7 +471,7 @@ public class PublishSubscribeService {
     
     public void punsubscribe(ChannelName channelName, AsyncSemaphore lock) {
         PubSubConnectionEntry entry = name2PubSubConnection.remove(channelName);
-        if (entry == null) {
+        if (entry == null || connectionManager.isShuttingDown()) {
             lock.release();
             return;
         }
@@ -466,7 +550,7 @@ public class PublishSubscribeService {
                 return;
             }
             
-            log.info("resubscribed listeners for '{}' channel-pattern to '{}'", channelName, res.getConnection().getRedisClient());
+            log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
         });
     }
     

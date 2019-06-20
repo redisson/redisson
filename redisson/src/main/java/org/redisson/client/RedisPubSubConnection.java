@@ -85,21 +85,21 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
 
-    public void subscribe(Codec codec, ChannelName... channels) {
+    public ChannelFuture subscribe(Codec codec, ChannelName... channels) {
         for (ChannelName ch : channels) {
             this.channels.put(ch, codec);
         }
-        async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channels);
+        return async(new PubSubMessageDecoder(codec.getValueDecoder()), RedisCommands.SUBSCRIBE, channels);
     }
 
-    public void psubscribe(Codec codec, ChannelName... channels) {
+    public ChannelFuture psubscribe(Codec codec, ChannelName... channels) {
         for (ChannelName ch : channels) {
             patternChannels.put(ch, codec);
         }
-        async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channels);
+        return async(new PubSubPatternMessageDecoder(codec.getValueDecoder()), RedisCommands.PSUBSCRIBE, channels);
     }
 
-    public void unsubscribe(ChannelName... channels) {
+    public ChannelFuture unsubscribe(ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 this.channels.remove(ch);
@@ -118,6 +118,7 @@ public class RedisPubSubConnection extends RedisConnection {
                 }
             }
         });
+        return future;
     }
     
     public void removeDisconnectListener(ChannelName channel) {
@@ -145,7 +146,7 @@ public class RedisPubSubConnection extends RedisConnection {
         }
     }
     
-    public void punsubscribe(ChannelName... channels) {
+    public ChannelFuture punsubscribe(ChannelName... channels) {
         synchronized (this) {
             for (ChannelName ch : channels) {
                 patternChannels.remove(ch);
@@ -164,6 +165,7 @@ public class RedisPubSubConnection extends RedisConnection {
                 }
             }
         });
+        return future;
     }
 
     private <T, R> ChannelFuture async(MultiDecoder<Object> messageDecoder, RedisCommand<T> command, Object... params) {

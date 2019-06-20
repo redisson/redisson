@@ -34,6 +34,8 @@ import org.redisson.client.SubscribeListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.pubsub.PubSubType;
 
+import io.netty.channel.ChannelFuture;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -165,12 +167,12 @@ public class PubSubConnectionEntry {
         return subscribedChannelsAmount.incrementAndGet();
     }
 
-    public void subscribe(Codec codec, ChannelName channelName) {
-        conn.subscribe(codec, channelName);
+    public ChannelFuture subscribe(Codec codec, ChannelName channelName) {
+        return conn.subscribe(codec, channelName);
     }
 
-    public void psubscribe(Codec codec, ChannelName pattern) {
-        conn.psubscribe(codec, pattern);
+    public ChannelFuture psubscribe(Codec codec, ChannelName pattern) {
+        return conn.psubscribe(codec, pattern);
     }
 
     public SubscribeListener getSubscribeFuture(ChannelName channel, PubSubType type) {
@@ -187,7 +189,7 @@ public class PubSubConnectionEntry {
         return listener;
     }
     
-    public void unsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
+    public ChannelFuture unsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, CharSequence ch) {
@@ -203,7 +205,7 @@ public class PubSubConnectionEntry {
             }
 
         });
-        conn.unsubscribe(channel);
+        return conn.unsubscribe(channel);
     }
 
     private void removeListeners(ChannelName channel) {
@@ -221,7 +223,7 @@ public class PubSubConnectionEntry {
         }
     }
 
-    public void punsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
+    public ChannelFuture punsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, CharSequence ch) {
@@ -236,7 +238,7 @@ public class PubSubConnectionEntry {
                 return false;
             }
         });
-        conn.punsubscribe(channel);
+        return conn.punsubscribe(channel);
     }
 
     public RedisPubSubConnection getConnection() {
