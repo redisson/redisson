@@ -148,7 +148,22 @@
       <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
 
         <plugins>	
-
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                        </manifest>
+                        <manifestEntries>
+                          <Build-Time>${maven.build.timestamp}</Build-Time>
+                        </manifestEntries>						
+                    </archive>
+                </configuration>
+            </plugin>
        	<plugin>
        		<groupId>org.sonatype.plugins</groupId>
        		<artifactId>nexus-staging-maven-plugin</artifactId>
