@@ -280,8 +280,11 @@ public class RedissonSession extends StandardSession {
     @Override
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
-        
-        if (updateMode == UpdateMode.DEFAULT && map != null && value != null) {
+
+        if (value == null) {
+            return;
+        }
+        if (updateMode == UpdateMode.DEFAULT && map != null) {
             fastPut(name, value);
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
