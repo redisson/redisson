@@ -12,8 +12,8 @@
     <url>http://redisson.org</url>
 
     <organization>
-       <name>The Redisson Project</name>
-       <url>http://redisson.org/</url>
+        <name>The Redisson Project</name>
+        <url>http://redisson.org/</url>
     </organization>
 
     <properties>
@@ -75,26 +75,26 @@
                         <artifactId>maven-source-plugin</artifactId>
                         <version>3.0.1</version>
                         <executions>
-                          <execution>
-                            <id>attach-sources</id>
-                            <goals>
-                              <goal>jar-no-fork</goal>
-                            </goals>
-                            <configuration>
-                              <archive>
-                                <manifest>
-                                  <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-                                  <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
-                                </manifest>
-                                <manifestEntries>
-                                  <Implementation-Build>${implementation.build}</Implementation-Build>
-                                  <Implementation-Build-Date>${maven.build.timestamp}</Implementation-Build-Date>
-                                  <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
-                                  <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
-                                </manifestEntries>
-                              </archive>
-                            </configuration>
-                          </execution>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar-no-fork</goal>
+                                </goals>
+                                <configuration>
+                                    <archive>
+                                        <manifest>
+                                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                                            <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
+                                        </manifest>
+                                        <manifestEntries>
+                                            <Implementation-Build>${implementation.build}</Implementation-Build>
+                                            <Implementation-Build-Date>${maven.build.timestamp}</Implementation-Build-Date>
+                                            <X-Compile-Source-JDK>${javac.src.version}</X-Compile-Source-JDK>
+                                            <X-Compile-Target-JDK>${javac.target.version}</X-Compile-Target-JDK>
+                                        </manifestEntries>
+                                    </archive>
+                                </configuration>
+                            </execution>
                         </executions>
                     </plugin>
                     <plugin>
@@ -139,13 +139,13 @@
         </dependencies>
     </dependencyManagement>
 
-  <build>
-      <directory>target</directory>
-      <outputDirectory>${basedir}/target/classes</outputDirectory>
-      <finalName>${project.artifactId}-${project.version}</finalName>
-      <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
-      <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
-      <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
+    <build>
+        <directory>target</directory>
+        <outputDirectory>${basedir}/target/classes</outputDirectory>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+        <testOutputDirectory>${basedir}/target/test-classes</testOutputDirectory>
+        <sourceDirectory>${basedir}/src/main/java</sourceDirectory>
+        <testSourceDirectory>${basedir}/src/test/java</testSourceDirectory>
 
         <plugins>
             <plugin>
@@ -159,7 +159,7 @@
                             <addDefaultSpecificationEntries>true</addDefaultSpecificationEntries>
                         </manifest>
                         <manifestEntries>
-                          <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Build-Time>${maven.build.timestamp}</Build-Time>
                         </manifestEntries>
                     </archive>
                 </configuration>
@@ -281,6 +281,6 @@
                 </configuration>
             </plugin>
         </plugins>
-  </build>
+    </build>
 
 </project>
