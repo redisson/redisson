@@ -511,9 +511,27 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 return;
             }
 
-            sentinels.putIfAbsent(addr, client);
-            log.info("sentinel: {} added", addr);
-            result.trySuccess(null);
+            RFuture<RedisConnection> f = client.connectAsync();
+            f.onComplete((connection, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                RFuture<String> r = connection.async(config.getTimeout(), RedisCommands.PING);
+                r.onComplete((resp, exc) -> {
+                    if (exc != null) {
+                        result.tryFailure(exc);
+                        return;
+                    }
+                    
+                    if (sentinels.putIfAbsent(addr, client) == null) {
+                        log.info("sentinel: {} added", addr);
+                    }
+                    result.trySuccess(null);
+                });
+            });
+
         });
         return result;
     }
