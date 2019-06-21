@@ -42,7 +42,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount
      */
-    private int connectionMinimumIdleSize = 32;
+    private int connectionMinimumIdleSize = 24;
 
     /**
      * Redis connection maximum pool size
