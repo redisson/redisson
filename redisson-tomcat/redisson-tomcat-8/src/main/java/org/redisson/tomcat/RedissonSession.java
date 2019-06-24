@@ -25,9 +25,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.catalina.connector.Request;
 import org.apache.catalina.session.StandardSession;
 import org.redisson.api.RSet;
 import org.redisson.api.RMap;
@@ -92,32 +94,93 @@ public class RedissonSession extends StandardSession {
 
     private static final long serialVersionUID = -2518607181636076487L;
 
+    private Map<String, Object> deltaAttributes = new ConcurrentHashMap<String, Object>();
+    private Set<Request> deltaAttributesUsedBy = Collections.newSetFromMap(new WeakHashMap<Request, Boolean>());
+
+    private Object getDeltaAttributesValue(String name) {
+    	synchronized (deltaAttributes) {
+    		return deltaAttributes.get(name);
+    	}
+    }
+    
+    private void putDeltaAttributesValue(String name, Object value) {
+    	if (name != null) {
+        	synchronized (deltaAttributes) {
+        		if (value == null) {
+        			deltaAttributes.remove(name);
+        		} else {
+        			deltaAttributes.put(name, value);
+        		}
+        	}
+    	}
+    }
+
+    public void beginUsageBy(Request request) {
+    	synchronized (deltaAttributes) {
+    		deltaAttributesUsedBy.add(request);
+    	}
+    }
+    
+    public void endUsageBy(Request request) {
+    	synchronized (deltaAttributes) {
+    		deltaAttributesUsedBy.remove(request);
+    		
+    		if (deltaAttributesUsedBy.isEmpty()) {
+		    	Map<String, Object> localMap = new HashMap<String, Object>();
+		    	localMap.putAll(deltaAttributes);
+		    	deltaAttributes.clear();
+		    	if ((localMap != null && !localMap.isEmpty()) || (removedAttributes != null && !removedAttributes.isEmpty())) { // check if we gave to the application mutable objects or the application set mutable objects
+		    		attrs.putAll(localMap);
+		    		if (readMode == ReadMode.REDIS || updateMode == UpdateMode.AFTER_REQUEST) {
+		    			save(localMap);
+		    		}
+		    	}
+    		}
+		}
+    }
+
+    public void clearDeltaAttributes() {
+    	synchronized (deltaAttributes) {
+    		deltaAttributes.clear();
+    	}
+    }
+
     @Override
     public Object getAttribute(String name) {
-        if (readMode == ReadMode.REDIS) {
-            if (!isValidInternal()) {
-                throw new IllegalStateException(sm.getString("standardSession.getAttribute.ise"));
-            }
-
-            if (name == null) {
-                return null;
-            }
-
-            return map.get(name);
-        } else {
-            if (!loaded) {
-                synchronized (this) {
-                    if (!loaded) {
-                        Map<String, Object> storedAttrs = map.readAllMap();
-                        
-                        load(storedAttrs);
-                        loaded = true;
-                    }
-                }
-            }
-        }
-
-        return super.getAttribute(name);
+    	synchronized (deltaAttributes) {
+	    	Object localResult = getDeltaAttributesValue(name);
+	    	if (localResult != null) {
+	    		return localResult;
+	    	}
+	    	Object result = null;
+	        if (readMode == ReadMode.REDIS) {
+	            if (!isValidInternal()) {
+	                throw new IllegalStateException(sm.getString("standardSession.getAttribute.ise"));
+	            }
+	
+	            if (name == null) {
+	                return null;
+	            }
+	            result = map.get(name);
+	        } else {
+	            if (!loaded) {
+	                synchronized (this) {
+	                    if (!loaded) {
+	                        Map<String, Object> storedAttrs = map.readAllMap();
+	                        
+	                        load(storedAttrs);
+	                        loaded = true;
+	                    }
+	                }
+	            }
+				result = super.getAttribute(name);
+	        }
+	
+	        //try to add redis object (readMode="REDIS") that was read or regular object when we have readMode="MEMORY" into thread cache so 
+	        //that at the end of the request we are going to update redis with those mutable objects, because web application could have alter those objects once received during request processing.
+	    	putDeltaAttributesValue(name, result);
+	        return result;
+    	}
     }
     
     @Override
@@ -161,6 +224,7 @@ public class RedissonSession extends StandardSession {
         } else {
             map.delete();
         }
+        clearDeltaAttributes();
         if (readMode == ReadMode.MEMORY) {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
@@ -284,6 +348,9 @@ public class RedissonSession extends StandardSession {
         if (value == null) {
             return;
         }
+
+        putDeltaAttributesValue(name, value);
+
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             fastPut(name, value);
         }
@@ -299,6 +366,7 @@ public class RedissonSession extends StandardSession {
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
+        putDeltaAttributesValue(name, null);
         
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             map.fastRemove(name);
@@ -312,6 +380,10 @@ public class RedissonSession extends StandardSession {
     }
     
     public void save() {
+    	save(attrs);
+    }
+    
+    protected void save(Map<String, Object> attributes) {
         if (map == null) {
             map = redissonManager.getMap(id);
         }
@@ -327,8 +399,8 @@ public class RedissonSession extends StandardSession {
             newMap.put(IS_EXPIRATION_LOCKED, isExpirationLocked);
         }
         
-        if (attrs != null) {
-            for (Entry<String, Object> entry : attrs.entrySet()) {
+        if (attributes != null) {
+            for (Entry<String, Object> entry : attributes.entrySet()) {
                 newMap.put(entry.getKey(), entry.getValue());
             }
         }
@@ -389,6 +461,7 @@ public class RedissonSession extends StandardSession {
     public void recycle() {
         super.recycle();
         map = null;
+        clearDeltaAttributes();
     }
     
 }

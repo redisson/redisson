@@ -257,11 +257,9 @@ public class RedissonSessionManager extends ManagerBase {
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
             contextInUse.add(getContext().getName());
-            if (updateMode == UpdateMode.AFTER_REQUEST) {
-                if (updateValve == null) {
-                    updateValve = new UpdateValve();
-                    pipeline.addValve(updateValve);
-                }
+            if (updateValve == null) {
+                updateValve = new UpdateValve();
+                pipeline.addValve(updateValve);
             }
         }
         

@@ -18,8 +18,9 @@ package org.redisson.tomcat;
 import java.io.IOException;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpSession;
 
-import org.apache.catalina.Manager;
+import org.apache.catalina.Session;
 import org.apache.catalina.connector.Request;
 import org.apache.catalina.connector.Response;
 import org.apache.catalina.valves.ValveBase;
@@ -44,22 +45,37 @@ public class UpdateValve extends ValveBase {
         if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             try {
+				HttpSession session = request.getSession(false);
+				if (session != null) {
+					Session sess = request.getContext().getManager().findSession(session.getId());
+					if (sess != null) {
+						((RedissonSession) sess).beginUsageBy(request);
+					}
+				}
+            	
                 getNext().invoke(request, response);
             } finally {
-                request.removeNote(ALREADY_FILTERED_NOTE);
-                final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-                try {
-                    ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
-                    Thread.currentThread().setContextClassLoader(applicationClassLoader);
-                    Manager manager = request.getContext().getManager();
-                    ((RedissonSessionManager)manager).store(request.getSession(false));
-                } finally {
-                    Thread.currentThread().setContextClassLoader(classLoader);
-                }
+				try {
+					HttpSession session = request.getSession(false);
+					if (session != null) {
+						final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+						try {
+							ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();
+							Thread.currentThread().setContextClassLoader(applicationClassLoader);
+							Session sess = request.getContext().getManager().findSession(session.getId());
+							if (sess != null) {
+								((RedissonSession) sess).endUsageBy(request);
+							}
+						} finally {
+							Thread.currentThread().setContextClassLoader(classLoader);
+						}
+					}
+				} finally {
+					request.removeNote(ALREADY_FILTERED_NOTE);
+				}
             }
         } else {
             getNext().invoke(request, response);
         }
     }
-
 }
