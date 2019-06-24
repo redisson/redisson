@@ -101,7 +101,7 @@ public class ConfigSupport {
     }
     
     private String resolveEnvParams(String content) {
-        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+)?)\\}");
+        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+?)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
             String[] parts = m.group(1).split(":-");
