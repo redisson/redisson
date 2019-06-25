@@ -645,6 +645,39 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testReplaceValueTTLIdleUpdate() throws InterruptedException {
+        RMapCache<SimpleKey, SimpleValue> map = null;
+		SimpleValue val1;
+		try {
+			map = redisson.getMapCache("simple");
+			map.put(new SimpleKey("1"), new SimpleValue("2"), 2, TimeUnit.SECONDS, 1, TimeUnit.SECONDS);
+
+			Thread.sleep(750);
+		
+			// update value, would like idle timeout to be refreshed
+			SimpleValue res = map.replace(new SimpleKey("1"), new SimpleValue("3"));
+			assertThat(res).isNotNull();
+
+			Thread.sleep(750);
+
+			// if idle timeout has been updated val1 will be not be null, else it will be null
+			val1 = map.get(new SimpleKey("1"));
+			assertThat(val1).isNotNull(); 
+
+			Thread.sleep(750);
+			
+			// val1 will have expired due to TTL
+			val1 = map.get(new SimpleKey("1"));
+			assertThat(val1).isNull();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+	        map.remove(new SimpleKey("1"));
+		}
+    }
+
+    @Test
     public void testScheduler() throws InterruptedException {
         RMapCache<SimpleKey, SimpleValue> map = redisson.getMapCache("simple3");
         Assert.assertNull(map.get(new SimpleKey("33")));
