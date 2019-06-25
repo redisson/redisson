@@ -4,6 +4,40 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 25-Jun-2019 - 3.11.1 released  
+Feature - `getPendingInvocations` method added to `RRemoteService` object  
+Feature - `natMap` setting support for Sentinel mode (thanks to [fgiannetti](https://github.com/fgiannetti))  
+Feature - `listPending` method added to `RStream`, `RStreamAsync`, `RStreamRx`, `RStreamReactive` interfaces  
+Feature - implementation of Spring Session `ReactiveSessionRepository` added  
+Feature - allow usage of multiple env variables with default values in one config entry (thanks to [tristanlins](https://github.com/tristanlins))  
+
+Improvement - Use maven packaging for redisson project as jar instead of bundle (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Improvement - add default entries in MANIFEST.MF file and extra Build-Time entry as well (thanks to [jchobantonov](https://github.com/jchobantonov))  
+
+Fixed - RMap.replace method doesn't update idle timeout (thanks to [mcacker](https://github.com/mcacker))  
+Fixed - timeout drift in RedissonFairLock (thanks to [jncorpron](https://github.com/jncorpron))  
+Fixed - dead Sentinel appears in logs as node added and down  
+Fixed - Publish/Subscribe connections are not resubscribed properly after failover process  
+Fixed - `RedissonLocalCachedMap.clearLocalCache` method is not executed asynchronously  
+Fixed - Tomcat `RedissonSession.setAttribute` method doesn't check the value for null (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - Tomcat Manager UpdateValve should be installed only once (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - remove MessageListener from topic when Tomcat Session Manager stopInternal is invoked (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - `RStream.getInfo` method throws `java.lang.ClassCastException`  
+Fixed - `RedissonMultiLock` could be acquired by multiple threads if `waitTime` == -1 and `leaseTime` != -1  
+Fixed - `PRINCIPAL_NAME_INDEX_NAME` key is not created in redis  
+Fixed - `SessionExpiredEvent` is not triggered in Spring Session implementation  
+Fixed - host name containing underscore cause NPE  
+Fixed - Illegal reflective access by org.redisson.misc.URIBuilder warning removed  
+Fixed - `RedissonSessionRepository` doesn't trigger created event if `keyPrefix` setting is not null (thanks to [hs20xqy](https://github.com/hs20xqy))  
+Fixed - `RRemoteService.getFreeWorkers` method removes registered service  
+Fixed - zero timeout isn't respected in `RRateLimiter.tryAcquire` method  
+Fixed - `RedissonObjectBuilder.REFERENCES` map should be filled one time  
+Fixed - RReadWriteLock.readLock doesn't take in account expiration date of the last acquired read lock. (thanks to [Aimwhipy](https://github.com/Aimwhipy))  
+Fixed - result object of RMapRx.iterator methods don't return `Flowable` object  
+Fixed - Tomcat Session doesn't expire if `broadcastSessionEvents = true`  
+Fixed - ClassNotFoundException thrown during `SerializationCodec.decode` method invocation (thanks to [jchobantonov](https://github.com/jchobantonov))  
+Fixed - connections amount setting for mirrors is not applied in Proxy mode  
+
 ### 28-May-2019 - 3.11.0 released  
 Feature - `radiusStoreSortedTo` methods added to `RGeo`, `RGeoAsync`, `RGeoRx`, `RGeoReactive` interfaces  
 Feature - Local cache for `JCache` added. Read the [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#1442-jcache-api-local-cache) for more details  
