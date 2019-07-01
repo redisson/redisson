@@ -25,7 +25,7 @@ Maven
          <artifactId>redisson-spring-data-20</artifactId>
          <!-- for Spring Data Redis v.2.1.x -->
          <artifactId>redisson-spring-data-21</artifactId>
-         <version>3.11.0</version>
+         <version>3.11.1</version>
      </dependency>
 ```
 
@@ -33,15 +33,15 @@ Gradle
 
 ```groovy
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.11.0'
+     compile 'org.redisson:redisson-spring-data-16:3.11.1'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.11.0'
+     compile 'org.redisson:redisson-spring-data-17:3.11.1'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.11.0'
+     compile 'org.redisson:redisson-spring-data-18:3.11.1'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.11.0'
+     compile 'org.redisson:redisson-spring-data-20:3.11.1'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.11.0'
+     compile 'org.redisson:redisson-spring-data-21:3.11.1'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context
