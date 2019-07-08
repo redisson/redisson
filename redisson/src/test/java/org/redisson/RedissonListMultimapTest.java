@@ -6,11 +6,17 @@ import java.io.Serializable;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
+import org.redisson.RedissonSetMultimapTest.SimpleKey;
+import org.redisson.RedissonSetMultimapTest.SimpleValue;
 import org.redisson.api.RListMultimap;
+import org.redisson.api.RSetMultimap;
 
 public class RedissonListMultimapTest extends BaseTest {
 
@@ -180,6 +186,21 @@ public class RedissonListMultimapTest extends BaseTest {
         assertThat(s2).containsExactly(new SimpleValue("4"));
     }
 
+    @Test
+    public void testRemoveAllFromCollection() {
+        RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
+        map.put(new SimpleKey("0"), new SimpleValue("1"));
+        map.put(new SimpleKey("0"), new SimpleValue("2"));
+        map.put(new SimpleKey("0"), new SimpleValue("3"));
+
+        Collection<SimpleValue> values = Arrays.asList(new SimpleValue("1"), new SimpleValue("2"));
+        assertThat(map.get(new SimpleKey("0")).removeAll(values)).isTrue();
+        assertThat(map.get(new SimpleKey("0")).size()).isEqualTo(1);
+        assertThat(map.get(new SimpleKey("0")).removeAll(Arrays.asList(new SimpleValue("3")))).isTrue();
+        assertThat(map.get(new SimpleKey("0")).size()).isZero();
+        assertThat(map.get(new SimpleKey("0")).removeAll(Arrays.asList(new SimpleValue("3")))).isFalse();
+    }
+    
     @Test
     public void testRemoveAll() {
         RListMultimap<SimpleKey, SimpleValue> map = redisson.getListMultimap("test1");
