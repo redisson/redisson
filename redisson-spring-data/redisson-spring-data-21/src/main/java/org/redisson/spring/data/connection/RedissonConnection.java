@@ -609,13 +609,13 @@ public class RedissonConnection extends AbstractRedisConnection {
             }
         } else {
             if (option == null || option == SetOption.UPSERT) {
-                return write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds());
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds());
             }
             if (option == SetOption.SET_IF_ABSENT) {
-                return write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "NX");
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "NX");
             }
             if (option == SetOption.SET_IF_PRESENT) {
-                return write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "XX");
+                return write(key, StringCodec.INSTANCE, SET, key, value, "PX", expiration.getExpirationTimeInMilliseconds(), "XX");
             }
         }
         throw new IllegalArgumentException();
