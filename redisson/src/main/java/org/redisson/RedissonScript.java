@@ -143,7 +143,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values) {
-        return evalShaAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), shaDigest, returnType, keys, values);
+        return evalShaAsync(null, mode, codec, shaDigest, returnType, keys, values);
     }
 
     @Override
@@ -228,7 +228,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> RFuture<R> evalShaAsync(Mode mode, String shaDigest, ReturnType returnType) {
-        return evalShaAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), shaDigest, returnType, Collections.emptyList());
+        return evalShaAsync(null, mode, codec, shaDigest, returnType, Collections.emptyList());
     }
 
     @Override
@@ -238,7 +238,7 @@ public class RedissonScript implements RScript {
 
     @Override
     public <R> RFuture<R> evalAsync(Mode mode, String luaScript, ReturnType returnType) {
-        return evalAsync(null, mode, commandExecutor.getConnectionManager().getCodec(), luaScript, returnType, Collections.emptyList());
+        return evalAsync(null, mode, codec, luaScript, returnType, Collections.emptyList());
     }
 
     @Override
