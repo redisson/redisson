@@ -29,7 +29,7 @@ public class RequiredIdResolver implements RIdResolver<Object> {
 
     @Override
     public Object resolve(Class<?> cls, RId annotation, String idFieldName, RedissonClient redisson) {
-        throw new IllegalArgumentException("id value not defined for instance of " + cls);
+        throw new IllegalArgumentException("id value is not defined for instance of " + cls);
     }
 
 }
