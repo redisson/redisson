@@ -19,7 +19,7 @@ package org.redisson.api;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  */
-public interface RLiveObject {
+public interface RLiveObject extends RExpirable {
 
     /**
      * Returns the value of the field that has the RId annotation.
@@ -38,22 +38,4 @@ public interface RLiveObject {
      */
     void setLiveObjectId(Object liveObjectId);
 
-    /**
-     * Returns true if this object holds no other values apart from the field
-     * annotated with RId. This involves in invoking the isExist() method on the
-     * underlying RMap. Since the field with RId annotation is encoded in the
-     * name of the underlying RMap, so to ensure the map exist in redis, set a 
-     * non null value to any of the other fields.
-     * 
-     * @return <code>true</code> is object exists 
-     * @see org.redisson.api.RMap
-     */
-    boolean isExists();
-    
-    /**
-     * Deletes the underlying RMap.
-     * @return <code>true</code> if object deleted successfully 
-     */
-    boolean delete();
-    
 }

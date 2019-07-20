@@ -54,6 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.redisson.api.RLiveObject;
 import org.redisson.api.RObject;
 import org.redisson.cache.LRUCacheMap;
 
@@ -142,7 +143,7 @@ public class ClassUtils {
 
     private static Iterable<Class<?>> getClassHierarchy(Class<?> clazz) {
         // Don't descend into hierarchy for RObjects
-        if (Arrays.asList(clazz.getInterfaces()).contains(RObject.class)) {
+        if (Arrays.asList(clazz.getInterfaces()).contains(RLiveObject.class)) {
             return Collections.<Class<?>>singleton(clazz);
         }
         List<Class<?>> classes = new ArrayList<Class<?>>();

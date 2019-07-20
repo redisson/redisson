@@ -751,7 +751,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
 
         Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
-                Introspectior.getTypeDescription(RLiveObject.class))
+                ElementMatchers.anyOf(RLiveObject.class, RExpirable.class, RObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
                         .or(ElementMatchers.named("isPhantom"))
                         .or(ElementMatchers.named("delete"))))
@@ -772,11 +772,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.named("get")
                         .or(ElementMatchers.named("set"))))
                 .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
-                
-                .method(ElementMatchers.isDeclaredBy(RObject.class)
-                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-                .intercept(MethodDelegation.to(RObjectInterceptor.class))
-                .implement(RObject.class)
                 
                 .method(ElementMatchers.isDeclaredBy(RExpirable.class)
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))
