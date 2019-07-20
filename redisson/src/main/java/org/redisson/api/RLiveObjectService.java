@@ -156,12 +156,10 @@ public interface RLiveObjectService {
     <T> RLiveObject asLiveObject(T instance);
 
     /**
-     * To cast the instance to RExpirable instance.
+     * Use {@link #asRMap(Object)} method instead
      * 
-     * @param <T> type of instance
-     * @param instance - live object
-     * @return RExpirable compatible object
      */
+    @Deprecated
     <T> RExpirable asRExpirable(T instance);
 
     /**
