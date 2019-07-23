@@ -403,13 +403,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private NodeSource getNodeSource(String key) {
         int slot = connectionManager.calcSlot(key);
         MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        return new NodeSource(entry);
+        return new NodeSource(entry, slot);
     }
 
     private NodeSource getNodeSource(byte[] key) {
         int slot = connectionManager.calcSlot(key);
         MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        return new NodeSource(entry);
+        return new NodeSource(entry, slot);
     }
     
     @Override

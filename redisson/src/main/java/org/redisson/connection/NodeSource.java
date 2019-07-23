@@ -37,6 +37,11 @@ public class NodeSource {
         this.entry = entry;
     }
 
+    public NodeSource(MasterSlaveEntry entry, Integer slot) {
+        this.entry = entry;
+        this.slot = slot;
+    }
+
     public NodeSource(MasterSlaveEntry entry, RedisClient redisClient) {
         this.entry = entry;
         this.redisClient = redisClient;
