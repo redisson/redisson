@@ -245,4 +245,9 @@ public class PubSubConnectionEntry {
         return conn;
     }
 
+    @Override
+    public String toString() {
+        return "PubSubConnectionEntry [subscribedChannelsAmount=" + subscribedChannelsAmount + ", conn=" + conn + "]";
+    }
+    
 }

@@ -496,6 +496,19 @@ public class PublishSubscribeService {
     }
     
     public void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
+        for (PubSubConnectionEntry entry : freePubSubConnections) {
+            if (entry.getConnection().equals(redisPubSubConnection)) {
+                freePubSubLock.acquire(new Runnable() {
+                    @Override
+                    public void run() {
+                        freePubSubConnections.remove(entry);
+                        freePubSubLock.release();
+                    }
+                });
+                break;
+            }
+        }
+        
         for (ChannelName channelName : redisPubSubConnection.getChannels().keySet()) {
             PubSubConnectionEntry pubSubEntry = getPubSubEntry(channelName);
             Collection<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(channelName);
@@ -553,6 +566,15 @@ public class PublishSubscribeService {
             log.info("listeners of '{}' channel-pattern to '{}' have been resubscribed", channelName, res.getConnection().getRedisClient());
         });
     }
+    
+    @Override
+    public String toString() {
+        return "PublishSubscribeService [name2PubSubConnection=" + name2PubSubConnection + ", freePubSubConnections="
+                + freePubSubConnections + "]";
+    }
+
+    
+    
     
     
 }
