@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,8 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+import org.redisson.reactive.CommandReactiveBatchService;
+import org.redisson.rx.CommandRxBatchService;
 
 /**
  * 
@@ -210,6 +213,18 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> deleteByPatternAsync(String pattern) {
+        if (commandExecutor instanceof CommandBatchService
+                || commandExecutor instanceof CommandReactiveBatchService
+                    || commandExecutor instanceof CommandRxBatchService) {
+            return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, 
+                            "local keys = redis.call('keys', ARGV[1]) "
+                              + "local n = 0 "
+                              + "for i=1, #keys,5000 do "
+                                  + "n = n + redis.call('del', unpack(keys, i, math.min(i+4999, table.getn(keys)))) "
+                              + "end "
+                          + "return n;", Collections.emptyList(), pattern);
+        }
+        
         int batchSize = 500;
         RPromise<Long> result = new RedissonPromise<Long>();
         AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
