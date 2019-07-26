@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.redisson.api.RLiveObject;
-import org.redisson.api.RObject;
 import org.redisson.cache.LRUCacheMap;
 
 /**
