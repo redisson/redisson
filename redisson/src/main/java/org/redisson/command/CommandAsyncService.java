@@ -800,7 +800,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
     }
     
-    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.weak(0, 0);
+    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.soft(0, 0);
 
     protected Codec getCodec(Codec codec) {
         if (codec == null) {
