@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.nustaq.serialization.FSTBasicObjectSerializer;
 import org.nustaq.serialization.FSTClazzInfo;
+import org.nustaq.serialization.FSTClazzInfoRegistry;
 import org.nustaq.serialization.FSTConfiguration;
 import org.nustaq.serialization.FSTDecoder;
 import org.nustaq.serialization.FSTEncoder;
@@ -196,11 +197,24 @@ public class FstCodec extends BaseCodec {
         def.setForceClzInit(codec.config.isForceClzInit());
         def.setForceSerializable(codec.config.isForceSerializable());
         def.setInstantiator(codec.config.getInstantiator(null));
+        def.setJsonFieldNames(codec.config.getJsonFieldNames());
+        def.setLastResortResolver(codec.config.getLastResortResolver());
         def.setName(codec.config.getName());
         def.setPreferSpeed(codec.config.isPreferSpeed());
+        def.setStructMode(codec.config.isStructMode());
         def.setShareReferences(codec.config.isShareReferences());
         def.setStreamCoderFactory(codec.config.getStreamCoderFactory());
         def.setVerifier(codec.config.getVerifier());
+        
+        try {
+            Field serializationInfoRegistryField = FSTConfiguration.class.getDeclaredField("serializationInfoRegistry");
+            serializationInfoRegistryField.setAccessible(true);
+            FSTClazzInfoRegistry registry = (FSTClazzInfoRegistry) serializationInfoRegistryField.get(codec.config);
+            serializationInfoRegistryField.set(def, registry);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        
         return def;
     }
     
