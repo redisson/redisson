@@ -210,7 +210,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> deleteByPatternAsync(String pattern) {
-        int batchSize = 100;
+        int batchSize = 500;
         RPromise<Long> result = new RedissonPromise<Long>();
         AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         AtomicLong count = new AtomicLong();
