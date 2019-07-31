@@ -181,7 +181,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of intersection
      */
-    Flowable<Long> intersection(String... names);
+    Flowable<Integer> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.

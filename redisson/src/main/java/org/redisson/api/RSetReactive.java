@@ -182,7 +182,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of intersection
      */
-    Mono<Long> intersection(String... names);
+    Mono<Integer> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.
