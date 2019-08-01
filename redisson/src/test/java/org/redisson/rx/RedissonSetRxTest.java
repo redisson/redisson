@@ -128,7 +128,7 @@ public class RedissonSetRxTest extends BaseRxTest {
     }
 
     private void checkIterator(RSetRx<Long> set, Set<Long> setCopy) {
-        for (Iterator<Long> iterator = toIterator(set.iterator()); iterator.hasNext(); ) {
+        for (Iterator<Long> iterator = toIterator(set.iterator()); iterator.hasNext();) {
             Long value = iterator.next();
             if (!setCopy.remove(value)) {
                 Assert.fail();
@@ -266,31 +266,5 @@ public class RedissonSetRxTest extends BaseRxTest {
 
         Assert.assertEquals(1, sync(set.size()).intValue());
         Assert.assertEquals(0, sync(otherSet.size()).intValue());
-    }
-
-    @Test
-    public void testIntersection() {
-        final String firstSetName = "firstSet";
-        RSetRx<Integer> firstSet = redisson.getSet(firstSetName);
-
-        sync(firstSet.add(1));
-        sync(firstSet.add(2));
-        sync(firstSet.add(3));
-
-        final String secondSetName = "secondSet";
-        RSetRx<Integer> secondSet = redisson.getSet(secondSetName);
-
-        sync(secondSet.add(3));
-        sync(secondSet.add(4));
-        sync(secondSet.add(1));
-
-        final RSetRx<Object> tmp = redisson.getSet("tmp");
-
-        final Integer count = sync(tmp.intersection(firstSetName, secondSetName));
-
-        Assert.assertEquals(2, count.intValue());
-
-        Assert.assertTrue(sync(tmp.contains(1)));
-        Assert.assertTrue(sync(tmp.contains(3)));
     }
 }
