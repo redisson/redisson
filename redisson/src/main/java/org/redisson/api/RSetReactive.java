@@ -146,7 +146,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of union
      */
-    Mono<Long> union(String... names);
+    Mono<Integer> union(String... names);
 
     /**
      * Union sets specified by name with current set.
@@ -164,7 +164,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of diff
      */
-    Mono<Long> diff(String... names);
+    Mono<Integer> diff(String... names);
     
     /**
      * Diff sets specified by name with current set.
@@ -182,7 +182,7 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
      * @param names - name of sets
      * @return size of intersection
      */
-    Mono<Long> intersection(String... names);
+    Mono<Integer> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.

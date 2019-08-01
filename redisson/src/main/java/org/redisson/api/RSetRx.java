@@ -147,7 +147,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of union
      */
-    Single<Long> union(String... names);
+    Single<Integer> union(String... names);
 
     /**
      * Union sets specified by name with current set.
@@ -165,7 +165,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of diff
      */
-    Single<Long> diff(String... names);
+    Single<Integer> diff(String... names);
     
     /**
      * Diff sets specified by name with current set.
@@ -183,7 +183,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of intersection
      */
-    Single<Long> intersection(String... names);
+    Single<Integer> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.
