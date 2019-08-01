@@ -69,6 +69,7 @@ import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
@@ -649,7 +650,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
     
-    @SuppressWarnings({"NestedIfDepth"})
+    @SuppressWarnings({"NestedIfDepth", "MethodLength"})
     public <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
             RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, 
             boolean ignoreRedirect) {
@@ -718,7 +719,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                                 return;
                             }
                             details.incAttempt();
-                            Timeout timeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+
+                            Timeout timeout;
+                            if (connectionManager.getConfig().getRetryInterval() > 0) {
+                                timeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+                            } else {
+                                timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
+                            }
                             details.setTimeout(timeout);
                             return;
                         }
@@ -762,7 +769,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         };
 
-        Timeout timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+        Timeout timeout;
+        if (connectionManager.getConfig().getRetryInterval() > 0) {
+            timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
+        } else {
+            timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
+        }
         details.setTimeout(timeout);
         details.setupMainPromiseListener(mainPromiseListener);
 

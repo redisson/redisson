@@ -50,6 +50,7 @@ import org.redisson.client.protocol.CommandsData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
+import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
@@ -679,7 +680,14 @@ public class CommandBatchService extends CommandAsyncService {
                                 return;
                             }
                             details.incAttempt();
-                            Timeout timeout = connectionManager.newTimeout(this, interval, TimeUnit.MILLISECONDS);
+                            
+                            Timeout timeout;
+                            if (interval > 0) {
+                                timeout = connectionManager.newTimeout(this, interval, TimeUnit.MILLISECONDS);
+                            } else {
+                                timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
+                            }
+
                             details.setTimeout(timeout);
                             return;
                         }

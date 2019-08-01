@@ -86,7 +86,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class MasterSlaveConnectionManager implements ConnectionManager {
 
-    private final Timeout dummyTimeout = new Timeout() {
+    public static final Timeout DUMMY_TIMEOUT = new Timeout() {
         @Override
         public Timer timer() {
             return null;
@@ -109,7 +109,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
         @Override
         public boolean cancel() {
-            return false;
+            return true;
         }
     };
 
@@ -685,7 +685,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             return timer.newTimeout(task, delay, unit);
         } catch (IllegalStateException e) {
             // timer is shutdown
-            return dummyTimeout;
+            return DUMMY_TIMEOUT;
         }
     }
 
