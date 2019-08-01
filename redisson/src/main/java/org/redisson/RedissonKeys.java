@@ -216,7 +216,7 @@ public class RedissonKeys implements RKeys {
         if (commandExecutor instanceof CommandBatchService
                 || commandExecutor instanceof CommandReactiveBatchService
                     || commandExecutor instanceof CommandRxBatchService) {
-            return commandExecutor.evalWriteAsync((String)null, null, RedisCommands.EVAL_LONG, 
+            return commandExecutor.evalWriteAsync((String) null, null, RedisCommands.EVAL_LONG, 
                             "local keys = redis.call('keys', ARGV[1]) "
                               + "local n = 0 "
                               + "for i=1, #keys,5000 do "
