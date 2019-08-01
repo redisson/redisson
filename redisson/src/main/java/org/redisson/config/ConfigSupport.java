@@ -16,15 +16,12 @@
 package org.redisson.config;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.net.URI;
 import java.net.URL;
-import java.util.List;
 import java.util.Scanner;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -43,7 +40,6 @@ import org.redisson.connection.SingleConnectionManager;
 import org.redisson.connection.balancer.LoadBalancer;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -62,42 +58,10 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
  *
  */
 public class ConfigSupport {
-
+    
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
     @JsonFilter("classFilter")
     public static class ClassMixIn {
-
-    }
-
-    public abstract static class SingleSeverConfigMixIn {
-
-        @JsonProperty
-        List<URI> address;
-
-        @JsonIgnore
-        abstract SingleServerConfig setAddress(String address);
-
-        @JsonIgnore
-        abstract URI getAddress();
-
-        @JsonIgnore
-        abstract void setAddress(URI address);
-
-    }
-
-    public abstract static class MasterSlaveServersConfigMixIn {
-
-        @JsonProperty
-        List<URI> masterAddress;
-
-        @JsonIgnore
-        abstract MasterSlaveServersConfig setMasterAddress(String masterAddress);
-
-        @JsonIgnore
-        abstract URI getMasterAddress();
-
-        @JsonIgnore
-        abstract void setMasterAddress(URI masterAddress);
 
     }
 
@@ -137,13 +101,15 @@ public class ConfigSupport {
     }
     
     private String resolveEnvParams(String content) {
-        Pattern pattern = Pattern.compile("\\$\\{(\\w+)\\}");
+        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+?)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
-            String s = m.group(1);
-            String v = System.getenv(s);
+            String[] parts = m.group(1).split(":-");
+            String v = System.getenv(parts[0]);
             if (v != null) {
                 content = content.replace(m.group(), v);
+            } else if (parts.length == 2) {
+                content = content.replace(m.group(), parts[1]);
             }
         }
         return content;
@@ -263,8 +229,6 @@ public class ConfigSupport {
     private ObjectMapper createMapper(JsonFactory mapping, ClassLoader classLoader) {
         ObjectMapper mapper = new ObjectMapper(mapping);
         
-        mapper.addMixIn(MasterSlaveServersConfig.class, MasterSlaveServersConfigMixIn.class);
-        mapper.addMixIn(SingleServerConfig.class, SingleSeverConfigMixIn.class);
         mapper.addMixIn(Config.class, ConfigMixIn.class);
         mapper.addMixIn(ReferenceCodecProvider.class, ClassMixIn.class);
         mapper.addMixIn(AddressResolverGroupFactory.class, ClassMixIn.class);

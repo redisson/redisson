@@ -48,7 +48,8 @@ public class MapOptions<K, V> {
     private MapLoader<K, V> loader;
     private MapWriter<K, V> writer;
     private WriteMode writeMode = WriteMode.WRITE_THROUGH;
-    private int writeBehindThreads = 1;
+    private int writeBehindBatchSize = 50;
+    private int writeBehindDelay = 1000;
     
     protected MapOptions() {
     }
@@ -90,19 +91,36 @@ public class MapOptions<K, V> {
     }
     
     /**
-     * Sets threads amount used in write behind mode.
+     * Sets write behind tasks batch size. 
+     * During MapWriter methods execution all updates accumulated into a batch of specified size.
      * <p>
-     * Default is <code>1</code>
+     * Default is <code>50</code>
      * 
-     * @param writeBehindThreads - threads amount
+     * @param writeBehindBatchSize - size of batch
      * @return MapOptions instance
      */
-    public MapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
-        this.writeBehindThreads = writeBehindThreads;
+    public MapOptions<K, V> writeBehindBatchSize(int writeBehindBatchSize) {
+        this.writeBehindBatchSize = writeBehindBatchSize;
         return this;
     }
-    public int getWriteBehindThreads() {
-        return writeBehindThreads;
+    public int getWriteBehindBatchSize() {
+        return writeBehindBatchSize;
+    }
+    
+    /**
+     * Sets write behind tasks execution delay. All updates would be applied with lag not more than specified delay.   
+     * <p>
+     * Default is <code>1000</code> milliseconds
+     * 
+     * @param writeBehindDelay - delay in milliseconds
+     * @return MapOptions instance
+     */
+    public MapOptions<K, V> writeBehindDelay(int writeBehindDelay) {
+        this.writeBehindDelay = writeBehindDelay;
+        return this;
+    }
+    public int getWriteBehindDelay() {
+        return writeBehindDelay;
     }
     
     /**

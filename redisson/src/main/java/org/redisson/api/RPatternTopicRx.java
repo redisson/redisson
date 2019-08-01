@@ -20,7 +20,7 @@ import java.util.List;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Pattern based observer for Publish Subscribe object.
@@ -48,7 +48,7 @@ public interface RPatternTopicRx {
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.MessageListener
      */
-    <T> Flowable<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
+    <T> Single<Integer> addListener(Class<T> type, PatternMessageListener<T> listener);
 
     /**
      * Subscribes to status changes of this topic
@@ -57,7 +57,7 @@ public interface RPatternTopicRx {
      * @return local JVM unique listener id
      * @see org.redisson.api.listener.StatusListener
      */
-    Flowable<Integer> addListener(PatternStatusListener listener);
+    Single<Integer> addListener(PatternStatusListener listener);
 
     /**
      * Removes the listener by <code>id</code> for listening this topic

@@ -26,10 +26,10 @@ import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.session.config.annotation.web.http.SpringHttpSessionConfiguration;
-import org.springframework.util.StringUtils;
+import org.springframework.session.web.http.SessionRepositoryFilter;
 
 /**
- * Exposes the SessionRepositoryFilter as the bean
+ * Exposes the {@link SessionRepositoryFilter} as the bean
  * named "springSessionRepositoryFilter".
  * <p>
  * Redisson instance should be registered as bean 
@@ -47,10 +47,7 @@ public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfigura
     @Bean
     public RedissonSessionRepository sessionRepository(
             RedissonClient redissonClient, ApplicationEventPublisher eventPublisher) {
-        RedissonSessionRepository repository = new RedissonSessionRepository(redissonClient, eventPublisher);
-        if (StringUtils.hasText(keyPrefix)) {
-            repository.setKeyPrefix(keyPrefix);
-        }
+        RedissonSessionRepository repository = new RedissonSessionRepository(redissonClient, eventPublisher, keyPrefix);
         repository.setDefaultMaxInactiveInterval(maxInactiveIntervalInSeconds);
         return repository;
     }

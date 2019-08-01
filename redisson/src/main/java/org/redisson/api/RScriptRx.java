@@ -20,7 +20,9 @@ import java.util.List;
 import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Redis Script feature
@@ -35,7 +37,7 @@ public interface RScriptRx {
      * 
      * @return void
      */
-    Flowable<Void> scriptFlush();
+    Completable scriptFlush();
 
     /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
@@ -48,7 +50,7 @@ public interface RScriptRx {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> Flowable<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    <R> Maybe<R> evalSha(Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
 
     /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
@@ -62,7 +64,7 @@ public interface RScriptRx {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> Flowable<R> evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
+    <R> Maybe<R> evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
     
     /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
@@ -73,7 +75,7 @@ public interface RScriptRx {
      * @param returnType - return type
      * @return result object
      */
-    <R> Flowable<R> evalSha(Mode mode, String shaDigest, ReturnType returnType);
+    <R> Maybe<R> evalSha(Mode mode, String shaDigest, ReturnType returnType);
 
     /**
      * Executes Lua script
@@ -86,7 +88,7 @@ public interface RScriptRx {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> Flowable<R> eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> Maybe<R> eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
     /**
      * Executes Lua script
@@ -97,7 +99,7 @@ public interface RScriptRx {
      * @param returnType - return type
      * @return result object
      */
-    <R> Flowable<R> eval(Mode mode, String luaScript, ReturnType returnType);
+    <R> Maybe<R> eval(Mode mode, String luaScript, ReturnType returnType);
     
     /**
      * Executes Lua script
@@ -111,7 +113,7 @@ public interface RScriptRx {
      * @param values - values available through VALUES param in script
      * @return result object
      */
-    <R> Flowable<R> eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
+    <R> Maybe<R> eval(String key, Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
     /**
      * Loads Lua script into Redis scripts cache and returns its SHA-1 digest
@@ -119,7 +121,7 @@ public interface RScriptRx {
      * @param luaScript - lua script
      * @return SHA-1 digest
      */
-    Flowable<String> scriptLoad(String luaScript);
+    Single<String> scriptLoad(String luaScript);
 
     /**
      * Checks for presence Lua scripts in Redis script cache by SHA-1 digest.
@@ -127,13 +129,13 @@ public interface RScriptRx {
      * @param shaDigests - collection of SHA-1 digests
      * @return list of booleans corresponding to collection SHA-1 digests
      */
-    Flowable<List<Boolean>> scriptExists(String ... shaDigests);
+    Single<List<Boolean>> scriptExists(String... shaDigests);
 
     /**
      * Kills currently executed Lua script
      * 
      * @return void
      */
-    Flowable<Void> scriptKill();
+    Completable scriptKill();
 
 }

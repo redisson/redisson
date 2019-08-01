@@ -20,14 +20,18 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -56,6 +60,9 @@ import org.redisson.Redisson;
 import org.redisson.RedissonBaseMapIterator;
 import org.redisson.RedissonObject;
 import org.redisson.ScanResult;
+import org.redisson.api.CacheAsync;
+import org.redisson.api.CacheReactive;
+import org.redisson.api.CacheRx;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RSemaphore;
@@ -71,9 +78,14 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.jcache.JMutableEntry.Action;
 import org.redisson.jcache.configuration.JCacheConfiguration;
 import org.redisson.misc.Hash;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+import org.redisson.reactive.CommandReactiveService;
+import org.redisson.reactive.ReactiveProxyBuilder;
+import org.redisson.rx.CommandRxService;
+import org.redisson.rx.RxProxyBuilder;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * JCache implementation
@@ -83,15 +95,15 @@ import io.netty.util.internal.PlatformDependent;
  * @param <K> key
  * @param <V> value
  */
-public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
+public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAsync<K, V> {
 
-    private final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
+    final boolean atomicExecution = System.getProperty("org.jsr107.tck.management.agentId") == null;
     
-    private final JCacheManager cacheManager;
-    private final JCacheConfiguration<K, V> config;
+    final JCacheManager cacheManager;
+    final JCacheConfiguration<K, V> config;
     private final ConcurrentMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>> listeners = 
                                         new ConcurrentHashMap<CacheEntryListenerConfiguration<K, V>, Map<Integer, String>>();
-    private final Redisson redisson;
+    final Redisson redisson;
 
     private CacheLoader<K, V> cacheLoader;
     private CacheWriter<K, V> cacheWriter;
@@ -133,7 +145,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private void checkNotClosed() {
+    void checkNotClosed() {
         if (closed) {
             throw new IllegalStateException();
         }
@@ -175,41 +187,67 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return "jcache_removed_channel:{" + getName() + "}";
     }
 
-    private long currentNanoTime() {
+    long currentNanoTime() {
         if (config.isStatisticsEnabled()) {
             return System.nanoTime();
         }
         return 0;
     }
 
-    @Override
-    public V get(K key) {
-        checkNotClosed();
+    protected void checkKey(Object key) {
         if (key == null) {
             throw new NullPointerException();
         }
-        long startTime = currentNanoTime();
+    }
+    
+    @Override
+    public V get(K key) {
         RLock lock = getLockedLock(key);
         try {
-            V value;
-            if (atomicExecution) {
-                value = getValue(key);
-            } else {
-                value = getValueLocked(key);
-            }
+            RFuture<V> result = getAsync(key);
+            result.syncUninterruptibly();
+            return result.getNow();
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> getAsync(K key) {
+        checkNotClosed();
+        checkKey(key);
+
+        long startTime = currentNanoTime();
+        RFuture<V> future;
+        if (atomicExecution) {
+            future = getValue(key);
+        } else {
+            V value = getValueLocked(key);
+            future = RedissonPromise.newSucceededFuture(value);
+        }
+
+        RPromise<V> result = new RedissonPromise<>();
+        future.onComplete((value, e) -> {
             if (value == null) {
                 cacheManager.getStatBean(this).addMisses(1);
                 if (config.isReadThrough()) {
-                    value = loadValue(key);
+                    redisson.getConnectionManager().getExecutor().execute(() -> {
+                        try {
+                            V val = loadValue(key);
+                            result.trySuccess(val);
+                        } catch (Exception ex) {
+                            result.tryFailure(ex);
+                        }
+                    });
+                    return;
                 }
             } else {
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                 cacheManager.getStatBean(this).addHits(1);
             }
-            return value;
-        } finally {
-            lock.unlock();
-        }
+            result.trySuccess(value);
+        });
+        return result;
     }
     
     V getValueLocked(K key) {
@@ -241,7 +279,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
             List<Object> result = new ArrayList<Object>(3);
             result.add(value);
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
                   + "redis.call('hdel', KEYS[1], ARGV[3]); "
@@ -270,11 +308,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
 
-    private V getValue(K key) {
+    RFuture<V> getValue(K key) {
         Long accessTimeout = getAccessTimeout();
         
         if (accessTimeout == -1) {
-            V value = evalRead(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
+            return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                     "local value = redis.call('hget', KEYS[1], ARGV[3]); "
                   + "if value == false then "
                       + "return nil; "
@@ -293,10 +331,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                   + "return value; ",
                  Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
                  accessTimeout, System.currentTimeMillis(), encodeMapKey(key));
-            return value;
         }
         
-        V value = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -324,14 +361,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
               + "return value; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), 
              accessTimeout, System.currentTimeMillis(), encodeMapKey(key));
-        return value;
     }
 
-    private Long getAccessTimeout() {
+    Long getAccessTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForAccess() == null) {
             return -1L;
         }
-        Long accessTimeout = config.getExpiryPolicy().getExpiryForAccess().getAdjustedTime(System.currentTimeMillis());
+        Long accessTimeout = config.getExpiryPolicy().getExpiryForAccess().getAdjustedTime(baseTime);
 
         if (config.getExpiryPolicy().getExpiryForAccess().isZero()) {
             accessTimeout = 0L;
@@ -341,25 +377,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return accessTimeout;
     }
 
-    V load(K key) {
-        RLock lock = getLockedLock(key);
-        try {
-            V value;
-            if (atomicExecution) {
-                value = getValue(key);
-            } else {
-                value = getValueLocked(key);
-            }
-            if (value == null) {
-                value = loadValue(key);
-            }
-            return value;
-        } finally {
-            lock.unlock();
-        }
+    Long getAccessTimeout() {
+        return getAccessTimeout(System.currentTimeMillis());
     }
-
-    private V loadValue(K key) {
+    
+    V loadValue(K key) {
         V value = null;
         try {
             value = cacheLoader.load(key);
@@ -378,7 +400,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return value;
     }
     
-    private <T, R> R write(String key, RedisCommand<T> command, Object ... params) {
+    private <T, R> R write(String key, RedisCommand<T> command, Object... params) {
         RFuture<R> future = commandExecutor.writeAsync(key, command, params);
         try {
             return get(future);
@@ -387,7 +409,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);
@@ -396,7 +418,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
     }
     
-    private <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> future = commandExecutor.evalReadAsync(key, codec, evalCommandType, script, keys, params);
         try {
             return get(future);
@@ -406,7 +428,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
     
     private boolean putValueLocked(K key, Object value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
         if (containsKey(key)) {
             Long updateTimeout = getUpdateTimeout();
@@ -479,12 +501,134 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
 
-    private boolean putValue(K key, Object value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+    RFuture<Long> putAllValues(Map<? extends K, ? extends V> map) {
+        Long creationTimeout = getCreationTimeout();
+        Long updateTimeout = getUpdateTimeout();
+
+        List<Object> params = new ArrayList<>();
+        params.add(creationTimeout);
+        params.add(updateTimeout);
+        params.add(System.currentTimeMillis());
+        double syncId = ThreadLocalRandom.current().nextDouble();
+        params.add(syncId);
+        
+        for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
+            params.add(encodeMapKey(entry.getKey()));
+            params.add(encodeMapValue(entry.getValue()));
+        }
+        
+        RFuture<List<Object>> res = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+              "local added = 0; "
+            + "local syncs = 0; "
+            + "for i = 5, #ARGV, 2 do "
+              + "if redis.call('hexists', KEYS[1], ARGV[i]) == 1 then "
+                + "if ARGV[2] == '0' then "
+                    + "redis.call('hdel', KEYS[1], ARGV[i]); "
+                    + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                    + "local value = redis.call('hget', KEYS[1], ARGV[i]);"
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value)); "
+                    + "redis.call('publish', KEYS[4], msg); "
+                    + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value), ARGV[4]); "
+                    + "syncs = syncs + redis.call('publish', KEYS[7], syncMsg); "
+                + "elseif ARGV[2] ~= '-1' then "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "redis.call('zadd', KEYS[2], ARGV[2], ARGV[i]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "                      
+                    + "redis.call('publish', KEYS[5], msg); "
+                    + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "syncs = syncs + redis.call('publish', KEYS[8], syncMsg); "
+                    + "added = added + 1;"
+                + "else "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[5], msg); "
+                    + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "syncs = syncs + redis.call('publish', KEYS[8], syncMsg); "
+                    + "added = added + 1;"
+                + "end; "
+            + "else "
+                + "if ARGV[1] == '0' then "
+                + "elseif ARGV[1] ~= '-1' then "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[i]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[3], msg); "
+                    + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "syncs = syncs + redis.call('publish', KEYS[6], syncMsg); "
+                    + "added = added + 1;"
+                + "else "
+                    + "redis.call('hset', KEYS[1], ARGV[i], ARGV[i+1]); "
+                    + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1]); "
+                    + "redis.call('publish', KEYS[3], msg); "
+                    + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(ARGV[i+1]), ARGV[i+1], ARGV[4]); "
+                    + "syncs = syncs + redis.call('publish', KEYS[6], syncMsg); "
+                    + "added = added + 1;"
+                + "end; "
+            + "end; "
+          + "end; "
+          + "return {added, syncs};",
+             Arrays.<Object>asList(getName(), getTimeoutSetName(), getCreatedChannelName(), getRemovedChannelName(), getUpdatedChannelName(),
+                     getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
+                     params.toArray());
+        
+        RPromise<Long> result = new RedissonPromise<>();
+        if (atomicExecution) {
+            res.onComplete((r, e) -> {
+                if (e != null) {
+                    result.tryFailure(new CacheException(e));
+                    return;
+                }
+                
+                Long added = (Long) r.get(0);
+                Long syncs = (Long) r.get(1);
+                if (syncs > 0) {
+                    RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(new CacheException(ex));
+                            return;
+                        }
+                        semaphore.deleteAsync().onComplete((obj, exc) -> {
+                            if (exc != null) {
+                                result.tryFailure(new CacheException(exc));
+                                return;
+                            }
+                            result.trySuccess(added);
+                        });
+                    });
+                } else {
+                    result.trySuccess(added);
+                }
+            });
+        } else {
+            res.syncUninterruptibly();
+            
+            List<Object> r = res.getNow();
+            Long added = (Long) r.get(0);
+            Long syncs = (Long) r.get(1);
+            if (syncs > 0) {
+                RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                try {
+                    semaphore.acquire(syncs.intValue());
+                    semaphore.delete();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            
+            result.trySuccess(added);
+        }
+        
+        return result;
+        
+    }
+    
+    RFuture<Boolean> putValue(K key, Object value) {
+        double syncId = ThreadLocalRandom.current().nextDouble();
         Long creationTimeout = getCreationTimeout();
         Long updateTimeout = getUpdateTimeout();
         
-        List<Object> res = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
+        RFuture<List<Object>> res = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "if redis.call('hexists', KEYS[1], ARGV[4]) == 1 then "
                   + "if ARGV[2] == '0' then "
                       + "redis.call('hdel', KEYS[1], ARGV[4]); "
@@ -535,18 +679,64 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                      getCreatedSyncChannelName(), getRemovedSyncChannelName(), getUpdatedSyncChannelName()), 
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
         
-        res.add(syncId);
-        waitSync(res);
+        RPromise<Boolean> result = waitSync(syncId, res);
         
-        return (Long) res.get(0) == 1;
+        return result;
     }
 
-    private Long getUpdateTimeout() {
+    protected RPromise<Boolean> waitSync(double syncId, RFuture<List<Object>> res) {
+        RPromise<Boolean> result = new RedissonPromise<>();
+        if (atomicExecution) {
+            res.onComplete((r, e) -> {
+                if (e != null) {
+                    result.tryFailure(new CacheException(e));
+                    return;
+                }
+                
+                r.add(syncId);
+                
+                if (r.size() < 2) {
+                    result.trySuccess((Long) r.get(0) >= 1);
+                    return;
+                }
+                
+                Long syncs = (Long) r.get(r.size() - 2);
+                if (syncs != null && syncs > 0) {
+                    RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(new CacheException(ex));
+                            return;
+                        }
+                        semaphore.deleteAsync().onComplete((obj, exc) -> {
+                            if (exc != null) {
+                                result.tryFailure(new CacheException(exc));
+                                return;
+                            }
+                            result.trySuccess((Long) r.get(0) >= 1);
+                        });
+                    });
+                } else {
+                    result.trySuccess((Long) r.get(0) >= 1);
+                }
+            });
+        } else {
+            res.syncUninterruptibly();
+            
+            List<Object> r = res.getNow();
+            r.add(syncId);
+            waitSync(r);
+            result.trySuccess((Long) r.get(0) >= 1);
+        }
+        return result;
+    }
+
+    Long getUpdateTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForUpdate() == null) {
             return -1L;
         }
         
-        Long updateTimeout = config.getExpiryPolicy().getExpiryForUpdate().getAdjustedTime(System.currentTimeMillis());
+        Long updateTimeout = config.getExpiryPolicy().getExpiryForUpdate().getAdjustedTime(baseTime);
         if (config.getExpiryPolicy().getExpiryForUpdate().isZero()) {
             updateTimeout = 0L;
         } else if (updateTimeout.longValue() == Long.MAX_VALUE) {
@@ -554,12 +744,16 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         return updateTimeout;
     }
+    
+    Long getUpdateTimeout() {
+        return getUpdateTimeout(System.currentTimeMillis());
+    }
 
-    private Long getCreationTimeout() {
+    Long getCreationTimeout(long baseTime) {
         if (config.getExpiryPolicy().getExpiryForCreation() == null) {
             return -1L;
         }
-        Long creationTimeout = config.getExpiryPolicy().getExpiryForCreation().getAdjustedTime(System.currentTimeMillis());
+        Long creationTimeout = config.getExpiryPolicy().getExpiryForCreation().getAdjustedTime(baseTime);
         if (config.getExpiryPolicy().getExpiryForCreation().isZero()) {
             creationTimeout = 0L;
         } else if (creationTimeout.longValue() == Long.MAX_VALUE) {
@@ -568,13 +762,17 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return creationTimeout;
     }
     
-    private boolean putIfAbsentValue(K key, Object value) {
+    Long getCreationTimeout() {
+        return getCreationTimeout(System.currentTimeMillis());
+    }
+    
+    RFuture<Boolean> putIfAbsentValue(K key, Object value) {
         Long creationTimeout = getCreationTimeout();
         if (creationTimeout == 0) {
-            return false;
+            return RedissonPromise.newSucceededFuture(false);
         }
         
-        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then "
                   + "return 0; "
               + "else "
@@ -638,13 +836,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             throw new NullPointerException();
         }
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
 
-        long startTime = currentNanoTime();
-        if (!config.isReadThrough()) {
+        if (!atomicExecution && !config.isReadThrough()) {
+            long startTime = currentNanoTime();
             boolean exists = false;
             for (K key : keys) {
                 if (containsKey(key)) {
@@ -658,7 +854,16 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
             }
         }
         
-        
+        RFuture<Map<K, V>> result = getAllAsync(keys);
+
+        result.syncUninterruptibly();
+        return result.getNow();
+    }
+
+    @Override
+    public RFuture<Map<K, V>> getAllAsync(Set<? extends K> keys) {
+        checkNotClosed();
+        long startTime = currentNanoTime();
         Long accessTimeout = getAccessTimeout();
         
         List<Object> args = new ArrayList<Object>(keys.size() + 2);
@@ -666,14 +871,20 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         args.add(System.currentTimeMillis());
         encode(args, keys);
         
-        Map<K, V> res;
+        RFuture<Map<K, V>> res;
         if (accessTimeout == -1) {
-            res = evalRead(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
+            res = commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
                     "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                   + "local accessTimeout = ARGV[1]; "
                   + "local currentTime = tonumber(ARGV[2]); "
                   + "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; "
-                  + "local map = redis.call('hmget', KEYS[1], unpack(ARGV, 3, #ARGV)); "
+                  + "local map = {};"
+                  + "for i=3, #ARGV, 5000 do "
+                     + "local m = redis.call('hmget', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                     + "for k,v in ipairs(m) do " 
+                     +     "table.insert(map, v) " 
+                     + "end; "
+                  + "end; "
                   + "local result = {};"
                   + "for i, value in ipairs(map) do "
                       + "if value ~= false then "
@@ -696,12 +907,19 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                   + "return result;",
             Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), args.toArray());
         } else {
-            res = evalWrite(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
+            res = commandExecutor.evalWriteAsync(getName(), codec, new RedisCommand<Map<Object, Object>>("EVAL", new MapGetAllDecoder(new ArrayList<Object>(keys), 0, true), ValueType.MAP_VALUE),
                             "local expireHead = redis.call('zrange', KEYS[2], 0, 0, 'withscores');"
                           + "local accessTimeout = ARGV[1]; "
                           + "local currentTime = tonumber(ARGV[2]); "
                           + "local hasExpire = #expireHead == 2 and tonumber(expireHead[2]) <= currentTime; "
-                          + "local map = redis.call('hmget', KEYS[1], unpack(ARGV, 3, #ARGV)); "
+                          + "local map = {};"
+                          + "for i=3, #ARGV, 5000 do "
+                             + "local m = redis.call('hmget', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); "
+                             + "for k,v in ipairs(m) do " 
+                             +     "table.insert(map, v) " 
+                             + "end; "
+                          + "end; "
+
                           + "local result = {};"
                           + "for i, value in ipairs(map) do "
                               + "if value ~= false then "
@@ -734,36 +952,55 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                     Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName()), args.toArray());            
         }
 
-        
-        Map<K, V> result = new HashMap<K, V>();
-        for (Map.Entry<K, V> entry : res.entrySet()) {
-            if (entry.getValue() != null) {
-                cacheManager.getStatBean(this).addHits(1);
-                result.put(entry.getKey(), entry.getValue());
-            } else {
-                if (config.isReadThrough()) {
-                    cacheManager.getStatBean(this).addMisses(1);
-                    V value = load(entry.getKey());
-                    if (value != null) {
-                        result.put(entry.getKey(), value);
+        RPromise<Map<K, V>> result = new RedissonPromise<>();
+        res.onComplete((r, ex) -> {
+            Map<K, V> map = r.entrySet().stream()
+                                .filter(e -> e.getValue() != null)
+                                .collect(Collectors.toMap(x -> x.getKey(), x -> x.getValue()));
+            
+            cacheManager.getStatBean(this).addHits(map.size());
+            
+            int nullValues = r.size() - map.size();
+            if (config.isReadThrough() && nullValues > 0) {
+                cacheManager.getStatBean(this).addMisses(nullValues);
+                commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                    try {
+                        r.entrySet().stream()
+                            .filter(e -> e.getValue() == null)
+                            .forEach(entry -> {
+                                V value = loadValue(entry.getKey());
+                                if (value != null) {
+                                    map.put(entry.getKey(), value);
+                                }
+                            });
+                    } catch (Exception exc) {
+                        result.tryFailure(exc);
+                        return;
                     }
-                }
+                    cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                    result.trySuccess(map);
+                });
+            } else {
+                cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                result.trySuccess(map);
             }
-        }
-        
-        cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-
+        });
         return result;
     }
 
     @Override
     public boolean containsKey(K key) {
-        checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        RFuture<Boolean> future = containsKeyAsync(key);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
 
-        return evalRead(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+    @Override
+    public RFuture<Boolean> containsKeyAsync(K key) {
+        checkNotClosed();
+        checkKey(key);
+
+        RFuture<Boolean> future = commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                   "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
                     + "return 0;"
                 + "end;"
@@ -780,9 +1017,11 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 + "return 1;",
              Arrays.<Object>asList(getName(), getTimeoutSetName()), 
              System.currentTimeMillis(), encodeMapKey(key));
+        return future;
     }
 
     @Override
+    @SuppressWarnings("NestedTryDepth")
     public void loadAll(final Set<? extends K> keys, final boolean replaceExistingValues, final CompletionListener completionListener) {
         checkNotClosed();
         if (keys == null) {
@@ -790,9 +1029,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
         
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
 
         if (cacheLoader == null) {
@@ -833,7 +1070,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                         if (completionListener != null) {
                             completionListener.onException(e);
                         }
-                        return;
+                        throw e;
                     }
                 }
                 if (completionListener != null) {
@@ -843,7 +1080,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         });
     }
     
-    private RLock getLockedLock(K key) {
+    RLock getLockedLock(K key) {
         if (atomicExecution) {
             return DUMMY_LOCK;
         }
@@ -858,98 +1095,166 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return lock;
     }
 
-
     @Override
-    public void put(K key, V value) {
+    public RFuture<Void> putAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
         
+        RPromise<Void> result = new RedissonPromise<>();
         long startTime = currentNanoTime();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                List<Object> result;
+                RFuture<List<Object>> future;
                 if (atomicExecution) {
-                    result = getAndPutValue(key, value);
+                    future = getAndPutValue(key, value);
                 } else {
-                    result = getAndPutValueLocked(key, value);
+                    List<Object> res = getAndPutValueLocked(key, value);
+                    future = RedissonPromise.newSucceededFuture(res);
                 }
-                if (result.isEmpty()) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return;
-                }
-                Long added = (Long) result.get(0);
-                if (added == null) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return;
-                }
-                
-                if (Long.valueOf(1).equals(added)) {
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, value));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                future.onComplete((res, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(new CacheException(ex));
+                        return;
                     }
-                } else {
-                    try {
-                        cacheWriter.delete(key);
-                    } catch (CacheWriterException e) {
-                        if (result.size() == 4 && result.get(1) != null) {
-                            putValue(key, result.get(1));
-                        }
-                        throw e;
-                    } catch (Exception e) {
-                        if (result.size() == 4 && result.get(1) != null) {
-                            putValue(key, result.get(1));
-                        }
-                        throw new CacheWriterException(e);
+
+                    if (res.isEmpty()) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                        result.trySuccess(null);
+                        return;
                     }
-                }
-                cacheManager.getStatBean(this).addPuts(1);
+                    Long added = (Long) res.get(0);
+                    if (added == null) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                        result.trySuccess(null);
+                        return;
+                    }
+                    
+                    writeCache(key, value, result, startTime, res, added);
+                });
             } finally {
                 lock.unlock();
             }
         } else {
             RLock lock = getLockedLock(key);
             try {
-                boolean result;
+                RFuture<Boolean> future;
                 if (atomicExecution) {
-                    result = putValue(key, value);
+                    future = putValue(key, value);
                 } else {
-                    result = putValueLocked(key, value);
+                    boolean res = putValueLocked(key, value);
+                    future = RedissonPromise.newSucceededFuture(res);
                 }
-                if (result) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                }
+                future.onComplete((r, e) -> {
+                    if (e != null) {
+                        result.tryFailure(new CacheException(e));
+                        return;
+                    }
+                    
+                    if (r) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                    }
+                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                    result.trySuccess(null);
+                });
             } finally {
                 lock.unlock();
             }
         }
-        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+        return result;
+    }
+
+    private void writeCache(K key, V value, RPromise<Void> result, long startTime, List<Object> res, Long added) {
+        Runnable r;
+        if (added >= 1) {
+            r = () -> {
+                try {
+                    cacheWriter.write(new JCacheEntry<K, V>(key, value));
+                    cacheManager.getStatBean(this).addPuts(1);
+                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                    result.trySuccess(null);
+                } catch (Exception e) {
+                    removeValues(key).onComplete((obj, exc) -> {
+                        if (exc != null) {
+                            result.tryFailure(new CacheWriterException(exc));
+                            return;
+                        }
+                        
+                        handleException(result, e);
+                    });
+                }
+            };
+        } else {
+            r = () -> {
+                try {
+                    cacheWriter.delete(key);
+                    cacheManager.getStatBean(this).addPuts(1);
+                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                    result.trySuccess(null);
+                } catch (Exception e) {
+                    if (res.size() == 4 && res.get(1) != null) {
+                        putValue(key, res.get(1)).onComplete((obj, exc) -> {
+                            if (exc != null) {
+                                result.tryFailure(new CacheWriterException(exc));
+                                return;
+                            }
+                            
+                            handleException(result, e);
+                        });
+                        return;
+                    }
+                    
+                    handleException(result, e);
+                }
+            };
+        }
+
+        if (atomicExecution) {
+            commandExecutor.getConnectionManager().getExecutor().execute(r);
+        } else {
+            r.run();
+        }
+    }
+
+    @Override
+    public void put(K key, V value) {
+        RFuture<Void> future = putAsync(key, value);
+        future.syncUninterruptibly();
     }
     
-    private long removeValues(Object... keys) {
-        List<Object> params = new ArrayList<Object>(keys.length);
+    RFuture<Long> removeValues(Object... keys) {
+        List<Object> params = new ArrayList<Object>(keys.length+1);
+        params.add(System.currentTimeMillis());
         encodeMapKeys(params, Arrays.asList(keys));
-        return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
-                  "redis.call('zrem', KEYS[2], unpack(ARGV)); "
-                + "return redis.call('hdel', KEYS[1], unpack(ARGV)); ",
-                Arrays.<Object>asList(getName(), getTimeoutSetName()), params.toArray());
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
+                  "local counter = 0;"
+                + "for i=2, #ARGV do "
+                      + "local value = redis.call('hget', KEYS[1], ARGV[i]); "
+                      + "if value ~= false then "
+                          + "redis.call('hdel', KEYS[1], ARGV[i]); "
+                      
+                          + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]); "
+                          + "if not (expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1])) then "
+                              + "counter = counter + 1;"
+                          + "end; "
+                          
+                          + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                          + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value)); "
+                          + "redis.call('publish', KEYS[3], msg); "
+                      + "end;"
+                + "end; "
+                + "return counter;",
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getRemovedSyncChannelName()), 
+                params.toArray());
     }
 
     private List<Object> getAndPutValueLocked(K key, V value) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         if (containsKey(key)) {
             Long updateTimeout = getUpdateTimeout();
             List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
@@ -1016,14 +1321,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return result;
     }
     
-    private List<Object> getAndPutValue(K key, V value) {
+    RFuture<List<Object>> getAndPutValue(K key, V value) {
         Long creationTimeout = getCreationTimeout();
         
         Long updateTimeout = getUpdateTimeout();
         
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
-        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
+        RPromise<List<Object>> result = new RedissonPromise<>();
+        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]);"
               + "if value ~= false then "
                   + "if ARGV[2] == '0' then "
@@ -1074,92 +1380,111 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                      getRemovedSyncChannelName(), getCreatedSyncChannelName(), getUpdatedSyncChannelName()), 
              creationTimeout, updateTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value), syncId);
         
-        if (!result.isEmpty()) {
-            result.add(syncId);
-        }
+        future.onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            
+            if (!r.isEmpty()) {
+                r.add(syncId);
+            }
+            result.trySuccess(r);
+        });
         
         return result;
     }
-    
+
     @Override
     public V getAndPut(K key, V value) {
+        RFuture<V> future = getAndPutAsync(key, value);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<V> getAndPutAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
         
+        RPromise<V> result = new RedissonPromise<>();
         long startTime = currentNanoTime();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                List<Object> result;
+                RFuture<List<Object>> future;
                 if (atomicExecution) {
-                    result = getAndPutValue(key, value);
+                    future = getAndPutValue(key, value);
                 } else {
-                    result = getAndPutValueLocked(key, value);
+                    List<Object> res = getAndPutValueLocked(key, value);
+                    future = RedissonPromise.newSucceededFuture(res);
                 }
-                if (result.isEmpty()) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addMisses(1);
-                    cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return null;
-                }
-                Long added = (Long) result.get(0);
-                if (added == null) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return (V) result.get(1);
-                }
-                
-                if (Long.valueOf(1).equals(added)) {
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, value));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                future.onComplete((res, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(new CacheException(ex));
+                        return;
                     }
-                } else {
-                    try {
-                        cacheWriter.delete(key);
-                    } catch (CacheWriterException e) {
-                        if (result.size() == 4 && result.get(1) != null) {
-                            putValue(key, result.get(1));
-                        }
-                        throw e;
-                    } catch (Exception e) {
-                        if (result.size() == 4 && result.get(1) != null) {
-                            putValue(key, result.get(1));
-                        }
-                        throw new CacheWriterException(e);
+                    
+                    if (res.isEmpty()) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                        cacheManager.getStatBean(this).addMisses(1);
+                        cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                        result.trySuccess(null);
+                        return;
                     }
-                }
-                return getAndPutResult(startTime, result);
+                    Long added = (Long) res.get(0);
+                    if (added == null) {
+                        cacheManager.getStatBean(this).addPuts(1);
+                        cacheManager.getStatBean(this).addHits(1);
+                        cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                        result.trySuccess((V) res.get(1));
+                        return;
+                    }
+                    
+                    RPromise<Void> writeRes = new RedissonPromise<>();
+                    writeCache(key, value, writeRes, startTime, res, added);
+                    writeRes.onComplete((r, e) -> {
+                        if (e != null) {
+                            result.tryFailure(e);
+                            return;
+                        }
+                        
+                        V val = getAndPutResult(startTime, res);
+                        result.trySuccess(val);
+                    });
+                });
             } finally {
                 lock.unlock();
             }
         } else {
             RLock lock = getLockedLock(key);
             try {
-                List<Object> result;
+                RFuture<List<Object>> future;
                 if (atomicExecution) {
-                    result = getAndPutValue(key, value);
+                    future = getAndPutValue(key, value);
                 } else {
-                    result = getAndPutValueLocked(key, value);
+                    List<Object> res = getAndPutValueLocked(key, value);
+                    future = RedissonPromise.newSucceededFuture(res);
                 }
-                return getAndPutResult(startTime, result);
+                future.onComplete((r, e) -> {
+                    if (e != null) {
+                        result.tryFailure(new CacheException(e));
+                        return;
+                    }
+                    
+                    V val = getAndPutResult(startTime, r);
+                    result.trySuccess(val);
+                });
             } finally {
                 lock.unlock();
             }
         }
+        return result;
     }
 
     private V getAndPutResult(long startTime, List<Object> result) {
@@ -1179,100 +1504,79 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     @Override
     public void putAll(Map<? extends K, ? extends V> map) {
+        RFuture<Void> result = putAllAsync(map);
+        result.syncUninterruptibly();
+    }
+
+    @Override
+    public RFuture<Void> putAllAsync(Map<? extends K, ? extends V> map) {
         checkNotClosed();
-        Map<K, V> deletedKeys = new HashMap<K, V>();
-        Map<K, Cache.Entry<? extends K, ? extends V>> addedEntries = new HashMap<K, Cache.Entry<? extends K, ? extends V>>();
 
         for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
             K key = entry.getKey();
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
             V value = entry.getValue();
             if (value == null) {
                 throw new NullPointerException();
             }
         }
         
-        List<RLock> lockedLocks = new ArrayList<RLock>();
-        for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
-            K key = entry.getKey();
-            V value = entry.getValue();
+        
+        long startTime = currentNanoTime();
+        RFuture<Long> future = putAllValues(map);
+        RPromise<Void> result = new RedissonPromise<>();
+        
+        Runnable r = () -> {
+            Map<K, Cache.Entry<? extends K, ? extends V>> addedEntries = new HashMap<>();
+            for (Map.Entry<? extends K, ? extends V> entry : map.entrySet()) {
+                addedEntries.put(entry.getKey(), new JCacheEntry<K, V>(entry.getKey(), entry.getValue()));
+            }
             
-            long startTime = currentNanoTime();
-            if (config.isWriteThrough()) {
-                RLock lock = getLockedLock(key);
-                lockedLocks.add(lock);
-                
-                List<Object> result = getAndPutValue(key, value);
-                if (result.isEmpty()) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    continue;
-                }
-                Long added = (Long) result.get(0);
-                if (added == null) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    continue;
-                }
-                
-                if (Long.valueOf(1).equals(added)) {
-                    addedEntries.put(key, new JCacheEntry<K, V>(key, value));
-                } else {
-                    V val = null;
-                    if (result.size() == 4) {
-                        val = (V) result.get(1);
+            try {
+                cacheWriter.writeAll(addedEntries.values());
+            } catch (Exception e) {
+                removeValues(addedEntries.keySet().toArray()).onComplete((res, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(new CacheException(ex));
+                        return;
                     }
                     
-                    deletedKeys.put(key, val);
-                }
-                cacheManager.getStatBean(this).addPuts(1);
-                waitSync(result);
-            } else {
-                boolean result = putValue(key, value);
-                if (result) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                }
+                    handleException(result, e);
+                });
+                return;
             }
-            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-        }
+            
+            result.trySuccess(null);
+        };
+
+        future.onComplete((res, ex) -> {
+            if (ex != null) {
+                result.tryFailure(new CacheException(ex));
+                return;
+            }
+            
+            cacheManager.getStatBean(this).addPuts(res);
+            for (int i = 0; i < res; i++) {
+                cacheManager.getStatBean(this).addPutTime((currentNanoTime() - startTime) / res);
+            }
+        });
         
-        if (config.isWriteThrough()) {
-            try {
-                try {
-                    cacheWriter.writeAll(addedEntries.values());
-                } catch (CacheWriterException e) {
-                    removeValues(addedEntries.keySet().toArray());
-                    throw e;
-                } catch (Exception e) {
-                    removeValues(addedEntries.keySet().toArray());
-                    throw new CacheWriterException(e);
+        if (atomicExecution) {
+            future.onComplete((res, ex) -> {
+                if (config.isWriteThrough()) {
+                    commandExecutor.getConnectionManager().getExecutor().execute(r);
+                } else {
+                    result.trySuccess(null);
                 }
-                
-                try {
-                    cacheWriter.deleteAll(deletedKeys.keySet());
-                } catch (CacheWriterException e) {
-                    for (Map.Entry<K, V> deletedEntry : deletedKeys.entrySet()) {
-                        if (deletedEntry.getValue() != null) {
-                            putValue(deletedEntry.getKey(), deletedEntry.getValue());
-                        }
-                    }
-                    throw e;
-                } catch (Exception e) {
-                    for (Map.Entry<K, V> deletedEntry : deletedKeys.entrySet()) {
-                        if (deletedEntry.getValue() != null) {
-                            putValue(deletedEntry.getKey(), deletedEntry.getValue());
-                        }
-                    }
-                    throw new CacheWriterException(e);
-                }
-            } finally {
-                for (RLock lock : lockedLocks) {
-                    lock.unlock();
-                }
+            });
+        } else {
+            if (config.isWriteThrough()) {
+                r.run();
+            } else {
+                result.trySuccess(null);
             }
         }
+        return result;
     }
     
     void waitSync(List<Object> result) {
@@ -1295,65 +1599,73 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
     @Override
     public boolean putIfAbsent(K key, V value) {
+        RFuture<Boolean> result = putIfAbsentAsync(key, value);
+        result.syncUninterruptibly();
+        return result.getNow();
+    }
+
+    @Override
+    public RFuture<Boolean> putIfAbsentAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
         
         long startTime = currentNanoTime();
-        if (config.isWriteThrough()) {
-            RLock lock = getLockedLock(key);
-            try {
-                boolean result;
-                if (atomicExecution) {
-                    result = putIfAbsentValue(key, value);
-                } else {
-                    result = putIfAbsentValueLocked(key, value);
+        RLock lock = getLockedLock(key);
+        RPromise<Boolean> result = new RedissonPromise<>();
+        try {
+            RFuture<Boolean> future;
+            if (atomicExecution) {
+                future = putIfAbsentValue(key, value);
+            } else {
+                boolean r = putIfAbsentValueLocked(key, value);
+                future = RedissonPromise.newSucceededFuture(r);
+            }
+            future.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(new CacheException(ex));
+                    return;
                 }
-                if (result) {
+                
+                if (r) {
                     cacheManager.getStatBean(this).addPuts(1);
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, value));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                    if (config.isWriteThrough()) {
+                        commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                            try {
+                                cacheWriter.write(new JCacheEntry<K, V>(key, value));
+                            } catch (Exception e) {
+                                removeValues(key);
+                                handleException(result, e);
+                                return;
+                            }
+                            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                            result.trySuccess(r);
+                        });
+                        return;
                     }
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            RLock lock = getLockedLock(key);
-            try {
-                boolean result;
-                if (atomicExecution) {
-                    result = putIfAbsentValue(key, value);
-                } else {
-                    result = putIfAbsentValueLocked(key, value);
-                }
-                if (result) {
-                    cacheManager.getStatBean(this).addPuts(1);
-                }
-                cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
+                result.trySuccess(r);
+            });
+        } finally {
+            lock.unlock();
         }
+        return result;
+    }
+
+    protected void handleException(RPromise<?> result, Exception e) {
+        if (e instanceof CacheWriterException) {
+            result.tryFailure(e);
+        }
+        result.tryFailure(new CacheWriterException(e));
     }
     
-    private boolean removeValue(K key) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+    RFuture<Boolean> removeValue(K key) {
+        double syncId = ThreadLocalRandom.current().nextDouble();
         
-        List<Object> res = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
+        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "local value = redis.call('hexists', KEYS[1], ARGV[2]); "
               + "if value == 0 then "
                   + "return {0}; "
@@ -1380,52 +1692,80 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getRemovedSyncChannelName()), 
              System.currentTimeMillis(), encodeMapKey(key), syncId);
         
-        res.add(syncId);
-        waitSync(res);
-        
-        return (Long) res.get(0) == 1;
+        RPromise<Boolean> result = waitSync(syncId, future);
+        return result;
     }
-
 
     @Override
     public boolean remove(K key) {
+        RFuture<Boolean> future = removeAsync(key);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<Boolean> removeAsync(K key) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         long startTime = System.currentTimeMillis();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
-                V oldValue = getAndRemoveValue(key);
-                try {
-                    cacheWriter.delete(key);
-                } catch (CacheWriterException e) {
-                    if (oldValue != null) {
-                        putValue(key, oldValue);
+                RPromise<Boolean> result = new RedissonPromise<>();
+                RFuture<V> future = getAndRemoveValue(key);
+                if (atomicExecution) {
+                    future.onComplete((oldValue, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(new CacheException(ex));
+                            return;
+                        }
+                        
+                        commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                            try {
+                                cacheWriter.delete(key);
+                                if (oldValue != null) {
+                                    cacheManager.getStatBean(this).addRemovals(1);
+                                }
+                                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                                result.trySuccess(oldValue != null);
+                            } catch (Exception e) {
+                                if (oldValue != null) {
+                                    putValue(key, oldValue);
+                                }
+                                handleException(result, e);
+                            }
+                        });
+                    });
+                } else {
+                    future.syncUninterruptibly();
+                    V oldValue = future.getNow();
+                    try {
+                        cacheWriter.delete(key);
+                        if (oldValue != null) {
+                            cacheManager.getStatBean(this).addRemovals(1);
+                        }
+                        cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                        result.trySuccess(oldValue != null);
+                    } catch (Exception e) {
+                        if (oldValue != null) {
+                            putValue(key, oldValue);
+                        }
+                        handleException(result, e);
                     }
-                    throw e;
-                } catch (Exception e) {
-                    if (oldValue != null) {
-                        putValue(key, oldValue);
-                    }
-                    throw new CacheWriterException(e);
                 }
-                if (oldValue != null) {
-                    cacheManager.getStatBean(this).addRemovals(1);
-                }
-                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                return oldValue != null;
+                return result;
             } finally {
                 lock.unlock();
             }
         } else {
-            boolean result = removeValue(key);
-            if (result) {
-                cacheManager.getStatBean(this).addRemovals(1);
-            }
-            cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+            RFuture<Boolean> result = removeValue(key);
+            result.onComplete((res, ex) -> {
+                if (res) {
+                    cacheManager.getStatBean(this).addRemovals(1);
+                }
+                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+            });
             return result;
         }
         
@@ -1482,10 +1822,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         return result;
     }
     
-    private boolean removeValue(K key, V value) {
+    RFuture<Boolean> removeValue(K key, V value) {
         Long accessTimeout = getAccessTimeout();
         
-        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return 0; "
@@ -1522,45 +1862,77 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
              accessTimeout, System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
     }
 
-    
+
     @Override
     public boolean remove(K key, V value) {
+        RFuture<Boolean> future = removeAsync(key, value);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<Boolean> removeAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
 
         long startTime = currentNanoTime();
-        boolean result;
+        RPromise<Boolean> result = new RedissonPromise<>();
         if (config.isWriteThrough()) {
             RLock lock = getLockedLock(key);
             try {
                 if (atomicExecution) {
-                    result = removeValue(key, value);
+                    RFuture<Boolean> future = removeValue(key, value);
+                    future.onComplete((r, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(new CacheException(ex));
+                            return;
+                        }
+                        
+                        if (r) {
+                            commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                                try {
+                                    cacheWriter.delete(key);
+                                } catch (Exception e) {
+                                    putValue(key, value);
+                                    
+                                    handleException(result, e);
+                                    return;
+                                }
+                                
+                                cacheManager.getStatBean(this).addHits(1);
+                                cacheManager.getStatBean(this).addRemovals(1);
+                                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                                result.trySuccess(r);
+                            });
+                        } else {
+                            cacheManager.getStatBean(this).addMisses(1);
+                            cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                            result.trySuccess(r);
+                        }
+                    });
                 } else {
-                    result = removeValueLocked(key, value);
-                }
-                if (result) {
-                    try {
-                        cacheWriter.delete(key);
-                    } catch (CacheWriterException e) {
-                        putValue(key, value);
-                        throw e;
-                    } catch (Exception e) {
-                        putValue(key, value);
-                        throw new CacheWriterException(e);
+                    boolean res = removeValueLocked(key, value);
+                    if (res) {
+                        try {
+                            cacheWriter.delete(key);
+                        } catch (Exception e) {
+                            putValue(key, value).syncUninterruptibly();
+                            if (e instanceof CacheWriterException) {
+                                throw e;
+                            }
+                            throw new CacheWriterException(e);
+                        }
+                        cacheManager.getStatBean(this).addHits(1);
+                        cacheManager.getStatBean(this).addRemovals(1);
+                        cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                    } else {
+                        cacheManager.getStatBean(this).addMisses(1);
+                        cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
                     }
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addRemovals(1);
-                    cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                    return true;
-                } else {
-                    cacheManager.getStatBean(this).addMisses(1);
-                    cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                    return false;
+                    return RedissonPromise.newSucceededFuture(res);
                 }
             } finally {
                 lock.unlock();
@@ -1568,28 +1940,172 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         } else {
             RLock lock = getLockedLock(key);
             try {
+                RFuture<Boolean> future;
                 if (atomicExecution) {
-                    result = removeValue(key, value);
+                    future = removeValue(key, value);
                 } else {
-                    result = removeValueLocked(key, value);
+                    boolean res = removeValueLocked(key, value);
+                    future = RedissonPromise.newSucceededFuture(res);
                 }
-                if (result) {
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addRemovals(1);
-                } else {
-                    cacheManager.getStatBean(this).addMisses(1);
-                }
-                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                return result;
+                future.onComplete((r, ex) -> {
+                    if (ex != null) {
+                        result.tryFailure(new CacheException(ex));
+                        return;
+                    }
+                    
+                    if (r) {
+                        cacheManager.getStatBean(this).addHits(1);
+                        cacheManager.getStatBean(this).addRemovals(1);
+                    } else {
+                        cacheManager.getStatBean(this).addMisses(1);
+                    }
+                    cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                    result.trySuccess(r);
+                });
             } finally {
                 lock.unlock();
             }
         }
+        return result;
     }
 
-    private V getAndRemoveValue(K key) {
-        double syncId = PlatformDependent.threadLocalRandom().nextDouble();
-        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
+    RFuture<Map<K, V>> getAndRemoveValues(Collection<K> keys) {
+        double syncId = ThreadLocalRandom.current().nextDouble();
+        RPromise<Map<K, V>> result = new RedissonPromise<>();
+        
+        List<Object> params = new ArrayList<>();
+        params.add(System.currentTimeMillis());
+        params.add(syncId);
+        
+        for (K key : keys) {
+            params.add(encodeMapKey(key));
+        }
+        
+        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
+                "local syncs = 0; "
+              + "local values = {}; "
+              + "local result = {}; "
+              + "local nulls = {}; "
+              
+              + "for i = 3, #ARGV, 1 do "
+                  + "local value = redis.call('hget', KEYS[1], ARGV[i]); "
+                  + "if value == false then "
+                      + "table.insert(nulls, i-3); "
+                  + "else "
+                      + "local expireDate = 92233720368547758; "
+                      + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]); "
+                      + "if expireDateScore ~= false then "
+                          + "expireDate = tonumber(expireDateScore); "
+                      + "end; "
+                      
+                      + "if expireDate <= tonumber(ARGV[1]) then "
+                          + "table.insert(nulls, i-3); "
+                      + "else "
+                          + "redis.call('hdel', KEYS[1], ARGV[i]); "
+                          + "redis.call('zrem', KEYS[2], ARGV[i]); "
+                          + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value)); "
+                          + "redis.call('publish', KEYS[3], msg); "
+                          + "local syncMsg = struct.pack('Lc0Lc0d', string.len(ARGV[i]), ARGV[i], string.len(tostring(value)), tostring(value), ARGV[2]); "
+                          + "syncs = syncs + redis.call('publish', KEYS[4], syncMsg); "
+                          + "table.insert(values, value); "
+                      + "end; "
+                  + "end; "
+              + "end; "
+              
+              + "table.insert(result, syncs); "
+              + "table.insert(result, #nulls); "
+              + "for i = 1, #nulls, 1 do "
+                  + "table.insert(result, nulls[i]); "
+              + "end; "
+              + "for i = 1, #values, 1 do "
+                  + "table.insert(result, values[i]); "
+              + "end; "
+              + "return result; ",
+                Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getRemovedSyncChannelName()),
+                params.toArray());
+        
+        if (atomicExecution) {
+            future.onComplete((r, exc1) -> {
+                if (exc1 != null) {
+                    result.tryFailure(exc1);
+                    return;
+                }
+
+                long nullsAmount = (long) r.get(1);
+                if (nullsAmount == keys.size()) {
+                    result.trySuccess(Collections.emptyMap());
+                    return;
+                }
+                
+                long syncs = (long) r.get(0);
+                if (syncs > 0) {
+                    RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                    semaphore.acquireAsync((int) syncs).onComplete((obj1, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(ex);
+                            return;
+                        }
+                        semaphore.deleteAsync().onComplete((obj, exc) -> {
+                            if (exc != null) {
+                                result.tryFailure(exc);
+                                return;
+                            }
+                            
+                            getAndRemoveValuesResult(keys, result, r, nullsAmount);
+                        });
+                    });
+                } else {
+                    getAndRemoveValuesResult(keys, result, r, nullsAmount);
+                }
+            });
+        } else {
+            future.syncUninterruptibly();
+            
+            List<Object> r = future.getNow();
+            
+            long nullsAmount = (long) r.get(1);
+            if (nullsAmount == keys.size()) {
+                result.trySuccess(Collections.emptyMap());
+                return result;
+            }
+            
+            long syncs = (long) r.get(0);
+            if (syncs > 0) {
+                RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                try {
+                    semaphore.acquire((int) syncs);
+                    semaphore.delete();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            
+            getAndRemoveValuesResult(keys, result, r, nullsAmount);
+        }
+        
+        return result;
+    }
+
+    private void getAndRemoveValuesResult(Collection<K> keys, RPromise<Map<K, V>> result, List<Object> r,
+            long nullsAmount) {
+        HashSet<Long> nullIndexes = new HashSet<>((List<Long>) (Object) r.subList(2, (int) nullsAmount + 2));
+        Map<K, V> res = new HashMap<>();
+        long i = 0;
+        for (K key : keys) {
+            if (nullIndexes.contains(i)) {
+                continue;
+            }
+            V value = (V) r.get((int) (i+nullsAmount+2));
+            res.put(key, value);
+            i++;
+        }
+        result.trySuccess(res);
+    }
+    
+    RFuture<V> getAndRemoveValue(K key) {
+        double syncId = ThreadLocalRandom.current().nextDouble();
+        RPromise<V> result = new RedissonPromise<>();
+        RFuture<List<Object>> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
                 "local value = redis.call('hget', KEYS[1], ARGV[2]); "
               + "if value == false then "
                   + "return {nil}; "
@@ -1615,67 +2131,121 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 Arrays.<Object>asList(getName(), getTimeoutSetName(), getRemovedChannelName(), getRemovedSyncChannelName()), 
                 System.currentTimeMillis(), encodeMapKey(key), syncId);
         
-        if (result.isEmpty()) {
-            return null;
+        if (atomicExecution) {
+            future.onComplete((r, exc1) -> {
+                if (exc1 != null) {
+                    result.tryFailure(exc1);
+                    return;
+                }
+
+                if (r.size() < 2) {
+                    result.trySuccess(null);
+                    return;
+                }
+                
+                Long syncs = (Long) r.get(1);
+                if (syncs != null && syncs > 0) {
+                    RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                    semaphore.acquireAsync(syncs.intValue()).onComplete((obj1, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(ex);
+                            return;
+                        }
+                        semaphore.deleteAsync().onComplete((obj, exc) -> {
+                            if (exc != null) {
+                                result.tryFailure(exc);
+                                return;
+                            }
+                            result.trySuccess((V) r.get(0));
+                        });
+                    });
+                } else {
+                    result.trySuccess((V) r.get(0));
+                }
+            });
+        } else {
+            future.syncUninterruptibly();
+            
+            List<Object> r = future.getNow();
+            
+            if (r.size() < 2) {
+                result.trySuccess(null);
+                return result;
+            }
+            
+            Long syncs = (Long) r.get(1);
+            if (syncs != null && syncs > 0) {
+                RSemaphore semaphore = redisson.getSemaphore(getSyncName(syncId));
+                try {
+                    semaphore.acquire(syncs.intValue());
+                    semaphore.delete();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            
+            result.trySuccess((V) r.get(0));
         }
         
-        result.add(syncId);
-        waitSync(result);
-        
-        return (V) result.get(0);
+        return result;
     }
 
-    
     @Override
     public V getAndRemove(K key) {
+        RFuture<V> future = getAndRemoveAsync(key);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<V> getAndRemoveAsync(K key) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
 
         long startTime = currentNanoTime();
-        if (config.isWriteThrough()) {
-            RLock lock = getLockedLock(key);
-            try {
-                Object value = getAndRemoveValue(key);
+        RPromise<V> result = new RedissonPromise<>();
+        RLock lock = getLockedLock(key);
+        try {
+            RFuture<V> future = getAndRemoveValue(key);
+            future.onComplete((value, e) -> {
+                if (e != null) {
+                    result.tryFailure(new CacheException(e));
+                    return;
+                }
+                
                 if (value != null) {
                     cacheManager.getStatBean(this).addHits(1);
                     cacheManager.getStatBean(this).addRemovals(1);
                 } else {
                     cacheManager.getStatBean(this).addMisses(1);
                 }
-
-                try {
-                    cacheWriter.delete(key);
-                } catch (CacheWriterException e) {
-                    if (value != null) {
-                        putValue(key, value);
-                    }
-                    throw e;
-                } catch (Exception e) {
-                    if (value != null) {
-                        putValue(key, value);
-                    }
-                    throw new CacheWriterException(e);
+                
+                if (config.isWriteThrough()) {
+                    commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                        try {
+                            cacheWriter.delete(key);
+                        } catch (Exception ex) {
+                            if (value != null) {
+                                putValue(key, value);
+                            }
+                            
+                            handleException(result, ex);
+                            return;
+                        }
+                        cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                        cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                        result.trySuccess(value);
+                    });
+                } else {
+                    cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                    cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                    result.trySuccess(value);
                 }
-                cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-                return (V) value;
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            V value = getAndRemoveValue(key);
-            if (value != null) {
-                cacheManager.getStatBean(this).addHits(1);
-                cacheManager.getStatBean(this).addRemovals(1);
-            } else {
-                cacheManager.getStatBean(this).addMisses(1);
-            }
-            cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-            cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
-            return value;
+            });
+        } finally {
+            lock.unlock();
         }
+        return result;
     }
 
     private long replaceValueLocked(K key, V oldValue, V newValue) {
@@ -1704,7 +2274,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
              
        if (res == 1) {
            Long updateTimeout = getUpdateTimeout();
-           double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+           double syncId = ThreadLocalRandom.current().nextDouble();
            Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                          "if ARGV[2] == '0' then "
                            + "redis.call('hdel', KEYS[1], ARGV[4]); "
@@ -1745,7 +2315,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
            return -1;
        }
 
-       double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+       double syncId = ThreadLocalRandom.current().nextDouble();
        List<Object> result = evalWrite(getName(), codec, RedisCommands.EVAL_LIST,
                 "if ARGV[1] == '0' then "
                   + "redis.call('hdel', KEYS[1], ARGV[4]); "
@@ -1769,12 +2339,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     
-    private long replaceValue(K key, V oldValue, V newValue) {
+    RFuture<Long> replaceValue(K key, V oldValue, V newValue) {
         Long accessTimeout = getAccessTimeout();
         
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LONG,
                 "local value = redis.call('hget', KEYS[1], ARGV[4]); "
               + "if value == false then "
                   + "return 0; "
@@ -1815,7 +2385,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                   + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[4]), ARGV[4], string.len(value), value); "
                   + "redis.call('publish', KEYS[3], msg); "                  
               + "elseif ARGV[1] ~= '-1' then " 
-                  + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[3]); "
+                  + "redis.call('zadd', KEYS[2], ARGV[1], ARGV[4]); "
                   + "return 0;"
               + "end; "
               + "return -1; ",
@@ -1826,10 +2396,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     
     @Override
     public boolean replace(K key, V oldValue, V newValue) {
+        RFuture<Boolean> future = replaceAsync(key, oldValue, newValue);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<Boolean> replaceAsync(K key, V oldValue, V newValue) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (oldValue == null) {
             throw new NullPointerException();
         }
@@ -1838,73 +2413,68 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         }
 
         long startTime = currentNanoTime();
-        if (config.isWriteThrough()) {
-            RLock lock = getLockedLock(key);
-            try {
-                long result;
-                if (atomicExecution) {
-                    result = replaceValue(key, oldValue, newValue);
-                } else {
-                    result = replaceValueLocked(key, oldValue, newValue);
+        RLock lock = getLockedLock(key);
+        RPromise<Boolean> result = new RedissonPromise<>();
+        try {
+            RFuture<Long> future;
+            if (atomicExecution) {
+                future = replaceValue(key, oldValue, newValue);
+            } else {
+                long res = replaceValueLocked(key, oldValue, newValue);
+                future = RedissonPromise.newSucceededFuture(res);
+            }
+            future.onComplete((res, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(new CacheException(ex));
+                    return;
                 }
-                if (result == 1) {
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, newValue));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                
+                if (res == 1) {
+                    if (config.isWriteThrough()) {
+                        commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                            try {
+                                cacheWriter.write(new JCacheEntry<K, V>(key, newValue));
+                            } catch (Exception e) {
+                                removeValues(key);
+                                
+                                handleException(result, e);
+                                return;
+                            }
+                            
+                            cacheManager.getStatBean(this).addHits(1);
+                            cacheManager.getStatBean(this).addPuts(1);
+                            cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                            result.trySuccess(true);
+                        });
+                    } else {
+                        cacheManager.getStatBean(this).addHits(1);
+                        cacheManager.getStatBean(this).addPuts(1);
+                        cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                        cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                        result.trySuccess(true);
                     }
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addPuts(1);
-                    cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                    cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return true;
                 } else {
-                    if (result == 0) {
+                    if (res == 0) {
                         cacheManager.getStatBean(this).addMisses(1);
                     } else {
                         cacheManager.getStatBean(this).addHits(1);
                     }
                     cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
                     cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                    return false;
+                    result.trySuccess(false);
                 }
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            RLock lock = getLockedLock(key);
-            try {
-                long result;
-                if (atomicExecution) {
-                    result = replaceValue(key, oldValue, newValue);
-                } else {
-                    result = replaceValueLocked(key, oldValue, newValue);
-                }
-                if (result == 1) {
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addPuts(1);
-                } else if (result == 0){
-                    cacheManager.getStatBean(this).addMisses(1);
-                } else {
-                    cacheManager.getStatBean(this).addHits(1);
-                }
-                cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                return result == 1;
-            } finally {
-                lock.unlock();
-            }
+            });
+        } finally {
+            lock.unlock();
         }
+        return result;
     }
     
     private boolean replaceValueLocked(K key, V value) {
 
         if (containsKey(key)) {
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long updateTimeout = getUpdateTimeout();
         Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
@@ -1943,10 +2513,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
     
-    private boolean replaceValue(K key, V value) {
+    RFuture<Boolean> replaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return 0; "
@@ -1983,10 +2553,10 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         
     }
     
-    private V getAndReplaceValue(K key, V value) {
+    RFuture<V> getAndReplaceValue(K key, V value) {
         Long updateTimeout = getUpdateTimeout();
 
-        return evalWrite(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local value = redis.call('hget', KEYS[1], ARGV[3]); "
               + "if value == false then "
                   + "return nil; "
@@ -2045,7 +2615,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
 
         if (oldValue != null) {
             Long updateTimeout = getUpdateTimeout();
-            double syncId = PlatformDependent.threadLocalRandom().nextDouble();
+            double syncId = ThreadLocalRandom.current().nextDouble();
             Long syncs = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
                 "if ARGV[1] == '0' then "
                   + "local value = redis.call('hget', KEYS[1], ARGV[3]); "
@@ -2080,120 +2650,126 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     }
 
 
+
     @Override
     public boolean replace(K key, V value) {
+        RFuture<Boolean> future = replaceAsync(key, value);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<Boolean> replaceAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
 
         long startTime = currentNanoTime();
-        if (config.isWriteThrough()) {
-            RLock lock = getLockedLock(key);
-            try {
-                boolean result;
-                if (atomicExecution) {
-                    result = replaceValue(key, value);
-                } else {
-                    result = replaceValueLocked(key, value);
+        RPromise<Boolean> result = new RedissonPromise<>();
+        RLock lock = getLockedLock(key);
+        try {
+            RFuture<Boolean> future;
+            if (atomicExecution) {
+                future = replaceValue(key, value);
+            } else {
+                boolean res = replaceValueLocked(key, value);
+                future = RedissonPromise.newSucceededFuture(res);
+            }
+            
+            future.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(new CacheException(ex));
+                    return;
                 }
-                if (result) {
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addPuts(1);
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, value));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                
+                if (r) {
+                    if (config.isWriteThrough()) {
+                        commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                            try {
+                                cacheWriter.write(new JCacheEntry<K, V>(key, value));
+                            } catch (Exception e) {
+                                removeValues(key);
+                                
+                                handleException(result, e);
+                            }
+                            
+                            cacheManager.getStatBean(this).addHits(1);
+                            cacheManager.getStatBean(this).addPuts(1);
+                            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                            result.trySuccess(r);
+                        });
+                        return;
                     }
-                } else {
-                    cacheManager.getStatBean(this).addMisses(1);
-                }
-                cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            RLock lock = getLockedLock(key);
-            try {
-                boolean result;
-                if (atomicExecution) {
-                    result = replaceValue(key, value);
-                } else {
-                    result = replaceValueLocked(key, value);
-                }
-                if (result) {
+                    
                     cacheManager.getStatBean(this).addHits(1);
                     cacheManager.getStatBean(this).addPuts(1);
                 } else {
                     cacheManager.getStatBean(this).addMisses(1);
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
+                result.trySuccess(r);
+            });
+        } finally {
+            lock.unlock();
         }
+        
+        return result;
     }
 
     @Override
     public V getAndReplace(K key, V value) {
+        RFuture<V> future = getAndReplaceAsync(key, value);
+        future.syncUninterruptibly();
+        return future.getNow();
+    }
+    
+    @Override
+    public RFuture<V> getAndReplaceAsync(K key, V value) {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (value == null) {
             throw new NullPointerException();
         }
 
         long startTime = currentNanoTime();
-        if (config.isWriteThrough()) {
-            RLock lock = getLockedLock(key);
-            try {
-                V result;
-                if (atomicExecution) {
-                    result = getAndReplaceValue(key, value);
-                } else {
-                    result = getAndReplaceValueLocked(key, value);
+        RPromise<V> result = new RedissonPromise<>();
+        RLock lock = getLockedLock(key);
+        try {
+            RFuture<V> future;
+            if (atomicExecution) {
+                future = getAndReplaceValue(key, value);
+            } else {
+                V res = getAndReplaceValueLocked(key, value);
+                future = RedissonPromise.newSucceededFuture(res);
+            }
+            future.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(new CacheException(ex));
+                    return;
                 }
-                if (result != null) {
-                    cacheManager.getStatBean(this).addHits(1);
-                    cacheManager.getStatBean(this).addPuts(1);
-                    try {
-                        cacheWriter.write(new JCacheEntry<K, V>(key, value));
-                    } catch (CacheWriterException e) {
-                        removeValues(key);
-                        throw e;
-                    } catch (Exception e) {
-                        removeValues(key);
-                        throw new CacheWriterException(e);
+                
+                if (r != null) {
+                    if (config.isWriteThrough()) {
+                        commandExecutor.getConnectionManager().getExecutor().submit(() -> {
+                            cacheManager.getStatBean(this).addHits(1);
+                            cacheManager.getStatBean(this).addPuts(1);
+                            try {
+                                cacheWriter.write(new JCacheEntry<K, V>(key, value));
+                            } catch (Exception e) {
+                                removeValues(key);
+                                
+                                handleException(result, e);
+                                return;
+                            }
+                            
+                            cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
+                            cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
+                            result.trySuccess(r);
+                        });
+                        return;
                     }
-                } else {
-                    cacheManager.getStatBean(this).addMisses(1);
-                }
-                cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
-                cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
-        } else {
-            RLock lock = getLockedLock(key);
-            try {
-                V result;
-                if (atomicExecution) {
-                    result = getAndReplaceValue(key, value);
-                } else {
-                    result = getAndReplaceValueLocked(key, value);
-                }
-                if (result != null) {
                     cacheManager.getStatBean(this).addHits(1);
                     cacheManager.getStatBean(this).addPuts(1);
                 } else {
@@ -2201,70 +2777,68 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
                 }
                 cacheManager.getStatBean(this).addPutTime(currentNanoTime() - startTime);
                 cacheManager.getStatBean(this).addGetTime(currentNanoTime() - startTime);
-                return result;
-            } finally {
-                lock.unlock();
-            }
+                result.trySuccess(r);
+            });
+        } finally {
+            lock.unlock();
         }
+        return result;
     }
 
     @Override
     public void removeAll(Set<? extends K> keys) {
+        RFuture<Void> future = removeAllAsync(keys);
+        future.syncUninterruptibly();
+    }
+    
+    @Override
+    public RFuture<Void> removeAllAsync(Set<? extends K> keys) {
         checkNotClosed();
-        Map<K, V> deletedKeys = new HashMap<K, V>();
         
         for (K key : keys) {
-            if (key == null) {
-                throw new NullPointerException();
-            }
+            checkKey(key);
         }
         
-        List<RLock> lockedLocks = new ArrayList<RLock>();
         long startTime = currentNanoTime();
+        RPromise<Void> result = new RedissonPromise<>();
         if (config.isWriteThrough()) {
-            for (K key : keys) {
-                RLock lock = getLockedLock(key);
-                lockedLocks.add(lock);
-                V result = getAndRemoveValue(key);
-                if (result != null) {
-                    deletedKeys.put(key, result);
+            RFuture<Map<K, V>> future = getAndRemoveValues((Set<K>) keys);
+            future.onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
                 }
-            }
-            
-            try {
+                
                 try {
-                    cacheWriter.deleteAll(deletedKeys.keySet());
-                } catch (CacheWriterException e) {
-                    for (Map.Entry<K, V> deletedEntry : deletedKeys.entrySet()) {
-                        if (deletedEntry.getValue() != null) {
-                            putValue(deletedEntry.getKey(), deletedEntry.getValue());
-                        }
-                    }
-                    throw e;
+                    cacheWriter.deleteAll(r.keySet());
                 } catch (Exception e) {
-                    for (Map.Entry<K, V> deletedEntry : deletedKeys.entrySet()) {
-                        if (deletedEntry.getValue() != null) {
-                            putValue(deletedEntry.getKey(), deletedEntry.getValue());
-                        }
-                    }
-                    throw new CacheWriterException(e);
+                    putAllValues(r);
+                    handleException(result, e);
+                    return;
                 }
-                cacheManager.getStatBean(this).addRemovals(deletedKeys.size());
-            } finally {
-                for (RLock lock : lockedLocks) {
-                    lock.unlock();
-                }
-            }
+                cacheManager.getStatBean(this).addRemovals(r.size());
+                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                result.trySuccess(null);
+            });
         } else {
-            long removedKeys = removeValues(keys.toArray());
-            cacheManager.getStatBean(this).addRemovals(removedKeys);
+            RFuture<Long> future = removeValues(keys.toArray());
+            future.onComplete((res, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                cacheManager.getStatBean(this).addRemovals(res);
+                cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+                result.trySuccess(null);
+            });
         }
-        cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+        return result;
     }
     
     MapScanResult<Object, Object> scanIterator(String name, RedisClient client, long startPos) {
         RFuture<MapScanResult<Object, Object>> f 
-            = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos);
+            = commandExecutor.readAsync(client, name, codec, RedisCommands.HSCAN, name, startPos, "COUNT", 50);
         try {
             return get(f);
         } catch (Exception e) {
@@ -2300,34 +2874,31 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     @Override
     public void removeAll() {
         checkNotClosed();
-        if (config.isWriteThrough()) {
-            for (Iterator<K> iterator = keyIterator(); iterator.hasNext();) {
-                K key = iterator.next();
-                remove(key);
+        Set<K> keys = new HashSet<>();
+        for (Iterator<K> iterator = keyIterator(); iterator.hasNext();) {
+            K key = iterator.next();
+            keys.add(key);
+            if (keys.size() == 50) {
+                removeAll(keys);
+                keys.clear();
             }
-        } else {
-            long startTime = currentNanoTime();
-            long removedObjects = evalWrite(getName(), codec, RedisCommands.EVAL_LONG,
-                      "local expiredEntriesCount = redis.call('zcount', KEYS[2], 0, ARGV[1]); "
-                    + "local result = 0; "
-                    + "if expiredEntriesCount > 0 then "
-                        + "result = redis.call('zcard', KEYS[2]) - expiredEntriesCount; "
-                    + "else "
-                        + "result = redis.call('hlen', KEYS[1]); "
-                    + "end; "
-                    + "redis.call('del', KEYS[1], KEYS[2]); "
-                    + "return result; ",
-                    Arrays.<Object>asList(getName(), getTimeoutSetName()),
-                    System.currentTimeMillis());
-            cacheManager.getStatBean(this).addRemovals(removedObjects);
-            cacheManager.getStatBean(this).addRemoveTime(currentNanoTime() - startTime);
+        }
+
+        if (!keys.isEmpty()) {
+            removeAll(keys);
         }
     }
 
     @Override
     public void clear() {
+        RFuture<Void> future = clearAsync();
+        future.syncUninterruptibly();
+    }
+    
+    @Override
+    public RFuture<Void> clearAsync() {
         checkNotClosed();
-        write(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName());
+        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), getTimeoutSetName());
     }
 
     @Override
@@ -2343,9 +2914,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
     public <T> T invoke(K key, EntryProcessor<K, V, T> entryProcessor, Object... arguments)
             throws EntryProcessorException {
         checkNotClosed();
-        if (key == null) {
-            throw new NullPointerException();
-        }
+        checkKey(key);
         if (entryProcessor == null) {
             throw new NullPointerException();
         }
@@ -2450,7 +3019,15 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V> {
         if (clazz.isAssignableFrom(getClass())) {
             return clazz.cast(this);
         }
-
+        if (clazz == CacheAsync.class) {
+            return (T) this;
+        }
+        if (clazz == CacheReactive.class) {
+            return (T) ReactiveProxyBuilder.create(new CommandReactiveService(commandExecutor.getConnectionManager()), this, CacheReactive.class);
+        }
+        if (clazz == CacheRx.class) {
+            return (T) RxProxyBuilder.create(new CommandRxService(commandExecutor.getConnectionManager()), this, CacheRx.class);
+        }
         return null;
     }
 

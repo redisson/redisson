@@ -38,8 +38,6 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.util.Timeout;
 import io.netty.util.Timer;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -126,16 +124,13 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                                     connection.getRedisClient().getAddr(), channel.localAddress(), channel.remoteAddress());
                         } else {
                             RedisConnection c = RedisConnection.getFrom(channel);
-                            c.getConnectionPromise().addListener(new FutureListener<RedisConnection>() {
-                                @Override
-                                public void operationComplete(Future<RedisConnection> future) throws Exception {
-                                    if (future.isSuccess()) {
-                                        refresh(connection, channel);
-                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
-                                    } else {
-                                        channel.close();
-                                        reconnect(connection, nextAttempt);
-                                    }
+                            c.getConnectionPromise().onComplete((res, e) -> {
+                                if (e == null) {
+                                    refresh(connection, channel);
+                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                } else {
+                                    channel.close();
+                                    reconnect(connection, nextAttempt);
                                 }
                             });
                             return;
@@ -182,14 +177,12 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        log.debug("blocking queue sent " + connection);
         ChannelFuture future = connection.send(currentCommand);
-        final CommandData<?, ?> cd = currentCommand;
         future.addListener(new ChannelFutureListener() {
             @Override
             public void operationComplete(ChannelFuture future) throws Exception {
                 if (!future.isSuccess()) {
-                    log.error("Can't reconnect blocking queue to new connection. {}", cd);
+                    log.error("Can't reconnect blocking queue by command: {} using connection: {}", currentCommand, connection);
                 }
             }
         });

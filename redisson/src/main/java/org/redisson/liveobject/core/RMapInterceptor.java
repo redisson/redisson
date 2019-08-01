@@ -16,12 +16,13 @@
 package org.redisson.liveobject.core;
 
 import java.lang.reflect.Method;
+
+import org.redisson.api.RMap;
+
 import net.bytebuddy.implementation.bind.annotation.AllArguments;
 import net.bytebuddy.implementation.bind.annotation.FieldValue;
 import net.bytebuddy.implementation.bind.annotation.Origin;
 import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import org.redisson.api.RMap;
-import org.redisson.liveobject.misc.ClassUtils;
 
 /**
  *
@@ -35,10 +36,6 @@ public class RMapInterceptor {
             @AllArguments Object[] args,
             @FieldValue("liveObjectLiveMap") RMap<?, ?> map
     ) throws Exception {
-        Class<?>[] cls = new Class[args.length];
-        for (int i = 0; i < args.length; i++) {
-            cls[i] = args[i].getClass();
-        }
-        return ClassUtils.searchForMethod(RMap.class, method.getName(), cls).invoke(map, args);
+        return method.invoke(map, args);
     }
 }

@@ -70,9 +70,9 @@ public abstract class MapOperation extends TransactionalOperation {
 
     protected RMap<Object, Object> getMap(CommandAsyncExecutor commandExecutor) {
         if (map instanceof RMapCache) {
-            return new RedissonMapCache<Object, Object>(codec, null, commandExecutor, name, null, null);
+            return new RedissonMapCache<Object, Object>(codec, null, commandExecutor, name, null, null, null);
         }
-        return new RedissonMap<Object, Object>(codec, commandExecutor, name, null, null);
+        return new RedissonMap<Object, Object>(codec, commandExecutor, name, null, null, null);
     }
     
     @Override
@@ -82,7 +82,7 @@ public abstract class MapOperation extends TransactionalOperation {
     }
 
     protected RLock getLock(RMap<?, ?> map, CommandAsyncExecutor commandExecutor, Object key) {
-        String lockName = ((RedissonMap<?, ?>) map).getLockName(key, "lock");
+        String lockName = ((RedissonMap<?, ?>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     

@@ -10,6 +10,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.MapOptions;
+import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
 
@@ -37,6 +38,13 @@ public class RedissonMapTest extends BaseMapTest {
         return redisson.getMap("test", options);        
     }
     
+    @Override
+    protected <K, V> RMap<K, V> getWriteBehindTestMap(String name, Map<K, V> map) {
+        MapOptions<K, V> options = MapOptions.<K, V>defaults()
+                                    .writer(createMapWriter(map))
+                                    .writeMode(WriteMode.WRITE_BEHIND);
+        return redisson.getMap("test", options);        
+    }
 
     @Test
     public void testEntrySet() {

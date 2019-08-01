@@ -64,7 +64,7 @@ public class GeoResultsDecoder implements MultiDecoder<GeoResults<GeoLocation<by
                     result.add(new GeoResult<GeoLocation<byte[]>>(location, new Distance((Double)vals.get(1), metric)));
                 } else {
                     GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[])vals.get(0), (Point)vals.get(1));
-                    result.add(new GeoResult<GeoLocation<byte[]>>(location, null));
+                    result.add(new GeoResult<GeoLocation<byte[]>>(location, new Distance(0)));
                 }
             } else {
                 GeoLocation<byte[]> location = new GeoLocation<byte[]>((byte[])object, null);

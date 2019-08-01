@@ -16,10 +16,24 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.nustaq.serialization.FSTBasicObjectSerializer;
+import org.nustaq.serialization.FSTClazzInfo;
+import org.nustaq.serialization.FSTClazzInfoRegistry;
 import org.nustaq.serialization.FSTConfiguration;
+import org.nustaq.serialization.FSTDecoder;
+import org.nustaq.serialization.FSTEncoder;
 import org.nustaq.serialization.FSTObjectInput;
 import org.nustaq.serialization.FSTObjectOutput;
+import org.nustaq.serialization.FSTSerializerRegistry;
+import org.nustaq.serialization.coders.FSTStreamDecoder;
+import org.nustaq.serialization.coders.FSTStreamEncoder;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -41,6 +55,126 @@ import io.netty.buffer.ByteBufOutputStream;
  */
 public class FstCodec extends BaseCodec {
 
+    @SuppressWarnings("AvoidInlineConditionals")
+    static class FSTMapSerializerV2 extends FSTBasicObjectSerializer {
+
+        @Override
+        public void writeObject(FSTObjectOutput out, Object toWrite, FSTClazzInfo clzInfo,
+                FSTClazzInfo.FSTFieldInfo referencedBy, int streamPosition) throws IOException {
+            Map col = (Map) toWrite;
+            out.writeInt(col.size());
+            FSTClazzInfo lastKClzI = null;
+            FSTClazzInfo lastVClzI = null;
+            Class lastKClz = null;
+            Class lastVClz = null;
+            for (Iterator iterator = col.entrySet().iterator(); iterator.hasNext();) {
+                Map.Entry next = (Map.Entry) iterator.next();
+                Object key = next.getKey();
+                Object value = next.getValue();
+                if (key != null && value != null) {
+                    lastKClzI = out.writeObjectInternal(key, key.getClass() == lastKClz ? lastKClzI : null, null);
+                    lastVClzI = out.writeObjectInternal(value, value.getClass() == lastVClz ? lastVClzI : null, null);
+                    lastKClz = key.getClass();
+                    lastVClz = value.getClass();
+                } else {
+                    out.writeObjectInternal(key, null, null);
+                    out.writeObjectInternal(value, null, null);
+                }
+
+            }
+        }
+
+        @Override
+        public Object instantiate(Class objectClass, FSTObjectInput in, FSTClazzInfo serializationInfo,
+                FSTClazzInfo.FSTFieldInfo referencee, int streamPosition) throws Exception {
+            Object res = null;
+            int len = in.readInt();
+            if (objectClass == HashMap.class) {
+                res = new HashMap(len);
+            } else if (objectClass == Hashtable.class) {
+                res = new Hashtable(len);
+            } else {
+                res = serializationInfo.newInstance(true);
+            }
+            in.registerObject(res, streamPosition, serializationInfo, referencee);
+            Map col = (Map) res;
+            for (int i = 0; i < len; i++) {
+                Object key = in.readObjectInternal(null);
+                Object val = in.readObjectInternal(null);
+                col.put(key, val);
+            }
+            return res;
+        }
+    }
+    
+    static class FSTDefaultStreamCoderFactory implements FSTConfiguration.StreamCoderFactory {
+
+        Field chBufField;
+        Field ascStringCacheField;
+
+        {
+            try {
+                chBufField = FSTStreamDecoder.class.getDeclaredField("chBufS");
+                ascStringCacheField = FSTStreamDecoder.class.getDeclaredField("ascStringCache");
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            ascStringCacheField.setAccessible(true);
+            chBufField.setAccessible(true);
+        }
+        
+        private FSTConfiguration fstConfiguration;
+
+        FSTDefaultStreamCoderFactory(FSTConfiguration fstConfiguration) {
+            this.fstConfiguration = fstConfiguration;
+        }
+
+        @Override
+        public FSTEncoder createStreamEncoder() {
+            return new FSTStreamEncoder(fstConfiguration);
+        }
+
+        @Override
+        public FSTDecoder createStreamDecoder() {
+            return new FSTStreamDecoder(fstConfiguration) {
+                public String readStringUTF() throws IOException {
+                    try {
+                        String res = super.readStringUTF();
+                        chBufField.set(this, null);
+                        return res;
+                    } catch (Exception e) {
+                        throw new IOException(e);
+                    }
+                }
+                
+                @Override
+                public String readStringAsc() throws IOException {
+                    try {
+                        String res = super.readStringAsc();
+                        ascStringCacheField.set(this, null);
+                        return res;
+                    } catch (Exception e) {
+                        throw new IOException(e);
+                    }
+                }
+            };
+        }
+
+        static ThreadLocal input = new ThreadLocal();
+        static ThreadLocal output = new ThreadLocal();
+
+        @Override
+        public ThreadLocal getInput() {
+            return input;
+        }
+
+        @Override
+        public ThreadLocal getOutput() {
+            return output;
+        }
+
+    }
+    
     private final FSTConfiguration config;
 
     public FstCodec() {
@@ -63,11 +197,24 @@ public class FstCodec extends BaseCodec {
         def.setForceClzInit(codec.config.isForceClzInit());
         def.setForceSerializable(codec.config.isForceSerializable());
         def.setInstantiator(codec.config.getInstantiator(null));
+        def.setJsonFieldNames(codec.config.getJsonFieldNames());
+        def.setLastResortResolver(codec.config.getLastResortResolver());
         def.setName(codec.config.getName());
         def.setPreferSpeed(codec.config.isPreferSpeed());
+        def.setStructMode(codec.config.isStructMode());
         def.setShareReferences(codec.config.isShareReferences());
         def.setStreamCoderFactory(codec.config.getStreamCoderFactory());
         def.setVerifier(codec.config.getVerifier());
+        
+        try {
+            Field serializationInfoRegistryField = FSTConfiguration.class.getDeclaredField("serializationInfoRegistry");
+            serializationInfoRegistryField.setAccessible(true);
+            FSTClazzInfoRegistry registry = (FSTClazzInfoRegistry) serializationInfoRegistryField.get(codec.config);
+            serializationInfoRegistryField.set(def, registry);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+        
         return def;
     }
     
@@ -79,19 +226,26 @@ public class FstCodec extends BaseCodec {
 
     public FstCodec(FSTConfiguration fstConfiguration) {
         config = fstConfiguration;
+        FSTSerializerRegistry reg = config.getCLInfoRegistry().getSerializerRegistry();
+        reg.putSerializer(Hashtable.class, new FSTMapSerializerV2(), true);
+        reg.putSerializer(ConcurrentHashMap.class, new FSTMapSerializerV2(), true);
+
+        config.setStreamCoderFactory(new FSTDefaultStreamCoderFactory(config));
     }
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
+            ByteBufInputStream in = new ByteBufInputStream(buf);
+            FSTObjectInput inputStream = config.getObjectInput(in);
             try {
-                ByteBufInputStream in = new ByteBufInputStream(buf);
-                FSTObjectInput inputStream = config.getObjectInput(in);
                 return inputStream.readObject();
             } catch (IOException e) {
                 throw e;
             } catch (Exception e) {
                 throw new IOException(e);
+//            } finally {
+//                inputStream.resetForReuseUseArray(empty);
             }
         }
     };
@@ -101,9 +255,9 @@ public class FstCodec extends BaseCodec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+            ByteBufOutputStream os = new ByteBufOutputStream(out);
+            FSTObjectOutput oos = config.getObjectOutput(os);
             try {
-                ByteBufOutputStream os = new ByteBufOutputStream(out);
-                FSTObjectOutput oos = config.getObjectOutput(os);
                 oos.writeObject(in);
                 oos.flush();
                 return os.buffer();
@@ -113,6 +267,8 @@ public class FstCodec extends BaseCodec {
             } catch (Exception e) {
                 out.release();
                 throw new IOException(e);
+//            } finally {
+//                oos.resetForReUse(empty);
             }
         }
     };

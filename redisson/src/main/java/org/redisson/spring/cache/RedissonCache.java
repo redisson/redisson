@@ -73,7 +73,7 @@ public class RedissonCache implements Cache {
         Object value = map.get(key);
         if (value == null) {
             addCacheMiss();
-        }else{
+        } else {
             addCacheHit();
         }
         return toValueWrapper(value);
@@ -83,7 +83,7 @@ public class RedissonCache implements Cache {
         Object value = map.get(key);
         if (value == null) {
             addCacheMiss();
-        }else{
+        } else {
             addCacheHit();
             if (value.getClass().getName().equals(NullValue.class.getName())) {
                 return null;
@@ -159,29 +159,34 @@ public class RedissonCache implements Cache {
             try {
                 value = map.get(key);
                 if (value == null) {
-                    try {
-                        value = toStoreValue(valueLoader.call());
-                    } catch (Throwable ex) {
-                        RuntimeException exception;
-                        try {
-                            Class<?> c = Class.forName("org.springframework.cache.Cache$ValueRetrievalException");
-                            Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
-                            exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex);
-                        } catch (Exception e) {
-                            throw new IllegalStateException(e);
-                        }
-                        throw exception;
-                    }
-                    put(key, value);
+                    value = putValue(key, valueLoader, value);
                 }
             } finally {
                 lock.unlock();
             }
-        }else{
+        } else {
             addCacheHit();
         }
         
         return (T) fromStoreValue(value);
+    }
+
+    private <T> Object putValue(Object key, Callable<T> valueLoader, Object value) {
+        try {
+            value = valueLoader.call();
+        } catch (Exception ex) {
+            RuntimeException exception;
+            try {
+                Class<?> c = Class.forName("org.springframework.cache.Cache$ValueRetrievalException");
+                Constructor<?> constructor = c.getConstructor(Object.class, Callable.class, Throwable.class);
+                exception = (RuntimeException) constructor.newInstance(key, valueLoader, ex);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+            throw exception;
+        }
+        put(key, value);
+        return value;
     }
 
     protected Object fromStoreValue(Object storeValue) {

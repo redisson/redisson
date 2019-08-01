@@ -12,6 +12,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.api.BatchResult;
+import org.redisson.api.RBatch;
 import org.redisson.api.RBucket;
 import org.redisson.api.RMap;
 import org.redisson.api.RType;
@@ -185,6 +187,32 @@ public class RedissonKeysTest extends BaseTest {
         Assert.assertEquals(0, redisson.getKeys().deleteByPattern("test?"));
     }
 
+    @Test
+    public void testDeleteByPatternBatch() {
+        RBucket<String> bucket = redisson.getBucket("test0");
+        bucket.set("someValue3");
+        assertThat(bucket.isExists()).isTrue();
+
+        RBucket<String> bucket2 = redisson.getBucket("test9");
+        bucket2.set("someValue4");
+        assertThat(bucket.isExists()).isTrue();
+
+        RMap<String, String> map = redisson.getMap("test2");
+        map.fastPut("1", "2");
+        assertThat(map.isExists()).isTrue();
+
+        RMap<String, String> map2 = redisson.getMap("test3");
+        map2.fastPut("1", "5");
+        assertThat(map2.isExists()).isTrue();
+
+
+        RBatch batch = redisson.createBatch();
+        batch.getKeys().deleteByPatternAsync("test?");
+        BatchResult<?> r = batch.execute();
+        Assert.assertEquals(4L, r.getResponses().get(0));
+    }
+    
+    
     @Test
     public void testFindKeys() {
         RBucket<String> bucket = redisson.getBucket("test1");

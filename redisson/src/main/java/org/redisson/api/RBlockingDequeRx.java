@@ -17,7 +17,10 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Redis based BlockingDeque object
@@ -40,7 +43,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Maybe<V> pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Retrieves and removes first available tail element of <b>any</b> queue in reactive mode,
@@ -55,7 +58,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Maybe<V> pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Adds value to the head of queue.
@@ -63,7 +66,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @param e value
      * @return void
      */
-    Flowable<Void> putFirst(V e);
+    Completable putFirst(V e);
 
     /**
      * Adds value to the tail of queue.
@@ -71,7 +74,7 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @param e value
      * @return void
      */
-    Flowable<Void> putLast(V e);
+    Completable putLast(V e);
 
     /**
      * Retrieves and removes value at the tail of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
@@ -83,14 +86,14 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the element at the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollLast(long timeout, TimeUnit unit);
+    Maybe<V> pollLast(long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes value at the tail of queue. Waits for an element become available.
      * 
      * @return the tail element of this queue
      */
-    Flowable<V> takeLast();
+    Single<V> takeLast();
 
     /**
      * Retrieves and removes value at the head of queue. If necessary waits up to defined <code>timeout</code> for an element become available.
@@ -102,14 +105,14 @@ public interface RBlockingDequeRx<V> extends RDequeRx<V>, RBlockingQueueRx<V> {
      * @return the element at the tail of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollFirst(long timeout, TimeUnit unit);
+    Maybe<V> pollFirst(long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes value at the head of queue. Waits for an element become available.
      * 
      * @return the head element of this queue
      */
-    Flowable<V> takeFirst();
+    Single<V> takeFirst();
 
     /**
      * Retrieves and removes continues stream of elements from the head of this queue. 

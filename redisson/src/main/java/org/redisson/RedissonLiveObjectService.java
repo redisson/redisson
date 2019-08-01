@@ -34,6 +34,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.api.RCascadeType;
@@ -68,14 +69,12 @@ import org.redisson.liveobject.core.FieldAccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
 import org.redisson.liveobject.core.RExpirableInterceptor;
 import org.redisson.liveobject.core.RMapInterceptor;
-import org.redisson.liveobject.core.RObjectInterceptor;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
-import org.redisson.liveobject.resolver.Resolver;
+import org.redisson.liveobject.resolver.RIdResolver;
 
-import io.netty.util.internal.PlatformDependent;
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
 import net.bytebuddy.ByteBuddy;
@@ -90,7 +89,7 @@ import net.bytebuddy.matcher.ElementMatchers;
 
 public class RedissonLiveObjectService implements RLiveObjectService {
 
-    private static final ConcurrentMap<Class<? extends Resolver>, Resolver<?, ?, ?>> providerCache = PlatformDependent.newConcurrentHashMap();
+    private static final ConcurrentMap<Class<? extends RIdResolver<?>>, RIdResolver<?>> PROVIDER_CACHE = new ConcurrentHashMap<>();
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
     private final CommandAsyncExecutor commandExecutor;
@@ -120,20 +119,20 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
-        Resolver resolver = getResolver(entityClass, annotation.generator(), annotation);
+        RIdResolver<?> resolver = getResolver(entityClass, annotation.generator(), annotation);
         Object id = resolver.resolve(entityClass, annotation, idFieldName, redisson);
         return id;
     }
     
-    private Resolver<?, ?, ?> getResolver(Class<?> cls, Class<? extends Resolver> resolverClass, Annotation anno) {
-        if (!providerCache.containsKey(resolverClass)) {
+    private RIdResolver<?> getResolver(Class<?> cls, Class<? extends RIdResolver<?>> resolverClass, Annotation anno) {
+        if (!PROVIDER_CACHE.containsKey(resolverClass)) {
             try {
-                providerCache.putIfAbsent(resolverClass, resolverClass.newInstance());
+                PROVIDER_CACHE.putIfAbsent(resolverClass, resolverClass.newInstance());
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
             }
         }
-        return providerCache.get(resolverClass);
+        return PROVIDER_CACHE.get(resolverClass);
     }
 
     public <T> T createLiveObject(Class<T> entityClass, Object id) {
@@ -143,7 +142,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> T get(Class<T> entityClass, Object id) {
         T proxied = createLiveObject(entityClass, id);
-        return asLiveObject(proxied).isExists() ? proxied : null;
+        if (asLiveObject(proxied).isExists()) {
+            return proxied;
+        }
+        return null;
     }
 
     Set<Object> traverseAnd(ANDCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
@@ -306,45 +308,42 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             if (rObject != null) {
                 commandExecutor.getObjectBuilder().store(rObject, field.getName(), liveMap);
                 if (rObject instanceof SortedSet) {
-                    ((RSortedSet)rObject).trySetComparator(((SortedSet)object).comparator());
+                    ((RSortedSet) rObject).trySetComparator(((SortedSet) object).comparator());
                 }
                 
                 if (rObject instanceof Collection) {
-                    for (Object obj : (Collection<Object>)object) {
+                    for (Object obj : (Collection<Object>) object) {
                         if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
-                            if (persisted == null) {
-                                if (checkCascade(detachedObject, type, field.getName())) {
-                                    persisted = persist(obj, alreadyPersisted, type);
-                                }
+                            if (persisted == null
+                                    && checkCascade(detachedObject, type, field.getName())) {
+                                persisted = persist(obj, alreadyPersisted, type);
                             }
                             obj = persisted;
                         }
-                        ((Collection)rObject).add(obj);
+                        ((Collection) rObject).add(obj);
                     }
                 } else if (rObject instanceof Map) {
                     Map<Object, Object> rMap = (Map<Object, Object>) rObject;
-                    Map<?, ?> map = (Map<?, ?>)rObject;
+                    Map<?, ?> map = (Map<?, ?>) object;
                     for (Entry<?, ?> entry : map.entrySet()) {
                         Object key = entry.getKey();
                         Object value = entry.getValue();
 
                         if (key != null && ClassUtils.isAnnotationPresent(key.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(key);
-                            if (persisted == null) {
-                                if (checkCascade(detachedObject, type, field.getName())) {
-                                    persisted = persist(key, alreadyPersisted, type);
-                                }
+                            if (persisted == null
+                                    && checkCascade(detachedObject, type, field.getName())) {
+                                persisted = persist(key, alreadyPersisted, type);
                             }
                             key = persisted;
                         }
 
                         if (value != null && ClassUtils.isAnnotationPresent(value.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(value);
-                            if (persisted == null) {
-                                if (checkCascade(detachedObject, type, field.getName())) {
-                                    persisted = persist(value, alreadyPersisted, type);
-                                }
+                            if (persisted == null
+                                    && checkCascade(detachedObject, type, field.getName())) {
+                                persisted = persist(value, alreadyPersisted, type);
                             }
                             value = persisted;
                         }
@@ -407,132 +406,128 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @SuppressWarnings("unchecked")
     private <T> T detach(T attachedObject, Map<String, Object> alreadyDetached) {
         validateAttached(attachedObject);
-        try {
-            T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
-            BeanCopy.beans(attachedObject, detached).declared(true, true).copy();
-            alreadyDetached.put(getMap(attachedObject).getName(), detached);
-            
-            for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
-                if (!checkCascade(attachedObject, RCascadeType.DETACH, obj.getKey())) {
-                    continue;
-                }
-                
-                if (obj.getValue() instanceof RSortedSet) {
-                    SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
-                    Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
-                    for (Object object : redissonSet) {
-                        if (isLiveObject(object)) {
-                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(object, alreadyDetached);
-                            }
-                            object = detachedObject;
-                        }
-                        set.add(object);
-                    }
-                    
-                    ClassUtils.setField(detached, obj.getKey(), set);
-                } else if (obj.getValue() instanceof RDeque) {
-                    Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
-                    Deque<Object> deque = new LinkedList<Object>(); 
-                    for (Object object : redissonDeque) {
-                        if (isLiveObject(object)) {
-                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(object, alreadyDetached);
-                            }
-                            object = detachedObject;
-                        }
-                        deque.add(object);
-                    }
-                    
-                    ClassUtils.setField(detached, obj.getKey(), deque);
-                } else if (obj.getValue() instanceof RQueue) {
-                    Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
-                    Queue<Object> queue = new LinkedList<Object>(); 
-                    for (Object object : redissonQueue) {
-                        if (isLiveObject(object)) {
-                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(object, alreadyDetached);
-                            }
-                            object = detachedObject;
-                        }
-                        queue.add(object);
-                    }
-                    
-                    ClassUtils.setField(detached, obj.getKey(), queue);
-                } else if (obj.getValue() instanceof RSet) {
-                    Set<Object> set = new HashSet<Object>(); 
-                    Collection<Object> redissonSet = (Collection<Object>) obj.getValue();
-                    for (Object object : redissonSet) {
-                        if (isLiveObject(object)) {
-                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(object, alreadyDetached);
-                            }
-                            object = detachedObject;
-                        }
-                        set.add(object);
-                    }
-                    
-                    ClassUtils.setField(detached, obj.getKey(), set);
-                } else if (obj.getValue() instanceof RList) {
-                    List<Object> list = new ArrayList<Object>(); 
-                    Collection<Object> redissonList = (Collection<Object>) obj.getValue();
-                    for (Object object : redissonList) {
-                        if (isLiveObject(object)) {
-                            Object detachedObject = alreadyDetached.get(getMap(object).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(object, alreadyDetached);
-                            }
-                            object = detachedObject;
-                        }
-                        list.add(object);
-                    }
-
-                    ClassUtils.setField(detached, obj.getKey(), list);
-                } else if (isLiveObject(obj.getValue())) {
-                    Object detachedObject = alreadyDetached.get(getMap(obj.getValue()).getName());
-                    if (detachedObject == null) {
-                        detachedObject = detach(obj.getValue(), alreadyDetached);
-                    }
-                    ClassUtils.setField(detached, obj.getKey(), detachedObject);
-                } else if (obj.getValue() instanceof RMap) {
-                    Map<Object, Object> map = new LinkedHashMap<Object, Object>(); 
-                    Map<Object, Object> redissonMap = (Map<Object, Object>) obj.getValue();
-                    for (Entry<Object, Object> entry : redissonMap.entrySet()) {
-                        Object key = entry.getKey();
-                        Object value = entry.getValue();
-                        
-                        if (isLiveObject(key)) {
-                            Object detachedObject = alreadyDetached.get(getMap(key).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(key, alreadyDetached);
-                            }
-                            key = detachedObject;
-                        }
-                        
-                        if (isLiveObject(value)) {
-                            Object detachedObject = alreadyDetached.get(getMap(value).getName());
-                            if (detachedObject == null) {
-                                detachedObject = detach(value, alreadyDetached);
-                            }
-                            value = detachedObject;
-                        }
-                        map.put(key, value);
-                    }
-                    
-                    ClassUtils.setField(detached, obj.getKey(), map);
-                } else {
-                    validateAnnotation(detached, obj.getKey());
-                }
+        T detached = instantiateDetachedObject((Class<T>) attachedObject.getClass().getSuperclass(), asLiveObject(attachedObject).getLiveObjectId());
+        BeanCopy.beans(attachedObject, detached).declared(true, true).copy();
+        alreadyDetached.put(getMap(attachedObject).getName(), detached);
+        
+        for (Entry<String, Object> obj : getMap(attachedObject).entrySet()) {
+            if (!checkCascade(attachedObject, RCascadeType.DETACH, obj.getKey())) {
+                continue;
             }
             
-            return detached;
-        } catch (Exception ex) {
-            throw ex instanceof RuntimeException ? (RuntimeException) ex : new RuntimeException(ex);
+            if (obj.getValue() instanceof RSortedSet) {
+                SortedSet<Object> redissonSet = (SortedSet<Object>) obj.getValue();
+                Set<Object> set = new TreeSet<Object>(redissonSet.comparator()); 
+                for (Object object : redissonSet) {
+                    if (isLiveObject(object)) {
+                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(object, alreadyDetached);
+                        }
+                        object = detachedObject;
+                    }
+                    set.add(object);
+                }
+                
+                ClassUtils.setField(detached, obj.getKey(), set);
+            } else if (obj.getValue() instanceof RDeque) {
+                Collection<Object> redissonDeque = (Collection<Object>) obj.getValue();
+                Deque<Object> deque = new LinkedList<Object>(); 
+                for (Object object : redissonDeque) {
+                    if (isLiveObject(object)) {
+                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(object, alreadyDetached);
+                        }
+                        object = detachedObject;
+                    }
+                    deque.add(object);
+                }
+                
+                ClassUtils.setField(detached, obj.getKey(), deque);
+            } else if (obj.getValue() instanceof RQueue) {
+                Collection<Object> redissonQueue = (Collection<Object>) obj.getValue();
+                Queue<Object> queue = new LinkedList<Object>(); 
+                for (Object object : redissonQueue) {
+                    if (isLiveObject(object)) {
+                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(object, alreadyDetached);
+                        }
+                        object = detachedObject;
+                    }
+                    queue.add(object);
+                }
+                
+                ClassUtils.setField(detached, obj.getKey(), queue);
+            } else if (obj.getValue() instanceof RSet) {
+                Set<Object> set = new HashSet<Object>(); 
+                Collection<Object> redissonSet = (Collection<Object>) obj.getValue();
+                for (Object object : redissonSet) {
+                    if (isLiveObject(object)) {
+                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(object, alreadyDetached);
+                        }
+                        object = detachedObject;
+                    }
+                    set.add(object);
+                }
+                
+                ClassUtils.setField(detached, obj.getKey(), set);
+            } else if (obj.getValue() instanceof RList) {
+                List<Object> list = new ArrayList<Object>(); 
+                Collection<Object> redissonList = (Collection<Object>) obj.getValue();
+                for (Object object : redissonList) {
+                    if (isLiveObject(object)) {
+                        Object detachedObject = alreadyDetached.get(getMap(object).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(object, alreadyDetached);
+                        }
+                        object = detachedObject;
+                    }
+                    list.add(object);
+                }
+
+                ClassUtils.setField(detached, obj.getKey(), list);
+            } else if (isLiveObject(obj.getValue())) {
+                Object detachedObject = alreadyDetached.get(getMap(obj.getValue()).getName());
+                if (detachedObject == null) {
+                    detachedObject = detach(obj.getValue(), alreadyDetached);
+                }
+                ClassUtils.setField(detached, obj.getKey(), detachedObject);
+            } else if (obj.getValue() instanceof RMap) {
+                Map<Object, Object> map = new LinkedHashMap<Object, Object>(); 
+                Map<Object, Object> redissonMap = (Map<Object, Object>) obj.getValue();
+                for (Entry<Object, Object> entry : redissonMap.entrySet()) {
+                    Object key = entry.getKey();
+                    Object value = entry.getValue();
+                    
+                    if (isLiveObject(key)) {
+                        Object detachedObject = alreadyDetached.get(getMap(key).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(key, alreadyDetached);
+                        }
+                        key = detachedObject;
+                    }
+                    
+                    if (isLiveObject(value)) {
+                        Object detachedObject = alreadyDetached.get(getMap(value).getName());
+                        if (detachedObject == null) {
+                            detachedObject = detach(value, alreadyDetached);
+                        }
+                        value = detachedObject;
+                    }
+                    map.put(key, value);
+                }
+                
+                ClassUtils.setField(detached, obj.getKey(), map);
+            } else {
+                validateAnnotation(detached, obj.getKey());
+            }
         }
+        
+        return detached;
     }
     
     @Override
@@ -550,29 +545,29 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             }
             
             if (obj.getValue() instanceof RSortedSet) {
-                deleteCollection(deleted, (Iterable<?>)obj.getValue());
-                ((RObject)obj.getValue()).delete();
+                deleteCollection(deleted, (Iterable<?>) obj.getValue());
+                ((RObject) obj.getValue()).delete();
             } else if (obj.getValue() instanceof RDeque) {
-                deleteCollection(deleted, (Iterable<?>)obj.getValue());
-                ((RObject)obj.getValue()).delete();
+                deleteCollection(deleted, (Iterable<?>) obj.getValue());
+                ((RObject) obj.getValue()).delete();
             } else if (obj.getValue() instanceof RQueue) {
-                deleteCollection(deleted, (Iterable<?>)obj.getValue());
-                ((RObject)obj.getValue()).delete();
+                deleteCollection(deleted, (Iterable<?>) obj.getValue());
+                ((RObject) obj.getValue()).delete();
             } else if (obj.getValue() instanceof RSet) {
-                deleteCollection(deleted, (Iterable<?>)obj.getValue());
-                ((RObject)obj.getValue()).delete();
+                deleteCollection(deleted, (Iterable<?>) obj.getValue());
+                ((RObject) obj.getValue()).delete();
             } else if (obj.getValue() instanceof RList) {
-                deleteCollection(deleted, (Iterable<?>)obj.getValue());
-                ((RObject)obj.getValue()).delete();
+                deleteCollection(deleted, (Iterable<?>) obj.getValue());
+                ((RObject) obj.getValue()).delete();
             } else if (isLiveObject(obj.getValue())) {
                 if (deleted.add(getMap(obj.getValue()).getName())) {
                     delete(obj.getValue(), deleted);
                 }
             } else if (obj.getValue() instanceof RMap) {
-                RMap<Object, Object> map = (RMap<Object, Object>)obj.getValue();
+                RMap<Object, Object> map = (RMap<Object, Object>) obj.getValue();
                 deleteCollection(deleted, map.keySet());
                 deleteCollection(deleted, map.values());
-                ((RObject)obj.getValue()).delete();
+                ((RObject) obj.getValue()).delete();
             } else {
                 validateAnnotation(attachedObject, obj.getKey());
             }
@@ -632,7 +627,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public void unregisterClass(Class<?> cls) {
-        classCache.remove(cls.isAssignableFrom(RLiveObject.class) ? cls.getSuperclass() : cls);
+        if (cls.isAssignableFrom(RLiveObject.class)) {
+            classCache.remove(cls.getSuperclass());
+        } else {
+            classCache.remove(cls);
+        }
     }
 
     @Override
@@ -751,7 +750,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         }
 
         Class<? extends T> proxied = builder.method(ElementMatchers.isDeclaredBy(
-                Introspectior.getTypeDescription(RLiveObject.class))
+                ElementMatchers.anyOf(RLiveObject.class, RExpirable.class, RObject.class))
                 .and(ElementMatchers.isGetter().or(ElementMatchers.isSetter())
                         .or(ElementMatchers.named("isPhantom"))
                         .or(ElementMatchers.named("delete"))))
@@ -772,11 +771,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         .and(ElementMatchers.named("get")
                         .or(ElementMatchers.named("set"))))
                 .intercept(MethodDelegation.to(FieldAccessorInterceptor.class))
-                
-                .method(ElementMatchers.isDeclaredBy(RObject.class)
-                        .or(ElementMatchers.isDeclaredBy(RObjectAsync.class)))
-                .intercept(MethodDelegation.to(RObjectInterceptor.class))
-                .implement(RObject.class)
                 
                 .method(ElementMatchers.isDeclaredBy(RExpirable.class)
                         .or(ElementMatchers.isDeclaredBy(RExpirableAsync.class)))

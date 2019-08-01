@@ -17,7 +17,8 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for Lock object
@@ -25,31 +26,163 @@ import io.reactivex.Flowable;
  * @author Nikita Koksharov
  *
  */
-public interface RLockRx extends RExpirableRx {
+public interface RLockRx {
 
-    Flowable<Boolean> forceUnlock();
+    /**
+     * Returns name of object
+     *
+     * @return name - name of object
+     */
+    String getName();
     
-    Flowable<Void> unlock();
-    
-    Flowable<Void> unlock(long threadId);
-    
-    Flowable<Boolean> tryLock();
+    /**
+     * Unlocks the lock independently of state
+     *
+     * @return <code>true</code> if unlocked otherwise <code>false</code>
+     */
+    Single<Boolean> forceUnlock();
 
-    Flowable<Void> lock();
+    /**
+     * Unlocks the lock 
+     * 
+     * @return void
+     */
+    Completable unlock();
 
-    Flowable<Void> lock(long threadId);
-    
-    Flowable<Void> lock(long leaseTime, TimeUnit unit);
-    
-    Flowable<Void> lock(long leaseTime, TimeUnit unit, long threadId);
-    
-    Flowable<Boolean> tryLock(long threadId);
-    
-    Flowable<Boolean> tryLock(long waitTime, TimeUnit unit);
+    /**
+     * Unlocks the lock. Throws {@link IllegalMonitorStateException} 
+     * if lock isn't locked by thread with specified <code>threadId</code>.
+     * 
+     * @param threadId id of thread
+     * @return void
+     */
+    Completable unlock(long threadId);
 
-    Flowable<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
+    /**
+     * Tries to acquire the lock.
+     * 
+     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     */
+    Single<Boolean> tryLock();
 
-    Flowable<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+    /**
+     * Acquires the lock.
+     * 
+     * @return void
+     */
+    Completable lock();
 
+    /**
+     * Acquires the lock by thread with specified <code>threadId</code>.
+     * 
+     * @param threadId id of thread
+     * @return void
+     */
+    Completable lock(long threadId);
+
+    /**
+     * Acquires the lock.
+     *
+     * <p>If the lock is not available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until the
+     * lock has been acquired.
+     *
+     * If the lock is acquired, it is held until <code>unlock</code> is invoked,
+     * or until leaseTime milliseconds have passed
+     * since the lock was granted - whichever comes first.
+     *
+     * @param leaseTime the maximum time to hold the lock after granting it,
+     *        before automatically releasing it if it hasn't already been released by invoking <code>unlock</code>.
+     *        If leaseTime is -1, hold the lock until explicitly unlocked.
+     * @param unit the time unit of the {@code leaseTime} argument
+     * @return void
+     */
+    Completable lock(long leaseTime, TimeUnit unit);
+
+    /**
+     * Acquires the lock by thread with specified <code>threadId</code>.
+     *
+     * <p>If the lock is not available then the current thread becomes
+     * disabled for thread scheduling purposes and lies dormant until the
+     * lock has been acquired.
+     *
+     * If the lock is acquired, it is held until <code>unlock</code> is invoked,
+     * or until leaseTime milliseconds have passed
+     * since the lock was granted - whichever comes first.
+     *
+     * @param leaseTime the maximum time to hold the lock after granting it,
+     *        before automatically releasing it if it hasn't already been released by invoking <code>unlock</code>.
+     *        If leaseTime is -1, hold the lock until explicitly unlocked.
+     * @param unit the time unit of the {@code leaseTime} argument
+     * @param threadId id of thread
+     * @return void
+     */
+    Completable lock(long leaseTime, TimeUnit unit, long threadId);
+
+    /**
+     * Tries to acquire the lock by thread with specified <code>threadId</code>.
+     * 
+     * @param threadId id of thread
+     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     */
+    Single<Boolean> tryLock(long threadId);
+
+    /**
+     * Tries to acquire the lock. If the lock is not available waits up 
+     * to specified <code>waitTime</code> time interval to acquire it.
+     * 
+     * @param waitTime interval to acquire lock
+     * @param unit the time unit of the {@code waitTime} argument
+     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     */
+    Single<Boolean> tryLock(long waitTime, TimeUnit unit);
+
+    /**
+     * Tries to acquire the lock. If the lock is not available waits 
+     * up to specified <code>waitTime</code> time interval to acquire it. 
+     * Lock will be release automatically after defined <code>leaseTime</code> interval. 
+     * 
+     * @param waitTime time interval to acquire lock
+     * @param leaseTime time interval after which lock will be released automatically 
+     * @param unit the time unit of the {@code waitTime} and {@code leaseTime} arguments
+     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     */
+    Single<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit);
+
+    /**
+     * Tries to acquire the lock by thread with specified <code>threadId</code>. If the lock is not available waits 
+     * up to specified <code>waitTime</code> time interval to acquire it. 
+     * Lock will be release automatically after defined <code>leaseTime</code> interval. 
+     * 
+     * @param threadId id of thread
+     * @param waitTime time interval to acquire lock
+     * @param leaseTime time interval after which lock will be released automatically 
+     * @param unit the time unit of the {@code waitTime} and {@code leaseTime} arguments
+     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     */
+    Single<Boolean> tryLock(long waitTime, long leaseTime, TimeUnit unit, long threadId);
+
+    /**
+     * Number of holds on this lock by the current thread
+     *
+     * @return holds or <code>0</code> if this lock is not held by current thread
+     */
+    Single<Integer> getHoldCount();
+    
+    /**
+     * Checks if this lock locked by any thread
+     *
+     * @return <code>true</code> if locked otherwise <code>false</code>
+     */
+    Single<Boolean> isLocked();
+
+    /**
+     * Remaining time to live of this lock 
+     *
+     * @return time in milliseconds
+     *          -2 if the lock does not exist.
+     *          -1 if the lock exists but has no associated expire.
+     */
+    Single<Long> remainTimeToLive();
     
 }

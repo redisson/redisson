@@ -17,7 +17,9 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * <p>Map-based cache with ability to set TTL for each entry via
@@ -47,7 +49,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param maxSize - max size
      * @return void
      */
-    Flowable<Void> setMaxSize(int maxSize);
+    Completable setMaxSize(int maxSize);
     
     /**
      * Tries to set max size of the map. 
@@ -56,7 +58,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param maxSize - max size
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
-    Flowable<Boolean> trySetMaxSize(int maxSize);
+    Single<Boolean> trySetMaxSize(int maxSize);
     
     /**
      * If the specified key is not already associated
@@ -74,7 +76,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param unit - time unit
      * @return previous associated value
      */
-    Flowable<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit);
+    Maybe<V> putIfAbsent(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * If the specified key is not already associated
@@ -100,7 +102,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *
      * @return previous associated value
      */
-    Flowable<V> putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    Maybe<V> putIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
@@ -115,7 +117,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @param unit - time unit
      * @return previous associated value
      */
-    Flowable<V> put(K key, V value, long ttl, TimeUnit unit);
+    Maybe<V> put(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * Stores value mapped by key with specified time to live and max idle time.
@@ -138,7 +140,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *
      * @return previous associated value
      */
-    Flowable<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    Maybe<V> put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Stores value mapped by key with specified time to live.
@@ -159,7 +161,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
-    Flowable<Boolean> fastPut(K key, V value, long ttl, TimeUnit unit);
+    Single<Boolean> fastPut(K key, V value, long ttl, TimeUnit unit);
 
     /**
      * Stores value mapped by key with specified time to live and max idle time.
@@ -186,7 +188,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
-    Flowable<Boolean> fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    Single<Boolean> fastPut(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
     
     /**
      * If the specified key is not already associated
@@ -213,7 +215,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      * @return <code>true</code> if key is a new key in the hash and value was set.
      *         <code>false</code> if key already exists in the hash
      */
-    Flowable<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
+    Single<Boolean> fastPutIfAbsent(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
 
     /**
      * Returns the number of entries in cache.
@@ -222,7 +224,7 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *
      */
     @Override
-    Flowable<Integer> size();
+    Single<Integer> size();
     
     /**
      * Remaining time to live of map entry associated with a <code>key</code>. 
@@ -232,6 +234,6 @@ public interface RMapCacheRx<K, V> extends RMapRx<K, V>, RDestroyable {
      *          -2 if the key does not exist.
      *          -1 if the key exists but has no associated expire.
      */
-    Flowable<Long> remainTimeToLive(K key);
+    Single<Long> remainTimeToLive(K key);
 
 }

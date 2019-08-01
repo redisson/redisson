@@ -65,7 +65,7 @@ public class RedissonSpringCacheManager implements CacheManager, ResourceLoaderA
      * @param redisson object
      */
     public RedissonSpringCacheManager(RedissonClient redisson) {
-        this(redisson, (String)null, null);
+        this(redisson, (String) null, null);
     }
 
     /**

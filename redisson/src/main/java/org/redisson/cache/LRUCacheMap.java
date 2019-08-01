@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -77,7 +76,7 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
     protected void onMapFull() {
         int startIndex = -1;
         while (true) {
-            int queueIndex = (int)Math.abs(index.incrementAndGet() % queues.size());
+            int queueIndex = (int) Math.abs(index.incrementAndGet() % queues.size());
             if (queueIndex == startIndex) {
                 return;
             }

@@ -37,16 +37,14 @@ import org.redisson.pubsub.CountDownLatchPubSub;
  */
 public class RedissonCountDownLatch extends RedissonObject implements RCountDownLatch {
 
-    public static final Long zeroCountMessage = 0L;
-    public static final Long newCountMessage = 1L;
-
-    private static final CountDownLatchPubSub PUBSUB = new CountDownLatchPubSub();
+    private final CountDownLatchPubSub pubSub;
 
     private final UUID id;
 
     protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
         this.id = commandExecutor.getConnectionManager().getId();
+        this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getCountDownLatchPubSub();
     }
 
     public void await() throws InterruptedException {
@@ -76,7 +74,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         }
 
         try {
-            remainTime -= (System.currentTimeMillis() - current);
+            remainTime -= System.currentTimeMillis() - current;
             if (remainTime <= 0) {
                 return false;
             }
@@ -92,7 +90,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                     entry.getLatch().await(remainTime, TimeUnit.MILLISECONDS);
                 }
 
-                remainTime -= (System.currentTimeMillis() - current);
+                remainTime -= System.currentTimeMillis() - current;
             }
 
             return true;
@@ -102,15 +100,15 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     private RedissonCountDownLatchEntry getEntry() {
-        return PUBSUB.getEntry(getEntryName());
+        return pubSub.getEntry(getEntryName());
     }
 
     private RFuture<RedissonCountDownLatchEntry> subscribe() {
-        return PUBSUB.subscribe(getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        return pubSub.subscribe(getEntryName(), getChannelName());
     }
 
     private void unsubscribe(RFuture<RedissonCountDownLatchEntry> future) {
-        PUBSUB.unsubscribe(future.getNow(), getEntryName(), getChannelName(), commandExecutor.getConnectionManager().getSubscribeService());
+        pubSub.unsubscribe(future.getNow(), getEntryName(), getChannelName());
     }
 
     @Override
@@ -124,7 +122,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                         "local v = redis.call('decr', KEYS[1]);" +
                         "if v <= 0 then redis.call('del', KEYS[1]) end;" +
                         "if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;",
-                    Arrays.<Object>asList(getName(), getChannelName()), zeroCountMessage);
+                    Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.ZERO_COUNT_MESSAGE);
     }
 
     private String getEntryName() {
@@ -160,7 +158,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 + "else "
                     + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), newCountMessage, count);
+                Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE, count);
     }
 
     @Override
@@ -172,7 +170,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 + "else "
                     + "return 0 "
                 + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), newCountMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE);
     }
 
 }

@@ -88,6 +88,16 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
     V getAndSet(V newValue);
 
     /**
+     * Retrieves current element in the holder and replaces it with <code>newValue</code> with defined <code>timeToLive</code> interval. 
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return previous value
+     */
+    V getAndSet(V value, long timeToLive, TimeUnit timeUnit);
+    
+    /**
      * Stores element into the holder. 
      * 
      * @param value - value to set

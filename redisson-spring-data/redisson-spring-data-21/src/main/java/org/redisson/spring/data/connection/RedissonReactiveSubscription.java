@@ -16,7 +16,6 @@
 package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -63,8 +62,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, channels.length);
         for (ByteBuffer channel : channels) {
             RFuture<PubSubConnectionEntry> f = subscribeService.subscribe(ByteArrayCodec.INSTANCE, toChannelName(channel));
-            f.addListener(e -> RedissonReactiveSubscription.this.channels.put(channel, e.getNow()));
-            f.addListener(listener);
+            f.onComplete((res, e) -> RedissonReactiveSubscription.this.channels.put(channel, res));
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -79,8 +78,8 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, patterns.length);
         for (ByteBuffer channel : patterns) {
             RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(toChannelName(channel), ByteArrayCodec.INSTANCE);
-            f.addListener(e -> RedissonReactiveSubscription.this.patterns.put(channel, e.getNow()));
-            f.addListener(listener);
+            f.onComplete((res, e) -> RedissonReactiveSubscription.this.patterns.put(channel, res));
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -96,7 +95,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, channels.length);
         for (ByteBuffer channel : channels) {
             RFuture<Codec> f = subscribeService.unsubscribe(toChannelName(channel), PubSubType.UNSUBSCRIBE);
-            f.addListener(listener);
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -112,7 +111,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
         CountableListener<Void> listener = new CountableListener<Void>(result, null, patterns.length);
         for (ByteBuffer channel : patterns) {
             RFuture<Codec> f = subscribeService.unsubscribe(toChannelName(channel), PubSubType.PUNSUBSCRIBE);
-            f.addListener(listener);
+            f.onComplete(listener);
         }
         return Mono.fromFuture(result);
     }
@@ -128,29 +127,16 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
     }
     
     private final AtomicReference<Flux<Message<ByteBuffer, ByteBuffer>>> flux = new AtomicReference<>();
-    private Disposable disposable;
+    private volatile Disposable disposable;
 
     @Override
     public Flux<Message<ByteBuffer, ByteBuffer>> receive() {
-        if (flux.get() == null) {
+        if (flux.get() != null) {
             return flux.get();
         }
         
         Flux<Message<ByteBuffer, ByteBuffer>> f = Flux.<Message<ByteBuffer, ByteBuffer>>create(emitter -> {
             emitter.onRequest(n -> {
-                Map<ByteBuffer, BaseRedisPubSubListener> channelMap = new HashMap<ByteBuffer, BaseRedisPubSubListener>();
-                Map<ByteBuffer, BaseRedisPubSubListener> patternMap = new HashMap<ByteBuffer, BaseRedisPubSubListener>();
-                
-                disposable = () -> {
-                    for (Entry<ByteBuffer, BaseRedisPubSubListener> entry : channelMap.entrySet()) {
-                        PubSubConnectionEntry e = channels.get(entry.getKey());
-                        e.removeListener(toChannelName(entry.getKey()), entry.getValue());
-                    }
-                    for (Entry<ByteBuffer, BaseRedisPubSubListener> entry : patternMap.entrySet()) {
-                        PubSubConnectionEntry e = patterns.get(entry.getKey());
-                        e.removeListener(toChannelName(entry.getKey()), entry.getValue());
-                    }
-                };
                 
                 AtomicLong counter = new AtomicLong(n);
                 BaseRedisPubSubListener listener = new BaseRedisPubSubListener() {
@@ -175,17 +161,7 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                         }
                     }
                 };
-                
-                for (Entry<ByteBuffer, PubSubConnectionEntry> entry : channels.entrySet()) {
-                    channelMap.put(entry.getKey(), listener);
-                    entry.getValue().addListener(toChannelName(entry.getKey()), listener);
-                }
-                
-                for (Entry<ByteBuffer, PubSubConnectionEntry> entry : patterns.entrySet()) {
-                    patternMap.put(entry.getKey(), listener);
-                    entry.getValue().addListener(toChannelName(entry.getKey()), listener);
-                }
-                
+
                 disposable = () -> {
                     for (Entry<ByteBuffer, PubSubConnectionEntry> entry : channels.entrySet()) {
                         entry.getValue().removeListener(toChannelName(entry.getKey()), listener);
@@ -194,6 +170,15 @@ public class RedissonReactiveSubscription implements ReactiveSubscription {
                         entry.getValue().removeListener(toChannelName(entry.getKey()), listener);
                     }
                 };
+                
+                for (Entry<ByteBuffer, PubSubConnectionEntry> entry : channels.entrySet()) {
+                    entry.getValue().addListener(toChannelName(entry.getKey()), listener);
+                }
+                
+                for (Entry<ByteBuffer, PubSubConnectionEntry> entry : patterns.entrySet()) {
+                    entry.getValue().addListener(toChannelName(entry.getKey()), listener);
+                }
+                
                 emitter.onDispose(disposable);
             });
         });

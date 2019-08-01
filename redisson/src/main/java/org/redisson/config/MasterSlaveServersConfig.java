@@ -15,10 +15,9 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.redisson.misc.URIBuilder;
 
 /**
  * 
@@ -30,12 +29,12 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
     /**
      * Redis slave servers addresses
      */
-    private Set<URI> slaveAddresses = new HashSet<URI>();
+    private Set<String> slaveAddresses = new HashSet<String>();
 
     /**
      * Redis master server address
      */
-    private URI masterAddress;
+    private String masterAddress;
 
     /**
      * Database index used for Redis connection
@@ -60,22 +59,11 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * @return config
      */
     public MasterSlaveServersConfig setMasterAddress(String masterAddress) {
-        if (masterAddress != null) {
-            this.masterAddress = URIBuilder.create(masterAddress);
-        }
+        this.masterAddress = masterAddress;
         return this;
     }
-    public URI getMasterAddress() {
-        if (masterAddress != null) {
-            return masterAddress;
-        }
-        return null;
-    }
-    public MasterSlaveServersConfig setMasterAddress(URI masterAddress) {
-        if (masterAddress != null) {
-            this.masterAddress = masterAddress;
-        }
-        return this;
+    public String getMasterAddress() {
+        return masterAddress;
     }
 
     /**
@@ -84,20 +72,18 @@ public class MasterSlaveServersConfig extends BaseMasterSlaveServersConfig<Maste
      * @param addresses of Redis
      * @return config
      */
-    public MasterSlaveServersConfig addSlaveAddress(String ... addresses) {
-        for (String address : addresses) {
-            slaveAddresses.add(URIBuilder.create(address));
-        }
+    public MasterSlaveServersConfig addSlaveAddress(String... addresses) {
+        slaveAddresses.addAll(Arrays.asList(addresses));
         return this;
     }
-    public MasterSlaveServersConfig addSlaveAddress(URI slaveAddress) {
+    public MasterSlaveServersConfig addSlaveAddress(String slaveAddress) {
         slaveAddresses.add(slaveAddress);
         return this;
     }
-    public Set<URI> getSlaveAddresses() {
+    public Set<String> getSlaveAddresses() {
         return slaveAddresses;
     }
-    public void setSlaveAddresses(Set<URI> readAddresses) {
+    public void setSlaveAddresses(Set<String> readAddresses) {
         this.slaveAddresses = readAddresses;
     }
 

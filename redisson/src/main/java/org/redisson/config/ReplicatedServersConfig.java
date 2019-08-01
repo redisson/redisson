@@ -15,10 +15,9 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import org.redisson.misc.URIBuilder;
 
 /**
  * Configuration for an Azure Redis Cache or AWS ElastiCache servers. 
@@ -32,7 +31,7 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
     /**
      * Replication group node urls list
      */
-    private List<URI> nodeAddresses = new ArrayList<URI>();
+    private List<String> nodeAddresses = new ArrayList<>();
 
     /**
      * Replication group scan interval in milliseconds
@@ -60,16 +59,14 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
      * @param addresses in <code>host:port</code> format
      * @return config
      */
-    public ReplicatedServersConfig addNodeAddress(String ... addresses) {
-        for (String address : addresses) {
-            nodeAddresses.add(URIBuilder.create(address));
-        }
+    public ReplicatedServersConfig addNodeAddress(String... addresses) {
+        nodeAddresses.addAll(Arrays.asList(addresses));
         return this;
     }
-    public List<URI> getNodeAddresses() {
+    public List<String> getNodeAddresses() {
         return nodeAddresses;
     }
-    void setNodeAddresses(List<URI> nodeAddresses) {
+    void setNodeAddresses(List<String> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
 

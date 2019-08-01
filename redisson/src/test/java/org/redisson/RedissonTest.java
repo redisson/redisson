@@ -36,8 +36,12 @@ import org.redisson.api.Node;
 import org.redisson.api.Node.InfoSection;
 import org.redisson.api.NodeType;
 import org.redisson.api.NodesGroup;
+import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
 import org.redisson.api.RMap;
+import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
@@ -66,11 +70,38 @@ import org.redisson.connection.balancer.RandomLoadBalancer;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
+import net.bytebuddy.utility.RandomString;
 
 public class RedissonTest {
 
     protected RedissonClient redisson;
     protected static RedissonClient defaultRedisson;
+    
+//    @Test
+    public void testLeak() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer()
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient localRedisson = Redisson.create(config);
+
+        String key = RandomString.make(120);
+        for (int i = 0; i < 500; i++) {
+            RMapCache<String, String> cache = localRedisson.getMapCache("mycache");
+            RLock keyLock = cache.getLock(key);
+            keyLock.lockInterruptibly(10, TimeUnit.SECONDS);
+            try {
+                cache.get(key);
+                cache.put(key, RandomString.make(4*1024*1024), 5, TimeUnit.SECONDS);
+            } finally {
+                if (keyLock != null) {
+                    keyLock.unlock();
+                }
+            }
+        }
+        
+
+    }
     
     @Test
     public void testDecoderError() {
@@ -160,6 +191,46 @@ public class RedissonTest {
     
     public static class Dummy {
         private String field;
+    }
+    
+    @Test
+    public void testNextResponseAfterDecoderError() throws Exception {
+        Config config = new Config();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1)
+              .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+
+        RedissonClient redisson = Redisson.create(config);
+        
+        setJSONValue(redisson, "test1", "test1");
+        setStringValue(redisson, "test2", "test2");
+        setJSONValue(redisson, "test3", "test3");
+        try {
+            RBuckets buckets = redisson.getBuckets(new JsonJacksonCodec());
+            buckets.get("test2", "test1");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        assertThat(getStringValue(redisson, "test3")).isEqualTo("\"test3\"");
+        
+        redisson.shutdown();
+    }
+
+    public void setJSONValue(RedissonClient redisson, String key, Object t) {
+        RBucket<Object> test1 = redisson.getBucket(key, new JsonJacksonCodec());
+        test1.set(t);
+    }
+
+    public void setStringValue(RedissonClient redisson, String key, Object t) {
+        RBucket<Object> test1 = redisson.getBucket(key, new StringCodec());
+        test1.set(t);
+    }
+
+
+    public Object getStringValue(RedissonClient redisson, String key) {
+        RBucket<Object> test1 = redisson.getBucket(key, new StringCodec());
+        return test1.get();
     }
 
     @Test(expected = IllegalArgumentException.class)

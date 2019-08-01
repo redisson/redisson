@@ -31,7 +31,7 @@ import org.redisson.api.map.MapWriter;
 public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     
     /**
-     * Various strategies to avoid stale objects in cache.
+     * Various strategies to avoid stale objects in local cache.
      * Handle cases when map instance has been disconnected for a while.
      *
      */
@@ -51,7 +51,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
          * Store invalidated entry hash in invalidation log for 10 minutes.
          * Cache keys for stored invalidated entry hashes will be removed 
          * if LocalCachedMap instance has been disconnected less than 10 minutes 
-         * or whole cache will be cleaned otherwise.
+         * or whole local cache will be cleaned otherwise.
          */
         LOAD
         
@@ -65,12 +65,12 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         NONE,
         
         /**
-         * Invalidate cache entry across all LocalCachedMap instances on map entry change. Broadcasts map entry hash (16 bytes) to all instances.
+         * Invalidate local cache entry across all LocalCachedMap instances on map entry change. Broadcasts map entry hash (16 bytes) to all instances.
          */
         INVALIDATE,
         
         /**
-         * Update cache entry across all LocalCachedMap instances on map entry change. Broadcasts full map entry state (Key and Value objects) to all instances.
+         * Update local cache entry across all LocalCachedMap instances on map entry change. Broadcasts full map entry state (Key and Value objects) to all instances.
          */
         UPDATE
         
@@ -79,28 +79,28 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     public enum EvictionPolicy {
         
         /**
-         * Cache without eviction. 
+         * Local cache without eviction. 
          */
         NONE, 
         
         /**
-         * Least Recently Used cache.
+         * Least Recently Used local cache.
          */
         LRU, 
         
         /**
-         * Least Frequently Used cache.
+         * Least Frequently Used local cache.
          */
         LFU, 
         
         /**
-         * Cache with Soft Reference used for values.
+         * Local cache with Soft Reference used for values.
          * All references will be collected by GC
          */
         SOFT, 
 
         /**
-         * Cache with Weak Reference used for values. 
+         * Local cache with Weak Reference used for values. 
          * All references will be collected by GC
          */
         WEAK
@@ -167,7 +167,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets cache size. If size is <code>0</code> then local cache is unbounded.
+     * Sets local cache size. If size is <code>0</code> then local cache is unbounded.
      * 
      * @param cacheSize - size of cache
      * @return LocalCachedMapOptions instance
@@ -207,9 +207,9 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      * Sets eviction policy. 
      * 
      * @param evictionPolicy
-     *         <p><code>LRU</code> - uses cache with LRU (least recently used) eviction policy.
-     *         <p><code>LFU</code> - uses cache with LFU (least frequently used) eviction policy.
-     *         <p><code>SOFT</code> - uses cache with soft references. The garbage collector will evict items from the cache when the JVM is running out of memory.
+     *         <p><code>LRU</code> - uses local cache with LRU (least recently used) eviction policy.
+     *         <p><code>LFU</code> - uses local cache with LFU (least frequently used) eviction policy.
+     *         <p><code>SOFT</code> - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
      *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalCachedMapOptions instance
      */
@@ -222,7 +222,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     /**
-     * Sets time to live in milliseconds for each map entry in cache.
+     * Sets time to live in milliseconds for each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param timeToLiveInMillis - time to live in milliseconds
@@ -234,7 +234,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets time to live for each map entry in cache.
+     * Sets time to live for each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param timeToLive - time to live
@@ -246,7 +246,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets max idle time in milliseconds for each map entry in cache.
+     * Sets max idle time in milliseconds for each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param maxIdleInMillis - time to live in milliseconds
@@ -258,7 +258,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets max idle time for each map entry in cache.
+     * Sets max idle time for each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param maxIdle - max idle time
@@ -270,13 +270,18 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     @Override
-    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
-        return (LocalCachedMapOptions<K, V>) super.writer(writer);
+    public LocalCachedMapOptions<K, V> writeBehindBatchSize(int writeBehindBatchSize) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindBatchSize(writeBehindBatchSize);
     }
     
     @Override
-    public LocalCachedMapOptions<K, V> writeBehindThreads(int writeBehindThreads) {
-        return (LocalCachedMapOptions<K, V>) super.writeBehindThreads(writeBehindThreads);
+    public LocalCachedMapOptions<K, V> writeBehindDelay(int writeBehindDelay) {
+        return (LocalCachedMapOptions<K, V>) super.writeBehindDelay(writeBehindDelay);
+    }
+    
+    @Override
+    public LocalCachedMapOptions<K, V> writer(MapWriter<K, V> writer) {
+        return (LocalCachedMapOptions<K, V>) super.writer(writer);
     }
     
     @Override

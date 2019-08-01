@@ -38,34 +38,34 @@ public class CommandSyncService extends CommandAsyncService implements CommandEx
     }
 
     @Override
-    public <T, R> R read(String key, RedisCommand<T> command, Object ... params) {
+    public <T, R> R read(String key, RedisCommand<T> command, Object... params) {
         return read(key, connectionManager.getCodec(), command, params);
     }
 
     @Override
-    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object ... params) {
+    public <T, R> R read(String key, Codec codec, RedisCommand<T> command, Object... params) {
         RFuture<R> res = readAsync(key, codec, command, params);
         return get(res);
     }
 
     @Override
-    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> R evalRead(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         return evalRead(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
     @Override
-    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> R evalRead(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> res = evalReadAsync(key, codec, evalCommandType, script, keys, params);
         return get(res);
     }
 
     @Override
-    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> R evalWrite(String key, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         return evalWrite(key, connectionManager.getCodec(), evalCommandType, script, keys, params);
     }
 
     @Override
-    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object ... params) {
+    public <T, R> R evalWrite(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         RFuture<R> res = evalWriteAsync(key, codec, evalCommandType, script, keys, params);
         return get(res);
     }

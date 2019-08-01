@@ -15,7 +15,6 @@
  */
 package org.redisson.pubsub;
 
-import org.redisson.RedissonCountDownLatch;
 import org.redisson.RedissonCountDownLatchEntry;
 import org.redisson.misc.RPromise;
 
@@ -26,6 +25,13 @@ import org.redisson.misc.RPromise;
  */
 public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatchEntry> {
 
+    public static final Long ZERO_COUNT_MESSAGE = 0L;
+    public static final Long NEW_COUNT_MESSAGE = 1L;
+    
+    public CountDownLatchPubSub(PublishSubscribeService service) {
+        super(service);
+    }
+
     @Override
     protected RedissonCountDownLatchEntry createEntry(RPromise<RedissonCountDownLatchEntry> newPromise) {
         return new RedissonCountDownLatchEntry(newPromise);
@@ -33,10 +39,10 @@ public class CountDownLatchPubSub extends PublishSubscribe<RedissonCountDownLatc
 
     @Override
     protected void onMessage(RedissonCountDownLatchEntry value, Long message) {
-        if (message.equals(RedissonCountDownLatch.zeroCountMessage)) {
+        if (message.equals(ZERO_COUNT_MESSAGE)) {
             value.getLatch().open();
         }
-        if (message.equals(RedissonCountDownLatch.newCountMessage)) {
+        if (message.equals(NEW_COUNT_MESSAGE)) {
             value.getLatch().close();
         }
     }

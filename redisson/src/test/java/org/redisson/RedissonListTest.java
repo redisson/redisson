@@ -35,6 +35,23 @@ public class RedissonListTest extends BaseTest {
     }
     
     @Test
+    public void testRange() {
+        RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
+        list.add(1);
+        list.add(2);
+        list.add(3);
+        list.add(4);
+        list.add(5);
+
+        assertThat(list.range(1)).containsExactly(1, 2);
+        assertThat(list.range(1, 3)).containsExactly(2, 3, 4);
+        
+        list.delete();
+        
+        assertThat(list.range(0, 2)).isEmpty();
+    }
+    
+    @Test
     public void testSortOrder() {
         RList<Integer> list = redisson.getList("list", IntegerCodec.INSTANCE);
         list.add(1);

@@ -19,6 +19,7 @@ import java.util.Deque;
 import java.util.stream.Stream;
 
 /**
+ * Redis based priority deque.
  * 
  * @author Nikita Koksharov
  *

@@ -21,16 +21,20 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Map;
 
+import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
+import org.hibernate.cache.internal.DefaultCacheKeysFactory;
+import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.support.DomainDataRegionImpl;
 import org.hibernate.cache.spi.support.DomainDataStorageAccess;
 import org.hibernate.cache.spi.support.RegionFactoryTemplate;
 import org.hibernate.cache.spi.support.StorageAccess;
+import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
 import org.redisson.Redisson;
@@ -72,10 +76,16 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
     public static final String REDISSON_CONFIG_PATH = CONFIG_PREFIX + "config";
     
     private RedissonClient redisson;
+    private CacheKeysFactory cacheKeysFactory;
     
     @Override
     protected void prepareForUse(SessionFactoryOptions settings, @SuppressWarnings("rawtypes") Map properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
+        
+        StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
+        cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
+                properties.get(Environment.CACHE_KEYS_FACTORY), DefaultCacheKeysFactory.INSTANCE);
+
     }
 
     protected RedissonClient createRedissonClient(Map properties) {
@@ -169,7 +179,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
                 regionConfig,
                 this,
                 createDomainDataStorageAccess( regionConfig, buildingContext ),
-                getImplicitCacheKeysFactory(),
+                cacheKeysFactory,
                 buildingContext
         );
     }

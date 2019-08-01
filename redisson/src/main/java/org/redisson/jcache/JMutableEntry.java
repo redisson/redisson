@@ -67,7 +67,7 @@ public class JMutableEntry<K, V> implements MutableEntry<K, V> {
         if (value != null) {
             action = Action.READ;
         } else if (isReadThrough) {
-            value = jCache.load(key);
+            value = jCache.loadValue(key);
             if (value != null) {
                 action = Action.LOADED;
             }

@@ -139,5 +139,12 @@ public interface RRateLimiter extends RRateLimiterAsync, RObject {
      *         if the waiting time elapsed before a permit was acquired
      */
     boolean tryAcquire(long permits, long timeout, TimeUnit unit);
+
+    /**
+     * Returns current configuration of this RateLimiter object.
+     * 
+     * @return config object
+     */
+    RateLimiterConfig getConfig();
     
 }

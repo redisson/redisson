@@ -32,8 +32,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -46,7 +44,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
         @Override
         public void write(int b) throws IOException {
-            writeBytes(new byte[] {(byte)b});
+            writeBytes(new byte[] {(byte) b});
         }
         
         private void writeBytes(byte[] bytes) {
@@ -106,7 +104,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         
         @Override
         public int available() throws IOException {
-            return (int)(size() - index);
+            return (int) (size() - index);
         }
         
         @Override
@@ -136,7 +134,7 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
                 throw new IndexOutOfBoundsException();
             }
             
-            return (Integer)get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
+            return (Integer) get(commandExecutor.evalReadAsync(getName(), codec, new RedisCommand<Integer>("EVAL", new Decoder<Integer>() {
                                 @Override
                                 public Integer decode(ByteBuf buf, State state) {
                                     if (buf.readableBytes() == 0) {
@@ -272,20 +270,17 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     private void write(final byte[] value, final RPromise<Void> result, final int chunkSize, final int i) {
         final int len = Math.min(value.length - i*chunkSize, chunkSize);
         byte[] bytes = Arrays.copyOfRange(value, i*chunkSize, i*chunkSize + len);
-        writeAsync(bytes).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                int j = i + 1;
-                if (j*chunkSize > value.length) {
-                    result.trySuccess(null);
-                } else {
-                    write(value, result, chunkSize, j);
-                }
+        writeAsync(bytes).onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            
+            int j = i + 1;
+            if (j*chunkSize > value.length) {
+                result.trySuccess(null);
+            } else {
+                write(value, result, chunkSize, j);
             }
         });
     }

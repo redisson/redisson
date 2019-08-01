@@ -38,7 +38,7 @@ import org.w3c.dom.Node;
  */
 public class RedissonNamespaceParserSupport {
     
-    public final static String REDISSON_NAMESPACE
+    public static final String REDISSON_NAMESPACE
             = "http://redisson.org/schema/redisson";
     
     static final String REF_SUFFIX = "-ref";
@@ -101,12 +101,10 @@ public class RedissonNamespaceParserSupport {
         for (int x = 0; x < attributes.getLength(); x++) {
             Attr attribute = (Attr) attributes.item(x);
             if (isEligibleAttribute(attribute)) {
-                String propertyName
-                        = attribute.getLocalName().endsWith(REF_SUFFIX)
-                                ? attribute.getLocalName()
-                                        .substring(0, attribute.getLocalName()
-                                                .length() - REF_SUFFIX.length())
-                                : attribute.getLocalName();
+                String propertyName = attribute.getLocalName();
+                if (propertyName.endsWith(REF_SUFFIX)) {
+                    propertyName = propertyName.substring(0, attribute.getLocalName().length() - REF_SUFFIX.length());
+                }
                 propertyName = Conventions
                         .attributeNameToPropertyName(propertyName);
                 Assert.state(StringUtils.hasText(propertyName),
@@ -164,13 +162,13 @@ public class RedissonNamespaceParserSupport {
         return componentDefinition;
     }
     
-    public void addConstructorArgs(Element element, String attribute, Class type, BeanDefinition bd) {
+    public void addConstructorArgs(Element element, String attribute, Class<?> type, BeanDefinition bd) {
         if (element.hasAttribute(attribute)) {
             addConstructorArgs(element.getAttribute(attribute), type, bd);
         }
     }
     
-    public void addConstructorArgs(Object value, Class type, BeanDefinition bd) {
+    public void addConstructorArgs(Object value, Class<?> type, BeanDefinition bd) {
         ConstructorArgumentValues.ValueHolder vHolder
                 = new ConstructorArgumentValues.ValueHolder(value, type.getName());
         ConstructorArgumentValues args
@@ -178,11 +176,11 @@ public class RedissonNamespaceParserSupport {
         args.addIndexedArgumentValue(args.getArgumentCount(), vHolder);
     }
     
-    public void addConstructorArgs(Element element, String attribute, Class type, BeanDefinitionBuilder builder) {
+    public void addConstructorArgs(Element element, String attribute, Class<?> type, BeanDefinitionBuilder builder) {
         addConstructorArgs(element, attribute, type, builder.getRawBeanDefinition());
     }
     
-    public void addConstructorArgs(Object value, Class type, BeanDefinitionBuilder builder) {
+    public void addConstructorArgs(Object value, Class<?> type, BeanDefinitionBuilder builder) {
         addConstructorArgs(value, type, builder.getRawBeanDefinition());
     }
     
@@ -191,9 +189,10 @@ public class RedissonNamespaceParserSupport {
     }
     
     public String getId(Element element, BeanDefinitionBuilder builder, ParserContext parserContext) {
-        String id = element != null
-                ? element.getAttribute(ID_ATTRIBUTE)
-                : null;
+        String id = null;
+        if (element != null) {
+            id = element.getAttribute(ID_ATTRIBUTE);
+        }
         if (!StringUtils.hasText(id)) {
             id = generateId(builder, parserContext);
         }
@@ -263,14 +262,16 @@ public class RedissonNamespaceParserSupport {
     }
     
     private BeanDefinitionBuilder preInvoke(Element element, Object obj, String method, Object[] args, ParserContext parserContext, boolean factory) {
+        Class<?> beanClass = BeanMethodInvoker.class;
+        if (factory) {
+            beanClass = MethodInvokingFactoryBean.class;
+        }
+        
         BeanDefinitionBuilder builder
-                = createBeanDefinitionBuilder(element, parserContext,
-                        factory
-                                ? MethodInvokingFactoryBean.class
-                                : BeanMethodInvoker.class);
+                = createBeanDefinitionBuilder(element, parserContext, beanClass);
         if (obj instanceof Class) {
             builder.addPropertyValue("staticMethod",
-                    ((Class) obj).getName() + "." + method);
+                    ((Class<?>) obj).getName() + "." + method);
         } else {
             builder.addPropertyValue("targetMethod", method);
         }
@@ -289,7 +290,7 @@ public class RedissonNamespaceParserSupport {
     }
     
     public boolean isEligibleAttribute(String attributeName) {
-        return  !attributeName.equals("xmlns")
+        return  !"xmlns".equals(attributeName)
                 && !attributeName.startsWith("xmlns:")
                 && !ID_ATTRIBUTE.equals(attributeName)
                 && !NAME_ATTRIBUTE.equals(attributeName);

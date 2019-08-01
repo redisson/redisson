@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for sorted set contained values of String type.
@@ -36,7 +36,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return number of elements removed
      */
-    Flowable<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Single<Integer> removeRange(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
      * Removes tail values range starting with <code>fromElement</code>.
@@ -45,7 +45,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param fromInclusive - start element inclusive
      * @return number of elements removed
      */
-    Flowable<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
+    Single<Integer> removeRangeTail(String fromElement, boolean fromInclusive);
 
     /**
      * Removes head values range ending with <code>toElement</code>.
@@ -54,7 +54,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return number of elements removed
      */
-    Flowable<Integer> removeRangeHead(String toElement, boolean toInclusive);
+    Single<Integer> removeRangeHead(String toElement, boolean toInclusive);
 
     /**
      * Returns the number of tail values starting with <code>fromElement</code>.
@@ -63,7 +63,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param fromInclusive - start element inclusive
      * @return number of elements
      */
-    Flowable<Integer> countTail(String fromElement, boolean fromInclusive);
+    Single<Integer> countTail(String fromElement, boolean fromInclusive);
 
     /**
      * Returns the number of head values ending with <code>toElement</code>.
@@ -72,7 +72,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return number of elements
      */
-    Flowable<Integer> countHead(String toElement, boolean toInclusive);
+    Single<Integer> countHead(String toElement, boolean toInclusive);
 
     /**
      * Returns tail values range starting with <code>fromElement</code>.
@@ -81,7 +81,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param fromInclusive - start element inclusive
      * @return collection of elements
      */
-    Flowable<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
+    Single<Collection<String>> rangeTail(String fromElement, boolean fromInclusive);
 
     /**
      * Returns head values range ending with <code>toElement</code>.
@@ -90,7 +90,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return collection of elements
      */
-    Flowable<Collection<String>> rangeHead(String toElement, boolean toInclusive);
+    Single<Collection<String>> rangeHead(String toElement, boolean toInclusive);
 
     /**
      * Returns values range starting with <code>fromElement</code> and ending with <code>toElement</code>.
@@ -101,7 +101,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return collection of elements
      */
-    Flowable<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Single<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
     /**
      * Returns tail values range starting with <code>fromElement</code>. 
@@ -113,7 +113,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param count - amount of result collection
      * @return collection of elements
      */
-    Flowable<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
+    Single<Collection<String>> rangeTail(String fromElement, boolean fromInclusive, int offset, int count);
 
     /**
      * Returns head values range ending with <code>toElement</code>.
@@ -125,7 +125,7 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param count - amount of result collection
      * @return collection of elements
      */
-    Flowable<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
+    Single<Collection<String>> rangeHead(String toElement, boolean toInclusive, int offset, int count);
 
     /**
      * Returns values range starting with <code>fromElement</code> and ending with <code>toElement</code>.
@@ -135,9 +135,11 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param fromInclusive - start element inclusive
      * @param toElement - end element
      * @param toInclusive - end element inclusive
+     * @param offset - offset of result collection
+     * @param count - amount of result collection
      * @return collection of elements
      */
-    Flowable<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
+    Single<Collection<String>> range(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive, int offset, int count);
 
     /**
      * Returns the number of elements between <code>fromElement</code> and <code>toElement</code>.
@@ -148,6 +150,6 @@ public interface RLexSortedSetRx extends RScoredSortedSetRx<String>, RCollection
      * @param toInclusive - end element inclusive
      * @return number of elements
      */
-    Flowable<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
+    Single<Integer> count(String fromElement, boolean fromInclusive, String toElement, boolean toInclusive);
 
 }

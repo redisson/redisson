@@ -59,16 +59,13 @@ abstract class RedissonBaseReactive {
     
     RFuture<String> toStringFuture(RFuture<Void> f) {
         RPromise<String> promise = new RedissonPromise<>();
-        f.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                promise.trySuccess("OK");
+        f.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            promise.trySuccess("OK");
         });
         return promise;
     }

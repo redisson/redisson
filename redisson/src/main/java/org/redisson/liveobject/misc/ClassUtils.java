@@ -54,7 +54,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.redisson.api.RObject;
+import org.redisson.api.RLiveObject;
 import org.redisson.cache.LRUCacheMap;
 
 /**
@@ -119,22 +119,22 @@ public class ClassUtils {
         throw new NoSuchFieldException("No such field: " + fieldName);
     }
     
-    private static final Map<Class<?>, Boolean> annotatedClasses = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
+    private static final Map<Class<?>, Boolean> ANNOTATED_CLASSES = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
 
     public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
         if (clazz.getName().startsWith("java.")) {
             return false;
         }
         
-        Boolean isAnnotated = annotatedClasses.get(clazz);
+        Boolean isAnnotated = ANNOTATED_CLASSES.get(clazz);
         if (isAnnotated == null) {
             for (Class<?> c : getClassHierarchy(clazz)) {
                 if (c.isAnnotationPresent(annotation)) {
-                    annotatedClasses.put(clazz, true);
+                    ANNOTATED_CLASSES.put(clazz, true);
                     return true;
                 }
             }
-            annotatedClasses.put(clazz, false);
+            ANNOTATED_CLASSES.put(clazz, false);
             return false;
         }
         return isAnnotated;
@@ -142,7 +142,7 @@ public class ClassUtils {
 
     private static Iterable<Class<?>> getClassHierarchy(Class<?> clazz) {
         // Don't descend into hierarchy for RObjects
-        if (Arrays.asList(clazz.getInterfaces()).contains(RObject.class)) {
+        if (Arrays.asList(clazz.getInterfaces()).contains(RLiveObject.class)) {
             return Collections.<Class<?>>singleton(clazz);
         }
         List<Class<?>> classes = new ArrayList<Class<?>>();

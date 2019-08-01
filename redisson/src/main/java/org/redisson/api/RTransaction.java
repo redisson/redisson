@@ -49,6 +49,22 @@ public interface RTransaction {
     <V> RBucket<V> getBucket(String name, Codec codec);
 
     /**
+     * Returns transactional interface for mass operations with Bucket objects.
+     *
+     * @return Buckets
+     */
+    RBuckets getBuckets();
+    
+    /**
+     * Returns transactional interface for mass operations with Bucket objects
+     * using provided codec for object.
+     *
+     * @param codec - codec for bucket objects
+     * @return Buckets
+     */
+    RBuckets getBuckets(Codec codec);
+    
+    /**
      * Returns transactional map instance by name.
      *
      * @param <K> type of key

@@ -15,10 +15,7 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.api.RBucketRx;
-import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
 import org.redisson.api.RMapCacheRx;
@@ -34,7 +31,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.transaction.RedissonTransaction;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
 
 /**
  * 
@@ -118,23 +115,13 @@ public class RedissonTransactionRx implements RTransactionRx {
     }
 
     @Override
-    public Flowable<Void> commit() {
-        return executorService.flowable(new Callable<RFuture<Void>>() {
-            @Override
-            public RFuture<Void> call() {
-                return transaction.commitAsync();
-            }
-        });
+    public Completable commit() {
+        return executorService.flowable(() -> transaction.commitAsync()).ignoreElements();
     }
 
     @Override
-    public Flowable<Void> rollback() {
-        return executorService.flowable(new Callable<RFuture<Void>>() {
-            @Override
-            public RFuture<Void> call() {
-                return transaction.rollbackAsync();
-            }
-        });
+    public Completable rollback() {
+        return executorService.flowable(() -> transaction.rollbackAsync()).ignoreElements();
     }
     
 }

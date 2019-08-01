@@ -33,8 +33,10 @@ import io.netty.buffer.ByteBuf;
  */
 public class MapCacheEventCodec implements Codec {
 
+    public enum OSType {WINDOWS, HPNONSTOP}
+    
     private final Codec codec;
-    private final boolean isWindows;
+    private final OSType osType;
     
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
@@ -56,10 +58,10 @@ public class MapCacheEventCodec implements Codec {
         }
     };
 
-    public MapCacheEventCodec(Codec codec, boolean isWindows) {
+    public MapCacheEventCodec(Codec codec, OSType osType) {
         super();
         this.codec = codec;
-        this.isWindows = isWindows;
+        this.osType = osType;
     }
     
     public MapCacheEventCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
@@ -68,7 +70,7 @@ public class MapCacheEventCodec implements Codec {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        this.isWindows = codec.isWindows;
+        this.osType = codec.osType;
     }
 
     @Override
@@ -103,8 +105,10 @@ public class MapCacheEventCodec implements Codec {
 
     private Object decode(ByteBuf buf, State state, Decoder<?> decoder) throws IOException {
         int keyLen;
-        if (isWindows) {
+        if (osType == OSType.WINDOWS) {
             keyLen = buf.readIntLE();
+        } else if (osType == OSType.HPNONSTOP) {
+            keyLen = (int) buf.readLong();
         } else {
             keyLen = (int) buf.readLongLE();
         }
@@ -119,11 +123,12 @@ public class MapCacheEventCodec implements Codec {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((codec == null) ? 0 : codec.hashCode());
-        result = prime * result + (isWindows ? 1231 : 1237);
+        result = prime * result + ((osType == null) ? 0 : osType.hashCode());
         return result;
     }
 
@@ -141,7 +146,7 @@ public class MapCacheEventCodec implements Codec {
                 return false;
         } else if (!codec.equals(other.codec))
             return false;
-        if (isWindows != other.isWindows)
+        if (osType != other.osType)
             return false;
         return true;
     }

@@ -17,6 +17,7 @@ package org.redisson.eviction;
 
 import java.util.Arrays;
 
+import org.redisson.RedissonObject;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
@@ -44,14 +45,12 @@ public class MapCacheEvictionTask extends EvictionTask {
         this.maxIdleSetName = maxIdleSetName;
         this.expiredChannelName = expiredChannelName;
         this.lastAccessTimeSetName = lastAccessTimeSetName;
-        this.executeTaskOnceLatchName = prefixName("redisson__execute_task_once_latch", name);
+        this.executeTaskOnceLatchName = RedissonObject.prefixName("redisson__execute_task_once_latch", name);
     }
-
-    protected String prefixName(String prefix, String name) {
-        if (name.contains("{")) {
-            return prefix + ":" + name;
-        }
-        return prefix + ":{" + name + "}";
+    
+    @Override
+    String getName() {
+        return name;
     }
     
     @Override

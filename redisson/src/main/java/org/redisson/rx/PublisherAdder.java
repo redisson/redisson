@@ -21,9 +21,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.LongConsumer;
@@ -40,7 +39,7 @@ public abstract class PublisherAdder<V> {
 
     public abstract RFuture<Boolean> add(Object o);
     
-    public Flowable<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         final Flowable<? extends V> cc = Flowable.fromPublisher(c);
         final ReplayProcessor<Boolean> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
@@ -54,21 +53,18 @@ public abstract class PublisherAdder<V> {
                     @Override
                     public void accept(V t) throws Exception {
                         values.getAndIncrement();
-                        add(t).addListener(new FutureListener<Boolean>() {
-                            @Override
-                            public void operationComplete(Future<Boolean> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    p.onError(future.cause());
-                                    return;
-                                }
-                                
-                                if (future.getNow()) {
-                                    lastSize.set(true);
-                                }
-                                if (values.decrementAndGet() == 0 && completed.get()) {
-                                    p.onNext(lastSize.get());
-                                    p.onComplete();
-                                }
+                        add(t).onComplete((res, e) -> {
+                            if (e != null) {
+                                p.onError(e);
+                                return;
+                            }
+                            
+                            if (res) {
+                                lastSize.set(true);
+                            }
+                            if (values.decrementAndGet() == 0 && completed.get()) {
+                                p.onNext(lastSize.get());
+                                p.onComplete();
                             }
                         });
                     }
@@ -88,7 +84,7 @@ public abstract class PublisherAdder<V> {
                     }
                 }, FlowableInternalHelper.RequestMax.INSTANCE);                
             }
-        });
+        }).singleOrError();
     }
 
 }

@@ -27,8 +27,15 @@ import java.util.concurrent.locks.Lock;
  *
  */
 
-public interface RLock extends Lock, RExpirable, RLockAsync {
+public interface RLock extends Lock, RLockAsync {
 
+    /**
+     * Returns name of object
+     *
+     * @return name - name of object
+     */
+    String getName();
+    
     /**
      * Acquires the lock.
      *
@@ -87,7 +94,7 @@ public interface RLock extends Lock, RExpirable, RLockAsync {
     /**
      * Unlocks lock independently of state
      *
-     * @return <code>true</code> if unlocked otherwise <code>false</code>
+     * @return <code>true</code> if lock existed and now unlocked otherwise <code>false</code>
      */
     boolean forceUnlock();
 
@@ -122,4 +129,13 @@ public interface RLock extends Lock, RExpirable, RLockAsync {
      */
     int getHoldCount();
 
+    /**
+     * Remaining time to live of this lock 
+     *
+     * @return time in milliseconds
+     *          -2 if the lock does not exist.
+     *          -1 if the lock exists but has no associated expire.
+     */
+    long remainTimeToLive();
+    
 }

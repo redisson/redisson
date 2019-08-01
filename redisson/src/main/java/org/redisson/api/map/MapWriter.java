@@ -28,12 +28,8 @@ import java.util.Map;
  */
 public interface MapWriter<K, V> {
 
-    void write(K key, V value);
+    void write(Map<K, V> map);
     
-    void writeAll(Map<K, V> map);
-    
-    void delete(K key);
-    
-    void deleteAll(Collection<K> keys);
+    void delete(Collection<K> keys);
     
 }

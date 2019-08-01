@@ -16,7 +16,6 @@
 package org.redisson.reactive;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.redisson.RedissonAtomicDouble;
 import org.redisson.RedissonAtomicLong;
@@ -51,7 +50,6 @@ import org.redisson.api.RBlockingDequeReactive;
 import org.redisson.api.RBlockingQueueReactive;
 import org.redisson.api.RBucketReactive;
 import org.redisson.api.RDequeReactive;
-import org.redisson.api.RFuture;
 import org.redisson.api.RGeoReactive;
 import org.redisson.api.RHyperLogLogReactive;
 import org.redisson.api.RKeysReactive;
@@ -91,7 +89,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
-        this.executorService = new CommandReactiveBatchService(connectionManager);
+        this.executorService = new CommandReactiveBatchService(connectionManager, options);
         this.commandExecutor = commandExecutor;
         this.options = options;
     }
@@ -140,28 +138,28 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
                 new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapReactive<K, V> getMap(String name, Codec codec) {
-        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, null);
+        RedissonMap<K, V> map = new RedissonMap<K, V>(codec, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
                 new RedissonMapReactive<K, V>(map, null), RMapReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name, Codec codec) {
-        RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(codec, evictionScheduler, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
                 new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
 
     @Override
     public <K, V> RMapCacheReactive<K, V> getMapCache(String name) {
-        RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, executorService, name, null, null);
+        RMapCache<K, V> map = new RedissonMapCache<K, V>(evictionScheduler, executorService, name, null, null, null);
         return ReactiveProxyBuilder.create(executorService, map, 
                 new RedissonMapCacheReactive<K, V>(map), RMapCacheReactive.class);
     }
@@ -287,12 +285,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Mono<BatchResult<?>> execute() {
-        return commandExecutor.reactive(new Supplier<RFuture<BatchResult<?>>>() {
-            @Override
-            public RFuture<BatchResult<?>> get() {
-                return executorService.executeAsync(options);
-            }
-        });
+        return commandExecutor.reactive(() -> executorService.executeAsync(options));
     }
 
     public RBatchReactive atomic() {

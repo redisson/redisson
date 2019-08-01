@@ -41,6 +41,11 @@ public class JCacheEvictionTask extends EvictionTask {
     }
 
     @Override
+    String getName() {
+        return name;
+    }
+    
+    @Override
     RFuture<Integer> execute() {
         return executor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "local expiredKeys = redis.call('zrangebyscore', KEYS[2], 0, ARGV[1], 'limit', 0, ARGV[2]); "

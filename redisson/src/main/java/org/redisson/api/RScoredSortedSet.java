@@ -34,7 +34,7 @@ import org.redisson.client.protocol.ScoredEntry;
  */
 public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<V>, RExpirable, RSortable<Set<V>> {
 
-    public enum Aggregate {
+    enum Aggregate {
         
         SUM, MAX, MIN
         
@@ -63,7 +63,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *        {@code timeout} parameter
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
-    V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
@@ -79,7 +79,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      *        {@code timeout} parameter
      * @return the head element, or {@code null} if all sorted sets are empty 
      */
-    V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Removes and returns the head element waiting if necessary for an element to become available.
@@ -374,6 +374,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Returns this sorted set in array of defined type.
      * 
+     * @param <T> type of element
      * @param a - instance of array
      * @return array of values
      */

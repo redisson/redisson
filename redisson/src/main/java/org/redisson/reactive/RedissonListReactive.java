@@ -24,8 +24,6 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 import org.redisson.client.codec.Codec;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
@@ -68,7 +66,7 @@ public class RedissonListReactive<V> {
         return iterator(startIndex, true);
     }
 
-    private Publisher<V> iterator(final int startIndex, final boolean forward) {
+    private Publisher<V> iterator(int startIndex, boolean forward) {
         return Flux.create(new Consumer<FluxSink<V>>() {
 
             @Override
@@ -82,24 +80,21 @@ public class RedissonListReactive<V> {
                         onRequest(forward, emitter, value);
                     }
                     
-                    protected void onRequest(final boolean forward, FluxSink<V> emitter, long n) {
-                        instance.getAsync(currentIndex).addListener(new FutureListener<V>() {
-                            @Override
-                            public void operationComplete(Future<V> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    emitter.error(future.cause());
+                    protected void onRequest(boolean forward, FluxSink<V> emitter, long n) {
+                        instance.getAsync(currentIndex).onComplete((value, e) -> {
+                                if (e != null) {
+                                    emitter.error(e);
                                     return;
                                 }
 
-                                V value = future.getNow();
                                 if (value != null) {
-                                emitter.next(value);
-                                if (forward) {
-                                    currentIndex++;
-                                } else {
-                                    currentIndex--;
+                                    emitter.next(value);
+                                    if (forward) {
+                                        currentIndex++;
+                                    } else {
+                                        currentIndex--;
+                                    }
                                 }
-                            }
 
                                 if (value == null) {
                                     emitter.complete();
@@ -109,7 +104,6 @@ public class RedissonListReactive<V> {
                                     return;
                                 }
                                 onRequest(forward, emitter, n-1);
-                            }
                         });
                     }
                 });
@@ -124,7 +118,7 @@ public class RedissonListReactive<V> {
 
             @Override
             public RFuture<Boolean> add(Object o) {
-                return instance.addAsync((V)o);
+                return instance.addAsync((V) o);
             }
 
         }.addAll(c);

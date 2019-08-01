@@ -41,7 +41,6 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.eviction.EvictionScheduler;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.Hash;
 import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
@@ -184,7 +183,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
             @Override
             protected void remove(Object value) {
-                RedissonSetCache.this.remove((V)value);
+                RedissonSetCache.this.remove((V) value);
             }
             
         };
@@ -265,7 +264,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public boolean remove(Object value) {
-        return get(removeAsync((V)value));
+        return get(removeAsync((V) value));
     }
 
     @Override
@@ -336,7 +335,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         List<Object> params = new ArrayList<Object>(c.size()*2);
         for (Object object : c) {
             params.add(score);
-            params.add(encode((V)object));
+            params.add(encode((V) object));
         }
         
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -371,48 +370,39 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         delete();
     }
 
-    public String getLockName(Object value, String suffix) {
-        ByteBuf state = encode(value);
-        try {
-            return suffixName(getName(value), Hash.hash128toBase64(state) + ":" + suffix);
-        } finally {
-            state.release();
-        }
-    }
-
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
-        String lockName = getLockName(value, "permitexpirablesemaphore");
-        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        String lockName = getLockByValue(value, "permitexpirablesemaphore");
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
     }
 
     @Override
     public RSemaphore getSemaphore(V value) {
-        String lockName = getLockName(value, "semaphore");
-        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        String lockName = getLockByValue(value, "semaphore");
+        return new RedissonSemaphore(commandExecutor, lockName);
     }
     
     @Override
     public RCountDownLatch getCountDownLatch(V value) {
-        String lockName = getLockName(value, "countdownlatch");
+        String lockName = getLockByValue(value, "countdownlatch");
         return new RedissonCountDownLatch(commandExecutor, lockName);
     }
     
     @Override
     public RLock getFairLock(V value) {
-        String lockName = getLockName(value, "fairlock");
+        String lockName = getLockByValue(value, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);
     }
     
     @Override
     public RLock getLock(V value) {
-        String lockName = getLockName(value, "lock");
+        String lockName = getLockByValue(value, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(V value) {
-        String lockName = getLockName(value, "rw_lock");
+        String lockName = getLockByValue(value, "rw_lock");
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
 

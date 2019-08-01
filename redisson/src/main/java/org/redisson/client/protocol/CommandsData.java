@@ -38,10 +38,6 @@ public class CommandsData implements QueueCommand {
         this(promise, commands, null, false, false, queued);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands) {
-        this(promise, commands, attachedCommands, false, false, true);
-    }
-    
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued) {
         this(promise, commands, null, skipResult, atomic, queued);
     }
@@ -85,8 +81,8 @@ public class CommandsData implements QueueCommand {
     public List<CommandData<Object, Object>> getPubSubOperations() {
         List<CommandData<Object, Object>> result = new ArrayList<CommandData<Object, Object>>();
         for (CommandData<?, ?> commandData : commands) {
-            if (RedisCommands.PUBSUB_COMMANDS.equals(commandData.getCommand().getName())) {
-                result.add((CommandData<Object, Object>)commandData);
+            if (RedisCommands.PUBSUB_COMMANDS.contains(commandData.getCommand().getName())) {
+                result.add((CommandData<Object, Object>) commandData);
             }
         }
         return result;

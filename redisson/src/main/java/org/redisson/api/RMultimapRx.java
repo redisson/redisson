@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * Base RxJava2 interface for Multimap object
@@ -34,7 +34,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      *
      * @return size of multimap
      */
-    Flowable<Integer> size();
+    Single<Integer> size();
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
@@ -43,7 +43,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return <code>true</code> if contains a key
      */
-    Flowable<Boolean> containsKey(Object key);
+    Single<Boolean> containsKey(Object key);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
@@ -52,7 +52,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param value - map value
      * @return <code>true</code> if contains a value
      */
-    Flowable<Boolean> containsValue(Object value);
+    Single<Boolean> containsValue(Object value);
 
     /**
      * Returns {@code true} if this multimap contains at least one key-value pair
@@ -62,7 +62,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param value - map value
      * @return <code>true</code> if contains an entry
      */
-    Flowable<Boolean> containsEntry(Object key, Object value);
+    Single<Boolean> containsEntry(Object key, Object value);
 
     /**
      * Stores a key-value pair in this multimap.
@@ -78,7 +78,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      *     {@code false} if the multimap already contained the key-value pair and
      *     doesn't allow duplicates
      */
-    Flowable<Boolean> put(K key, V value);
+    Single<Boolean> put(K key, V value);
 
     /**
      * Removes a single key-value pair with the key {@code key} and the value
@@ -90,7 +90,7 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param value - map value
      * @return {@code true} if the multimap changed
      */
-    Flowable<Boolean> remove(Object key, Object value);
+    Single<Boolean> remove(Object key, Object value);
 
     // Bulk Operations
 
@@ -109,14 +109,14 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param values - map values
      * @return {@code true} if the multimap changed
      */
-    Flowable<Boolean> putAll(K key, Iterable<? extends V> values);
+    Single<Boolean> putAll(K key, Iterable<? extends V> values);
 
     /**
      * Returns the number of key-value pairs in this multimap.
      *
      * @return keys amount
      */
-    Flowable<Integer> keySize();
+    Single<Integer> keySize();
 
     /**
      * Removes <code>keys</code> from map by one operation
@@ -127,14 +127,14 @@ public interface RMultimapRx<K, V> extends RExpirableRx {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Flowable<Long> fastRemove(K ... keys);
+    Single<Long> fastRemove(K... keys);
 
     /**
      * Read all keys at once
      *
      * @return keys
      */
-    Flowable<Set<K>> readAllKeySet();
+    Single<Set<K>> readAllKeySet();
 
     
 }

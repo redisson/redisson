@@ -15,10 +15,9 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.Callable;
-
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.api.RFuture;
+import org.redisson.api.RObject;
 import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -39,35 +38,29 @@ public class RedissonScoredSortedSetRx<V>  {
         this.instance = instance;
     }
     
-    private Flowable<V> scanIteratorReactive(final String pattern, final int count) {
+    private Flowable<V> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<V>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                return ((RedissonScoredSortedSet<V>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((RedissonScoredSortedSet<V>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         }.create();
     }
 
     public Flowable<V> takeFirstElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeFirstAsync();
-            }
+        return ElementsStream.takeElements(() -> {
+            return instance.takeFirstAsync();
         });
     }
     
     public Flowable<V> takeLastElements() {
-        return ElementsStream.takeElements(new Callable<RFuture<V>>() {
-            @Override
-            public RFuture<V> call() throws Exception {
-                return instance.takeLastAsync();
-            }
+        return ElementsStream.takeElements(() -> {
+            return instance.takeLastAsync();
         });
     }
     
     public String getName() {
-        return ((RedissonScoredSortedSet<V>)instance).getName();
+        return ((RObject) instance).getName();
     }
     
     public Flowable<V> iterator() {

@@ -40,12 +40,12 @@ public abstract class SetOperation extends TransactionalOperation {
     }
 
     protected RLock getLock(RSetCache<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
-        String lockName = ((RedissonSetCache<?>)setCache).getLockName(value, "lock");
+        String lockName = ((RedissonSetCache<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
     protected RLock getLock(RSet<?> setCache, CommandAsyncExecutor commandExecutor, Object value) {
-        String lockName = ((RedissonSet<?>)setCache).getLockName(value, "lock");
+        String lockName = ((RedissonSet<?>) setCache).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 

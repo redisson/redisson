@@ -21,8 +21,6 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.LongConsumer;
@@ -41,12 +39,12 @@ public class RedissonTopicRx {
         this.topic = topic;
     }
 
-    public <M> Flowable<M> getMessages(final Class<M> type) {
-        final ReplayProcessor<M> p = ReplayProcessor.create();
+    public <M> Flowable<M> getMessages(Class<M> type) {
+        ReplayProcessor<M> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long n) throws Exception {
-                final AtomicLong counter = new AtomicLong(n);
+                AtomicLong counter = new AtomicLong(n);
                 RFuture<Integer> t = topic.addListenerAsync(type, new MessageListener<M>() {
                     @Override
                     public void onMessage(CharSequence channel, M msg) {
@@ -57,22 +55,18 @@ public class RedissonTopicRx {
                         }
                     }
                 });
-                t.addListener(new FutureListener<Integer>() {
-                    @Override
-                    public void operationComplete(Future<Integer> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            p.onError(future.cause());
-                            return;
-                        }
-                        
-                        final Integer id = future.getNow();
-                        p.doOnCancel(new Action() {
-                            @Override
-                            public void run() throws Exception {
-                                topic.removeListenerAsync(id);
-                            }
-                        });
+                t.onComplete((id, e) -> {
+                    if (e != null) {
+                        p.onError(e);
+                        return;
                     }
+                    
+                    p.doOnCancel(new Action() {
+                        @Override
+                        public void run() throws Exception {
+                            topic.removeListenerAsync(id);
+                        }
+                    });
                 });
             }
         });

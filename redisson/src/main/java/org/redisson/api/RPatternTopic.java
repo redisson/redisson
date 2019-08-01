@@ -80,4 +80,6 @@ public interface RPatternTopic {
     
     <T> RFuture<Integer> addListenerAsync(Class<T> type, PatternMessageListener<T> listener);
 
+    RFuture<Void> removeListenerAsync(int listenerId);
+
 }

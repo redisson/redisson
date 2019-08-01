@@ -15,10 +15,12 @@
  */
 package org.redisson.config;
 
-import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import org.redisson.misc.URIBuilder;
+import java.util.Map;
 
 /**
  * 
@@ -27,10 +29,12 @@ import org.redisson.misc.URIBuilder;
  */
 public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterServersConfig> {
 
+    private Map<String, String> natMap = Collections.emptyMap();
+    
     /**
      * Redis cluster node urls list
      */
-    private List<URI> nodeAddresses = new ArrayList<URI>();
+    private List<String> nodeAddresses = new ArrayList<>();
 
     /**
      * Redis cluster scan interval in milliseconds
@@ -44,6 +48,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         super(config);
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
+        setNatMap(new HashMap<>(config.getNatMap()));
     }
 
     /**
@@ -52,16 +57,14 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      * @param addresses in <code>host:port</code> format
      * @return config
      */
-    public ClusterServersConfig addNodeAddress(String ... addresses) {
-        for (String address : addresses) {
-            nodeAddresses.add(URIBuilder.create(address));
-        }
+    public ClusterServersConfig addNodeAddress(String... addresses) {
+        nodeAddresses.addAll(Arrays.asList(addresses));
         return this;
     }
-    public List<URI> getNodeAddresses() {
+    public List<String> getNodeAddresses() {
         return nodeAddresses;
     }
-    void setNodeAddresses(List<URI> nodeAddresses) {
+    void setNodeAddresses(List<String> nodeAddresses) {
         this.nodeAddresses = nodeAddresses;
     }
 
@@ -80,5 +83,20 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         this.scanInterval = scanInterval;
         return this;
     }
+
+    public Map<String, String> getNatMap() {
+        return natMap;
+    }
+    /**
+     * Defines NAT mapping. Address as a map key is replaced with mapped address as value.
+     * 
+     * @param natMap - nat mapping
+     * @return config
+     */
+    public ClusterServersConfig setNatMap(Map<String, String> natMap) {
+        this.natMap = natMap;
+        return this;
+    }
+    
 
 }

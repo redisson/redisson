@@ -15,10 +15,6 @@
  */
 package org.redisson.reactive;
 
-import java.util.List;
-import java.util.function.Supplier;
-
-import org.reactivestreams.Publisher;
 import org.redisson.RedissonListMultimap;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
@@ -34,21 +30,23 @@ import org.redisson.client.codec.Codec;
  */
 public class RedissonListMultimapReactive<K, V> {
 
-    private CommandReactiveExecutor commandExecutor;
-    private RedissonListMultimap<K, V> instance;
+    private final CommandReactiveExecutor commandExecutor;
+    private final RedissonListMultimap<K, V> instance;
     
     public RedissonListMultimapReactive(CommandReactiveExecutor commandExecutor, String name) {
         this.instance = new RedissonListMultimap<K, V>(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
     }
 
     public RedissonListMultimapReactive(Codec codec, CommandReactiveExecutor commandExecutor, String name) {
         this.instance = new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+        this.commandExecutor = commandExecutor;
     }
 
     public RListReactive<V> get(K key) {
-        RList<V> list = ((RListMultimap<K, V>)instance).get(key);
+        RList<V> list = ((RListMultimap<K, V>) instance).get(key);
         return ReactiveProxyBuilder.create(commandExecutor, instance, 
                 new RedissonListReactive<V>(instance.getCodec(), commandExecutor, list.getName()), RListReactive.class);
     }
 
-            }
+}

@@ -21,6 +21,7 @@ import org.redisson.RedissonBucket;
 import org.redisson.RedissonLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.transaction.RedissonTransactionalLock;
 import org.redisson.transaction.operation.TransactionalOperation;
 
 /**
@@ -31,21 +32,23 @@ import org.redisson.transaction.operation.TransactionalOperation;
  */
 public class BucketTrySetOperation<V> extends TransactionalOperation {
 
+    private String transactionId;
     private Object value;
     private String lockName;
     private long timeToLive;
     private TimeUnit timeUnit;
     
-    public BucketTrySetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit) {
-        this(name, lockName, codec, value);
+    public BucketTrySetOperation(String name, String lockName, Codec codec, Object value, long timeToLive, TimeUnit timeUnit, String transactionId) {
+        this(name, lockName, codec, value, transactionId);
         this.timeToLive = timeToLive;
         this.timeUnit = timeUnit;
     }
     
-    public BucketTrySetOperation(String name, String lockName, Codec codec, Object value) {
+    public BucketTrySetOperation(String name, String lockName, Codec codec, Object value, String transactionId) {
         super(name, codec);
         this.value = value;
         this.lockName = lockName;
+        this.transactionId = transactionId;
     }
 
     @Override
@@ -56,13 +59,13 @@ public class BucketTrySetOperation<V> extends TransactionalOperation {
         } else {
             bucket.trySetAsync((V) value);
         }
-        RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+        RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
         lock.unlockAsync();
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
-        RedissonLock lock = new RedissonLock(commandExecutor, lockName);
+        RedissonLock lock = new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
         lock.unlockAsync();
     }
     

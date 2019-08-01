@@ -25,6 +25,10 @@ import org.redisson.misc.RPromise;
  */
 public class SemaphorePubSub extends PublishSubscribe<RedissonLockEntry> {
 
+    public SemaphorePubSub(PublishSubscribeService service) {
+        super(service);
+    }
+
     @Override
     protected RedissonLockEntry createEntry(RPromise<RedissonLockEntry> newPromise) {
         return new RedissonLockEntry(newPromise);

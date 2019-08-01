@@ -109,8 +109,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
         list = (RedissonList<V>) redisson.getList(getName());
-        
-        loadComparator();
     }
 
     public RedissonSortedSet(Codec codec, CommandExecutor commandExecutor, String name, Redisson redisson) {
@@ -120,8 +118,6 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
         list = (RedissonList<V>) redisson.getList(getName(), codec);
-
-        loadComparator();
     }
     
     @Override
@@ -194,7 +190,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     @Override
     public boolean contains(final Object o) {
-        return binarySearch((V)o, codec).getIndex() >= 0;
+        return binarySearch((V) o, codec).getIndex() >= 0;
     }
 
     @Override
@@ -298,7 +294,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
                 return false;
             }
 
-            list.remove((int)res.getIndex());
+            list.remove((int) res.getIndex());
             return true;
         } finally {
             lock.unlock();
@@ -447,6 +443,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
         return indexRes;
     }
 
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())

@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.redisson.api.RType;
+import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -68,6 +69,8 @@ import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
 import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
 import org.redisson.client.protocol.decoder.SlotsDecoder;
+import org.redisson.client.protocol.decoder.StreamConsumerInfoDecoder;
+import org.redisson.client.protocol.decoder.StreamGroupInfoDecoder;
 import org.redisson.client.protocol.decoder.StreamIdDecoder;
 import org.redisson.client.protocol.decoder.StreamIdListDecoder;
 import org.redisson.client.protocol.decoder.StreamObjectMapReplayDecoder;
@@ -291,7 +294,8 @@ public interface RedisCommands {
     RedisStrictCommand<Boolean> HSETNX = new RedisStrictCommand<Boolean>("HSETNX", new BooleanReplayConvertor());
     RedisStrictCommand<Boolean> HSET = new RedisStrictCommand<Boolean>("HSET", new BooleanReplayConvertor());
     RedisStrictCommand<Void> HSET_VOID = new RedisStrictCommand<Void>("HSET", new VoidReplayConvertor());
-    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
+    RedisCommand<MapScanResult<Object, Object>> HSCAN = new RedisCommand<MapScanResult<Object, Object>>("HSCAN", 
+            new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapReplayDecoder(), new MapScanResultReplayDecoder()), ValueType.MAP);
     RedisCommand<Map<Object, Object>> HGETALL = new RedisCommand<Map<Object, Object>>("HGETALL", new ObjectMapReplayDecoder(), ValueType.MAP);
     RedisCommand<Set<Entry<Object, Object>>> HGETALL_ENTRY = new RedisCommand<Set<Entry<Object, Object>>>("HGETALL", new ObjectMapEntryReplayDecoder(), ValueType.MAP);
     RedisCommand<List<Object>> HVALS = new RedisCommand<List<Object>>("HVALS", new ObjectListReplayDecoder<Object>(), ValueType.MAP_VALUE);
@@ -384,6 +388,12 @@ public interface RedisCommands {
                     new StreamObjectMapReplayDecoder(),
                     new StreamResultDecoder()));
 
+    RedisCommand<StreamInfo<Object, Object>> XINFO_GROUPS = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "GROUPS",
+            new ListMultiDecoder(0, new StreamGroupInfoDecoder(), new ObjectListReplayDecoder()));
+
+    RedisCommand<StreamInfo<Object, Object>> XINFO_CONSUMERS = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "CONSUMERS",
+            new ListMultiDecoder(0, new StreamConsumerInfoDecoder(), new ObjectListReplayDecoder()));
+
     RedisCommand<List<StreamMessageId>> XCLAIM_IDS = new RedisCommand<List<StreamMessageId>>("XCLAIM", new StreamIdListDecoder());
     
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XCLAIM = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XCLAIM",
@@ -408,7 +418,7 @@ public interface RedisCommands {
     RedisStrictCommand<Long> XDEL = new RedisStrictCommand<Long>("XDEL");
     RedisStrictCommand<Long> XTRIM = new RedisStrictCommand<Long>("XTRIM");
     RedisCommand<Object> XPENDING = new RedisCommand<Object>("XPENDING", 
-            new ListMultiDecoder(new ObjectListReplayDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new PendingResultDecoder()));
+            new ListMultiDecoder(0, new ObjectListReplayDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new PendingResultDecoder()));
     RedisCommand<Object> XPENDING_ENTRIES = new RedisCommand<Object>("XPENDING", 
             new PendingEntryDecoder());
     

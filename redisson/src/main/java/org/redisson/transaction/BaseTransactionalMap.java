@@ -58,8 +58,6 @@ import org.redisson.transaction.operation.map.MapRemoveOperation;
 import org.redisson.transaction.operation.map.MapReplaceOperation;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -111,7 +109,7 @@ public class BaseTransactionalMap<K, V> {
     }
 
     HashValue toKeyHash(Object key) {
-        ByteBuf keyState = ((RedissonObject)map).encodeMapKey(key);
+        ByteBuf keyState = ((RedissonObject) map).encodeMapKey(key);
         try {
             return new HashValue(Hash.hash128(keyState));
         } finally {
@@ -132,33 +130,29 @@ public class BaseTransactionalMap<K, V> {
     }
     
     public RFuture<Boolean> touchAsync(CommandAsyncExecutor commandExecutor) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null && deleted) {
             operations.add(new TouchOperation(map.getName()));
             result.trySuccess(false);
             return result;
         }
         
-        map.isExistsAsync().addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                operations.add(new TouchOperation(map.getName()));
-                boolean exists = future.getNow();
-                if (!exists) {
-                    for (MapEntry entry : state.values()) {
-                        if (entry != MapEntry.NULL) {
-                            exists = true;
-                            break;
-                        }
+        map.isExistsAsync().onComplete((exists, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            
+            operations.add(new TouchOperation(map.getName()));
+            if (!exists) {
+                for (MapEntry entry : state.values()) {
+                    if (entry != MapEntry.NULL) {
+                        exists = true;
+                        break;
                     }
                 }
-                result.trySuccess(exists);
             }
+            result.trySuccess(exists);
         });
         return result;
     }
@@ -167,8 +161,8 @@ public class BaseTransactionalMap<K, V> {
         return deleteAsync(commandExecutor, new DeleteOperation(map.getName()));
     }
 
-    protected RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor, final TransactionalOperation operation) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    protected RFuture<Boolean> deleteAsync(CommandAsyncExecutor commandExecutor, TransactionalOperation operation) {
+        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         if (deleted != null) {
             operations.add(operation);
             result.trySuccess(!deleted);
@@ -176,21 +170,18 @@ public class BaseTransactionalMap<K, V> {
             return result;
         }
         
-        map.isExistsAsync().addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                operations.add(operation);
-                for (HashValue key : state.keySet()) {
-                    state.put(key, MapEntry.NULL);
-                }
-                deleted = true;
-                result.trySuccess(future.getNow());
+        map.isExistsAsync().onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            operations.add(operation);
+            for (HashValue key : state.keySet()) {
+                state.put(key, MapEntry.NULL);
+            }
+            deleted = true;
+            result.trySuccess(res);
         });
         
         return result;
@@ -198,7 +189,7 @@ public class BaseTransactionalMap<K, V> {
     
     protected MapScanResult<Object, Object> scanIterator(String name, RedisClient client,
             long startPos, String pattern, int count) {
-        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>)map).scanIterator(name, client, startPos, pattern, count);
+        MapScanResult<Object, Object> res = ((RedissonMap<?, ?>) map).scanIterator(name, client, startPos, pattern, count);
         Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
         for (Iterator<Object> iterator = res.getMap().keySet().iterator(); iterator.hasNext();) {
             Object entry = iterator.next();
@@ -250,12 +241,12 @@ public class BaseTransactionalMap<K, V> {
         return map.containsValueAsync(value);
     }
     
-    protected RFuture<V> addAndGetOperationAsync(final K key, final Number value) {
-        final RPromise<V> result = new RedissonPromise<V>();
+    protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
+        RPromise<V> result = new RedissonPromise<V>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     BigDecimal currentValue = BigDecimal.ZERO;
@@ -275,26 +266,22 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
                 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        BigDecimal currentValue = new BigDecimal(future.getNow().toString());
-                        BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
-                        
-                        operations.add(new MapAddAndGetOperation(map, key, value, transactionId));
-                        state.put(keyHash, new MapEntry(key, res));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                        
-                        NumberConvertor convertor = new NumberConvertor(value.getClass());
-                        result.trySuccess((V) convertor.convert(res.toPlainString()));
+                map.getAsync(key).onComplete((r, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
-
+                    BigDecimal currentValue = new BigDecimal(r.toString());
+                    BigDecimal res = currentValue.add(new BigDecimal(value.toString()));
+                    
+                    operations.add(new MapAddAndGetOperation(map, key, value, transactionId));
+                    state.put(keyHash, new MapEntry(key, res));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                    
+                    NumberConvertor convertor = new NumberConvertor(value.getClass());
+                    result.trySuccess((V) convertor.convert(res.toPlainString()));
                 });
             }
         });
@@ -305,12 +292,12 @@ public class BaseTransactionalMap<K, V> {
         return putIfAbsentOperationAsync(key, value, new MapPutIfAbsentOperation(map, key, value, transactionId));
     }
 
-    protected RFuture<V> putIfAbsentOperationAsync(final K key, final V value, final MapOperation mapOperation) {
-        final RPromise<V> result = new RedissonPromise<V>();
+    protected RFuture<V> putIfAbsentOperationAsync(K key, V value, MapOperation mapOperation) {
+        RPromise<V> result = new RedissonPromise<V>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     operations.add(mapOperation);
@@ -327,23 +314,20 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(mapOperation);
-                        if (future.getNow() == null) {
-                            state.put(keyHash, new MapEntry(key, value));
-                            if (deleted != null) {
-                                deleted = false;
-                            }
-                        }
-                        result.trySuccess(future.getNow());
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(mapOperation);
+                    if (res == null) {
+                        state.put(keyHash, new MapEntry(key, value));
+                        if (deleted != null) {
+                            deleted = false;
+                        }
+                    }
+                    result.trySuccess(res);
                 });
             }
         });
@@ -354,12 +338,12 @@ public class BaseTransactionalMap<K, V> {
         return putOperationAsync(key, value, new MapPutOperation(map, key, value, transactionId));
     }
 
-    protected RFuture<V> putOperationAsync(final K key, final V value, final MapOperation operation) {
-        final RPromise<V> result = new RedissonPromise<V>();
+    protected RFuture<V> putOperationAsync(K key, V value, MapOperation operation) {
+        RPromise<V> result = new RedissonPromise<V>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     operations.add(operation);
@@ -376,21 +360,18 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
                 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(operation);
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-                        result.trySuccess(future.getNow());
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(operation);
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+                    result.trySuccess(res);
                 });
             }
         });
@@ -401,12 +382,12 @@ public class BaseTransactionalMap<K, V> {
         return fastPutIfAbsentOperationAsync(key, value, new MapFastPutIfAbsentOperation(map, key, value, transactionId));
     }
 
-    protected RFuture<Boolean> fastPutIfAbsentOperationAsync(final K key, final V value, final MapOperation mapOperation) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value, MapOperation mapOperation) {
+        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     operations.add(mapOperation);
@@ -422,24 +403,21 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(mapOperation);
-                        boolean isUpdated = future.getNow() == null;
-                        if (isUpdated) {
-                            state.put(keyHash, new MapEntry(key, value));
-                            if (deleted != null) {
-                                deleted = false;
-                            }
-                        }
-                        result.trySuccess(isUpdated);
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(mapOperation);
+                    boolean isUpdated = res == null;
+                    if (isUpdated) {
+                        state.put(keyHash, new MapEntry(key, value));
+                        if (deleted != null) {
+                            deleted = false;
+                        }
+                    }
+                    result.trySuccess(isUpdated);
                 });
             }
         });
@@ -450,12 +428,12 @@ public class BaseTransactionalMap<K, V> {
         return fastPutOperationAsync(key, value, new MapFastPutOperation(map, key, value, transactionId));
     }
 
-    protected RFuture<Boolean> fastPutOperationAsync(final K key, final V value, final MapOperation operation) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    protected RFuture<Boolean> fastPutOperationAsync(K key, V value, MapOperation operation) {
+        RPromise<Boolean> result = new RedissonPromise<Boolean>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     operations.add(operation);
@@ -472,23 +450,20 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
                 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(operation);
-                        state.put(keyHash, new MapEntry(key, value));
-                        if (deleted != null) {
-                            deleted = false;
-                        }
-
-                        boolean isNew = future.getNow() == null;
-                        result.trySuccess(isNew);
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(operation);
+                    state.put(keyHash, new MapEntry(key, value));
+                    if (deleted != null) {
+                        deleted = false;
+                    }
+
+                    boolean isNew = res == null;
+                    result.trySuccess(isNew);
                 });
             }
         });
@@ -496,12 +471,12 @@ public class BaseTransactionalMap<K, V> {
     }
     
     @SuppressWarnings("unchecked")
-    protected RFuture<Long> fastRemoveOperationAsync(final K... keys) {
-        final RPromise<Long> result = new RedissonPromise<Long>();
+    protected RFuture<Long> fastRemoveOperationAsync(K... keys) {
+        RPromise<Long> result = new RedissonPromise<Long>();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
-                final AtomicLong counter = new AtomicLong();
+                AtomicLong counter = new AtomicLong();
                 List<K> keyList = Arrays.asList(keys);
                 for (Iterator<K> iterator = keyList.iterator(); iterator.hasNext();) {
                     K key = iterator.next();
@@ -517,23 +492,20 @@ public class BaseTransactionalMap<K, V> {
                 }
                 
                 // TODO optimize
-                map.getAllAsync(new HashSet<K>(keyList)).addListener(new FutureListener<Map<K, V>>() {
-                    @Override
-                    public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                        if (future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        for (K key : future.getNow().keySet()) {
-                            HashValue keyHash = toKeyHash(key);
-                            operations.add(new MapFastRemoveOperation(map, key, transactionId));
-                            counter.incrementAndGet();
-                            state.put(keyHash, MapEntry.NULL);
-                        }
-
-                        result.trySuccess(counter.get());
+                map.getAllAsync(new HashSet<K>(keyList)).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    for (K key : res.keySet()) {
+                        HashValue keyHash = toKeyHash(key);
+                        operations.add(new MapFastRemoveOperation(map, key, transactionId));
+                        counter.incrementAndGet();
+                        state.put(keyHash, MapEntry.NULL);
+                    }
+
+                    result.trySuccess(counter.get());
                 });
             }
         }, Arrays.asList(keys));
@@ -547,7 +519,7 @@ public class BaseTransactionalMap<K, V> {
             if (entry == MapEntry.NULL) {
                 return RedissonPromise.newSucceededFuture(null);
             } else {
-                ByteBuf valueState = ((RedissonObject)map).encodeMapValue(entry.getValue());
+                ByteBuf valueState = ((RedissonObject) map).encodeMapValue(entry.getValue());
                 try {
                     return RedissonPromise.newSucceededFuture(valueState.readableBytes());
                 } finally {
@@ -566,162 +538,148 @@ public class BaseTransactionalMap<K, V> {
             if (entry == MapEntry.NULL) {
                 return RedissonPromise.newSucceededFuture(null);
             } else {
-                return RedissonPromise.newSucceededFuture((V)entry.getValue());
+                return RedissonPromise.newSucceededFuture((V) entry.getValue());
             }
         }
-        return ((RedissonMap<K, V>)map).getOperationAsync(key);
+        return ((RedissonMap<K, V>) map).getOperationAsync(key);
     }
 
     public RFuture<Set<K>> readAllKeySetAsync() {
-        final RPromise<Set<K>> result = new RedissonPromise<Set<K>>();
+        RPromise<Set<K>> result = new RedissonPromise<Set<K>>();
         RFuture<Set<K>> future = map.readAllKeySetAsync();
-        future.addListener(new FutureListener<Set<K>>() {
-
-            @Override
-            public void operationComplete(Future<Set<K>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                Set<K> set = future.getNow();
-                Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-                for (Iterator<K> iterator = set.iterator(); iterator.hasNext();) {
-                    K key = iterator.next();
-                    MapEntry value = newstate.remove(toKeyHash(key));
-                    if (value == MapEntry.NULL) {
-                        iterator.remove();
-                    }
-                }
-                
-                for (MapEntry entry : newstate.values()) {
-                    if (entry == MapEntry.NULL) {
-                        continue;
-                    }
-                    set.add((K) entry.getKey());
-                }
-                
-                result.trySuccess(set);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            Set<K> set = future.getNow();
+            Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
+            for (Iterator<K> iterator = set.iterator(); iterator.hasNext();) {
+                K key = iterator.next();
+                MapEntry value = newstate.remove(toKeyHash(key));
+                if (value == MapEntry.NULL) {
+                    iterator.remove();
+                }
+            }
+            
+            for (MapEntry entry : newstate.values()) {
+                if (entry == MapEntry.NULL) {
+                    continue;
+                }
+                set.add((K) entry.getKey());
+            }
+            
+            result.trySuccess(set);
         });
         
         return result;
     }
     
     public RFuture<Set<Entry<K, V>>> readAllEntrySetAsync() {
-        final RPromise<Set<Entry<K, V>>> result = new RedissonPromise<Set<Entry<K, V>>>();
+        RPromise<Set<Entry<K, V>>> result = new RedissonPromise<Set<Entry<K, V>>>();
         RFuture<Map<K, V>> future = readAllMapAsync();
-        future.addListener(new FutureListener<Map<K, V>>() {
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                result.trySuccess(future.getNow().entrySet());
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            result.trySuccess(res.entrySet());
         });
         
         return result;
     }
     
     public RFuture<Collection<V>> readAllValuesAsync() {
-        final RPromise<Collection<V>> result = new RedissonPromise<Collection<V>>();
+        RPromise<Collection<V>> result = new RedissonPromise<Collection<V>>();
         RFuture<Map<K, V>> future = readAllMapAsync();
-        future.addListener(new FutureListener<Map<K, V>>() {
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                result.trySuccess(future.getNow().values());
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            result.trySuccess(res.values());
         });
         
         return result;
     }
     
     public RFuture<Map<K, V>> readAllMapAsync() {
-        final RPromise<Map<K, V>> result = new RedissonPromise<Map<K, V>>();
+        RPromise<Map<K, V>> result = new RedissonPromise<>();
         RFuture<Map<K, V>> future = map.readAllMapAsync();
-        future.addListener(new FutureListener<Map<K, V>>() {
-
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                Map<HashValue, MapEntry> newstate = new HashMap<HashValue, MapEntry>(state);
-                Map<K, V> map = future.getNow();
-                for (Iterator<K> iterator = map.keySet().iterator(); iterator.hasNext();) {
-                    K key = iterator.next();
-                    MapEntry entry = newstate.remove(toKeyHash(key));
-                    if (entry == MapEntry.NULL) {
-                        iterator.remove();
-                    } else if (entry != null) {
-                        map.put(key, (V) entry.getValue());
-                    }
-                }
-                
-                for (MapEntry entry : newstate.values()) {
-                    if (entry == MapEntry.NULL) {
-                        continue;
-                    }
-                    map.put((K)entry.getKey(), (V)entry.getValue());
-                }
-                
-                result.trySuccess(map);
+        future.onComplete((map, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            Map<HashValue, MapEntry> newstate = new HashMap<>(state);
+            for (Iterator<K> iterator = map.keySet().iterator(); iterator.hasNext();) {
+                K key = iterator.next();
+                MapEntry entry = newstate.remove(toKeyHash(key));
+                if (entry == MapEntry.NULL) {
+                    iterator.remove();
+                } else if (entry != null) {
+                    map.put(key, (V) entry.getValue());
+                }
+            }
+            
+            for (MapEntry entry : newstate.values()) {
+                if (entry == MapEntry.NULL) {
+                    continue;
+                }
+                map.put((K) entry.getKey(), (V) entry.getValue());
+            }
+            
+            result.trySuccess(map);
         });
 
         return result;
     }
     
     protected RFuture<Map<K, V>> getAllOperationAsync(Set<K> keys) {
-        final RPromise<Map<K, V>> result = new RedissonPromise<Map<K, V>>();
-        Set<K> keysToLoad = new HashSet<K>(keys);
-        final Map<K, V> map = new HashMap<K, V>();
+        RPromise<Map<K, V>> result = new RedissonPromise<>();
+        Set<K> keysToLoad = new HashSet<K>();
+        Map<K, V> map = new HashMap<K, V>();
         for (K key : keys) {
             HashValue keyHash = toKeyHash(key);
             
             MapEntry entry = state.get(keyHash);
             if (entry != null) {
                 if (entry != MapEntry.NULL) {
-                    map.put(key, (V)entry.getValue());
+                    map.put(key, (V) entry.getValue());
                 }
             } else {
                 keysToLoad.add(key);
             }
         }
 
-        RFuture<Map<K, V>> future = ((RedissonMap<K, V>)this.map).getAllOperationAsync(keysToLoad);
-        future.addListener(new FutureListener<Map<K, V>>() {
-            @Override
-            public void operationComplete(Future<Map<K, V>> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
-                    return;
-                }
-                
-                map.putAll(future.getNow());
-                result.trySuccess(map);
+        if (keysToLoad.isEmpty()) {
+            return RedissonPromise.newSucceededFuture(map);
+        }
+        
+        RFuture<Map<K, V>> future = ((RedissonMap<K, V>) this.map).getAllOperationAsync(keysToLoad);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
             }
+            
+            map.putAll(future.getNow());
+            result.trySuccess(map);
         });
         
         return result;
     }
     
-    protected RFuture<V> removeOperationAsync(final K key) {
-        final RPromise<V> result = new RedissonPromise<V>();
+    protected RFuture<V> removeOperationAsync(K key) {
+        RPromise<V> result = new RedissonPromise<>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     operations.add(new MapRemoveOperation(map, key, transactionId));
@@ -734,32 +692,29 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        operations.add(new MapRemoveOperation(map, key, transactionId));
-                        if (future.getNow() != null) {
-                            state.put(keyHash, MapEntry.NULL);
-                        }
-
-                        result.trySuccess(future.getNow());
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    operations.add(new MapRemoveOperation(map, key, transactionId));
+                    if (res != null) {
+                        state.put(keyHash, MapEntry.NULL);
+                    }
+
+                    result.trySuccess(res);
                 });
             }
         });
         return result;
     }
     
-    protected RFuture<Boolean> removeOperationAsync(final Object key, final Object value) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
-        executeLocked(result, (K)key, new Runnable() {
+    protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
+        RPromise<Boolean> result = new RedissonPromise<>();
+        executeLocked(result, (K) key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     if (entry == MapEntry.NULL) {
@@ -778,20 +733,17 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
                 
-                map.getAsync((K)key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        operations.add(new MapRemoveOperation(map, key, value, transactionId));
-                        boolean res = isEqual(future.getNow(), value);
-                        if (res) {
-                            state.put(keyHash, MapEntry.NULL);
-                        }
-                        result.trySuccess(res);
+                map.getAsync((K) key).onComplete((r, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    operations.add(new MapRemoveOperation(map, key, value, transactionId));
+                    boolean res = isEqual(r, value);
+                    if (res) {
+                        state.put(keyHash, MapEntry.NULL);
+                    }
+                    result.trySuccess(res);
                 });
             }
         });
@@ -799,8 +751,8 @@ public class BaseTransactionalMap<K, V> {
     }
     
     private boolean isEqual(Object value, Object oldValue) {
-        ByteBuf valueBuf = ((RedissonObject)map).encodeMapValue(value);
-        ByteBuf oldValueBuf = ((RedissonObject)map).encodeMapValue(oldValue);
+        ByteBuf valueBuf = ((RedissonObject) map).encodeMapValue(value);
+        ByteBuf oldValueBuf = ((RedissonObject) map).encodeMapValue(oldValue);
         
         try {
             return valueBuf.equals(oldValueBuf);
@@ -810,8 +762,8 @@ public class BaseTransactionalMap<K, V> {
         }
     }
 
-    protected RFuture<Void> putAllOperationAsync(final Map<? extends K, ? extends V> entries) {
-        final RPromise<Void> result = new RedissonPromise<Void>();
+    protected RFuture<Void> putAllOperationAsync(Map<? extends K, ? extends V> entries) {
+        RPromise<Void> result = new RedissonPromise<>();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
@@ -827,16 +779,16 @@ public class BaseTransactionalMap<K, V> {
 
                 result.trySuccess(null);
             }
-        }, (Collection<K>)entries.keySet());
+        }, (Collection<K>) entries.keySet());
         return result;
     }
     
-    protected RFuture<Boolean> replaceOperationAsync(final K key, final V oldValue, final V newValue) {
-        final RPromise<Boolean> result = new RedissonPromise<Boolean>();
+    protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
+        RPromise<Boolean> result = new RedissonPromise<>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 if (entry != null) {
                     if (entry == MapEntry.NULL) {
@@ -855,33 +807,30 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId));
-                        boolean res = isEqual(future.getNow(), oldValue);
-                        if (res) {
-                            state.put(keyHash, new MapEntry(key, newValue));
-                        }
-                        result.trySuccess(res);
+                map.getAsync(key).onComplete((r, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(new MapReplaceOperation(map, key, newValue, oldValue, transactionId));
+                    boolean res = isEqual(r, oldValue);
+                    if (res) {
+                        state.put(keyHash, new MapEntry(key, newValue));
+                    }
+                    result.trySuccess(res);
                 });
             }
         });
         return result;
     }
 
-    protected RFuture<V> replaceOperationAsync(final K key, final V value) {
-        final RPromise<V> result = new RedissonPromise<V>();
+    protected RFuture<V> replaceOperationAsync(K key, V value) {
+        RPromise<V> result = new RedissonPromise<>();
         executeLocked(result, key, new Runnable() {
             @Override
             public void run() {
-                final HashValue keyHash = toKeyHash(key);
+                HashValue keyHash = toKeyHash(key);
                 MapEntry entry = state.get(keyHash);
                 operations.add(new MapReplaceOperation(map, key, value, transactionId));
                 if (entry != null) {
@@ -895,66 +844,57 @@ public class BaseTransactionalMap<K, V> {
                     return;
                 }
 
-                map.getAsync(key).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            result.tryFailure(future.cause());
-                            return;
-                        }
-                        
-                        operations.add(new MapReplaceOperation(map, key, value, transactionId));
-                        if (future.getNow() != null) {
-                            state.put(keyHash, new MapEntry(key, value));
-                        }
-                        result.trySuccess(future.getNow());
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
                     }
+                    
+                    operations.add(new MapReplaceOperation(map, key, value, transactionId));
+                    if (res != null) {
+                        state.put(keyHash, new MapEntry(key, value));
+                    }
+                    result.trySuccess(res);
                 });
             }
         });
         return result;
     }
     
-    protected <R> void executeLocked(final RPromise<R> promise, K key, final Runnable runnable) {
+    protected <R> void executeLocked(RPromise<R> promise, K key, Runnable runnable) {
         RLock lock = getLock(key);
         executeLocked(promise, runnable, lock);
     }
 
     protected RLock getLock(K key) {
-        String lockName = ((RedissonMap<K, V>) map).getLockName(key, "lock");
+        String lockName = ((RedissonMap<K, V>) map).getLockByMapKey(key, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
 
-    protected <R> void executeLocked(final RPromise<R> promise, final Runnable runnable, RLock lock) {
-        lock.lockAsync(timeout, TimeUnit.MILLISECONDS).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (future.isSuccess()) {
-                    runnable.run();
-                } else {
-                    promise.tryFailure(future.cause());
-                }
+    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, RLock lock) {
+        lock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
+            if (e == null) {
+                runnable.run();
+            } else {
+                promise.tryFailure(e);
             }
         });
     }
     
-    protected <R> void executeLocked(final RPromise<R> promise, final Runnable runnable, Collection<K> keys) {
-        List<RLock> locks = new ArrayList<RLock>(keys.size());
+    protected <R> void executeLocked(RPromise<R> promise, Runnable runnable, Collection<K> keys) {
+        List<RLock> locks = new ArrayList<>(keys.size());
         for (K key : keys) {
             RLock lock = getLock(key);
             locks.add(lock);
         }
-        final RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[locks.size()]));
-        final long threadId = Thread.currentThread().getId();
-        multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS).addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (future.isSuccess()) {
-                    runnable.run();
-                } else {
-                    multiLock.unlockAsync(threadId);
-                    promise.tryFailure(future.cause());
-                }
+        RedissonMultiLock multiLock = new RedissonMultiLock(locks.toArray(new RLock[locks.size()]));
+        long threadId = Thread.currentThread().getId();
+        multiLock.lockAsync(timeout, TimeUnit.MILLISECONDS).onComplete((res, e) -> {
+            if (e == null) {
+                runnable.run();
+            } else {
+                multiLock.unlockAsync(threadId);
+                promise.tryFailure(e);
             }
         });
     }

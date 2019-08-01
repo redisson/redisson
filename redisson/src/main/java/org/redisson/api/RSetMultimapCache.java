@@ -15,6 +15,13 @@
  */
 package org.redisson.api;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public interface RSetMultimapCache<K, V> extends RSetMultimap<K, V>, RMultimapCache<K, V> {
 
 }

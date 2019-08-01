@@ -42,7 +42,9 @@ public class LocalCachedMessageCodec extends BaseCodec {
         public Object decode(ByteBuf buf, State state) throws IOException {
             byte type = buf.readByte();
             if (type == 0x0) {
-                return new LocalCachedMapClear();
+                byte[] id = new byte[16];
+                buf.readBytes(id);
+                return new LocalCachedMapClear(id);
             }
             
             if (type == 0x1) {
@@ -78,7 +80,7 @@ public class LocalCachedMessageCodec extends BaseCodec {
             
             if (type == 0x3) {
                 byte len = buf.readByte();
-                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.UTF_8);
+                CharSequence requestId = buf.readCharSequence(len, CharsetUtil.US_ASCII);
                 long timeout = buf.readLong();
                 int hashesCount = buf.readInt();
                 byte[][] hashes = new byte[hashesCount][];
@@ -116,8 +118,10 @@ public class LocalCachedMessageCodec extends BaseCodec {
         @Override
         public ByteBuf encode(Object in) throws IOException {
             if (in instanceof LocalCachedMapClear) {
+                LocalCachedMapClear li = (LocalCachedMapClear) in; 
                 ByteBuf result = ByteBufAllocator.DEFAULT.buffer(1);
                 result.writeByte(0x0);
+                result.writeBytes(li.getRequestId());
                 return result;
             }
             if (in instanceof LocalCachedMapInvalidate) {

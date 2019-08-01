@@ -24,6 +24,14 @@ import java.util.concurrent.TimeUnit;
  */
 public enum RateIntervalUnit {
 
+    
+    MILLISECONDS {
+        @Override
+        public long toMillis(long value) {
+            return value;
+        }
+    },
+
     SECONDS {
         @Override
         public long toMillis(long value) {

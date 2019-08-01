@@ -74,8 +74,12 @@ public abstract class BaseReactiveTest {
         return Flux.from(pub).toIterable();
     }
 
-    public static <V> V sync(Publisher<V> ob) {
-        return Mono.from(ob).block();
+    public static <V> V sync(Mono<V> mono) {
+        return mono.block();
+    }
+    
+    public static <V> V sync(Flux<V> flux) {
+        return flux.single().block();
     }
 
     public static RedissonReactiveClient createInstance() {

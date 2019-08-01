@@ -26,8 +26,6 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.MapScanResult;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import reactor.core.publisher.FluxSink;
 
 /**
@@ -72,48 +70,42 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
             };
             
             protected void nextValues(FluxSink<M> emitter) {
-                        scanIterator(client, nextIterPos).addListener(new FutureListener<MapScanResult<Object, Object>>() {
+                        scanIterator(client, nextIterPos).onComplete((res, e) -> {
+                            if (e != null) {
+                                emitter.error(e);
+                                return;
+                            }
 
-                            @Override
-                            public void operationComplete(Future<MapScanResult<Object, Object>> future)
-                                    throws Exception {
-                                    if (!future.isSuccess()) {
-                                        emitter.error(future.cause());
-                                        return;
-                                    }
-    
-                                    if (finished) {
-                                        client = null;
-                                        nextIterPos = 0;
-                                        return;
-                                    }
+                            if (finished) {
+                                client = null;
+                                nextIterPos = 0;
+                                return;
+                            }
 
-                                    MapScanResult<Object, Object> res = future.getNow();
-                                    client = res.getRedisClient();
-                                    nextIterPos = res.getPos();
-                                    
-                                    for (Entry<Object, Object> entry : res.getMap().entrySet()) {
-                                        M val = getValue(entry);
-                                        emitter.next(val);
-                                        elementsRead.incrementAndGet();
-                                    }
-                                    
-                                    if (elementsRead.get() >= readAmount.get()) {
-                                        emitter.complete();
-                                        elementsRead.set(0);
-                                        completed = true;
-                                        return;
-                                    }
-                                    if (res.getPos() == 0 && !tryAgain()) {
-                                        finished = true;
-                                        emitter.complete();
-                                    }
-                                    
-                                    if (finished || completed) {
-                                        return;
-                                    }
-                                    nextValues(emitter);
-                                }
+                            client = res.getRedisClient();
+                            nextIterPos = res.getPos();
+                            
+                            for (Entry<Object, Object> entry : res.getMap().entrySet()) {
+                                M val = getValue(entry);
+                                emitter.next(val);
+                                elementsRead.incrementAndGet();
+                            }
+                            
+                            if (elementsRead.get() >= readAmount.get()) {
+                                emitter.complete();
+                                elementsRead.set(0);
+                                completed = true;
+                                return;
+                            }
+                            if (res.getPos() == 0 && !tryAgain()) {
+                                finished = true;
+                                emitter.complete();
+                            }
+                            
+                            if (finished || completed) {
+                                return;
+                            }
+                            nextValues(emitter);
                         });
                     }
         });
@@ -123,8 +115,8 @@ public class MapReactiveIterator<K, V, M> implements Consumer<FluxSink<M>> {
         return false;
     }
 
-    M getValue(final Entry<Object, Object> entry) {
-        return (M)new AbstractMap.SimpleEntry<K, V>((K)entry.getKey(), (V)entry.getValue()) {
+    M getValue(Entry<Object, Object> entry) {
+        return (M) new AbstractMap.SimpleEntry<K, V>((K) entry.getKey(), (V) entry.getValue()) {
 
             @Override
             public V setValue(V value) {

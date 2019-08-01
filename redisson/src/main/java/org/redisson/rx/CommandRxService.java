@@ -21,8 +21,6 @@ import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.LongConsumer;
@@ -40,33 +38,35 @@ public class CommandRxService extends CommandAsyncService implements CommandRxEx
     }
 
     @Override
-    public <R> Flowable<R> flowable(final Callable<RFuture<R>> supplier) {
-        final ReplayProcessor<R> p = ReplayProcessor.create();
+    public <R> Flowable<R> flowable(Callable<RFuture<R>> supplier) {
+        ReplayProcessor<R> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
             @Override
             public void accept(long t) throws Exception {
-                RFuture<R> future = supplier.call();
-                future.addListener(new FutureListener<R>() {
-
+                RFuture<R> future;
+                try {
+                    future = supplier.call();
+                } catch (Exception e) {
+                    p.onError(e);
+                    return;
+                }
+                p.doOnCancel(new Action() {
                     @Override
-                    public void operationComplete(final Future<R> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            p.onError(future.cause());
-                            return;
-                        }
-                        
-                        p.doOnCancel(new Action() {
-                            @Override
-                            public void run() throws Exception {
-                                future.cancel(true);
-                            }
-                        });
-                        
-                        if (future.getNow() != null) {
-                            p.onNext(future.getNow());
-                        }
-                        p.onComplete();
+                    public void run() throws Exception {
+                        future.cancel(true);
                     }
+                });
+                
+                future.onComplete((res, e) -> {
+                   if (e != null) {
+                       p.onError(e);
+                       return;
+                   }
+                   
+                   if (res != null) {
+                       p.onNext(res);
+                   }
+                   p.onComplete();
                 });
             }
         });

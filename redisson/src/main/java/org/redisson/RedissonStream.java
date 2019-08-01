@@ -27,10 +27,18 @@ import org.redisson.api.PendingEntry;
 import org.redisson.api.PendingResult;
 import org.redisson.api.RFuture;
 import org.redisson.api.RStream;
+import org.redisson.api.StreamConsumer;
+import org.redisson.api.StreamGroup;
+import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.ListMultiDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.StreamInfoDecoder;
+import org.redisson.client.protocol.decoder.StreamInfoMapDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -42,12 +50,18 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K, V> {
 
+    private final RedisCommand<StreamInfo<Object, Object>> xinfoStreamCommand;
+    
     public RedissonStream(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
+        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
+                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     public RedissonStream(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
+        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
+                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     protected void checkKey(Object key) {
@@ -79,7 +93,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     
     @Override
     public RFuture<Void> createGroupAsync(String groupName, StreamMessageId id) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id);
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XGROUP, "CREATE", getName(), groupName, id, "MKSTREAM");
     }
     
     @Override
@@ -101,14 +115,24 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<PendingResult> listPendingAsync(String groupName) {
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+        return getPendingInfoAsync(groupName);
     }
 
     @Override
     public PendingResult listPending(String groupName) {
-        return get(listPendingAsync(groupName));
+        return getPendingInfo(groupName);
     }
 
+    @Override
+    public RFuture<PendingResult> getPendingInfoAsync(String groupName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING, getName(), groupName);
+    }
+
+    @Override
+    public PendingResult getPendingInfo(String groupName) {
+        return get(listPendingAsync(groupName));
+    }
+    
     @Override
     public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, startId, endId, count, consumerName);
@@ -232,7 +256,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> keyToId) {
+    public RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> keyToId) {
         return readGroupAsync(groupName, consumerName, 0, id, keyToId);
     }
     
@@ -758,7 +782,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
     
     @Override
-    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId ... ids) {
+    public Map<StreamMessageId, Map<K, V>> read(int count, StreamMessageId... ids) {
         return get(readAsync(count, ids));
     }
 
@@ -933,6 +957,80 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public void updateGroupMessageId(String groupName, StreamMessageId id) {
         get(updateGroupMessageIdAsync(groupName, id));
+    }
+    
+    @Override
+    public StreamInfo<K, V> getInfo() {
+        return get(getInfoAsync());
+    }
+
+    @Override
+    public RFuture<StreamInfo<K, V>> getInfoAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, xinfoStreamCommand, getName());
+    }
+
+    @Override
+    public List<StreamGroup> listGroups() {
+        return get(listGroupsAsync());
+    }
+
+    @Override
+    public RFuture<List<StreamGroup>> listGroupsAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_GROUPS, getName());
+    }
+
+    @Override
+    public List<StreamConsumer> listConsumers(String groupName) {
+        return get(listConsumersAsync(groupName));
+    }
+
+    @Override
+    public RFuture<List<StreamConsumer>> listConsumersAsync(String groupName) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XINFO_CONSUMERS, getName(), groupName);
+    }
+
+    private static final RedisCommand<Map<StreamMessageId, Map<Object, Object>>> EVAL_XRANGE = new RedisCommand("EVAL", RedisCommands.XRANGE.getReplayMultiDecoder());
+    
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
+            StreamMessageId endId, int count) {
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+                "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4]);" +
+                "local result = {}; " +
+                "for i = 1, #pendingData, 1 do " +
+                    "local value = redis.call('xrange', KEYS[1], pendingData[i][1], pendingData[i][1]);" +
+                    "table.insert(result, value[1]);" + 
+                "end; " +
+                "return result;",
+                Collections.<Object>singletonList(getName()), 
+                groupName, startId, endId, count);
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
+            StreamMessageId startId, StreamMessageId endId, int count) {
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+                "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
+                "local result = {}; " +
+                "for i = 1, #pendingData, 1 do " +
+                    "local value = redis.call('xrange', KEYS[1], pendingData[i][1], pendingData[i][1]);" +
+                    "table.insert(result, value[1]);" + 
+                "end; " +
+                "return result;",
+                Collections.<Object>singletonList(getName()), 
+                groupName, startId, endId, count, consumerName);
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId,
+            StreamMessageId endId, int count) {
+        return get(pendingRangeAsync(groupName, consumerName, startId, endId, count));
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId,
+            int count) {
+        return get(pendingRangeAsync(groupName, startId, endId, count));
     }
 
 }

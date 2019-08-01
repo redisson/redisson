@@ -45,7 +45,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      *        {@code timeout} parameter
      * @return the tail element, or {@code null} if all sorted sets are empty 
      */
-    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns first available head element of <b>any</b> sorted set,
@@ -62,7 +62,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return the head element, or {@code null} if all sorted sets are empty
      *  
      */
-    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames);
+    RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames);
     
     /**
      * Removes and returns the head element or {@code null} if this sorted set is empty.
@@ -109,8 +109,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Removes and returns the head elements or {@code null} if this sorted set is empty.
      *
      * @param count - elements amount
-     * @return the head element, 
-     *         or {@code null} if this sorted set is empty
+     * @return the head elements
      */
     RFuture<Collection<V>> pollFirstAsync(int count);
 
@@ -118,7 +117,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Removes and returns the tail elements or {@code null} if this sorted set is empty.
      *
      * @param count - elements amount
-     * @return the tail element or {@code null} if this sorted set is empty
+     * @return the tail elements
      */
     RFuture<Collection<V>> pollLastAsync(int count);
 
@@ -196,7 +195,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * 
      * @param startIndex - start index 
      * @param endIndex - end index
-     * @return
+     * @return number of elements removed
      */
     RFuture<Integer> removeRangeByRankAsync(int startIndex, int endIndex);
 

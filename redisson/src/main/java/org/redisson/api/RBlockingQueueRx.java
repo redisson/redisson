@@ -18,7 +18,10 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  * RxJava2 interface for BlockingQueue
@@ -41,7 +44,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * @return Flowable object with the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollFromAny(long timeout, TimeUnit unit, String ... queueNames);
+    Maybe<V> pollFromAny(long timeout, TimeUnit unit, String... queueNames);
 
     /**
      * Removes at most the given number of available elements from
@@ -66,7 +69,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    Flowable<Integer> drainTo(Collection<? super V> c, int maxElements);
+    Single<Integer> drainTo(Collection<? super V> c, int maxElements);
 
     /**
      * Removes all available elements from this queue and adds them
@@ -91,12 +94,11 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      *         queue, or some property of an element of this queue prevents
      *         it from being added to the specified collection
      */
-    Flowable<Integer> drainTo(Collection<? super V> c);
+    Single<Integer> drainTo(Collection<? super V> c);
 
     /**
-     * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
-     * waiting up to the specified wait time if necessary for an element to become available
-     * in any of defined queues <b>including</b> queue itself.
+     * Retrieves and removes last available tail element of this queue and adds it at the head of <code>queueName</code>,
+     * waiting up to the specified wait time if necessary for an element to become available.
      *
      * @param queueName - names of destination queue
      * @param timeout how long to wait before giving up, in units of
@@ -106,7 +108,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * @return the tail of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit);
+    Maybe<V> pollLastAndOfferFirstTo(String queueName, long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting up to the
@@ -119,7 +121,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * @return the head of this queue, or {@code null} if the
      *         specified waiting time elapses before an element is available
      */
-    Flowable<V> poll(long timeout, TimeUnit unit);
+    Maybe<V> poll(long timeout, TimeUnit unit);
 
     /**
      * Retrieves and removes the head of this queue in async mode, waiting if necessary
@@ -127,7 +129,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      *
      * @return the head of this queue
      */
-    Flowable<V> take();
+    Single<V> take();
     
     /**
      * Retrieves and removes last available tail element of <b>any</b> queue and adds it at the head of <code>queueName</code>,
@@ -135,10 +137,9 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      * in any of defined queues <b>including</b> queue itself.
      *
      * @param queueName - names of destination queue
-     * @return the tail of this queue, or {@code null} if the
-     *         specified waiting time elapses before an element is available
+     * @return the tail of this queue
      */
-    Flowable<V> takeLastAndOfferFirstTo(String queueName);
+    Single<V> takeLastAndOfferFirstTo(String queueName);
 
     /**
      * Inserts the specified element into this queue in async mode, waiting if necessary
@@ -152,7 +153,7 @@ public interface RBlockingQueueRx<V> extends RQueueRx<V> {
      *         element prevents it from being added to this queue
      * @return void
      */
-    Flowable<Void> put(V e);
+    Completable put(V e);
 
     /**
      * Retrieves and removes continues stream of elements from the head of this queue.

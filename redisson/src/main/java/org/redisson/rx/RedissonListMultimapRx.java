@@ -30,19 +30,21 @@ import org.redisson.client.codec.Codec;
  */
 public class RedissonListMultimapRx<K, V> {
 
-    private CommandRxExecutor commandExecutor;
-    private RedissonListMultimap<K, V> instance;
+    private final CommandRxExecutor commandExecutor;
+    private final RedissonListMultimap<K, V> instance;
     
     public RedissonListMultimapRx(CommandRxExecutor commandExecutor, String name) {
         this.instance = new RedissonListMultimap<K, V>(commandExecutor, name);
+        this.commandExecutor = commandExecutor;
     }
 
     public RedissonListMultimapRx(Codec codec, CommandRxExecutor commandExecutor, String name) {
         this.instance = new RedissonListMultimap<K, V>(codec, commandExecutor, name);
+        this.commandExecutor = commandExecutor;
     }
 
     public RListRx<V> get(K key) {
-        RedissonList<V> list = (RedissonList<V>) ((RListMultimap<K, V>)instance).get(key);
+        RedissonList<V> list = (RedissonList<V>) ((RListMultimap<K, V>) instance).get(key);
         return RxProxyBuilder.create(commandExecutor, instance, 
                 new RedissonListRx<V>(list), RListRx.class);
     }

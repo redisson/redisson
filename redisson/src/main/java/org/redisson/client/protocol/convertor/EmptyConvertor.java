@@ -19,7 +19,7 @@ package org.redisson.client.protocol.convertor;
  * 
  * @author Nikita Koksharov
  *
- * @param <R>
+ * @param <R> type of value
  */
 public class EmptyConvertor<R> implements Convertor<R> {
 

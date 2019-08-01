@@ -37,7 +37,7 @@ public class PubSubStatusDecoder implements MultiDecoder<Object> {
     @Override
     public PubSubStatusMessage decode(List<Object> parts, State state) {
         PubSubType type = PubSubType.valueOf(parts.get(0).toString().toUpperCase());
-        ChannelName name = new ChannelName((byte[])parts.get(1));
+        ChannelName name = new ChannelName((byte[]) parts.get(1));
         return new PubSubStatusMessage(type, name);
     }
 

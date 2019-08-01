@@ -85,46 +85,91 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return marked messages amount
      */
     RFuture<Long> ackAsync(String groupName, StreamMessageId... ids);
-    
+
     /**
-     * Returns pending messages by group name
+     * Returns common info about pending messages by group name.
      * 
      * @param groupName - name of group
      * @return result object
      */
+    RFuture<PendingResult> getPendingInfoAsync(String groupName);
+
+    /*
+     * Use #getPendingInfoAsync method
+     */
+    @Deprecated
     RFuture<PendingResult> listPendingAsync(String groupName);
 
     /**
-     * Returns list of pending messages by group name.
-     * Limited by start stream id and end stream id and count.
+     * Returns list of common info about pending messages by group name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
-     * {@link StreamMessageId#MAX} is used as max stream id
-     * {@link StreamMessageId#MIN} is used as min stream id
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #pendingRangeAsync
      * 
      * @param groupName - name of group
-     * @param startId - start stream id
-     * @param endId - end stream id
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
      * @param count - amount of messages
      * @return list
      */
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
     /**
-     * Returns list of pending messages by group name and consumer name.
-     * Limited by start stream id and end stream id and count.
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
-     * {@link StreamMessageId#MAX} is used as max stream id
-     * {@link StreamMessageId#MIN} is used as min stream id
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #pendingRangeAsync
      * 
      * @param consumerName - name of consumer
      * @param groupName - name of group
-     * @param startId - start stream id
-     * @param endId - end stream id
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
      * @param count - amount of messages
      * @return list
      */
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+
+    /**
+     * Returns stream data of pending messages by group name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPendingAsync
+     * 
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
     
+    /**
+     * Returns stream data of pending messages by group and customer name.
+     * Limited by start Stream Message ID and end Stream Message ID and count.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * 
+     * @see #listPendingAsync
+     * 
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return map
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+
     /**
      * Transfers ownership of pending messages by id to a new consumer 
      * by name if idle time of messages is greater than defined value. 
@@ -136,7 +181,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - stream ids
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Transfers ownership of pending messages by id to a new consumer 
@@ -149,7 +194,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - Stream Message IDs
      * @return list of Stream Message IDs
      */
-    RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId ... ids);
+    RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -159,7 +204,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
@@ -170,7 +215,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -183,7 +228,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs. 
@@ -197,7 +242,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readGroupAsync(String groupName, String consumerName, int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -208,7 +253,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param nameToId - Stream Message ID mapped by stream name
      * @return stream data mapped by key and Stream Message ID
      */
-    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName,StreamMessageId id, Map<String, StreamMessageId> nameToId);
+    RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readGroupAsync(String groupName, String consumerName, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code>, starting by specified message ids for this and other streams.
@@ -462,7 +507,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs.
@@ -471,7 +516,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, StreamMessageId... ids);
 
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -482,7 +527,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(long timeout, TimeUnit unit, StreamMessageId... ids);
     
     /**
      * Read stream data by specified collection of Stream IDs. 
@@ -494,7 +539,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param ids - collection of Stream IDs
      * @return stream data mapped by Stream ID
      */
-    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId ... ids);
+    RFuture<Map<StreamMessageId, Map<K, V>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId... ids);
 
     /**
      * Read stream data by specified stream name including this stream.
@@ -645,7 +690,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<String, Map<StreamMessageId, Map<K, V>>>> readAsync(int count, long timeout, TimeUnit unit, StreamMessageId id, Map<String, StreamMessageId> nameToId);
     
     /**
-     * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -654,7 +699,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(StreamMessageId startId, StreamMessageId endId);
 
     /**
-     * Read stream data in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -664,7 +709,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeAsync(int count, StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param startId - start Stream ID
      * @param endId - end Stream ID
@@ -673,7 +718,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> rangeReversedAsync(StreamMessageId startId, StreamMessageId endId);
     
     /**
-     * Read stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
+     * Returns stream data in reverse order in range by specified start Stream ID (included) and end Stream ID (included).
      * 
      * @param count - stream data size limit
      * @param startId - start Stream ID
@@ -705,5 +750,27 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return number of deleted messages
      */
     RFuture<Long> trimNonStrictAsync(int size);
+    
+    /**
+     * Returns information about this stream.
+     * 
+     * @return info object
+     */
+    RFuture<StreamInfo<K, V>> getInfoAsync();
+    
+    /**
+     * Returns list of objects with information about groups belonging to this stream.
+     * 
+     * @return list of info objects 
+     */
+    RFuture<List<StreamGroup>> listGroupsAsync();
+
+    /**
+     * Returns list of objects with information about group customers for specified <code>groupName</code>.
+     * 
+     * @param groupName - name of group
+     * @return list of info objects
+     */
+    RFuture<List<StreamConsumer>> listConsumersAsync(String groupName);
     
 }

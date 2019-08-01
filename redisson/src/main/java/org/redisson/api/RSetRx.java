@@ -18,9 +18,11 @@ package org.redisson.api;
 import java.util.Set;
 
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
- * RxJava2 interface for RSetCache object
+ * RxJava2 interface for RSet object
  *
  * @author Nikita Koksharov
  *
@@ -103,7 +105,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param amount of random values
      * @return random values
      */
-    Flowable<Set<V>> removeRandom(int amount);
+    Single<Set<V>> removeRandom(int amount);
     
     /**
      * Removes and returns random element from set
@@ -111,7 +113,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      *
      * @return value
      */
-    Flowable<V> removeRandom();
+    Maybe<V> removeRandom();
 
     /**
      * Returns random element from set
@@ -119,7 +121,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      *
      * @return value
      */
-    Flowable<V> random();
+    Maybe<V> random();
 
     /**
      * Move a member from this set to the given destination set in async mode.
@@ -129,14 +131,14 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @return true if the element is moved, false if the element is not a
      * member of this set or no operation was performed
      */
-    Flowable<Boolean> move(String destination, V member);
+    Single<Boolean> move(String destination, V member);
 
     /**
      * Read all elements at once
      *
      * @return values
      */
-    Flowable<Set<V>> readAll();
+    Single<Set<V>> readAll();
     
     /**
      * Union sets specified by name and write to current set.
@@ -145,7 +147,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of union
      */
-    Flowable<Long> union(String... names);
+    Single<Long> union(String... names);
 
     /**
      * Union sets specified by name with current set.
@@ -154,7 +156,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of union
      */
-    Flowable<Set<V>> readUnion(String... names);
+    Single<Set<V>> readUnion(String... names);
     
     /**
      * Diff sets specified by name and write to current set.
@@ -163,7 +165,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of diff
      */
-    Flowable<Long> diff(String... names);
+    Single<Long> diff(String... names);
     
     /**
      * Diff sets specified by name with current set.
@@ -172,7 +174,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return values
      */
-    Flowable<Set<V>> readDiff(String... names);
+    Single<Set<V>> readDiff(String... names);
     
     /**
      * Intersection sets specified by name and write to current set.
@@ -181,7 +183,7 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return size of intersection
      */
-    Flowable<Integer> intersection(String... names);
+    Single<Integer> intersection(String... names);
 
     /**
      * Intersection sets specified by name with current set.
@@ -190,6 +192,6 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
      * @param names - name of sets
      * @return values
      */
-    Flowable<Set<V>> readIntersection(String... names);
+    Single<Set<V>> readIntersection(String... names);
 
 }

@@ -20,6 +20,7 @@ import java.util.Collection;
 import org.reactivestreams.Publisher;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * Common RxJava2 interface for collection object
@@ -44,7 +45,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @param c collection containing elements to be retained in this collection
      * @return <code>true</code> if this collection changed as a result of the call
      */
-    Flowable<Boolean> retainAll(Collection<?> c);
+    Single<Boolean> retainAll(Collection<?> c);
 
     /**
      * Removes all of this collection's elements that are also contained in the
@@ -54,7 +55,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if this collection changed as a result of the
      *         call
      */
-    Flowable<Boolean> removeAll(Collection<?> c);
+    Single<Boolean> removeAll(Collection<?> c);
 
     /**
      * Returns <code>true</code> if this collection contains encoded state of the specified element.
@@ -63,7 +64,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if this collection contains the specified
      *         element and <code>false</code> otherwise
      */
-    Flowable<Boolean> contains(V o);
+    Single<Boolean> contains(V o);
 
     /**
      * Returns <code>true</code> if this collection contains all of the elements
@@ -73,7 +74,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if this collection contains all of the elements
      *         in the specified collection
      */
-    Flowable<Boolean> containsAll(Collection<?> c);
+    Single<Boolean> containsAll(Collection<?> c);
 
     /**
      * Removes a single instance of the specified element from this
@@ -82,14 +83,14 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @param o element to be removed from this collection, if present
      * @return <code>true</code> if an element was removed as a result of this call
      */
-    Flowable<Boolean> remove(V o);
+    Single<Boolean> remove(V o);
 
     /**
      * Returns number of elements in this collection.
      *
      * @return size of collection
      */
-    Flowable<Integer> size();
+    Single<Integer> size();
 
     /**
      * Adds element into this collection.
@@ -98,7 +99,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if an element was added 
      *          and <code>false</code> if it is already present
      */
-    Flowable<Boolean> add(V e);
+    Single<Boolean> add(V e);
 
     /**
      * Adds all elements contained in the specified collection
@@ -107,7 +108,7 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Flowable<Boolean> addAll(Publisher<? extends V> c);
+    Single<Boolean> addAll(Publisher<? extends V> c);
     
     /**
      * Adds all elements contained in the specified collection
@@ -116,6 +117,6 @@ public interface RCollectionRx<V> extends RExpirableRx {
      * @return <code>true</code> if at least one element was added 
      *          and <code>false</code> if all elements are already present
      */
-    Flowable<Boolean> addAll(Collection<? extends V> c);
+    Single<Boolean> addAll(Collection<? extends V> c);
 
 }

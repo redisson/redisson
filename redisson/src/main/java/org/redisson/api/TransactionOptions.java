@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public class TransactionOptions {
+public final class TransactionOptions {
     
     private long responseTimeout = 3000;
     private int retryAttempts = 3;

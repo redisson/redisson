@@ -113,6 +113,10 @@ public class RedissonBitSetTest extends BaseTest {
         assertThat(bitset.get(3)).isTrue();
         assertThat(bitset.get(41)).isTrue();
         assertThat(bs.cardinality()).isEqualTo(2);
+        
+        RBitSet emptyBitSet = redisson.getBitSet("emptybitset");
+        BitSet s = emptyBitSet.asBitSet();
+        assertThat(s.cardinality()).isZero();
     }
 
     @Test

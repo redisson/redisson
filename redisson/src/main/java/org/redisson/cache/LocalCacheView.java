@@ -24,8 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import org.redisson.RedissonLocalCachedMap.CacheValue;
 import org.redisson.RedissonObject;
+import org.redisson.misc.Hash;
 
 import io.netty.buffer.ByteBuf;
 
@@ -55,7 +55,9 @@ public class LocalCacheView<K, V> {
         @Override
         public Iterator<K> iterator() {
             return new Iterator<K>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
+
+                private Iterator<CacheValue> iter = cache.values().iterator();
+                
                 @Override
                 public boolean hasNext() {
                     return iter.hasNext();
@@ -106,7 +108,9 @@ public class LocalCacheView<K, V> {
         @Override
         public Iterator<V> iterator() {
             return new Iterator<V>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
+                
+                private Iterator<CacheValue> iter = cache.values().iterator();
+                
                 @Override
                 public boolean hasNext() {
                     return iter.hasNext();
@@ -146,21 +150,23 @@ public class LocalCacheView<K, V> {
         return new LocalEntrySet();
     }
 
-    final class LocalEntrySet extends AbstractSet<Map.Entry<K,V>> {
+    final class LocalEntrySet extends AbstractSet<Map.Entry<K, V>> {
 
         @Override
-        public Iterator<Map.Entry<K,V>> iterator() {
-            return new Iterator<Map.Entry<K,V>>() {
-                Iterator<CacheValue> iter = cache.values().iterator();
+        public Iterator<Map.Entry<K, V>> iterator() {
+            return new Iterator<Map.Entry<K, V>>() {
+                
+                private Iterator<CacheValue> iter = cache.values().iterator();
+                
                 @Override
                 public boolean hasNext() {
                     return iter.hasNext();
                 }
 
                 @Override
-                public Map.Entry<K,V> next() {
+                public Map.Entry<K, V> next() {
                     CacheValue e = iter.next();
-                    return new AbstractMap.SimpleEntry<K, V>((K)e.getKey(), (V)e.getValue());
+                    return new AbstractMap.SimpleEntry<K, V>((K) e.getKey(), (V) e.getValue());
                 }
                 
                 @Override
@@ -174,7 +180,7 @@ public class LocalCacheView<K, V> {
         public boolean contains(Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             CacheKey cacheKey = toCacheKey(e.getKey());
             CacheValue entry = cache.get(cacheKey);
             return entry != null && entry.getValue().equals(e.getValue());
@@ -183,7 +189,7 @@ public class LocalCacheView<K, V> {
         @Override
         public boolean remove(Object o) {
             if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
                 CacheKey cacheKey = toCacheKey(e.getKey());
                 return cache.remove(cacheKey) != null;
             }
@@ -206,7 +212,7 @@ public class LocalCacheView<K, V> {
         return new LocalMap();
     }
     
-    final class LocalMap extends AbstractMap<K,V> {
+    final class LocalMap extends AbstractMap<K, V> {
 
         @Override
         public V get(Object key) {
@@ -246,6 +252,8 @@ public class LocalCacheView<K, V> {
         }
     }
 
-
+    private CacheKey toCacheKey(ByteBuf encodedKey) {
+        return new CacheKey(Hash.hash128toArray(encodedKey));
+    }
     
 }

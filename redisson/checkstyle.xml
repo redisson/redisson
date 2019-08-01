@@ -19,7 +19,7 @@
 
 <!DOCTYPE module PUBLIC
         "-//Puppy Crawl//DTD Check Configuration 1.2//EN"
-        "http://www.puppycrawl.com/dtds/configuration_1_2.dtd">
+        "https://checkstyle.org/dtds/configuration_1_3.dtd">
 
 <!--
 
@@ -49,6 +49,7 @@
 -->
 
 <module name="Checker">
+    <property name="charset" value="UTF-8"/>
 
     <!-- Checks whether files end with a new line.                        -->
     <!-- See http://checkstyle.sf.net/config_misc.html#NewlineAtEndOfFile -->
@@ -72,7 +73,7 @@
         <!-- Checks for Naming Conventions.                  -->
         <!-- See http://checkstyle.sf.net/config_naming.html -->
         <module name="ConstantName">
-            <property name="format" value="^([A-Z_][A-Z0-9]*(_[A-Z0-9]+)*|_log)$"/>
+            <property name="format" value="^log(ger)?|[A-Z][A-Z0-9]*(_[A-Z0-9]+)*$"/>
         </module>
         <module name="LocalFinalVariableName"/>
         <module name="LocalVariableName"/>
@@ -120,7 +121,7 @@
 -->
         <module name="MethodLength"/>
         <module name="ParameterNumber">
-            <property name="max" value="5"/>
+            <property name="max" value="10"/>
         </module>
 
         <!-- Checks for whitespace                               -->
@@ -158,24 +159,35 @@
 
         <!-- Checks for common coding problems               -->
         <!-- See http://checkstyle.sf.net/config_coding.html -->
-        <!--module name="AvoidInlineConditionals"/-->
+        <module name="ArrayTrailingComma"/>
+        <module name="AvoidInlineConditionals"/>
+        <module name="CovariantEquals"/>
         <!-- MY FAVOURITE -->
         <module name="EmptyStatement"/>
         <module name="EqualsHashCode"/>
+        <module name="EqualsAvoidNull"/>
         <!--module name="HiddenField"/-->
         <module name="IllegalInstantiation"/>
+        <module name="IllegalThrows"/>
         <module name="InnerAssignment"/>
+        <module name="MultipleVariableDeclarations"/>
         <!--module name="MagicNumber"/-->
         <module name="SimplifyBooleanExpression"/>
         <module name="SimplifyBooleanReturn"/>
         <module name="StringLiteralEquality"/>
-        <module name="NestedIfDepth"/>
+        <module name="NestedForDepth">
+           <property name="max" value="2"/>
+        </module>
+        <module name="NestedIfDepth">
+           <property name="max" value="3"/>
+        </module>
         <module name="NestedTryDepth"/>
-        <module name="SuperClone"/>
+        <module name="NoClone"/>
+        <module name="NoFinalizer"/>
+        <module name="OneStatementPerLine"/>
         <module name="IllegalCatch">
            <property name="illegalClassNames" value=" java.lang.Throwable, java.lang.RuntimeException"/>
         </module>
-        <!--module name="IllegalThrows"/-->
         <module name="FallThrough"/>
         <module name="UnnecessaryParentheses"/>
         <!--module name="FinalLocalVariable"/-->
@@ -185,9 +197,10 @@
         <!--module name="DesignForExtension"/-->
         <module name="FinalClass"/>
         <!--module name="HideUtilityClassConstructor"/-->
-        <module name="InterfaceIsType"/>
-        <module name="VisibilityModifier"/>
-
+        <module name="VisibilityModifier">
+          <property name="packageAllowed" value="true"/>
+          <property name="protectedAllowed" value="true"/>
+        </module>
 
         <!-- Miscellaneous other checks.                   -->
         <!-- See http://checkstyle.sf.net/config_misc.html -->
@@ -213,6 +226,12 @@
         <!--module name="TodoComment"/-->
         <module name="UpperEll"/>
 
+	<module name="BooleanExpressionComplexity"/>
+    </module>
+
+    <module name="SuppressionFilter">
+        <property name="file" value="${checkstyle.config.path}/suppressions.xml"/>
+        <property name="optional" value="false"/>
     </module>
 
 </module>

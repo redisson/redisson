@@ -230,7 +230,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
             @Override
             protected void remove(Object value) {
-                RedissonSetMultimapValues.this.remove((V)value);
+                RedissonSetMultimapValues.this.remove((V) value);
             }
             
         };
@@ -342,7 +342,7 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
 
     @Override
     public boolean remove(Object value) {
-        return get(removeAsync((V)value));
+        return get(removeAsync((V) value));
     }
 
     @Override

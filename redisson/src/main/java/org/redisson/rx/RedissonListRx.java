@@ -19,8 +19,7 @@ import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
+import io.reactivex.Single;
 import io.reactivex.functions.LongConsumer;
 import io.reactivex.processors.ReplayProcessor;
 
@@ -55,52 +54,52 @@ public class RedissonListRx<V> {
         return iterator(startIndex, true);
     }
 
-    private Publisher<V> iterator(final int startIndex, final boolean forward) {
-        final ReplayProcessor<V> p = ReplayProcessor.create();
+    private Publisher<V> iterator(int startIndex, boolean forward) {
+        ReplayProcessor<V> p = ReplayProcessor.create();
         return p.doOnRequest(new LongConsumer() {
 
             private int currentIndex = startIndex;
             
             @Override
-            public void accept(final long n) throws Exception {
-                instance.getAsync(currentIndex).addListener(new FutureListener<V>() {
-                    @Override
-                    public void operationComplete(Future<V> future) throws Exception {
-                        if (!future.isSuccess()) {
-                            p.onError(future.cause());
-                            return;
+            public void accept(long n) throws Exception {
+                instance.getAsync(currentIndex).onComplete((value, e) -> {
+                    if (e != null) {
+                        p.onError(e);
+                        return;
+                    }
+                    
+                    if (value != null) {
+                        p.onNext(value);
+                        if (forward) {
+                            currentIndex++;
+                        } else {
+                            currentIndex--;
                         }
-                        
-                        V value = future.getNow();
-                        if (value != null) {
-                            p.onNext(value);
-                            if (forward) {
-                                currentIndex++;
-                            } else {
-                                currentIndex--;
-                            }
-                        }
-                        
-                        if (value == null) {
-                            p.onComplete();
-                            return;
-                        }
-                        if (n-1 == 0) {
-                            return;
-                        }
+                    }
+                    
+                    if (value == null) {
+                        p.onComplete();
+                        return;
+                    }
+                    if (n-1 == 0) {
+                        return;
+                    }
+                    try {
                         accept(n-1);
+                    } catch (Exception e1) {
+                        e1.printStackTrace();
                     }
                 });
             }
         });
     }
     
-    public Publisher<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
 
             @Override
             public RFuture<Boolean> add(Object o) {
-                return instance.addAsync((V)o);
+                return instance.addAsync((V) o);
             }
 
         }.addAll(c);

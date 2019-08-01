@@ -18,25 +18,28 @@ package org.redisson.cache;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.RedissonListMultimapCache;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonScoredSortedSet;
+import org.redisson.RedissonSemaphore;
 import org.redisson.RedissonTopic;
 import org.redisson.api.LocalCachedMapOptions;
+import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListMultimapCache;
 import org.redisson.api.RObject;
 import org.redisson.api.RScoredSortedSet;
+import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
@@ -51,8 +54,6 @@ import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -73,7 +74,7 @@ public abstract class LocalCacheListener {
     private CommandAsyncExecutor commandExecutor;
     private Cache<?, ?> cache;
     private RObject object;
-    private byte[] instanceId;
+    private byte[] instanceId = new byte[16];
     private Codec codec;
     private LocalCachedMapOptions<?, ?> options;
     
@@ -83,24 +84,55 @@ public abstract class LocalCacheListener {
     private int syncListenerId;
     private int reconnectionListenerId;
     
-    public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor, Cache<?, ?> cache,
-            RObject object, byte[] instanceId, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
+    public LocalCacheListener(String name, CommandAsyncExecutor commandExecutor,
+            RObject object, Codec codec, LocalCachedMapOptions<?, ?> options, long cacheUpdateLogTime) {
         super();
         this.name = name;
         this.commandExecutor = commandExecutor;
-        this.cache = cache;
         this.object = object;
-        this.instanceId = instanceId;
         this.codec = codec;
         this.options = options;
         this.cacheUpdateLogTime = cacheUpdateLogTime;
+        
+        ThreadLocalRandom.current().nextBytes(instanceId);
     }
-
+    
+    public byte[] generateId() {
+        byte[] id = new byte[16];
+        ThreadLocalRandom.current().nextBytes(id);
+        return id;
+    }
+    
+    public byte[] getInstanceId() {
+        return instanceId;
+    }
+    
+    public Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+        if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
+            return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LRU) {
+            return new LRUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
+            return new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
+            return ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        if (options.getEvictionPolicy() == EvictionPolicy.WEAK) {
+            return ReferenceCacheMap.weak(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+        }
+        throw new IllegalArgumentException("Invalid eviction policy: " + options.getEvictionPolicy());
+    }
+    
     public boolean isDisabled(Object key) {
         return disabledKeys.containsKey(key);
     }
     
-    public void add() {
+    public void add(Cache<?, ?> cache) {
+        this.cache = cache;
+        
         invalidationTopic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());
 
         if (options.getReconnectionStrategy() != ReconnectionStrategy.NONE) {
@@ -114,44 +146,7 @@ public abstract class LocalCacheListener {
                             // check if instance has already been used
                             && lastInvalidate > 0) {
 
-                        if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
-                            cache.clear();
-                            return;
-                        }
-                        
-                        object.isExistsAsync().addListener(new FutureListener<Boolean>() {
-                            @Override
-                            public void operationComplete(Future<Boolean> future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    log.error("Can't check existance", future.cause());
-                                    return;
-                                }
-
-                                if (!future.getNow()) {                                        
-                                    cache.clear();
-                                    return;
-                                }
-                                
-                                RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
-                                logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
-                                .addListener(new FutureListener<Collection<byte[]>>() {
-                                    @Override
-                                    public void operationComplete(Future<Collection<byte[]>> future) throws Exception {
-                                        if (!future.isSuccess()) {
-                                            log.error("Can't load update log", future.cause());
-                                            return;
-                                        }
-                                        
-                                        for (byte[] entry : future.getNow()) {
-                                            byte[] keyHash = Arrays.copyOf(entry, 16);
-                                            CacheKey key = new CacheKey(keyHash);
-                                            cache.remove(key);
-                                        }
-                                    }
-                                });
-                            }
-                        });
-                        
+                        loadAfterReconnection();
                     }
                 }
             });
@@ -186,11 +181,15 @@ public abstract class LocalCacheListener {
                     }
                     
                     if (msg instanceof LocalCachedMapClear) {
+                        LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
                         cache.clear();
+
+                        RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
+                        semaphore.releaseAsync();
                     }
                     
                     if (msg instanceof LocalCachedMapInvalidate) {
-                        LocalCachedMapInvalidate invalidateMsg = (LocalCachedMapInvalidate)msg;
+                        LocalCachedMapInvalidate invalidateMsg = (LocalCachedMapInvalidate) msg;
                         if (!Arrays.equals(invalidateMsg.getExcludedId(), instanceId)) {
                             for (byte[] keyHash : invalidateMsg.getKeyHashes()) {
                                 CacheKey key = new CacheKey(keyHash);
@@ -240,18 +239,24 @@ public abstract class LocalCacheListener {
     }
     
     public RFuture<Void> clearLocalCacheAsync() {
-        final RPromise<Void> result = new RedissonPromise<Void>();
-        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear());
-        future.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    result.tryFailure(future.cause());
+        RPromise<Void> result = new RedissonPromise<Void>();
+        byte[] id = generateId();
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id));
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            RSemaphore semaphore = getClearSemaphore(id);
+            semaphore.acquireAsync(res.intValue()).onComplete((r, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
                     return;
                 }
-
+                
                 result.trySuccess(null);
-            }
+            });
         });
         
         return result;
@@ -292,6 +297,46 @@ public abstract class LocalCacheListener {
 
     public String getUpdatesLogName() {
         return RedissonObject.prefixName("redisson__cache_updates_log", name);
+    }
+
+    private void loadAfterReconnection() {
+        if (System.currentTimeMillis() - lastInvalidate > cacheUpdateLogTime) {
+            cache.clear();
+            return;
+        }
+        
+        object.isExistsAsync().onComplete((res, e) -> {
+            if (e != null) {
+                log.error("Can't check existance", e);
+                return;
+            }
+
+            if (!res) {                                        
+                cache.clear();
+                return;
+            }
+            
+            RScoredSortedSet<byte[]> logs = new RedissonScoredSortedSet<byte[]>(ByteArrayCodec.INSTANCE, commandExecutor, getUpdatesLogName(), null);
+            logs.valueRangeAsync(lastInvalidate, true, Double.POSITIVE_INFINITY, true)
+            .onComplete((r, ex) -> {
+                if (ex != null) {
+                    log.error("Can't load update log", ex);
+                    return;
+                }
+                
+                for (byte[] entry : r) {
+                    byte[] keyHash = Arrays.copyOf(entry, 16);
+                    CacheKey key = new CacheKey(keyHash);
+                    cache.remove(key);
+                }
+            });
+        });
+    }
+
+    protected RSemaphore getClearSemaphore(byte[] requestId) {
+        String id = ByteBufUtil.hexDump(requestId);
+        RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
+        return semaphore;
     }
 
 }

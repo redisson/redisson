@@ -121,14 +121,6 @@ public class LiveObjectInterceptor {
             return namingScheme.resolveId(map.getName());
         }
 
-        if ("getLiveObjectLiveMap".equals(method.getName())) {
-            return map;
-        }
-
-        if ("isExists".equals(method.getName())) {
-            return map.isExists();
-        }
-        
         if ("delete".equals(method.getName())) {
             FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
             RBatch batch = redisson.createBatch();
@@ -146,7 +138,7 @@ public class LiveObjectInterceptor {
             return deleteFuture.getNow() > 0;
         }
 
-        throw new NoSuchMethodException();
+        return method.invoke(map, args);
     }
 
     private String getMapKey(Object id) {

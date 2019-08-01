@@ -15,11 +15,10 @@
  */
 package org.redisson.eviction;
 
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.redisson.command.CommandAsyncExecutor;
-
-import io.netty.util.internal.PlatformDependent;
 
 /**
  * Eviction scheduler.
@@ -32,7 +31,7 @@ import io.netty.util.internal.PlatformDependent;
  */
 public class EvictionScheduler {
 
-    private final ConcurrentMap<String, EvictionTask> tasks = PlatformDependent.newConcurrentHashMap();
+    private final ConcurrentMap<String, EvictionTask> tasks = new ConcurrentHashMap<>();
     private final CommandAsyncExecutor executor;
 
     public EvictionScheduler(CommandAsyncExecutor executor) {

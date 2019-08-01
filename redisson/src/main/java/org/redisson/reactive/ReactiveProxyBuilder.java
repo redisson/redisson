@@ -16,7 +16,7 @@
 package org.redisson.reactive;
 
 import java.lang.reflect.Method;
-import java.util.function.Supplier;
+import java.util.concurrent.Callable;
 
 import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
@@ -33,18 +33,15 @@ public class ReactiveProxyBuilder {
         return create(commandExecutor, instance, null, clazz);
     }
     
-    public static <T> T create(final CommandReactiveExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
+    public static <T> T create(CommandReactiveExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
         return ProxyBuilder.create(new Callback() {
             @Override
-            public Object execute(final Method mm, final Object instance, final Object[] args) {
-                return commandExecutor.reactive(new Supplier<RFuture<Object>>() {
+            public Object execute(Method mm, Object instance, Method instanceMethod, Object[] args) {
+                return commandExecutor.reactive(new Callable<RFuture<Object>>() {
+                    @SuppressWarnings("unchecked")
                     @Override
-                    public RFuture<Object> get() {
-                        try {
-                            return (RFuture<Object>) mm.invoke(instance, args);
-                        } catch (Exception e) {
-                            throw new IllegalStateException(e);
-                        }
+                    public RFuture<Object> call() throws Exception {
+                        return (RFuture<Object>) mm.invoke(instance, args);
                     }
                 });
             }

@@ -43,7 +43,7 @@ public class PubSubMessageDecoder implements MultiDecoder<Object> {
     
     @Override
     public PubSubMessage decode(List<Object> parts, State state) {
-        ChannelName name = new ChannelName((byte[])parts.get(1));
+        ChannelName name = new ChannelName((byte[]) parts.get(1));
         return new PubSubMessage(name, parts.get(2));
     }
 

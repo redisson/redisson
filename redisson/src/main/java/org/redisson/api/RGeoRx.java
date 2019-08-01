@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.List;
 import java.util.Map;
 
-import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * Geospatial items holder. Reactive interface.
@@ -39,7 +39,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * not including elements already existing for which 
      * the score was updated
      */
-    Flowable<Long> add(double longitude, double latitude, V member);
+    Single<Long> add(double longitude, double latitude, V member);
 
     /**
      * Adds geospatial members.
@@ -49,7 +49,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * not including elements already existing for which 
      * the score was updated
      */
-    Flowable<Long> add(GeoEntry... entries);
+    Single<Long> add(GeoEntry... entries);
 
     /**
      * Returns distance between members in <code>GeoUnit</code> units.
@@ -59,7 +59,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return distance
      */
-    Flowable<Double> dist(V firstMember, V secondMember, GeoUnit geoUnit);
+    Single<Double> dist(V firstMember, V secondMember, GeoUnit geoUnit);
     
     /**
      * Returns 11 characters Geohash string mapped by defined member.
@@ -67,7 +67,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param members - objects
      * @return hash mapped by object
      */
-    Flowable<Map<V, String>> hash(V... members);
+    Single<Map<V, String>> hash(V... members);
 
     /**
      * Returns geo-position mapped by defined member.
@@ -75,7 +75,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param members - objects
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> pos(V... members);
+    Single<Map<V, GeoPosition>> pos(V... members);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -91,7 +91,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return list of objects
      */
-    Flowable<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    Single<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -108,7 +108,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return list of objects
      */
-    Flowable<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    Single<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Returns the members of a sorted set, which are within the 
@@ -125,7 +125,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - order of result
      * @return list of objects
      */
-    Flowable<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -144,7 +144,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return list of objects
      */
-    Flowable<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<List<V>> radius(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
  
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -161,7 +161,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    Single<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -179,7 +179,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    Single<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
     
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -197,7 +197,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - order of result
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
     
     /**
      * Returns the distance mapped by member, distance between member and the location. 
@@ -217,7 +217,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Map<V, Double>> radiusWithDistance(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the geo-position mapped by member. 
@@ -234,7 +234,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit);
+    Single<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -252,7 +252,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    Single<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -270,7 +270,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - geo order
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -290,7 +290,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Map<V, GeoPosition>> radiusWithPosition(double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the members of a sorted set, which are within the 
@@ -305,7 +305,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return list of objects
      */
-    Flowable<List<V>> radius(V member, double radius, GeoUnit geoUnit);
+    Single<List<V>> radius(V member, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the members of a sorted set, which are within the 
@@ -321,7 +321,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return list of objects
      */
-    Flowable<List<V>> radius(V member, double radius, GeoUnit geoUnit, int count);
+    Single<List<V>> radius(V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Returns the members of a sorted set, which are within the 
@@ -337,7 +337,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - geo order
      * @return list of objects
      */
-    Flowable<List<V>> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<List<V>> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /**
      * Returns the members of a sorted set, which are within the 
@@ -354,7 +354,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return list of objects
      */
-    Flowable<List<V>> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<List<V>> radius(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -370,7 +370,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit);
+    Single<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -387,7 +387,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, int count);
+    Single<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -404,7 +404,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - geo
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /**
      * Returns the distance mapped by member, distance between member and the defined member location. 
@@ -423,7 +423,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return distance mapped by object
      */
-    Flowable<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Map<V, Double>> radiusWithDistance(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
     
     /**
      * Returns the geo-position mapped by member. 
@@ -439,7 +439,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit);
+    Single<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -456,7 +456,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, int count);
+    Single<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -473,7 +473,7 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoOrder - geo order
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
+    Single<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder);
 
     /**
      * Returns the geo-position mapped by member. 
@@ -492,14 +492,15 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return geo position mapped by object
      */
-    Flowable<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Map<V, GeoPosition>> radiusWithPosition(V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units. 
-     * Store result to <code>destName</code>.
+     * <p>
+     * Stores result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param longitude - longitude of object
@@ -508,14 +509,15 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
+    Single<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
-     * in <code>GeoUnit</code> units and limited by count 
-     * Store result to <code>destName</code>.
+     * in <code>GeoUnit</code> units and limited by count. 
+     * <p>
+     * Store result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param longitude - longitude of object
@@ -525,15 +527,16 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+    Single<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the center location 
      * and the maximum distance from the center (the radius) 
      * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
-     * and limited by count 
-     * Store result to <code>destName</code>.
+     * and limited by count.
+     * <p>
+     * Stores result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param longitude - longitude of object
@@ -544,14 +547,15 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Long> radiusStoreTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
      * in <code>GeoUnit</code> units. 
-     * Store result to <code>destName</code>.
+     * <p>
+     * Store result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param member - object
@@ -559,14 +563,15 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param geoUnit - geo unit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit);
+    Single<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location
      * and the maximum distance from the defined member location (the radius) 
-     * in <code>GeoUnit</code> units and limited by count
-     * Store result to <code>destName</code>.
+     * in <code>GeoUnit</code> units and limited by count.
+     * <p>
+     * Store result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param member - object
@@ -575,14 +580,15 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, int count);
+    Single<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, int count);
 
     /**
      * Finds the members of a sorted set, which are within the 
      * borders of the area specified with the defined member location 
      * and the maximum distance from the defined member location (the radius) 
-     * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
-     * Store result to <code>destName</code>.
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>. 
+     * <p>
+     * Store result to <code>destName</code> sorted by distance.
      * 
      * @param destName - Geo object destination
      * @param member - object
@@ -592,6 +598,113 @@ public interface RGeoRx<V> extends RScoredSortedSetRx<V> {
      * @param count - result limit
      * @return length of result
      */
-    Flowable<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+    Single<Long> radiusStoreTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
 
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units.
+     * <p> 
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units and limited by count
+     * <p> 
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the center location 
+     * and the maximum distance from the center (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code> 
+     * and limited by count.
+     * <p>
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - order of result
+     * @param count - result limit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, double longitude, double latitude, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units. 
+     * <p>
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units and limited by count.
+     * <p>
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param count - result limit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit, int count);
+
+    /**
+     * Finds the members of a sorted set, which are within the 
+     * borders of the area specified with the defined member location 
+     * and the maximum distance from the defined member location (the radius) 
+     * in <code>GeoUnit</code> units with <code>GeoOrder</code>
+     * <p> 
+     * Stores result to <code>destName</code> sorted by distance.
+     * 
+     * @param destName - Geo object destination
+     * @param member - object
+     * @param radius - radius in geo units
+     * @param geoUnit - geo unit
+     * @param geoOrder - geo order
+     * @param count - result limit
+     * @return length of result
+     */
+    Single<Long> radiusStoreSortedTo(String destName, V member, double radius, GeoUnit geoUnit, GeoOrder geoOrder, int count);
+
+    
 }

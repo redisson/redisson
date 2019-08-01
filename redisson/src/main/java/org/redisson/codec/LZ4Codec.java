@@ -61,7 +61,7 @@ public class LZ4Codec extends BaseCodec {
         this(new FstCodec(classLoader));
     }
 
-    public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) {
+    public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     

@@ -34,11 +34,11 @@ public class ScoredSortedSetScanReplayDecoder implements MultiDecoder<ListScanRe
     
     @Override
     public ListScanResult<Object> decode(List<Object> parts, State state) {
-        List<Object> values = (List<Object>)parts.get(1);
+        List<Object> values = (List<Object>) parts.get(1);
         for (int i = 1; i < values.size(); i++) {
             values.remove(i);
         }
-        return new ListScanResult<Object>((Long)parts.get(0), values);
+        return new ListScanResult<Object>((Long) parts.get(0), values);
     }
 
 }

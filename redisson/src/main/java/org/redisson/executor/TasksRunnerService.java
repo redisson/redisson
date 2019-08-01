@@ -55,8 +55,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * Executor service runs Callable and Runnable tasks.
@@ -66,7 +64,7 @@ import io.netty.util.concurrent.FutureListener;
  */
 public class TasksRunnerService implements RemoteExecutorService {
 
-    private static final Map<HashValue, Codec> codecs = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
+    private static final Map<HashValue, Codec> CODECS = new LRUCacheMap<HashValue, Codec>(500, 0, 0);
     
     private final Codec codec;
     private final String name;
@@ -127,7 +125,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         RFuture<Void> future = asyncScheduledServiceAtFixed(params.getExecutorId(), params.getRequestId()).scheduleAtFixedRate(params);
         try {
             executeRunnable(params);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             // cancel task if it throws an exception
             future.cancel(true);
             throw e;
@@ -147,7 +145,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
         try {
             executeRunnable(params, nextStartDate == null);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             // cancel task if it throws an exception
             if (future != null) {
                 future.cancel(true);
@@ -163,7 +161,7 @@ public class TasksRunnerService implements RemoteExecutorService {
      * @return
      */
     private RemoteExecutorServiceAsync asyncScheduledServiceAtFixed(String executorId, String requestId) {
-        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, redisson, name, commandExecutor, executorId, responses);
+        ScheduledTasksService scheduledRemoteService = new ScheduledTasksService(codec, name, commandExecutor, executorId, responses);
         scheduledRemoteService.setTerminationTopicName(terminationTopicName);
         scheduledRemoteService.setTasksCounterName(tasksCounterName);
         scheduledRemoteService.setStatusName(statusName);
@@ -218,7 +216,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     protected void scheduleRetryTimeRenewal(final String requestId) {
-        ((Redisson)redisson).getConnectionManager().newTimeout(new TimerTask() {
+        ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 renewRetryTime(requestId);
@@ -252,12 +250,9 @@ public class TasksRunnerService implements RemoteExecutorService {
                 + "return 0;", 
                 Arrays.<Object>asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
                 System.currentTimeMillis(), requestId);
-        future.addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess() || future.get()) {
-                    scheduleRetryTimeRenewal(requestId);
-                }
+        future.onComplete((res, e) -> {
+            if (e != null || res) {
+                scheduleRetryTimeRenewal(requestId);
             }
         });
     }
@@ -268,21 +263,30 @@ public class TasksRunnerService implements RemoteExecutorService {
         ByteBuf stateBuf = Unpooled.wrappedBuffer(params.getState());
         try {
             HashValue hash = new HashValue(Hash.hash128(classBodyBuf));
-            Codec classLoaderCodec = codecs.get(hash);
+            Codec classLoaderCodec = CODECS.get(hash);
             if (classLoaderCodec == null) {
                 RedissonClassLoader cl = new RedissonClassLoader(codec.getClassLoader());
                 cl.loadClass(params.getClassName(), params.getClassBody());
                 
                 classLoaderCodec = this.codec.getClass().getConstructor(ClassLoader.class).newInstance(cl);
-                codecs.put(hash, classLoaderCodec);
+                CODECS.put(hash, classLoaderCodec);
             }
             
             T task;
             if (params.getLambdaBody() != null) {
                 ByteArrayInputStream is = new ByteArrayInputStream(params.getLambdaBody());
-                ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
-                task = (T) oo.readObject();
-                oo.close();
+                
+                //set thread context class loader to be the classLoaderCodec.getClassLoader() variable as there could be reflection
+                //done while reading from input stream which reflection will use thread class loader to load classes on demand
+                ClassLoader currentThreadClassLoader = Thread.currentThread().getContextClassLoader();                
+                try {
+                    Thread.currentThread().setContextClassLoader(classLoaderCodec.getClassLoader());
+                    ObjectInput oo = new CustomObjectInputStream(classLoaderCodec.getClassLoader(), is);
+                    task = (T) oo.readObject();
+                    oo.close();
+                } finally {
+                    Thread.currentThread().setContextClassLoader(currentThreadClassLoader);
+                }
             } else {
                 task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
             }

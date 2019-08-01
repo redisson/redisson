@@ -40,7 +40,7 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
+    V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
     /**
      * Retrieves and removes first available tail element of <b>any</b> queue,
@@ -56,6 +56,6 @@ public interface RBlockingDeque<V> extends BlockingDeque<V>, RBlockingQueue<V>, 
      *         specified waiting time elapses before an element is available
      * @throws InterruptedException if interrupted while waiting
      */
-    V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) throws InterruptedException;
+    V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException;
 
 }

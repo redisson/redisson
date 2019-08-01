@@ -552,6 +552,8 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         @RId(generator = UUIDGenerator.class)
         private Serializable id;
+        
+        private Map<String, String> values = new HashMap<>();
 
         public TestClass() {
         }
@@ -597,6 +599,17 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
             return null;
         }
 
+        public void addEntry(String key, String value) {
+            values.put(key, value);
+        }
+        
+        public void setValues(Map<String, String> values) {
+            this.values = values;
+        }
+        public Map<String, String> getValues() {
+            return values;
+        }
+        
         @Override
         public boolean equals(Object obj) {
             if (obj == null || !(obj instanceof TestClass) || !this.getClass().equals(obj.getClass())) {
@@ -763,9 +776,11 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         TestClass ts = new TestClass(new ObjectId(100));
         ts.setValue("VALUE");
         ts.setContent(new TestREntity("123"));
+        ts.addEntry("1", "2");
         TestClass persisted = service.persist(ts);
         
-        assertEquals(2, redisson.getKeys().count());
+        assertEquals(3, redisson.getKeys().count());
+        assertEquals(1, persisted.getValues().size());
         assertEquals("123", ((TestREntity)persisted.getContent()).getName());
         assertEquals(new ObjectId(100), persisted.getId());
         assertEquals("VALUE", persisted.getValue());
@@ -1370,7 +1385,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         
         assertThat(c.getOrders().size()).isEqualTo(2);
 
-        assertThat(redisson.getKeys().count()).isEqualTo(5);
+        assertThat(redisson.getKeys().count()).isEqualTo(7);
         
         List<Order> list = new ArrayList<>();
         Order o3 = new Order(c);

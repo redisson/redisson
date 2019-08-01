@@ -15,7 +15,8 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * Reactive interface for AtomicDouble object
@@ -34,7 +35,7 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @return true if successful; or false if the actual value
      *         was not equal to the expected value.
      */
-    Flowable<Boolean> compareAndSet(double expect, double update);
+    Single<Boolean> compareAndSet(double expect, double update);
 
     /**
      * Atomically adds the given value to the current value.
@@ -42,28 +43,28 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param delta the value to add
      * @return the updated value
      */
-    Flowable<Double> addAndGet(double delta);
+    Single<Double> addAndGet(double delta);
 
     /**
      * Atomically decrements the current value by one.
      *
      * @return the updated value
      */
-    Flowable<Double> decrementAndGet();
+    Single<Double> decrementAndGet();
 
     /**
      * Returns current value.
      *
      * @return current value
      */
-    Flowable<Double> get();
+    Single<Double> get();
 
     /**
      * Returns and deletes object
      * 
      * @return the current value
      */
-    Flowable<Double> getAndDelete();
+    Single<Double> getAndDelete();
     
     /**
      * Atomically adds the given value to the current value.
@@ -71,7 +72,7 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param delta the value to add
      * @return the updated value
      */
-    Flowable<Double> getAndAdd(double delta);
+    Single<Double> getAndAdd(double delta);
 
     /**
      * Atomically sets the given value and returns the old value.
@@ -79,28 +80,28 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param newValue the new value
      * @return the old value
      */
-    Flowable<Double> getAndSet(double newValue);
+    Single<Double> getAndSet(double newValue);
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the updated value
      */
-    Flowable<Double> incrementAndGet();
+    Single<Double> incrementAndGet();
 
     /**
      * Atomically increments the current value by one.
      *
      * @return the old value
      */
-    Flowable<Double> getAndIncrement();
+    Single<Double> getAndIncrement();
 
     /**
      * Atomically decrements by one the current value.
      *
      * @return the previous value
      */
-    Flowable<Double> getAndDecrement();
+    Single<Double> getAndDecrement();
 
     /**
      * Atomically sets the given value.
@@ -108,6 +109,6 @@ public interface RAtomicDoubleRx extends RExpirableRx {
      * @param newValue the new value
      * @return void
      */
-    Flowable<Void> set(double newValue);
+    Completable set(double newValue);
 
 }

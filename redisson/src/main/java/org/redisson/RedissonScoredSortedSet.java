@@ -150,22 +150,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
     
     @Override
-    public V pollFirstFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+    public V pollFirstFromAny(long timeout, TimeUnit unit, String... queueNames) {
         return get(pollFirstFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollFirstFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BZPOPMIN_VALUE, toSeconds(timeout, unit), queueNames);
     }
 
     @Override
-    public V pollLastFromAny(long timeout, TimeUnit unit, String ... queueNames) {
+    public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) {
         return get(pollLastFromAnyAsync(timeout, unit, queueNames));
     }
 
     @Override
-    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String ... queueNames) {
+    public RFuture<V> pollLastFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         return commandExecutor.pollFromAnyAsync(getName(), codec, RedisCommands.BZPOPMAX_VALUE, toSeconds(timeout, unit), queueNames);
     }
     
@@ -319,7 +319,11 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             element.append("(");
         }
         if (Double.isInfinite(score)) {
-            element.append(score > 0 ? "+inf" : "-inf");
+            if (score > 0) {
+                element.append("+inf");
+            } else {
+                element.append("-inf");
+            }
         } else {
             element.append(BigDecimal.valueOf(score).toPlainString());
         }
@@ -421,7 +425,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
             @Override
             protected void remove(Object value) {
-                RedissonScoredSortedSet.this.remove((V)value);
+                RedissonScoredSortedSet.this.remove((V) value);
             }
             
         };
@@ -493,7 +497,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         List<Object> params = new ArrayList<Object>(c.size()*2);
         for (Object object : c) {
             params.add(0);
-            params.add(encode((V)object));
+            params.add(encode((V) object));
         }
         
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
@@ -863,7 +867,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -873,7 +877,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -903,12 +907,12 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override

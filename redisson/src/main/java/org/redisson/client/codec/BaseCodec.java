@@ -15,6 +15,9 @@
  */
 package org.redisson.client.codec;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.redisson.cache.LocalCachedMessageCodec;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
@@ -27,21 +30,21 @@ import org.redisson.jcache.JCacheEventCodec;
  */
 public abstract class BaseCodec implements Codec {
 
-    public static Codec copy(ClassLoader classLoader, Codec codec) {
-        if (codec instanceof StringCodec
-                || codec instanceof ByteArrayCodec
-                    || codec instanceof LocalCachedMessageCodec
-                        || codec instanceof BitSetCodec
-                            || codec instanceof JCacheEventCodec
-                                || codec == null) {
+    public static final List<Class<?>> SKIPPED_CODECS = Arrays.asList(StringCodec.class, 
+            ByteArrayCodec.class, LocalCachedMessageCodec.class, BitSetCodec.class, JCacheEventCodec.class);
+    
+    public static Codec copy(ClassLoader classLoader, Codec codec) throws ReflectiveOperationException {
+        if (codec == null) {
             return codec;
         }
 
-        try {
-            return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        for (Class<?> clazz : SKIPPED_CODECS) {
+            if (clazz.isAssignableFrom(codec.getClass())) {
+                return codec;
+            }
         }
+
+        return codec.getClass().getConstructor(ClassLoader.class, codec.getClass()).newInstance(classLoader, codec);
     }
     
     @Override

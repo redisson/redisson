@@ -18,5 +18,9 @@
     <session-config>
         <session-timeout>1</session-timeout>
     </session-config>
+    
+    <listener>
+        <listener-class>org.redisson.tomcat.TestHttpSessionListener</listener-class>
+    </listener>
 
 </web-app>

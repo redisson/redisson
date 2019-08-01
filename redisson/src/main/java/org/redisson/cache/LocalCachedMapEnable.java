@@ -26,6 +26,9 @@ public class LocalCachedMapEnable implements Serializable {
 
     private byte[][] keyHashes;
     private String requestId;
+    
+    public LocalCachedMapEnable() {
+    }
 
     public LocalCachedMapEnable(String requestId, byte[][] keyHashes) {
         super();

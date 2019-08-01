@@ -23,6 +23,7 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
 import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 /**
  * 
@@ -37,20 +38,20 @@ public class RedissonLexSortedSetRx {
         this.instance = instance;
     }
 
-    public Flowable<Boolean> addAll(Publisher<? extends String> c) {
+    public Single<Boolean> addAll(Publisher<? extends String> c) {
         return new PublisherAdder<String>() {
             @Override
             public RFuture<Boolean> add(Object e) {
-                return instance.addAsync((String)e);
+                return instance.addAsync((String) e);
             }
         }.addAll(c);
     }
     
-    private Flowable<String> scanIteratorReactive(final String pattern, final int count) {
+    private Flowable<String> scanIteratorReactive(String pattern, int count) {
         return new SetRxIterator<String>() {
             @Override
-            protected RFuture<ListScanResult<Object>> scanIterator(final RedisClient client, final long nextIterPos) {
-                return ((RedissonScoredSortedSet<String>)instance).scanIteratorAsync(client, nextIterPos, pattern, count);
+            protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
+                return ((RedissonScoredSortedSet<String>) instance).scanIteratorAsync(client, nextIterPos, pattern, count);
             }
         }.create();
     }

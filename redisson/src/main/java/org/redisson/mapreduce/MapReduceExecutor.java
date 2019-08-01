@@ -35,9 +35,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.misc.TransferListener;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -63,7 +60,7 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
     M mapper;
     long timeout;
     
-    public MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
+    MapReduceExecutor(RObject object, RedissonClient redisson, ConnectionManager connectionManager) {
         this.objectName = object.getName();
         this.objectCodec = object.getCodec();
         this.objectClass = object.getClass();
@@ -98,31 +95,25 @@ abstract class MapReduceExecutor<M, VIn, KOut, VOut> implements RMapReduceExecut
         final RPromise<Map<KOut, VOut>> promise = new RedissonPromise<Map<KOut, VOut>>();
         final RFuture<Void> future = executeMapperAsync(resultMapName, null);
         addCancelHandling(promise, future);
-        future.addListener(new FutureListener<Void>() {
-            @Override
-            public void operationComplete(Future<Void> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                RBatch batch = redisson.createBatch();
-                RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
-                resultMap.readAllMapAsync().addListener(new TransferListener<Map<KOut, VOut>>(promise));
-                resultMap.deleteAsync();
-                batch.executeAsync();
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            RBatch batch = redisson.createBatch();
+            RMapAsync<KOut, VOut> resultMap = batch.getMap(resultMapName, objectCodec);
+            resultMap.readAllMapAsync().onComplete(new TransferListener<Map<KOut, VOut>>(promise));
+            resultMap.deleteAsync();
+            batch.executeAsync();
         });        
         return promise;
     }
 
-    private <T> void addCancelHandling(final RPromise<T> promise, final RFuture<?> future) {
-        promise.addListener(new FutureListener<T>() {
-            @Override
-            public void operationComplete(Future<T> f) throws Exception {
-                if (promise.isCancelled()) {
-                    future.cancel(true);
-                }
+    private <T> void addCancelHandling(RPromise<T> promise, RFuture<?> future) {
+        promise.onComplete((res, e) -> {
+            if (promise.isCancelled()) {
+                future.cancel(true);
             }
         });
     }

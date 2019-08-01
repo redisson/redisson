@@ -17,21 +17,27 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RFuture;
 import org.redisson.api.RRateLimiter;
 import org.redisson.api.RateIntervalUnit;
+import org.redisson.api.RateLimiterConfig;
 import org.redisson.api.RateType;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 
 /**
  * 
@@ -89,17 +95,14 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
 
     @Override
     public RFuture<Void> acquireAsync(long permits) {
-        final RPromise<Void> promise = new RedissonPromise<Void>();
-        tryAcquireAsync(permits, -1, null).addListener(new FutureListener<Boolean>() {
-            @Override
-            public void operationComplete(Future<Boolean> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                promise.trySuccess(null);
+        RPromise<Void> promise = new RedissonPromise<Void>();
+        tryAcquireAsync(permits, -1, null).onComplete((res, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
             }
+            
+            promise.trySuccess(null);
         });
         return promise;
     }
@@ -123,68 +126,55 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
     public RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit) {
         RPromise<Boolean> promise = new RedissonPromise<Boolean>();
         long timeoutInMillis = -1;
-        if (timeout > 0) {
+        if (timeout >= 0) {
             timeoutInMillis = unit.toMillis(timeout);
         }
         tryAcquireAsync(permits, promise, timeoutInMillis);
         return promise;
     }
     
-    private void tryAcquireAsync(final long permits, final RPromise<Boolean> promise, final long timeoutInMillis) {
-        final long start = System.currentTimeMillis();
+    private void tryAcquireAsync(long permits, RPromise<Boolean> promise, long timeoutInMillis) {
+        long s = System.currentTimeMillis();
         RFuture<Long> future = tryAcquireAsync(RedisCommands.EVAL_LONG, permits);
-        future.addListener(new FutureListener<Long>() {
-            @Override
-            public void operationComplete(Future<Long> future) throws Exception {
-                if (!future.isSuccess()) {
-                    promise.tryFailure(future.cause());
-                    return;
-                }
-                
-                Long delay = future.getNow();
-                if (delay == null) {
-                    promise.trySuccess(true);
-                    return;
-                }
-                
-                if (timeoutInMillis == -1) {
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            tryAcquireAsync(permits, promise, timeoutInMillis);
-                        }
-                    }, delay, TimeUnit.MILLISECONDS);
-                    return;
-                }
-                
-                long elapsed = System.currentTimeMillis() - start;
-                final long remains = timeoutInMillis - elapsed;
-                if (remains <= 0) {
+        future.onComplete((delay, e) -> {
+            if (e != null) {
+                promise.tryFailure(e);
+                return;
+            }
+            
+            if (delay == null) {
+                promise.trySuccess(true);
+                return;
+            }
+            
+            if (timeoutInMillis == -1) {
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                    tryAcquireAsync(permits, promise, timeoutInMillis);
+                }, delay, TimeUnit.MILLISECONDS);
+                return;
+            }
+            
+            long el = System.currentTimeMillis() - s;
+            long remains = timeoutInMillis - el;
+            if (remains <= 0) {
+                promise.trySuccess(false);
+                return;
+            }
+            if (remains < delay) {
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
                     promise.trySuccess(false);
-                    return;
-                }
-                if (remains < delay) {
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            promise.trySuccess(false);
-                        }
-                    }, remains, TimeUnit.MILLISECONDS);
-                } else {
-                    final long start = System.currentTimeMillis();
-                    commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
-                        @Override
-                        public void run() {
-                            long elapsed = System.currentTimeMillis() - start;
-                            if (remains <= elapsed) {
-                                promise.trySuccess(false);
-                                return;
-                            }
-                            
-                            tryAcquireAsync(permits, promise, remains - elapsed);
-                        }
-                    }, delay, TimeUnit.MILLISECONDS);
-                }
+                }, remains, TimeUnit.MILLISECONDS);
+            } else {
+                long start = System.currentTimeMillis();
+                commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                    long elapsed = System.currentTimeMillis() - start;
+                    if (remains <= elapsed) {
+                        promise.trySuccess(false);
+                        return;
+                    }
+                    
+                    tryAcquireAsync(permits, promise, remains - elapsed);
+                }, delay, TimeUnit.MILLISECONDS);
             }
         });
     }
@@ -210,6 +200,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                          + "return nil; "
                      + "end; "
               + "else "
+                     + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
                      + "redis.call('set', valueName, rate, 'px', interval); "
                      + "redis.call('decrby', valueName, ARGV[1]); "
                      + "return nil; "
@@ -230,6 +221,39 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
               + "redis.call('hsetnx', KEYS[1], 'interval', ARGV[2]);"
               + "return redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);",
                 Collections.<Object>singletonList(getName()), rate, unit.toMillis(rateInterval), type.ordinal());
+    }
+    
+    private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MultiDecoder<RateLimiterConfig>() {
+        @Override
+        public Decoder<Object> getDecoder(int paramNum, State state) {
+            return null;
+        }
+
+        @Override
+        public RateLimiterConfig decode(List<Object> parts, State state) {
+            Map<String, String> map = new HashMap<>(parts.size()/2);
+            for (int i = 0; i < parts.size(); i++) {
+                if (i % 2 != 0) {
+                    map.put(parts.get(i-1).toString(), parts.get(i).toString());
+                }
+            }
+
+            RateType type = RateType.values()[Integer.valueOf(map.get("type"))];
+            Long rateInterval = Long.valueOf(map.get("interval"));
+            Long rate = Long.valueOf(map.get("rate"));
+            return new RateLimiterConfig(type, rateInterval, rate);
+        }
+        
+    }, ValueType.MAP);
+    
+    @Override
+    public RateLimiterConfig getConfig() {
+        return get(getConfigAsync());
+    }
+    
+    @Override
+    public RFuture<RateLimiterConfig> getConfigAsync() {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, HGETALL, getName());
     }
     
 }

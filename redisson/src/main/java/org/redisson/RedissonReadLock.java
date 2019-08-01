@@ -72,7 +72,8 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                                   "local key = KEYS[2] .. ':' .. ind;" +
                                   "redis.call('set', key, 1); " +
                                   "redis.call('pexpire', key, ARGV[1]); " +
-                                  "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                                  "local remainTime = redis.call('pttl', KEYS[1]); " +
+                                  "redis.call('pexpire', KEYS[1], math.max(remainTime, ARGV[1])); " +
                                   "return nil; " +
                                 "end;" +
                                 "return redis.call('pttl', KEYS[1]);",
@@ -129,7 +130,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                 "redis.call('publish', KEYS[2], ARGV[1]); " +
                 "return 1; ",
                 Arrays.<Object>asList(getName(), getChannelName(), timeoutPrefix, keyPrefix), 
-                LockPubSub.unlockMessage, getLockName(threadId));
+                LockPubSub.UNLOCK_MESSAGE, getLockName(threadId));
     }
 
     protected String getKeyPrefix(long threadId, String timeoutPrefix) {
@@ -180,7 +181,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
                     "return 1; " +
                 "end; " +
                 "return 0; ",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.unlockMessage);
+                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
     }
 
     @Override

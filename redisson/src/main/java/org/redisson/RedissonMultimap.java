@@ -27,10 +27,13 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.api.RMultimap;
+import org.redisson.api.RPermitExpirableSemaphore;
 import org.redisson.api.RReadWriteLock;
+import org.redisson.api.RSemaphore;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -40,7 +43,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandExecutor;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RedissonPromise;
 
@@ -67,24 +69,39 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
+    public RLock getFairLock(K key) {
+        String lockName = getLockByMapKey(key, "fairlock");
+        return new RedissonFairLock(commandExecutor, lockName);
+    }
+    
+    @Override
+    public RPermitExpirableSemaphore getPermitExpirableSemaphore(K key) {
+        String lockName = getLockByMapKey(key, "permitexpirablesemaphore");
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
+    }
+    
+    @Override
+    public RCountDownLatch getCountDownLatch(K key) {
+        String lockName = getLockByMapKey(key, "countdownlatch");
+        return new RedissonCountDownLatch(commandExecutor, lockName);
+    }
+    
+    @Override
+    public RSemaphore getSemaphore(K key) {
+        String lockName = getLockByMapKey(key, "semaphore");
+        return new RedissonSemaphore(commandExecutor, lockName);
+    }
+    
+    @Override
     public RLock getLock(K key) {
-        String lockName = getLockName(key);
-        return new RedissonLock((CommandExecutor)commandExecutor, lockName);
+        String lockName = getLockByMapKey(key, "lock");
+        return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(K key) {
-        String lockName = getLockName(key);
-        return new RedissonReadWriteLock((CommandExecutor)commandExecutor, lockName);
-    }
-    
-    private String getLockName(Object key) {
-        ByteBuf keyState = encodeMapKey(key);
-        try {
-            return suffixName(getName(), Hash.hash128toBase64(keyState) + ":key");
-        } finally {
-            keyState.release();
-        }
+        String lockName = getLockByMapKey(key, "rw_lock");
+        return new RedissonReadWriteLock(commandExecutor, lockName);
     }
     
     protected String hash(ByteBuf objectState) {
@@ -107,7 +124,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     
     @Override
     public int keySize() {
-    	return get(keySizeAsync());
+        return get(keySizeAsync());
     }
 
     @Override
@@ -195,12 +212,12 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
-    public long fastRemove(K ... keys) {
+    public long fastRemove(K... keys) {
         return get(fastRemoveAsync(keys));
     }
 
     @Override
-    public RFuture<Long> fastRemoveAsync(K ... keys) {
+    public RFuture<Long> fastRemoveAsync(K... keys) {
         if (keys == null || keys.length == 0) {
             return RedissonPromise.newSucceededFuture(0L);
         }
@@ -296,7 +313,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     
     @Override
     public RFuture<Integer> keySizeAsync() {
-    	return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.HLEN, getName());
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.HLEN, getName());
     }
     
     
@@ -328,7 +345,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
         @Override
         public boolean remove(Object o) {
-            return RedissonMultimap.this.fastRemove((K)o) == 1;
+            return RedissonMultimap.this.fastRemove((K) o) == 1;
         }
 
         @Override
@@ -367,22 +384,25 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
     }
 
-    final class EntrySet extends AbstractSet<Map.Entry<K,V>> {
+    final class EntrySet extends AbstractSet<Map.Entry<K, V>> {
 
-        public final Iterator<Map.Entry<K,V>> iterator() {
+        @Override
+        public Iterator<Map.Entry<K, V>> iterator() {
             return entryIterator();
         }
 
-        public final boolean contains(Object o) {
+        @Override
+        public boolean contains(Object o) {
             if (!(o instanceof Map.Entry))
                 return false;
-            Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+            Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
             return containsEntry(e.getKey(), e.getValue());
         }
 
-        public final boolean remove(Object o) {
+        @Override
+        public boolean remove(Object o) {
             if (o instanceof Map.Entry) {
-                Map.Entry<?,?> e = (Map.Entry<?,?>) o;
+                Map.Entry<?, ?> e = (Map.Entry<?, ?>) o;
                 Object key = e.getKey();
                 Object value = e.getValue();
                 return RedissonMultimap.this.remove(key, value);
@@ -390,11 +410,13 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
             return false;
         }
 
-        public final int size() {
+        @Override
+        public int size() {
             return RedissonMultimap.this.size();
         }
 
-        public final void clear() {
+        @Override
+        public void clear() {
             RedissonMultimap.this.clear();
         }
 

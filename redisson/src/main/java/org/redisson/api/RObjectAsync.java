@@ -156,4 +156,22 @@ public interface RObjectAsync {
      */
     RFuture<Boolean> isExistsAsync();
 
+    /**
+     * Adds object event listener
+     * 
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * 
+     * @param listener - object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
+    /**
+     * Removes object event listener
+     * 
+     * @param listenerId - listener id
+     */
+    RFuture<Void> removeListenerAsync(int listenerId);
+    
 }

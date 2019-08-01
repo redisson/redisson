@@ -40,10 +40,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
-import org.redisson.misc.Hash;
 import org.redisson.misc.RedissonPromise;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.Set}
@@ -122,7 +119,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
             @Override
             protected void remove(Object value) {
-                RedissonSet.this.remove((V)value);
+                RedissonSet.this.remove((V) value);
             }
             
         };
@@ -212,7 +209,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public boolean remove(Object value) {
-        return get(removeAsync((V)value));
+        return get(removeAsync((V) value));
     }
 
     @Override
@@ -388,6 +385,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -446,7 +444,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -456,7 +454,7 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -486,12 +484,12 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -607,48 +605,39 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.SORT_TO, params.toArray());
     }
 
-    public String getLockName(Object value, String suffix) {
-        ByteBuf state = encode(value);
-        try {
-            return suffixName(getName(value), Hash.hash128toBase64(state) + ":" + suffix);
-        } finally {
-            state.release();
-        }
-    }
-
     @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
-        String lockName = getLockName(value, "permitexpirablesemaphore");
-        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        String lockName = getLockByValue(value, "permitexpirablesemaphore");
+        return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);
     }
 
     @Override
     public RSemaphore getSemaphore(V value) {
-        String lockName = getLockName(value, "semaphore");
-        return new RedissonSemaphore(commandExecutor, lockName, ((Redisson)redisson).getSemaphorePubSub());
+        String lockName = getLockByValue(value, "semaphore");
+        return new RedissonSemaphore(commandExecutor, lockName);
     }
     
     @Override
     public RCountDownLatch getCountDownLatch(V value) {
-        String lockName = getLockName(value, "countdownlatch");
+        String lockName = getLockByValue(value, "countdownlatch");
         return new RedissonCountDownLatch(commandExecutor, lockName);
     }
     
     @Override
     public RLock getFairLock(V value) {
-        String lockName = getLockName(value, "fairlock");
+        String lockName = getLockByValue(value, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);
     }
     
     @Override
     public RLock getLock(V value) {
-        String lockName = getLockName(value, "lock");
+        String lockName = getLockByValue(value, "lock");
         return new RedissonLock(commandExecutor, lockName);
     }
     
     @Override
     public RReadWriteLock getReadWriteLock(V value) {
-        String lockName = getLockName(value, "rw_lock");
+        String lockName = getLockByValue(value, "rw_lock");
         return new RedissonReadWriteLock(commandExecutor, lockName);
     }
 

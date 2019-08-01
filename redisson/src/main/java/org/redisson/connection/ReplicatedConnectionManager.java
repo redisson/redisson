@@ -15,7 +15,6 @@
  */
 package org.redisson.connection;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -34,11 +33,10 @@ import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.ReplicatedServersConfig;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
+import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 
 /**
@@ -55,7 +53,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    private AtomicReference<URI> currentMaster = new AtomicReference<URI>();
+    private AtomicReference<RedisURI> currentMaster = new AtomicReference<>();
 
     private ScheduledFuture<?> monitorFuture;
 
@@ -70,7 +68,8 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         this.config = create(cfg);
         initTimer(this.config);
 
-        for (URI addr : cfg.getNodeAddresses()) {
+        for (String address : cfg.getNodeAddresses()) {
+            RedisURI addr = new RedisURI(address);
             RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
             connectionFuture.awaitUninterruptibly();
             RedisConnection connection = connectionFuture.getNow();
@@ -86,10 +85,10 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                 }
                 currentMaster.set(addr);
                 log.info("{} is the master", addr);
-                this.config.setMasterAddress(addr);
+                this.config.setMasterAddress(addr.toString());
             } else {
                 log.info("{} is a slave", addr);
-                this.config.addSlaveAddress(addr);
+                this.config.addSlaveAddress(addr.toString());
             }
         }
 
@@ -109,11 +108,11 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
     @Override
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig res = super.create(cfg);
-        res.setDatabase(((ReplicatedServersConfig)cfg).getDatabase());
+        res.setDatabase(((ReplicatedServersConfig) cfg).getDatabase());
         return res;
     }
     
-    private void scheduleMasterChangeCheck(final ReplicatedServersConfig cfg) {
+    private void scheduleMasterChangeCheck(ReplicatedServersConfig cfg) {
         if (isShuttingDown()) {
             return;
         }
@@ -125,68 +124,57 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
-                final URI master = currentMaster.get();
+                RedisURI master = currentMaster.get();
                 log.debug("Current master: {}", master);
                 
-                final AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
-                for (final URI addr : cfg.getNodeAddresses()) {
+                AtomicInteger count = new AtomicInteger(cfg.getNodeAddresses().size());
+                for (String address : cfg.getNodeAddresses()) {
+                    RedisURI addr = new RedisURI(address);
                     RFuture<RedisConnection> connectionFuture = connectToNode(cfg, addr, null, addr.getHost());
-                    connectionFuture.addListener(new FutureListener<RedisConnection>() {
-                        @Override
-                        public void operationComplete(Future<RedisConnection> future) throws Exception {
-                            if (!future.isSuccess()) {
-                                log.error(future.cause().getMessage(), future.cause());
+                    connectionFuture.onComplete((connection, exc) -> {
+                        if (exc != null) {
+                            log.error(exc.getMessage(), exc);
+                            if (count.decrementAndGet() == 0) {
+                                scheduleMasterChangeCheck(cfg);
+                            }
+                            return;
+                        }
+                        
+                        if (isShuttingDown()) {
+                            return;
+                        }
+                        
+                        RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
+                        result.onComplete((r, ex) -> {
+                            if (ex != null) {
+                                log.error(ex.getMessage(), ex);
+                                closeNodeConnection(connection);
                                 if (count.decrementAndGet() == 0) {
                                     scheduleMasterChangeCheck(cfg);
                                 }
                                 return;
                             }
                             
-                            if (isShuttingDown()) {
-                                return;
+                            Role role = Role.valueOf(r.get(ROLE_KEY));
+                            if (Role.master.equals(role)) {
+                                if (master.equals(addr)) {
+                                    log.debug("Current master {} unchanged", master);
+                                } else if (currentMaster.compareAndSet(master, addr)) {
+                                    RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), addr);
+                                    changeFuture.onComplete((res, e) -> {
+                                        if (e != null) {
+                                            currentMaster.compareAndSet(addr, master);
+                                        }
+                                    });
+                                }
+                            } else if (!config.checkSkipSlavesInit()) {
+                                slaveUp(addr);
                             }
                             
-                            final RedisConnection connection = future.getNow();
-                            RFuture<Map<String, String>> result = connection.async(RedisCommands.INFO_REPLICATION);
-                            result.addListener(new FutureListener<Map<String, String>>() {
-                                @Override
-                                public void operationComplete(Future<Map<String, String>> future)
-                                        throws Exception {
-                                    if (!future.isSuccess()) {
-                                        log.error(future.cause().getMessage(), future.cause());
-                                        closeNodeConnection(connection);
-                                        if (count.decrementAndGet() == 0) {
-                                            scheduleMasterChangeCheck(cfg);
-                                        }
-                                        return;
-                                    }
-                                    
-                                    Role role = Role.valueOf(future.getNow().get(ROLE_KEY));
-                                    if (Role.master.equals(role)) {
-                                        if (master.equals(addr)) {
-                                            log.debug("Current master {} unchanged", master);
-                                        } else if (currentMaster.compareAndSet(master, addr)) {
-                                            RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), addr);
-                                            changeFuture.addListener(new FutureListener<RedisClient>() {
-                                                @Override
-                                                public void operationComplete(Future<RedisClient> future)
-                                                        throws Exception {
-                                                    if (!future.isSuccess()) {
-                                                        currentMaster.compareAndSet(addr, master);
-                                                    }
-                                                }
-                                            });
-                                        }
-                                    } else if (!config.checkSkipSlavesInit()) {
-                                        slaveUp(addr);
-                                    }
-                                    
-                                    if (count.decrementAndGet() == 0) {
-                                        scheduleMasterChangeCheck(cfg);
-                                    }
-                                }
-                            });
-                        }
+                            if (count.decrementAndGet() == 0) {
+                                scheduleMasterChangeCheck(cfg);
+                            }
+                        });
                     });
                 }
             }
@@ -194,7 +182,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
-    private void slaveUp(URI uri) {
+    private void slaveUp(RedisURI uri) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
         if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
             log.info("slave: {} has up", uri);

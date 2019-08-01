@@ -23,13 +23,13 @@ import org.redisson.api.annotation.RId;
  * @author Nikita Koksharov
  *
  */
-public class RequiredIdResolver implements RIdResolver<RId, Object> {
+public class RequiredIdResolver implements RIdResolver<Object> {
     
     public static final RequiredIdResolver INSTANCE = new RequiredIdResolver();
 
     @Override
-    public Object resolve(Class cls, RId annotation, String idFieldName, RedissonClient redisson) {
-        throw new IllegalArgumentException("id value not defined for instance of " + cls);
+    public Object resolve(Class<?> cls, RId annotation, String idFieldName, RedissonClient redisson) {
+        throw new IllegalArgumentException("id value is not defined for instance of " + cls);
     }
 
 }

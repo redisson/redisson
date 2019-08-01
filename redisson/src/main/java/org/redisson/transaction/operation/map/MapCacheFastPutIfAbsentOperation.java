@@ -43,7 +43,7 @@ public class MapCacheFastPutIfAbsentOperation extends MapOperation {
 
     @Override
     public void commit(RMap<Object, Object> map) {
-        ((RMapCache<Object, Object>)map).fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
+        ((RMapCache<Object, Object>) map).fastPutIfAbsentAsync(key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit);
     }
     
     public long getTTL() {

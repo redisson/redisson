@@ -48,7 +48,7 @@ public class RedissonSetMultimapRx<K, V> {
     }
 
     public RSetRx<V> get(K key) {
-        RedissonSet<V> set = (RedissonSet<V>) ((RSetMultimap<K, V>)instance).get(key);
+        RedissonSet<V> set = (RedissonSet<V>) ((RSetMultimap<K, V>) instance).get(key);
         return RxProxyBuilder.create(commandExecutor, set, 
                 new RedissonSetRx<V>(set, redisson), RSetRx.class);
     }

@@ -46,6 +46,7 @@ public class RedissonNodeConfig extends Config {
         super(oldConf);
         this.executorServiceWorkers = new HashMap<String, Integer>(oldConf.executorServiceWorkers);
         this.redissonNodeInitializer = oldConf.redissonNodeInitializer;
+        this.mapReduceWorkers = oldConf.mapReduceWorkers;
     }
     
     /**

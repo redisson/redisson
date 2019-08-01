@@ -23,7 +23,10 @@ import java.util.Set;
 import org.redisson.api.map.MapLoader;
 import org.redisson.api.map.MapWriter;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 /**
  *  map functions
@@ -42,7 +45,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param parallelism - parallelism level, used to increase speed of process execution
      * @return void
      */
-    Flowable<Void> loadAll(boolean replaceExistingValues, int parallelism);
+    Completable loadAll(boolean replaceExistingValues, int parallelism);
     
     /**
      * Loads map entries using {@link org.redisson.api.map.MapLoader} whose keys are listed in defined <code>keys</code> parameter.
@@ -52,7 +55,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param parallelism - parallelism level, used to increase speed of process execution
      * @return void
      */
-    Flowable<Void> loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
+    Completable loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
 
     /**
      * Returns size of value mapped by key in bytes
@@ -60,7 +63,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return size of value
      */
-    Flowable<Integer> valueSize(K key);
+    Single<Integer> valueSize(K key);
 
     /**
      * Gets a map slice contained the mappings with defined <code>keys</code>
@@ -74,7 +77,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param keys - map keys
      * @return Map slice
      */
-    Flowable<Map<K, V>> getAll(Set<K> keys);
+    Single<Map<K, V>> getAll(Set<K> keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -85,15 +88,15 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param map mappings to be stored in this map
      * @return void
      */
-    Flowable<Void> putAll(Map<? extends K, ? extends V> map);
+    Completable putAll(Map<? extends K, ? extends V> map);
 
-    Flowable<V> addAndGet(K key, Number value);
+    Single<V> addAndGet(K key, Number value);
 
-    Flowable<Boolean> containsValue(Object value);
+    Single<Boolean> containsValue(Object value);
 
-    Flowable<Boolean> containsKey(Object key);
+    Single<Boolean> containsKey(Object key);
 
-    Flowable<Integer> size();
+    Single<Integer> size();
 
     /**
      * Removes <code>keys</code> from map by one operation in async manner.
@@ -106,7 +109,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param keys - map keys
      * @return the number of keys that were removed from the hash, not including specified but non existing keys
      */
-    Flowable<Long> fastRemove(K ... keys);
+    Single<Long> fastRemove(K... keys);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -122,7 +125,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and the value was updated.
      */
-    Flowable<Boolean> fastPut(K key, V value);
+    Single<Boolean> fastPut(K key, V value);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -138,35 +141,35 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @return <code>true</code> if key is a new one in the hash and value was set.
      *         <code>false</code> if key already exists in the hash and change hasn't been made.
      */
-    Flowable<Boolean> fastPutIfAbsent(K key, V value);
+    Single<Boolean> fastPutIfAbsent(K key, V value);
     
     /**
      * Read all keys at once
      *
      * @return keys
      */
-    Flowable<Set<K>> readAllKeySet();
+    Single<Set<K>> readAllKeySet();
 
     /**
      * Read all values at once
      *
      * @return values
      */
-    Flowable<Collection<V>> readAllValues();
+    Single<Collection<V>> readAllValues();
 
     /**
      * Read all map entries at once
      *
      * @return entries
      */
-    Flowable<Set<Entry<K, V>>> readAllEntrySet();
+    Single<Set<Entry<K, V>>> readAllEntrySet();
 
     /**
      * Read all map as local instance at once
      *
      * @return map
      */
-    Flowable<Map<K, V>> readAllMap();
+    Single<Map<K, V>> readAllMap();
 
     /**
      * Returns the value to which the specified key is mapped,
@@ -179,7 +182,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @return the value to which the specified key is mapped, or
      *         {@code null} if this map contains no mapping for the key
      */
-    Flowable<V> get(K key);
+    Maybe<V> get(K key);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -191,7 +194,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param value - map value
      * @return previous associated value
      */
-    Flowable<V> put(K key, V value);
+    Maybe<V> put(K key, V value);
 
     /**
      * Removes <code>key</code> from map and returns associated value in async manner.
@@ -201,7 +204,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param key - map key
      * @return deleted value or <code>null</code> if there wasn't any association
      */
-    Flowable<V> remove(K key);
+    Maybe<V> remove(K key);
 
     /**
      * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
@@ -214,7 +217,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @return previous associated value 
      *         or <code>null</code> if there wasn't any association and change hasn't been made
      */
-    Flowable<V> replace(K key, V value);
+    Maybe<V> replace(K key, V value);
 
     /**
      * Replaces previous <code>oldValue</code> with a <code>newValue</code> associated with the <code>key</code>.
@@ -227,7 +230,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param newValue - map new value
      * @return <code>true</code> if value has been replaced otherwise <code>false</code>.
      */
-    Flowable<Boolean> replace(K key, V oldValue, V newValue);
+    Single<Boolean> replace(K key, V oldValue, V newValue);
 
     /**
      * Removes <code>key</code> from map only if it associated with <code>value</code>.
@@ -238,7 +241,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @param value - map value
      * @return <code>true</code> if map entry has been replaced otherwise <code>false</code>.
      */
-    Flowable<Boolean> remove(Object key, Object value);
+    Single<Boolean> remove(Object key, Object value);
 
     /**
      * Associates the specified <code>value</code> with the specified <code>key</code>
@@ -251,7 +254,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * @return <code>null</code> if key is a new one in the hash and value was set.
      *         Previous value if key already exists in the hash and change hasn't been made.
      */
-    Flowable<V> putIfAbsent(K key, V value);
+    Maybe<V> putIfAbsent(K key, V value);
 
     /**
      * Returns iterator over map entries collection. 

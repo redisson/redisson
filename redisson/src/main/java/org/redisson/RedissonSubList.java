@@ -486,6 +486,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
         get(trimAsync(fromIndex, toIndex));
     }
 
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -503,6 +504,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -521,6 +523,7 @@ public class RedissonSubList<V> extends RedissonList<V> implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {

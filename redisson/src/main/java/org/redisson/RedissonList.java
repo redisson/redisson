@@ -49,9 +49,6 @@ import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
  *
@@ -188,7 +185,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public RFuture<Boolean> addAllAsync(final Collection<? extends V> c) {
+    public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         if (c.isEmpty()) {
             return RedissonPromise.newSucceededFuture(false);
         }
@@ -311,11 +308,11 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return commandExecutor.readAsync(getName(), codec, LINDEX, getName(), index);
     }
     
-    public List<V> get(int ...indexes) {
+    public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
     
-    public RFuture<List<V>> getAsync(int ...indexes) {
+    public RFuture<List<V>> getAsync(int...indexes) {
         List<Integer> params = new ArrayList<Integer>();
         for (Integer index : indexes) {
             params.add(index);
@@ -346,7 +343,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
             return get(setAsync(index, element));
         } catch (RedisException e) {
             if (e.getCause() instanceof IndexOutOfBoundsException) {
-                throw (IndexOutOfBoundsException)e.getCause();
+                throw (IndexOutOfBoundsException) e.getCause();
             }
             throw e;
         }
@@ -354,27 +351,23 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public RFuture<V> setAsync(int index, V element) {
-        final RPromise<V> result = new RedissonPromise<V>();
+        RPromise<V> result = new RedissonPromise<V>();
         RFuture<V> future = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_OBJECT,
                 "local v = redis.call('lindex', KEYS[1], ARGV[1]); " +
                         "redis.call('lset', KEYS[1], ARGV[1], ARGV[2]); " +
                         "return v",
                 Collections.<Object>singletonList(getName()), index, encode(element));
-        future.addListener(new FutureListener<V>() {
-
-            @Override
-            public void operationComplete(Future<V> future) throws Exception {
-                if (!future.isSuccess()) {
-                    if (future.cause().getMessage().contains("ERR index out of range")) {
-                        result.tryFailure(new IndexOutOfBoundsException("index out of range"));
-                        return;
-                    }
-                    result.tryFailure(future.cause());
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                if (e.getMessage().contains("ERR index out of range")) {
+                    result.tryFailure(new IndexOutOfBoundsException("index out of range"));
                     return;
                 }
-                
-                result.trySuccess(future.getNow());
+                result.tryFailure(e);
+                return;
             }
+            
+            result.trySuccess(res);
         });
         return result;
     }
@@ -511,7 +504,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
-    public ListIterator<V> listIterator(final int ind) {
+    public ListIterator<V> listIterator(int ind) {
         return new ListIterator<V>() {
 
             private V prevCurrentValue;
@@ -620,6 +613,8 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return new RedissonSubList<V>(codec, commandExecutor, getName(), fromIndex, toIndex);
     }
 
+    @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -637,6 +632,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -655,6 +651,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {
@@ -725,7 +722,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order));
     }
     
     @Override
@@ -735,7 +732,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSort(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -785,7 +782,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order));
     }
 
     @Override
@@ -795,7 +792,7 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public <T> Collection<T> readSortAlpha(String byPattern, List<String> getPatterns, SortOrder order, int offset, int count) {
-        return (Collection<T>)get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
+        return (Collection<T>) get(readSortAlphaAsync(byPattern, getPatterns, order, offset, count));
     }
 
     @Override
@@ -916,6 +913,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         }
 
         return commandExecutor.readAsync(getName(), codec, RedisCommands.SORT_LIST, params.toArray());
+    }
+
+    @Override
+    public RFuture<List<V>> rangeAsync(int toIndex) {
+        return rangeAsync(0, toIndex);
+    }
+
+    @Override
+    public RFuture<List<V>> rangeAsync(int fromIndex, int toIndex) {
+        return commandExecutor.readAsync(getName(), codec, LRANGE, getName(), fromIndex, toIndex);
+    }
+
+    @Override
+    public List<V> range(int toIndex) {
+        return get(rangeAsync(toIndex));
+    }
+
+    @Override
+    public List<V> range(int fromIndex, int toIndex) {
+        return get(rangeAsync(fromIndex, toIndex));
     }
 
 }

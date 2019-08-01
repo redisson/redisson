@@ -31,7 +31,7 @@ public class LongCodec extends StringCodec {
 
     public static final LongCodec INSTANCE = new LongCodec();
 
-    public final Decoder<Object> decoder = new Decoder<Object>() {
+    private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
             String str = (String) LongCodec.super.getValueDecoder().decode(buf, state);

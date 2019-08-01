@@ -40,7 +40,7 @@ import org.redisson.api.RedissonRxClient;
 public class RedissonMapRx<K, V> {
 
     private final RedissonMap<K, V> instance;
-    private RedissonRxClient redisson;
+    private final RedissonRxClient redisson;
 
     public RedissonMapRx(RMap<K, V> instance, RedissonRx redisson) {
         this.instance = (RedissonMap<K, V>) instance;
@@ -106,27 +106,27 @@ public class RedissonMapRx<K, V> {
     }
 
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(K key) {
-        String name = ((RedissonMap<K, V>)instance).getLockName(key, "permitexpirablesemaphore");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
     public RSemaphoreRx getSemaphore(K key) {
-        String name = ((RedissonMap<K, V>)instance).getLockName(key, "semaphore");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "semaphore");
         return redisson.getSemaphore(name);
     }
     
     public RLockRx getFairLock(K key) {
-        String name = ((RedissonMap<K, V>)instance).getLockName(key, "fairlock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "fairlock");
         return redisson.getFairLock(name);
     }
     
     public RReadWriteLockRx getReadWriteLock(K key) {
-        String name = ((RedissonMap<K, V>)instance).getLockName(key, "rw_lock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
     public RLockRx getLock(K key) {
-        String name = ((RedissonMap<K, V>)instance).getLockName(key, "lock");
+        String name = ((RedissonMap<K, V>) instance).getLockByMapKey(key, "lock");
         return redisson.getLock(name);
     }
 

@@ -22,6 +22,10 @@ import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
 import org.redisson.misc.ProxyBuilder.Callback;
 
+import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -33,21 +37,24 @@ public class RxProxyBuilder {
         return create(commandExecutor, instance, null, clazz);
     }
     
-    public static <T> T create(final CommandRxExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
+    public static <T> T create(CommandRxExecutor commandExecutor, Object instance, Object implementation, Class<T> clazz) {
         return ProxyBuilder.create(new Callback() {
             @Override
-            public Object execute(final Method mm, final Object instance, final Object[] args) {
-                return commandExecutor.flowable(new Callable<RFuture<Object>>() {
-                    @SuppressWarnings("unchecked")
+            public Object execute(Method mm, Object instance, Method instanceMethod, Object[] args) {
+                Flowable<Object> flowable = commandExecutor.flowable(new Callable<RFuture<Object>>() {
                     @Override
-                    public RFuture<Object> call() {
-                        try {
-                            return (RFuture<Object>) mm.invoke(instance, args);
-                        } catch (Exception e) {
-                            throw new IllegalStateException(e);
-                        }
+                    public RFuture<Object> call() throws Exception {
+                        return (RFuture<Object>) mm.invoke(instance, args);
                     }
                 });
+                
+                if (instanceMethod.getReturnType() == Completable.class) {
+                    return flowable.ignoreElements();
+                }
+                if (instanceMethod.getReturnType() == Single.class) {
+                    return flowable.singleOrError();
+                }
+                return flowable.singleElement();
             }
         }, instance, implementation, clazz);
     }

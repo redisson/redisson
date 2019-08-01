@@ -53,7 +53,7 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
     @Override
     protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
             String pattern, int count) {
-        return ((RedissonSetCache<?>)set).scanIterator(name, client, startPos, pattern, count);
+        return ((RedissonSetCache<?>) set).scanIterator(name, client, startPos, pattern, count);
     }
 
     @Override
@@ -66,23 +66,23 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
     }
     
     @Override
-    protected TransactionalOperation createAddOperation(final V value) {
+    protected TransactionalOperation createAddOperation(V value) {
         return new AddCacheOperation(set, value, transactionId);
     }
     
     @Override
-    protected MoveOperation createMoveOperation(final String destination, final V value, final long threadId) {
+    protected MoveOperation createMoveOperation(String destination, V value, long threadId) {
         throw new UnsupportedOperationException();
     }
     
     @Override
-    protected TransactionalOperation createRemoveOperation(final Object value) {
+    protected TransactionalOperation createRemoveOperation(Object value) {
         return new RemoveCacheOperation(set, value, transactionId);
     }
 
     @Override
     protected RLock getLock(RCollectionAsync<V> set, V value) {
-        String lockName = ((RedissonSetCache<V>)set).getLockName(value, "lock");
+        String lockName = ((RedissonSetCache<V>) set).getLockByValue(value, "lock");
         return new RedissonTransactionalLock(commandExecutor, lockName, transactionId);
     }
     

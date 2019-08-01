@@ -2,11 +2,11 @@ package org.redisson.spring.session;
 
 import org.springframework.session.web.context.AbstractHttpSessionApplicationInitializer;
 
-public class Initializer extends AbstractHttpSessionApplicationInitializer {
+public class HttpInitializer extends AbstractHttpSessionApplicationInitializer {
 
-    public static Class<?> CONFIG_CLASS = Config.class;
+    public static Class<?> CONFIG_CLASS = HttpConfig.class;
     
-    public Initializer() {
+    public HttpInitializer() {
         super(CONFIG_CLASS);
     }
     

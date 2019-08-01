@@ -26,6 +26,7 @@ import org.redisson.client.protocol.Encoder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.compression.Snappy;
+import io.netty.util.concurrent.FastThreadLocal;
 
 /**
  * Snappy compression codec.
@@ -39,13 +40,13 @@ import io.netty.handler.codec.compression.Snappy;
  */
 public class SnappyCodec extends BaseCodec {
 
-    private static final ThreadLocal<Snappy> snappyDecoder = new ThreadLocal<Snappy>() {
+    private static final FastThreadLocal<Snappy> SNAPPY_DECODER = new FastThreadLocal<Snappy>() {
         protected Snappy initialValue() {
             return new Snappy();
         };
     };
     
-    private static final ThreadLocal<Snappy> snappyEncoder = new ThreadLocal<Snappy>() {
+    private static final FastThreadLocal<Snappy> SNAPPY_ENCODER = new FastThreadLocal<Snappy>() {
         protected Snappy initialValue() {
             return new Snappy();
         };
@@ -65,7 +66,7 @@ public class SnappyCodec extends BaseCodec {
         this(new FstCodec(classLoader));
     }
     
-    public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) {
+    public SnappyCodec(ClassLoader classLoader, SnappyCodec codec) throws ReflectiveOperationException {
         this(copy(classLoader, codec.innerCodec));
     }
     
@@ -78,12 +79,12 @@ public class SnappyCodec extends BaseCodec {
                 while (buf.isReadable()) {
                     int chunkSize = buf.readInt();
                     ByteBuf chunk = buf.readSlice(chunkSize);
-                    snappyDecoder.get().decode(chunk, out);
-                    snappyDecoder.get().reset();
+                    SNAPPY_DECODER.get().decode(chunk, out);
+                    SNAPPY_DECODER.get().reset();
                 }
                 return innerCodec.getValueDecoder().decode(out, state);
             } finally {
-                snappyDecoder.get().reset();
+                SNAPPY_DECODER.get().reset();
                 out.release();
             }
         }
@@ -96,21 +97,21 @@ public class SnappyCodec extends BaseCodec {
             ByteBuf buf = innerCodec.getValueEncoder().encode(in);
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
             try {
-                int chunksAmount = (int)Math.ceil(buf.readableBytes() / (double)Short.MAX_VALUE);
+                int chunksAmount = (int) Math.ceil(buf.readableBytes() / (double) Short.MAX_VALUE);
                 for (int i = 1; i <= chunksAmount; i++) {
                     int chunkSize = Math.min(Short.MAX_VALUE, buf.readableBytes());
 
                     ByteBuf chunk = buf.readSlice(chunkSize);
                     int lenIndex = out.writerIndex();
                     out.writeInt(0);
-                    snappyEncoder.get().encode(chunk, out, chunk.readableBytes());
+                    SNAPPY_ENCODER.get().encode(chunk, out, chunk.readableBytes());
                     int compressedDataLength = out.writerIndex() - 4 - lenIndex;
                     out.setInt(lenIndex, compressedDataLength);
                 }
                 return out;
             } finally {
                 buf.release();
-                snappyEncoder.get().reset();
+                SNAPPY_ENCODER.get().reset();
             }
         }
     };

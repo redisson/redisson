@@ -17,7 +17,8 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.reactivex.Flowable;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 
 /**
  * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.
@@ -36,7 +37,7 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * @return <code>true</code> if object has been added 
      *          or <code>false</code> if it was already added
      */
-    Flowable<Boolean> add(V obj);
+    Single<Boolean> add(V obj);
 
     /**
      * Adds all elements contained in <code>objects</code> collection into this structure
@@ -45,14 +46,14 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * @return <code>true</code> if at least one object has been added 
      *          or <code>false</code> if all were already added
      */
-    Flowable<Boolean> addAll(Collection<V> objects);
+    Single<Boolean> addAll(Collection<V> objects);
 
     /**
      * Returns approximated number of unique elements added into this structure.
      * 
      * @return approximated number of unique elements added into this structure
      */
-    Flowable<Long> count();
+    Single<Long> count();
 
     /**
      * Returns approximated number of unique elements 
@@ -61,7 +62,7 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * @param otherLogNames - name of instances
      * @return number
      */
-    Flowable<Long> countWith(String ... otherLogNames);
+    Single<Long> countWith(String... otherLogNames);
 
     /**
      * Merges multiple instances into this instance.
@@ -69,6 +70,6 @@ public interface RHyperLogLogRx<V> extends RExpirableRx {
      * @param otherLogNames - name of instances
      * @return void
      */
-    Flowable<Void> mergeWith(String ... otherLogNames);
+    Completable mergeWith(String... otherLogNames);
 
 }

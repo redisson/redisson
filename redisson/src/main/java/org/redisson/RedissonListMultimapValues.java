@@ -164,18 +164,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
 
     @Override
     public RFuture<List<V>> readAllAsync() {
-        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
-                "local expireDate = 92233720368547758; " +
-                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore) "
-              + "end; "
-              + "if expireDate <= tonumber(ARGV[1]) then "
-                  + "return {};"
-              + "end; "
-              + "return redis.call('lrange', KEYS[2], 0, -1);",
-              Arrays.<Object>asList(timeoutSetName, getName()), 
-              System.currentTimeMillis(), encodeMapKey(key));
+        return rangeAsync(0, -1);
     }
 
     @Override
@@ -365,12 +354,12 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
-    public List<V> get(int ...indexes) {
+    public List<V> get(int...indexes) {
         return get(getAsync(indexes));
     }
     
     @Override
-    public RFuture<List<V>> getAsync(int ...indexes) {
+    public RFuture<List<V>> getAsync(int...indexes) {
         List<Object> params = new ArrayList<Object>();
         params.add(System.currentTimeMillis());
         params.add(encodeMapKey(key));
@@ -656,6 +645,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public String toString() {
         Iterator<V> it = iterator();
         if (! it.hasNext())
@@ -673,6 +663,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public boolean equals(Object o) {
         if (o == this)
             return true;
@@ -691,6 +682,7 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     }
 
     @Override
+    @SuppressWarnings("AvoidInlineConditionals")
     public int hashCode() {
         int hashCode = 1;
         for (V e : this) {
@@ -888,6 +880,37 @@ public class RedissonListMultimapValues<V> extends RedissonExpirable implements 
     public RFuture<Integer> sortToAsync(String destName, String byPattern, List<String> getPatterns,
             SortOrder order, int offset, int count) {
         return list.sortToAsync(destName, byPattern, getPatterns, order, offset, count);
+    }
+
+    @Override
+    public RFuture<List<V>> rangeAsync(int toIndex) {
+        return rangeAsync(0, toIndex);
+    }
+
+    @Override
+    public RFuture<List<V>> rangeAsync(int fromIndex, int toIndex) {
+        return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_MAP_VALUE_LIST,
+                "local expireDate = 92233720368547758; " +
+                "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); "
+              + "if expireDateScore ~= false then "
+                  + "expireDate = tonumber(expireDateScore) "
+              + "end; "
+              + "if expireDate <= tonumber(ARGV[1]) then "
+                  + "return {};"
+              + "end; "
+              + "return redis.call('lrange', KEYS[2], ARGV[3], ARGV[4]);",
+              Arrays.<Object>asList(timeoutSetName, getName()), 
+              System.currentTimeMillis(), encodeMapKey(key), fromIndex, toIndex);
+    }
+
+    @Override
+    public List<V> range(int toIndex) {
+        return get(rangeAsync(toIndex));
+    }
+
+    @Override
+    public List<V> range(int fromIndex, int toIndex) {
+        return get(rangeAsync(fromIndex, toIndex));
     }
 
     

@@ -17,8 +17,6 @@ package org.redisson.misc;
 
 import org.redisson.api.RFuture;
 
-import io.netty.util.concurrent.FutureListener;
-
 /**
  * 
  * @author Nikita Koksharov
@@ -56,18 +54,6 @@ public interface RPromise<T> extends RFuture<T> {
      *         without being cancelled.  {@code false} if this future has been cancelled already.
      */
     boolean setUncancellable();
-
-    @Override
-    RPromise<T> addListener(FutureListener<? super T> listener);
-
-    @Override
-    RPromise<T> addListeners(FutureListener<? super T>... listeners);
-
-    @Override
-    RPromise<T> removeListener(FutureListener<? super T> listener);
-
-    @Override
-    RPromise<T> removeListeners(FutureListener<? super T>... listeners);
 
     @Override
     RPromise<T> await() throws InterruptedException;

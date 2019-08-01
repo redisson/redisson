@@ -24,6 +24,8 @@ import org.redisson.api.StreamMessageId;
  */
 public class StreamIdConvertor implements Convertor<StreamMessageId> {
 
+    public static final StreamIdConvertor INSTANCE = new StreamIdConvertor();
+    
     @Override
     public StreamMessageId convert(Object id) {
         String[] parts = id.toString().split("-");

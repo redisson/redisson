@@ -28,6 +28,8 @@ import org.redisson.api.RedissonRxClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
+import io.reactivex.Single;
+
 /**
  *
  * @author Nikita Koksharov
@@ -48,42 +50,42 @@ public class RedissonSetCacheRx<V> {
         return new SetRxIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((ScanIterator)instance).scanIteratorAsync(instance.getName(), client, nextIterPos, null, 10);
+                return ((ScanIterator) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, null, 10);
             }
         }.create();
     }
 
-    public Publisher<Boolean> addAll(Publisher<? extends V> c) {
+    public Single<Boolean> addAll(Publisher<? extends V> c) {
         return new PublisherAdder<V>() {
             @Override
             public RFuture<Boolean> add(Object o) {
-                return instance.addAsync((V)o);
+                return instance.addAsync((V) o);
             }
         }.addAll(c);
     }
 
     public RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(V value) {
-        String name = ((RedissonSetCache<V>)instance).getLockName(value, "permitexpirablesemaphore");
+        String name = ((RedissonSetCache<V>) instance).getLockByValue(value, "permitexpirablesemaphore");
         return redisson.getPermitExpirableSemaphore(name);
     }
 
     public RSemaphoreRx getSemaphore(V value) {
-        String name = ((RedissonSetCache<V>)instance).getLockName(value, "semaphore");
+        String name = ((RedissonSetCache<V>) instance).getLockByValue(value, "semaphore");
         return redisson.getSemaphore(name);
     }
     
     public RLockRx getFairLock(V value) {
-        String name = ((RedissonSetCache<V>)instance).getLockName(value, "fairlock");
+        String name = ((RedissonSetCache<V>) instance).getLockByValue(value, "fairlock");
         return redisson.getFairLock(name);
     }
     
     public RReadWriteLockRx getReadWriteLock(V value) {
-        String name = ((RedissonSetCache<V>)instance).getLockName(value, "rw_lock");
+        String name = ((RedissonSetCache<V>) instance).getLockByValue(value, "rw_lock");
         return redisson.getReadWriteLock(name);
     }
     
     public RLockRx getLock(V value) {
-        String name = ((RedissonSetCache<V>)instance).getLockName(value, "lock");
+        String name = ((RedissonSetCache<V>) instance).getLockByValue(value, "lock");
         return redisson.getLock(name);
     }
     

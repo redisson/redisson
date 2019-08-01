@@ -35,7 +35,7 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
      * @param indexes of elements
      * @return list of elements
      */
-    List<V> get(int ...indexes);
+    List<V> get(int...indexes);
     
     /**
      * Returns <code>RMapReduce</code> object associated with this map
@@ -93,12 +93,39 @@ public interface RList<V> extends List<V>, RExpirable, RListAsync<V>, RSortable<
     void trim(int fromIndex, int toIndex);
 
     /**
+     * Returns range of values from 0 index to <code>toIndex</code>. Indexes are zero based. 
+     * <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param toIndex - end index
+     * @return elements
+     */
+    List<V> range(int toIndex);
+    
+    /**
+     * Returns range of values from <code>fromIndex</code> to <code>toIndex</code> index including.
+     * Indexes are zero based. <code>-1</code> means the last element, <code>-2</code> means penultimate and so on.
+     * 
+     * @param fromIndex - start index
+     * @param toIndex - end index
+     * @return elements
+     */
+    List<V> range(int fromIndex, int toIndex);
+    
+    /**
      * Remove object by specified index
      * 
      * @param index - index of object
      */
     void fastRemove(int index);
     
-    boolean remove(Object o, int count);
+    /**
+     * Removes up to <code>count</code> occurrences of <code>element</code> 
+     * 
+     * @param element - element to find
+     * @param count - amount occurrences
+     * @return {@code true} if at least one element removed; 
+     *      or {@code false} if element isn't found
+     */
+    boolean remove(Object element, int count);
     
 }

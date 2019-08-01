@@ -13,6 +13,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.joor.Reflect;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,7 +33,6 @@ import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 
-import mockit.Deencapsulation;
 import mockit.Invocation;
 import mockit.Mock;
 import mockit.MockUp;
@@ -88,7 +88,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         RScheduledExecutorService executorService = client.getExecutorService("JobA");
         executorService.schedule(new TestTask() , CronSchedule.of("0/1 * * * * ?"));
         
-        TimeUnit.MILLISECONDS.sleep(4800);
+        TimeUnit.MILLISECONDS.sleep(4900);
         
         assertThat(client.getAtomicLong("counter").get()).isEqualTo(4);
         
@@ -105,7 +105,8 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(f.isSuccess()).isTrue();
         assertThat(System.currentTimeMillis() - start).isBetween(11000L, 11500L);
         
-        Deencapsulation.setField(RedissonExecutorService.class, "RESULT_OPTIONS", RemoteInvocationOptions.defaults().noAck().expectResultWithin(3, TimeUnit.SECONDS));
+        Reflect.onClass(RedissonExecutorService.class).set("RESULT_OPTIONS", RemoteInvocationOptions.defaults().noAck().expectResultWithin(3, TimeUnit.SECONDS));
+    
         executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(5, TimeUnit.SECONDS));
         start = System.currentTimeMillis();
         RScheduledFuture<?> f1 = executor.schedule(new ScheduledCallableTask(), 5, TimeUnit.SECONDS);
@@ -155,7 +156,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         long start = System.currentTimeMillis();
         RExecutorFuture<?> f = executor.schedule(new IncrementRunnableTask("counter"), 1, TimeUnit.SECONDS);
         f.syncUninterruptibly();
-        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1200L);
+        assertThat(System.currentTimeMillis() - start).isBetween(900L, 1300L);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
         Thread.sleep(2000);
         node.shutdown();

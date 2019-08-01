@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.Node.InfoSection;
 import org.redisson.client.protocol.Time;
@@ -34,6 +35,15 @@ public interface NodeAsync {
     
     RFuture<Boolean> pingAsync();
 
+    /**
+     * Ping Redis node with specified timeout.
+     *
+     * @param timeout - ping timeout
+     * @param timeUnit - timeout unit
+     * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
+     */
+    RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit);
+    
     RFuture<Map<String, String>> clusterInfoAsync();
     
 }

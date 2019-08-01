@@ -25,4 +25,17 @@ import java.io.Serializable;
 @SuppressWarnings("serial")
 public class LocalCachedMapClear implements Serializable {
 
+    private byte[] requestId;
+
+    public LocalCachedMapClear() {
+    }
+    
+    public LocalCachedMapClear(byte[] requestId) {
+        this.requestId = requestId;
+    }
+    
+    public byte[] getRequestId() {
+        return requestId;
+    }
+    
 }

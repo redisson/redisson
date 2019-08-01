@@ -17,6 +17,13 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <K> key type
+ * @param <V> value type
+ */
 public interface RMultimapCacheAsync<K, V> extends RMultimapAsync<K, V> {
 
     /**

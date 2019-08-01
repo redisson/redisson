@@ -88,6 +88,16 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<V> getAndSetAsync(V newValue);
 
     /**
+     * Retrieves current element in the holder and replaces it with <code>newValue</code> with defined <code>timeToLive</code> interval. 
+     * 
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return previous value
+     */
+    RFuture<V> getAndSetAsync(V value, long timeToLive, TimeUnit timeUnit);
+    
+    /**
      * Stores element into the holder. 
      * 
      * @param value - value to set

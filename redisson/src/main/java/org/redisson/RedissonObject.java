@@ -26,13 +26,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.redisson.api.DeletedObjectListener;
+import org.redisson.api.ExpiredObjectListener;
+import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
+import org.redisson.api.RPatternTopic;
+import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CountableListener;
+import org.redisson.misc.Hash;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 import io.netty.buffer.ByteBuf;
 
@@ -45,7 +54,7 @@ import io.netty.buffer.ByteBuf;
 public abstract class RedissonObject implements RObject {
 
     protected final CommandAsyncExecutor commandExecutor;
-    private final String name;
+    private String name;
     protected final Codec codec;
 
     public RedissonObject(Codec codec, CommandAsyncExecutor commandExecutor, String name) {
@@ -113,7 +122,7 @@ public abstract class RedissonObject implements RObject {
     }
     
     public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
-        return commandExecutor.evalWriteAsync((String)keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+        return commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                   "local total = 0;"
                 + "for j = 1, #KEYS, 1 do "
                     + "local size = redis.call('memory', 'usage', KEYS[j]); "
@@ -132,7 +141,13 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Void> renameAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
+        RFuture<Void> f = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
+        f.onComplete((r, e) -> {
+            if (e == null) {
+                this.name = newName;
+            }
+        });
+        return f;
     }
 
     @Override
@@ -172,7 +187,14 @@ public abstract class RedissonObject implements RObject {
 
     @Override
     public RFuture<Boolean> renamenxAsync(String newName) {
-        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getName(), newName);
+        RFuture<Boolean> f = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAMENX, getName(), newName);
+        f.onComplete((value, e) -> {
+            if (e == null && value) {
+                this.name = newName;
+            }
+        });
+        return f;
+
     }
 
     @Override
@@ -231,6 +253,24 @@ public abstract class RedissonObject implements RObject {
     public void encode(Collection<Object> params, Collection<?> values) {
         for (Object object : values) {
             params.add(encode(object));
+        }
+    }
+    
+    public String getLockByMapKey(Object key, String suffix) {
+        ByteBuf keyState = encodeMapKey(key);
+        try {
+            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
+        } finally {
+            keyState.release();
+        }
+    }
+
+    public String getLockByValue(Object key, String suffix) {
+        ByteBuf keyState = encode(key);
+        try {
+            return suffixName(getName(key), Hash.hash128toBase64(keyState) + ":" + suffix);
+        } finally {
+            keyState.release();
         }
     }
     
@@ -351,4 +391,80 @@ public abstract class RedissonObject implements RObject {
         return restoreAndReplaceAsync(state, 0, null);
     }
     
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof ExpiredObjectListener) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+            return topic.addListener(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    if (msg.equals(getName())) {
+                        ((ExpiredObjectListener) listener).onExpired(msg);
+                    }
+                }
+            });
+        }
+        if (listener instanceof DeletedObjectListener) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
+            return topic.addListener(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    if (msg.equals(getName())) {
+                        ((DeletedObjectListener) listener).onDeleted(msg);
+                    }
+                }
+            });
+        }
+        throw new IllegalArgumentException();
+    };
+    
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ExpiredObjectListener) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+            return topic.addListenerAsync(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    if (msg.equals(getName())) {
+                        ((ExpiredObjectListener) listener).onExpired(msg);
+                    }
+                }
+            });
+        }
+        if (listener instanceof DeletedObjectListener) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
+            return topic.addListenerAsync(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    if (msg.equals(getName())) {
+                        ((DeletedObjectListener) listener).onDeleted(msg);
+                    }
+                }
+            });
+        }
+        throw new IllegalArgumentException();
+    }
+    
+    @Override
+    public void removeListener(int listenerId) {
+        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        expiredTopic.removeListener(listenerId);
+
+        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
+        deletedTopic.removeListener(listenerId);
+    }
+    
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RPromise<Void> result = new RedissonPromise<>();
+        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
+        
+        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
+        expiredTopic.removeListenerAsync(listenerId).onComplete(listener);
+        
+        RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
+        deletedTopic.removeListenerAsync(listenerId).onComplete(listener);
+        return result;
+    }
+
 }
