@@ -4,6 +4,22 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 03-Aug-2019 - 3.11.2 released  
+
+Improvement - `RLiveObject` interface should extend `RExpirable`  
+Improvement - `RKeys.deleteByPattern` method performance improvements  
+Fixed - `RBatch.execute` method throws `NoSuchElementException`  
+Fixed - `RedisTimeoutException` is thrown if retryInterval set to 0  
+Fixed - `Set.intersection`, `union` and `diff` methods should return Integer  
+Fixed - `FSTCodec` state is not fully copied  
+Fixed - `CommandAsyncService.CODECS` map changed to Soft reference map  
+Fixed - `RKeys.deleteByPatternAsync` method doesn't work in batch mode  
+Fixed - subscribe timeouts after failover  
+Fixed - a new attempt is not made if node with defined slot wasn't discovered  
+Fixed - some methods of `RScript` object doesn't use defined codec  
+Fixed - `RedissonConnection.set` method returns null if invoked with expiration parameter  
+Fixed - `removeAll` method doesn't work on collections returned by Multimap based objects  
+
 ### 25-Jun-2019 - 3.11.1 released  
 Feature - `getPendingInvocations` method added to `RRemoteService` object  
 Feature - `natMap` setting support for Sentinel mode (thanks to [fgiannetti](https://github.com/fgiannetti))  
