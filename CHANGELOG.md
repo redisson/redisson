@@ -8,6 +8,7 @@ Redisson Releases History
 
 Improvement - `RLiveObject` interface should extend `RExpirable`  
 Improvement - `RKeys.deleteByPattern` method performance improvements  
+
 Fixed - `RBatch.execute` method throws `NoSuchElementException`  
 Fixed - `RedisTimeoutException` is thrown if retryInterval set to 0  
 Fixed - `Set.intersection`, `union` and `diff` methods should return Integer  
