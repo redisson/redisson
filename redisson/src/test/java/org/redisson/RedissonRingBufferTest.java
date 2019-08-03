@@ -13,7 +13,6 @@ public class RedissonRingBufferTest extends BaseTest {
     @Test
     public void testAdd() {
         RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
-        assertThat(buffer.remainingCapacity()).isZero();
         assertThat(buffer.capacity()).isZero();
         buffer.trySetCapacity(10);
         assertThat(buffer.capacity()).isEqualTo(10);
@@ -47,7 +46,6 @@ public class RedissonRingBufferTest extends BaseTest {
     @Test
     public void testAddAll() {
         RRingBuffer<Integer> buffer = redisson.getRingBuffer("test");
-        assertThat(buffer.remainingCapacity()).isZero();
         assertThat(buffer.capacity()).isZero();
         buffer.trySetCapacity(10);
         assertThat(buffer.capacity()).isEqualTo(10);
