@@ -468,8 +468,14 @@ public class CommandBatchService extends CommandAsyncService {
                                     if (data.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                                         break;
                                     }
+                                    
                                     RPromise<Object> promise = (RPromise<Object>) data.getPromise();
-                                    promise.trySuccess(resultIter.next());
+                                    if (resultIter.hasNext()) {
+                                        promise.trySuccess(resultIter.next());
+                                    } else {
+                                        // fix for https://github.com/redisson/redisson/issues/2212
+                                        promise.trySuccess(null);
+                                    }
                                 }
                             }
                             
