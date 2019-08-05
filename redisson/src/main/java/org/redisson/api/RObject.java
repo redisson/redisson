@@ -28,9 +28,9 @@ import org.redisson.client.codec.Codec;
 public interface RObject extends RObjectAsync {
 
     /**
-     * Returns size of object in Redis memory
+     * Returns bytes amount used by object in Redis memory. 
      * 
-     * @return size of object
+     * @return size in bytes
      */
     long sizeInMemory();
     

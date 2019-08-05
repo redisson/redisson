@@ -34,6 +34,13 @@ public interface RObjectReactive {
     Codec getCodec();
     
     /**
+     * Returns bytes amount used by object in Redis memory. 
+     * 
+     * @return size in bytes
+     */
+    Mono<Long> sizeInMemory();
+    
+    /**
      * Restores object using its state returned by {@link #dump()} method.
      * 
      * @param state - state of object
