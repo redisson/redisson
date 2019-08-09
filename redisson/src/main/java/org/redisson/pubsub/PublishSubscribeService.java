@@ -267,7 +267,7 @@ public class PublishSubscribeService {
     private RFuture<RedisPubSubConnection> nextPubSubConnection(int slot) {
         MasterSlaveEntry entry = connectionManager.getEntry(slot);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet");
+            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node for slot: " + slot + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command");
             return RedissonPromise.newFailedFuture(ex);
         }
         return entry.nextPubSubConnection();

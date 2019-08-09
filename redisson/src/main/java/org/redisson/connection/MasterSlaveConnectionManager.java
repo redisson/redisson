@@ -556,8 +556,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
-            return RedissonPromise.newFailedFuture(ex);
+            return createNodeNotFoundFuture(source);
         }
         // fix for https://github.com/redisson/redisson/issues/1548
         if (source.getRedirect() != null 
@@ -587,8 +586,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public RFuture<RedisConnection> connectionReadOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);
         if (entry == null) {
-            RedisNodeNotFoundException ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet");
-            return RedissonPromise.newFailedFuture(ex);
+            return createNodeNotFoundFuture(source);
         }
 
         if (source.getRedirect() != null) {
@@ -599,6 +597,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         
         return entry.connectionReadOp(command);
+    }
+
+    protected RFuture<RedisConnection> createNodeNotFoundFuture(NodeSource source) {
+        RedisNodeNotFoundException ex;
+        if (source.getSlot() != null && source.getAddr() == null && source.getRedisClient() == null) {
+            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command");
+        } else {
+            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet.");
+        }
+        return RedissonPromise.newFailedFuture(ex);
     }
 
     @Override
