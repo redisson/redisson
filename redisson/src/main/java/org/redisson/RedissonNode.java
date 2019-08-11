@@ -147,7 +147,7 @@ public final class RedissonNode {
             String name = entry.getKey();
             int workers = entry.getValue();
             redisson.getExecutorService(name).registerWorkers(workers);
-            log.info("{} worker(s) for '{}' ExecutorService registered", workers, name);
+            log.info("{} worker(s) registered for ExecutorService with '{}' name", workers, name);
         }
 
         log.info("Redisson node started!");
