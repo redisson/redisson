@@ -55,7 +55,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
     }
     
     String getClientValueName() {
-        return suffixName(getValueName(), commandExecutor.getConnectionManager().getId().toString());
+        return suffixName(getValueName(), commandExecutor.getConnectionManager().getId());
     }
     
     @Override
@@ -206,7 +206,7 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                      + "return nil; "
               + "end;",
                 Arrays.<Object>asList(getName(), getValueName(), getClientValueName()), 
-                value, commandExecutor.getConnectionManager().getId().toString());
+                value, commandExecutor.getConnectionManager().getId());
     }
 
     @Override

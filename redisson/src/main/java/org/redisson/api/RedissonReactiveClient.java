@@ -738,4 +738,11 @@ public interface RedissonReactiveClient {
      */
     boolean isShuttingDown();
 
+    /**
+     * Returns id of this Redisson instance
+     * 
+     * @return id
+     */
+    String getId();
+    
 }

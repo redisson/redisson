@@ -1099,4 +1099,11 @@ public interface RedissonClient {
      */
     boolean isShuttingDown();
 
+    /**
+     * Returns id of this Redisson instance
+     * 
+     * @return id
+     */
+    String getId();
+
 }

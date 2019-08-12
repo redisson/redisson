@@ -435,11 +435,9 @@ public class RedissonReactive implements RedissonReactiveClient {
 
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        String executorId;
-        if (codec == connectionManager.getCodec()) {
-            executorId = connectionManager.getId().toString();
-        } else {
-            executorId = connectionManager.getId() + ":" + name;
+        String executorId = connectionManager.getId();
+        if (codec != connectionManager.getCodec()) {
+            executorId = executorId + ":" + name;
         }
         return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
     }
@@ -562,4 +560,10 @@ public class RedissonReactive implements RedissonReactiveClient {
         return ReactiveProxyBuilder.create(commandExecutor, deque, 
                 new RedissonBlockingDequeReactive<V>(deque), RBlockingDequeReactive.class);
     }
+
+    @Override
+    public String getId() {
+        return commandExecutor.getConnectionManager().getId();
+    }
+
 }

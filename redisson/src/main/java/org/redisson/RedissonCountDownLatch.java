@@ -16,7 +16,6 @@
 package org.redisson;
 
 import java.util.Arrays;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RCountDownLatch;
@@ -39,7 +38,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
 
     private final CountDownLatchPubSub pubSub;
 
-    private final UUID id;
+    private final String id;
 
     protected RedissonCountDownLatch(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);

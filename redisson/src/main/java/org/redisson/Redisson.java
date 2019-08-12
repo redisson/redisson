@@ -475,11 +475,9 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        String executorId;
-        if (codec == connectionManager.getCodec()) {
-            executorId = connectionManager.getId().toString();
-        } else {
-            executorId = connectionManager.getId() + ":" + name;
+        String executorId = connectionManager.getId();
+        if (codec != connectionManager.getCodec()) {
+            executorId = executorId + ":" + name;
         }
         return new RedissonRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
     }
@@ -760,5 +758,9 @@ public class Redisson implements RedissonClient {
         return new RedissonPriorityDeque<V>(codec, connectionManager.getCommandExecutor(), name, this);
     }
 
+    @Override
+    public String getId() {
+        return connectionManager.getId();
+    }
 
 }

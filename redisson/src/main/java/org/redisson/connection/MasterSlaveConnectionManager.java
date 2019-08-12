@@ -113,7 +113,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
     };
 
-    protected final UUID id;
+    protected final String id;
     
     public static final int MAX_SLOT = 16384;
 
@@ -165,7 +165,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     }
 
     protected MasterSlaveConnectionManager(Config cfg, UUID id) {
-        this.id = id;
+        this.id = id.toString();
         Version.logVersion();
 
         if (cfg.getTransportMode() == TransportMode.EPOLL) {
@@ -282,22 +282,27 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return result;
     }
     
-    public UUID getId() {
+    @Override
+    public String getId() {
         return id;
     }
     
+    @Override
     public boolean isClusterMode() {
         return false;
     }
     
+    @Override
     public CommandSyncService getCommandExecutor() {
         return commandExecutor;
     }
 
+    @Override
     public IdleConnectionWatcher getConnectionWatcher() {
         return connectionWatcher;
     }
 
+    @Override
     public Config getCfg() {
         return cfg;
     }

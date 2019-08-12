@@ -412,11 +412,9 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public RRemoteService getRemoteService(String name, Codec codec) {
-        String executorId;
-        if (codec == connectionManager.getCodec()) {
-            executorId = connectionManager.getId().toString();
-        } else {
-            executorId = connectionManager.getId() + ":" + name;
+        String executorId = connectionManager.getId();
+        if (codec != connectionManager.getCodec()) {
+            executorId = executorId + ":" + name;
         }
         return new RedissonRemoteService(codec, name, commandExecutor, executorId, responses);
     }
@@ -539,6 +537,11 @@ public class RedissonRx implements RedissonRxClient {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, deque, 
                 new RedissonBlockingDequeRx<V>(deque), RBlockingDequeRx.class);
+    }
+
+    @Override
+    public String getId() {
+        return commandExecutor.getConnectionManager().getId();
     }
     
 }

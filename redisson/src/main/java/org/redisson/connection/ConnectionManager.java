@@ -17,7 +17,6 @@ package org.redisson.connection;
 
 import java.net.InetSocketAddress;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
@@ -48,7 +47,7 @@ public interface ConnectionManager {
     
     RedisURI applyNatMap(RedisURI address);
     
-    UUID getId();
+    String getId();
     
     CommandSyncService getCommandExecutor();
     

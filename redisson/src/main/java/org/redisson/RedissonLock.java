@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -114,7 +113,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
     protected long internalLockLeaseTime;
 
-    final UUID id;
+    final String id;
     final String entryName;
 
     protected final LockPubSub pubSub;

@@ -160,9 +160,9 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         this.responses = responses;
 
         if (codec == connectionManager.getCodec()) {
-            this.executorId = connectionManager.getId().toString();
+            this.executorId = connectionManager.getId();
         } else {
-            this.executorId = connectionManager.getId().toString() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
+            this.executorId = connectionManager.getId() + ":" + RemoteExecutorServiceAsync.class.getName() + ":" + name;
         }
         
         remoteService = new RedissonExecutorRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
