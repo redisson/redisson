@@ -82,6 +82,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final Map<String, String> natMap;
 
     private boolean usePassword = false;
+    private String scheme;
 
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
@@ -107,6 +108,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 RedisConnection c = client.connect();
                 try {
                     c.sync(RedisCommands.PING);
+                    scheme = addr.getScheme();
                 } catch (RedisAuthRequiredException e) {
                     usePassword = true;
                 }
@@ -120,7 +122,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             if (NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null && !addr.getHost().equals("localhost")) {
-                sentinelHosts.add(convert(addr.getHost(), "" + addr.getPort()));
+                sentinelHosts.add(addr);
             }
             
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
@@ -483,7 +485,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         } else {
             host = applyNatMap(host);
         }
-        return "redis://" + host + ":" + port;
+        
+        return scheme + "://" + host + ":" + port;
     }
 
     @Override
