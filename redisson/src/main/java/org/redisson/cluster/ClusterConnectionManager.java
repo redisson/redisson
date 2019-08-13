@@ -114,7 +114,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
                 
                 clusterNodesCommand = RedisCommands.CLUSTER_NODES;
-                if ("rediss".equals(addr.getScheme())) {
+                if (addr.isSsl()) {
                     clusterNodesCommand = RedisCommands.CLUSTER_NODES_SSL;
                 }
                 

@@ -106,7 +106,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
     
     private void initSsl(final RedisClientConfig config, Channel ch) throws KeyStoreException, IOException,
             NoSuchAlgorithmException, CertificateException, SSLException, UnrecoverableKeyException {
-        if (!"rediss".equals(config.getAddress().getScheme())) {
+        if (!config.getAddress().isSsl()) {
             return;
         }
 
