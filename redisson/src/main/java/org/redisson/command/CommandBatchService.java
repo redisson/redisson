@@ -688,7 +688,7 @@ public class CommandBatchService extends CommandAsyncService {
                             details.incAttempt();
                             
                             Timeout timeout;
-                            if (interval > 0) {
+                            if (interval > 0 && attempts > 0) {
                                 timeout = connectionManager.newTimeout(this, interval, TimeUnit.MILLISECONDS);
                             } else {
                                 timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
@@ -728,7 +728,12 @@ public class CommandBatchService extends CommandAsyncService {
             }
         };
 
-        Timeout timeout = connectionManager.newTimeout(retryTimerTask, interval, TimeUnit.MILLISECONDS);
+        Timeout timeout;
+        if (interval > 0 && attempts > 0) {
+            timeout = connectionManager.newTimeout(retryTimerTask, interval, TimeUnit.MILLISECONDS);
+        } else {
+            timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
+        }
         details.setTimeout(timeout);
         mainPromise.onComplete(mainPromiseListener);
 

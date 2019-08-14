@@ -103,7 +103,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
-            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
                 RedisConnection c = client.connect();
                 try {
@@ -125,7 +125,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 sentinelHosts.add(addr);
             }
             
-            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getRetryInterval() * this.config.getRetryAttempts(), null);
+            RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
                 RedisConnection connection = client.connect();
                 if (!connection.isActive()) {
@@ -505,7 +505,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             return RedissonPromise.newSucceededFuture(null);
         }
         
-        RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getRetryInterval() * c.getRetryAttempts(), null);
+        RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getTimeout(), null);
         RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> future = client.resolveAddr();
         future.onComplete((res, e) -> {

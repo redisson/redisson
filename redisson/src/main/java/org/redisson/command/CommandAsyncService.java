@@ -721,7 +721,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             details.incAttempt();
 
                             Timeout timeout;
-                            if (connectionManager.getConfig().getRetryInterval() > 0) {
+                            if (connectionManager.getConfig().getRetryInterval() > 0 && connectionManager.getConfig().getRetryAttempts() > 0) {
                                 timeout = connectionManager.newTimeout(this, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
                             } else {
                                 timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
@@ -770,7 +770,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         };
 
         Timeout timeout;
-        if (connectionManager.getConfig().getRetryInterval() > 0) {
+        if (connectionManager.getConfig().getRetryInterval() > 0 && connectionManager.getConfig().getRetryAttempts() > 0) {
             timeout = connectionManager.newTimeout(retryTimerTask, connectionManager.getConfig().getRetryInterval(), TimeUnit.MILLISECONDS);
         } else {
             timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
