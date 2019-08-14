@@ -119,7 +119,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (config.getSslTruststore() != null) {
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             
-            InputStream stream = config.getSslTruststore().toURL().openStream();
+            InputStream stream = config.getSslTruststore().openStream();
             try {
                 char[] password = null;
                 if (config.getSslTruststorePassword() != null) {
@@ -138,7 +138,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         if (config.getSslKeystore() != null){
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             
-            InputStream stream = config.getSslKeystore().toURL().openStream();
+            InputStream stream = config.getSslKeystore().openStream();
             char[] password = null;
             if (config.getSslKeystorePassword() != null) {
                 password = config.getSslKeystorePassword().toCharArray();

@@ -16,7 +16,7 @@
 package org.redisson.client;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.concurrent.ExecutorService;
 
 import org.redisson.config.SslProvider;
@@ -59,9 +59,9 @@ public class RedisClientConfig {
     private String sslHostname;
     private boolean sslEnableEndpointIdentification = true;
     private SslProvider sslProvider = SslProvider.JDK;
-    private URI sslTruststore;
+    private URL sslTruststore;
     private String sslTruststorePassword;
-    private URI sslKeystore;
+    private URL sslKeystore;
     private String sslKeystorePassword;
     
     public RedisClientConfig() {
@@ -184,18 +184,18 @@ public class RedisClientConfig {
         return this;
     }
     
-    public URI getSslTruststore() {
+    public URL getSslTruststore() {
         return sslTruststore;
     }
-    public RedisClientConfig setSslTruststore(URI sslTruststore) {
+    public RedisClientConfig setSslTruststore(URL sslTruststore) {
         this.sslTruststore = sslTruststore;
         return this;
     }
     
-    public URI getSslKeystore() {
+    public URL getSslKeystore() {
         return sslKeystore;
     }
-    public RedisClientConfig setSslKeystore(URI sslKeystore) {
+    public RedisClientConfig setSslKeystore(URL sslKeystore) {
         this.sslKeystore = sslKeystore;
         return this;
     }
