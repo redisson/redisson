@@ -101,22 +101,37 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
         
+        boolean connected = false;
+        
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
                 RedisConnection c = client.connect();
+                connected = true;
                 try {
                     c.sync(RedisCommands.PING);
                     scheme = addr.getScheme();
                 } catch (RedisAuthRequiredException e) {
                     usePassword = true;
                 }
-                client.shutdown();
                 break;
+            } catch (RedisConnectionException e) {
+                log.warn("Can't connect to sentinel server. {}", e.getMessage());
             } catch (Exception e) {
                 // skip
+            } finally {
+                client.shutdown();
             }
+        }
+        
+        if (!connected) {
+            stopThreads();
+            StringBuilder list = new StringBuilder();
+            for (String address : cfg.getSentinelAddresses()) {
+                list.append(address).append(", ");
+            }
+            throw new RedisConnectionException("Unable to connect to Redis sentinel servers: " + list);
         }
         
         for (String address : cfg.getSentinelAddresses()) {
@@ -190,7 +205,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                 break;
             } catch (RedisConnectionException e) {
-                log.warn("Can't connect to sentinel server. {}", e.getMessage());
+                // skip
             } finally {
                 client.shutdownAsync();
             }
