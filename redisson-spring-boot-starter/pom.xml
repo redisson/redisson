@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>2.1.1.RELEASE</spring-boot.version>
+        <spring-boot.version>2.1.7.RELEASE</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
