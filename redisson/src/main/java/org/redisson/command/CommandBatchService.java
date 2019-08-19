@@ -205,7 +205,7 @@ public class CommandBatchService extends CommandAsyncService {
     }
     
     @Override
-    protected <V, R> void handleSuccess(AsyncDetails<V, R> details, RPromise<R> promise, RedisCommand<?> command, R res) {
+    protected <V, R> void handleSuccess(AsyncDetails<V, R> details, RPromise<R> promise, RedisCommand<?> command, R res) throws ReflectiveOperationException {
         if (RedisCommands.EXEC.getName().equals(command.getName())) {
             super.handleSuccess(details, promise, command, res);
             return;
@@ -568,7 +568,11 @@ public class CommandBatchService extends CommandAsyncService {
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                             && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
                         Object entryResult = commandEntry.getPromise().getNow();
-                        entryResult = tryHandleReference(entryResult);
+                        try {
+                            entryResult = tryHandleReference(entryResult);
+                        } catch (ReflectiveOperationException exc) {
+                            log.error("Unable to handle reference from " + entryResult, exc);
+                        }
                         responses.add(entryResult);
                     }
                 }

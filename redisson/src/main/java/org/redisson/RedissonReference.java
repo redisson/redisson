@@ -111,23 +111,17 @@ public class RedissonReference implements Serializable {
 
     /**
      * @return the type
-     * @throws java.lang.Exception - which could be:
-     *     LinkageError - if the linkage fails
-     *     ExceptionInInitializerError - if the initialization provoked by this method fails
-     *     ClassNotFoundException - if the class cannot be located
+     * @throws java.lang.ClassNotFoundException - if the class cannot be located
      */
-    public Class<?> getType() throws Exception {
+    public Class<?> getType() throws ClassNotFoundException {
         return Class.forName(type);
     }
 
     /**
      * @return the type
-     * @throws java.lang.Exception - which could be:
-     *     LinkageError - if the linkage fails
-     *     ExceptionInInitializerError - if the initialization provoked by this method fails
-     *     ClassNotFoundException - if the class cannot be located
+     * @throws java.lang.ClassNotFoundException - if the class cannot be located
      */
-    public Class<?> getReactiveType() throws Exception {
+    public Class<?> getReactiveType() throws ClassNotFoundException {
         if (REACTIVE_MAP.containsValue(type)) {
             return Class.forName(REACTIVE_MAP.reverseGet(type)); //live object is not supported in reactive client
         }
@@ -179,12 +173,9 @@ public class RedissonReference implements Serializable {
 
     /**
      * @return the codec
-     * @throws java.lang.Exception - which could be:
-     *     LinkageError - if the linkage fails
-     *     ExceptionInInitializerError - if the initialization provoked by this method fails
-     *     ClassNotFoundException - if the class cannot be located 
+     * @throws java.lang.ClassNotFoundException - if the class cannot be located
      */
-    public Class<? extends Codec> getCodecType() throws Exception {
+    public Class<? extends Codec> getCodecType() throws ClassNotFoundException {
         if (codec != null) {
             return (Class<? extends Codec>) Class.forName(codec);
         }

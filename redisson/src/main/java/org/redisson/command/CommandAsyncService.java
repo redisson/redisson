@@ -101,9 +101,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     final ConnectionManager connectionManager;
     private RedissonObjectBuilder objectBuilder;
-    protected RedissonClient redisson;
-    protected RedissonReactiveClient redissonReactive;
-    protected RedissonRxClient redissonRx;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -116,47 +113,32 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonClient redisson) {
-        if (redisson != null) {
-            this.redisson = redisson;
-            enableRedissonReferenceSupport(redisson.getConfig());
-            this.redissonReactive = null;
-            this.redissonRx = null;
-        }
+        enableRedissonReferenceSupport(redisson.getConfig(), redisson, null, null);
         return this;
     }
 
     @Override
     public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {
-        if (redissonReactive != null) {
-            this.redissonReactive = redissonReactive;
-            enableRedissonReferenceSupport(redissonReactive.getConfig());
-            this.redisson = null;
-            this.redissonRx = null;
-        }
+        enableRedissonReferenceSupport(redissonReactive.getConfig(), null, redissonReactive, null);
         return this;
     }
     
     @Override
     public CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
-        if (redissonRx != null) {
-            this.redissonReactive = null;
-            enableRedissonReferenceSupport(redissonRx.getConfig());
-            this.redisson = null;
-            this.redissonRx = redissonRx;
-        }
+        enableRedissonReferenceSupport(redissonRx.getConfig(), null, null, redissonRx);
         return this;
     }
 
-    private void enableRedissonReferenceSupport(Config config) {
+    private void enableRedissonReferenceSupport(Config config, RedissonClient redisson, RedissonReactiveClient redissonReactive, RedissonRxClient redissonRx) {
         Codec codec = config.getCodec();
-        objectBuilder = new RedissonObjectBuilder(config);
+        objectBuilder = new RedissonObjectBuilder(config, redisson, redissonReactive, redissonRx);
         ReferenceCodecProvider codecProvider = objectBuilder.getReferenceCodecProvider();
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
     @Override
     public boolean isRedissonReferenceSupportEnabled() {
-        return redisson != null || redissonReactive != null || redissonRx != null;
+        return objectBuilder != null;
     }
 
     @Override
@@ -1085,7 +1067,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             AsyncDetails.release(details);
         } catch (Exception e) {
             handleError(details, details.getMainPromise(), e);
-            throw e;
         }
     }
 
@@ -1093,7 +1074,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         mainPromise.tryFailure(cause);
     }
 
-    protected <V, R> void handleSuccess(AsyncDetails<V, R> details, RPromise<R> promise, RedisCommand<?> command, R res) {
+    protected <V, R> void handleSuccess(AsyncDetails<V, R> details, RPromise<R> promise, RedisCommand<?> command, R res) throws ReflectiveOperationException {
         if (isRedissonReferenceSupportEnabled()) {
             handleReference(promise, res);
         } else {
@@ -1101,11 +1082,11 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private <R, V> void handleReference(RPromise<R> mainPromise, R res) {
+    private <R, V> void handleReference(RPromise<R> mainPromise, R res) throws ReflectiveOperationException {
         mainPromise.trySuccess((R) tryHandleReference(res));
     }
     
-    protected Object tryHandleReference(Object o) {
+    protected Object tryHandleReference(Object o) throws ReflectiveOperationException {
         boolean hasConversion = false;
         if (o instanceof List) {
             List<Object> r = (List<Object>) o;
@@ -1198,7 +1179,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         }
     }
 
-    private Object tryHandleReference0(Object o) {
+    private Object tryHandleReference0(Object o) throws ReflectiveOperationException {
         if (o instanceof RedissonReference) {
             return fromReference(o);
         } else if (o instanceof ScoredEntry && ((ScoredEntry) o).getValue() instanceof RedissonReference) {
@@ -1215,22 +1196,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return o;
     }
 
-    private Object fromReference(Object res) {
+    private Object fromReference(Object res) throws ReflectiveOperationException {
         if (objectBuilder == null) {
             return res;
         }
         
-        try {
-            if (redisson != null) {
-                return objectBuilder.fromReference(redisson, (RedissonReference) res);
-            }
-            if (redissonReactive != null) {
-                return objectBuilder.fromReference(redissonReactive, (RedissonReference) res);
-            }
-            return objectBuilder.fromReference(redissonRx, (RedissonReference) res);
-        } catch (Exception exception) {
-            throw new IllegalStateException(exception);
-        }
+        return objectBuilder.fromReference((RedissonReference) res);
     }
 
     protected <R, V> void sendCommand(AsyncDetails<V, R> details, RedisConnection connection) {
