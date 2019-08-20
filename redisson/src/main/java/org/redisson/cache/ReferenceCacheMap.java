@@ -30,7 +30,7 @@ public class ReferenceCacheMap<K, V> extends AbstractCacheMap<K, V> {
 
     private final ReferenceQueue<V> queue = new ReferenceQueue<V>();
     
-    private ReferenceCachedValue.Type type;
+    private final ReferenceCachedValue.Type type;
     
     public static <K, V> ReferenceCacheMap<K, V> weak(long timeToLiveInMillis, long maxIdleInMillis) {
         return new ReferenceCacheMap<K, V>(timeToLiveInMillis, maxIdleInMillis, Type.WEAK);
