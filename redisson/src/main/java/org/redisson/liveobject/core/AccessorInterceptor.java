@@ -196,7 +196,7 @@ public class AccessorInterceptor {
         return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
     }
 
-    private static String getREntityIdFieldName(Object o) throws Exception {
+    private static String getREntityIdFieldName(Object o) {
         return Introspectior
                 .getFieldsWithAnnotation(o.getClass().getSuperclass(), RId.class)
                 .getOnly()
