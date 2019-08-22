@@ -314,7 +314,10 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(cache1.size()).isEqualTo(2);
         assertThat(cache2.size()).isEqualTo(2);
 
+        
         map1.clearLocalCache();
+        
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
 
         assertThat(cache1.size()).isZero();
         assertThat(cache2.size()).isZero();

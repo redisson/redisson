@@ -255,7 +255,14 @@ public abstract class LocalCacheListener {
                     return;
                 }
                 
-                result.trySuccess(null);
+                semaphore.deleteAsync().onComplete((re, exc) -> {
+                    if (exc != null) {
+                        result.tryFailure(exc);
+                        return;
+                    }
+
+                    result.trySuccess(null);
+                });
             });
         });
         
