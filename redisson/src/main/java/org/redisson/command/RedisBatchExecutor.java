@@ -63,12 +63,12 @@ public class RedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
     
     @SuppressWarnings("ParameterNumber")
     public RedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect,
+            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
             ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, 
             ConcurrentMap<MasterSlaveEntry, Entry> commands, ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections,
             BatchOptions options, AtomicInteger index, boolean isRedisBasedQueue, AtomicBoolean executed, AsyncSemaphore semaphore) {
         
-        super(readOnlyMode, source, codec, command, params, mainPromise, attempt, ignoreRedirect, connectionManager,
+        super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager,
                 objectBuilder);
         this.commands = commands;
         this.connections = connections;

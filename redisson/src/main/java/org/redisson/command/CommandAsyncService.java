@@ -174,7 +174,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     @Override
     public <T, R> RFuture<R> readAsync(RedisClient client, MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
-        async(true, new NodeSource(entry, client), codec, command, params, mainPromise, 0, false);
+        async(true, new NodeSource(entry, client), codec, command, params, mainPromise, false);
         return mainPromise;
     }
     
@@ -182,21 +182,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> RFuture<R> readAsync(RedisClient client, String name, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         int slot = connectionManager.calcSlot(name);
-        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0, false);
+        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, false);
         return mainPromise;
     }
     
     public <T, R> RFuture<R> readAsync(RedisClient client, byte[] key, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         int slot = connectionManager.calcSlot(key);
-        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, 0, false);
+        async(true, new NodeSource(slot, client), codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
     @Override
     public <T, R> RFuture<R> readAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
-        async(true, new NodeSource(client), codec, command, params, mainPromise, 0, false);
+        async(true, new NodeSource(client), codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
@@ -245,7 +245,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         for (MasterSlaveEntry entry : nodes) {
             RPromise<R> promise = new RedissonPromise<R>();
             promise.onComplete(listener);
-            async(true, new NodeSource(entry), codec, command, params, promise, 0, true);
+            async(true, new NodeSource(entry), codec, command, params, promise, true);
         }
         return mainPromise;
     }
@@ -287,7 +287,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         });
 
         MasterSlaveEntry entry = nodes.remove(0);
-        async(true, new NodeSource(entry), codec, command, params, attemptPromise, 0, false);
+        async(true, new NodeSource(entry), codec, command, params, attemptPromise, false);
     }
 
     @Override
@@ -342,7 +342,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         for (MasterSlaveEntry entry : nodes) {
             RPromise<T> promise = new RedissonPromise<T>();
             promise.onComplete(listener);
-            async(readOnlyMode, new NodeSource(entry), codec, command, params, promise, 0, true);
+            async(readOnlyMode, new NodeSource(entry), codec, command, params, promise, true);
         }
         return mainPromise;
     }
@@ -370,7 +370,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> RFuture<R> readAsync(String key, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         NodeSource source = getNodeSource(key);
-        async(true, source, codec, command, params, mainPromise, 0, false);
+        async(true, source, codec, command, params, mainPromise, false);
         return mainPromise;
     }
     
@@ -378,20 +378,20 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> RFuture<R> readAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         NodeSource source = getNodeSource(key);
-        async(true, source, codec, command, params, mainPromise, 0, false);
+        async(true, source, codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
     public <T, R> RFuture<R> readAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
-        async(true, new NodeSource(entry), codec, command, params, mainPromise, 0, false);
+        async(true, new NodeSource(entry), codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
     @Override
     public <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
-        async(false, new NodeSource(entry), codec, command, params, mainPromise, 0, false);
+        async(false, new NodeSource(entry), codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
@@ -460,7 +460,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         for (MasterSlaveEntry entry : entries) {
             RPromise<T> promise = new RedissonPromise<T>();
             promise.onComplete(listener);
-            async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, 0, true);
+            async(readOnlyMode, new NodeSource(entry), connectionManager.getCodec(), command, args.toArray(), promise, true);
         }
         return mainPromise;
     }
@@ -540,7 +540,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.add(keys.size());
             args.addAll(keys);
             args.addAll(Arrays.asList(params));
-            async(false, nodeSource, codec, cmd, args.toArray(), promise, 0, false);
+            async(false, nodeSource, codec, cmd, args.toArray(), promise, false);
             
             promise.onComplete((res, e) -> {
                 if (e != null) {
@@ -559,7 +559,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             newargs.add(keys.size());
                             newargs.addAll(keys);
                             newargs.addAll(Arrays.asList(pps));
-                            async(false, nodeSource, codec, command, newargs.toArray(), mainPromise, 0, false);
+                            async(false, nodeSource, codec, command, newargs.toArray(), mainPromise, false);
                         });
                     } else {
                         free(pps);
@@ -579,7 +579,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         args.add(keys.size());
         args.addAll(keys);
         args.addAll(Arrays.asList(params));
-        async(readOnlyMode, nodeSource, codec, evalCommandType, args.toArray(), mainPromise, 0, false);
+        async(readOnlyMode, nodeSource, codec, evalCommandType, args.toArray(), mainPromise, false);
         return mainPromise;
     }
 
@@ -592,21 +592,21 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public <T, R> RFuture<R> writeAsync(String key, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         NodeSource source = getNodeSource(key);
-        async(false, source, codec, command, params, mainPromise, 0, false);
+        async(false, source, codec, command, params, mainPromise, false);
         return mainPromise;
     }
 
     public <T, R> RFuture<R> writeAsync(byte[] key, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         NodeSource source = getNodeSource(key);
-        async(false, source, codec, command, params, mainPromise, 0, false);
+        async(false, source, codec, command, params, mainPromise, false);
         return mainPromise;
     }
     
     public <V, R> void async(boolean readOnlyMode, NodeSource source, Codec codec,
-            RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, 
+            RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, 
             boolean ignoreRedirect) {
-        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, attempt, ignoreRedirect, connectionManager, objectBuilder);
+        RedisExecutor<V, R> executor = new RedisExecutor<>(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder);
         executor.execute();
     }
 

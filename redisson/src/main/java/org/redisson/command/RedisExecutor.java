@@ -79,17 +79,17 @@ public class RedisExecutor<V, R> {
     
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
     
-    boolean readOnlyMode; 
-    NodeSource source; 
-    Codec codec;
-    RedisCommand<V> command; 
-    Object[] params; 
-    RPromise<R> mainPromise; 
-    volatile int attempt; 
-    boolean ignoreRedirect;
+    final boolean readOnlyMode; 
+    final RedisCommand<V> command; 
+    final Object[] params; 
+    final RPromise<R> mainPromise; 
+    final boolean ignoreRedirect;
     final RedissonObjectBuilder objectBuilder;
     final ConnectionManager connectionManager;
     
+    NodeSource source; 
+    Codec codec;
+    volatile int attempt; 
     volatile Timeout timeout;
     volatile BiConsumer<R, Throwable> mainPromiseListener;
     volatile ChannelFuture writeFuture;
@@ -100,7 +100,7 @@ public class RedisExecutor<V, R> {
     long responseTimeout;
     
     public RedisExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
-            Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect, 
+            Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, 
             ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder) {
         super();
         this.readOnlyMode = readOnlyMode;
@@ -109,7 +109,6 @@ public class RedisExecutor<V, R> {
         this.command = command;
         this.params = params;
         this.mainPromise = mainPromise;
-        this.attempt = attempt;
         this.ignoreRedirect = ignoreRedirect;
         this.connectionManager = connectionManager;
         this.objectBuilder = objectBuilder;
@@ -140,24 +139,23 @@ public class RedisExecutor<V, R> {
 
         AtomicBoolean skip = new AtomicBoolean();
         RPromise<R> attemptPromise = new RedissonPromise<R>();
-        mainPromiseListener = new BiConsumer<R, Throwable>() {
-
-            @Override
-            public void accept(R t, Throwable u) {
-                if (!skip.get() && mainPromise.isCancelled() && connectionFuture.cancel(false)) {
-                    log.debug("Connection obtaining canceled for {}", command);
-                    timeout.cancel();
-                    if (attemptPromise.cancel(false)) {
-                        free();
-                    }
+        mainPromiseListener = (r, e) -> {
+            if (!skip.get() && mainPromise.isCancelled() && connectionFuture.cancel(false)) {
+                log.debug("Connection obtaining canceled for {}", command);
+                timeout.cancel();
+                if (attemptPromise.cancel(false)) {
+                    free();
                 }
             }
         };
-        mainPromise.onComplete((r, e) -> {
-            if (this.mainPromiseListener != null) {
-                this.mainPromiseListener.accept(r, e);
-            }
-        });
+        
+        if (attempt == 0) {
+            mainPromise.onComplete((r, e) -> {
+                if (this.mainPromiseListener != null) {
+                    this.mainPromiseListener.accept(r, e);
+                }
+            });
+        }
 
         TimerTask retryTimerTask = new TimerTask() {
 
@@ -241,13 +239,11 @@ public class RedisExecutor<V, R> {
 
         };
 
-        Timeout timeout;
         if (retryInterval > 0 && attempts > 0) {
-            timeout = connectionManager.newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS);
+            this.timeout = connectionManager.newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS);
         } else {
-            timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
+            this.timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
         }
-        this.timeout = timeout;
 
         connectionFuture.onComplete((connection, e) -> {
             if (connectionFuture.isCancelled()) {

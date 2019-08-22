@@ -132,8 +132,8 @@ public class CommandBatchService extends CommandAsyncService {
     
     @Override
     public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
-            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, int attempt, boolean ignoreRedirect) {
-        RedisBatchExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, attempt, 
+            Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect) {
+        RedisBatchExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
                 true, connectionManager, objectBuilder, commands, connections, options, index, isRedisBasedQueue(), executed, semaphore);
         executor.execute();
     }
@@ -219,7 +219,7 @@ public class CommandBatchService extends CommandAsyncService {
                     for (Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
                         RPromise<List<Object>> execPromise = new RedissonPromise<List<Object>>();
                         async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
-                                new Object[] {}, execPromise, 0, false);
+                                new Object[] {}, execPromise, false);
                         execPromise.onComplete((r, ex) -> {
                             if (ex != null) {
                                 mainPromise.tryFailure(ex);
@@ -390,7 +390,7 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         for (java.util.Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
-            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, 0, this.options);
+            execute(e.getValue(), new NodeSource(e.getKey()), voidPromise, slots, this.options);
         }
         return resultPromise;
     }
@@ -400,8 +400,8 @@ public class CommandBatchService extends CommandAsyncService {
     }
 
     private void execute(Entry entry, NodeSource source, RPromise<Void> mainPromise, AtomicInteger slots, 
-            int attempt, BatchOptions options) {
-        RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(source, mainPromise, attempt, connectionManager, options, entry, slots);
+            BatchOptions options) {
+        RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(source, mainPromise, connectionManager, options, entry, slots);
         executor.execute();
     }
 
