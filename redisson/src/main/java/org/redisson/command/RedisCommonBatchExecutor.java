@@ -70,11 +70,6 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
     }
 
     @Override
-    protected void markSkip(AtomicBoolean skip) {
-        skip.set(true);
-    }
-    
-    @Override
     protected void onException() {
         entry.clearErrors();
     }

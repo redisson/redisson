@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 
 import org.redisson.RedissonReference;
@@ -118,9 +117,6 @@ public class RedisExecutor<V, R> {
         this.responseTimeout = connectionManager.getConfig().getTimeout();
     }
 
-    protected void markSkip(AtomicBoolean skip) {
-    }
-    
     public void execute() {
         if (mainPromise.isCancelled()) {
             free();
@@ -137,10 +133,9 @@ public class RedisExecutor<V, R> {
         
         RFuture<RedisConnection> connectionFuture = getConnection();
 
-        AtomicBoolean skip = new AtomicBoolean();
         RPromise<R> attemptPromise = new RedissonPromise<R>();
         mainPromiseListener = (r, e) -> {
-            if (!skip.get() && mainPromise.isCancelled() && connectionFuture.cancel(false)) {
+            if (mainPromise.isCancelled() && connectionFuture.cancel(false)) {
                 log.debug("Connection obtaining canceled for {}", command);
                 timeout.cancel();
                 if (attemptPromise.cancel(false)) {
@@ -233,7 +228,6 @@ public class RedisExecutor<V, R> {
                 
                 mainPromiseListener = null;
 
-                markSkip(skip);
                 execute();
             }
 
@@ -275,7 +269,7 @@ public class RedisExecutor<V, R> {
         });
 
         attemptPromise.onComplete((r, e) -> {
-            checkAttemptPromise(attemptPromise, skip, connectionFuture);
+            checkAttemptPromise(attemptPromise, connectionFuture);
         });
     }
     
@@ -419,7 +413,7 @@ public class RedisExecutor<V, R> {
         }
     }
     
-    protected void checkAttemptPromise(RPromise<R> attemptFuture, AtomicBoolean skip, RFuture<RedisConnection> connectionFuture) {
+    protected void checkAttemptPromise(RPromise<R> attemptFuture, RFuture<RedisConnection> connectionFuture) {
         timeout.cancel();
         if (attemptFuture.isCancelled()) {
             return;
@@ -427,8 +421,6 @@ public class RedisExecutor<V, R> {
 
         try {
             mainPromiseListener = null;
-            
-            markSkip(skip);
             
             if (attemptFuture.cause() instanceof RedisMovedException && !ignoreRedirect) {
                 RedisMovedException ex = (RedisMovedException) attemptFuture.cause();
