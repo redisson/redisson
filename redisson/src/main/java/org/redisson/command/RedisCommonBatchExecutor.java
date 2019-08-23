@@ -17,12 +17,11 @@ package org.redisson.command;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.BatchOptions;
-import org.redisson.api.RFuture;
 import org.redisson.api.BatchOptions.ExecutionMode;
+import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;

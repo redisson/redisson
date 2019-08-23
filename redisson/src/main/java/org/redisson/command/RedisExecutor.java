@@ -73,7 +73,7 @@ import io.netty.util.concurrent.FutureListener;
  * @param <V> type of value
  * @param <R> type of returned value
  */
-@SuppressWarnings({"NestedIfDepth", "MethodLength"})
+@SuppressWarnings({"NestedIfDepth"})
 public class RedisExecutor<V, R> {
     
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
@@ -152,6 +152,48 @@ public class RedisExecutor<V, R> {
             });
         }
 
+        scheduleRetryTimeout(connectionFuture, attemptPromise);
+
+        connectionFuture.onComplete((connection, e) -> {
+            if (connectionFuture.isCancelled()) {
+                connectionManager.getShutdownLatch().release();
+                return;
+            }
+
+            if (!connectionFuture.isSuccess()) {
+                connectionManager.getShutdownLatch().release();
+                exception = convertException(connectionFuture);
+                return;
+            }
+
+            if (attemptPromise.isDone() || mainPromise.isDone()) {
+                releaseConnection(attemptPromise, connectionFuture);
+                return;
+            }
+
+            sendCommand(attemptPromise, connection);
+
+            writeFuture.addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(ChannelFuture future) throws Exception {
+                    checkWriteFuture(writeFuture, attemptPromise, connection);
+                }
+            });
+
+            releaseConnection(attemptPromise, connectionFuture);
+        });
+
+        attemptPromise.onComplete((r, e) -> {
+            checkAttemptPromise(attemptPromise, connectionFuture);
+        });
+    }
+
+    private void scheduleRetryTimeout(RFuture<RedisConnection> connectionFuture, RPromise<R> attemptPromise) {
+        if (retryInterval == 0 || attempts == 0) {
+            this.timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;
+            return;
+        }
+        
         TimerTask retryTimerTask = new TimerTask() {
 
             @Override
@@ -233,44 +275,7 @@ public class RedisExecutor<V, R> {
 
         };
 
-        if (retryInterval > 0 && attempts > 0) {
-            this.timeout = connectionManager.newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS);
-        } else {
-            this.timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
-        }
-
-        connectionFuture.onComplete((connection, e) -> {
-            if (connectionFuture.isCancelled()) {
-                connectionManager.getShutdownLatch().release();
-                return;
-            }
-
-            if (!connectionFuture.isSuccess()) {
-                connectionManager.getShutdownLatch().release();
-                exception = convertException(connectionFuture);
-                return;
-            }
-
-            if (attemptPromise.isDone() || mainPromise.isDone()) {
-                releaseConnection(attemptPromise, connectionFuture);
-                return;
-            }
-
-            sendCommand(attemptPromise, connection);
-
-            writeFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    checkWriteFuture(writeFuture, attemptPromise, connection);
-                }
-            });
-
-            releaseConnection(attemptPromise, connectionFuture);
-        });
-
-        attemptPromise.onComplete((r, e) -> {
-            checkAttemptPromise(attemptPromise, connectionFuture);
-        });
+        timeout = connectionManager.newTimeout(retryTimerTask, retryInterval, TimeUnit.MILLISECONDS);
     }
     
     protected void free() {
