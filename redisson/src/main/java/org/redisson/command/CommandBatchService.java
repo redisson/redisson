@@ -37,6 +37,7 @@ import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -133,9 +134,16 @@ public class CommandBatchService extends CommandAsyncService {
     @Override
     public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect) {
-        RedisBatchExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
-                true, connectionManager, objectBuilder, commands, connections, options, index, isRedisBasedQueue(), executed, semaphore);
-        executor.execute();
+        if (isRedisBasedQueue()) {
+            RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
+                    true, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
+            executor.execute();
+        } else {
+            RedisExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
+                    true, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
+            executor.execute();
+        }
+        
     }
         
     @Override
