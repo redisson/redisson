@@ -102,21 +102,27 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      */
     boolean delete();
 
+    /*
+     * Use {@link #registerWorkers(WorkerOptions)} setting instead
+     * 
+     */
+    @Deprecated
+    void registerWorkers(int workers);
+
+    /*
+     * Use {@link #registerWorkers(WorkerOptions)} setting instead
+     * 
+     */
+    @Deprecated
+    void registerWorkers(int workers, ExecutorService executor);
+
     /**
      * Register workers
      * 
-     * @param workers - workers amount
+     * @param options - worker options
      */
-    void registerWorkers(int workers);
+    void registerWorkers(WorkerOptions options);
     
-    /**
-     * Register workers with custom executor
-     * 
-     * @param workers - workers amount
-     * @param executor - executor instance
-     */
-    void registerWorkers(int workers, ExecutorService executor);
-
     /**
      * Returns active worker groups
      * 

@@ -50,6 +50,8 @@ import org.redisson.misc.HashValue;
 import org.redisson.misc.Injector;
 import org.redisson.remote.RequestId;
 import org.redisson.remote.ResponseEntry;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -79,6 +81,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
+    private BeanFactory beanFactory;
     private ConcurrentMap<String, ResponseEntry> responses;
     
     public TasksRunnerService(CommandExecutor commandExecutor, RedissonClient redisson, Codec codec, String name, ConcurrentMap<String, ResponseEntry> responses) {
@@ -88,6 +91,10 @@ public class TasksRunnerService implements RemoteExecutorService {
         this.responses = responses;
         
         this.codec = codec;
+    }
+    
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
     }
     
     public void setTasksRetryIntervalName(String tasksRetryInterval) {
@@ -292,6 +299,13 @@ public class TasksRunnerService implements RemoteExecutorService {
             }
             
             Injector.inject(task, redisson);
+            
+            if (beanFactory != null) {
+                AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();
+                bpp.setBeanFactory(beanFactory);
+                bpp.processInjection(task);
+            }
+            
             return task;
         } catch (Exception e) {
             throw new IllegalStateException("Unable to initialize codec with ClassLoader parameter", e);

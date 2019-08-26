@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.redisson.api.RedissonNodeInitializer;
+import org.springframework.beans.factory.BeanFactory;
 
 /**
  * Redisson Node configuration
@@ -32,6 +33,7 @@ public class RedissonNodeConfig extends Config {
     
     private int mapReduceWorkers = 0;
     private RedissonNodeInitializer redissonNodeInitializer;
+    private BeanFactory beanFactory;
     private Map<String, Integer> executorServiceWorkers = new HashMap<String, Integer>();
     
     public RedissonNodeConfig() {
@@ -47,6 +49,7 @@ public class RedissonNodeConfig extends Config {
         this.executorServiceWorkers = new HashMap<String, Integer>(oldConf.executorServiceWorkers);
         this.redissonNodeInitializer = oldConf.redissonNodeInitializer;
         this.mapReduceWorkers = oldConf.mapReduceWorkers;
+        this.beanFactory = oldConf.beanFactory;
     }
     
     /**
@@ -98,6 +101,19 @@ public class RedissonNodeConfig extends Config {
         return redissonNodeInitializer;
     }
 
+    public BeanFactory getBeanFactory() {
+        return beanFactory;
+    }
+
+    /**
+     * Defines Spring Bean Factory instance to execute tasks with Spring's '@Autowired', 
+     * '@Value' or JSR-330's '@Inject' annotation.
+     * 
+     * @param beanFactory - Spring BeanFactory instance
+     */
+    public void setBeanFactory(BeanFactory beanFactory) {
+        this.beanFactory = beanFactory;
+    }
 
     /**
      * Read config object stored in JSON format from <code>File</code>

@@ -57,6 +57,7 @@ import org.redisson.api.RScheduledFuture;
 import org.redisson.api.RSemaphore;
 import org.redisson.api.RTopic;
 import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.WorkerOptions;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -237,11 +238,15 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public void registerWorkers(int workers) {
-        registerWorkers(workers, commandExecutor.getConnectionManager().getExecutor());
+        registerWorkers(WorkerOptions.defaults().workers(workers));
     }
     
     @Override
-    public void registerWorkers(int workers, ExecutorService executor) {
+    public void registerWorkers(WorkerOptions options) {
+        if (options.getWorkers() == 0) {
+            throw new IllegalArgumentException("workers amount can't be zero");
+        }
+        
         QueueTransferTask task = new QueueTransferTask(connectionManager) {
             @Override
             protected RTopic getTopic() {
@@ -306,15 +311,26 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
+        service.setBeanFactory(options.getBeanFactory());
         
-        remoteService.register(RemoteExecutorService.class, service, workers, executor);
+        ExecutorService es = commandExecutor.getConnectionManager().getExecutor();
+        if (options.getExecutorService() != null) {
+            es = options.getExecutorService();
+        }
+        
+        remoteService.register(RemoteExecutorService.class, service, options.getWorkers(), es);
         workersGroupListenerId = workersTopic.addListener(String.class, new MessageListener<String>() {
             @Override
             public void onMessage(CharSequence channel, String id) {
-                redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(workers);
+                redisson.getAtomicLong(workersCounterName + ":" + id).getAndAdd(options.getWorkers());
                 redisson.getSemaphore(workersSemaphoreName + ":" + id).release();
             }
         });
+    }
+    
+    @Override
+    public void registerWorkers(int workers, ExecutorService executor) {
+        registerWorkers(WorkerOptions.defaults().workers(workers).executorService(executor));
     }
     
     @Override
