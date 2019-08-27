@@ -4,4 +4,4 @@ Redisson offers ability to run as standalone node and participate in distributed
 
 Packaged as a single jar and could be [downloaded](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.9.0&e=jar).
 
-[Documentation](https://github.com/mrniko/redisson/wiki/12.-Standalone-node) about Redisson standalone node.
+[Documentation](https://github.com/mrniko/redisson/wiki/12.-Standalone-node) for Redisson node.
