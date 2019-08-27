@@ -29,6 +29,7 @@ import org.redisson.api.RScheduledExecutorService;
 import org.redisson.api.RScheduledFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.RemoteInvocationOptions;
+import org.redisson.api.WorkerOptions;
 import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
@@ -373,7 +374,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     @Test
     public void testCancelAtFixedDelay2() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(30, TimeUnit.MINUTES));
-        executor.registerWorkers(5);
+        executor.registerWorkers(WorkerOptions.defaults().workers(5));
         RScheduledFuture<?> future1 = executor.scheduleWithFixedDelay(new ScheduledRunnableTask2("executed1"), 1, 2, TimeUnit.SECONDS);
         Thread.sleep(5000);
         assertThat(redisson.getAtomicLong("executed1").get()).isEqualTo(1);

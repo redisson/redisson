@@ -20,12 +20,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.redisson.api.BatchOptions;
-import org.redisson.api.RFuture;
-import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandBatchService.ConnectionEntry;
 import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;

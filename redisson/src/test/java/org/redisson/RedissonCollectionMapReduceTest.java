@@ -16,6 +16,7 @@ import org.redisson.api.RList;
 import org.redisson.api.RMap;
 import org.redisson.api.RQueue;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.WorkerOptions;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.mapreduce.RCollator;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
@@ -78,7 +79,7 @@ public class RedissonCollectionMapReduceTest extends BaseTest {
     
     @Before
     public void beforeTest() {
-        redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(3);
+        redisson.getExecutorService(RExecutorService.MAPREDUCE_NAME).registerWorkers(WorkerOptions.defaults().workers(3));
     }
     
     @Test
