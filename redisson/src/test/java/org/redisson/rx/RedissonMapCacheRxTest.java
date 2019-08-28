@@ -171,7 +171,7 @@ public class RedissonMapCacheRxTest extends BaseRxTest {
 
         Thread.sleep(1000);
 
-        assertThat(toIterator(cache.keyIterator())).containsOnly("0", "2", "3");
+        assertThat(toIterator(cache.keyIterator())).toIterable().containsOnly("0", "2", "3");
     }
 
     @Test
@@ -238,7 +238,7 @@ public class RedissonMapCacheRxTest extends BaseRxTest {
         joinMap.put(6, "6");
         sync(map.putAll(joinMap));
 
-        assertThat(toIterator(map.keyIterator())).containsOnly(1, 2, 3, 4, 5, 6);
+        assertThat(toIterator(map.keyIterator())).toIterable().containsOnly(1, 2, 3, 4, 5, 6);
     }
 
     @Test

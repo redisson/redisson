@@ -170,7 +170,7 @@ public class RedissonMapCacheReactiveTest extends BaseReactiveTest {
 
         Thread.sleep(1000);
 
-        assertThat(toIterator(cache.keyIterator())).containsOnly("0", "2", "3");
+        assertThat(toIterator(cache.keyIterator())).toIterable().containsOnly("0", "2", "3");
     }
 
     @Test

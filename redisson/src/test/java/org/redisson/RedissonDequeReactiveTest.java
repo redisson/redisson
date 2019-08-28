@@ -121,7 +121,7 @@ public class RedissonDequeReactiveTest extends BaseReactiveTest {
         final RDequeReactive<Integer> queue = redisson.getDeque("deque");
         sync(queue.addAll(Arrays.asList(1, 2, 3)));
 
-        assertThat(toIterator(queue.descendingIterator())).containsExactly(3, 2, 1);
+        assertThat(toIterator(queue.descendingIterator())).toIterable().containsExactly(3, 2, 1);
     }
 
 }

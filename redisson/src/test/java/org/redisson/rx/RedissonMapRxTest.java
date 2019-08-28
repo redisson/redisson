@@ -245,7 +245,7 @@ public class RedissonMapRxTest extends BaseRxTest {
         joinMap.put(6, "6");
         sync(map.putAll(joinMap));
 
-        assertThat(toIterator(map.keyIterator())).contains(1, 2, 3, 4, 5, 6);
+        assertThat(toIterator(map.keyIterator())).toIterable().contains(1, 2, 3, 4, 5, 6);
     }
 
     @Test

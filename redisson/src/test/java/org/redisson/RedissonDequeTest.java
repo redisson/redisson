@@ -165,7 +165,7 @@ public class RedissonDequeTest extends BaseTest {
         final Deque<Integer> queue = new ArrayDeque<Integer>();
         queue.addAll(Arrays.asList(1, 2, 3));
 
-        assertThat(queue.descendingIterator()).containsExactly(3, 2, 1);
+        assertThat(queue.descendingIterator()).toIterable().containsExactly(3, 2, 1);
     }
 
     @Test
@@ -173,7 +173,7 @@ public class RedissonDequeTest extends BaseTest {
         final RDeque<Integer> queue = redisson.getDeque("deque");
         queue.addAll(Arrays.asList(1, 2, 3));
 
-        assertThat(queue.descendingIterator()).containsExactly(3, 2, 1);
+        assertThat(queue.descendingIterator()).toIterable().containsExactly(3, 2, 1);
     }
 
 }

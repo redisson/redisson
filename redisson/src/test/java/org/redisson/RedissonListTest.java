@@ -742,14 +742,14 @@ public class RedissonListTest extends BaseTest {
         list.add(10);
 
         List<Integer> subList = list.subList(3, 7);
-        assertThat(subList.iterator()).containsExactly(4, 5, 6, 7);
+        assertThat(subList.iterator()).toIterable().containsExactly(4, 5, 6, 7);
 
         subList.clear();
         assertThat(list).containsExactly(1, 2, 3, 8, 9, 10);
         assertThat(subList.size()).isZero();
 
         List<Integer> subList2 = list.subList(3, 6);
-        assertThat(subList2.iterator()).containsExactly(8, 9, 10);
+        assertThat(subList2.iterator()).toIterable().containsExactly(8, 9, 10);
     }
 
     @Test
@@ -819,7 +819,7 @@ public class RedissonListTest extends BaseTest {
         list.add(10);
 
         List<Integer> subList = list.subList(3, 7);
-        assertThat(subList.iterator()).containsExactly(4, 5, 6, 7);
+        assertThat(subList.iterator()).toIterable().containsExactly(4, 5, 6, 7);
 
         for (Iterator<Integer> iterator = subList.iterator(); iterator.hasNext();) {
             Integer num = iterator.next();
@@ -828,7 +828,7 @@ public class RedissonListTest extends BaseTest {
             }
         }
 
-        assertThat(subList.iterator()).containsExactly(4, 6, 7);
+        assertThat(subList.iterator()).toIterable().containsExactly(4, 6, 7);
 
         ListIterator<Integer> iterator = subList.listIterator();
         assertThat(iterator.hasPrevious()).isFalse();
@@ -882,16 +882,16 @@ public class RedissonListTest extends BaseTest {
         list.add(8);
 
         List<Integer> subList = list.subList(2, 6);
-        assertThat(subList.iterator()).containsExactly(3, 4, 5, 6);
+        assertThat(subList.iterator()).toIterable().containsExactly(3, 4, 5, 6);
         assertThat(subList.size()).isEqualTo(4);
         Integer val = subList.remove(2);
         assertThat(val).isEqualTo(5);
 
-        assertThat(subList.iterator()).containsExactly(3, 4, 6);
+        assertThat(subList.iterator()).toIterable().containsExactly(3, 4, 6);
 
         Integer val1 = subList.remove(2);
         assertThat(val1).isEqualTo(6);
-        assertThat(subList.iterator()).containsExactly(3, 4);
+        assertThat(subList.iterator()).toIterable().containsExactly(3, 4);
     }
 
 
