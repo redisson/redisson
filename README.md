@@ -17,7 +17,7 @@ JDK compatibility:  1.8 - 12, Android
     1. automatic master, slave and sentinel servers discovery
     2. automatic status and topology update
 * Master with Slave Redis servers mode  
-* Single Redis server mode  
+* Single Redis server mode (also supports [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/)) 
 * Thread-safe implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [RxJava2](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
