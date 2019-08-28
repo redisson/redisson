@@ -382,6 +382,34 @@ public class RedissonBatchTest extends BaseTest {
     }
 
     @Test
+    public void testBatchCancel() {
+        RedissonClient redisson = createInstance();
+        
+        BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.IN_MEMORY);
+        RBatch batch = redisson.createBatch(batchOptions);
+        for (int i = 0; i < 10; i++) {
+            RFuture<Void> f = batch.getBucket("test").setAsync(123);
+            assertThat(f.cancel(true)).isTrue();
+        }
+        
+        BatchResult<?> res = batch.execute();
+        Assert.assertEquals(0, res.getResponses().size());
+        
+        RBatch b2 = redisson.createBatch(batchOptions);
+        RListAsync<Integer> listAsync2 = b2.getList("list");
+        for (int i = 0; i < 6; i++) {
+            RFuture<Boolean> t = listAsync2.addAsync(i);
+            assertThat(t.cancel(true)).isTrue();
+        }
+
+        RFuture<BatchResult<?>> res2 = b2.executeAsync();
+        assertThat(res2.cancel(true)).isFalse();
+        Assert.assertEquals(0, res.getResponses().size());
+        
+        redisson.shutdown();
+    }
+    
+    @Test
     public void testBatchBigRequest() {
         Config config = createConfig();
         config.useSingleServer().setTimeout(15000);

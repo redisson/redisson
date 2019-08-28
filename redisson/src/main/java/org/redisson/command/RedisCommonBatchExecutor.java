@@ -96,11 +96,20 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             list.add(new CommandData<Void, Void>(promise, StringCodec.INSTANCE, RedisCommands.ASKING, new Object[] {}));
         } 
         for (CommandData<?, ?> c : entry.getCommands()) {
-            if (c.getPromise().isSuccess() && !isWaitCommand(c) && !isAtomic) {
-                // skip successful commands
+            if ((c.getPromise().isCancelled() || c.getPromise().isSuccess()) 
+                    && !isWaitCommand(c) 
+                        && !isAtomic) {
+                // skip command
                 continue;
             }
             list.add(c);
+        }
+        
+        if (list.isEmpty()) {
+            writeFuture = connection.getChannel().newPromise();
+            attemptPromise.trySuccess(null);
+            timeout.cancel();
+            return;
         }
         
         writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued));

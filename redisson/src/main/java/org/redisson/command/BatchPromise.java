@@ -41,6 +41,11 @@ public class BatchPromise<T> extends RedissonPromise<T> {
     }
     
     @Override
+    public boolean cancel(boolean mayInterruptIfRunning) {
+        return false;
+    }
+    
+    @Override
     public RPromise<T> sync() throws InterruptedException {
         if (executed.get()) {
             return super.sync();

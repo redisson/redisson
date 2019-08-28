@@ -140,7 +140,7 @@ public class CommandBatchService extends CommandAsyncService {
             executor.execute();
         } else {
             RedisExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
-                    true, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
+                    true, connectionManager, objectBuilder, commands, options, index, executed);
             executor.execute();
         }
         
@@ -149,9 +149,10 @@ public class CommandBatchService extends CommandAsyncService {
     @Override
     public <R> RPromise<R> createPromise() {
         if (isRedisBasedQueue()) {
-            return new BatchPromise<R>(executed);
+            return new BatchPromise<>(executed);
         }
-        return super.createPromise();
+        
+        return new RedissonPromise<>();
     }
     
     public BatchResult<?> execute() {
@@ -258,6 +259,11 @@ public class CommandBatchService extends CommandAsyncService {
                         syncedSlaves = (Integer) commandEntry.getPromise().getNow();
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
                             && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
+                        
+                        if (commandEntry.getPromise().isCancelled()) {
+                            continue;
+                        }
+                        
                         Object entryResult = commandEntry.getPromise().getNow();
                         try {
                             entryResult = RedisExecutor.tryHandleReference(objectBuilder, entryResult);
@@ -321,12 +327,12 @@ public class CommandBatchService extends CommandAsyncService {
                     return;
                 }
                 
-                RPromise<Map<MasterSlaveEntry, List<Object>>> mainPromise = new RedissonPromise<Map<MasterSlaveEntry, List<Object>>>();
-                Map<MasterSlaveEntry, List<Object>> result = new ConcurrentHashMap<MasterSlaveEntry, List<Object>>();
-                CountableListener<Map<MasterSlaveEntry, List<Object>>> listener = new CountableListener<Map<MasterSlaveEntry, List<Object>>>(mainPromise, result);
+                RPromise<Map<MasterSlaveEntry, List<Object>>> mainPromise = new RedissonPromise<>();
+                Map<MasterSlaveEntry, List<Object>> result = new ConcurrentHashMap<>();
+                CountableListener<Map<MasterSlaveEntry, List<Object>>> listener = new CountableListener<>(mainPromise, result);
                 listener.setCounter(connections.size());
                 for (Map.Entry<MasterSlaveEntry, Entry> entry : commands.entrySet()) {
-                    RPromise<List<Object>> execPromise = new RedissonPromise<List<Object>>();
+                    RPromise<List<Object>> execPromise = new RedissonPromise<>();
                     async(entry.getValue().isReadOnlyMode(), new NodeSource(entry.getKey()), connectionManager.getCodec(), RedisCommands.EXEC, 
                             new Object[] {}, execPromise, false);
                     execPromise.onComplete((r, ex) -> {

@@ -23,14 +23,12 @@ import org.redisson.api.BatchOptions;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.command.CommandBatchService.ConnectionEntry;
 import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.RPromise;
-import org.redisson.pubsub.AsyncSemaphore;
 
 /**
  * 
@@ -42,28 +40,24 @@ import org.redisson.pubsub.AsyncSemaphore;
 public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
 
     final ConcurrentMap<MasterSlaveEntry, Entry> commands;
-    final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
     final BatchOptions options;
     final AtomicInteger index;
     
     final AtomicBoolean executed;
-    final AsyncSemaphore semaphore;
     
     @SuppressWarnings("ParameterNumber")
     public BaseRedisBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
             Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect,
             ConnectionManager connectionManager, RedissonObjectBuilder objectBuilder, 
-            ConcurrentMap<MasterSlaveEntry, Entry> commands, ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections,
-            BatchOptions options, AtomicInteger index, AtomicBoolean executed, AsyncSemaphore semaphore) {
+            ConcurrentMap<MasterSlaveEntry, Entry> commands,
+            BatchOptions options, AtomicInteger index, AtomicBoolean executed) {
         
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager,
                 objectBuilder);
         this.commands = commands;
-        this.connections = connections;
         this.options = options;
         this.index = index;
         this.executed = executed;
-        this.semaphore = semaphore;
     }
     
     protected final void addBatchCommandData(Object[] batchParams) {

@@ -52,6 +52,9 @@ import org.redisson.pubsub.AsyncSemaphore;
  */
 public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
+    private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
+    private final AsyncSemaphore semaphore;
+    
     @SuppressWarnings("ParameterNumber")
     public RedisQueuedBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
             Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
@@ -59,7 +62,10 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
             AtomicBoolean executed, AsyncSemaphore semaphore) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
-                commands, connections, options, index, executed, semaphore);
+                commands, options, index, executed);
+        
+        this.connections = connections;
+        this.semaphore = semaphore;
     }
     
     @Override
