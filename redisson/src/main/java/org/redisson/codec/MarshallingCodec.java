@@ -46,14 +46,14 @@ import io.netty.util.concurrent.FastThreadLocal;
  */
 public class MarshallingCodec extends BaseCodec {
 
-    private final FastThreadLocal<Unmarshaller> decoder = new FastThreadLocal<Unmarshaller>() {
+    private final FastThreadLocal<Unmarshaller> decoderThreadLocal = new FastThreadLocal<Unmarshaller>() {
         @Override
         protected Unmarshaller initialValue() throws IOException {
             return factory.createUnmarshaller(configuration);
         };
     };
     
-    private final FastThreadLocal<Marshaller> encoder = new FastThreadLocal<Marshaller>() {
+    private final FastThreadLocal<Marshaller> encoderThreadLocal = new FastThreadLocal<Marshaller>() {
         @Override
         protected Marshaller initialValue() throws IOException {
             return factory.createMarshaller(configuration);
@@ -147,8 +147,41 @@ public class MarshallingCodec extends BaseCodec {
         
     }
     
+    private final Decoder<Object> decoder = new Decoder<Object>() {
+        
+        @Override
+        public Object decode(ByteBuf buf, State state) throws IOException {
+            Unmarshaller unmarshaller = decoderThreadLocal.get();
+            try {
+                unmarshaller.start(new ByteInputWrapper(buf));
+                return unmarshaller.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new IOException(e);
+            } finally {
+                unmarshaller.finish();
+                unmarshaller.close();
+            }
+        }
+    };
+    
+    private final Encoder encoder = new Encoder() {
+        
+        @Override
+        public ByteBuf encode(Object in) throws IOException {
+            ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
+
+            Marshaller marshaller = encoderThreadLocal.get();
+            marshaller.start(new ByteOutputWrapper(out));
+            marshaller.writeObject(in);
+            marshaller.finish();
+            marshaller.close();
+            return out;
+        }
+    };
+    
     private final MarshallerFactory factory;
     private final MarshallingConfiguration configuration;
+    private ClassLoader classLoader;
     
     public MarshallingCodec() {
         this(Protocol.RIVER, new MarshallingConfiguration());
@@ -157,12 +190,14 @@ public class MarshallingCodec extends BaseCodec {
     public MarshallingCodec(ClassLoader classLoader) {
         this(Protocol.RIVER, new MarshallingConfiguration());
         configuration.setClassResolver(new SimpleClassResolver(classLoader));
+        this.classLoader = classLoader;
     }
     
     public MarshallingCodec(ClassLoader classLoader, MarshallingCodec codec) {
         this.factory = codec.factory;
         this.configuration = codec.configuration;
         this.configuration.setClassResolver(new SimpleClassResolver(classLoader));
+        this.classLoader = classLoader;
     }
     
     public MarshallingCodec(Protocol protocol, MarshallingConfiguration configuration) {
@@ -172,40 +207,21 @@ public class MarshallingCodec extends BaseCodec {
     
     @Override
     public Decoder<Object> getValueDecoder() {
-        return new Decoder<Object>() {
-            
-            @Override
-            public Object decode(ByteBuf buf, State state) throws IOException {
-                Unmarshaller unmarshaller = decoder.get();
-                try {
-                    unmarshaller.start(new ByteInputWrapper(buf));
-                    return unmarshaller.readObject();
-                } catch (ClassNotFoundException e) {
-                    throw new IOException(e);
-                } finally {
-                    unmarshaller.finish();
-                    unmarshaller.close();
-                }
-            }
-        };
+        return decoder;
     }
 
     @Override
     public Encoder getValueEncoder() {
-        return new Encoder() {
-            
-            @Override
-            public ByteBuf encode(Object in) throws IOException {
-                ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
-
-                Marshaller marshaller = encoder.get();
-                marshaller.start(new ByteOutputWrapper(out));
-                marshaller.writeObject(in);
-                marshaller.finish();
-                marshaller.close();
-                return out;
-            }
-        };
+        return encoder;
     }
 
+    @Override
+    public ClassLoader getClassLoader() {
+        if (this.classLoader != null) {
+            return classLoader;
+        }
+
+        return super.getClassLoader();
+    }
+    
 }
