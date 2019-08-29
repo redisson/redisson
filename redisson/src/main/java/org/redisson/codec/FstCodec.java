@@ -174,7 +174,8 @@ public class FstCodec extends BaseCodec {
         }
 
     }
-    
+
+    private final boolean useCache;
     private final FSTConfiguration config;
 
     public FstCodec() {
@@ -225,14 +226,21 @@ public class FstCodec extends BaseCodec {
     }
 
     public FstCodec(FSTConfiguration fstConfiguration) {
+        this(fstConfiguration, true);
+    }
+    
+    public FstCodec(FSTConfiguration fstConfiguration, boolean useCache) {
         config = fstConfiguration;
         FSTSerializerRegistry reg = config.getCLInfoRegistry().getSerializerRegistry();
         reg.putSerializer(Hashtable.class, new FSTMapSerializerV2(), true);
         reg.putSerializer(ConcurrentHashMap.class, new FSTMapSerializerV2(), true);
 
         config.setStreamCoderFactory(new FSTDefaultStreamCoderFactory(config));
+        this.useCache = useCache;
     }
 
+    private final byte[] emptyArray = new byte[] {};
+    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -244,8 +252,10 @@ public class FstCodec extends BaseCodec {
                 throw e;
             } catch (Exception e) {
                 throw new IOException(e);
-//            } finally {
-//                inputStream.resetForReuseUseArray(empty);
+            } finally {
+                if (!useCache) {
+                    inputStream.resetForReuseUseArray(emptyArray);
+                }
             }
         }
     };
@@ -267,8 +277,10 @@ public class FstCodec extends BaseCodec {
             } catch (Exception e) {
                 out.release();
                 throw new IOException(e);
-//            } finally {
-//                oos.resetForReUse(empty);
+            } finally {
+                if (!useCache) {
+                    oos.resetForReUse(emptyArray);
+                }
             }
         }
     };
