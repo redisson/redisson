@@ -142,11 +142,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
-                RedisConnection connection = client.connect();
-                if (!connection.isActive()) {
+                RedisConnection connection = null;
+                try {
+                    connection = client.connect();
+                    if (!connection.isActive()) {
+                        continue;
+                    }
+                } catch (RedisConnectionException e) {
                     continue;
                 }
-
+                
                 List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
                 if (master.isEmpty()) {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
@@ -204,8 +209,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
 
                 break;
-            } catch (RedisConnectionException e) {
-                // skip
             } finally {
                 client.shutdownAsync();
             }
