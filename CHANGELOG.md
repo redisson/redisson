@@ -4,6 +4,22 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 30-Aug-2019 - 3.11.3 released  
+
+Feature - JBoss Marshalling codec implementation  
+Feature - support for Spring's `@Autowired`, `@Value` and JSR-330 `@Inject` annotations in ExecutorService tasks  
+Feature - SSL support for Sentinel mode  
+Feature - `sizeInMemory()` method added to `RObjectReactive` and `RObjectRx` interfaces  
+Feature - `getId()` method added to `RedissonClient`, `RedissonRxClient`, `RedissonReactiveClient` interfaces  
+
+Improvement - `useCache` parameter added to `FstCodec`  
+Improvement - URL object should be used for `sslKeystore` and `sslTruststore` settings  
+
+Fixed - `RedisTimeoutException` thrown if retryAttempts set to 0  
+Fixed - `RStream.readGroup` method doesn't work properly with `TypedJsonJacksonCodec`  
+Fixed - semaphore object is not deleted after `RLocalCachedMap.clearLocalCache` method invocation  
+Fixed - Redisson couldn't be shutdown if one of RBatch commands was canceled  
+
 ### 03-Aug-2019 - 3.11.2 released  
 
 Improvement - `RLiveObject` interface should extend `RExpirable`  
