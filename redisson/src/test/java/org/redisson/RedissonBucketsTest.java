@@ -2,15 +2,57 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.ClusterRunner.ClusterProcesses;
+import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RBucket;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonBucketsTest extends BaseTest {
 
+    @Test
+    public void testGetInCluster() throws FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+        
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+        
+        int size = 10000;
+        Map<String, Integer> map = new HashMap<>();
+        for (int i = 0; i < size; i++) {
+            map.put("test" + i, i);
+            redisson.getBucket("test" + i).set(i);
+        }
+        
+        Map<String, Integer> buckets = redisson.getBuckets().get(map.keySet().toArray(new String[map.size()]));
+        
+        assertThat(buckets).isEqualTo(map);
+        
+        redisson.shutdown();
+        process.shutdown();
+    }
+    
     @Test
     public void testGet() {
         RBucket<String> bucket1 = redisson.getBucket("test1");

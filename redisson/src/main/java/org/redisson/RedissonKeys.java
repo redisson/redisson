@@ -18,11 +18,8 @@ package org.redisson;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +37,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -304,61 +300,36 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public RFuture<Long> unlinkAsync(String... keys) {
-        return executeAsync(RedisCommands.UNLINK, keys);
+        return commandExecutor.writeBatchedAsync(null, RedisCommands.UNLINK, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
+
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
+            }
+
+            @Override
+            public Long onFinish() {
+                return results.get();
+            }
+        }, keys);
     }
 
     @Override
     public RFuture<Long> deleteAsync(String... keys) {
-        return executeAsync(RedisCommands.DEL, keys);
-    }
+        return commandExecutor.writeBatchedAsync(null, RedisCommands.DEL, new SlotCallback<Long, Long>() {
+            AtomicLong results = new AtomicLong();
 
-    private RFuture<Long> executeAsync(RedisStrictCommand<Long> command, String... keys) {
-        if (!commandExecutor.getConnectionManager().isClusterMode()) {
-            return commandExecutor.writeAsync(null, command, keys);
-        }
-
-        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
-        for (String key : keys) {
-            int slot = commandExecutor.getConnectionManager().calcSlot(key);
-            MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(slot);
-            List<String> list = range2key.get(entry);
-            if (list == null) {
-                list = new ArrayList<String>();
-                range2key.put(entry, list);
-            }
-            list.add(key);
-        }
-
-        RPromise<Long> result = new RedissonPromise<Long>();
-        AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
-        AtomicLong count = new AtomicLong();
-        AtomicLong executed = new AtomicLong(range2key.size());
-        BiConsumer<List<?>, Throwable> listener = (t, u) -> {
-            if (u == null) {
-                for (Long res : (List<Long>) t) {
-                    if (res != null) {
-                        count.addAndGet(res);
-                    }
-                }
-            } else {
-                failed.set(u);
+            @Override
+            public void onSlotResult(Long result) {
+                results.addAndGet(result);
             }
 
-            checkExecution(result, failed, count, executed);
-        };
-
-        for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
-            // executes in batch due to CROSSLOT error
-            CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
-            for (String key : entry.getValue()) {
-                executorService.writeAsync(entry.getKey(), null, command, key);
+            @Override
+            public Long onFinish() {
+                return results.get();
             }
-
-            RFuture<List<?>> future = executorService.executeAsync();
-            future.onComplete(listener);
-        }
-
-        return result;
+        }, keys);
     }
 
     @Override

@@ -15,8 +15,21 @@
  */
 package org.redisson;
 
+import org.redisson.client.protocol.RedisCommand;
+
+/**
+ * 
+ * @author Nikita Koksharov
+ *
+ * @param <T> type of batch result
+ * @param <R> type of result
+ */
 public interface SlotCallback<T, R> {
 
+    default RedisCommand<T> createCommand(Object param) {
+        return null;
+    }
+    
     void onSlotResult(T result);
 
     R onFinish();

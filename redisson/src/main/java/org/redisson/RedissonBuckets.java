@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.redisson.api.RBuckets;
 import org.redisson.api.RFuture;
@@ -31,6 +32,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.connection.decoder.BucketsDecoder;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.misc.RedissonPromise;
 
@@ -76,9 +78,28 @@ public class RedissonBuckets implements RBuckets {
         if (keys.length == 0) {
             return RedissonPromise.newSucceededFuture(Collections.emptyMap());
         }
-
+        
+        Codec commandCodec = new CompositeCodec(StringCodec.INSTANCE, codec, codec);
+        
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("MGET", new MapGetAllDecoder(Arrays.<Object>asList(keys), 0));
-        return commandExecutor.readAsync(keys[0], new CompositeCodec(StringCodec.INSTANCE, codec, codec), command, keys);
+        return commandExecutor.readBatchedAsync(commandCodec, command, new SlotCallback<Map<Object, Object>, Map<String, V>>() {
+            Map<String, V> results = new ConcurrentHashMap<>();
+
+            @Override
+            public void onSlotResult(Map<Object, Object> result) {
+                results.putAll((Map<String, V>) (Object) result);
+            }
+
+            @Override
+            public Map<String, V> onFinish() {
+                return results;
+            }
+
+            @Override
+            public RedisCommand<Map<Object, Object>> createCommand(Object param) {
+                return new RedisCommand<Map<Object, Object>>("MGET", new BucketsDecoder(param.toString()));
+            }
+        }, keys);
     }
 
     @Override
