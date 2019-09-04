@@ -1012,7 +1012,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return -1; "
                         + "end;"
                         + "if expireDate > tonumber(ARGV[1]) then "
-                            + "return ARGV[1] - expireDate; "
+                            + "return expireDate - ARGV[1]; "
                         + "else "
                             + "return -2; "
                         + "end; "

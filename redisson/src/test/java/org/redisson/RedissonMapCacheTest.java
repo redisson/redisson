@@ -97,7 +97,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
     public void testRemainTimeToLive() {
         RMapCache<String, String> map = redisson.getMapCache("test");
         map.put("1", "2", 2, TimeUnit.SECONDS);
-        assertThat(map.remainTimeToLive("1")).isLessThan(1900);
+        assertThat(map.remainTimeToLive("1")).isBetween(1900L, 2000L);
         map.put("3", "4");
         assertThat(map.remainTimeToLive("3")).isEqualTo(-1);
         assertThat(map.remainTimeToLive("0")).isEqualTo(-2);
