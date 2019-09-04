@@ -46,7 +46,7 @@ public class PendingResultDecoder implements MultiDecoder<Object> {
         }
         
         List<List<String>> customerParts = (List<List<String>>) parts.get(3);
-        if (customerParts == null) {
+        if (customerParts.isEmpty()) {
             return new PendingResult(0, null, null, Collections.emptyMap());
         }
         

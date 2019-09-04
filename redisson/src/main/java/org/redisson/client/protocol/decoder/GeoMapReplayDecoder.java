@@ -27,6 +27,7 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class GeoMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
 
     @Override

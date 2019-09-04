@@ -131,25 +131,25 @@ public class RedissonStreamTest extends BaseTest {
     
     @Test
     public void testClaimIds() throws InterruptedException {
-        RStream<String, String> stream = redisson.getStream("test");
+        RStream<String, String> stream = redisson.getStream("test3");
 
         stream.add("0", "0");
         
-        stream.createGroup("testGroup");
+        stream.createGroup("testGroup3");
         
         StreamMessageId id1 = stream.add("1", "1");
         StreamMessageId id2 = stream.add("2", "2");
         
-        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1");
         assertThat(s.size()).isEqualTo(2);
         
         StreamMessageId id3 = stream.add("3", "33");
         StreamMessageId id4 = stream.add("4", "44");
         
-        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2");
         assertThat(s2.size()).isEqualTo(2);
         
-        List<StreamMessageId> res = stream.fastClaim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
+        List<StreamMessageId> res = stream.fastClaim("testGroup3", "consumer1", 1, TimeUnit.MILLISECONDS, id3, id4);
         assertThat(res.size()).isEqualTo(2);
         assertThat(res).containsExactly(id3, id4);
     }

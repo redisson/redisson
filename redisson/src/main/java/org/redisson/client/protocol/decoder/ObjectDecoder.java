@@ -41,7 +41,6 @@ public class ObjectDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        parts.clear();
         return parts;
     }
 

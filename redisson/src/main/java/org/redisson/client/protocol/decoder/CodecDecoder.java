@@ -34,7 +34,7 @@ public class CodecDecoder implements MultiDecoder<Object> {
 
     @Override
     public Object decode(List<Object> parts, State state) {
-        return null;
+        return parts;
     }
 
 }

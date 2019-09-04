@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBuf;
  *
  * @param <T> type
  */
+@Deprecated
 public class ListMultiDecoder<T> implements MultiDecoder<Object> {
 
     public static final Decoder<Object> RESET = new Decoder<Object>() {

@@ -45,12 +45,10 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.NumberConvertor;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.LongMultiDecoder;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.MapCacheScanResult;
 import org.redisson.client.protocol.decoder.MapCacheScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ObjectListDecoder;
 import org.redisson.client.protocol.decoder.ObjectMapDecoder;
 import org.redisson.codec.MapCacheEventCodec;
 import org.redisson.codec.MapCacheEventCodec.OSType;
@@ -1231,7 +1229,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         params.add(count);
 
         RedisCommand<MapCacheScanResult<Object, Object>> command = new RedisCommand<MapCacheScanResult<Object, Object>>("EVAL",
-                new ListMultiDecoder(new LongMultiDecoder(), new ObjectMapDecoder(codec), new ObjectListDecoder(codec), new MapCacheScanResultReplayDecoder()), ValueType.MAP);
+                new ListMultiDecoder2(
+                        new MapCacheScanResultReplayDecoder(),
+                        new ObjectMapDecoder(codec, true)), ValueType.MAP);
         RFuture<MapCacheScanResult<Object, Object>> f = commandExecutor.evalReadAsync(client, name, codec, command,
                 "local result = {}; "
                 + "local idleKeys = {}; "

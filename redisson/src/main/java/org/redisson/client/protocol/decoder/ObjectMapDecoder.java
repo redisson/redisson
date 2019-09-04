@@ -28,19 +28,26 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class ObjectMapDecoder implements MultiDecoder<Map<Object, Object>> {
+public class ObjectMapDecoder implements MultiDecoder<Object> {
 
-    private Codec codec;
+    private final Codec codec;
+    private final boolean decodeList;
     
-    public ObjectMapDecoder(Codec codec) {
+    public ObjectMapDecoder(Codec codec, boolean decodeList) {
         super();
         this.codec = codec;
+        this.decodeList = decodeList;
     }
 
     private int pos;
+    private boolean mapDecoded;
     
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (mapDecoded) {
+            return codec.getMapKeyDecoder();
+        }
+        
         if (pos++ % 2 == 0) {
             return codec.getMapKeyDecoder();
         }
@@ -48,13 +55,19 @@ public class ObjectMapDecoder implements MultiDecoder<Map<Object, Object>> {
     }
     
     @Override
-    public Map<Object, Object> decode(List<Object> parts, State state) {
+    public Object decode(List<Object> parts, State state) {
+        if (decodeList && mapDecoded) {
+            return parts;
+        }
+        
         Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
                 result.put(parts.get(i-1), parts.get(i));
            }
         }
+        
+        mapDecoded = true;
         return result;
     }
 

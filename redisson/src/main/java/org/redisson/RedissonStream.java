@@ -35,10 +35,10 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.CodecDecoder;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
+import org.redisson.client.protocol.decoder.ObjectMapDecoder;
 import org.redisson.client.protocol.decoder.StreamInfoDecoder;
-import org.redisson.client.protocol.decoder.StreamInfoMapDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 
 /**
@@ -50,18 +50,12 @@ import org.redisson.command.CommandAsyncExecutor;
  */
 public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K, V> {
 
-    private final RedisCommand<StreamInfo<Object, Object>> xinfoStreamCommand;
-    
     public RedissonStream(Codec codec, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
-        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
-                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     public RedissonStream(CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
-        xinfoStreamCommand = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "STREAM",
-                new ListMultiDecoder(new StreamInfoMapDecoder(getCodec()), new ObjectListReplayDecoder<String>(ListMultiDecoder.RESET), new StreamInfoDecoder()));
     }
 
     protected void checkKey(Object key) {
@@ -966,6 +960,12 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
 
     @Override
     public RFuture<StreamInfo<K, V>> getInfoAsync() {
+        RedisCommand<StreamInfo<Object, Object>> xinfoStreamCommand = new RedisCommand<>("XINFO", "STREAM",
+                new ListMultiDecoder2(
+                        new StreamInfoDecoder(),
+                        new CodecDecoder(),
+                        new ObjectMapDecoder(getCodec(), false)));
+
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, xinfoStreamCommand, getName());
     }
 

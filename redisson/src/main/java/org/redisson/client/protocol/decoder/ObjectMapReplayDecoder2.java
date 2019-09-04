@@ -15,9 +15,10 @@
  */
 package org.redisson.client.protocol.decoder;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -25,27 +26,22 @@ import org.redisson.client.protocol.Decoder;
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-@Deprecated
-public class ObjectListDecoder<T> implements MultiDecoder<List<T>> {
+public class ObjectMapReplayDecoder2 implements MultiDecoder<Map<Object, Object>> {
 
-    private Codec codec;
-    
-    public ObjectListDecoder(Codec codec) {
-        super();
-        this.codec = codec;
+    @Override
+    public Map<Object, Object> decode(List<Object> parts, State state) {
+        List<List<Object>> list = (List<List<Object>>) (Object) parts;
+        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
+        for (List<Object> entry : list) {
+            result.put(entry.get(0), entry.get(1));
+        }
+        return result;
     }
-    
+
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return codec.getMapKeyDecoder();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public List<T> decode(List<Object> parts, State state) {
-        return (List<T>) parts;
+        return null;
     }
 
 }

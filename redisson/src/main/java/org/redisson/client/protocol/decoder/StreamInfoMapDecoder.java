@@ -26,6 +26,7 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class StreamInfoMapDecoder implements MultiDecoder<Object> {
 
     boolean hasNonZeroLevel = false;
@@ -33,7 +34,7 @@ public class StreamInfoMapDecoder implements MultiDecoder<Object> {
     final ObjectMapDecoder decoder;
     
     public StreamInfoMapDecoder(Codec codec) {
-        decoder = new ObjectMapDecoder(codec);
+        decoder = new ObjectMapDecoder(codec, false);
     }
     
     @Override

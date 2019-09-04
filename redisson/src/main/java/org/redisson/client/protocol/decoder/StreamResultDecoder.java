@@ -15,7 +15,7 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,13 +30,34 @@ import org.redisson.client.protocol.Decoder;
  */
 public class StreamResultDecoder implements MultiDecoder<Object> {
 
+    private final boolean firstResult;
+    
+    public StreamResultDecoder(boolean firstResult) {
+        super();
+        this.firstResult = firstResult;
+    }
+
     @Override
     public Object decode(List<Object> parts, State state) {
-        if (!parts.isEmpty()) {
-            Map<String, Map<StreamMessageId, Map<Object, Object>>> result = (Map<String, Map<StreamMessageId, Map<Object, Object>>>) parts.get(0);
-            return result.values().iterator().next();
+        List<List<Object>> list = (List<List<Object>>) (Object) parts;
+        Map<String, Map<StreamMessageId, Map<Object, Object>>> result = new HashMap<>();
+        for (List<Object> entries : list) {
+            List<List<Object>> streamEntries = (List<List<Object>>) entries.get(1);
+            if (!streamEntries.isEmpty()) {
+                String name = (String) entries.get(0);
+                Map<StreamMessageId, Map<Object, Object>> ee = new HashMap<>();
+                result.put(name, ee);
+                
+                for (List<Object> se : streamEntries) {
+                    ee.put((StreamMessageId) se.get(0), (Map<Object, Object>) se.get(1));
+                }
+                
+                if (firstResult) {
+                    return ee;
+                }
+            }
         }
-        return Collections.emptyMap();
+        return result;
     }
 
     @Override

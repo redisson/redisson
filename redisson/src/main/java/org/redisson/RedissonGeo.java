@@ -35,12 +35,11 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.CodecDecoder;
 import org.redisson.client.protocol.decoder.GeoDistanceDecoder;
-import org.redisson.client.protocol.decoder.GeoMapReplayDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionDecoder;
 import org.redisson.client.protocol.decoder.GeoPositionMapDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
 import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder2;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 
@@ -53,10 +52,15 @@ import org.redisson.connection.decoder.MapGetAllDecoder;
  */
 public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V> {
 
-    private static final MultiDecoder<Map<Object, Object>> POSTITION_DECODER = new ListMultiDecoder(new CodecDecoder(),
-            new GeoPositionDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoMapReplayDecoder());
-    private static final MultiDecoder<Map<Object, Object>> DISTANCE_DECODER = new ListMultiDecoder(
-            new GeoDistanceDecoder(), new GeoMapReplayDecoder());
+    private static final MultiDecoder<Map<Object, Object>> POSTITION_DECODER = new ListMultiDecoder2(
+            new ObjectMapReplayDecoder2(),
+            new CodecDecoder(),
+            new GeoPositionDecoder());
+    
+    private static final MultiDecoder<Map<Object, Object>> DISTANCE_DECODER = new ListMultiDecoder2(
+            new ObjectMapReplayDecoder2(),
+            new GeoDistanceDecoder());
+    
     private static final RedisCommand<Map<Object, Object>> GEORADIUS_RO_DISTANCE = new RedisCommand<Map<Object, Object>>(
             "GEORADIUS_RO", DISTANCE_DECODER);
     private static final RedisCommand<Map<Object, Object>> GEORADIUS_RO_POS = new RedisCommand<Map<Object, Object>>(
@@ -147,9 +151,9 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
             params.add(encode(member));
         }
 
-        MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder(0, new GeoPositionDecoder(),
-                // new ObjectListReplayDecoder(ListMultiDecoder.RESET),
-                new GeoPositionMapDecoder((List<Object>) Arrays.asList(members)));
+        MultiDecoder<Map<Object, Object>> decoder = new ListMultiDecoder2(
+                new GeoPositionMapDecoder((List<Object>) Arrays.asList(members)),
+                new GeoPositionDecoder());
         RedisCommand<Map<Object, Object>> command = new RedisCommand<Map<Object, Object>>("GEOPOS", decoder);
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, command, params.toArray());
     }

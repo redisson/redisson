@@ -17,7 +17,6 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
-import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 
@@ -27,25 +26,24 @@ import org.redisson.client.protocol.Decoder;
  *
  * @param <T> type
  */
-@Deprecated
-public class ObjectListDecoder<T> implements MultiDecoder<List<T>> {
+public class ListMultiDecoder2<T> implements MultiDecoder<Object> {
 
-    private Codec codec;
+    private final MultiDecoder<?>[] decoders;
     
-    public ObjectListDecoder(Codec codec) {
-        super();
-        this.codec = codec;
+    public ListMultiDecoder2(MultiDecoder<?>... decoders) {
+        this.decoders = decoders;
     }
     
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return codec.getMapKeyDecoder();
+        int index = state.getLevel();
+        return decoders[index].getDecoder(paramNum, state);
     }
-
-    @SuppressWarnings("unchecked")
+    
     @Override
-    public List<T> decode(List<Object> parts, State state) {
-        return (List<T>) parts;
+    public Object decode(List<Object> parts, State state) {
+        int index = state.getLevel();
+        return decoders[index].decode(parts, state);
     }
-
+    
 }
