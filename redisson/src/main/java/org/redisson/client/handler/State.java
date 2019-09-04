@@ -51,9 +51,11 @@ public class State {
         return batchIndex;
     }
 
+    @Deprecated
     public <T extends DecoderState> T getDecoderState() {
         return (T) decoderState;
     }
+    @Deprecated
     public void setDecoderState(DecoderState decoderState) {
         this.decoderState = decoderState;
     }

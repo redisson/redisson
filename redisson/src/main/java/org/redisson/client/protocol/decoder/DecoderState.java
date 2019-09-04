@@ -20,6 +20,7 @@ package org.redisson.client.protocol.decoder;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public interface DecoderState {
 
     DecoderState copy();

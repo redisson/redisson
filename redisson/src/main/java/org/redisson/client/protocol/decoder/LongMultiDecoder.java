@@ -26,6 +26,7 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class LongMultiDecoder implements MultiDecoder<Object> {
 
     @Override
