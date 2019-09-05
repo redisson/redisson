@@ -501,7 +501,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (host.contains(":")){
             String pureHost = host.replaceAll("[\\[\\]]", "");
             host = applyNatMap(pureHost);
-            if (host.contains(":")) {
+            if (host.contains(":") && !host.startsWith("[")) {
                 host = "[" + host + "]";
             }
         } else {
