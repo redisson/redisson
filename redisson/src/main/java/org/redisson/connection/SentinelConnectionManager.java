@@ -543,7 +543,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     return;
                 }
 
-                RFuture<String> r = connection.async(config.getTimeout(), RedisCommands.PING);
+                RFuture<String> r = connection.async(RedisCommands.PING);
                 r.onComplete((resp, exc) -> {
                     if (exc != null) {
                         result.tryFailure(exc);

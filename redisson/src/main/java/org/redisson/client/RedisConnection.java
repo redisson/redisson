@@ -180,7 +180,7 @@ public class RedisConnection implements RedisCommands {
     }
 
     public <T, R> RFuture<R> async(RedisCommand<T> command, Object... params) {
-        return async(null, command, params);
+        return async(-1, command, params);
     }
     
     public <T, R> RFuture<R> async(long timeout, RedisCommand<T> command, Object... params) {
@@ -255,7 +255,7 @@ public class RedisConnection implements RedisCommands {
         if (command != null && command.isBlockingCommand()) {
             channel.close();
         } else {
-            RFuture<Void> f = async(redisClient.getConfig().getCommandTimeout(), RedisCommands.QUIT);
+            RFuture<Void> f = async(RedisCommands.QUIT);
             f.onComplete((res, e) -> {
                 channel.close();
             });
