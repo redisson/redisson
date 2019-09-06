@@ -226,17 +226,11 @@ public class RedisExecutor<V, R> {
                             }
                             attempt++;
 
-                            Timeout timeout;
-                            if (retryInterval > 0 && attempts > 0) {
-                                timeout = connectionManager.newTimeout(this, retryInterval, TimeUnit.MILLISECONDS);
-                            } else {
-                                timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;            
-                            }
-                            RedisExecutor.this.timeout = timeout;
+                            scheduleRetryTimeout(connectionFuture, attemptPromise);
                             return;
                         }
 
-                        if (writeFuture.isDone() && writeFuture.isSuccess()) {
+                        if (writeFuture.isSuccess()) {
                             return;
                         }
                     }
@@ -308,6 +302,10 @@ public class RedisExecutor<V, R> {
 
         timeout.cancel();
 
+        scheduleResponseTimeout(attemptPromise, connection);
+    }
+
+    private void scheduleResponseTimeout(RPromise<R> attemptPromise, RedisConnection connection) {
         long timeoutTime = responseTimeout;
         if (command != null 
                 && (RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())

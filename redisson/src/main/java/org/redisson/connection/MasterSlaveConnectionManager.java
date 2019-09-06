@@ -666,8 +666,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         result.awaitUninterruptibly(timeout, unit);
         resolverGroup.close();
 
-        timer.stop();
         shutdownLatch.close();
+        timer.stop();
         shutdownPromise.trySuccess(null);
         shutdownLatch.awaitUninterruptibly();
         
@@ -697,8 +697,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         try {
             return timer.newTimeout(task, delay, unit);
         } catch (IllegalStateException e) {
-            // timer is shutdown
-            return DUMMY_TIMEOUT;
+            if (isShuttingDown()) {
+                return DUMMY_TIMEOUT;
+            }
+            
+            throw e;
         }
     }
 
