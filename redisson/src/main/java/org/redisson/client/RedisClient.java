@@ -311,13 +311,6 @@ public final class RedisClient {
     }
 
     public RFuture<Void> shutdownAsync() {
-        for (Channel channel : channels) {
-            RedisConnection connection = RedisConnection.getFrom(channel);
-            if (connection != null) {
-                connection.closeAsync();
-            }
-        }
-
         final RPromise<Void> result = new RedissonPromise<Void>();
         ChannelGroupFuture channelsFuture = channels.newCloseFuture();
         channelsFuture.addListener(new FutureListener<Void>() {
@@ -364,6 +357,13 @@ public final class RedisClient {
             }
         });
         
+        for (Channel channel : channels) {
+            RedisConnection connection = RedisConnection.getFrom(channel);
+            if (connection != null) {
+                connection.closeAsync();
+            }
+        }
+
         return result;
     }
 

@@ -255,11 +255,9 @@ public class RedisConnection implements RedisCommands {
         if (command != null && command.isBlockingCommand()) {
             channel.close();
         } else {
-            RFuture<Void> f = async(RedisCommands.QUIT);
+            RFuture<Void> f = async(redisClient.getConfig().getCommandTimeout(), RedisCommands.QUIT);
             f.onComplete((res, e) -> {
-                if (e != null) {
-                    channel.close();
-                }
+                channel.close();
             });
         }
     }
