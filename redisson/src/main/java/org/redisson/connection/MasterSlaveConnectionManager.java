@@ -334,7 +334,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             minTimeout = 100;
         }
         
-        timer = new HashedWheelTimer(Executors.defaultThreadFactory(), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
+        timer = new HashedWheelTimer(new DefaultThreadFactory("redisson-timer"), minTimeout, TimeUnit.MILLISECONDS, 1024, false);
         
         connectionWatcher = new IdleConnectionWatcher(this, config);
         subscribeService = new PublishSubscribeService(this, config);
@@ -667,7 +667,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         resolverGroup.close();
 
         shutdownLatch.close();
-        timer.stop();
         shutdownPromise.trySuccess(null);
         shutdownLatch.awaitUninterruptibly();
         
@@ -675,6 +674,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             group.shutdownGracefully(quietPeriod, timeout, unit).syncUninterruptibly();
         }
         
+        timer.stop();
     }
 
     @Override
