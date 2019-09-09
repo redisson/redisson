@@ -59,7 +59,7 @@ public class Config {
     private int nettyThreads = 32;
 
     /**
-     * Redis key/value codec. JsonJacksonCodec used by default
+     * Redis key/value codec. FST codec is used by default
      */
     private Codec codec;
 
