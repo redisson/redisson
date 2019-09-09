@@ -809,7 +809,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, delay, unit);
         RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
         syncExecute(rp);
-        storeReference(future, rp.getRequestId());
         return future;
     }
 
@@ -860,7 +859,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(task, delay, unit);
         RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
         syncExecute(rp);
-        storeReference(future, rp.getRequestId());
         return future;
     }
     
@@ -880,7 +878,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(task, initialDelay, period, unit);
         RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
         syncExecute(rp);
-        storeReference(future, rp.getRequestId());
         return future;
     }
     
@@ -908,7 +905,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(task, cronSchedule);
         RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
         syncExecute(rp);
-        storeReference(future, rp.getRequestId());
         return future;
     }
     
@@ -948,7 +944,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleWithFixedDelayAsync(task, initialDelay, delay, unit);
         RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
         syncExecute(rp);
-        storeReference(future, rp.getRequestId());
         return future;
     }
     
