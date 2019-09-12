@@ -210,6 +210,20 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
     }
 
     @Override
+    public boolean setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+        return get(setRateAsync(type, rate, rateInterval, unit));
+    }
+
+    @Override
+    public RFuture<Boolean> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
+                        + "return redis.call('hset', KEYS[1], 'type', ARGV[3]);",
+                Collections.<Object>singletonList(getName()), rate, unit.toMillis(rateInterval), type.ordinal());
+    }
+
+    @Override
     public boolean trySetRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
         return get(trySetRateAsync(type, rate, rateInterval, unit));
     }

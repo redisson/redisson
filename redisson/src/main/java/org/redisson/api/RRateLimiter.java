@@ -26,6 +26,18 @@ public interface RRateLimiter extends RRateLimiterAsync, RObject {
 
     /**
      * Initializes RateLimiter's state and stores config to Redis server.
+     *
+     * @param mode - rate mode
+     * @param rate - rate
+     * @param rateInterval - rate time interval
+     * @param rateIntervalUnit - rate time interval unit
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    boolean setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Initializes RateLimiter's state and stores config to Redis server, but will not overwrite pre-existing config.
      * 
      * @param mode - rate mode
      * @param rate - rate

@@ -22,6 +22,16 @@ public class RedissonRateLimiterTest extends BaseTest {
     @Test
     public void testRateConfig() {
         RRateLimiter rr = redisson.getRateLimiter("acquire");
+        assertThat(rr.setRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
+
+        assertThat(rr.getConfig().getRate()).isEqualTo(1);
+        assertThat(rr.getConfig().getRateInterval()).isEqualTo(5000);
+        assertThat(rr.getConfig().getRateType()).isEqualTo(RateType.OVERALL);
+    }
+
+    @Test
+    public void testTryRateConfig() {
+        RRateLimiter rr = redisson.getRateLimiter("acquire");
         assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
         
         assertThat(rr.getConfig().getRate()).isEqualTo(1);
