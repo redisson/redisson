@@ -222,17 +222,17 @@ public class TasksRunnerService implements RemoteExecutorService {
         }
     }
 
-    protected void scheduleRetryTimeRenewal(final String requestId) {
+    protected void scheduleRetryTimeRenewal(String requestId, long retryInterval) {
         ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
                 renewRetryTime(requestId);
             }
-        }, 5, TimeUnit.SECONDS);
+        }, Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
     }
 
-    protected void renewRetryTime(final String requestId) {
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    protected void renewRetryTime(String requestId) {
+        RFuture<Long> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 // check if executor service not in shutdown state
                   "local name = ARGV[2];"
                 + "local scheduledName = ARGV[2];"
@@ -252,14 +252,19 @@ public class TasksRunnerService implements RemoteExecutorService {
                     + "if v[1] == ARGV[2] then "
                         + "redis.call('publish', KEYS[3], startTime); "
                     + "end;"
-                    + "return 1; "
+                    + "return retryInterval; "
                 + "end;"
-                + "return 0;", 
+                + "return nil;", 
                 Arrays.<Object>asList(statusName, schedulerQueueName, schedulerChannelName, tasksRetryIntervalName, tasksName),
                 System.currentTimeMillis(), requestId);
         future.onComplete((res, e) -> {
-            if (e != null || res) {
-                scheduleRetryTimeRenewal(requestId);
+            if (e != null) {
+                scheduleRetryTimeRenewal(requestId, 10000);
+                return;
+            }
+            
+            if (res != null) {
+                scheduleRetryTimeRenewal(requestId, res);
             }
         });
     }
