@@ -21,7 +21,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +35,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 import org.redisson.api.RCascadeType;
 import org.redisson.api.RDeque;
@@ -50,7 +50,6 @@ import org.redisson.api.RObject;
 import org.redisson.api.RObjectAsync;
 import org.redisson.api.RQueue;
 import org.redisson.api.RSet;
-import org.redisson.api.RSetMultimap;
 import org.redisson.api.RSortedSet;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RCascade;
@@ -60,10 +59,8 @@ import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.api.condition.Condition;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.liveobject.LiveObjectSearch;
 import org.redisson.liveobject.LiveObjectTemplate;
-import org.redisson.liveobject.condition.ANDCondition;
-import org.redisson.liveobject.condition.EQCondition;
-import org.redisson.liveobject.condition.ORCondition;
 import org.redisson.liveobject.core.AccessorInterceptor;
 import org.redisson.liveobject.core.FieldAccessorInterceptor;
 import org.redisson.liveobject.core.LiveObjectInterceptor;
@@ -72,7 +69,6 @@ import org.redisson.liveobject.core.RMapInterceptor;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
-import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.RIdResolver;
 
 import jodd.bean.BeanCopy;
@@ -93,11 +89,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     private final ConcurrentMap<Class<?>, Class<?>> classCache;
     private final RedissonClient redisson;
     private final CommandAsyncExecutor commandExecutor;
+    private final LiveObjectSearch seachEngine;
 
     public RedissonLiveObjectService(RedissonClient redisson, ConcurrentMap<Class<?>, Class<?>> classCache, CommandAsyncExecutor commandExecutor) {
         this.redisson = redisson;
         this.classCache = classCache;
         this.commandExecutor = commandExecutor;
+        this.seachEngine = new LiveObjectSearch(redisson, commandExecutor.getObjectBuilder());
     }
 
     //TODO: Add ttl renewal functionality
@@ -148,110 +146,13 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return null;
     }
 
-    Set<Object> traverseAnd(ANDCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
-        Set<Object> allIds = new HashSet<Object>();
-        RSet<Object> firstSet = null;
-        List<String> names = new ArrayList<String>();
-        boolean isAllEqConditions = true;
-        for (Condition cond : condition.getConditions()) {
-            if (cond instanceof EQCondition) {
-                EQCondition eqc = (EQCondition) cond;
-                
-                String indexName = namingScheme.getIndexName(entityClass, eqc.getName());
-                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-                RSet<Object> values = map.get(eqc.getValue());
-                if (firstSet == null) {
-                    firstSet = values;
-                } else {
-                    names.add(values.getName());
-                }
-            }
-            if (cond instanceof ORCondition) {
-                isAllEqConditions = false;
-                Collection<Object> ids = traverseOr((ORCondition) cond, namingScheme, entityClass);
-                allIds.addAll(ids);
-            }
-        }
-        if (!isAllEqConditions && allIds.isEmpty()) {
-            return Collections.emptySet();
-        }
-        
-        if (firstSet != null) {
-            if (names.isEmpty()) {
-                if (!isAllEqConditions && !allIds.isEmpty()) {
-                    allIds.retainAll(firstSet.readAll());    
-                } else {
-                    allIds.addAll(firstSet.readAll());
-                }
-            } else {
-                Set<Object> intersect = firstSet.readIntersection(names.toArray(new String[names.size()]));
-                if (!isAllEqConditions && !allIds.isEmpty()) {
-                    allIds.retainAll(intersect);    
-                } else {
-                    allIds.addAll(intersect);
-                }
-            }
-        }
-        return allIds;
-    }
-
-    Set<Object> traverseOr(ORCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
-        Set<Object> allIds = new HashSet<Object>();
-        RSet<Object> firstSet = null;
-        List<String> names = new ArrayList<String>();
-        for (Condition cond : condition.getConditions()) {
-            if (cond instanceof EQCondition) {
-                EQCondition eqc = (EQCondition) cond;
-                
-                String indexName = namingScheme.getIndexName(entityClass, eqc.getName());
-                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-                RSet<Object> values = map.get(eqc.getValue());
-                if (firstSet == null) {
-                    firstSet = values;
-                } else {
-                    names.add(values.getName());
-                }
-            }
-            if (cond instanceof ANDCondition) {
-                Collection<Object> ids = traverseAnd((ANDCondition) cond, namingScheme, entityClass);
-                allIds.addAll(ids);
-            }
-        }
-        if (firstSet != null) {
-            if (names.isEmpty()) {
-                allIds.addAll(firstSet.readAll());
-            } else {
-                allIds.addAll(firstSet.readUnion(names.toArray(new String[names.size()])));
-            }
-        }
-        return allIds;
-    }
-    
     @Override
     public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
-        NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(entityClass);
-
-        Set<Object> ids = Collections.emptySet();
-        if (condition instanceof EQCondition) {
-            EQCondition c = (EQCondition) condition;
-            String indexName = namingScheme.getIndexName(entityClass, c.getName());
-            RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-            ids = map.getAll(c.getValue());
-        } else if (condition instanceof ORCondition) {
-            ids = traverseOr((ORCondition) condition, namingScheme, entityClass);
-        } else if (condition instanceof ANDCondition) {
-            ids = traverseAnd((ANDCondition) condition, namingScheme, entityClass);
-        }
+        Set<Object> ids = seachEngine.find(entityClass, condition);
         
-        if (ids.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<T> result = new ArrayList<T>(ids.size());
-        for (Object id : ids) {
-            T proxied = createLiveObject(entityClass, id);
-            result.add(proxied);
-        }
-        return result;
+        return ids.stream()
+                    .map(id -> createLiveObject(entityClass, id))
+                    .collect(Collectors.toList());
     }
 
     @Override

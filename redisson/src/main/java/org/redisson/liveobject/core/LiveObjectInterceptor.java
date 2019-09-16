@@ -22,6 +22,7 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RMultimapAsync;
+import org.redisson.api.RScoredSortedSetAsync;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.client.RedisException;
@@ -127,10 +128,17 @@ public class LiveObjectInterceptor {
             for (InDefinedShape field : fields) {
                 String fieldName = field.getName();
                 Object value = map.get(fieldName);
+                
                 NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
                 String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-                RMultimapAsync<Object, Object> idsMultimap = batch.getSetMultimap(indexName, namingScheme.getCodec());
-                idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
+                
+                if (value instanceof Number) {
+                    RScoredSortedSetAsync<Object> set = batch.getScoredSortedSet(indexName, namingScheme.getCodec());
+                    set.removeAsync(((RLiveObject) me).getLiveObjectId());
+                } else {
+                    RMultimapAsync<Object, Object> idsMultimap = batch.getSetMultimap(indexName, namingScheme.getCodec());
+                    idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
+                }
             }
             RFuture<Long> deleteFuture = batch.getKeys().deleteAsync(map.getName());
             batch.execute();

@@ -25,6 +25,7 @@ import org.redisson.RedissonReference;
 import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.api.RObject;
+import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RSetMultimap;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.REntity;
@@ -61,6 +62,7 @@ public class AccessorInterceptor {
     }
 
     @RuntimeType
+    @SuppressWarnings("NestedIfDepth")
     public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
             @AllArguments Object[] args, @This Object me,
             @FieldValue("liveObjectLiveMap") RMap<String, Object> liveMap) throws Exception {
@@ -148,11 +150,17 @@ public class AccessorInterceptor {
                 if (field.getAnnotation(RIndex.class) != null) {
                     NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
                     String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-                    RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-                    if (oldArg instanceof RLiveObject) {
-                        map.remove(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
+                    
+                    if (oldArg instanceof Number) {
+                        RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
+                        set.remove(((RLiveObject) me).getLiveObjectId());
                     } else {
-                        map.remove(oldArg, ((RLiveObject) me).getLiveObjectId());
+                        RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+                        if (oldArg instanceof RLiveObject) {
+                            map.remove(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
+                        } else {
+                            map.remove(oldArg, ((RLiveObject) me).getLiveObjectId());
+                        }
                     }
                 }
             } else {
@@ -169,8 +177,13 @@ public class AccessorInterceptor {
         if (field.getAnnotation(RIndex.class) != null) {
             NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
             String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
-            RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-            map.put(arg, ((RLiveObject) me).getLiveObjectId());
+            if (arg instanceof Number) {
+                RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
+                set.add(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+            } else {
+                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+                map.put(arg, ((RLiveObject) me).getLiveObjectId());
+            }
         }
     }
 

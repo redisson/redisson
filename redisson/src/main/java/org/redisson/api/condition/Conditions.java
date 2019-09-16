@@ -21,6 +21,10 @@ import java.util.List;
 
 import org.redisson.liveobject.condition.ANDCondition;
 import org.redisson.liveobject.condition.EQCondition;
+import org.redisson.liveobject.condition.GECondition;
+import org.redisson.liveobject.condition.GTCondition;
+import org.redisson.liveobject.condition.LECondition;
+import org.redisson.liveobject.condition.LTCondition;
 import org.redisson.liveobject.condition.ORCondition;
 
 /**
@@ -90,6 +94,50 @@ public final class Conditions {
      */
     public static Condition and(Condition... conditions) {
         return new ANDCondition(conditions);
+    }
+
+    /**
+     * Returns "GREATER THAN" condition which restricts property by <code>name</code> to defined <code>value</code>
+     * 
+     * @param name - name of property
+     * @param value - defined value
+     * @return condition
+     */
+    public static Condition gt(String name, Number value) {
+        return new GTCondition(name, value);
+    }
+
+    /**
+     * Returns "LESS THAN" condition which restricts property by <code>name</code> to defined <code>value</code>
+     * 
+     * @param name - name of property
+     * @param value - defined value
+     * @return condition
+     */
+    public static Condition lt(String name, Number value) {
+        return new LTCondition(name, value);
+    }
+
+    /**
+     * Returns "GREATER THAN ON EQUAL" condition which restricts property by <code>name</code> to defined <code>value</code>
+     * 
+     * @param name - name of property
+     * @param value - defined value
+     * @return condition
+     */
+    public static Condition ge(String name, Number value) {
+        return new GECondition(name, value);
+    }
+
+    /**
+     * Returns "LESS THAN ON EQUAL" condition which restricts property by <code>name</code> to defined <code>value</code>
+     * 
+     * @param name - name of property
+     * @param value - defined value
+     * @return condition
+     */
+    public static Condition le(String name, Number value) {
+        return new LECondition(name, value);
     }
 
     private Conditions() {
