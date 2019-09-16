@@ -151,6 +151,10 @@ public final class RedisClient {
         return config;
     }
 
+    public Timer getTimer() {
+        return timer;
+    }
+    
     public RedisConnection connect() {
         try {
             return connectAsync().syncUninterruptibly().getNow();
@@ -311,7 +315,12 @@ public final class RedisClient {
     }
 
     public RFuture<Void> shutdownAsync() {
-        final RPromise<Void> result = new RedissonPromise<Void>();
+        RPromise<Void> result = new RedissonPromise<Void>();
+        if (channels.isEmpty()) {
+            shutdown(result);
+            return result;
+        }
+        
         ChannelGroupFuture channelsFuture = channels.newCloseFuture();
         channelsFuture.addListener(new FutureListener<Void>() {
             @Override
@@ -321,39 +330,7 @@ public final class RedisClient {
                     return;
                 }
                 
-                if (!hasOwnTimer && !hasOwnExecutor && !hasOwnResolver && !hasOwnGroup) {
-                    result.trySuccess(null);
-                    return;
-                }
-                
-                Thread t = new Thread() {
-                    @Override
-                    public void run() {
-                        try {
-                            if (hasOwnTimer) {
-                                timer.stop();
-                            }
-                            
-                            if (hasOwnExecutor) {
-                                executor.shutdown();
-                                executor.awaitTermination(15, TimeUnit.SECONDS);
-                            }
-                            
-                            if (hasOwnResolver) {
-                                bootstrap.config().resolver().close();
-                            }
-                            if (hasOwnGroup) {
-                                bootstrap.config().group().shutdownGracefully();
-                            }
-                        } catch (Exception e) {
-                            result.tryFailure(e);
-                            return;
-                        }
-                        
-                        result.trySuccess(null);
-                    }
-                };
-                t.start();
+                shutdown(result);
             }
         });
         
@@ -363,8 +340,43 @@ public final class RedisClient {
                 connection.closeAsync();
             }
         }
-
+        
         return result;
+    }
+
+    private void shutdown(RPromise<Void> result) {
+        if (!hasOwnTimer && !hasOwnExecutor && !hasOwnResolver && !hasOwnGroup) {
+            result.trySuccess(null);
+        } else {
+            Thread t = new Thread() {
+                @Override
+                public void run() {
+                    try {
+                        if (hasOwnTimer) {
+                            timer.stop();
+                        }
+                        
+                        if (hasOwnExecutor) {
+                            executor.shutdown();
+                            executor.awaitTermination(15, TimeUnit.SECONDS);
+                        }
+                        
+                        if (hasOwnResolver) {
+                            bootstrap.config().resolver().close();
+                        }
+                        if (hasOwnGroup) {
+                            bootstrap.config().group().shutdownGracefully();
+                        }
+                    } catch (Exception e) {
+                        result.tryFailure(e);
+                        return;
+                    }
+                    
+                    result.trySuccess(null);
+                }
+            };
+            t.start();
+        }
     }
 
     @Override
