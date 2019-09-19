@@ -130,29 +130,22 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     @Override
     public <V> V get(RFuture<V> future) {
-        if (!future.isDone()) {
-            CountDownLatch l = new CountDownLatch(1);
-            future.onComplete((res, e) -> {
-                l.countDown();
-            });
-
-            boolean interrupted = false;
-            while (!future.isDone()) {
-                try {
-                    l.await();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                    break;
-                }
-            }
-
-            if (interrupted) {
-                Thread.currentThread().interrupt();
-            }
+        try {
+            future.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        if (future.isSuccess()) {
+            return future.getNow();
         }
 
-        // commented out due to blocking issues up to 200 ms per minute for each thread
-        // future.awaitUninterruptibly();
+        throw convertException(future);
+    }
+    
+    @Override
+    public <V> V getInterrupted(RFuture<V> future) throws InterruptedException {
+        future.await();
+        
         if (future.isSuccess()) {
             return future.getNow();
         }

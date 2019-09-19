@@ -58,6 +58,8 @@ public interface CommandAsyncExecutor {
     void syncSubscription(RFuture<?> future);
     
     <V> V get(RFuture<V> future);
+    
+    <V> V getInterrupted(RFuture<V> future) throws InterruptedException;
 
     <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
     
