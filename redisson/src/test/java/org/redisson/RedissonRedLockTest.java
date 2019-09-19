@@ -369,7 +369,7 @@ public class RedissonRedLockTest {
         t.start();
         t.join();
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
 
         lock.unlock();
 

@@ -294,7 +294,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
         current = System.currentTimeMillis();
         RFuture<RedissonLockEntry> future = subscribe();
-        if (!await(future, time, TimeUnit.MILLISECONDS)) {
+        if (!future.await(time, TimeUnit.MILLISECONDS)) {
             return false;
         }
 

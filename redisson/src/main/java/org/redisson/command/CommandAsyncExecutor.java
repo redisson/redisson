@@ -17,7 +17,6 @@ package org.redisson.command;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
@@ -53,8 +52,6 @@ public interface CommandAsyncExecutor {
     
     <V> RedisException convertException(RFuture<V> future);
 
-    boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException;
-    
     void syncSubscription(RFuture<?> future);
     
     <V> V get(RFuture<V> future);

@@ -63,7 +63,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         assertThat(queue.offer(6, 3, TimeUnit.SECONDS)).isTrue();
         assertThat(System.currentTimeMillis() - start).isBetween(1000L, 2000L);
         
-        await().atMost(2, TimeUnit.SECONDS).until(() -> executed.get());
+        await().atMost(2, TimeUnit.SECONDS).untilTrue(executed);
         
         assertThat(queue).containsExactly(2, 3, 4, 5, 6);
         
@@ -142,7 +142,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
         queue1.put(4);
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
         
         assertThat(queue1).containsExactly(2, 3, 4);
         
@@ -299,7 +299,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
         
         t.join();
         
-        await().atMost(5, TimeUnit.SECONDS).until(() -> executed.get());
+        await().atMost(5, TimeUnit.SECONDS).untilTrue(executed);
         
         redisson.shutdown();
         runner.stop();

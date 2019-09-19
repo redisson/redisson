@@ -428,7 +428,7 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
         
         current = System.currentTimeMillis();
         RFuture<RedissonLockEntry> future = subscribe();
-        if (!await(future, time, TimeUnit.MILLISECONDS)) {
+        if (!future.await(time, TimeUnit.MILLISECONDS)) {
             return null;
         }
 

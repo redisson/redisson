@@ -377,7 +377,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         
         current = System.currentTimeMillis();
         RFuture<RedissonLockEntry> subscribeFuture = subscribe(threadId);
-        if (!await(subscribeFuture, time, TimeUnit.MILLISECONDS)) {
+        if (!subscribeFuture.await(time, TimeUnit.MILLISECONDS)) {
             if (!subscribeFuture.cancel(false)) {
                 subscribeFuture.onComplete((res, e) -> {
                     if (e == null) {

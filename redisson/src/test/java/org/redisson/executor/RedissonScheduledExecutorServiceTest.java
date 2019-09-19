@@ -139,7 +139,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         AtomicInteger counter = new AtomicInteger();
         new MockUp<TasksRunnerService>() {
             @Mock
-            private void finish(Invocation invocation, String requestId) {
+            private void finish(Invocation invocation, String requestId, boolean removeTask) {
                 if (counter.incrementAndGet() > 1) {
                     invocation.proceed();
                 }
@@ -172,7 +172,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
         
         redisson.getKeys().delete("counter");
-        assertThat(redisson.getKeys().count()).isEqualTo(1);
+        assertThat(redisson.getKeys().count()).isEqualTo(2);
     }
 
     @Test(timeout = 7000)

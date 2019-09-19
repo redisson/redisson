@@ -25,8 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -153,15 +151,6 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         throw convertException(future);
     }
 
-    @Override
-    public boolean await(RFuture<?> future, long timeout, TimeUnit timeoutUnit) throws InterruptedException {
-        CountDownLatch l = new CountDownLatch(1);
-        future.onComplete((res, e) -> {
-            l.countDown();
-        });
-        return l.await(timeout, timeoutUnit);
-    }
-    
     protected <R> RPromise<R> createPromise() {
         return new RedissonPromise<R>();
     }

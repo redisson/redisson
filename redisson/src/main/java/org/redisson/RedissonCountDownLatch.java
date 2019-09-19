@@ -68,7 +68,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         long remainTime = unit.toMillis(time);
         long current = System.currentTimeMillis();
         RFuture<RedissonCountDownLatchEntry> promise = subscribe();
-        if (!await(promise, time, unit)) {
+        if (!promise.await(time, unit)) {
             return false;
         }
 
