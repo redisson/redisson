@@ -35,7 +35,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.ScheduledFuture;
+import io.netty.util.Timeout;
 
 /**
  * 
@@ -201,19 +201,15 @@ public class RedisConnection implements RedisCommands {
             RedissonShutdownException cause = new RedissonShutdownException("Redisson is shutdown");
             return RedissonPromise.newFailedFuture(cause);
         }
-        
-        ScheduledFuture<?> scheduledFuture = redisClient.getEventLoopGroup().schedule(new Runnable() {
-            @Override
-            public void run() {
-                RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
-                        + LogHelper.toString(command, params)
-                        + ", Redis client: " + redisClient);
-                promise.tryFailure(ex);
-            }
+
+        Timeout scheduledFuture = redisClient.getTimer().newTimeout(t -> {
+            RedisTimeoutException ex = new RedisTimeoutException("Command execution timeout for command: "
+                    + LogHelper.toString(command, params) + ", Redis client: " + redisClient);
+            promise.tryFailure(ex);
         }, timeout, TimeUnit.MILLISECONDS);
         
         promise.onComplete((res, e) -> {
-            scheduledFuture.cancel(false);
+            scheduledFuture.cancel();
         });
         
         ChannelFuture writeFuture = send(new CommandData<T, R>(promise, encoder, command, params));
