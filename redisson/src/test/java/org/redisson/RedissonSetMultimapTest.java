@@ -383,6 +383,19 @@ public class RedissonSetMultimapTest extends BaseTest {
     }
 
     @Test
+    public void testExpire() throws InterruptedException {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+
+        map.expire(100, TimeUnit.MILLISECONDS);
+
+        Thread.sleep(500);
+
+        assertThat(map.size()).isZero();
+    }
+
+    @Test
     public void testReplaceValues() {
         RSetMultimap<SimpleKey, SimpleValue> map = redisson.getSetMultimap("test1");
         map.put(new SimpleKey("0"), new SimpleValue("1"));
@@ -394,19 +407,6 @@ public class RedissonSetMultimapTest extends BaseTest {
 
         Set<SimpleValue> allValues = map.getAll(new SimpleKey("0"));
         assertThat(allValues).containsOnlyElementsOf(values);
-    }
-
-    @Test
-    public void testExpire() throws InterruptedException {
-        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
-        map.put("1", "2");
-        map.put("2", "3");
-
-        map.expire(100, TimeUnit.MILLISECONDS);
-
-        Thread.sleep(500);
-
-        assertThat(map.size()).isZero();
     }
 
     @Test
@@ -446,6 +446,50 @@ public class RedissonSetMultimapTest extends BaseTest {
         
         RSetMultimap<String, String> map2 = redisson.getSetMultimap("simple1");
         assertThat(map2.delete()).isFalse();
+    }
+
+    @Test
+    public void testRename() {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+        map.rename("simple2");
+
+        RSetMultimap<String, String> map2 = redisson.getSetMultimap("simple2");
+        assertThat(map2.size()).isEqualTo(2);
+        assertThat(map2.get("1")).containsOnly("2");
+        assertThat(map2.get("2")).containsOnly("3");
+
+        RSetMultimap<String, String> map3 = redisson.getSetMultimap("simple");
+        assertThat(map3.isExists()).isFalse();
+        assertThat(map3.isEmpty()).isTrue();
+    }
+
+    @Test
+    public void testRenamenx() {
+        RSetMultimap<String, String> map = redisson.getSetMultimap("simple");
+        map.put("1", "2");
+        map.put("2", "3");
+
+        RSetMultimap<String, String> map2 = redisson.getSetMultimap("simple2");
+        map2.put("4", "5");
+
+        assertThat(map.renamenx("simple2")).isFalse();
+        assertThat(map.size()).isEqualTo(2);
+        assertThat(map.get("1")).containsOnly("2");
+        assertThat(map.get("2")).containsOnly("3");
+        assertThat(map2.get("4")).containsOnly("5");
+
+        assertThat(map.renamenx("simple3")).isTrue();
+
+        RSetMultimap<String, String> map3 = redisson.getSetMultimap("simple");
+        assertThat(map3.isExists()).isFalse();
+        assertThat(map3.isEmpty()).isTrue();
+
+        RSetMultimap<String, String> map4 = redisson.getSetMultimap("simple3");
+        assertThat(map4.size()).isEqualTo(2);
+        assertThat(map4.get("1")).containsOnly("2");
+        assertThat(map4.get("2")).containsOnly("3");
     }
 
 }

@@ -267,6 +267,68 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
+    public RFuture<Void> renameAsync(String newName) {
+        String newPrefix = suffixName(newName, "");
+        RFuture<Void> f = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "table.insert(keys, v); " +
+                    "end;" +
+                "end; " +
+
+                "redis.call('rename', KEYS[1], ARGV[3]); "
+              + "for i=1, #keys, 1 do "
+                  + "redis.call('rename', ARGV[1] .. keys[i], ARGV[2] .. keys[i]); "
+              + "end; ",
+                Arrays.asList(getName()), prefix, newPrefix, newName);
+        f.onComplete((r, e) -> {
+            if (e == null) {
+                this.name = newName;
+            }
+        });
+        return f;
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String newName) {
+        String newPrefix = suffixName(newName, "");
+        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local entries = redis.call('hgetall', KEYS[1]); " +
+                "local keys = {}; " +
+                "for i, v in ipairs(entries) do " +
+                    "if i % 2 == 0 then " +
+                        "table.insert(keys, v); " +
+                    "end;" +
+                "end; " +
+
+                "local r = redis.call('exists', ARGV[3]);" +
+                "if r == 1 then " +
+                    "return 0;" +
+                "end; " +
+                "for i=1, #keys, 1 do " +
+                    "local r = redis.call('exists', ARGV[2] .. keys[i]);" +
+                    "if r == 1 then " +
+                        "return 0;" +
+                    "end; " +
+                "end; " +
+
+                "redis.call('rename', KEYS[1], ARGV[3]); "
+              + "for i=1, #keys, 1 do "
+                  + "redis.call('rename', ARGV[1] .. keys[i], ARGV[2] .. keys[i]); "
+              + "end; " +
+                "return 1; ",
+                Arrays.asList(getName()), prefix, newPrefix, newName);
+        f.onComplete((value, e) -> {
+            if (e == null && value) {
+                this.name = newName;
+            }
+        });
+        return f;
+    }
+
+    @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "local entries = redis.call('hgetall', KEYS[1]); " +
