@@ -4,6 +4,22 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 24-Sep-2019 - 3.11.4 released
+
+Feature - support search by numeric fields in LiveObject search engine. Follow conditions are supported: `greater than on equal`, `greater than`, `lower than`, `lower than or equal`  
+
+Fixed - threads blocked waiting on CountDownLatch  
+Fixed - `rename` and `renamenx` methods of `RMultimap` interface aren't working  
+Fixed - memory leak caused by `FastThreadLocal` object used in `CodecDecoder`  
+Fixed - blocking queue methods don't re-throw `InterruptedException`  
+Fixed - `RExecutorService` tasks duplication after task retry event  
+Fixed - `Redisson.shutdown` method blocks calling thread  
+Fixed - Spring Boot default connection timeout is 0 seconds  
+Fixed - IPv6 handling in Sentinel manager (thanks to [AndreevDm](https://github.com/AndreevDm))  
+Fixed - `RMapCache.remainTimeToLive` method returns negative remain time  
+Fixed - `RBuckets.get` method doesn't work in Redis cluster mode  
+Fixed - wrong error message if Sentinel server has misconfiguration  
+
 ### 30-Aug-2019 - 3.11.3 released  
 
 Feature - JBoss Marshalling codec implementation  
