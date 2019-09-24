@@ -60,8 +60,6 @@ public class LiveObjectSearch {
     private Set<Object> traverseAnd(ANDCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
         Set<Object> allIds = new HashSet<Object>();
         
-        RSet<Object> firstEqSet = null;
-        
         List<String> eqNames = new ArrayList<String>();
         
         Map<RScoredSortedSet<Object>, Number> gtNumericNames = new HashMap<>();
@@ -81,11 +79,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
                     RSet<Object> values = map.get(eqc.getValue());
-                    if (firstEqSet == null) {
-                        firstEqSet = values;
-                    } else {
-                        eqNames.add(values.getName());
-                    }
+                    eqNames.add(values.getName());
                 }
             }
             if (cond instanceof LTCondition) {
@@ -122,24 +116,23 @@ public class LiveObjectSearch {
                 if (ids.isEmpty()) {
                     return Collections.emptySet();
                 }
-                allIds.addAll(ids);
+                allIds.retainAll(ids);
+                if (allIds.isEmpty()) {
+                    return Collections.emptySet();
+                }
             }
         }
         
-        if (firstEqSet != null) {
-            if (eqNames.isEmpty()) {
-                if (!allIds.isEmpty()) {
-                    allIds.retainAll(firstEqSet.readAll());    
-                } else {
-                    allIds.addAll(firstEqSet.readAll());
+        if (!eqNames.isEmpty()) {
+            RSet<Object> set = redisson.getSet(eqNames.get(0));
+            Set<Object> intersect = set.readIntersection(eqNames.toArray(new String[eqNames.size()]));
+            if (!allIds.isEmpty()) {
+                allIds.retainAll(intersect);
+                if (allIds.isEmpty()) {
+                    return Collections.emptySet();
                 }
             } else {
-                Set<Object> intersect = firstEqSet.readIntersection(eqNames.toArray(new String[eqNames.size()]));
-                if (!allIds.isEmpty()) {
-                    allIds.retainAll(intersect);    
-                } else {
-                    allIds.addAll(intersect);
-                }
+                allIds.addAll(intersect);
             }
         }
 
@@ -178,25 +171,22 @@ public class LiveObjectSearch {
 
     private boolean checkValueRange(Set<Object> allIds, Map<RScoredSortedSet<Object>, Number> numericNames, 
                         BiFunction<RScoredSortedSet<Object>, Number, Collection<Object>> func) {
-        if (!numericNames.isEmpty()) {
-            Set<Object> gtAllIds = new HashSet<>();
-            boolean firstFill = false;
-            for (Entry<RScoredSortedSet<Object>, Number> e : numericNames.entrySet()) {
-                Collection<Object> gtIds = func.apply(e.getKey(), e.getValue());
-                if (gtIds.isEmpty()) {
-                    return false;
-                }
-                if (!firstFill) {
-                    gtAllIds.addAll(gtIds);
-                    firstFill = true;
-                } else {
-                    gtAllIds.retainAll(gtIds);
-                }
+        if (numericNames.isEmpty()) {
+            return true;
+        }
+
+        for (Entry<RScoredSortedSet<Object>, Number> e : numericNames.entrySet()) {
+            Collection<Object> gtIds = func.apply(e.getKey(), e.getValue());
+            if (gtIds.isEmpty()) {
+                return false;
             }
             if (!allIds.isEmpty()) {
-                allIds.retainAll(gtAllIds);    
+                allIds.retainAll(gtIds);
+                if (allIds.isEmpty()) {
+                    return false;
+                }
             } else {
-                allIds.addAll(gtAllIds);
+                allIds.addAll(gtIds);
             }
         }
         return true;
@@ -205,7 +195,6 @@ public class LiveObjectSearch {
     private Set<Object> traverseOr(ORCondition condition, NamingScheme namingScheme, Class<?> entityClass) {
         Set<Object> allIds = new HashSet<Object>();
         
-        RSet<Object> firstEqSet = null;
         List<String> eqNames = new ArrayList<String>();
 
         Map<RScoredSortedSet<Object>, Number> ltNumericNames = new HashMap<>();
@@ -225,11 +214,7 @@ public class LiveObjectSearch {
                 } else {
                     RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
                     RSet<Object> values = map.get(eqc.getValue());
-                    if (firstEqSet == null) {
-                        firstEqSet = values;
-                    } else {
-                        eqNames.add(values.getName());
-                    }
+                    eqNames.add(values.getName());
                 }
             }
             if (cond instanceof GTCondition) {
@@ -265,12 +250,10 @@ public class LiveObjectSearch {
                 allIds.addAll(ids);
             }
         }
-        if (firstEqSet != null) {
-            if (eqNames.isEmpty()) {
-                allIds.addAll(firstEqSet.readAll());
-            } else {
-                allIds.addAll(firstEqSet.readUnion(eqNames.toArray(new String[eqNames.size()])));
-            }
+
+        if (!eqNames.isEmpty()) {
+            RSet<Object> set = redisson.getSet(eqNames.get(0));
+            allIds.addAll(set.readUnion(eqNames.toArray(new String[eqNames.size()])));
         }
         
         for (Entry<RScoredSortedSet<Object>, Number> e : eqNumericNames.entrySet()) {
@@ -304,7 +287,6 @@ public class LiveObjectSearch {
     public Set<Object> find(Class<?> entityClass, Condition condition) {
         NamingScheme namingScheme = objectBuilder.getNamingScheme(entityClass);
 
-        Set<Object> ids = Collections.emptySet();
         if (condition instanceof EQCondition) {
             EQCondition c = (EQCondition) condition;
             String indexName = namingScheme.getIndexName(entityClass, c.getName());
@@ -313,45 +295,42 @@ public class LiveObjectSearch {
                 RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
                 double v = ((Number) c.getValue()).doubleValue();
                 Collection<Object> gtIds = set.valueRange(v, true, v, true);
-                ids = new HashSet<>(gtIds);
+                return new HashSet<>(gtIds);
             } else {
                 RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-                ids = map.getAll(c.getValue());
+                return map.getAll(c.getValue());
             }
         } else if (condition instanceof GTCondition) {
             GTCondition c = (GTCondition) condition;
             String indexName = namingScheme.getIndexName(entityClass, c.getName());
             RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
             Collection<Object> gtIds = set.valueRange(c.getValue().doubleValue(), false, Double.POSITIVE_INFINITY, false);
-            ids = new HashSet<>(gtIds);
+            return new HashSet<>(gtIds);
         } else if (condition instanceof GECondition) {
             GECondition c = (GECondition) condition;
             String indexName = namingScheme.getIndexName(entityClass, c.getName());
             RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
             Collection<Object> gtIds = set.valueRange(c.getValue().doubleValue(), true, Double.POSITIVE_INFINITY, false);
-            ids = new HashSet<>(gtIds);
+            return new HashSet<>(gtIds);
         } else if (condition instanceof LTCondition) {
             LTCondition c = (LTCondition) condition;
             String indexName = namingScheme.getIndexName(entityClass, c.getName());
             RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
             Collection<Object> gtIds = set.valueRange(Double.NEGATIVE_INFINITY, false, c.getValue().doubleValue(), false);
-            ids = new HashSet<>(gtIds);
+            return new HashSet<>(gtIds);
         } else if (condition instanceof LECondition) {
             LECondition c = (LECondition) condition;
             String indexName = namingScheme.getIndexName(entityClass, c.getName());
             RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
             Collection<Object> gtIds = set.valueRange(Double.NEGATIVE_INFINITY, false, c.getValue().doubleValue(), true);
-            ids = new HashSet<>(gtIds);
+            return new HashSet<>(gtIds);
         } else if (condition instanceof ORCondition) {
-            ids = traverseOr((ORCondition) condition, namingScheme, entityClass);
+            return traverseOr((ORCondition) condition, namingScheme, entityClass);
         } else if (condition instanceof ANDCondition) {
-            ids = traverseAnd((ANDCondition) condition, namingScheme, entityClass);
+            return traverseAnd((ANDCondition) condition, namingScheme, entityClass);
         }
-        
-        if (ids.isEmpty()) {
-            return Collections.emptySet();
-        }
-        return ids;
+
+        throw new IllegalArgumentException();
     }
 
     
