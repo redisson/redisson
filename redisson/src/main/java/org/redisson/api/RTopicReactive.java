@@ -85,7 +85,7 @@ public interface RTopicReactive {
     Mono<Void> removeListener(MessageListener<?> listener);
 
     /**
-     * Returns stream of messages.
+     * Returns continues stream of messages.
      * 
      * @param <M> type of message 
      * @param type - type of message to listen
