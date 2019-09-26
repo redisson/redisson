@@ -14,14 +14,6 @@
     <name>Redisson/Hibernate-4.x</name>
 
     <dependencies>
-        <dependency>
-            <groupId>de.ruedigermoeller</groupId>
-            <artifactId>fst</artifactId>
-            <version>2.54</version>
-            <scope>test</scope>
-            <optional>true</optional>
-        </dependency>
-
        <dependency>
          <groupId>org.hibernate</groupId>
          <artifactId>hibernate-core</artifactId>
