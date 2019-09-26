@@ -56,14 +56,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.LongMultiDecoder;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
@@ -1304,7 +1297,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(destKey, StringCodec.INSTANCE, ZINTERSTORE, args.toArray());
     }
 
-    private static final RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new ListMultiDecoder(new LongMultiDecoder(), new ScoredSortedListReplayDecoder(), new ListScanResultReplayDecoder()));
+    private static final RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ScoredSortedListReplayDecoder()));
     
     @Override
     public Cursor<Tuple> zScan(byte[] key, ScanOptions options) {

@@ -17,14 +17,21 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class Long2MultiDecoder extends LongMultiDecoder {
+public class Long2MultiDecoder implements MultiDecoder<Object> {
+
+    @Override
+    public Decoder<Object> getDecoder(int paramNum, State state) {
+        return LongCodec.INSTANCE.getValueDecoder();
+    }
 
     @Override
     public Object decode(List<Object> parts, State state) {

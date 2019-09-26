@@ -15,27 +15,6 @@
  */
 package org.redisson.spring.data.connection;
 
-import static org.redisson.client.protocol.RedisCommands.LRANGE;
-
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-
 import org.redisson.Redisson;
 import org.redisson.SlotCallback;
 import org.redisson.api.BatchOptions;
@@ -45,25 +24,14 @@ import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
-import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.Codec;
-import org.redisson.client.codec.DoubleCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.codec.StringCodec;
+import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.LongMultiDecoder;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
@@ -72,22 +40,22 @@ import org.redisson.misc.RedissonPromise;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessApiUsageException;
 import org.springframework.data.redis.RedisSystemException;
-import org.springframework.data.redis.connection.AbstractRedisConnection;
-import org.springframework.data.redis.connection.DataType;
-import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.connection.RedisPipelineException;
-import org.springframework.data.redis.connection.RedisSubscribedConnectionException;
-import org.springframework.data.redis.connection.ReturnType;
-import org.springframework.data.redis.connection.SortParameters;
-import org.springframework.data.redis.connection.Subscription;
-import org.springframework.data.redis.core.Cursor;
-import org.springframework.data.redis.core.KeyBoundCursor;
-import org.springframework.data.redis.core.ScanCursor;
-import org.springframework.data.redis.core.ScanIteration;
-import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.connection.*;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import org.springframework.util.Assert;
 import org.springframework.util.ReflectionUtils;
+
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+
+import static org.redisson.client.protocol.RedisCommands.LRANGE;
 
 /**
  * Redisson connection
@@ -1272,7 +1240,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return write(destKey, StringCodec.INSTANCE, ZINTERSTORE, args.toArray());
     }
 
-    private static final RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<ListScanResult<Object>>("ZSCAN", new ListMultiDecoder(new LongMultiDecoder(), new ScoredSortedListReplayDecoder(), new ListScanResultReplayDecoder()));
+    private static final RedisCommand<ListScanResult<Object>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ScoredSortedListReplayDecoder()));
     
     @Override
     public Cursor<Tuple> zScan(byte[] key, ScanOptions options) {

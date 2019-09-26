@@ -15,30 +15,15 @@
  */
 package org.redisson.spring.data.connection;
 
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.reactivestreams.Publisher;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.DoubleCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.decoder.CodecDecoder;
-import org.redisson.client.protocol.decoder.GeoDistanceDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.reactive.CommandReactiveExecutor;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.GeoResult;
-import org.springframework.data.geo.GeoResults;
-import org.springframework.data.geo.Metric;
-import org.springframework.data.geo.Point;
+import org.springframework.data.geo.*;
 import org.springframework.data.redis.connection.ReactiveGeoCommands;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.CommandResponse;
 import org.springframework.data.redis.connection.ReactiveRedisConnection.MultiValueResponse;
@@ -47,9 +32,15 @@ import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation;
 import org.springframework.data.redis.connection.RedisGeoCommands.GeoRadiusCommandArgs;
 import org.springframework.util.Assert;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -126,7 +117,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
-    private final MultiDecoder<Map<Object, Object>> geoDecoder = new ListMultiDecoder(new PointDecoder(), new ObjectListReplayDecoder2(ListMultiDecoder.RESET));
+    private final MultiDecoder<Map<Object, Object>> geoDecoder = new ListMultiDecoder2(new ObjectListReplayDecoder2(), new PointDecoder());
     
     @Override
     public Flux<MultiValueResponse<GeoPosCommand, Point>> geoPos(Publisher<GeoPosCommand> commands) {
@@ -147,7 +138,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
         });
     }
 
-    private final MultiDecoder<GeoResults<GeoLocation<byte[]>>> postitionDecoder = new ListMultiDecoder(new CodecDecoder(), new PointDecoder(), new ObjectListReplayDecoder(ListMultiDecoder.RESET), new GeoResultsDecoder());
+    private final MultiDecoder<GeoResults<GeoLocation<byte[]>>> postitionDecoder = new ListMultiDecoder2(new GeoResultsDecoder(), new CodecDecoder(), new PointDecoder(), new ObjectListReplayDecoder());
     
     @Override
     public Flux<CommandResponse<GeoRadiusCommand, Flux<GeoResult<GeoLocation<ByteBuffer>>>>> geoRadius(
@@ -173,7 +164,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
-                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()));
+                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", distanceDecoder);
                 params.add("WITHDIST");
             }
@@ -215,7 +206,7 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
-                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder(new GeoDistanceDecoder(), new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()));
+                MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
                 cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", distanceDecoder);
                 params.add("WITHDIST");
             }

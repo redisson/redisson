@@ -38,7 +38,7 @@ public class DefaultReferenceCodecProvider implements ReferenceCodecProvider {
         Codec codec = codecCache.get(codecClass);
         if (codec == null) {
             try {
-                codec = codecClass.newInstance();
+                codec = codecClass.getDeclaredConstructor().newInstance();
                 codecCache.putIfAbsent(codecClass, codec);
             } catch (Exception ex) {
                 throw new RuntimeException(ex);

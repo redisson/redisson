@@ -34,11 +34,7 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.convertor.DoubleNullSafeReplayConvertor;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.LongMultiDecoder;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.reactive.CommandReactiveExecutor;
 import org.redisson.reactive.SetReactiveIterator;
 import org.springframework.data.domain.Range;
@@ -258,8 +254,7 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         });
     }
 
-    private static final RedisCommand<ListScanResult<Tuple>> ZSCAN = new RedisCommand<ListScanResult<Tuple>>("ZSCAN", 
-            new ListMultiDecoder(new LongMultiDecoder(), new ScoredSortedListReplayDecoder(), new ListScanResultReplayDecoder()));
+    private static final RedisCommand<ListScanResult<Tuple>> ZSCAN = new RedisCommand<>("ZSCAN", new ListMultiDecoder2(new ScoredSortedSetScanDecoder<Object>(), new ScoredSortedSetScanReplayDecoder()));
 
     @Override
     public Flux<CommandResponse<KeyCommand, Flux<Tuple>>> zScan(Publisher<KeyScanCommand> commands) {

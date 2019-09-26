@@ -15,20 +15,15 @@
  */
 package org.redisson.spring.data.connection;
 
+import org.redisson.client.handler.State;
+import org.redisson.client.protocol.Decoder;
+import org.redisson.client.protocol.decoder.MultiDecoder;
+import org.springframework.data.geo.*;
+import org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder;
-import org.redisson.client.protocol.decoder.MultiDecoder;
-import org.springframework.data.geo.Distance;
-import org.springframework.data.geo.GeoResult;
-import org.springframework.data.geo.GeoResults;
-import org.springframework.data.geo.Metric;
-import org.springframework.data.geo.Point;
-import org.springframework.data.redis.connection.RedisGeoCommands.GeoLocation;
 
 /**
  * 
@@ -50,7 +45,7 @@ public class ByteBufferGeoResultsDecoder implements MultiDecoder<GeoResults<GeoL
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return ListMultiDecoder.RESET;
+        return null;
     }
     
     @Override
