@@ -11,12 +11,12 @@
     <artifactId>redisson</artifactId>
 
     <name>Redisson</name>
-    <description>Redis based In-Memory Data Grid for Java</description>
+    <description>Redis Java client with features of In-Memory Data Grid</description>
     <inceptionYear>2014</inceptionYear>
     <url>http://redisson.org</url>
 
     <organization>
-       <name>The Redisson Project</name>
+       <name>Redisson</name>
        <url>http://redisson.org/</url>
     </organization>
 
@@ -418,7 +418,7 @@
 
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.1.2</version>
                 <configuration>
                     <archive>  
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>

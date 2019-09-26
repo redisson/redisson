@@ -13,13 +13,13 @@
 
     <name>Redisson/All-in-One</name>
 
-    <description>Redis based In-Memory Data Grid for Java</description>
+    <description>Redis Java client with features of In-Memory Data Grid</description>
     <inceptionYear>2014</inceptionYear>
-    <url>http://redisson.org</url>
+    <url>https://redisson.org</url>
 
     <organization>
-       <name>The Redisson Project</name>
-       <url>http://redisson.org/</url>
+       <name>Redisson</name>
+       <url>https://redisson.org/</url>
     </organization>
 
     <scm>
@@ -126,6 +126,7 @@
                         </manifest>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
+                            <Automatic-Module-Name>redisson.all</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
