@@ -18,6 +18,7 @@ package org.redisson.client.handler;
 import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
 
 import org.redisson.client.ChannelName;
@@ -53,7 +54,7 @@ public class CommandsQueue extends ChannelDuplexHandler {
     
     public static final AttributeKey<QueueCommand> CURRENT_COMMAND = AttributeKey.valueOf("promise");
 
-    private final Queue<QueueCommandHolder> queue = PlatformDependent.newMpscQueue();
+    private final Queue<QueueCommandHolder> queue = new ConcurrentLinkedQueue<>();
 
     private final ChannelFutureListener listener = new ChannelFutureListener() {
         @Override
