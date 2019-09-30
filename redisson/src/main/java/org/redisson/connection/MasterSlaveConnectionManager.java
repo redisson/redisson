@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
+import org.redisson.ElementsSubscribeService;
 import org.redisson.Version;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -151,7 +152,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private final Config cfg;
 
     protected final AddressResolverGroup<InetSocketAddress> resolverGroup;
-    
+
+    private final ElementsSubscribeService elementsSubscribeService = new ElementsSubscribeService(this);
+
     private PublishSubscribeService subscribeService;
     
     private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
@@ -727,7 +730,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     public PublishSubscribeService getSubscribeService() {
         return subscribeService;
     }
-    
+
+    public ElementsSubscribeService getElementsSubscribeService() {
+        return elementsSubscribeService;
+    }
+
     public ExecutorService getExecutor() {
         return executor;
     }

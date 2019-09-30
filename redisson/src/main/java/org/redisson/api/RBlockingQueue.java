@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * Distributed implementation of {@link BlockingQueue}
@@ -68,5 +69,21 @@ public interface RBlockingQueue<V> extends BlockingQueue<V>, RQueue<V>, RBlockin
      * @throws InterruptedException if interrupted while waiting
      */
     V takeLastAndOfferFirstTo(String queueName) throws InterruptedException;
+
+    /**
+     * Subscribes on elements appeared in this queue.
+     * Continuously invokes {@link #takeAsync()} method to get a new element.
+     *
+     * @param consumer - queue elements listener
+     * @return listenerId - id of listener
+     */
+    int subscribeOnElements(Consumer<V> consumer);
+
+    /**
+     * Un-subscribes defined listener.
+     *
+     * @param listenerId - id of listener
+     */
+    void unsubscribe(int listenerId);
 
 }

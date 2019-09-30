@@ -634,4 +634,31 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             Assert.fail(e.getLocalizedMessage());
         }
     }
+
+    @Test
+    public void testSubscribeOnElements() throws InterruptedException {
+        RBlockingQueue<Integer> q = redisson.getBlockingQueue("test");
+        Set<Integer> values = new HashSet<>();
+        int listnerId = q.subscribeOnElements(v -> {
+            values.add(v);
+        });
+
+        for (int i = 0; i < 10; i++) {
+            q.add(i);
+        }
+
+        Awaitility.await().atMost(Duration.ONE_SECOND).until(() -> {
+            return values.size() == 10;
+        });
+
+        q.unsubscribe(listnerId);
+
+        q.add(11);
+        q.add(12);
+
+        Thread.sleep(1000);
+
+        assertThat(values).hasSize(10);
+    }
+
 }

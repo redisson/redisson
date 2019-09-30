@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.ElementsSubscribeService;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
@@ -50,7 +51,9 @@ public interface ConnectionManager {
     String getId();
     
     CommandSyncService getCommandExecutor();
-    
+
+    ElementsSubscribeService getElementsSubscribeService();
+
     PublishSubscribeService getSubscribeService();
     
     ExecutorService getExecutor();

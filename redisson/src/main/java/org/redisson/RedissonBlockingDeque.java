@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.redisson.api.RBlockingDeque;
 import org.redisson.api.RFuture;
@@ -126,7 +127,17 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     public V takeLastAndOfferFirstTo(String queueName) throws InterruptedException {
         return commandExecutor.getInterrupted(takeLastAndOfferFirstToAsync(queueName));
     }
-    
+
+    @Override
+    public int subscribeOnElements(Consumer<V> consumer) {
+        return blockingQueue.subscribeOnElements(consumer);
+    }
+
+    @Override
+    public void unsubscribe(int id) {
+        blockingQueue.unsubscribe(id);
+    }
+
     @Override
     public RFuture<V> takeLastAndOfferFirstToAsync(String queueName) {
         return pollLastAndOfferFirstToAsync(queueName, 0, TimeUnit.SECONDS);
@@ -227,6 +238,16 @@ public class RedissonBlockingDeque<V> extends RedissonDeque<V> implements RBlock
     @Override
     public V pollLastFromAny(long timeout, TimeUnit unit, String... queueNames) throws InterruptedException {
         return commandExecutor.getInterrupted(pollLastFromAnyAsync(timeout, unit, queueNames));
+    }
+
+    @Override
+    public int subscribeOnFirstElements(Consumer<V> consumer) {
+        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeFirstAsync, consumer);
+    }
+
+    @Override
+    public int subscribeOnLastElements(Consumer<V> consumer) {
+        return commandExecutor.getConnectionManager().getElementsSubscribeService().subscribeOnElements(this::takeLastAsync, consumer);
     }
 
     @Override
