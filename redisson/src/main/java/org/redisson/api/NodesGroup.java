@@ -29,7 +29,7 @@ public interface NodesGroup<N extends Node> {
 
     /**
      * Adds connection listener which will be triggered
-     * when Redisson has just been connected to or disconnected from redis server
+     * when Redisson connected to or disconnected from Redis server
      *
      * @param connectionListener - connection listener
      * @return id of listener
