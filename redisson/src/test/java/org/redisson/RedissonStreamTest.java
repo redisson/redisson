@@ -22,6 +22,17 @@ import org.redisson.client.RedisException;
 public class RedissonStreamTest extends BaseTest {
 
     @Test
+    public void testTrim() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+        stream.add("1", "1");
+        stream.add("2", "2");
+
+        assertThat(stream.trim(2)).isEqualTo(1);
+    }
+
+    @Test
     public void testPendingEmpty() {
         RStream<Object, Object> stream = redisson.getStream("test");
         stream.createGroup("testGroup");
