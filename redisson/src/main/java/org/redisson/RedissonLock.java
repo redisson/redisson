@@ -325,9 +325,12 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         if (threadId != null) {
             task.removeThreadId(threadId);
         }
-        
+
         if (threadId == null || task.hasNoThreads()) {
-            task.getTimeout().cancel();
+            Timeout timeout = task.getTimeout();
+            if (timeout != null) {
+                timeout.cancel();
+            }
             EXPIRATION_RENEWAL_MAP.remove(getEntryName());
         }
     }
