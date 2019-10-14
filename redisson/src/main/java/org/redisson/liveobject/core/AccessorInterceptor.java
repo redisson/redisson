@@ -22,16 +22,16 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.redisson.RedissonReference;
-import org.redisson.api.RLiveObject;
-import org.redisson.api.RMap;
-import org.redisson.api.RObject;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RSetMultimap;
-import org.redisson.api.RedissonClient;
+import org.redisson.RedissonScoredSortedSet;
+import org.redisson.RedissonSetMultimap;
+import org.redisson.api.*;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.REntity.TransformationMode;
 import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RIndex;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
@@ -53,12 +53,12 @@ import net.bytebuddy.implementation.bind.annotation.This;
  */
 public class AccessorInterceptor {
 
-    private final RedissonClient redisson;
-    private final RedissonObjectBuilder objectBuilder;
+    private final CommandAsyncExecutor commandExecutor;
+    private final ConnectionManager connectionManager;
 
-    public AccessorInterceptor(RedissonClient redisson, RedissonObjectBuilder objectBuilder) {
-        this.redisson = redisson;
-        this.objectBuilder = objectBuilder;
+    public AccessorInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager) {
+        this.commandExecutor = commandExecutor;
+        this.connectionManager = connectionManager;
     }
 
     @RuntimeType
@@ -81,9 +81,9 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                RObject ar = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
+                RObject ar = connectionManager.getCommandExecutor().getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
                 if (ar != null) {
-                    objectBuilder.store(ar, fieldName, liveMap);
+                    connectionManager.getCommandExecutor().getObjectBuilder().store(ar, fieldName, liveMap);
                     return ar;
                 }
             }
@@ -95,7 +95,7 @@ public class AccessorInterceptor {
                 return result;
             }
             if (result instanceof RedissonReference) {
-                return objectBuilder.fromReference((RedissonReference) result);
+                return connectionManager.getCommandExecutor().getObjectBuilder().fromReference((RedissonReference) result);
             }
             return result;
         }
@@ -111,10 +111,18 @@ public class AccessorInterceptor {
                 storeIndex(field, me, liveObject.getLiveObjectId());
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
-                NamingScheme ns = objectBuilder.getNamingScheme(rEntity);
-                liveMap.fastPut(fieldName, new RedissonReference(rEntity,
-                        ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
-                                liveObject.getLiveObjectId())));
+                NamingScheme ns = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(rEntity);
+
+                if (commandExecutor instanceof CommandBatchService) {
+                    liveMap.fastPutAsync(fieldName, new RedissonReference(rEntity,
+                            ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
+                                    liveObject.getLiveObjectId())));
+                } else {
+                    liveMap.fastPut(fieldName, new RedissonReference(rEntity,
+                            ns.getName(rEntity, fieldType, getREntityIdFieldName(liveObject),
+                                    liveObject.getLiveObjectId())));
+                }
+
                 return me;
             }
             
@@ -123,7 +131,7 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
                             REntity.class).fieldTransformation())) {
-                RObject rObject = objectBuilder.createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
+                RObject rObject = connectionManager.getCommandExecutor().getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
                 if (arg != null) {
                     if (rObject instanceof Collection) {
                         Collection<?> c = (Collection<?>) rObject;
@@ -141,32 +149,45 @@ public class AccessorInterceptor {
             }
             
             if (arg instanceof RObject) {
-                objectBuilder.store((RObject) arg, fieldName, liveMap);
+                connectionManager.getCommandExecutor().getObjectBuilder().store((RObject) arg, fieldName, liveMap);
                 return me;
             }
 
             if (arg == null) {
                 Object oldArg = liveMap.remove(fieldName);
                 if (field.getAnnotation(RIndex.class) != null) {
-                    NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
+                    NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
                     String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-                    
-                    if (oldArg instanceof Number) {
-                        RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
-                        set.remove(((RLiveObject) me).getLiveObjectId());
+
+                    CommandBatchService ce;
+                    if (commandExecutor instanceof CommandBatchService) {
+                        ce = (CommandBatchService) commandExecutor;
                     } else {
-                        RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
+                        ce = new CommandBatchService(connectionManager);
+                    }
+
+                    if (oldArg instanceof Number) {
+                        RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+                        set.removeAsync(((RLiveObject) me).getLiveObjectId());
+                    } else {
+                        RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
                         if (oldArg instanceof RLiveObject) {
-                            map.remove(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
+                            map.removeAsync(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
                         } else {
-                            map.remove(oldArg, ((RLiveObject) me).getLiveObjectId());
+                            map.removeAsync(oldArg, ((RLiveObject) me).getLiveObjectId());
                         }
                     }
+
+                    ce.execute();
                 }
             } else {
                 storeIndex(field, me, arg);
 
-                liveMap.fastPut(fieldName, arg);
+                if (commandExecutor instanceof CommandBatchService) {
+                    liveMap.fastPutAsync(fieldName, arg);
+                } else {
+                    liveMap.fastPut(fieldName, arg);
+                }
             }
             return me;
         }
@@ -175,15 +196,24 @@ public class AccessorInterceptor {
 
     protected void storeIndex(Field field, Object me, Object arg) {
         if (field.getAnnotation(RIndex.class) != null) {
-            NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
+            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
             String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
-            if (arg instanceof Number) {
-                RScoredSortedSet<Object> set = redisson.getScoredSortedSet(indexName, namingScheme.getCodec());
-                set.add(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+
+            CommandBatchService ce;
+            if (commandExecutor instanceof CommandBatchService) {
+                ce = (CommandBatchService) commandExecutor;
             } else {
-                RSetMultimap<Object, Object> map = redisson.getSetMultimap(indexName, namingScheme.getCodec());
-                map.put(arg, ((RLiveObject) me).getLiveObjectId());
+                ce = new CommandBatchService(connectionManager);
             }
+
+            if (arg instanceof Number) {
+                RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+                set.addAsync(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+            } else {
+                RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
+            }
+            ce.execute();
         }
     }
 

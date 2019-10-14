@@ -28,19 +28,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.api.RBlockingDeque;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RCascadeType;
-import org.redisson.api.RDeque;
-import org.redisson.api.RList;
-import org.redisson.api.RLiveObject;
-import org.redisson.api.RLiveObjectService;
-import org.redisson.api.RMap;
-import org.redisson.api.RObject;
-import org.redisson.api.RQueue;
-import org.redisson.api.RSet;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.annotation.RCascade;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.RFieldAccessor;
@@ -2038,6 +2026,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public void setGood(boolean good) {
             this.good = good;
         }
+    }
+
+    @Test
+    public void testBatchedPersist() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+
+        List<TestREntity> objects = new ArrayList<>();
+        int objectsAmount = 1000000;
+        for (int i = 0; i < objectsAmount; i++) {
+            TestREntity e = new TestREntity();
+            e.setName("" + i);
+            e.setValue("value" + i);
+            objects.add(e);
+        }
+        List<Object> attachedObjects = s.persist(objects.toArray());
+        assertThat(attachedObjects).hasSize(objectsAmount);
+
+        assertThat(redisson.getKeys().count()).isEqualTo(objectsAmount);
     }
 
     @Test

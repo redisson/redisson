@@ -15,10 +15,10 @@
  */
 package org.redisson.liveobject.resolver;
 
-import java.util.UUID;
-
-import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RId;
+import org.redisson.command.CommandAsyncExecutor;
+
+import java.util.UUID;
 
 /**
  *
@@ -29,7 +29,7 @@ public class UUIDGenerator implements RIdResolver<String>{
     public static final UUIDGenerator INSTANCE = new UUIDGenerator();
     
     @Override
-    public String resolve(Class<?> value, RId id, String idFieldName, RedissonClient redisson) {
+    public String resolve(Class<?> value, RId id, String idFieldName, CommandAsyncExecutor commandAsyncExecutor) {
         return UUID.randomUUID().toString();
     }
     

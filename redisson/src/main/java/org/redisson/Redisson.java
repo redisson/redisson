@@ -671,7 +671,7 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLiveObjectService getLiveObjectService() {
-        return new RedissonLiveObjectService(this, liveObjectClassCache, connectionManager.getCommandExecutor());
+        return new RedissonLiveObjectService(liveObjectClassCache, connectionManager);
     }
 
     @Override

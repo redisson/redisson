@@ -15,8 +15,8 @@
  */
 package org.redisson.liveobject.resolver;
 
-import org.redisson.api.RedissonClient;
 import org.redisson.api.annotation.RId;
+import org.redisson.command.CommandAsyncExecutor;
 
 /**
  *
@@ -32,9 +32,9 @@ public interface RIdResolver<V> {
      * @param cls the class of the LiveObject.
      * @param annotation the RId annotation used in the class.
      * @param idFieldName field id
-     * @param redisson instance
+     * @param commandAsyncExecutor instance
      * @return resolved RId field value.
      */
-    V resolve(Class<?> cls, RId annotation, String idFieldName, RedissonClient redisson);
+    V resolve(Class<?> cls, RId annotation, String idFieldName, CommandAsyncExecutor commandAsyncExecutor);
 
 }

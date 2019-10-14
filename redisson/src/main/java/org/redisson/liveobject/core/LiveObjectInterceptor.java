@@ -15,29 +15,24 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.Method;
-
-import org.redisson.api.RBatch;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLiveObject;
-import org.redisson.api.RMap;
-import org.redisson.api.RMultimapAsync;
-import org.redisson.api.RScoredSortedSetAsync;
-import org.redisson.api.RedissonClient;
+import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
+import net.bytebuddy.description.field.FieldList;
+import net.bytebuddy.implementation.bind.annotation.*;
+import org.redisson.RedissonKeys;
+import org.redisson.RedissonMap;
+import org.redisson.RedissonScoredSortedSet;
+import org.redisson.RedissonSetMultimap;
+import org.redisson.api.*;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.client.RedisException;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
-import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
-import net.bytebuddy.description.field.FieldList;
-import net.bytebuddy.implementation.bind.annotation.AllArguments;
-import net.bytebuddy.implementation.bind.annotation.FieldProxy;
-import net.bytebuddy.implementation.bind.annotation.FieldValue;
-import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.implementation.bind.annotation.This;
+import java.lang.reflect.Method;
 
 /**
  *
@@ -56,21 +51,21 @@ public class LiveObjectInterceptor {
         void setValue(Object value);
     }
 
-    private final RedissonClient redisson;
+    private final CommandAsyncExecutor commandExecutor;
+    private final ConnectionManager connectionManager;
     private final Class<?> originalClass;
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
-    private final RedissonObjectBuilder objectBuilder;
 
-    public LiveObjectInterceptor(RedissonClient redisson, Class<?> entityClass, String idFieldName, RedissonObjectBuilder objectBuilder) {
-        this.redisson = redisson;
+    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager, Class<?> entityClass, String idFieldName) {
+        this.commandExecutor = commandExecutor;
+        this.connectionManager = connectionManager;
         this.originalClass = entityClass;
         this.idFieldName = idFieldName;
-        this.objectBuilder = objectBuilder;
-        
-        namingScheme = objectBuilder.getNamingScheme(entityClass);
-        
+
+        namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
+
         try {
             this.idFieldType = ClassUtils.getDeclaredField(originalClass, idFieldName).getType();
         } catch (Exception e) {
@@ -109,7 +104,9 @@ public class LiveObjectInterceptor {
                     //key may already renamed by others.
                 }
             }
-            RMap<Object, Object> liveMap = redisson.getMap(idKey, namingScheme.getCodec());
+
+            RMap<Object, Object> liveMap = new RedissonMap<Object, Object>(namingScheme.getCodec(), commandExecutor,
+                                                    idKey, null, null, null);
             mapSetter.setValue(liveMap);
 
             return null;
@@ -124,24 +121,29 @@ public class LiveObjectInterceptor {
 
         if ("delete".equals(method.getName())) {
             FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
-            RBatch batch = redisson.createBatch();
+            CommandBatchService ce;
+            if (commandExecutor instanceof CommandBatchService) {
+                ce = (CommandBatchService) commandExecutor;
+            } else {
+                ce = new CommandBatchService(connectionManager);
+            }
             for (InDefinedShape field : fields) {
                 String fieldName = field.getName();
                 Object value = map.get(fieldName);
-                
-                NamingScheme namingScheme = objectBuilder.getNamingScheme(me.getClass().getSuperclass());
+
+                NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
                 String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-                
+
                 if (value instanceof Number) {
-                    RScoredSortedSetAsync<Object> set = batch.getScoredSortedSet(indexName, namingScheme.getCodec());
+                    RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
                     set.removeAsync(((RLiveObject) me).getLiveObjectId());
                 } else {
-                    RMultimapAsync<Object, Object> idsMultimap = batch.getSetMultimap(indexName, namingScheme.getCodec());
+                    RMultimapAsync<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
                     idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
                 }
             }
-            RFuture<Long> deleteFuture = batch.getKeys().deleteAsync(map.getName());
-            batch.execute();
+            RFuture<Long> deleteFuture = new RedissonKeys(ce).deleteAsync(map.getName());
+            ce.execute();
             
             return deleteFuture.getNow() > 0;
         }
