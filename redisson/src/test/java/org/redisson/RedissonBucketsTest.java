@@ -11,7 +11,9 @@ import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.api.RBucket;
+import org.redisson.api.RBuckets;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
@@ -67,7 +69,22 @@ public class RedissonBucketsTest extends BaseTest {
 
         Assert.assertEquals(expected, result);
     }
-    
+
+    @Test
+    public void testCodec() {
+        RBuckets buckets = redisson.getBuckets(StringCodec.INSTANCE);
+        Map<String, String> items = buckets.get("buckets:A", "buckets:B", "buckets:C");
+
+        items.put("buckets:A", "XYZ");
+        items.put("buckets:B", "OPM");
+        items.put("buckets:C", "123");
+
+        buckets.set(items);
+        items = buckets.get("buckets:A", "buckets:B", "buckets:C");
+        Assert.assertEquals(3, items.size());
+        Assert.assertEquals("XYZ", items.get("buckets:A"));
+    }
+
     @Test
     public void testSet() {
         Map<String, Integer> buckets = new HashMap<String, Integer>();

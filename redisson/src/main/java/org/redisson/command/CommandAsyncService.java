@@ -613,9 +613,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     private <T, R> RFuture<R> executeBatchedAsync(boolean readOnly, Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys) {
         if (!connectionManager.isClusterMode()) {
             if (readOnly) {
-                return readAsync(null, command, keys);
+                return readAsync((String) null, codec, command, keys);
             }
-            return writeAsync(null, command, keys);
+            return writeAsync((String) null, codec, command, keys);
         }
 
         Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
