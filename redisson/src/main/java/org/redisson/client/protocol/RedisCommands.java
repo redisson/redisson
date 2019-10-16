@@ -217,7 +217,7 @@ public interface RedisCommands {
     RedisCommand<Object> BZPOPMAX_VALUE = new RedisCommand<Object>("BZPOPMAX", new ScoredSortedSetPolledObjectDecoder());
 
     Set<String> BLOCKING_COMMAND_NAMES = new HashSet<String>(
-            Arrays.asList(BLPOP_VALUE.getName(), BRPOP_VALUE.getName(), BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(), 
+            Arrays.asList(BRPOPLPUSH.getName(), BZPOPMIN_VALUE.getName(), BZPOPMAX_VALUE.getName(),
                     BLPOP.getName(), BRPOP.getName()));
 
     RedisCommand<Boolean> PFADD = new RedisCommand<Boolean>("PFADD", new BooleanReplayConvertor());
@@ -329,16 +329,16 @@ public interface RedisCommands {
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor());
     RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor());
 
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XRANGE = new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XRANGE",
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XRANGE = new RedisCommand<>("XRANGE",
             new ListMultiDecoder2(
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
 
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREVRANGE = 
-                new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XREVRANGE", XRANGE.getReplayMultiDecoder(), ValueType.MAP);
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREVRANGE =
+                new RedisCommand<>("XREVRANGE", XRANGE.getReplayMultiDecoder(), ValueType.MAP);
     
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD = new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XREAD",
+    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
                     new StreamResultDecoder(false),
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
@@ -346,9 +346,9 @@ public interface RedisCommands {
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
             
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD_BLOCKING = new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XREAD", XREAD.getReplayMultiDecoder());
+    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREAD_BLOCKING = new RedisCommand<>("XREAD", XREAD.getReplayMultiDecoder(), ValueType.MAP);
 
-    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREAD_SINGLE = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XREAD",
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREAD_SINGLE = new RedisCommand<>("XREAD",
             new ListMultiDecoder2(
                     new StreamResultDecoder(true),
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
@@ -357,20 +357,15 @@ public interface RedisCommands {
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
     
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREAD_BLOCKING_SINGLE = 
-                new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XREAD", XREAD_SINGLE.getReplayMultiDecoder(), ValueType.MAP);
+                new RedisCommand<>("XREAD", XREAD_SINGLE.getReplayMultiDecoder(), ValueType.MAP);
 
-    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREADGROUP = new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XREADGROUP",
-            new ListMultiDecoder2(
-                    new StreamResultDecoder(false),
-                    new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
-                    new ObjectDecoder(new StreamIdDecoder()),
-                    new ObjectDecoder(new StreamIdDecoder()),
-                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+    RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREADGROUP =
+            new RedisCommand<>("XREADGROUP", XREAD.getReplayMultiDecoder(), ValueType.MAP);
 
     RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>> XREADGROUP_BLOCKING = 
-                new RedisCommand<Map<String, Map<StreamMessageId, Map<Object, Object>>>>("XREADGROUP", XREADGROUP.getReplayMultiDecoder(), ValueType.MAP);
+                new RedisCommand<>("XREADGROUP", XREADGROUP.getReplayMultiDecoder(), ValueType.MAP);
             
-    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_SINGLE = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XREADGROUP",
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_SINGLE = new RedisCommand<>("XREADGROUP",
             new ListMultiDecoder2(
                     new StreamResultDecoder(true),
                     new ObjectDecoder(StringCodec.INSTANCE.getValueDecoder()),
@@ -378,7 +373,7 @@ public interface RedisCommands {
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
 
-    RedisCommand<StreamInfo<Object, Object>> XINFO_GROUPS = new RedisCommand<StreamInfo<Object, Object>>("XINFO", "GROUPS",
+    RedisCommand<StreamInfo<Object, Object>> XINFO_GROUPS = new RedisCommand<>("XINFO", "GROUPS",
             new ListMultiDecoder2(new ObjectListReplayDecoder(), new StreamGroupInfoDecoder()));
 
     RedisCommand<StreamInfo<Object, Object>> XINFO_CONSUMERS = new RedisCommand<>("XINFO", "CONSUMERS",
@@ -386,13 +381,13 @@ public interface RedisCommands {
 
     RedisCommand<List<StreamMessageId>> XCLAIM_IDS = new RedisCommand<List<StreamMessageId>>("XCLAIM", new StreamIdListDecoder());
     
-    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XCLAIM = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XCLAIM",
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XCLAIM = new RedisCommand<>("XCLAIM",
             new ListMultiDecoder2(
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
             
-    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE = new RedisCommand<Map<StreamMessageId, Map<Object, Object>>>("XREADGROUP",
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE = new RedisCommand<>("XREADGROUP",
             XREADGROUP_SINGLE.getReplayMultiDecoder());
 
     Set<RedisCommand> BLOCKING_COMMANDS = new HashSet<RedisCommand>(Arrays.asList(
