@@ -42,40 +42,21 @@ public class Kryo5Codec extends BaseCodec {
     private final Pool<Kryo> kryoPool;
     private final Pool<Input> inputPool;
     private final Pool<Output> outputPool;
-    private final List<Class<?>> classes;
 
     public Kryo5Codec() {
-        this(Collections.emptyList());
-    }
-
-    public Kryo5Codec(ClassLoader classLoader) {
-        this(Collections.emptyList(), classLoader);
+        this(null);
     }
 
     public Kryo5Codec(ClassLoader classLoader, Kryo5Codec codec) {
-        this(codec.getClasses(), classLoader);
+        this(classLoader);
     }
 
-    public Kryo5Codec(List<Class<?>> classes) {
-        this(classes, null);
-    }
-
-    public Kryo5Codec(List<Class<?>> classes, ClassLoader classLoader) {
-        this.classes = classes;
+    public Kryo5Codec(ClassLoader classLoader) {
 
         this.kryoPool = new Pool<Kryo>(true, false) {
             @Override
             protected Kryo create() {
-                Kryo kryo = new Kryo();
-                if (classLoader != null) {
-                    kryo.setClassLoader(classLoader);
-                }
-                kryo.setRegistrationRequired(false);
-                kryo.setReferences(false);
-                for (Class<?> clazz : classes) {
-                    kryo.register(clazz);
-                }
-                return kryo;
+                return createKryo(classLoader);
             }
         };
 
@@ -92,6 +73,16 @@ public class Kryo5Codec extends BaseCodec {
                 return new Output(8192, -1);
             }
         };
+    }
+
+    protected Kryo createKryo(ClassLoader classLoader) {
+        Kryo kryo = new Kryo();
+        if (classLoader != null) {
+            kryo.setClassLoader(classLoader);
+        }
+        kryo.setRegistrationRequired(false);
+        kryo.setReferences(false);
+        return kryo;
     }
 
     private final Decoder<Object> decoder = new Decoder<Object>() {
@@ -131,10 +122,6 @@ public class Kryo5Codec extends BaseCodec {
             }
         }
     };
-
-    public List<Class<?>> getClasses() {
-        return classes;
-    }
 
     @Override
     public Decoder<Object> getValueDecoder() {
