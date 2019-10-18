@@ -29,8 +29,6 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
 
 /**
  *
