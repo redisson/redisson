@@ -306,6 +306,16 @@ public class Redisson implements RedissonClient {
         return new RedissonLocalCachedMap<K, V>(codec, connectionManager.getCommandExecutor(), name, 
                 options, evictionScheduler, this, writeBehindService);
     }
+    
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name) {
+        return getLocalCachedMap(name, LocalCachedMapOptions.defaults());
+    }
+
+    @Override
+    public <K, V> RLocalCachedMap<K, V> getLocalCachedMap(String name, Codec codec) {
+        return getLocalCachedMap(name, codec, LocalCachedMapOptions.defaults());
+    }
 
     @Override
     public <K, V> RMap<K, V> getMap(String name) {
