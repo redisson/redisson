@@ -177,9 +177,7 @@ public class BaseTransactionalMap<K, V> {
             }
             
             operations.add(operation);
-            for (HashValue key : state.keySet()) {
-                state.put(key, MapEntry.NULL);
-            }
+            state.replaceAll((k, v) -> MapEntry.NULL);
             deleted = true;
             result.trySuccess(res);
         });

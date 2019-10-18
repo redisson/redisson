@@ -193,7 +193,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 iterator.remove();
             }
         }
-        while (!entriesCopy.isEmpty()) {
+        if (!entriesCopy.isEmpty()) {
             ClientConnectionsEntry entry = config.getLoadBalancer().getEntry(entriesCopy);
             return acquireConnection(command, entry);
         }

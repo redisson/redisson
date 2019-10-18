@@ -147,9 +147,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
             }
             
             operations.add(operation);
-            for (HashValue key : state.keySet()) {
-                state.put(key, NULL);
-            }
+            state.replaceAll((k, v) -> NULL);
             deleted = true;
             result.trySuccess(res);
         });
