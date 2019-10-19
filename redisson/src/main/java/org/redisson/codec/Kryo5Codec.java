@@ -51,21 +51,21 @@ public class Kryo5Codec extends BaseCodec {
 
     public Kryo5Codec(ClassLoader classLoader) {
 
-        this.kryoPool = new Pool<Kryo>(true, false) {
+        this.kryoPool = new Pool<Kryo>(true, false, 1024) {
             @Override
             protected Kryo create() {
                 return createKryo(classLoader);
             }
         };
 
-        this.inputPool = new Pool<Input>(true, false) {
+        this.inputPool = new Pool<Input>(true, false, 512) {
             @Override
             protected Input create() {
                 return new Input(8192);
             }
         };
 
-        this.outputPool = new Pool<Output>(true, false) {
+        this.outputPool = new Pool<Output>(true, false, 512) {
             @Override
             protected Output create() {
                 return new Output(8192, -1);
