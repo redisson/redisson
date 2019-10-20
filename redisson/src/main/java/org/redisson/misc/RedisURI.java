@@ -38,6 +38,9 @@ public class RedisURI {
         
         String urlHost = uri.replaceFirst("redis://", "http://").replaceFirst("rediss://", "http://");
         String ipV6Host = uri.substring(uri.indexOf("://")+3, uri.lastIndexOf(":"));
+        if (ipV6Host.contains("@")) {
+            ipV6Host = ipV6Host.split("@")[1];
+        }
         if (ipV6Host.contains(":")) {
             urlHost = urlHost.replace(ipV6Host, "[" + ipV6Host + "]");
         }
