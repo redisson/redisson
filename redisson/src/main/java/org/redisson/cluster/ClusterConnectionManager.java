@@ -193,7 +193,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     partition.getMasterAddress() + " for slot ranges: " +
                     partition.getSlotRanges() + ". Reason - server has FAIL flag");
 
-            if (partition.getSlotRanges().isEmpty()) {
+            if (partition.getSlotsAmount() == 0) {
                 e = new RedisException("Failed to add master: " +
                         partition.getMasterAddress() + ". Reason - server has FAIL flag");
             }
@@ -475,10 +475,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
     private ClusterPartition find(Collection<ClusterPartition> partitions, Integer slot) {
         for (ClusterPartition clusterPartition : partitions) {
-            for (ClusterSlotRange slotRange : clusterPartition.getSlotRanges()) {
-                if (slotRange.isOwn(slot)) {
-                    return clusterPartition;
-                }
+            if (clusterPartition.hasSlot(slot)) {
+                return clusterPartition;
             }
         }
         return null;
@@ -518,7 +516,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 break;
             }
 
-            if (!masterFound && !newPart.getSlotRanges().isEmpty()) {
+            if (!masterFound && newPart.getSlotsAmount() > 0) {
                 newMasters.add(newPart);
             }
         }
@@ -558,7 +556,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             return;
         }
 
-        Set<Integer> removedSlots = new HashSet<Integer>();
+        Set<Integer> removedSlots = new HashSet<>();
         for (Integer slot : lastPartitions.keySet()) {
             boolean found = false;
             for (ClusterPartition clusterPartition : newPartitions) {
@@ -584,31 +582,23 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        BitSet addedSlots = new BitSet();
+        Integer addedSlots = 0;
         for (ClusterPartition clusterPartition : newPartitions) {
+            MasterSlaveEntry entry = getEntry(clusterPartition.getMasterAddress());
             for (Integer slot : clusterPartition.getSlots()) {
-                if (!lastPartitions.containsKey(slot)) {
-                    addedSlots.set(slot);
+                if (lastPartitions.containsKey(slot)) {
+                    continue;
+                }
+
+                if (entry != null) {
+                    addEntry(slot, entry);
+                    lastPartitions.put(slot, clusterPartition);
+                    addedSlots++;
                 }
             }
         }
-        if (!addedSlots.isEmpty()) {
-            log.info("{} slots found to add", addedSlots.size());
-        }
-        for (Integer slot : (Iterable<Integer>) addedSlots.stream()::iterator) {
-            ClusterPartition partition = find(newPartitions, slot);
-            
-            BitSet oldSlots = partition.copySlots();
-            oldSlots.andNot(addedSlots);
-            if (oldSlots.isEmpty()) {
-                continue;
-            }
-            
-            MasterSlaveEntry entry = getEntry(oldSlots.nextSetBit(0));
-            if (entry != null) {
-                addEntry(slot, entry);
-                lastPartitions.put(slot, partition);
-            }
+        if (addedSlots > 0) {
+            log.info("{} slots found to add", addedSlots);
         }
     }
     
@@ -623,27 +613,27 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 BitSet addedSlots = newPartition.copySlots();
                 addedSlots.andNot(currentPartition.slots());
                 currentPartition.addSlots(addedSlots);
-                
 
                 for (Integer slot : (Iterable<Integer>) addedSlots.stream()::iterator) {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
                 }
                 if (!addedSlots.isEmpty()) {
-                    log.info("{} slots added to {}", addedSlots.size(), currentPartition.getMasterAddress());
+                    log.info("{} slots added to {}", addedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
 
                 BitSet removedSlots = currentPartition.copySlots();
                 removedSlots.andNot(newPartition.slots());
+                currentPartition.removeSlots(removedSlots);
+
                 for (Integer removeSlot : (Iterable<Integer>) removedSlots.stream()::iterator) {
                     if (lastPartitions.remove(removeSlot, currentPartition)) {
                         removeEntry(removeSlot);
                     }
                 }
-                currentPartition.removeSlots(removedSlots);
 
                 if (!removedSlots.isEmpty()) {
-                    log.info("{} slots removed from {}", removedSlots.size(), currentPartition.getMasterAddress());
+                    log.info("{} slots removed from {}", removedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
                 break;
             }
@@ -712,29 +702,34 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 continue;
             }
 
-            String id = clusterNodeInfo.getNodeId();
-            ClusterPartition slavePartition = getPartition(partitions, id);
-
+            String masterId = clusterNodeInfo.getNodeId();
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
-                id = clusterNodeInfo.getSlaveOf();
+                masterId = clusterNodeInfo.getSlaveOf();
             }
 
-            ClusterPartition partition = getPartition(partitions, id);
+            if (masterId == null) {
+                // skip it
+                continue;
+            }
 
             RedisURI address = applyNatMap(clusterNodeInfo.getAddress());
             if (clusterNodeInfo.containsFlag(Flag.SLAVE)) {
-                slavePartition.setParent(partition);
+                ClusterPartition masterPartition = getPartition(partitions, masterId);
+                ClusterPartition slavePartition = getPartition(partitions, clusterNodeInfo.getNodeId());
+                slavePartition.setType(Type.SLAVE);
+                slavePartition.setParent(masterPartition);
                 
-                partition.addSlaveAddress(address);
+                masterPartition.addSlaveAddress(address);
                 if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                    partition.addFailedSlaveAddress(address);
+                    masterPartition.addFailedSlaveAddress(address);
                 }
-            } else {
-                partition.addSlotRanges(clusterNodeInfo.getSlotRanges());
-                partition.setMasterAddress(address);
-                partition.setType(Type.MASTER);
+            } else if (clusterNodeInfo.containsFlag(Flag.MASTER)) {
+                ClusterPartition masterPartition = getPartition(partitions, masterId);
+                masterPartition.addSlotRanges(clusterNodeInfo.getSlotRanges());
+                masterPartition.setMasterAddress(address);
+                masterPartition.setType(Type.MASTER);
                 if (clusterNodeInfo.containsFlag(Flag.FAIL)) {
-                    partition.setMasterFail(true);
+                    masterPartition.setMasterFail(true);
                 }
             }
         }
@@ -769,7 +764,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         ClusterPartition partition = partitions.get(id);
         if (partition == null) {
             partition = new ClusterPartition(id);
-            partition.setType(Type.SLAVE);
             partitions.put(id, partition);
         }
         return partition;

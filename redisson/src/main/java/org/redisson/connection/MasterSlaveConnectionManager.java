@@ -499,7 +499,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return null;
     }
     
-    private MasterSlaveEntry getEntry(RedisURI addr) {
+    protected MasterSlaveEntry getEntry(RedisURI addr) {
         for (MasterSlaveEntry entry : client2entry.values()) {
             if (RedisURI.compare(entry.getClient().getAddr(), addr)) {
                 return entry;

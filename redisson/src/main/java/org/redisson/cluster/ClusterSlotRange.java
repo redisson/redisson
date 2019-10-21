@@ -38,10 +38,6 @@ public class ClusterSlotRange {
         return endSlot - startSlot + 1;
     }
 
-    public boolean isOwn(int slot) {
-        return slot >= startSlot && slot <= endSlot;
-    }
-
     @Override
     public int hashCode() {
         final int prime = 31;
