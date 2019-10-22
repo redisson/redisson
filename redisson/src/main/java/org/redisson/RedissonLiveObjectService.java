@@ -212,10 +212,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                     continue;
                 }
 
-                String idFieldName = getRIdFieldName(detachedObject.getClass());
                 validateAnnotation(detachedObject, field.getName());
-                copy(detachedObject, attachedObject, Arrays.asList(idFieldName));
             }
+
+            String idFieldName = getRIdFieldName(detachedObject.getClass());
+            copy(detachedObject, attachedObject, Arrays.asList(idFieldName));
         }
 
         commandExecutor.execute();

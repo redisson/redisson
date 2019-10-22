@@ -199,9 +199,11 @@ public class AccessorInterceptor {
             NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
             String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
 
+            boolean skipExecution = false;
             CommandBatchService ce;
             if (commandExecutor instanceof CommandBatchService) {
                 ce = (CommandBatchService) commandExecutor;
+                skipExecution = true;
             } else {
                 ce = new CommandBatchService(connectionManager);
             }
@@ -213,7 +215,10 @@ public class AccessorInterceptor {
                 RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
                 map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
             }
-            ce.execute();
+
+            if (!skipExecution) {
+                ce.execute();
+            }
         }
     }
 
