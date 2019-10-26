@@ -15,18 +15,17 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.util.CharsetUtil;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.cluster.ClusterNodeInfo;
-import org.redisson.cluster.ClusterSlotRange;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
+import org.redisson.cluster.ClusterSlotRange;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.CharsetUtil;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
@@ -84,7 +83,7 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             if (params.length > 8) {
                 for (int i = 0; i < params.length - 8; i++) {
                     String slots = params[i + 8];
-                    if (slots.indexOf("-<-") != -1 || slots.indexOf("->-") != -1) {
+                    if (slots.contains("-<-") || slots.contains("->-")) {
                         continue;
                     }
 
