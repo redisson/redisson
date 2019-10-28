@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>2.1.7.RELEASE</spring-boot.version>
+        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -117,14 +117,14 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-21</artifactId>
+            <artifactId>redisson-spring-data-22</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.10.0</version>
+            <version>3.13.2</version>
             <scope>test</scope>
         </dependency>
 
