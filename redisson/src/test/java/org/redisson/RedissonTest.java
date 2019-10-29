@@ -290,7 +290,19 @@ public class RedissonTest {
         .setConnectionPoolSize(2);
         Redisson.create(redissonConfig);        
     }
-    
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testTlsConfig() {
+        String tlsVersion = "TLSv1.2";
+        Config radissonConfig = new Config();
+        radissonConfig.useSingleServer()
+                .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())
+                .setTlsVersion(tlsVersion);
+        Assert.assertEquals(tlsVersion, radissonConfig.useSingleServer().getTlsVersion());
+        RedissonClient r = Redisson.create(radissonConfig);
+        Assert.assertEquals(tlsVersion, r.getConfig().useSingleServer().getTlsVersion());
+    }
+
     @Test
     public void testConnectionListener() throws IOException, InterruptedException, TimeoutException {
 

@@ -47,6 +47,7 @@ public class RedisClientConfig {
     private int commandTimeout = 10000;
     
     private String password;
+    private String tlsVersion;
     private int database;
     private String clientName;
     private boolean readOnly;
@@ -78,6 +79,7 @@ public class RedisClientConfig {
         this.connectTimeout = config.connectTimeout;
         this.commandTimeout = config.commandTimeout;
         this.password = config.password;
+        this.tlsVersion = config.tlsVersion;
         this.database = config.database;
         this.clientName = config.clientName;
         this.readOnly = config.readOnly;
@@ -229,6 +231,15 @@ public class RedisClientConfig {
     }
     public RedisClientConfig setPassword(String password) {
         this.password = password;
+        return this;
+    }
+
+    public String getTlsVersion() {
+        return tlsVersion;
+    }
+
+    public RedisClientConfig setTlsVersion(String tlsVersion) {
+        this.tlsVersion = tlsVersion;
         return this;
     }
     
