@@ -124,9 +124,9 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     void registerWorkers(WorkerOptions options);
     
     /**
-     * Returns active worker groups
+     * Returns active workers amount available for tasks execution.
      * 
-     * @return active worker groups count
+     * @return workers amount
      */
     int countActiveWorkers();
     
