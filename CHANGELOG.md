@@ -4,6 +4,23 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 26-Oct-2019 - 3.11.5 released
+
+Feature - Automatic-Module-Name entry added to manifest file  
+Feature - `subscribeOnElements` method added to `RBlockingQueue` object  
+Feature - `subscribeOnFirstElements` and `subscribeOnLastElements` methods added to `RBlockingDeque` object  
+Feature - `subscribeOnFirstElements` and `subscribeOnLastElements` methods added to `RScoredSortedSet` object  
+Feature - support of Spring Data Redis 2.2.x  
+Feature - added batched persist method to `RLiveObjectService` object  
+Feature - Kryo5Codec implemented  
+
+Fixed - host details in Redis url cause extra bracket at the end  
+Fixed - RBuckets.get() method doesn't work with custom codec  
+Fixed - RLock.unlock() method hangs forever  
+Fixed - `RStream.trim` method throws exception  
+Fixed - Spring Data pubsub listeners executes multiple times  
+Fixed - Redis commands processing handler consumes 100% of CPU resources  
+
 ### 24-Sep-2019 - 3.11.4 released
 
 Feature - support search by numeric fields in LiveObject search engine. Follow conditions are supported: `greater than on equal`, `greater than`, `lower than`, `lower than or equal`  
