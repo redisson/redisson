@@ -15,72 +15,17 @@
  */
 package org.redisson;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.lang.invoke.SerializedLambda;
-import java.lang.ref.ReferenceQueue;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-
-import org.redisson.api.CronSchedule;
-import org.redisson.api.ExecutorOptions;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RExecutorBatchFuture;
-import org.redisson.api.RExecutorFuture;
-import org.redisson.api.RFuture;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RScheduledExecutorService;
-import org.redisson.api.RScheduledFuture;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RTopic;
-import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.WorkerOptions;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.executor.RedissonExecutorBatchFuture;
-import org.redisson.executor.RedissonExecutorFuture;
-import org.redisson.executor.RedissonExecutorFutureReference;
-import org.redisson.executor.RedissonExecutorRemoteService;
-import org.redisson.executor.RedissonScheduledFuture;
-import org.redisson.executor.RemoteExecutorService;
-import org.redisson.executor.RemoteExecutorServiceAsync;
-import org.redisson.executor.RemotePromise;
-import org.redisson.executor.ScheduledTasksService;
-import org.redisson.executor.TasksBatchService;
-import org.redisson.executor.TasksRunnerService;
-import org.redisson.executor.TasksService;
-import org.redisson.executor.params.ScheduledAtFixedRateParameters;
-import org.redisson.executor.params.ScheduledCronExpressionParameters;
-import org.redisson.executor.params.ScheduledParameters;
-import org.redisson.executor.params.ScheduledWithFixedDelayParameters;
-import org.redisson.executor.params.TaskParameters;
+import org.redisson.executor.*;
+import org.redisson.executor.params.*;
 import org.redisson.misc.Injector;
 import org.redisson.misc.PromiseDelegator;
 import org.redisson.misc.RPromise;
@@ -91,8 +36,14 @@ import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
+import java.io.*;
+import java.lang.invoke.SerializedLambda;
+import java.lang.ref.ReferenceQueue;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -215,7 +166,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         ThreadLocalRandom.current().nextBytes(id);
         return ByteBufUtil.hexDump(id);
     }
-    
+
+    @Override
+    public int getTaskCount() {
+        return commandExecutor.get(getTaskCountAsync());
+    }
+
+    @Override
+    public RFuture<Integer> getTaskCountAsync() {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_INTEGER, tasksCounterName);
+    }
+
     @Override
     public int countActiveWorkers() {
         String id = generateRequestId();

@@ -122,7 +122,14 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @param options - worker options
      */
     void registerWorkers(WorkerOptions options);
-    
+
+    /**
+     * Returns amount of tasks awaiting for execution and/or currently in execution.
+     *
+     * @return amount of tasks
+     */
+    int getTaskCount();
+
     /**
      * Returns active workers amount available for tasks execution.
      * 

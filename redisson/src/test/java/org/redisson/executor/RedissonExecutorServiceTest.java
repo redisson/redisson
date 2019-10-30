@@ -72,6 +72,23 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testTaskCount() throws InterruptedException {
+        RExecutorService e = redisson.getExecutorService("test");
+        assertThat(e.getTaskCount()).isEqualTo(0);
+
+        e.submit(new DelayedTask(1000, "testcounter"));
+        e.submit(new DelayedTask(1000, "testcounter"));
+        for (int i = 0; i < 20; i++) {
+            e.submit(new RunnableTask());
+        }
+        assertThat(e.getTaskCount()).isEqualTo(22);
+
+        Thread.sleep(1500);
+
+        assertThat(e.getTaskCount()).isEqualTo(21);
+    }
+
+    @Test
     public void testBatchSubmitRunnable() throws InterruptedException, ExecutionException, TimeoutException {
         RExecutorService e = redisson.getExecutorService("test");
         RExecutorBatchFuture future = e.submit(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 

@@ -26,6 +26,13 @@ import java.util.concurrent.Callable;
 public interface RExecutorServiceAsync {
 
     /**
+     * Returns amount of tasks awaiting for execution and/or currently in execution.
+     *
+     * @return amount of tasks
+     */
+    RFuture<Integer> getTaskCountAsync();
+
+    /**
      * Deletes executor request queue and state objects
      * 
      * @return <code>true</code> if any of objects were deleted

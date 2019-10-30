@@ -22,14 +22,7 @@ import org.redisson.BaseTest;
 import org.redisson.Redisson;
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonNode;
-import org.redisson.api.CronSchedule;
-import org.redisson.api.ExecutorOptions;
-import org.redisson.api.RExecutorFuture;
-import org.redisson.api.RScheduledExecutorService;
-import org.redisson.api.RScheduledFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RemoteInvocationOptions;
-import org.redisson.api.WorkerOptions;
+import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
@@ -96,7 +89,22 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         client.shutdown();
         node.shutdown();
     }
-    
+
+    @Test
+    public void testTaskCount() throws InterruptedException {
+        RScheduledExecutorService e = redisson.getExecutorService("test");
+        e.schedule(new RunnableTask(), 1, TimeUnit.SECONDS);
+        e.schedule(new RunnableTask(), 2, TimeUnit.SECONDS);
+        assertThat(e.getTaskCount()).isEqualTo(2);
+
+        Thread.sleep(1100);
+        assertThat(e.getTaskCount()).isEqualTo(1);
+
+        Thread.sleep(1100);
+        assertThat(e.getTaskCount()).isEqualTo(0);
+    }
+
+
     @Test
     public void testDelay() throws InterruptedException {
         RScheduledExecutorService executor = redisson.getExecutorService("test", ExecutorOptions.defaults().taskRetryInterval(5, TimeUnit.SECONDS));
