@@ -152,6 +152,7 @@
                                 <artifact>*</artifact>
                                 <excludes>
                                   <exclude>META-INF/**/*.class</exclude>
+                                  <exclude>META-INF/**/spring.*</exclude>
                                 </excludes>
                               </filter>
                             </filters>
