@@ -968,11 +968,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
-    public boolean cancelScheduledTask(String taskId) {
-        return cancelTask(taskId);
-    }
-    
-    @Override
     public boolean cancelTask(String taskId) {
         if (taskId.startsWith("01")) {
             RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));

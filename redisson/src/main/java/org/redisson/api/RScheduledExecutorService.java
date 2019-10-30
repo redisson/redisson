@@ -122,13 +122,4 @@ public interface RScheduledExecutorService extends RExecutorService, ScheduledEx
      */
     RScheduledFuture<?> schedule(Runnable task, CronSchedule cronSchedule);
 
-    /**
-     * Use {@link #cancelTask(String)}
-     * 
-     * @param taskId of task
-     * @return boolean
-     */
-    @Deprecated
-    boolean cancelScheduledTask(String taskId);
-    
 }
