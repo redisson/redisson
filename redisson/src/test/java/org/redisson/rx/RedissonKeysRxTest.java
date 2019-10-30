@@ -1,15 +1,27 @@
 package org.redisson.rx;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.util.Iterator;
-
+import io.reactivex.Flowable;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBucketRx;
+import org.redisson.api.RKeysRx;
 import org.redisson.api.RMapRx;
+import reactor.core.publisher.Flux;
+
+import java.util.Iterator;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonKeysRxTest extends BaseRxTest {
+
+    @Test
+    public void testGetKeys() {
+        RKeysRx keys = redisson.getKeys();
+        sync(redisson.getBucket("test1").set(1));
+        sync(redisson.getBucket("test2").set(1));
+        Flowable<String> k = keys.getKeys();
+        assertThat(k.blockingIterable()).contains("test1", "test2");
+    }
 
     @Test
     public void testKeysIterablePattern() {

@@ -45,6 +45,14 @@ public class RedissonKeysReactive {
         this.commandExecutor = commandExecutor;
     }
 
+    public Flux<String> getKeys() {
+        return getKeysByPattern(null);
+    }
+
+    public Flux<String> getKeys(int count) {
+        return getKeysByPattern(null, count);
+    }
+
     public Flux<String> getKeysByPattern(String pattern) {
         return getKeysByPattern(pattern, 10);
     }

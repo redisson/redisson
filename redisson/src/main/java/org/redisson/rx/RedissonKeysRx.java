@@ -42,6 +42,14 @@ public class RedissonKeysRx {
         this.commandExecutor = commandExecutor;
     }
 
+    public Flowable<String> getKeys() {
+        return getKeysByPattern(null);
+    }
+
+    public Flowable<String> getKeys(int count) {
+        return getKeysByPattern(null, count);
+    }
+
     public Flowable<String> getKeysByPattern(String pattern) {
         return getKeysByPattern(pattern, 10);
     }
