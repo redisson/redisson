@@ -41,16 +41,18 @@ public class WriteBehindService {
             return task;
         }
         
-        task = new MapWriteBehindTask(executor, options);
+        task = new MapWriteBehindTask(name, executor, options);
         MapWriteBehindTask prevTask = tasks.putIfAbsent(name, task);
         if (prevTask != null) {
             task = prevTask;
         }
+        task.start();
         return task;
     }
     
     public void stop(String name) {
-        tasks.remove(name);
+        MapWriteBehindTask task = tasks.remove(name);
+        task.stop();
     }
 
 }
