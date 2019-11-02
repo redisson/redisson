@@ -186,7 +186,7 @@ public class RedisExecutor<V, R> {
 
                 if (connectionFuture.cancel(false)) {
                     if (exception == null) {
-                        exception = new RedisTimeoutException("Unable to acquire connection! Increase connection pool size and/or retryInterval"
+                        exception = new RedisTimeoutException("Unable to acquire connection! Increase connection pool size and/or retryInterval settings "
                                     + "Node source: " + source
                                     + ", command: " + LogHelper.toString(command, params)
                                     + " after " + attempt + " retry attempts");
@@ -197,7 +197,7 @@ public class RedisExecutor<V, R> {
                             if (attempt == attempts) {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
-                                        exception = new RedisTimeoutException("Command still hasn't been written into connection! Increase nettyThreads and/or retryInterval"
+                                        exception = new RedisTimeoutException("Command still hasn't been written into connection! Increase nettyThreads and/or retryInterval settings "
                                                 + "Node source: " + source + ", connection: " + connectionFuture.getNow()
                                                 + ", command: " + LogHelper.toString(command, params)
                                                 + " after " + attempt + " retry attempts");
@@ -334,7 +334,7 @@ public class RedisExecutor<V, R> {
                 
                 attemptPromise.tryFailure(
                         new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                                + " after " + attempt + " retry attempts. Command: "
+                                + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Command: "
                                 + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
             }
         };

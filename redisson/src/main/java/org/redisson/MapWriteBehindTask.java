@@ -65,6 +65,8 @@ public class MapWriteBehindTask {
         future.onComplete((task, e) -> {
             if (e != null) {
                 log.error(e.getMessage(), e);
+
+                enqueueTask();
                 return;
             }
 
