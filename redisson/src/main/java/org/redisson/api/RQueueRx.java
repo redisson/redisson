@@ -15,10 +15,11 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+
+import java.util.List;
 
 /**
  * RxJava2 interface for Queue object
@@ -42,6 +43,14 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
      * @return the head of this queue, or {@code null}
      */
     Maybe<V> poll();
+
+    /**
+     * Retrieves and removes the head elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of head elements
+     */
+    Flowable<V> poll(int limit);
 
     /**
      * Inserts the specified element into this queue.

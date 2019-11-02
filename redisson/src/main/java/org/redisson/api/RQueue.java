@@ -42,5 +42,13 @@ public interface RQueue<V> extends Queue<V>, RExpirable, RQueueAsync<V> {
      * @return elements
      */
     List<V> readAll();
+
+    /**
+     * Retrieves and removes the head elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of head elements
+     */
+    List<V> poll(int limit);
     
 }

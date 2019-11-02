@@ -16,6 +16,7 @@
 package org.redisson;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
@@ -143,6 +144,11 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
     }
 
     @Override
+    public RFuture<List<V>> pollAsync(int limit) {
+        return null;
+    }
+
+    @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         throw new UnsupportedOperationException("use poll method");
     }
@@ -258,4 +264,28 @@ public class RedissonPriorityBlockingDeque<V> extends RedissonPriorityDeque<V> i
         return commandExecutor.getInterrupted(pollLastAsync(timeout, unit));
     }
 
+    @Override
+    public List<V> poll(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<V> pollLast(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<V> pollFirst(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> pollFirstAsync(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> pollLastAsync(int limit) {
+        throw new UnsupportedOperationException();
+    }
 }

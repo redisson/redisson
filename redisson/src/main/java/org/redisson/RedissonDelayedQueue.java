@@ -256,6 +256,11 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     }
 
     @Override
+    public List<V> poll(int limit) {
+        return get(pollAsync(limit));
+    }
+
+    @Override
     public RFuture<List<V>> readAllAsync() {
         return commandExecutor.evalReadAsync(getName(), codec, RedisCommands.EVAL_LIST,
                 "local result = {}; " +
@@ -265,7 +270,25 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
                    + "table.insert(result, value);"
               + "end; "
               + "return result; ",
-           Collections.<Object>singletonList(queueName));
+           Collections.singletonList(queueName));
+    }
+
+    @Override
+    public RFuture<List<V>> pollAsync(int limit) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+                   "local result = {};"
+                 + "for i = 1, ARGV[1], 1 do " +
+                       "local v = redis.call('lpop', KEYS[1]);" +
+                       "if v ~= false then " +
+                           "redis.call('zrem', KEYS[2], v); " +
+                           "local randomId, value = struct.unpack('dLc0', v);" +
+                           "table.insert(result, value);" +
+                       "else " +
+                           "return result;" +
+                       "end;" +
+                   "end; " +
+                   "return result;",
+                Arrays.asList(queueName, timeoutSetName), limit);
     }
 
     @Override

@@ -94,6 +94,22 @@ public interface RDequeReactive<V> extends RQueueReactive<V> {
     Mono<V> pollFirst();
 
     /**
+     * Retrieves and removes the tail elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of tail elements
+     */
+    Flux<V> pollLast(int limit);
+
+    /**
+     * Retrieves and removes the head elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of head elements
+     */
+    Flux<V> pollFirst(int limit);
+
+    /**
      * Returns element at the tail of this deque 
      * or <code>null</code> if there are no elements in deque.
      * 

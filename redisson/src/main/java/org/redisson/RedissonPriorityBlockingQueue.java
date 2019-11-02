@@ -17,6 +17,7 @@ package org.redisson;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -218,6 +219,11 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     }
 
     @Override
+    public RFuture<List<V>> pollAsync(int limit) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public RFuture<V> pollFromAnyAsync(long timeout, TimeUnit unit, String... queueNames) {
         throw new UnsupportedOperationException("use poll method");
     }
@@ -225,5 +231,10 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     @Override
     public RFuture<Void> putAsync(V e) {
         throw new UnsupportedOperationException("use add method");
+    }
+
+    @Override
+    public List<V> poll(int limit) {
+        throw new UnsupportedOperationException();
     }
 }

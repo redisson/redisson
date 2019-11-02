@@ -2,6 +2,8 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.junit.Assert;
@@ -12,6 +14,18 @@ public class RedissonQueueTest extends BaseTest {
 
     <T> RQueue<T> getQueue() {
         return redisson.getQueue("queue");
+    }
+
+    @Test
+    public void testPollLimited() {
+        RQueue<Integer> queue = getQueue();
+        queue.addAll(Arrays.asList(1, 2, 3, 4, 5, 6, 7));
+        List<Integer> elements = queue.poll(3);
+        assertThat(elements).containsExactly(1, 2, 3);
+        List<Integer> elements2 = queue.poll(10);
+        assertThat(elements2).containsExactly(4, 5, 6, 7);
+        List<Integer> elements3 = queue.poll(5);
+        assertThat(elements3).isEmpty();
     }
     
     @Test

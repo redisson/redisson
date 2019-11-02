@@ -66,5 +66,13 @@ public interface RQueueAsync<V> extends RCollectionAsync<V> {
      * @return elements
      */
     RFuture<List<V>> readAllAsync();
-    
+
+    /**
+     * Retrieves and removes the head elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of head elements
+     */
+    RFuture<List<V>> pollAsync(int limit);
+
 }

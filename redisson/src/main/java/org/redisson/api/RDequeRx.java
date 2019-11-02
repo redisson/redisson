@@ -96,6 +96,22 @@ public interface RDequeRx<V> extends RQueueRx<V> {
     Maybe<V> pollFirst();
 
     /**
+     * Retrieves and removes the tail elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of tail elements
+     */
+    Flowable<V> pollLast(int limit);
+
+    /**
+     * Retrieves and removes the head elements of this queue.
+     * Elements amount limited by <code>limit</code> param.
+     *
+     * @return list of head elements
+     */
+    Flowable<V> pollFirst(int limit);
+
+    /**
      * Returns element at the tail of this deque 
      * or <code>null</code> if there are no elements in deque.
      * 
