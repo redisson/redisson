@@ -17,7 +17,7 @@ public class RedissonConnectionTest extends BaseConnectionTest {
         connection.zAdd(new byte[] {1}, 2, new byte[] {2});
         connection.zAdd(new byte[] {1}, 10, new byte[] {3});
 
-        assertThat(connection.zRangeByScore(new byte[] {1}, Double.NEGATIVE_INFINITY, 100))
+        assertThat(connection.zRangeByScore(new byte[] {1}, Double.NEGATIVE_INFINITY, 5))
                 .containsOnly(new byte[] {1}, new byte[] {2});
     }
 
