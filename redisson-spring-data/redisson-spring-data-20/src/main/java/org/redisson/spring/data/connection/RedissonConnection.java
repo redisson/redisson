@@ -1055,8 +1055,9 @@ public class RedissonConnection extends AbstractRedisConnection {
         if (score instanceof Double) {
             if (Double.isInfinite((Double) score)) {
                 element.append((Double)score > 0 ? "+inf" : "-inf");
+            } else {
+                element.append(BigDecimal.valueOf((Double)score).toPlainString());
             }
-            element.append(BigDecimal.valueOf((Double)score).toPlainString());
         } else {
             element.append(score);
         }

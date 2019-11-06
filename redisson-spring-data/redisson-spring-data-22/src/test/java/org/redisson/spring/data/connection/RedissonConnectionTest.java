@@ -10,7 +10,17 @@ import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
-    
+
+    @Test
+    public void testZSet() {
+        connection.zAdd(new byte[] {1}, -1, new byte[] {1});
+        connection.zAdd(new byte[] {1}, 2, new byte[] {2});
+        connection.zAdd(new byte[] {1}, 10, new byte[] {3});
+
+        assertThat(connection.zRangeByScore(new byte[] {1}, Double.NEGATIVE_INFINITY, 100))
+                .containsOnly(new byte[] {1}, new byte[] {2});
+    }
+
     @Test
     public void testEcho() {
         assertThat(connection.echo("test".getBytes())).isEqualTo("test".getBytes());
