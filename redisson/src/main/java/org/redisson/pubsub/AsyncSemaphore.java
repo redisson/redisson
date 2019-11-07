@@ -76,7 +76,7 @@ public class AsyncSemaphore {
         
     }
     
-    private int counter;
+    private volatile int counter;
     private final Set<Entry> listeners = new LinkedHashSet<Entry>();
 
     public AsyncSemaphore(int permits) {
