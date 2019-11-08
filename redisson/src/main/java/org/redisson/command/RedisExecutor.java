@@ -372,7 +372,9 @@ public class RedisExecutor<V, R> {
             }
 
             // handling cancel operation for blocking commands
-            if (mainPromise.isCancelled() && !attemptPromise.isDone()) {
+            if ((mainPromise.isCancelled()
+                    || mainPromise.cause() instanceof  InterruptedException)
+                        && !attemptPromise.isDone()) {
                 log.debug("Canceled blocking operation {} used {}", command, connection);
                 connection.forceFastReconnectAsync().onComplete((r, ex) -> {
                     attemptPromise.cancel(true);

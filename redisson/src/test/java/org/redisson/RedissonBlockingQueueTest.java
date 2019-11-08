@@ -295,12 +295,17 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
                 }
             };
         };
-        
+
         t.start();
         t.join(1000);
-        
+
         t.interrupt();
         Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(interrupted);
+
+        RBlockingQueue<Integer> q = getQueue(redisson);
+        q.add(1);
+        Thread.sleep(1000);
+        assertThat(q.contains(1)).isTrue();
     }
 
     @Test

@@ -142,8 +142,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     
     @Override
     public <V> V getInterrupted(RFuture<V> future) throws InterruptedException {
-        future.await();
-        
+        try {
+            future.await();
+        } catch (InterruptedException e) {
+            ((RPromise)future).tryFailure(e);
+            throw e;
+        }
+
         if (future.isSuccess()) {
             return future.getNow();
         }
