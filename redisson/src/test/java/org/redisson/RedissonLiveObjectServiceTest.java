@@ -1340,12 +1340,6 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertTrue(ConcurrentHashMap.class.isAssignableFrom(ts.getContent().getClass()));
         assertFalse(RMap.class.isAssignableFrom(ts.getContent().getClass()));
 
-        ArrayBlockingQueue<String> abq = new ArrayBlockingQueue<>(10);
-        abq.add("111");
-        ts.setContent(abq);
-        assertTrue(ArrayBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
-        assertFalse(RBlockingQueue.class.isAssignableFrom(ts.getContent().getClass()));
-
         ConcurrentLinkedQueue<String> clq = new ConcurrentLinkedQueue<>();
         ts.setContent(clq);
         assertTrue(ConcurrentLinkedQueue.class.isAssignableFrom(ts.getContent().getClass()));

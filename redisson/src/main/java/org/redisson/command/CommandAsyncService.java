@@ -145,7 +145,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         try {
             future.await();
         } catch (InterruptedException e) {
-            ((RPromise)future).tryFailure(e);
+            ((RPromise) future).tryFailure(e);
             throw e;
         }
 

@@ -15,17 +15,12 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
-
+import io.netty.channel.ChannelFuture;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisException;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
@@ -37,17 +32,16 @@ import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.connection.balancer.LoadBalancerManager;
 import org.redisson.connection.pool.MasterConnectionPool;
 import org.redisson.connection.pool.MasterPubSubConnectionPool;
-import org.redisson.misc.CountableListener;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedisURI;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.misc.TransferListener;
+import org.redisson.misc.*;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import java.net.InetSocketAddress;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  *
@@ -238,32 +232,20 @@ public class MasterSlaveEntry {
                 log.error("Can't resubscribe blocking queue " + commandData, e);
                 return;
             }
-            
-            AtomicBoolean skip = new AtomicBoolean();
-            BiConsumer<Object, Throwable> listener = new BiConsumer<Object, Throwable>() {
-                @Override
-                public void accept(Object t, Throwable u) {
-                    if (skip.get()) {
-                        return;
-                    }
-                    releaseWrite(newConnection);
-                }
-            };
-            commandData.getPromise().onComplete(listener);
+
             if (commandData.getPromise().isDone()) {
+                releaseWrite(newConnection);
                 return;
             }
+
             ChannelFuture channelFuture = newConnection.send(commandData);
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        listener.accept(null, null);
-                        skip.set(true);
-                        releaseWrite(newConnection);
-                        log.error("Can't resubscribe blocking queue {}", commandData);
-                    }
+            channelFuture.addListener(future -> {
+                if (!future.isSuccess()) {
+                    commandData.getPromise().tryFailure(new RedisException("Can't resubscribe blocking queue " + commandData + " to " + newConnection));
                 }
+            });
+            commandData.getPromise().onComplete((r, ex) -> {
+                releaseWrite(newConnection);
             });
         });
     }

@@ -542,7 +542,7 @@ public class RedissonBoundedBlockingQueueTest extends BaseTest {
 
         long startTime = System.currentTimeMillis();
         Integer value = queue1.takeLastAndOfferFirstTo(queue2.getName());
-        assertThat(System.currentTimeMillis() - startTime).isBetween(3000L, 3200L);
+        assertThat(System.currentTimeMillis() - startTime).isBetween(2900L, 3200L);
         assertThat(value).isEqualTo(3);
         assertThat(queue2).containsExactly(3, 4, 5, 6);
     }
