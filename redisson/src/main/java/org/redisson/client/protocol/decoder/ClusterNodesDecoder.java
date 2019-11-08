@@ -56,7 +56,12 @@ public class ClusterNodesDecoder implements Decoder<List<ClusterNodeInfo>> {
             String flags = params[2];
             for (String flag : flags.split(",")) {
                 String flagValue = flag.toUpperCase().replaceAll("\\?", "");
-                node.addFlag(ClusterNodeInfo.Flag.valueOf(flagValue));
+                for (Flag nodeInfoFlag : ClusterNodeInfo.Flag.values()) {
+                    if (nodeInfoFlag.name().equals(flagValue)) {
+                        node.addFlag(nodeInfoFlag);
+                        break;
+                    }
+                }
             }
             
             if (!node.containsFlag(Flag.NOADDR)) {
