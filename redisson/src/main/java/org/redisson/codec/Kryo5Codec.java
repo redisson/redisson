@@ -18,6 +18,7 @@ package org.redisson.codec;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
 import com.esotericsoftware.kryo.util.Pool;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -80,6 +81,7 @@ public class Kryo5Codec extends BaseCodec {
         }
         kryo.setRegistrationRequired(false);
         kryo.setReferences(false);
+        kryo.addDefaultSerializer(Throwable.class, new JavaSerializer());
         return kryo;
     }
 
