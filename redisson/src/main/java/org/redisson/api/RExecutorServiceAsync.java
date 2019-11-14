@@ -26,6 +26,15 @@ import java.util.concurrent.Callable;
 public interface RExecutorServiceAsync {
 
     /**
+     * Returns <code>true</code> if this Executor Service has task
+     * by <code>taskId</code> awaiting for execution and/or currently in execution
+     *
+     * @param taskId - id of task
+     * @return <code>true</code> if this Executor Service has task
+     */
+    RFuture<Boolean> hasTaskAsync(String taskId);
+
+    /**
      * Returns amount of tasks awaiting for execution and/or currently in execution.
      *
      * @return amount of tasks

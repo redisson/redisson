@@ -176,6 +176,10 @@ public class TasksService extends BaseRemoteService {
           taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
     }
 
+    public RFuture<Boolean> hasTaskAsync(RequestId requestId) {
+        return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, requestId.toString());
+    }
+
     public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {
         final RPromise<Boolean> result = new RedissonPromise<Boolean>();
         

@@ -178,6 +178,19 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
+    public boolean hasTask(String taskId) {
+        return commandExecutor.get(hasTaskAsync(taskId));
+    }
+
+    @Override
+    public RFuture<Boolean> hasTaskAsync(String taskId) {
+        if (taskId.startsWith("01")) {
+            return scheduledRemoteService.hasTaskAsync(new RequestId(taskId));
+        }
+        return executorRemoteService.hasTaskAsync(new RequestId(taskId));
+    }
+
+    @Override
     public int countActiveWorkers() {
         String id = generateRequestId();
         int subscribers = (int) workersTopic.publish(id);
@@ -936,7 +949,6 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         RFuture<Boolean> scheduledFuture = executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
         return commandExecutor.get(scheduledFuture);
-        
     }
     
     private <T> RFuture<T> poll(List<RExecutorFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException {

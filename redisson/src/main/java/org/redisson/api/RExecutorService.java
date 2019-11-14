@@ -136,9 +136,18 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return workers amount
      */
     int countActiveWorkers();
-    
+
     /**
-     * Cancels task by id
+     * Returns <code>true</code> if this Executor Service has task
+     * by <code>taskId</code> awaiting for execution and/or currently in execution
+     *
+     * @param taskId - id of task
+     * @return <code>true</code> if this Executor Service has task
+     */
+    boolean hasTask(String taskId);
+
+    /**
+     * Cancel task by id
      * 
      * @see RExecutorFuture#getTaskId()
      * 
