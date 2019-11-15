@@ -98,6 +98,8 @@ public class DNSMonitor {
 
     private void monitorMasters(AtomicInteger counter) {
         for (Entry<RedisURI, InetSocketAddress> entry : masters.entrySet()) {
+            log.debug("Request sent to resolve ip address for master host: {}", entry.getKey().getHost());
+
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override
@@ -110,7 +112,9 @@ public class DNSMonitor {
                         log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
                         return;
                     }
-                    
+
+                    log.debug("Resolved ip: {} for master host: {}", future.getNow().getAddress(), entry.getKey().getHost());
+
                     InetSocketAddress currentMasterAddr = entry.getValue();
                     InetSocketAddress newMasterAddr = future.getNow();
                     if (!newMasterAddr.getAddress().equals(currentMasterAddr.getAddress())) {
@@ -135,6 +139,8 @@ public class DNSMonitor {
 
     private void monitorSlaves(AtomicInteger counter) {
         for (Entry<RedisURI, InetSocketAddress> entry : slaves.entrySet()) {
+            log.debug("Request sent to resolve ip address for slave host: {}", entry.getKey().getHost());
+
             Future<InetSocketAddress> resolveFuture = resolver.resolve(InetSocketAddress.createUnresolved(entry.getKey().getHost(), entry.getKey().getPort()));
             resolveFuture.addListener(new FutureListener<InetSocketAddress>() {
                 @Override
@@ -147,7 +153,9 @@ public class DNSMonitor {
                         log.error("Unable to resolve " + entry.getKey().getHost(), future.cause());
                         return;
                     }
-                    
+
+                    log.debug("Resolved ip: {} for slave host: {}", future.getNow().getAddress(), entry.getKey().getHost());
+
                     InetSocketAddress currentSlaveAddr = entry.getValue();
                     InetSocketAddress newSlaveAddr = future.getNow();
                     if (!newSlaveAddr.getAddress().equals(currentSlaveAddr.getAddress())) {
