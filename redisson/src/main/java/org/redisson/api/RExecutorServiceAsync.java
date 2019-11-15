@@ -42,6 +42,16 @@ public interface RExecutorServiceAsync {
     RFuture<Integer> getTaskCountAsync();
 
     /**
+     * Cancel task by id
+     *
+     * @see RExecutorFuture#getTaskId()
+     *
+     * @param taskId - id of task
+     * @return <code>true</code> if task has been canceled successfully
+     */
+    RFuture<Boolean> cancelTaskAsync(String taskId);
+
+    /**
      * Deletes executor request queue and state objects
      * 
      * @return <code>true</code> if any of objects were deleted

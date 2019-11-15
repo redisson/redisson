@@ -943,14 +943,17 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     @Override
     public boolean cancelTask(String taskId) {
-        if (taskId.startsWith("01")) {
-            RFuture<Boolean> scheduledFuture = scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
-            return commandExecutor.get(scheduledFuture);
-        }
-        RFuture<Boolean> scheduledFuture = executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
-        return commandExecutor.get(scheduledFuture);
+        return commandExecutor.get(cancelTaskAsync(taskId));
     }
-    
+
+    @Override
+    public RFuture<Boolean> cancelTaskAsync(String taskId) {
+        if (taskId.startsWith("01")) {
+            return scheduledRemoteService.cancelExecutionAsync(new RequestId(taskId));
+        }
+        return executorRemoteService.cancelExecutionAsync(new RequestId(taskId));
+    }
+
     private <T> RFuture<T> poll(List<RExecutorFuture<?>> futures, long timeout, TimeUnit timeUnit) throws InterruptedException {
         CountDownLatch latch = new CountDownLatch(1);
         AtomicReference<RFuture<T>> result = new AtomicReference<>();
