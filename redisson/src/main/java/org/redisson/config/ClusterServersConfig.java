@@ -41,6 +41,8 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     private int scanInterval = 5000;
 
+    private boolean checkSlotsCoverage;
+
     public ClusterServersConfig() {
     }
 
@@ -49,6 +51,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
         setNodeAddresses(config.getNodeAddresses());
         setScanInterval(config.getScanInterval());
         setNatMap(new HashMap<>(config.getNatMap()));
+        setCheckSlotsCoverage(config.isCheckSlotsCoverage());
     }
 
     /**
@@ -81,6 +84,23 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     public ClusterServersConfig setScanInterval(int scanInterval) {
         this.scanInterval = scanInterval;
+        return this;
+    }
+
+    public boolean isCheckSlotsCoverage() {
+        return checkSlotsCoverage;
+    }
+
+    /**
+     * Enables cluster slots check during Redisson startup.
+     * <p>
+     * Default is <code>false</code>
+     *
+     * @param checkSlotsCoverage - boolean value
+     * @return config
+     */
+    public ClusterServersConfig setCheckSlotsCoverage(boolean checkSlotsCoverage) {
+        this.checkSlotsCoverage = checkSlotsCoverage;
         return this;
     }
 
