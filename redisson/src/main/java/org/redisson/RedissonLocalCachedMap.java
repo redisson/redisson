@@ -105,6 +105,13 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 CacheKey cacheKey = toCacheKey(keyBuf);
                 Object key = codec.getMapKeyDecoder().decode(keyBuf, null);
                 Object value = codec.getMapValueDecoder().decode(valueBuf, null);
+                if(value instanceof RedissonReference){
+                    try{
+                        value = commandExecutor.getObjectBuilder().fromReference((RedissonReference)value);
+                    }catch (ReflectiveOperationException roe){
+                        roe.printStackTrace();
+                    }
+                }
                 cachePut(cacheKey, key, value);
             }
             
