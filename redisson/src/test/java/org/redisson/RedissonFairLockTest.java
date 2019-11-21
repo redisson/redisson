@@ -347,7 +347,7 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         locked = lock.tryLockInnerAsync(leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
         Assert.assertFalse(locked);
         
-        Thread.sleep(490);
+        Thread.sleep(500);
 
         locked = lock.tryLockInnerAsync(leaseTime, TimeUnit.MILLISECONDS, threadThirdWaiter, RedisCommands.EVAL_NULL_BOOLEAN).await().get();
         Assert.assertTrue(locked);
