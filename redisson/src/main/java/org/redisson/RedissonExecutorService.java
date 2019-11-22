@@ -21,6 +21,7 @@ import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.connection.ConnectionManager;
@@ -183,11 +184,18 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     }
 
     @Override
+    public Set<String> getTaskIds() {
+        return commandExecutor.get(getTaskIdsAsync());
+    }
+
+    @Override
+    public RFuture<Set<String>> getTaskIdsAsync() {
+        return commandExecutor.writeAsync(tasksName, StringCodec.INSTANCE, RedisCommands.HKEYS, tasksName);
+    }
+
+    @Override
     public RFuture<Boolean> hasTaskAsync(String taskId) {
-        if (taskId.startsWith("01")) {
-            return scheduledRemoteService.hasTaskAsync(new RequestId(taskId));
-        }
-        return executorRemoteService.hasTaskAsync(new RequestId(taskId));
+        return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, taskId);
     }
 
     @Override

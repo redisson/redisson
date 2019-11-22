@@ -15,10 +15,6 @@
  */
 package org.redisson.executor;
 
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.RedissonExecutorService;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
@@ -30,12 +26,11 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.params.TaskParameters;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.remote.BaseRemoteService;
-import org.redisson.remote.RemoteServiceCancelRequest;
-import org.redisson.remote.RemoteServiceCancelResponse;
-import org.redisson.remote.RemoteServiceRequest;
-import org.redisson.remote.RequestId;
-import org.redisson.remote.ResponseEntry;
+import org.redisson.remote.*;
+
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -174,10 +169,6 @@ public class TasksService extends BaseRemoteService {
               + "return 0;",
           Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName, tasksRetryIntervalName), 
           taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
-    }
-
-    public RFuture<Boolean> hasTaskAsync(RequestId requestId) {
-        return commandExecutor.writeAsync(tasksName, LongCodec.INSTANCE, RedisCommands.HEXISTS, tasksName, requestId.toString());
     }
 
     public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {

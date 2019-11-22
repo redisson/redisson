@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 /**
@@ -40,6 +41,13 @@ public interface RExecutorServiceAsync {
      * @return amount of tasks
      */
     RFuture<Integer> getTaskCountAsync();
+
+    /**
+     * Returns list of task ids awaiting for execution and/or currently in execution.
+     *
+     * @return task ids
+     */
+    RFuture<Set<String>> getTaskIdsAsync();
 
     /**
      * Cancel task by id

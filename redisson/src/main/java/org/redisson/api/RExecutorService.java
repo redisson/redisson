@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
@@ -145,6 +146,13 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      * @return <code>true</code> if this Executor Service has task
      */
     boolean hasTask(String taskId);
+
+    /**
+     * Returns list of task ids awaiting for execution and/or currently in execution.
+     *
+     * @return task ids
+     */
+    Set<String> getTaskIds();
 
     /**
      * Cancel task by id

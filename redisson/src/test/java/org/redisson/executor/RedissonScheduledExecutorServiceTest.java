@@ -240,6 +240,15 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
         assertThat(executor.hasTask(future.getTaskId())).isFalse();
     }
 
+    @Test
+    public void testTaskIds() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        RScheduledFuture<?> future = executor.schedule(new ScheduledRunnableTask("executed"), 1, TimeUnit.SECONDS);
+        assertThat(executor.getTaskIds().contains(future.getTaskId())).isTrue();
+        Thread.sleep(1200);
+        assertThat(executor.getTaskIds().isEmpty()).isTrue();
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testWrongCronExpression() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
