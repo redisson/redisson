@@ -17,9 +17,14 @@ package org.redisson;
 
 import org.redisson.misc.RPromise;
 
+/**
+ *
+ * Nikita Koksharov
+ *
+ */
 public interface PubSubEntry<E> {
 
-    void aquire();
+    void acquire();
 
     int release();
 

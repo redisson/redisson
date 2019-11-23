@@ -34,7 +34,7 @@ public class RedissonLockEntry implements PubSubEntry<RedissonLockEntry> {
         this.promise = promise;
     }
 
-    public void aquire() {
+    public void acquire() {
         counter++;
     }
 

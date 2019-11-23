@@ -47,16 +47,17 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     }
 
     public void await() throws InterruptedException {
+        if (getCount() == 0) {
+            return;
+        }
+
         RFuture<RedissonCountDownLatchEntry> future = subscribe();
         try {
             commandExecutor.syncSubscription(future);
 
             while (getCount() > 0) {
                 // waiting for open state
-                RedissonCountDownLatchEntry entry = getEntry();
-                if (entry != null) {
-                    entry.getLatch().await();
-                }
+                future.getNow().getLatch().await();
             }
         } finally {
             unsubscribe(future);
@@ -67,6 +68,9 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
     public boolean await(long time, TimeUnit unit) throws InterruptedException {
         long remainTime = unit.toMillis(time);
         long current = System.currentTimeMillis();
+        if (getCount() == 0) {
+            return true;
+        }
         RFuture<RedissonCountDownLatchEntry> promise = subscribe();
         if (!promise.await(time, unit)) {
             return false;
@@ -84,10 +88,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
                 }
                 current = System.currentTimeMillis();
                 // waiting for open state
-                RedissonCountDownLatchEntry entry = getEntry();
-                if (entry != null) {
-                    entry.getLatch().await(remainTime, TimeUnit.MILLISECONDS);
-                }
+                promise.getNow().getLatch().await(remainTime, TimeUnit.MILLISECONDS);
 
                 remainTime -= System.currentTimeMillis() - current;
             }
@@ -96,10 +97,6 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         } finally {
             unsubscribe(promise);
         }
-    }
-
-    private RedissonCountDownLatchEntry getEntry() {
-        return pubSub.getEntry(getEntryName());
     }
 
     private RFuture<RedissonCountDownLatchEntry> subscribe() {

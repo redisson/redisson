@@ -192,18 +192,18 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 // waiting for message
                 if (ttl >= 0) {
                     try {
-                        getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                        future.getNow().getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                     } catch (InterruptedException e) {
                         if (interruptibly) {
                             throw e;
                         }
-                        getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                        future.getNow().getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                     }
                 } else {
                     if (interruptibly) {
-                        getEntry(threadId).getLatch().acquire();
+                        future.getNow().getLatch().acquire();
                     } else {
-                        getEntry(threadId).getLatch().acquireUninterruptibly();
+                        future.getNow().getLatch().acquireUninterruptibly();
                     }
                 }
             }
@@ -416,9 +416,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 // waiting for message
                 currentTime = System.currentTimeMillis();
                 if (ttl >= 0 && ttl < time) {
-                    getEntry(threadId).getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
+                    subscribeFuture.getNow().getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
-                    getEntry(threadId).getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
+                    subscribeFuture.getNow().getLatch().tryAcquire(time, TimeUnit.MILLISECONDS);
                 }
 
                 time -= System.currentTimeMillis() - currentTime;
@@ -431,10 +431,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             unsubscribe(subscribeFuture, threadId);
         }
 //        return get(tryLockAsync(waitTime, leaseTime, unit));
-    }
-
-    protected RedissonLockEntry getEntry(long threadId) {
-        return pubSub.getEntry(getEntryName());
     }
 
     protected RFuture<RedissonLockEntry> subscribe(long threadId) {
@@ -657,7 +653,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 return;
             }
 
-            RedissonLockEntry entry = getEntry(currentThreadId);
+            RedissonLockEntry entry = subscribeFuture.getNow();
             if (entry.getLatch().tryAcquire()) {
                 lockAsync(leaseTime, unit, subscribeFuture, result, currentThreadId);
             } else {
@@ -826,7 +822,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
 
                 // waiting for message
                 long current = System.currentTimeMillis();
-                RedissonLockEntry entry = getEntry(currentThreadId);
+                RedissonLockEntry entry = subscribeFuture.getNow();
                 if (entry.getLatch().tryAcquire()) {
                     tryLockAsync(time, leaseTime, unit, subscribeFuture, result, currentThreadId);
                 } else {

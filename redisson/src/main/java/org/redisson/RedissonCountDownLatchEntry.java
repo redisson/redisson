@@ -31,7 +31,7 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
         this.promise = promise;
     }
 
-    public void aquire() {
+    public void acquire() {
         counter++;
     }
 
