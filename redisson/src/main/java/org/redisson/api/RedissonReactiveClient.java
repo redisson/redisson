@@ -15,10 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
+
+import java.util.List;
 
 /**
  * Main Redisson interface for access
@@ -143,7 +143,15 @@ public interface RedissonReactiveClient {
      * @return RedLock object
      */
     RLockReactive getRedLock(RLock... locks);
-    
+
+    /**
+     * Returns CountDownLatch instance by name.
+     *
+     * @param name - name of object
+     * @return CountDownLatch object
+     */
+    RCountDownLatchReactive getCountDownLatch(String name);
+
     /**
      * Returns set-based cache instance by <code>name</code>.
      * Supports value eviction with a given TTL value.

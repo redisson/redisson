@@ -15,18 +15,21 @@
  */
 package org.redisson.api;
 
+import io.reactivex.Completable;
+import io.reactivex.Single;
+
 import java.util.concurrent.TimeUnit;
 
 /**
- * Async interface of {@link java.util.concurrent.CountDownLatch}
+ * RxJava2 interface of {@link java.util.concurrent.CountDownLatch}
  *
  * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
- * count can be set via {@link #trySetCountAsync} method.
+ * count can be set via {@link #trySetCount} method.
  *
  * @author Nikita Koksharov
  *
  */
-public interface RCountDownLatchAsync extends RObjectAsync {
+public interface RCountDownLatchRx extends RObjectRx {
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -37,10 +40,10 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * <p>If the current count is greater than zero then the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until the count reaches zero due to invocations of the
-     * {@link #countDownAsync} method.
+     * {@link #countDown} method.
      *
      */
-    RFuture<Void> awaitAsync();
+    Completable await();
 
     /**
      * Causes the current thread to wait until the latch has counted down to
@@ -52,7 +55,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * <p>If the current count is greater than zero then the current
      * thread becomes disabled for thread scheduling purposes and lies
      * dormant until the count reaches zero due to invocations of the
-     * {@link #countDownAsync()} method or the specified waiting time elapses.
+     * {@link #countDown()} method or the specified waiting time elapses.
      *
      * <p>If the count reaches zero then the method returns with the
      * value {@code true}.
@@ -66,7 +69,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * @return {@code true} if the count reached zero and {@code false}
      *         if the waiting time elapsed before the count reached zero
      */
-    RFuture<Boolean> awaitAsync(long waitTime, TimeUnit unit);
+    Single<Boolean> await(long waitTime, TimeUnit unit);
 
     /**
      * Decrements the count of the latch, releasing all waiting threads if
@@ -80,7 +83,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * 
      * @return void
      */
-    RFuture<Void> countDownAsync();
+    Completable countDown();
 
     /**
      * Returns the current count.
@@ -89,7 +92,7 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      *
      * @return the current count
      */
-    RFuture<Long> getCountAsync();
+    Single<Long> getCount();
 
     /**
      * Sets new count value only if previous count already has reached zero
@@ -100,6 +103,6 @@ public interface RCountDownLatchAsync extends RObjectAsync {
      * @return <code>true</code> if new count setted
      *         <code>false</code> if previous count has not reached zero
      */
-    RFuture<Boolean> trySetCountAsync(long count);
+    Single<Boolean> trySetCount(long count);
 
 }
