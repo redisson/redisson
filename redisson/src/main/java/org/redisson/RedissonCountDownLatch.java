@@ -17,12 +17,19 @@ package org.redisson;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.api.RCountDownLatch;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.CountDownLatchPubSub;
 
 /**
@@ -46,6 +53,7 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getCountDownLatchPubSub();
     }
 
+    @Override
     public void await() throws InterruptedException {
         if (getCount() == 0) {
             return;
@@ -62,6 +70,55 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         } finally {
             unsubscribe(future);
         }
+    }
+
+    @Override
+    public RFuture<Void> awaitAsync() {
+        RPromise<Void> result = new RedissonPromise<>();
+        RFuture<Long> countFuture = getCountAsync();
+        countFuture.onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            RFuture<RedissonCountDownLatchEntry> subscribeFuture = subscribe();
+            subscribeFuture.onComplete((res, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                await(result, subscribeFuture);
+            });
+        });
+        return result;
+    }
+
+    private void await(RPromise<Void> result, RFuture<RedissonCountDownLatchEntry> subscribeFuture) {
+        if (result.isDone()) {
+            unsubscribe(subscribeFuture);
+            return;
+        }
+
+        RFuture<Long> countFuture = getCountAsync();
+        countFuture.onComplete((r, e) -> {
+            if (e != null) {
+                unsubscribe(subscribeFuture);
+                result.tryFailure(e);
+                return;
+            }
+
+            if (r == 0) {
+                unsubscribe(subscribeFuture);
+                result.trySuccess(null);
+                return;
+            }
+
+            subscribeFuture.getNow().addListener(() -> {
+                await(result, subscribeFuture);
+            });
+        });
     }
 
     @Override
@@ -97,6 +154,119 @@ public class RedissonCountDownLatch extends RedissonObject implements RCountDown
         } finally {
             unsubscribe(promise);
         }
+    }
+
+    @Override
+    public RFuture<Boolean> awaitAsync(long waitTime, TimeUnit unit) {
+        RPromise<Boolean> result = new RedissonPromise<>();
+
+        AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
+        long currentTime = System.currentTimeMillis();
+        RFuture<Long> countFuture = getCountAsync();
+        countFuture.onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            long el = System.currentTimeMillis() - currentTime;
+            time.addAndGet(-el);
+
+            if (time.get() <= 0) {
+                result.trySuccess(false);
+                return;
+            }
+
+            long current = System.currentTimeMillis();
+            AtomicReference<Timeout> futureRef = new AtomicReference<>();
+            RFuture<RedissonCountDownLatchEntry> subscribeFuture = subscribe();
+            subscribeFuture.onComplete((res, ex) -> {
+                if (ex != null) {
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                if (futureRef.get() != null) {
+                    futureRef.get().cancel();
+                }
+
+                long elapsed = System.currentTimeMillis() - current;
+                time.addAndGet(-elapsed);
+
+                await(time, result, subscribeFuture);
+            });
+        });
+        return result;
+    }
+
+    private void await(AtomicLong time, RPromise<Boolean> result, RFuture<RedissonCountDownLatchEntry> subscribeFuture) {
+        if (result.isDone()) {
+            unsubscribe(subscribeFuture);
+            return;
+        }
+
+        if (time.get() <= 0) {
+            unsubscribe(subscribeFuture);
+            result.trySuccess(false);
+            return;
+        }
+
+        long curr = System.currentTimeMillis();
+        RFuture<Long> countFuture = getCountAsync();
+        countFuture.onComplete((r, e) -> {
+            if (e != null) {
+                unsubscribe(subscribeFuture);
+                result.tryFailure(e);
+                return;
+            }
+
+            if (r == 0) {
+                unsubscribe(subscribeFuture);
+                result.trySuccess(true);
+                return;
+            }
+
+            long el = System.currentTimeMillis() - curr;
+            time.addAndGet(-el);
+
+            if (time.get() <= 0) {
+                unsubscribe(subscribeFuture);
+                result.trySuccess(false);
+                return;
+            }
+
+            long current = System.currentTimeMillis();
+            AtomicBoolean executed = new AtomicBoolean();
+            RedissonCountDownLatchEntry entry = subscribeFuture.getNow();
+            AtomicReference<Timeout> futureRef = new AtomicReference<>();
+            Runnable listener = () -> {
+                executed.set(true);
+                if (futureRef.get() != null) {
+                    futureRef.get().cancel();
+                }
+
+                long elapsed = System.currentTimeMillis() - current;
+                time.addAndGet(-elapsed);
+
+                await(time, result, subscribeFuture);
+            };
+            entry.addListener(listener);
+
+            if (!executed.get()) {
+                Timeout timeoutFuture = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
+                    @Override
+                    public void run(Timeout timeout) throws Exception {
+                        if (entry.removeListener(listener)) {
+                            long elapsed = System.currentTimeMillis() - current;
+                            time.addAndGet(-elapsed);
+
+                            await(time, result, subscribeFuture);
+                        }
+                    }
+                }, time.get(), TimeUnit.MILLISECONDS);
+                futureRef.set(timeoutFuture);
+            }
+        });
     }
 
     private RFuture<RedissonCountDownLatchEntry> subscribe() {

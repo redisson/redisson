@@ -18,12 +18,15 @@ package org.redisson;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.ReclosableLatch;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDownLatchEntry> {
 
     private int counter;
 
     private final ReclosableLatch latch;
     private final RPromise<RedissonCountDownLatchEntry> promise;
+    private final ConcurrentLinkedQueue<Runnable> listeners = new ConcurrentLinkedQueue<>();
 
     public RedissonCountDownLatchEntry(RPromise<RedissonCountDownLatchEntry> promise) {
         super();
@@ -41,6 +44,18 @@ public class RedissonCountDownLatchEntry implements PubSubEntry<RedissonCountDow
 
     public RPromise<RedissonCountDownLatchEntry> getPromise() {
         return promise;
+    }
+
+    public void addListener(Runnable listener) {
+        listeners.add(listener);
+    }
+
+    public boolean removeListener(Runnable listener) {
+        return listeners.remove(listener);
+    }
+
+    public ConcurrentLinkedQueue<Runnable> getListeners() {
+        return listeners;
     }
 
     public ReclosableLatch getLatch() {

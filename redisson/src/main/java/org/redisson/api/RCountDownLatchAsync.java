@@ -15,6 +15,8 @@
  */
 package org.redisson.api;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Distributed async implementation of {@link java.util.concurrent.CountDownLatch}
  *
@@ -25,6 +27,46 @@ package org.redisson.api;
  *
  */
 public interface RCountDownLatchAsync extends RObjectAsync {
+
+    /**
+     * Causes the current thread to wait until the latch has counted down to
+     * zero.
+     *
+     * <p>If the current count is zero then this method returns immediately.
+     *
+     * <p>If the current count is greater than zero then the current
+     * thread becomes disabled for thread scheduling purposes and lies
+     * dormant until the count reaches zero due to invocations of the
+     * {@link #countDownAsync} method.
+     *
+     */
+    RFuture<Void> awaitAsync();
+
+    /**
+     * Causes the current thread to wait until the latch has counted down to
+     * zero or the specified waiting time elapses.
+     *
+     * <p>If the current count is zero then this method returns immediately
+     * with the value {@code true}.
+     *
+     * <p>If the current count is greater than zero then the current
+     * thread becomes disabled for thread scheduling purposes and lies
+     * dormant until the count reaches zero due to invocations of the
+     * {@link #countDownAsync()} method or the specified waiting time elapses.
+     *
+     * <p>If the count reaches zero then the method returns with the
+     * value {@code true}.
+     *
+     * <p>If the specified waiting time elapses then the value {@code false}
+     * is returned.  If the time is less than or equal to zero, the method
+     * will not wait at all.
+     *
+     * @param waitTime the maximum time to wait
+     * @param unit the time unit of the {@code timeout} argument
+     * @return {@code true} if the count reached zero and {@code false}
+     *         if the waiting time elapsed before the count reached zero
+     */
+    RFuture<Boolean> awaitAsync(long waitTime, TimeUnit unit);
 
     /**
      * Decrements the count of the latch, releasing all waiting threads if
