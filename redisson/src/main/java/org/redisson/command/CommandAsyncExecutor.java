@@ -53,7 +53,9 @@ public interface CommandAsyncExecutor {
     <V> RedisException convertException(RFuture<V> future);
 
     void syncSubscription(RFuture<?> future);
-    
+
+    void syncSubscriptionInterrupted(RFuture<?> future) throws InterruptedException;
+
     <V> V get(RFuture<V> future);
     
     <V> V getInterrupted(RFuture<V> future) throws InterruptedException;

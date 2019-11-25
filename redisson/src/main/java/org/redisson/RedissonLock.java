@@ -179,7 +179,11 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
 
         RFuture<RedissonLockEntry> future = subscribe(threadId);
-        commandExecutor.syncSubscription(future);
+        if (interruptibly) {
+            commandExecutor.syncSubscriptionInterrupted(future);
+        } else {
+            commandExecutor.syncSubscription(future);
+        }
 
         try {
             while (true) {

@@ -127,6 +127,16 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public void syncSubscriptionInterrupted(RFuture<?> future) throws InterruptedException {
+        MasterSlaveServersConfig config = connectionManager.getConfig();
+        int timeout = config.getTimeout() + config.getRetryInterval() * config.getRetryAttempts();
+        if (!future.await(timeout)) {
+            ((RPromise<?>) future).tryFailure(new RedisTimeoutException("Subscribe timeout: (" + timeout + "ms). Increase 'subscriptionsPerConnection' and/or 'subscriptionConnectionPoolSize' parameters."));
+        }
+        future.sync();
+    }
+
+    @Override
     public <V> V get(RFuture<V> future) {
         try {
             future.await();
