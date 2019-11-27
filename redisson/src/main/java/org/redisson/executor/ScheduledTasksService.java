@@ -131,7 +131,7 @@ public class ScheduledTasksService extends TasksService {
         if (requestId == null) {
             byte[] id = new byte[17];
             ThreadLocalRandom.current().nextBytes(id);
-            id[0] = 1;
+            id[0] = 01;
             return new RequestId(id);
         }
         return requestId;

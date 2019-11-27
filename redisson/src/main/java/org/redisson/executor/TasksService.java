@@ -30,6 +30,7 @@ import org.redisson.remote.*;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -169,6 +170,14 @@ public class TasksService extends BaseRemoteService {
               + "return 0;",
           Arrays.<Object>asList(requestQueueName, schedulerQueueName, tasksCounterName, statusName, terminationTopicName, tasksName, tasksRetryIntervalName), 
           taskId.toString(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+    }
+
+    @Override
+    protected RequestId generateRequestId() {
+        byte[] id = new byte[17];
+        ThreadLocalRandom.current().nextBytes(id);
+        id[0] = 00;
+        return new RequestId(id);
     }
 
     public RFuture<Boolean> cancelExecutionAsync(final RequestId requestId) {

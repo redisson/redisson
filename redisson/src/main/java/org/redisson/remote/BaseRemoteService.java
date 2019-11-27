@@ -186,9 +186,8 @@ public abstract class BaseRemoteService {
     }
 
     protected RequestId generateRequestId() {
-        byte[] id = new byte[17];
+        byte[] id = new byte[16];
         ThreadLocalRandom.current().nextBytes(id);
-        id[0] = 00;
         return new RequestId(id);
     }
 
