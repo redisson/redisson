@@ -57,6 +57,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
+import org.redisson.codec.FstCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -943,7 +944,7 @@ public class RedissonTest {
     }
 
     @Test
-    public void testClusterConfig() throws IOException {
+    public void testClusterConfigJSON() throws IOException {
         Config originalConfig = new Config();
         originalConfig.useClusterServers().addNodeAddress("redis://123.123.1.23:1902", "redis://9.3.1.0:1902");
         String t = originalConfig.toJSON();
@@ -967,6 +968,14 @@ public class RedissonTest {
         assertThat(c.toYAML()).isEqualTo(t);
     }
 
+    @Test
+    public void testSentinelJSON() throws IOException {
+        Config c2 = new Config();
+        c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
+        String t = c2.toJSON();
+        Config c = Config.fromJSON(t);
+        assertThat(c.toJSON()).isEqualTo(t);
+    }
 
     @Test
     public void testMasterSlaveConfigJSON() throws IOException {
@@ -980,7 +989,7 @@ public class RedissonTest {
     @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
+        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
         String t = c2.toYAML();
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);

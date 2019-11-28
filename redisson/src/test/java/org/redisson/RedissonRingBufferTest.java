@@ -53,7 +53,7 @@ public class RedissonRingBufferTest extends BaseTest {
         List<Integer> s = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
         buffer.addAll(s);
         
-        assertThat(buffer).containsExactly((Integer[]) s.toArray());
+        assertThat(buffer).containsExactly(s.toArray(new Integer[s.size()]));
         assertThat(buffer.capacity()).isEqualTo(10);
         assertThat(buffer.remainingCapacity()).isEqualTo(0);
 
