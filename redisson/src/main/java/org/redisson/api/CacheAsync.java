@@ -24,7 +24,8 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 
 /**
- * 
+ * Asynchronous interface for JCache
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type

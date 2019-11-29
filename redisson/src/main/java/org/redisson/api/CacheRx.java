@@ -28,7 +28,8 @@ import io.reactivex.Maybe;
 import io.reactivex.Single;
 
 /**
- * 
+ * RxJava2 interface for JCache
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type

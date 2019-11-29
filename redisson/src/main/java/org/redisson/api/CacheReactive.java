@@ -26,7 +26,8 @@ import javax.cache.integration.CacheWriter;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Reactive interface for JCache
+ *
  * @author Nikita Koksharov
  *
  * @param <K> key type
