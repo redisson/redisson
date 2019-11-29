@@ -30,7 +30,7 @@ import org.redisson.api.annotation.RInject;
  */
 public class Injector {
 
-    public static void inject(Object task, RedissonClient redisson) {
+    public static <T> void inject(Object task, Class<T> valueClass, T value) {
         List<Field> allFields = new ArrayList<Field>();
         Class<?> clazz = task.getClass();
         while (true) {
@@ -46,18 +46,22 @@ public class Injector {
                 clazz = null;
             }
         }
-        
+
         for (Field field : allFields) {
-            if (RedissonClient.class.isAssignableFrom(field.getType())
+            if (valueClass.isAssignableFrom(field.getType())
                     && field.isAnnotationPresent(RInject.class)) {
                 field.setAccessible(true);
                 try {
-                    field.set(task, redisson);
+                    field.set(task, value);
                 } catch (IllegalAccessException e) {
                     throw new IllegalStateException(e);
                 }
             }
         }
+    }
+
+    public static void inject(Object task, RedissonClient redisson) {
+        inject(task, RedissonClient.class, redisson);
     }
     
 }

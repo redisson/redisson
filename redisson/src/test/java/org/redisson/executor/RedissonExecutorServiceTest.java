@@ -30,6 +30,7 @@ import org.redisson.api.RExecutorBatchFuture;
 import org.redisson.api.RExecutorFuture;
 import org.redisson.api.RExecutorService;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -290,7 +291,31 @@ public class RedissonExecutorServiceTest extends BaseTest {
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();
     }
-    
+
+
+    public static class TestClass implements Runnable, Serializable {
+
+        @RInject
+        private String id;
+
+        @RInject
+        private RedissonClient client;
+
+        @Override
+        public void run() {
+            client.getBucket("id").set(id);
+        }
+    }
+
+    @Test
+    public void testTaskId() throws ExecutionException, InterruptedException {
+        RExecutorService executor = redisson.getExecutorService("test");
+        RExecutorFuture<?> future = executor.submit(new TestClass());
+        future.get();
+        String id = redisson.<String>getBucket("id").get();
+        assertThat(id).hasSize(34);
+    }
+
     @Test
     public void testCancelAndInterrupt() throws InterruptedException, ExecutionException {
         RExecutorService executor = redisson.getExecutorService("test");

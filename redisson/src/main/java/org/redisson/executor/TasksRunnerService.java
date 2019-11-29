@@ -270,7 +270,7 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
     
     @SuppressWarnings("unchecked")
-    private <T> T decode(TaskParameters params) throws IOException {
+    private <T> T decode(TaskParameters params) {
         ByteBuf classBodyBuf = Unpooled.wrappedBuffer(params.getClassBody());
         ByteBuf stateBuf = Unpooled.wrappedBuffer(params.getState());
         try {
@@ -302,8 +302,9 @@ public class TasksRunnerService implements RemoteExecutorService {
             } else {
                 task = (T) classLoaderCodec.getValueDecoder().decode(stateBuf, null);
             }
-            
-            Injector.inject(task, redisson);
+
+            Injector.inject(task, RedissonClient.class, redisson);
+            Injector.inject(task, String.class, params.getRequestId());
             
             if (beanFactory != null) {
                 AutowiredAnnotationBeanPostProcessor bpp = new AutowiredAnnotationBeanPostProcessor();
