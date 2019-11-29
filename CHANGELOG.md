@@ -4,6 +4,28 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 28-Nov-2019 - 3.11.6 released
+
+Feature - `RExecutorServiceAsync.cancelTaskAsync()` method added  
+Feature - `RExecutorService.hasTask()` method added  
+Feature - `RExecutorService.getTaskCount()` method added  
+Feature - `RMap` write-behind queue should be fault-tolerant  
+Feature - added `poll()` methods with limit to `RQueue`, `RDeque`, `RDelayedQueue` objects  
+Feature - `checkSlotsCoverage` setting added to cluster config  
+Feature - `RExecutorService.getTaskIds()` method added  
+Feature - `awaitAsync()` methods added to `RCountDownLatch` object  
+Feature - `RCountDownLatchRx` and `RCountDownLatchReactive` objects added  
+
+Fixed - channel subscription proccess in interruptible methods can't be interrupted  
+Fixed - `RMap.get()` method invokes `MapWriter.write()` method during value loading  
+Fixed - interruptible blocking methods couldn't be canceled  
+Fixed - ClusterNodesDecoder ignore unknown flag and avoid throwing exception  (thanks to ZhangJQ)  
+Fixed - `AsyncSemaphore` counter field should be volatile  
+Fixed - data encoding exception is not logged during remote call invocation  
+Fixed - Spring Data ZRangeByScore method doesn't support Infinity Double value  
+Fixed - spring metainfo files should be excluded in redisson-all artifact  
+Fixed - `RKeysRx.getKeys()` and `RKeysReactive.getKeys()` methods throws Exception  
+
 ### 26-Oct-2019 - 3.11.5 released
 
 Feature - Automatic-Module-Name entry added to manifest file  
