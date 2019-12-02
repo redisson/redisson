@@ -22,7 +22,7 @@ import org.redisson.client.codec.Codec;
 import reactor.core.publisher.Mono;
 
 /**
- * Base interface for all Redisson objects
+ * Base Reactive interface for all Redisson objects
  *
  * @author Nikita Koksharov
  *

@@ -15,6 +15,14 @@
  */
 package org.redisson.api;
 
+/**
+ * List based Multimap. Stores insertion order and allows duplicates for values mapped to key.
+ *
+ * @author Nikita Koksharov
+ *
+ * @param <K> key
+ * @param <V> value
+ */
 public interface RListMultimapCache<K, V> extends RListMultimap<K, V>, RMultimapCache<K, V> {
 
 }

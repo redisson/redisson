@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Rate Limiter object
+ * Reactive interface for Redis based Rate Limiter object.
  * 
  * @author Nikita Koksharov
  *

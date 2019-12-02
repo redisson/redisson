@@ -20,7 +20,7 @@ import java.util.Set;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Multimap object
+ * Base Reactive interface for Multimap object
  * 
  * @author Nikita Koksharov
  *

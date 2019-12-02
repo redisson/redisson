@@ -21,7 +21,7 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 
 /**
- * RxJava2 interface for Rate Limiter object
+ * Reactive interface for Redis based Rate Limiter object.
  * 
  * @author Nikita Koksharov
  *

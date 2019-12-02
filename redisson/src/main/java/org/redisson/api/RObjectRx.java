@@ -23,7 +23,7 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 
 /**
- * Base interface for all Redisson objects
+ * Base RxJava2 interface for all Redisson objects
  *
  * @author Nikita Koksharov
  *

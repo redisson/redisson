@@ -18,7 +18,8 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 
+ * Redis based Rate Limiter object.
+ *
  * @author Nikita Koksharov
  *
  */

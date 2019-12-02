@@ -21,7 +21,7 @@ import java.util.Queue;
 
 /**
  * 
- * Redis based priority queue.
+ * Redis based priority deque.
  * 
  * @author Nikita Koksharov
  *

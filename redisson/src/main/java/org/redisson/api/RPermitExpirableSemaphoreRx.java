@@ -21,7 +21,7 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 
 /**
- * RxJava2 interface for Semaphore object with support of lease time parameter for each acquired permit.
+ * RxJava2 interface for Semaphore object with lease time parameter support for each acquired permit.
  * 
  * <p>Each permit identified by own id and could be released only using its id.
  * Permit id is a 128-bits unique random identifier generated each time during acquiring.

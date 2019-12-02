@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * Asynchronous interface for Redis based Rate Limiter object.
  * 
  * @author Nikita Koksharov
  *
