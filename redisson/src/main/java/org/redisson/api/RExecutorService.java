@@ -18,6 +18,7 @@ package org.redisson.api;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.ExecutorService}
@@ -33,7 +34,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     String MAPREDUCE_NAME = "redisson_mapreduce";
     
     /**
-     * Submits a value-returning task for execution synchronously and returns a
+     * Synchronously submits a value-returning task for execution asynchronously and returns a
      * Future representing the pending results of the task. The
      * Future's {@code get} method will return the task's result upon
      * successful completion.
@@ -44,9 +45,24 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
      */
     @Override
     <T> RExecutorFuture<T> submit(Callable<T> task);
-    
+
     /**
-     * Submits tasks batch for execution synchronously. 
+     * Synchronously submits a value-returning task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously. Returns a Future representing the pending
+     * results of the task. The Future's {@code get} method will return the
+     * task's result upon successful completion.
+     *
+     * @param task the task to submit
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @param <T> the type of the task's result
+     * @return a Future representing pending completion of the task
+     */
+    <T> RExecutorFuture<T> submit(Callable<T> task, long timeToLive, TimeUnit timeUnit);
+
+
+    /**
+     * Synchronously submits tasks batch for execution asynchronously.
      * All tasks are stored to executor request queue atomically, 
      * if case of any error none of tasks will be added.
      * 
@@ -56,8 +72,8 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     RExecutorBatchFuture submit(Callable<?>...tasks);
     
     /**
-     * Submits a Runnable task for execution and returns a Future
-     * representing that task. The Future's {@code get} method will
+     * Synchronously submits a Runnable task for execution asynchronously
+     * and returns a Future representing that task. The Future's {@code get} method will
      * return the given result upon successful completion.
      *
      * @param task the task to submit
@@ -69,8 +85,8 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     <T> RExecutorFuture<T> submit(Runnable task, T result);;
 
     /**
-     * Submits a Runnable task for execution and returns a Future
-     * representing that task. The Future's {@code get} method will
+     * Synchronously submits a Runnable task for execution asynchronously.
+     * Returns a Future representing task completion. The Future's {@code get} method will
      * return {@code null} upon <em>successful</em> completion.
      *
      * @param task the task to submit
@@ -80,7 +96,20 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     RExecutorFuture<?> submit(Runnable task);
 
     /**
-     * Submits tasks batch for execution synchronously. 
+     * Synchronously submits a task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously. Returns a Future representing task completion.
+     * The Future's {@code get} method will return the
+     * task's result upon successful completion.
+     *
+     * @param task the task to submit
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return a Future representing pending completion of the task
+     */
+    RExecutorFuture<?> submit(Runnable task, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Synchronously submits tasks batch for execution asynchronously.
      * All tasks are stored to executor request queue atomically, 
      * if case of any error none of tasks will be added.
      * 

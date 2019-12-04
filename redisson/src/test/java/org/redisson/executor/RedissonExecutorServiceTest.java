@@ -25,11 +25,7 @@ import org.redisson.BaseTest;
 import org.redisson.RedisRunner;
 import org.redisson.Redisson;
 import org.redisson.RedissonNode;
-import org.redisson.api.ExecutorOptions;
-import org.redisson.api.RExecutorBatchFuture;
-import org.redisson.api.RExecutorFuture;
-import org.redisson.api.RExecutorService;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
@@ -524,7 +520,19 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Future<String> future = redisson.getExecutorService("test").submit(new ParameterizedTask("testparam"));
         assertThat(future.get()).isEqualTo("testparam");
     }
-    
+
+    @Test
+    public void testTTL() throws InterruptedException {
+        RScheduledExecutorService executor = redisson.getExecutorService("test");
+        executor.submit(new DelayedTask(2000, "test"));
+        Future<?> future = executor.submit(new ScheduledRunnableTask("testparam"), 1, TimeUnit.SECONDS);
+        Thread.sleep(500);
+        assertThat(executor.getTaskCount()).isEqualTo(2);
+        Thread.sleep(2000);
+        assertThat(executor.getTaskCount()).isEqualTo(0);
+        assertThat(redisson.getKeys().countExists("testparam")).isEqualTo(0);
+    }
+
     @Test(expected = IllegalArgumentException.class)
     public void testAnonymousRunnable() {
         redisson.getExecutorService("test").submit(new Runnable() {

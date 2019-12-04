@@ -69,6 +69,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String schedulerQueueName;
     private final String schedulerChannelName;
     private final String tasksRetryIntervalName;
+    private final String tasksExpirationTimeName;
     
     private final String workersChannelName;
     private final String workersSemaphoreName;
@@ -77,7 +78,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     private final String tasksCounterName;
     private final String statusName;
     private final RTopic terminationTopic;
-    private final RRemoteService remoteService;
+    private final RedissonExecutorRemoteService remoteService;
     private final RTopic workersTopic;
     private int workersGroupListenerId;
 
@@ -119,8 +120,8 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         }
         
         remoteService = new RedissonExecutorRemoteService(codec, name, connectionManager.getCommandExecutor(), executorId, responses);
-        requestQueueName = ((RedissonRemoteService) remoteService).getRequestQueueName(RemoteExecutorService.class);
-        responseQueueName = ((RedissonRemoteService) remoteService).getResponseQueueName(executorId);
+        requestQueueName = remoteService.getRequestQueueName(RemoteExecutorService.class);
+        responseQueueName = remoteService.getResponseQueueName(executorId);
         String objectName = requestQueueName;
         tasksCounterName = objectName + ":counter";
         tasksName = objectName + ":tasks";
@@ -128,6 +129,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         terminationTopic = redisson.getTopic(objectName + ":termination-topic", LongCodec.INSTANCE);
 
         tasksRetryIntervalName = objectName + ":retry-interval";
+        tasksExpirationTimeName = objectName + ":expiration";
         schedulerChannelName = objectName + ":scheduler-channel";
         schedulerQueueName = objectName + ":scheduler";
         
@@ -136,7 +138,13 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         workersCounterName = objectName + ":workers-counter";
         
         workersTopic = redisson.getTopic(workersChannelName);
-        
+
+        remoteService.setStatusName(statusName);
+        remoteService.setTasksCounterName(tasksCounterName);
+        remoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
+        remoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        remoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
+
         executorRemoteService = new TasksService(codec, name, commandExecutor, executorId, responses);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
@@ -145,6 +153,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         executorRemoteService.setSchedulerChannelName(schedulerChannelName);
         executorRemoteService.setSchedulerQueueName(schedulerQueueName);
         executorRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        executorRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         executorRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
         asyncService = executorRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncServiceWithoutResult = executorRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
@@ -344,6 +353,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
 
     private TasksBatchService createBatchService() {
         TasksBatchService executorRemoteService = new TasksBatchService(codec, name, commandExecutor, executorId, responses);
+        executorRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         executorRemoteService.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         executorRemoteService.setTasksCounterName(tasksCounterName);
         executorRemoteService.setStatusName(statusName);
@@ -556,7 +566,24 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         syncExecute(promise);
         return createFuture(promise);
     }
-    
+
+    @Override
+    public <T> RExecutorFuture<T> submit(Callable<T> task, long timeToLive, TimeUnit timeUnit) {
+        RemotePromise<T> promise = (RemotePromise<T>) ((PromiseDelegator<T>) submitAsync(task, timeToLive, timeUnit)).getInnerPromise();
+        syncExecute(promise);
+        return createFuture(promise);
+    }
+
+    @Override
+    public <T> RExecutorFuture<T> submitAsync(Callable<T> task, long timeToLive, TimeUnit timeUnit) {
+        check(task);
+        TaskParameters taskParameters = createTaskParameters(task);
+        taskParameters.setTtl(timeUnit.toMillis(timeToLive));
+        RemotePromise<T> result = (RemotePromise<T>) asyncService.executeCallable(taskParameters);
+        addListener(result);
+        return createFuture(result);
+    }
+
     @Override
     public <T> RExecutorFuture<T> submitAsync(Callable<T> task) {
         check(task);
@@ -758,7 +785,24 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         syncExecute(promise);
         return createFuture(promise);
     }
-    
+
+    @Override
+    public RExecutorFuture<?> submit(Runnable task, long timeToLive, TimeUnit timeUnit) {
+        RemotePromise<Void> promise = (RemotePromise<Void>) ((PromiseDelegator<Void>) submitAsync(task, timeToLive, timeUnit)).getInnerPromise();
+        syncExecute(promise);
+        return createFuture(promise);
+    }
+
+    @Override
+    public RExecutorFuture<?> submitAsync(Runnable task, long timeToLive, TimeUnit timeUnit) {
+        check(task);
+        TaskParameters taskParameters = createTaskParameters(task);
+        taskParameters.setTtl(timeUnit.toMillis(timeToLive));
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncService.executeRunnable(taskParameters);
+        addListener(result);
+        return createFuture(result);
+    }
+
     @Override
     public RExecutorFuture<?> submitAsync(Runnable task) {
         check(task);

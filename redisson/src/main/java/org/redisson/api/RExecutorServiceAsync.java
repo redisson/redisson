@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Distributed async implementation of {@link java.util.concurrent.ExecutorService}
@@ -76,7 +77,22 @@ public interface RExecutorServiceAsync {
     <T> RExecutorFuture<T> submitAsync(Callable<T> task);
 
     /**
-     * Submits tasks batch for execution asynchronously. All tasks are stored to executor request queue atomically, 
+     * Submits a value-returning task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously. Returns a Future representing the pending
+     * results of the task. The Future's {@code get} method will return the
+     * task's result upon successful completion.
+     *
+     * @param task the task to submit
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @param <T> the type of the task's result
+     * @return a Future representing pending completion of the task
+     */
+    <T> RExecutorFuture<T> submitAsync(Callable<T> task, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Submits tasks batch for execution asynchronously.
+     * All tasks are stored to executor request queue atomically,
      * if case of any error none of tasks will be added.
      * 
      * @param tasks - tasks to execute
@@ -92,6 +108,19 @@ public interface RExecutorServiceAsync {
      */
     RExecutorFuture<?> submitAsync(Runnable task);
     
+    /**
+     * Submits a task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously. Returns a Future representing task completion.
+     * The Future's {@code get} method will return the
+     * task's result upon successful completion.
+     *
+     * @param task the task to submit
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return a Future representing pending completion of the task
+     */
+    RExecutorFuture<?> submitAsync(Runnable task, long timeToLive, TimeUnit timeUnit);
+
     /**
      * Submits tasks batch for execution asynchronously. All tasks are stored to executor request queue atomically, 
      * if case of any error none of tasks will be added.
