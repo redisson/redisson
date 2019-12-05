@@ -14,8 +14,6 @@
     <name>Redisson/Spring Data Redis integration</name>
 
     <modules>
-        <module>redisson-spring-data-16</module>
-        <module>redisson-spring-data-17</module>
         <module>redisson-spring-data-18</module>
         <module>redisson-spring-data-20</module>
         <module>redisson-spring-data-21</module>

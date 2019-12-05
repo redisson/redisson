@@ -14,9 +14,6 @@
     <name>Redisson/Hibernate</name>
 
     <modules>
-        <module>redisson-hibernate-4</module>
-        <module>redisson-hibernate-5</module>
-        <module>redisson-hibernate-52</module>
         <module>redisson-hibernate-53</module>
     </modules>
 
