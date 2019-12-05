@@ -986,6 +986,16 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     public Set<K> cachedKeySet() {
         return localCacheView.cachedKeySet();
     }
+    
+     @Override
+    public Collection<V> values(){
+        Collection<V> data = cachedValues();
+        if(data.size() > 0){
+            return data;
+        }
+
+        return super.values();
+    }
 
     @Override
     public Collection<V> cachedValues() {
