@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -47,7 +48,9 @@ public class RedissonBucketsTest extends BaseTest {
             redisson.getBucket("test" + i).set(i);
         }
         
-        Map<String, Integer> buckets = redisson.getBuckets().get(map.keySet().toArray(new String[map.size()]));
+        Set<String> queryKeys = map.keySet();
+        queryKeys.add("test_invalid");
+        Map<String, Integer> buckets = redisson.getBuckets().get(queryKeys.toArray(new String[map.size()]));
         
         assertThat(buckets).isEqualTo(map);
         
@@ -57,10 +60,10 @@ public class RedissonBucketsTest extends BaseTest {
     
     @Test
     public void testGet() {
-        RBucket<String> bucket1 = redisson.getBucket("test1");
-        bucket1.set("someValue1");
-        RBucket<String> bucket3 = redisson.getBucket("test3");
-        bucket3.set("someValue3");
+        redisson.getBucket("test1").set("someValue1");
+        redisson.getBucket("test2").delete();
+        redisson.getBucket("test3").set("someValue3");
+        redisson.getBucket("test4").delete();
 
         Map<String, String> result = redisson.getBuckets().get("test1", "test2", "test3", "test4");
         Map<String, String> expected = new HashMap<String, String>();
