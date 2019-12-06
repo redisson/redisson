@@ -55,7 +55,17 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         Thread.sleep(1100);
         Assert.assertEquals(2, semaphore.availablePermits());
     }
-    
+
+    @Test
+    public void testExpiration() throws InterruptedException {
+        RPermitExpirableSemaphore semaphore = redisson.getPermitExpirableSemaphore("some-key");
+        semaphore.trySetPermits(1);
+        semaphore.expire(3, TimeUnit.SECONDS);
+        semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
+        Thread.sleep(4000);
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
     @Test
     public void testExpire() throws InterruptedException {
         RPermitExpirableSemaphore s = redisson.getPermitExpirableSemaphore("test");

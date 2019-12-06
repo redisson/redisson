@@ -387,6 +387,12 @@ public class RedissonPermitExpirableSemaphore extends RedissonExpirable implemen
                   "if (value ~= false and tonumber(value) >= tonumber(ARGV[1])) then " +
                       "redis.call('decrby', KEYS[1], ARGV[1]); " +
                       "redis.call('zadd', KEYS[2], ARGV[2], ARGV[3]); " +
+
+                      "local ttl = redis.call('pttl', KEYS[1]); " +
+                      "if ttl > 0 then " +
+                          "redis.call('pexpire', KEYS[2], ttl); " +
+                      "end; " +
+
                       "return ARGV[3]; " +
                   "end; " +
                   "local v = redis.call('zrange', KEYS[2], 0, 0, 'WITHSCORES'); " + 
