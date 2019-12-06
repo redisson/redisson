@@ -16,14 +16,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.11.5</version>
+         <version>3.11.6</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.11.5'
+     compile 'org.redisson:redisson-spring-boot-starter:3.11.6'
 ```
 
 ### 2. Add settings into `application.settings` file
@@ -45,7 +45,7 @@ spring.redis.sentinel.nodes=
 
 # Redisson settings
 
-#path to redisson.yaml or redisson.json
+#path to config - redisson.yaml
 spring.redis.redisson.config=classpath:redisson.yaml
 ```
 
