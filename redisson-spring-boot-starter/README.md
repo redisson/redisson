@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
 
-Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x, 2.1.x
+Supports Spring Boot 1.3.x, 1.4.x, 1.5.x, 2.0.x, 2.1.x, 2.2.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
