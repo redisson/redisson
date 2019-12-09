@@ -1,4 +1,4 @@
-# Redis based Hibernate Cache implementation
+# Redis based MyBatis Cache implementation
 
 Implements [MyBatis Cache](https://mybatis.org/mybatis-3/sqlmap-xml.html#cache) provider based on Redis.  
 
