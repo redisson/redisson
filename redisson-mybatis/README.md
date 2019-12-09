@@ -12,7 +12,7 @@ Redisson provides various MyBatis Cache implementations including those with fea
 
 Below is the list of all available implementations with local cache and/or data partitioning support:
 
-|Class name | Local cache <br/> support<br/>(up to 5x faster) | Data partitioning <br/> support |
+|Class name | Local cache <br/> support<br/>(up to 45x faster) | Data partitioning <br/> support |
 | ------------- | ------------- | ------------|
 |RedissonCache<br/>&nbsp; | No | No |
 |RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | **Yes** | No |
