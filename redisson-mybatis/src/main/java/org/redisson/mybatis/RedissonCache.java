@@ -111,7 +111,7 @@ public class RedissonCache implements Cache {
         }
     }
 
-    protected RMapCache<Object, Object> getMapCache(RedissonClient redisson) {
+    protected RMapCache<Object, Object> getMapCache(String id, RedissonClient redisson) {
         return redisson.getMapCache(id);
     }
 
