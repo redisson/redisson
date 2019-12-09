@@ -24,6 +24,7 @@ import org.redisson.config.Config;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
 
 /**
  * MyBatis cache implementation
@@ -88,6 +89,10 @@ public class RedissonCache implements Cache {
 
     public void setMaxSize(int maxSize) {
         this.maxSize = maxSize;
+    }
+
+    public ReadWriteLock getReadWriteLock() {
+        return null;
     }
 
     public void setRedissonConfig(String config) {
