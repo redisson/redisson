@@ -105,7 +105,7 @@ public class RedissonCache implements Cache {
         }
 
         RedissonClient redisson = Redisson.create(cfg);
-        mapCache = getMapCache(redisson);
+        mapCache = getMapCache(id, redisson);
         if (maxSize > 0) {
             mapCache.setMaxSize(maxSize);
         }
