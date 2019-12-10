@@ -6,7 +6,7 @@ Compatible with MyBatis 3.0.0+
 
 Redisson provides various MyBatis Cache implementations including those with features below:
 
-**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **5x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event.
+**local cache** - so called `near cache`, which is useful for use cases when Hibernate Cache used mostly for read operations and/or network roundtrips are undesirable. It caches Map entries on Redisson side and executes read operations up to **45x faster** in comparison with common implementation. All local caches with the same name connected to the same pub/sub channel which is used for messaging between them. In particular to send entity update or entity invalidate event.
 
 **data partitioning** - data partitioning in cluster mode. It allows to scale available memory, read/write operations and entry eviction process for individual Hibernate Cache instance in Redis cluster.
 
@@ -48,6 +48,16 @@ Redisson allows to define follow settings per Cache instance:
 `maxIdleTime` - defines max idle time per cache entry
 
 `maxSize` - defines max size of entries amount stored in Redis
+
+`localCacheEvictionPolicy` - local cache eviction policy. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` eviction policies are available.
+
+`localCacheSize` - local cache size. If size is `0` then local cache is unbounded.
+
+`localCacheTimeToLive` - time to live in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+`localCacheMaxIdleTime` - max idle time in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+`localCacheSyncStrategy` - local cache sync strategy. `INVALIDATE`, `UPDATE` and `NONE` eviction policies are available.
 
 `redissonConfig` - defines path to redisson config in YAML format
 
