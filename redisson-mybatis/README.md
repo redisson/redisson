@@ -1,6 +1,6 @@
 # Redis based MyBatis Cache implementation
 
-Implements [MyBatis Cache](https://mybatis.org/mybatis-3/sqlmap-xml.html#cache) provider based on Redis.  
+Implements [MyBatis Cache](https://mybatis.org/mybatis-3/sqlmap-xml.html#cache) based on Redis.  
 
 Compatible with MyBatis 3.0.0+
 
