@@ -76,6 +76,13 @@ Examples:
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
+
+  <property name="localCacheEvictionPolicy" value="LRU"/>
+  <property name="localCacheSize" value="1000"/>
+  <property name="localCacheTimeToLive" value="2000000"/>
+  <property name="localCacheMaxIdleTime" value="1000000"/>
+  <property name="localCacheSyncStrategy" value="INVALIDATE"/>
+     
   <property name="redissonConfig" value="redisson.yaml"/>
 </cache>
 
@@ -92,6 +99,13 @@ Examples:
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
+     
+  <property name="localCacheEvictionPolicy" value="LRU"/>
+  <property name="localCacheSize" value="1000"/>
+  <property name="localCacheTimeToLive" value="2000000"/>
+  <property name="localCacheMaxIdleTime" value="1000000"/>
+  <property name="localCacheSyncStrategy" value="INVALIDATE"/>
+     
   <property name="redissonConfig" value="redisson.yaml"/>
 </cache>
 ```
