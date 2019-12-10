@@ -14,7 +14,7 @@ Redisson provides various Hibernate Cache factories including those with feature
 
 Below is the list of all available factories with local cache and/or data partitioning support:
 
-|Class name | Local cache <br/> support<br/>(up to 5x faster) | Data partitioning <br/> support |
+|Class name | Local cache | Data partitioning |
 | ------------- | ------------- | ------------|
 |RedissonRegionFactory<br/>&nbsp; | No | No |
 |RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | **Yes** | No |
