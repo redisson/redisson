@@ -49,6 +49,16 @@ Redisson allows to define follow settings per Cache instance:
 
 `maxSize` - defines max size of entries amount stored in Redis
 
+`localCacheEvictionPolicy` - local cache eviction policy. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` eviction policies are available.
+
+`localCacheSize` - local cache size. If size is `0` then local cache is unbounded.
+
+`localCacheTimeToLive` - time to live in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+`localCacheMaxIdleTime` - max idle time in milliseconds for each map entry in local cache. If value equals to `0` then timeout is not applied.
+
+`localCacheSyncStrategy` - local cache sync strategy. `INVALIDATE`, `UPDATE` and `NONE` eviction policies are available.
+
 `redissonConfig` - defines path to redisson config in YAML format
 
 Examples:
