@@ -1,4 +1,9 @@
-## Build Prerequisites ##
+## License
+
+All contributions to Redisson are licensed under the
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) and subject to the [Developer Certificate of Origin (DCO)](https://developercertificate.org/).
+
+## Build Prerequisites
 Have at least a local copy of built redis, for more information see [tutorial](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-redis).
 
 Note that redis shouldn't be running - the build will start instances as needed.
@@ -8,7 +13,7 @@ Note that redis shouldn't be running - the build will start instances as needed.
 Prior to the build, you may need to change branch depending on which version of Redisson you want to build. Currently master branch is for version 2.x whereas 3.0.0 branch is for 3.x branch. Version 2.x requies Java SDK 6 and above and version 3.x requires Java SDK 8 and above to build.
 
 
-## Running the tests ##
+## Running the tests
 
 ``` bash
 export REDIS_BIN=<path to redis binaries>
