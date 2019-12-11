@@ -40,6 +40,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private String statusName;
     private String tasksRetryIntervalName;
     private String terminationTopicName;
+    private String schedulerQueueName;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
             CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
@@ -52,6 +53,10 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                   "local value = redis.call('zscore', KEYS[2], ARGV[1]); " +
                   "if (value ~= false and tonumber(value) < tonumber(ARGV[2])) then "
                     + "redis.call('zrem', KEYS[2], ARGV[1]); "
+
+                    + "redis.call('zrem', KEYS[7], ARGV[1]); "
+                    + "redis.call('zrem', KEYS[7], 'ff' .. ARGV[1]);"
+
                     + "redis.call('hdel', KEYS[1], ARGV[1]); "
                     + "if redis.call('decr', KEYS[3]) == 0 then "
                         + "redis.call('del', KEYS[3]);"
@@ -65,8 +70,13 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                     + "return nil;"
                 + "end;"
                 + "return redis.call('hget', KEYS[1], ARGV[1]); ",
-        Arrays.asList(tasks.getName(), tasksExpirationTimeName, tasksCounterName, statusName, tasksRetryIntervalName, terminationTopicName),
+        Arrays.asList(tasks.getName(), tasksExpirationTimeName, tasksCounterName, statusName,
+                            tasksRetryIntervalName, terminationTopicName, schedulerQueueName),
         requestId, System.currentTimeMillis(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+    }
+
+    public void setSchedulerQueueName(String schedulerQueueName) {
+        this.schedulerQueueName = schedulerQueueName;
     }
 
     public void setTasksExpirationTimeName(String tasksExpirationTimeName) {

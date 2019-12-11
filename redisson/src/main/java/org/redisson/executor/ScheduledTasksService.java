@@ -52,7 +52,12 @@ public class ScheduledTasksService extends TasksService {
     protected RFuture<Boolean> addAsync(String requestQueueName, RemoteServiceRequest request) {
         ScheduledParameters params = (ScheduledParameters) request.getArgs()[0];
         params.setRequestId(request.getId());
-        
+
+        long expireTime = 0;
+        if (params.getTtl() > 0) {
+            expireTime = System.currentTimeMillis() + params.getTtl();
+        }
+
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 // check if executor service not in shutdown state
                 "if redis.call('exists', KEYS[2]) == 0 then "
@@ -64,6 +69,10 @@ public class ScheduledTasksService extends TasksService {
                         + "redis.call('set', KEYS[6], ARGV[4]);"
                         + "local time = tonumber(ARGV[1]) + tonumber(ARGV[4]);"
                         + "redis.call('zadd', KEYS[3], time, 'ff' .. ARGV[2]);"
+                    + "end; "
+
+                    + "if tonumber(ARGV[5]) > 0 then "
+                        + "redis.call('zadd', KEYS[7], ARGV[5], ARGV[2]);"
                     + "end; "
 
                     + "redis.call('zadd', KEYS[3], ARGV[1], ARGV[2]);"
@@ -78,8 +87,9 @@ public class ScheduledTasksService extends TasksService {
                     + "return 1;"
                 + "end;"
                 + "return 0;", 
-                Arrays.<Object>asList(tasksCounterName, statusName, schedulerQueueName, schedulerChannelName, tasksName, tasksRetryIntervalName),
-                params.getStartTime(), request.getId(), encode(request), tasksRetryInterval);
+                Arrays.asList(tasksCounterName, statusName, schedulerQueueName,
+                        schedulerChannelName, tasksName, tasksRetryIntervalName, tasksExpirationTimeName),
+                params.getStartTime(), request.getId(), encode(request), tasksRetryInterval, expireTime);
     }
     
     @Override

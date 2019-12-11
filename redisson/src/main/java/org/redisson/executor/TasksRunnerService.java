@@ -75,6 +75,8 @@ public class TasksRunnerService implements RemoteExecutorService {
     private String schedulerQueueName;
     private String schedulerChannelName;
     private String tasksRetryIntervalName;
+    private String tasksExpirationTimeName;
+
     private BeanFactory beanFactory;
     private ConcurrentMap<String, ResponseEntry> responses;
     
@@ -90,7 +92,11 @@ public class TasksRunnerService implements RemoteExecutorService {
     public void setBeanFactory(BeanFactory beanFactory) {
         this.beanFactory = beanFactory;
     }
-    
+
+    public void setTasksExpirationTimeName(String tasksExpirationTimeName) {
+        this.tasksExpirationTimeName = tasksExpirationTimeName;
+    }
+
     public void setTasksRetryIntervalName(String tasksRetryInterval) {
         this.tasksRetryIntervalName = tasksRetryInterval;
     }
@@ -170,6 +176,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
         scheduledRemoteService.setRequestId(new RequestId(requestId));
+        scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
         RemoteExecutorServiceAsync asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
         return asyncScheduledServiceAtFixed;

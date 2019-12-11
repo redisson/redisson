@@ -140,6 +140,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         workersTopic = redisson.getTopic(workersChannelName);
 
         remoteService.setStatusName(statusName);
+        remoteService.setSchedulerQueueName(schedulerQueueName);
         remoteService.setTasksCounterName(tasksCounterName);
         remoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         remoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
@@ -166,6 +167,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         scheduledRemoteService.setSchedulerChannelName(schedulerChannelName);
         scheduledRemoteService.setTasksName(tasksName);
         scheduledRemoteService.setTasksRetryIntervalName(tasksRetryIntervalName);
+        scheduledRemoteService.setTasksExpirationTimeName(tasksExpirationTimeName);
         scheduledRemoteService.setTasksRetryInterval(options.getTaskRetryInterval());
         asyncScheduledService = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RESULT_OPTIONS);
         asyncScheduledServiceAtFixed = scheduledRemoteService.get(RemoteExecutorServiceAsync.class, RemoteInvocationOptions.defaults().noAck().noResult());
@@ -301,6 +303,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
         service.setTerminationTopicName(terminationTopic.getChannelNames().get(0));
         service.setSchedulerChannelName(schedulerChannelName);
         service.setSchedulerQueueName(schedulerQueueName);
+        service.setTasksExpirationTimeName(tasksExpirationTimeName);
         service.setTasksRetryIntervalName(tasksRetryIntervalName);
         service.setBeanFactory(options.getBeanFactory());
         
@@ -870,14 +873,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit) {
-        check(task);
-        ClassBody classBody = getClassBody(task);
-        byte[] state = encode(task);
-        long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledService.scheduleRunnable(new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime));
-        addListener(result);
-        
-        return createFuture(result, startTime);
+        return scheduleAsync(task, delay, unit, 0, null);
     }
     
     @Override
@@ -890,15 +886,55 @@ public class RedissonExecutorService implements RScheduledExecutorService {
     
     @Override
     public <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit) {
+        return scheduleAsync(task, delay, unit, 0, null);
+    }
+
+    @Override
+    public RScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit, long ttl, TimeUnit ttlUnit) {
+        RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAsync(command, delay, unit, ttl, ttlUnit);
+        RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
+        syncExecute(rp);
+        return future;
+    }
+
+    @Override
+    public RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
         check(task);
         ClassBody classBody = getClassBody(task);
         byte[] state = encode(task);
         long startTime = System.currentTimeMillis() + unit.toMillis(delay);
-        RemotePromise<V> result = (RemotePromise<V>) asyncScheduledService.scheduleCallable(new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime));
+        ScheduledParameters params = new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
+        if (timeToLive > 0) {
+            params.setTtl(ttlUnit.toMillis(timeToLive));
+        }
+        RemotePromise<Void> result = (RemotePromise<Void>) asyncScheduledService.scheduleRunnable(params);
         addListener(result);
         return createFuture(result, startTime);
     }
-    
+
+    @Override
+    public <V> RScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
+        RedissonScheduledFuture<V> future = (RedissonScheduledFuture<V>) scheduleAsync(callable, delay, unit, timeToLive, ttlUnit);
+        RemotePromise<?> rp = (RemotePromise<?>) future.getInnerPromise();
+        syncExecute(rp);
+        return future;
+    }
+
+    @Override
+    public <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit) {
+        check(task);
+        ClassBody classBody = getClassBody(task);
+        byte[] state = encode(task);
+        long startTime = System.currentTimeMillis() + unit.toMillis(delay);
+        ScheduledParameters params = new ScheduledParameters(classBody.getClazzName(), classBody.getClazz(), classBody.getLambda(), state, startTime);
+        if (timeToLive > 0) {
+            params.setTtl(ttlUnit.toMillis(timeToLive));
+        }
+        RemotePromise<V> result = (RemotePromise<V>) asyncScheduledService.scheduleCallable(params);
+        addListener(result);
+        return createFuture(result, startTime);
+    }
+
     @Override
     public RScheduledFuture<?> scheduleAtFixedRate(Runnable task, long initialDelay, long period, TimeUnit unit) {
         RedissonScheduledFuture<?> future = (RedissonScheduledFuture<?>) scheduleAtFixedRateAsync(task, initialDelay, period, unit);

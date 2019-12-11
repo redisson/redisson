@@ -27,8 +27,9 @@ import java.util.concurrent.TimeUnit;
 public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
 
     /**
-     * Creates in async mode and executes a one-shot action that becomes enabled
-     * after the given delay.
+     * Schedules a Runnable task for execution asynchronously
+     * after the given <code>delay</code>. Returns a RScheduledFuture representing that task.
+     * The Future's {@code get} method will return the given result upon successful completion.
      *
      * @param task the task to execute
      * @param delay the time from now to delay execution
@@ -36,10 +37,26 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * @return RScheduledFuture with listeners support
      */
     RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit);
-    
+
     /**
-     * Creates in async mode and executes a ScheduledFuture that becomes enabled after the
-     * given delay.
+     * Schedules a Runnable task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously after the given <code>delay</code>.
+     * Returns a RScheduledFuture representing that task.
+     * The Future's {@code get} method will return the given result upon successful completion.
+     *
+     * @param task the task to execute
+     * @param delay the time from now to delay execution
+     * @param unit the time unit of the delay parameter
+     * @param timeToLive - time to live interval
+     * @param ttlUnit - unit of time to live interval
+     * @return RScheduledFuture with listeners support
+     */
+    RScheduledFuture<?> scheduleAsync(Runnable task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit);
+
+    /**
+     * Schedules a value-returning task for execution asynchronously
+     * after the given <code>delay</code>. Returns a RScheduledFuture representing that task.
+     * The Future's {@code get} method will return the given result upon successful completion.
      *
      * @param task the function to execute
      * @param delay the time from now to delay execution
@@ -48,17 +65,30 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
      * @return RScheduledFuture with listeners support
      */
     <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit);
-    
+
     /**
-     * Creates in async mode and executes a periodic action that becomes enabled first
-     * after the given initial delay, and subsequently with the given
-     * period.
-     * If any execution of the task
-     * encounters an exception, subsequent executions are suppressed.
-     * Otherwise, the task will only terminate via cancellation or
-     * termination of the executor.  If any execution of this task
-     * takes longer than its period, then subsequent executions
-     * may start late, but will not concurrently execute.
+     * Schedules a value-returning task with defined <code>timeToLive</code> parameter
+     * for execution asynchronously after the given <code>delay</code>.
+     * Returns a RScheduledFuture representing that task.
+     * The Future's {@code get} method will return the given result upon successful completion.
+     *
+     * @param task the function to execute
+     * @param delay the time from now to delay execution
+     * @param unit the time unit of the delay parameter
+     * @param timeToLive - time to live interval
+     * @param ttlUnit - unit of time to live interval
+     * @param <V> the type of the callable's result
+     * @return RScheduledFuture with listeners support
+     */
+    <V> RScheduledFuture<V> scheduleAsync(Callable<V> task, long delay, TimeUnit unit, long timeToLive, TimeUnit ttlUnit);
+
+    /**
+     * Schedules a Runnable task for execution asynchronously
+     * after the given <code>initialDelay</code>, and subsequently with the given
+     * <code>period</code>.
+     * Subsequent executions are stopped if any execution of the task throws an exception.
+     * Otherwise, task could be terminated via cancellation or
+     * termination of the executor.
      *
      * @param task the task to execute
      * @param initialDelay the time to delay first execution
@@ -69,12 +99,11 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
     RScheduledFuture<?> scheduleAtFixedRateAsync(Runnable task, long initialDelay, long period, TimeUnit unit);
 
     /**
-     * Creates in async mode and executes a periodic action that becomes enabled first
-     * after the given initial delay, and subsequently with the
-     * given delay between the termination of one execution and the
-     * commencement of the next.  If any execution of the task
-     * encounters an exception, subsequent executions are suppressed.
-     * Otherwise, the task will only terminate via cancellation or
+     * Schedules a Runnable task for execution asynchronously
+     * after the given <code>initialDelay</code>, and subsequently with the given
+     * <code>delay</code> started from the task finishing moment.
+     * Subsequent executions are stopped if any execution of the task throws an exception.
+     * Otherwise, task could be terminated via cancellation or
      * termination of the executor.
      *
      * @param task the task to execute
@@ -87,13 +116,11 @@ public interface RScheduledExecutorServiceAsync extends RExecutorServiceAsync {
     RScheduledFuture<?> scheduleWithFixedDelayAsync(Runnable task, long initialDelay, long delay, TimeUnit unit);
 
     /**
-     * Creates in async mode and executes a periodic action with cron schedule object.
-     * If any execution of the task
-     * encounters an exception, subsequent executions are suppressed.
-     * Otherwise, the task will only terminate via cancellation or
-     * termination of the executor.  If any execution of this task
-     * takes longer than its period, then subsequent executions
-     * may start late, but will not concurrently execute.
+     * Synchronously schedules a Runnable task for execution asynchronously
+     * cron schedule object.
+     * Subsequent executions are stopped if any execution of the task throws an exception.
+     * Otherwise, task could be terminated via cancellation or
+     * termination of the executor.
      *
      * @param task the task to execute
      * @param cronSchedule cron schedule object

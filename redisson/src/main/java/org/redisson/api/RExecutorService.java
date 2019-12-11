@@ -73,7 +73,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
     
     /**
      * Synchronously submits a Runnable task for execution asynchronously
-     * and returns a Future representing that task. The Future's {@code get} method will
+     * and returns a RExecutorFuture representing that task. The Future's {@code get} method will
      * return the given result upon successful completion.
      *
      * @param task the task to submit
@@ -86,7 +86,7 @@ public interface RExecutorService extends ExecutorService, RExecutorServiceAsync
 
     /**
      * Synchronously submits a Runnable task for execution asynchronously.
-     * Returns a Future representing task completion. The Future's {@code get} method will
+     * Returns a RExecutorFuture representing task completion. The Future's {@code get} method will
      * return {@code null} upon <em>successful</em> completion.
      *
      * @param task the task to submit
