@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,7 +49,7 @@ public class RedissonBucketsTest extends BaseTest {
             redisson.getBucket("test" + i).set(i);
         }
         
-        Set<String> queryKeys = map.keySet();
+        Set<String> queryKeys = new HashSet<>(map.keySet());
         queryKeys.add("test_invalid");
         Map<String, Integer> buckets = redisson.getBuckets().get(queryKeys.toArray(new String[map.size()]));
         
