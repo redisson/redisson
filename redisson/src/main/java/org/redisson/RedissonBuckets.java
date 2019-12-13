@@ -87,7 +87,11 @@ public class RedissonBuckets implements RBuckets {
 
             @Override
             public void onSlotResult(Map<Object, Object> result) {
-                results.putAll((Map<String, V>) (Object) result);
+                for (Map.Entry<Object, Object> entry : result.entrySet()) {
+                    if (entry.getKey() != null && entry.getValue() != null) {
+                        results.put((String) entry.getKey(), (V) entry.getValue());
+                    }
+                }
             }
 
             @Override
