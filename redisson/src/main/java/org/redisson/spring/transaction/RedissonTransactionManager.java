@@ -115,6 +115,18 @@ public class RedissonTransactionManager extends AbstractPlatformTransactionManag
     }
 
     @Override
+    protected void doResume(Object transaction, Object suspendedResources) throws TransactionException {
+        TransactionSynchronizationManager.bindResource(redisson, suspendedResources);
+    }
+
+    @Override
+    protected Object doSuspend(Object transaction) throws TransactionException {
+        RedissonTransactionObject to = (RedissonTransactionObject) transaction;
+        to.setTransactionHolder(null);
+        return TransactionSynchronizationManager.unbindResource(redisson);
+    }
+
+    @Override
     protected void doCleanupAfterCompletion(Object transaction) {
         TransactionSynchronizationManager.unbindResourceIfPossible(redisson);
         RedissonTransactionObject to = (RedissonTransactionObject) transaction;
