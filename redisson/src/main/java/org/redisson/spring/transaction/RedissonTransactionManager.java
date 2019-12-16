@@ -15,8 +15,6 @@
  */
 package org.redisson.spring.transaction;
 
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.api.RTransaction;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.TransactionOptions;
@@ -28,6 +26,8 @@ import org.springframework.transaction.support.AbstractPlatformTransactionManage
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.ResourceTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -93,7 +93,7 @@ public class RedissonTransactionManager extends AbstractPlatformTransactionManag
         RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
         try {
             to.getTransactionHolder().getTransaction().commit();
-        } catch (TransactionException e) {
+        } catch (org.redisson.transaction.TransactionException e) {
             throw new TransactionSystemException("Unable to commit transaction", e);
         }
     }
@@ -103,7 +103,7 @@ public class RedissonTransactionManager extends AbstractPlatformTransactionManag
         RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
         try {
             to.getTransactionHolder().getTransaction().rollback();
-        } catch (TransactionException e) {
+        } catch (org.redisson.transaction.TransactionException e) {
             throw new TransactionSystemException("Unable to commit transaction", e);
         }
     }
@@ -113,7 +113,7 @@ public class RedissonTransactionManager extends AbstractPlatformTransactionManag
         RedissonTransactionObject to = (RedissonTransactionObject) status.getTransaction();
         to.setRollbackOnly(true);
     }
-    
+
     @Override
     protected void doCleanupAfterCompletion(Object transaction) {
         TransactionSynchronizationManager.unbindResourceIfPossible(redisson);
