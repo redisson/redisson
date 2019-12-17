@@ -33,37 +33,39 @@ public class AddCacheOperation extends SetOperation {
     private Object value;
     private long ttl;
     private TimeUnit timeUnit;
+    private long threadId;
     
-    public AddCacheOperation(RObject set, Object value, String transactionId) {
-        this(set, value, 0, null, transactionId);
+    public AddCacheOperation(RObject set, Object value, String transactionId, long threadId) {
+        this(set, value, 0, null, transactionId, threadId);
     }
     
-    public AddCacheOperation(RObject set, Object value, long ttl, TimeUnit timeUnit, String transactionId) {
-        this(set.getName(), set.getCodec(), value, ttl, timeUnit, transactionId);
+    public AddCacheOperation(RObject set, Object value, long ttl, TimeUnit timeUnit, String transactionId, long threadId) {
+        this(set.getName(), set.getCodec(), value, ttl, timeUnit, transactionId, threadId);
     }
 
-    public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit, String transactionId) {
+    public AddCacheOperation(String name, Codec codec, Object value, long ttl, TimeUnit timeUnit, String transactionId, long threadId) {
         super(name, codec, transactionId);
         this.value = value;
         this.timeUnit = timeUnit;
         this.ttl = ttl;
+        this.threadId = threadId;
     }
 
     @Override
     public void commit(CommandAsyncExecutor commandExecutor) {
-        RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
+        RSetCache<Object> set = new RedissonSetCache<>(codec, null, commandExecutor, name, null);
         if (timeUnit != null) {
             set.addAsync(value, ttl, timeUnit);
         } else {
             set.addAsync(value);
         }
-        getLock(set, commandExecutor, value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     @Override
     public void rollback(CommandAsyncExecutor commandExecutor) {
         RSetCache<Object> set = new RedissonSetCache<Object>(codec, null, commandExecutor, name, null);
-        getLock(set, commandExecutor, value).unlockAsync();
+        getLock(set, commandExecutor, value).unlockAsync(threadId);
     }
 
     public Object getValue() {

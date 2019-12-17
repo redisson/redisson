@@ -15,11 +15,7 @@
  */
 package org.redisson.transaction;
 
-import java.util.Date;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.RedissonBucket;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -31,13 +27,12 @@ import org.redisson.transaction.operation.DeleteOperation;
 import org.redisson.transaction.operation.TouchOperation;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.UnlinkOperation;
-import org.redisson.transaction.operation.bucket.BucketCompareAndSetOperation;
-import org.redisson.transaction.operation.bucket.BucketGetAndDeleteOperation;
-import org.redisson.transaction.operation.bucket.BucketGetAndSetOperation;
-import org.redisson.transaction.operation.bucket.BucketSetOperation;
-import org.redisson.transaction.operation.bucket.BucketTrySetOperation;
+import org.redisson.transaction.operation.bucket.*;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 
@@ -196,11 +191,12 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
     public RFuture<Boolean> deleteAsync() {
         checkState();
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long threadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
                 if (state != null) {
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId));
+                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
                     if (state == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -216,7 +212,7 @@ public class RedissonTransactionalBucket<V> extends RedissonBucket<V> {
                         return;
                     }
                     
-                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId));
+                    operations.add(new DeleteOperation(getName(), getLockName(), transactionId, threadId));
                     state = NULL;
                     result.trySuccess(res);
                 });

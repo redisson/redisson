@@ -27,12 +27,12 @@ public class MapReplaceOperation extends MapOperation {
     public MapReplaceOperation() {
     }
     
-    public MapReplaceOperation(RMap<?, ?> map, Object key, Object value, Object oldValue, String transactionId) {
-        super(map, key, value, oldValue, transactionId);
+    public MapReplaceOperation(RMap<?, ?> map, Object key, Object value, Object oldValue, String transactionId, long threadId) {
+        super(map, key, value, oldValue, transactionId, threadId);
     }
     
-    public MapReplaceOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapReplaceOperation(RMap<?, ?> map, Object key, Object value, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
     }
 
     @Override

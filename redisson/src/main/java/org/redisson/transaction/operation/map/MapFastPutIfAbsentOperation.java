@@ -27,8 +27,8 @@ public class MapFastPutIfAbsentOperation extends MapOperation {
     public MapFastPutIfAbsentOperation() {
     }
     
-    public MapFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
     }
 
     @Override

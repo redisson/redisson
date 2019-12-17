@@ -29,14 +29,16 @@ import org.redisson.command.CommandAsyncExecutor;
 public class AddOperation extends SetOperation {
 
     private Object value;
+    private long threadId;
     
-    public AddOperation(RObject set, Object value, String transactionId) {
-        this(set.getName(), set.getCodec(), value, transactionId);
+    public AddOperation(RObject set, Object value, String transactionId, long threadId) {
+        this(set.getName(), set.getCodec(), value, transactionId, threadId);
     }
     
-    public AddOperation(String name, Codec codec, Object value, String transactionId) {
+    public AddOperation(String name, Codec codec, Object value, String transactionId, long threadId) {
         super(name, codec, transactionId);
         this.value = value;
+        this.threadId = threadId;
     }
 
     @Override

@@ -27,8 +27,8 @@ public class MapFastPutOperation extends MapOperation {
     public MapFastPutOperation() {
     }
     
-    public MapFastPutOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapFastPutOperation(RMap<?, ?> map, Object key, Object value, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
     }
 
     @Override

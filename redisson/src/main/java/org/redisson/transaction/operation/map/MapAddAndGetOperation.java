@@ -27,8 +27,8 @@ public class MapAddAndGetOperation extends MapOperation {
     public MapAddAndGetOperation() {
     }
     
-    public MapAddAndGetOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapAddAndGetOperation(RMap<?, ?> map, Object key, Object value, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
     }
 
     @Override

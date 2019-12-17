@@ -33,8 +33,8 @@ public class MapCacheFastPutIfAbsentOperation extends MapOperation {
     private TimeUnit maxIdleUnit;
 
     public MapCacheFastPutIfAbsentOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit,
-            long maxIdleTime, TimeUnit maxIdleUnit, String transactionId) {
-        super(map, key, value, transactionId);
+            long maxIdleTime, TimeUnit maxIdleUnit, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
         this.ttl = ttl;
         this.ttlUnit = ttlUnit;
         this.maxIdleTime = maxIdleTime;

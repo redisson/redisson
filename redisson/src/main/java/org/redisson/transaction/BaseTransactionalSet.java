@@ -15,25 +15,11 @@
  */
 package org.redisson.transaction;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.RedissonMultiLock;
 import org.redisson.RedissonObject;
 import org.redisson.RedissonSet;
-import org.redisson.api.RCollectionAsync;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RObject;
-import org.redisson.api.RSet;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
@@ -47,7 +33,9 @@ import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.UnlinkOperation;
 import org.redisson.transaction.operation.set.MoveOperation;
 
-import io.netty.buffer.ByteBuf;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -226,7 +214,8 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     }
     
     public RFuture<Boolean> addAsync(V value) {
-        TransactionalOperation operation = createAddOperation(value);
+        long threadId = Thread.currentThread().getId();
+        TransactionalOperation operation = createAddOperation(value, threadId);
         return addAsync(value, operation);
     }
     
@@ -266,7 +255,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         return result;
     }
 
-    protected abstract TransactionalOperation createAddOperation(V value);
+    protected abstract TransactionalOperation createAddOperation(V value, long threadId);
     
     public RFuture<V> removeRandomAsync() {
         throw new UnsupportedOperationException();
@@ -328,13 +317,14 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     
     public RFuture<Boolean> removeAsync(Object value) {
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long threadId = Thread.currentThread().getId();
         executeLocked(result, (V) value, new Runnable() {
             @Override
             public void run() {
                 HashValue keyHash = toHash(value);
                 Object currentValue = state.get(keyHash);
                 if (currentValue != null) {
-                    operations.add(createRemoveOperation(value));
+                    operations.add(createRemoveOperation(value, threadId));
                     if (currentValue == NULL) {
                         result.trySuccess(false);
                     } else {
@@ -350,7 +340,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                         return;
                     }
                     
-                    operations.add(createRemoveOperation(value));
+                    operations.add(createRemoveOperation(value, threadId));
                     if (res) {
                         state.put(keyHash, NULL);
                     }
@@ -364,7 +354,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
         
     }
 
-    protected abstract TransactionalOperation createRemoveOperation(Object value);
+    protected abstract TransactionalOperation createRemoveOperation(Object value, long threadId);
     
     public RFuture<Boolean> containsAllAsync(Collection<?> c) {
         List<Object> coll = new ArrayList<Object>(c);
@@ -383,6 +373,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
 
     public RFuture<Boolean> addAllAsync(Collection<? extends V> c) {
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long threadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
@@ -393,7 +384,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                     }
 
                     for (V value : c) {
-                        operations.add(createAddOperation(value));
+                        operations.add(createAddOperation(value, threadId));
                         HashValue keyHash = toHash(value);
                         state.put(keyHash, value);
                     }
@@ -415,6 +406,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
     
     public RFuture<Boolean> removeAllAsync(Collection<?> c) {
         RPromise<Boolean> result = new RedissonPromise<Boolean>();
+        long threadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
@@ -425,7 +417,7 @@ public abstract class BaseTransactionalSet<V> extends BaseTransactionalObject {
                     }
 
                     for (Object value : c) {
-                        operations.add(createRemoveOperation(value));
+                        operations.add(createRemoveOperation(value, threadId));
                         HashValue keyHash = toHash(value);
                         state.put(keyHash, NULL);
                     }

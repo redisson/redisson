@@ -27,12 +27,12 @@ public class MapRemoveOperation extends MapOperation {
     public MapRemoveOperation() {
     }
     
-    public MapRemoveOperation(RMap<?, ?> map, Object key, String transactionId) {
-        super(map, key, null, transactionId);
+    public MapRemoveOperation(RMap<?, ?> map, Object key, String transactionId, long threadId) {
+        super(map, key, null, transactionId, threadId);
     }
     
-    public MapRemoveOperation(RMap<?, ?> map, Object key, Object value, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapRemoveOperation(RMap<?, ?> map, Object key, Object value, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
     }
 
     @Override

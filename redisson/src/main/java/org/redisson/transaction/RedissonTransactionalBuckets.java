@@ -141,6 +141,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
     public RFuture<Long> deleteAsync(String... keys) {
         checkState();
         RPromise<Long> result = new RedissonPromise<>();
+        long threadId = Thread.currentThread().getId();
         executeLocked(result, new Runnable() {
             @Override
             public void run() {
@@ -149,7 +150,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
                 for (String key : keys) {
                     Object st = state.get(key);
                     if (st != null) {
-                        operations.add(new DeleteOperation(key, getLockName(key), transactionId));
+                        operations.add(new DeleteOperation(key, getLockName(key), transactionId, threadId));
                         if (st != NULL) {
                             state.put(key, NULL);
                             counter.incrementAndGet();
@@ -168,7 +169,7 @@ public class RedissonTransactionalBuckets extends RedissonBuckets {
                         }
                         
                         if (res > 0) {
-                            operations.add(new DeleteOperation(key, getLockName(key), transactionId));
+                            operations.add(new DeleteOperation(key, getLockName(key), transactionId, threadId));
                             state.put(key, NULL);
                             counter.incrementAndGet();
                         }

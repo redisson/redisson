@@ -35,8 +35,8 @@ public class MapCacheFastPutOperation extends MapOperation {
     public MapCacheFastPutOperation() {
     }
     
-    public MapCacheFastPutOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String transactionId) {
-        super(map, key, value, transactionId);
+    public MapCacheFastPutOperation(RMap<?, ?> map, Object key, Object value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit, String transactionId, long threadId) {
+        super(map, key, value, transactionId, threadId);
         this.ttl = ttl;
         this.ttlUnit = ttlUnit;
         this.maxIdleTime = maxIdleTime;
