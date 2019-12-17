@@ -104,7 +104,7 @@ public class RedissonTransactionManager extends AbstractPlatformTransactionManag
         try {
             to.getTransactionHolder().getTransaction().rollback();
         } catch (org.redisson.transaction.TransactionException e) {
-            throw new TransactionSystemException("Unable to commit transaction", e);
+            throw new TransactionSystemException("Unable to rollback transaction", e);
         }
     }
 
