@@ -58,12 +58,6 @@ public class RedissonTransactionManagerTest {
         transactionalBean.testCommitAfterRollback();
         assertThat(map2.get("1")).isEqualTo("2");
         
-        try {
-            transactionalBean.testNestedNewTransaction();
-            Assert.fail();
-        } catch (TransactionSuspensionNotSupportedException e) {
-            // skip
-        }
         RMap<String, String> mapTr1 = redisson.getMap("tr1");
         assertThat(mapTr1.get("1")).isNull();
         RMap<String, String> mapTr2 = redisson.getMap("tr2");
