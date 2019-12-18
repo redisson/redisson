@@ -15,6 +15,7 @@
  */
 package org.redisson.connection;
 
+import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -168,7 +169,7 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
                                     });
                                 }
                             } else if (!config.checkSkipSlavesInit()) {
-                                slaveUp(addr);
+                                slaveUp(addr, connection.getRedisClient().getAddr());
                             }
                             
                             if (count.decrementAndGet() == 0) {
@@ -182,9 +183,9 @@ public class ReplicatedConnectionManager extends MasterSlaveConnectionManager {
         }, cfg.getScanInterval(), TimeUnit.MILLISECONDS);
     }
 
-    private void slaveUp(RedisURI uri) {
+    private void slaveUp(RedisURI uri, InetSocketAddress address) {
         MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
-        if (entry.slaveUp(uri, FreezeReason.MANAGER)) {
+        if (entry.slaveUp(address, FreezeReason.MANAGER)) {
             log.info("slave: {} has up", uri);
         }
     }
