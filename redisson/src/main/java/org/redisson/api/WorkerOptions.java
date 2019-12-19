@@ -28,7 +28,7 @@ import org.springframework.beans.factory.BeanFactory;
  */
 public final class WorkerOptions {
 
-    private int workers;
+    private int workers = 1;
     private ExecutorService executorService;
     private BeanFactory beanFactory;
     
@@ -45,6 +45,7 @@ public final class WorkerOptions {
 
     /**
      * Defines workers amount used to execute tasks.
+     * Default is <code>1</code>.
      * 
      * @param workers - workers amount
      * @return self instance
