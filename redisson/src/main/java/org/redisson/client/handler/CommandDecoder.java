@@ -31,40 +31,27 @@
  */
 package org.redisson.client.handler;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-
-import org.redisson.client.RedisAskException;
-import org.redisson.client.RedisAuthRequiredException;
-import org.redisson.client.RedisException;
-import org.redisson.client.RedisLoadingException;
-import org.redisson.client.RedisMovedException;
-import org.redisson.client.RedisOutOfMemoryException;
-import org.redisson.client.RedisTimeoutException;
-import org.redisson.client.RedisTryAgainException;
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ReplayingDecoder;
+import io.netty.util.CharsetUtil;
+import org.redisson.client.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.QueueCommand;
-import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.*;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ReplayingDecoder;
-import io.netty.util.CharsetUtil;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Redis protocol command decoder
@@ -238,7 +225,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     }
 
     protected void sendNext(Channel channel) {
-        channel.pipeline().get(CommandsQueue.class).sendNextCommand(channel);
+        CommandsQueue handler = channel.pipeline().get(CommandsQueue.class);
+        if (handler != null) {
+            handler.sendNextCommand(channel);
+        }
         state(null);
     }
 
