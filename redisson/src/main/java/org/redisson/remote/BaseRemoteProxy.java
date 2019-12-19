@@ -15,16 +15,7 @@
  */
 package org.redisson.remote;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-
+import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.RedissonBlockingQueue;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
@@ -39,7 +30,10 @@ import org.redisson.remote.ResponseEntry.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.util.concurrent.ScheduledFuture;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 
 /**
  * 
