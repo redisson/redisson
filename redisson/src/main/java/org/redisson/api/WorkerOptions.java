@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.config.Config;
 import org.springframework.beans.factory.BeanFactory;
@@ -31,6 +32,7 @@ public final class WorkerOptions {
     private int workers = 1;
     private ExecutorService executorService;
     private BeanFactory beanFactory;
+    private long taskTimeout;
     
     private WorkerOptions() {
     }
@@ -85,6 +87,22 @@ public final class WorkerOptions {
     public WorkerOptions executorService(ExecutorService executorService) {
         this.executorService = executorService;
         return this;
+    }
+
+    /**
+     * Defines task timeout since moment of task execution start
+     *
+     * @param timeout
+     * @param unit
+     * @return
+     */
+    public WorkerOptions taskTimeout(long timeout, TimeUnit unit) {
+        this.taskTimeout = unit.toMillis(timeout);
+        return this;
+    }
+
+    public long getTaskTimeout() {
+        return taskTimeout;
     }
 
 }

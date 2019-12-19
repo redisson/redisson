@@ -17,16 +17,20 @@ package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
+import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncService;
-import org.redisson.remote.RemoteServiceRequest;
-import org.redisson.remote.ResponseEntry;
+import org.redisson.misc.RPromise;
+import org.redisson.remote.*;
 
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * 
@@ -41,6 +45,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private String tasksRetryIntervalName;
     private String terminationTopicName;
     private String schedulerQueueName;
+    private long taskTimeout;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
             CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
@@ -73,6 +78,20 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
         Arrays.asList(tasks.getName(), tasksExpirationTimeName, tasksCounterName, statusName,
                             tasksRetryIntervalName, terminationTopicName, schedulerQueueName),
         requestId, System.currentTimeMillis(), RedissonExecutorService.SHUTDOWN_STATE, RedissonExecutorService.TERMINATED_STATE);
+    }
+
+    @Override
+    protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request, RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {
+        if (taskTimeout > 0) {
+            commandExecutor.getConnectionManager().getGroup().schedule(() -> {
+                ((RPromise)cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
+            }, taskTimeout, TimeUnit.MILLISECONDS);
+        }
+        super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responseHolder);
+    }
+
+    public void setTaskTimeout(long taskTimeout) {
+        this.taskTimeout = taskTimeout;
     }
 
     public void setSchedulerQueueName(String schedulerQueueName) {

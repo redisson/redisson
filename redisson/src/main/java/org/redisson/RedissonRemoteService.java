@@ -352,7 +352,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         });
     }
 
-    private <T> void invokeMethod(Class<T> remoteInterface,
+    protected <T> void invokeMethod(Class<T> remoteInterface,
             RBlockingQueue<String> requestQueue, RemoteServiceRequest request,
             RemoteServiceMethod method, String responseName, ExecutorService executor,
             RFuture<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {

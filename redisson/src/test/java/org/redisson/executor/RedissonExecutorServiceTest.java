@@ -313,6 +313,18 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testTaskTimeout() throws InterruptedException {
+        RExecutorService executor = redisson.getExecutorService("test1");
+        executor.registerWorkers(WorkerOptions.defaults().taskTimeout(1, TimeUnit.SECONDS));
+
+        RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));
+
+        Thread.sleep(1050);
+
+        assertThat(future.isCancelled()).isTrue();
+    }
+
+    @Test
     public void testCancelAndInterrupt() throws InterruptedException, ExecutionException {
         RExecutorService executor = redisson.getExecutorService("test");
         RExecutorFuture<?> future = executor.submit(new ScheduledLongRunnableTask("executed1"));
