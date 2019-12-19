@@ -84,7 +84,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request, RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {
         if (taskTimeout > 0) {
             commandExecutor.getConnectionManager().getGroup().schedule(() -> {
-                ((RPromise)cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
+                ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
         super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responseHolder);
