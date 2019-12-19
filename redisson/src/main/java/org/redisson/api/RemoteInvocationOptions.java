@@ -56,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @see RRemoteService#get(Class, RemoteInvocationOptions)
  */
-public class RemoteInvocationOptions implements Serializable {
+public final class RemoteInvocationOptions implements Serializable {
 
     private static final long serialVersionUID = -7715968073286484802L;
     
