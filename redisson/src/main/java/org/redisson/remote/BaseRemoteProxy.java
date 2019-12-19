@@ -142,7 +142,7 @@ public abstract class BaseRemoteProxy {
                         for (Iterator<Result> iterator = list.iterator(); iterator.hasNext();) {
                             Result result = iterator.next();
                             if (result.getPromise() == responseFuture) {
-                                result.getScheduledFuture().cancel(true);
+                                result.getResponseTimeoutFuture().cancel(true);
                                 iterator.remove();
                             }
                         }
@@ -157,7 +157,7 @@ public abstract class BaseRemoteProxy {
                 }
             });
             
-            ScheduledFuture<?> future = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
+            ScheduledFuture<?> responseTimeoutFuture = commandExecutor.getConnectionManager().getGroup().schedule(new Runnable() {
                 @Override
                 public void run() {
                     synchronized (responses) {
@@ -188,7 +188,7 @@ public abstract class BaseRemoteProxy {
                 entryResponses.put(requestId, list);
             }
             
-            Result res = new Result(responseFuture, future);
+            Result res = new Result(responseFuture, responseTimeoutFuture);
             if (insertFirst) {
                 list.add(0, res);
             } else {
@@ -243,7 +243,7 @@ public abstract class BaseRemoteProxy {
                 }
 
                 promise = res.getPromise();
-                res.getScheduledFuture().cancel(true);
+                res.getResponseTimeoutFuture().cancel(true);
                 
                 if (entry.getResponses().isEmpty()) {
                     responses.remove(responseQueueName, entry);
