@@ -316,7 +316,7 @@ public class RedisClientConfig {
     }
 
     public enum TlsVersion {
-        TLSv0("TLSv1.0"),
+        TLSv0("TLSv1"),
         TLSv1("TLSv1.1"),
         TLSv2("TLSv1.2");
 
