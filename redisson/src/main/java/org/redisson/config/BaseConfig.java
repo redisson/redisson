@@ -19,6 +19,7 @@ import java.net.URL;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.redisson.client.RedisClientConfig.TlsVersion;
 
 /**
  * 
@@ -72,7 +73,7 @@ class BaseConfig<T extends BaseConfig<T>> {
     /**
      * TLS version for the client to use in the TLS handshake to instances.
      */
-    private String tlsVersion;
+    private TlsVersion tlsVersion;
 
     /**
      * Subscriptions per Redis connection limit
@@ -167,12 +168,12 @@ class BaseConfig<T extends BaseConfig<T>> {
      * @param tlsVersion options : TLSv1, TLSv1.1, TLSv1.2
      * @return config
      */
-    public T setTlsVersion(String tlsVersion) {
+    public T setTlsVersion(TlsVersion tlsVersion) {
         this.tlsVersion = tlsVersion;
         return (T) this;
     }
 
-    public String getTlsVersion() {
+    public TlsVersion getTlsVersion() {
         return tlsVersion;
     }
 

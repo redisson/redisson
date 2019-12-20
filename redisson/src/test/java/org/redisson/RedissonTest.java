@@ -45,6 +45,7 @@ import org.redisson.api.RMapCache;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisClientConfig;
+import org.redisson.client.RedisClientConfig.TlsVersion;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisConnectionException;
 import org.redisson.client.RedisOutOfMemoryException;
@@ -293,7 +294,7 @@ public class RedissonTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testTlsConfig() {
-        String tlsVersion = "TLSv1.2";
+        TlsVersion tlsVersion = RedisClientConfig.TlsVersion.TLSv2;
         Config radissonConfig = new Config();
         radissonConfig.useSingleServer()
                 .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort())

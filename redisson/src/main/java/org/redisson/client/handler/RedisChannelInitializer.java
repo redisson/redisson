@@ -156,8 +156,8 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         
         SSLParameters sslParams = new SSLParameters();
 
-        if (config.getTlsVersion() != null && !config.getTlsVersion().isEmpty()) {
-            sslParams.setProtocols(new String[]{config.getTlsVersion()});
+        if (config.getTlsVersion() != null && !config.getTlsVersion().getTlsVersion().isEmpty()) {
+            sslParams.setProtocols(new String[]{config.getTlsVersion().getTlsVersion()});
         }
 
         if (config.isSslEnableEndpointIdentification()) {

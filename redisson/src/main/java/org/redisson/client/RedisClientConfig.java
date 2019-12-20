@@ -47,7 +47,7 @@ public class RedisClientConfig {
     private int commandTimeout = 10000;
     
     private String password;
-    private String tlsVersion;
+    private TlsVersion tlsVersion;
     private int database;
     private String clientName;
     private boolean readOnly;
@@ -234,11 +234,11 @@ public class RedisClientConfig {
         return this;
     }
 
-    public String getTlsVersion() {
+    public TlsVersion getTlsVersion() {
         return tlsVersion;
     }
 
-    public RedisClientConfig setTlsVersion(String tlsVersion) {
+    public RedisClientConfig setTlsVersion(TlsVersion tlsVersion) {
         this.tlsVersion = tlsVersion;
         return this;
     }
@@ -314,7 +314,21 @@ public class RedisClientConfig {
         this.resolverGroup = resolverGroup;
         return this;
     }
-    
-    
+
+    public enum TlsVersion {
+        TLSv0("TLSv1.0"),
+        TLSv1("TLSv1.1"),
+        TLSv2("TLSv1.2");
+
+        private String tlsVersion;
+
+        public String getTlsVersion() {
+            return this.tlsVersion;
+        }
+
+        TlsVersion(String tlsVersion) {
+            this.tlsVersion = tlsVersion;
+        }
+    }
     
 }
