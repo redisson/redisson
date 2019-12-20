@@ -541,84 +541,42 @@ public class Config {
         return addressResolverGroupFactory;
     }
 
-    /**
-     * Read config object stored in JSON format from <code>String</code>
-     *
-     * @param content of config
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(String content) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(content, Config.class);
     }
 
-    /**
-     * Read config object stored in JSON format from <code>InputStream</code>
-     *
-     * @param inputStream object
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(InputStream inputStream) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(inputStream, Config.class);
     }
 
-    /**
-     * Read config object stored in JSON format from <code>File</code>
-     *
-     * @param file object
-     * @param classLoader class loader 
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(File file, ClassLoader classLoader) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(file, Config.class, classLoader);
     }
 
-    /**
-     * Read config object stored in JSON format from <code>File</code>
-     *
-     * @param file object
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(File file) throws IOException {
         return fromJSON(file, null);
     }
 
-    /**
-     * Read config object stored in JSON format from <code>URL</code>
-     *
-     * @param url object
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(URL url) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(url, Config.class);
     }
 
-    /**
-     * Read config object stored in JSON format from <code>Reader</code>
-     *
-     * @param reader object
-     * @return config
-     * @throws IOException error
-     */
+    @Deprecated
     public static Config fromJSON(Reader reader) throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.fromJSON(reader, Config.class);
     }
 
-    /**
-     * Convert current configuration to JSON format
-     *
-     * @return config in json format
-     * @throws IOException error
-     */
+    @Deprecated
     public String toJSON() throws IOException {
         ConfigSupport support = new ConfigSupport();
         return support.toJSON(this);
