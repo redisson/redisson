@@ -88,13 +88,14 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
     boolean tryAcquire(int permits, long waitTime, TimeUnit unit) throws InterruptedException;
 
     /**
-     * Releases a permit.
+     * Releases a permit. Increases the number of available permits.
      *
      */
     void release();
 
     /**
      * Releases defined amount of <code>permits</code>.
+     * Increases the number of available permits by <code>permits</code> amount.
      *
      * @param permits amount of permits
      */
@@ -115,7 +116,7 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
     int drainPermits();
 
     /**
-     * Sets number of permits.
+     * Tries to set number of permits.
      *
      * @param permits - number of permits
      * @return <code>true</code> if permits has been set successfully,
