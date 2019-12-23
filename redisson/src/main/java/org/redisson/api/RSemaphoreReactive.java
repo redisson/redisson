@@ -20,51 +20,36 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.publisher.Mono;
 
 /**
- * Reactive interface for Semaphore object
- * 
+ * Reactive interface of Redis based {@link java.util.concurrent.Semaphore}.
+ * <p>
+ * Works in non-fair mode. Therefore order of acquiring is unpredictable.
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RSemaphoreReactive extends RExpirableReactive {
 
     /**
-     * Acquires a permit only if one is available at the
-     * time of invocation.
+     * Acquires a permit.
+     * Waits if necessary until a permit became available.
      *
-     * <p>Acquires a permit, if one is available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by one.
-     *
-     * <p>If no permit is available then this method will return
-     * immediately with the value {@code false}.
-     *
-     * @return {@code true} if a permit was acquired and {@code false}
+     * @return <code>true</code> if a permit was acquired and <code>false</code>
      *         otherwise
      */
     Mono<Boolean> tryAcquire();
     
     /**
-     * Acquires the given number of permits only if all are available at the
-     * time of invocation.
-     *
-     * <p>Acquires a permits, if all are available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by given number of permits.
-     *
-     * <p>If no permits are available then this method will return
-     * immediately with the value {@code false}.
+     * Tries to acquire defined amount of currently available <code>permits</code>.
      *
      * @param permits the number of permits to acquire
-     * @return {@code true} if a permit was acquired and {@code false}
+     * @return <code>true</code> if permits were acquired and <code>false</code>
      *         otherwise
      */
     Mono<Boolean> tryAcquire(int permits);
 
     /**
-     * Acquires a permit from this semaphore.
-     *
-     * <p>Acquires a permit, if one is available and returns immediately,
-     * reducing the number of available permits by one.
+     * Acquires a permit.
+     * Waits if necessary until a permit became available.
      * 
      * @return void
      *
@@ -72,43 +57,24 @@ public interface RSemaphoreReactive extends RExpirableReactive {
     Mono<Void> acquire();
 
     /**
-     * Acquires the given number of permits, if they are available,
-     * and returns immediately, reducing the number of available permits
-     * by the given amount.
+     * Acquires defined amount of <code>permits</code>.
+     * Waits if necessary until all permits became available.
      *
      * @param permits the number of permits to acquire
-     * @throws IllegalArgumentException if {@code permits} is negative
+     * @throws IllegalArgumentException if <code>permits</code> is negative
      * @return void
      */
     Mono<Void> acquire(int permits);
 
     /**
-     * Releases a permit, returning it to the semaphore.
+     * Releases a permit.
      *
-     * <p>Releases a permit, increasing the number of available permits by
-     * one. If any threads of Redisson client are trying to acquire a permit,
-     * then one is selected and given the permit that was just released.
-     *
-     * <p>There is no requirement that a thread that releases a permit must
-     * have acquired that permit by calling {@link #acquire()}.
-     * Correct usage of a semaphore is established by programming convention
-     * in the application.
-     * 
      * @return void
      */
     Mono<Void> release();
 
     /**
-     * Releases the given number of permits, returning them to the semaphore.
-     *
-     * <p>Releases the given number of permits, increasing the number of available permits by
-     * the given number of permits. If any threads of Redisson client are trying to
-     * acquire a permits, then next threads is selected and tries to acquire the permits that was just released.
-     *
-     * <p>There is no requirement that a thread that releases a permits must
-     * have acquired that permit by calling {@link #acquire()}.
-     * Correct usage of a semaphore is established by programming convention
-     * in the application.
+     * Releases defined amount of <code>permits</code>.
      *
      * @param permits amount
      * @return void
@@ -124,55 +90,34 @@ public interface RSemaphoreReactive extends RExpirableReactive {
     Mono<Boolean> trySetPermits(int permits);
 
     /**
-     * <p>Acquires a permit, if one is available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by one.
+     * Tries to acquire currently available permit.
+     * Waits up to defined <code>waitTime</code> if necessary until a permit became available.
      *
-     * <p>If a permit is acquired then the value {@code true} is returned.
-     *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
-     *
-     * @param waitTime the maximum time to wait for a permit
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param waitTime the maximum time to wait
+     * @param unit the time unit
+     * @return <code>true</code> if a permit was acquired and <code>false</code>
+     *         otherwise
      */
     Mono<Boolean> tryAcquire(long waitTime, TimeUnit unit);
     
     /**
-     * Acquires the given number of permits only if all are available
-     * within the given waiting time.
+     * Tries to acquire defined amount of currently available <code>permits</code>.
+     * Waits up to defined <code>waitTime</code> if necessary until all permits became available.
      *
-     * <p>Acquires a permits, if all are available and returns immediately,
-     * with the value {@code true},
-     * reducing the number of available permits by one.
-     *
-     * <p>If a permits is acquired then the value {@code true} is returned.
-     *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
-     *
-     * @param permits amount
-     * @param waitTime the maximum time to wait for a available permits
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if a permit was acquired and {@code false}
-     *         if the waiting time elapsed before a permit was acquired
+     * @param permits amount of permits
+     * @param waitTime the maximum time to wait
+     * @param unit the time unit
+     * @return <code>true</code> if permits were acquired and <code>false</code>
+     *         otherwise
      */
     Mono<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
     /**
-     * Shrinks the number of available permits by the indicated
-     * reduction. This method can be useful in subclasses that use
-     * semaphores to track resources that become unavailable. This
-     * method differs from {@link #acquire()} in that it does not block
-     * waiting for permits to become available.
+     * Reduces the number of available permits by defined <code>permits</code> amount.
      *
      * @param permits - reduction the number of permits to remove
      * @return void
-     * @throws IllegalArgumentException if {@code reduction} is negative
+     * @throws IllegalArgumentException if <code>permits</code> value is negative
      */
     Mono<Void> reducePermits(int permits);
 
