@@ -21,7 +21,7 @@ import io.reactivex.Single;
 import java.util.concurrent.TimeUnit;
 
 /**
- * RxJava2 interface of {@link java.util.concurrent.CountDownLatch}
+ * RxJava2 interface of Redis based {@link java.util.concurrent.CountDownLatch}
  *
  * It has an advantage over {@link java.util.concurrent.CountDownLatch} --
  * count can be set via {@link #trySetCount} method.
@@ -32,63 +32,33 @@ import java.util.concurrent.TimeUnit;
 public interface RCountDownLatchRx extends RObjectRx {
 
     /**
-     * Causes the current thread to wait until the latch has counted down to
-     * zero.
+     * Waits until counter reach zero.
      *
-     * <p>If the current count is zero then this method returns immediately.
-     *
-     * <p>If the current count is greater than zero then the current
-     * thread becomes disabled for thread scheduling purposes and lies
-     * dormant until the count reaches zero due to invocations of the
-     * {@link #countDown} method.
+     * @return void
      *
      */
     Completable await();
 
     /**
-     * Causes the current thread to wait until the latch has counted down to
-     * zero or the specified waiting time elapses.
-     *
-     * <p>If the current count is zero then this method returns immediately
-     * with the value {@code true}.
-     *
-     * <p>If the current count is greater than zero then the current
-     * thread becomes disabled for thread scheduling purposes and lies
-     * dormant until the count reaches zero due to invocations of the
-     * {@link #countDown()} method or the specified waiting time elapses.
-     *
-     * <p>If the count reaches zero then the method returns with the
-     * value {@code true}.
-     *
-     * <p>If the specified waiting time elapses then the value {@code false}
-     * is returned.  If the time is less than or equal to zero, the method
-     * will not wait at all.
+     * Waits until counter reach zero or up to defined <code>timeout</code>.
      *
      * @param waitTime the maximum time to wait
-     * @param unit the time unit of the {@code timeout} argument
-     * @return {@code true} if the count reached zero and {@code false}
-     *         if the waiting time elapsed before the count reached zero
+     * @param unit the time unit
+     * @return <code>true</code> if the count reached zero and <code>false</code>
+     *         if timeout reached before the count reached zero
      */
     Single<Boolean> await(long waitTime, TimeUnit unit);
 
     /**
-     * Decrements the count of the latch, releasing all waiting threads if
-     * the count reaches zero.
-     *
-     * <p>If the current count is greater than zero then it is decremented.
-     * If the new count is zero then all waiting threads are re-enabled for
-     * thread scheduling purposes.
-     *
-     * <p>If the current count equals zero then nothing happens.
+     * Decrements the counter of the latch.
+     * Notifies all waiting threads when count reaches zero.
      * 
      * @return void
      */
     Completable countDown();
 
     /**
-     * Returns the current count.
-     *
-     * <p>This method is typically used for debugging and testing purposes.
+     * Returns value of current count.
      *
      * @return the current count
      */
