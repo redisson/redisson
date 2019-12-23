@@ -11,7 +11,7 @@
     <artifactId>redisson-hibernate</artifactId>
     <packaging>pom</packaging>
 
-    <name>Redisson/Hibernate</name>
+    <name>Redisson/Hibernate cache</name>
 
     <modules>
         <module>redisson-hibernate-53</module>
