@@ -488,16 +488,22 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     
     @Override
     public RFuture<Void> reducePermitsAsync(int permits) {
-        if (permits < 0) {
-            throw new IllegalArgumentException();
-        }
+        return addPermitsAsync(-permits);
+    }
+    
+    public void addPermits(int permits) {
+        get(reducePermitsAsync(permits));
+    }
+
+    public RFuture<Void> addPermitsAsync(int permits) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +
                 "if (value == false) then "
                   + "value = 0;"
               + "end;"
-              + "redis.call('set', KEYS[1], value - ARGV[1]); ",
+              + "redis.call('set', KEYS[1], value + ARGV[1]); ",
                 Arrays.<Object>asList(getName(), getChannelName()), permits);
     }
-    
+
+
 }

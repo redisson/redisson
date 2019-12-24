@@ -124,12 +124,18 @@ public interface RSemaphore extends RExpirable, RSemaphoreAsync {
      */
     boolean trySetPermits(int permits);
 
-    /**
-     * Reduces the number of available permits by defined <code>permits</code> amount.
-     *
-     * @param permits - reduction the number of permits to remove
-     * @throws IllegalArgumentException if <code>permits</code> value is negative
+    /*
+     * Use addPermits instead
      */
+    @Deprecated
     void reducePermits(int permits);
-    
+
+    /**
+     * Increases or decreases the number of available permits by defined value.
+     *
+     * @param permits amount of permits to add/remove
+     */
+    void addPermits(int permits);
+
+
 }

@@ -113,14 +113,17 @@ public interface RSemaphoreRx extends RExpirableRx {
      */
     Single<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
-    /**
-     * Reduces the number of available permits by defined <code>permits</code> amount.
-     *
-     * @param permits - reduction the number of permits to remove
-     * @return void
-     * @throws IllegalArgumentException if <code>permits</code> value is negative
+    /*
+     * Use addPermits instead
      */
+    @Deprecated
     Completable reducePermits(int permits);
 
-    
+    /**
+     * Increases or decreases the number of available permits by defined value.
+     *
+     * @param permits amount of permits to add/remove
+     */
+    Completable addPermits(int permits);
+
 }
