@@ -252,7 +252,7 @@ public class RedissonTransaction implements RTransaction {
                 .responseTimeout(options.getResponseTimeout(), TimeUnit.MILLISECONDS)
                 .retryAttempts(options.getRetryAttempts())
                 .retryInterval(options.getRetryInterval(), TimeUnit.MILLISECONDS)
-                .atomic();
+                .executionMode(BatchOptions.ExecutionMode.IN_MEMORY_ATOMIC);
         return batchOptions;
     }
 

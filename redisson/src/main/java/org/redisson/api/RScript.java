@@ -15,11 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
-import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
+
+import java.util.List;
 
 /**
  * Interface for Redis Script feature
@@ -79,12 +78,6 @@ public interface RScript extends RScriptAsync {
      */
     <R> R evalSha(String key, Mode mode, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
     
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> R evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
     /**
      * Executes Lua script stored in Redis scripts cache by SHA-1 digest
      * 
@@ -95,12 +88,6 @@ public interface RScript extends RScriptAsync {
      * @return result object
      */
     <R> R evalSha(Mode mode, String shaDigest, ReturnType returnType);
-
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> R evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
 
     /**
      * Executes Lua script
@@ -129,12 +116,6 @@ public interface RScript extends RScriptAsync {
      */
     <R> R eval(Mode mode, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
 
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> R eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
     /**
      * Executes Lua script
      * 
@@ -145,12 +126,6 @@ public interface RScript extends RScriptAsync {
      * @return result object
      */
     <R> R eval(Mode mode, String luaScript, ReturnType returnType);
-
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> R eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
     /**
      * Loads Lua script into Redis scripts cache and returns its SHA-1 digest

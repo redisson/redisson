@@ -15,65 +15,12 @@
  */
 package org.redisson.rx;
 
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.RedissonAtomicDouble;
-import org.redisson.RedissonAtomicLong;
-import org.redisson.RedissonBitSet;
-import org.redisson.RedissonBlockingDeque;
-import org.redisson.RedissonBlockingQueue;
-import org.redisson.RedissonBucket;
-import org.redisson.RedissonDeque;
-import org.redisson.RedissonGeo;
-import org.redisson.RedissonHyperLogLog;
-import org.redisson.RedissonKeys;
-import org.redisson.RedissonLexSortedSet;
-import org.redisson.RedissonList;
-import org.redisson.RedissonListMultimap;
-import org.redisson.RedissonMap;
-import org.redisson.RedissonMapCache;
-import org.redisson.RedissonQueue;
-import org.redisson.RedissonScoredSortedSet;
-import org.redisson.RedissonScript;
-import org.redisson.RedissonSet;
-import org.redisson.RedissonSetCache;
-import org.redisson.RedissonSetMultimap;
-import org.redisson.RedissonStream;
-import org.redisson.RedissonTopic;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RAtomicDoubleRx;
-import org.redisson.api.RAtomicLongRx;
-import org.redisson.api.RBatchRx;
-import org.redisson.api.RBitSetRx;
-import org.redisson.api.RBlockingDequeRx;
-import org.redisson.api.RBlockingQueueRx;
-import org.redisson.api.RBucketRx;
-import org.redisson.api.RDequeRx;
-import org.redisson.api.RGeoRx;
-import org.redisson.api.RHyperLogLogRx;
-import org.redisson.api.RKeysRx;
-import org.redisson.api.RLexSortedSetRx;
-import org.redisson.api.RListMultimapRx;
-import org.redisson.api.RListRx;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RMapCacheRx;
-import org.redisson.api.RMapRx;
-import org.redisson.api.RQueueRx;
-import org.redisson.api.RScoredSortedSetRx;
-import org.redisson.api.RScriptRx;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetCacheRx;
-import org.redisson.api.RSetMultimapRx;
-import org.redisson.api.RSetRx;
-import org.redisson.api.RStreamRx;
-import org.redisson.api.RTopicRx;
-import org.redisson.api.RedissonRxClient;
+import io.reactivex.Maybe;
+import org.redisson.*;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-
-import io.reactivex.Maybe;
 
 /**
  * 
@@ -298,41 +245,6 @@ public class RedissonBatchRx implements RBatchRx {
         return commandExecutor.flowable(() -> executorService.executeAsync(options)).singleElement();
     }
     
-    public RBatchRx atomic() {
-        options.atomic();
-        return this;
-    }
-    
-    @Override
-    public RBatchRx syncSlaves(int slaves, long timeout, TimeUnit unit) {
-        options.syncSlaves(slaves, timeout, unit);
-        return this;
-    }
-    
-    @Override
-    public RBatchRx skipResult() {
-        options.skipResult();
-        return this;
-    }
-    
-    @Override
-    public RBatchRx retryAttempts(int retryAttempts) {
-        options.retryAttempts(retryAttempts);
-        return this;
-    }
-    
-    @Override
-    public RBatchRx retryInterval(long retryInterval, TimeUnit unit) {
-        options.retryInterval(retryInterval, unit);
-        return this;
-    }
-    
-    @Override
-    public RBatchRx timeout(long timeout, TimeUnit unit) {
-        options.responseTimeout(timeout, unit);
-        return this;
-    }
-
     public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {
         this.executorService.enableRedissonReferenceSupport(redissonRx);
     }

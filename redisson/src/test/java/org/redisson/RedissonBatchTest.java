@@ -107,7 +107,7 @@ public class RedissonBatchTest extends BaseTest {
         assertThat(b2f2.get()).isEqualTo(2d);
     }
     
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void testPerformance() {
         RMap<String, String> map = redisson.getMap("map");
         Map<String, String> m = new HashMap<String, String>();
@@ -168,7 +168,7 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testBigRequestAtomic() {
         batchOptions
-                    .atomic()
+                    .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
                     .responseTimeout(15, TimeUnit.SECONDS)
                     .retryInterval(1, TimeUnit.SECONDS)
                     .retryAttempts(5);
@@ -284,7 +284,7 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testAtomic() {
         batchOptions
-                                            .atomic();
+                                            .executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
         
         RBatch batch = redisson.createBatch(batchOptions);
         RFuture<Long> f1 = batch.getAtomicLong("A1").addAndGetAsync(1);
@@ -324,7 +324,7 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         
         batchOptions
-                                            .atomic()
+                                            .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
                                             .syncSlaves(1, 1, TimeUnit.SECONDS);
 
         RBatch batch = redisson.createBatch(batchOptions);
@@ -359,7 +359,7 @@ public class RedissonBatchTest extends BaseTest {
 
     @Test
     public void testDifferentCodecsAtomic() {
-        RBatch b = redisson.createBatch(batchOptions.atomic());
+        RBatch b = redisson.createBatch(batchOptions.executionMode(ExecutionMode.IN_MEMORY_ATOMIC));
         b.getMap("test1").putAsync("1", "2");
         b.getMap("test2", StringCodec.INSTANCE).putAsync("21", "3");
         RFuture<Object> val1 = b.getMap("test1").getAsync("1");

@@ -15,13 +15,11 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
 import org.redisson.api.RScript.Mode;
 import org.redisson.api.RScript.ReturnType;
-import org.redisson.client.codec.Codec;
-
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * Reactive interface for Redis Script feature
@@ -136,29 +134,5 @@ public interface RScriptReactive {
      * @return void
      */
     Mono<Void> scriptKill();
-    
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> Mono<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType, List<Object> keys, Object... values);
-
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> Mono<R> evalSha(Mode mode, Codec codec, String shaDigest, ReturnType returnType);
-
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> Mono<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType, List<Object> keys, Object... values);
-
-    /*
-     * Use getScript(Codec) instead
-     */
-    @Deprecated
-    <R> Mono<R> eval(Mode mode, Codec codec, String luaScript, ReturnType returnType);
 
 }

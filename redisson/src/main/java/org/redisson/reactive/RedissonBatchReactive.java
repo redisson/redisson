@@ -15,64 +15,11 @@
  */
 package org.redisson.reactive;
 
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.RedissonAtomicDouble;
-import org.redisson.RedissonAtomicLong;
-import org.redisson.RedissonBitSet;
-import org.redisson.RedissonBlockingDeque;
-import org.redisson.RedissonBlockingQueue;
-import org.redisson.RedissonBucket;
-import org.redisson.RedissonDeque;
-import org.redisson.RedissonGeo;
-import org.redisson.RedissonHyperLogLog;
-import org.redisson.RedissonKeys;
-import org.redisson.RedissonLexSortedSet;
-import org.redisson.RedissonList;
-import org.redisson.RedissonListMultimap;
-import org.redisson.RedissonMap;
-import org.redisson.RedissonMapCache;
-import org.redisson.RedissonQueue;
-import org.redisson.RedissonScoredSortedSet;
-import org.redisson.RedissonScript;
-import org.redisson.RedissonSet;
-import org.redisson.RedissonSetCache;
-import org.redisson.RedissonSetMultimap;
-import org.redisson.RedissonStream;
-import org.redisson.RedissonTopic;
-import org.redisson.api.BatchOptions;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RAtomicDoubleReactive;
-import org.redisson.api.RAtomicLongReactive;
-import org.redisson.api.RBatchReactive;
-import org.redisson.api.RBitSetReactive;
-import org.redisson.api.RBlockingDequeReactive;
-import org.redisson.api.RBlockingQueueReactive;
-import org.redisson.api.RBucketReactive;
-import org.redisson.api.RDequeReactive;
-import org.redisson.api.RGeoReactive;
-import org.redisson.api.RHyperLogLogReactive;
-import org.redisson.api.RKeysReactive;
-import org.redisson.api.RLexSortedSetReactive;
-import org.redisson.api.RListMultimapReactive;
-import org.redisson.api.RListReactive;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RMapCacheReactive;
-import org.redisson.api.RMapReactive;
-import org.redisson.api.RQueueReactive;
-import org.redisson.api.RScoredSortedSetReactive;
-import org.redisson.api.RScriptReactive;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetCacheReactive;
-import org.redisson.api.RSetMultimapReactive;
-import org.redisson.api.RSetReactive;
-import org.redisson.api.RStreamReactive;
-import org.redisson.api.RTopicReactive;
-import org.redisson.api.RedissonReactiveClient;
+import org.redisson.*;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-
 import reactor.core.publisher.Mono;
 
 /**
@@ -286,41 +233,6 @@ public class RedissonBatchReactive implements RBatchReactive {
     @Override
     public Mono<BatchResult<?>> execute() {
         return commandExecutor.reactive(() -> executorService.executeAsync(options));
-    }
-
-    public RBatchReactive atomic() {
-        options.atomic();
-        return this;
-    }
-    
-    @Override
-    public RBatchReactive syncSlaves(int slaves, long timeout, TimeUnit unit) {
-        options.syncSlaves(slaves, timeout, unit);
-        return this;
-    }
-    
-    @Override
-    public RBatchReactive skipResult() {
-        options.skipResult();
-        return this;
-    }
-    
-    @Override
-    public RBatchReactive retryAttempts(int retryAttempts) {
-        options.retryAttempts(retryAttempts);
-        return this;
-    }
-    
-    @Override
-    public RBatchReactive retryInterval(long retryInterval, TimeUnit unit) {
-        options.retryInterval(retryInterval, unit);
-        return this;
-    }
-    
-    @Override
-    public RBatchReactive timeout(long timeout, TimeUnit unit) {
-        options.responseTimeout(timeout, unit);
-        return this;
     }
 
     public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {

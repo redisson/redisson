@@ -368,40 +368,4 @@ public interface RBatchRx {
      */
     Maybe<BatchResult<?>> execute();
 
-    /*
-     * Use BatchOptions#atomic
-     */
-    @Deprecated
-    RBatchRx atomic();
-    
-    /*
-     * Use BatchOptions#skipResult
-     */
-    @Deprecated
-    RBatchRx skipResult();
-
-    /*
-     * Use BatchOptions#syncSlaves
-     */
-    @Deprecated
-    RBatchRx syncSlaves(int slaves, long timeout, TimeUnit unit);
-    
-    /*
-     * Use BatchOptions#responseTimeout
-     */
-    @Deprecated
-    RBatchRx timeout(long timeout, TimeUnit unit);
-
-    /*
-     * Use BatchOptions#retryInterval
-     */
-    @Deprecated
-    RBatchRx retryInterval(long retryInterval, TimeUnit unit);
-
-    /*
-     * Use BatchOptions#retryAttempts
-     */
-    @Deprecated
-    RBatchRx retryAttempts(int retryAttempts);
-
 }

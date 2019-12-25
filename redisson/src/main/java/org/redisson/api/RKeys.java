@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -262,12 +261,6 @@ public interface RKeys extends RKeysAsync {
      * @return random key
      */
     String randomKey();
-
-    /*
-     * Use getKeysByPattern method instead
-     */
-    @Deprecated
-    Collection<String> findKeysByPattern(String pattern);
 
     /**
      * Delete multiple objects by a key pattern.

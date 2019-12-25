@@ -162,16 +162,6 @@ public final class BatchOptions {
     }
     
     /**
-     * Use {@link #executionMode(ExecutionMode)} setting instead
-     * 
-     */
-    @Deprecated
-    public BatchOptions atomic() {
-        executionMode = ExecutionMode.IN_MEMORY_ATOMIC;
-        return this;
-    }
-    
-    /**
      * Inform Redis not to send reply. This allows to save network traffic for commands with batch with big response.
      * <p>
      * NOTE: Redis 3.2+ required

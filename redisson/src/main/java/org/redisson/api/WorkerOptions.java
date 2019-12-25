@@ -94,7 +94,7 @@ public final class WorkerOptions {
     }
 
     /**
-     * Defines task timeout since moment of task execution start
+     * Defines task timeout since task execution start moment
      *
      * @param timeout - timeout of task
      * @param unit - time unit

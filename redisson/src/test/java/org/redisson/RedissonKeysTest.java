@@ -259,10 +259,10 @@ public class RedissonKeysTest extends BaseTest {
         RMap<String, String> map = redisson.getMap("test2");
         map.fastPut("1", "2");
 
-        Collection<String> keys = redisson.getKeys().findKeysByPattern("test?");
+        Iterable<String> keys = redisson.getKeys().getKeysByPattern("test?");
         assertThat(keys).containsOnly("test1", "test2");
 
-        Collection<String> keys2 = redisson.getKeys().findKeysByPattern("test");
+        Iterable<String> keys2 = redisson.getKeys().getKeysByPattern("test");
         assertThat(keys2).isEmpty();
     }
 

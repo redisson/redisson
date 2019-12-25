@@ -431,40 +431,4 @@ public interface RBatch {
      */
     RFuture<BatchResult<?>> executeAsync();
 
-    /*
-     * Use BatchOptions#atomic
-     */
-    @Deprecated
-    RBatch atomic();
-    
-    /*
-     * Use BatchOptions#skipResult
-     */
-    @Deprecated
-    RBatch skipResult();
-
-    /*
-     * Use BatchOptions#syncSlaves
-     */
-    @Deprecated
-    RBatch syncSlaves(int slaves, long timeout, TimeUnit unit);
-    
-    /*
-     * Use BatchOptions#responseTimeout
-     */
-    @Deprecated
-    RBatch timeout(long timeout, TimeUnit unit);
-
-    /*
-     * Use BatchOptions#retryInterval
-     */
-    @Deprecated
-    RBatch retryInterval(long retryInterval, TimeUnit unit);
-
-    /*
-     * Use BatchOptions#retryAttempts
-     */
-    @Deprecated
-    RBatch retryAttempts(int retryAttempts);
-    
 }

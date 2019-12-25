@@ -193,16 +193,6 @@ public class RedissonKeys implements RKeys {
     }
 
     @Override
-    public Collection<String> findKeysByPattern(String pattern) {
-        return commandExecutor.get(findKeysByPatternAsync(pattern));
-    }
-
-    @Override
-    public RFuture<Collection<String>> findKeysByPatternAsync(String pattern) {
-        return commandExecutor.readAllAsync(RedisCommands.KEYS, pattern);
-    }
-
-    @Override
     public long deleteByPattern(String pattern) {
         return commandExecutor.get(deleteByPatternAsync(pattern));
     }

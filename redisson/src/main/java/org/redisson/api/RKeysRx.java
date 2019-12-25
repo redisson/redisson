@@ -209,9 +209,6 @@ public interface RKeysRx {
      */
     Single<Integer> getSlot(String key);
 
-    @Deprecated
-    Single<Collection<String>> findKeysByPattern(String pattern);
-
     /**
      * Get random key
      *

@@ -171,7 +171,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
     @Test
     public void testBigRequestAtomic() {
         batchOptions
-                    .atomic()
+                    .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
                     .responseTimeout(15, TimeUnit.SECONDS)
                     .retryInterval(1, TimeUnit.SECONDS)
                     .retryAttempts(5);
@@ -288,7 +288,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
 
     @Test
     public void testAtomic() {
-        batchOptions.atomic();
+        batchOptions.executionMode(ExecutionMode.IN_MEMORY_ATOMIC);
         
         RBatchRx batch = redisson.createBatch(batchOptions);
         Single<Long> f1 = batch.getAtomicLong("A1").addAndGet(1);
@@ -328,7 +328,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         RedissonRxClient redisson = Redisson.createRx(config);
         
         batchOptions
-                                            .atomic()
+                                            .executionMode(ExecutionMode.IN_MEMORY_ATOMIC)
                                             .syncSlaves(1, 1, TimeUnit.SECONDS);
 
         RBatchRx batch = redisson.createBatch(batchOptions);
@@ -363,7 +363,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
 
     @Test
     public void testDifferentCodecsAtomic() {
-        RBatchRx b = redisson.createBatch(batchOptions.atomic());
+        RBatchRx b = redisson.createBatch(batchOptions.executionMode(ExecutionMode.IN_MEMORY_ATOMIC));
         b.getMap("test1").put("1", "2");
         b.getMap("test2", StringCodec.INSTANCE).put("21", "3");
         Maybe<Object> val1 = b.getMap("test1").get("1");
