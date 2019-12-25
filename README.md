@@ -38,7 +38,8 @@ JDK compatibility:  1.8 - 13, Android
 * [Spring Transaction API](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#147-spring-transaction-manager) implementation
 * [Spring Data Redis](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#148-spring-data-redis) integration
 * [Spring Boot Starter](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks/#149-spring-boot-starter) implementation
-* [Hibernate Cache](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#143-hibernate-cache) implementation
+* [Hibernate Cache](https://github.com/redisson/redisson/tree/master/redisson-hibernate) implementation
+* [MyBatis Cache](https://github.com/redisson/redisson/tree/master/redisson-mybatis) implementation
 * [Transactions API](https://github.com/redisson/redisson/wiki/10.-Additional-features#104-transactions)
 * [XA Transaction API](https://github.com/redisson/redisson/wiki/10.-additional-features/#105-xa-transactions) implementation
 * [JCache API (JSR-107)](https://github.com/redisson/redisson/wiki/14.-Integration%20with%20frameworks/#144-jcache-api-jsr-107-implementation) implementation
