@@ -158,7 +158,7 @@ RLockRx lockRx = redissonRx.getLock("myLock");
 // 4. Get Redis based ExecutorService
 RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
-// over 30 different Redis based objects and services ...
+// over 50 Redis based Java objects and services ...
 
 ```
 
