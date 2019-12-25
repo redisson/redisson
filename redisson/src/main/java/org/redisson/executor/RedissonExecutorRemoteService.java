@@ -17,9 +17,8 @@ package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RFuture;
-import org.redisson.api.RMap;
+import org.redisson.api.*;
+import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncService;
@@ -27,10 +26,12 @@ import org.redisson.misc.RPromise;
 import org.redisson.remote.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -46,6 +47,10 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     private String terminationTopicName;
     private String schedulerQueueName;
     private long taskTimeout;
+    private List<TaskStartedListener> startedListeners;
+    private List<TaskFinishedListener> finishedListeners;
+    private List<TaskFailureListener> failureListeners;
+    private List<TaskSuccessListener> successListeners;
 
     public RedissonExecutorRemoteService(Codec codec, String name,
             CommandAsyncService commandExecutor, String executorId, ConcurrentMap<String, ResponseEntry> responses) {
@@ -82,12 +87,49 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
 
     @Override
     protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request, RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {
+        startedListeners.stream().forEach(l -> l.onStarted(request.getId()));
+
         if (taskTimeout > 0) {
             commandExecutor.getConnectionManager().getGroup().schedule(() -> {
                 ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
         super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responseHolder);
+
+        if (responseHolder.get() instanceof RemoteServiceResponse) {
+            RemoteServiceResponse response = (RemoteServiceResponse) responseHolder.get();
+            if (response.getError() == null) {
+                successListeners.stream().forEach(l -> l.onSucceeded(request.getId(), response.getResult()));
+            } else {
+                failureListeners.stream().forEach(l -> l.onFailed(request.getId(), response.getError()));
+            }
+        } else {
+            failureListeners.stream().forEach(l -> l.onFailed(request.getId(), null));
+        }
+
+        finishedListeners.stream().forEach(l -> l.onFinished(request.getId()));
+    }
+
+    public void setListeners(List<TaskListener> listeners) {
+        startedListeners = listeners.stream()
+                                .filter(x -> x instanceof TaskStartedListener)
+                                .map(x -> (TaskStartedListener) x)
+                                .collect(Collectors.toList());
+
+        finishedListeners = listeners.stream()
+                                .filter(x -> x instanceof TaskFinishedListener)
+                                .map(x -> (TaskFinishedListener) x)
+                                .collect(Collectors.toList());
+
+        failureListeners = listeners.stream()
+                                .filter(x -> x instanceof TaskFailureListener)
+                                .map(x -> (TaskFailureListener) x)
+                                .collect(Collectors.toList());
+
+        successListeners = listeners.stream()
+                                .filter(x -> x instanceof TaskSuccessListener)
+                                .map(x -> (TaskSuccessListener) x)
+                                .collect(Collectors.toList());
     }
 
     public void setTaskTimeout(long taskTimeout) {

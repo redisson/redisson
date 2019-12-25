@@ -8,13 +8,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.awaitility.Duration;
@@ -27,6 +21,8 @@ import org.redisson.Redisson;
 import org.redisson.RedissonNode;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
+import org.redisson.api.executor.TaskFinishedListener;
+import org.redisson.api.executor.TaskStartedListener;
 import org.redisson.config.Config;
 import org.redisson.config.RedissonNodeConfig;
 import org.redisson.connection.balancer.RandomLoadBalancer;
@@ -313,6 +309,44 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @Test
+    public void testTaskStarted() throws InterruptedException {
+        RExecutorService executor = redisson.getExecutorService("test1");
+        CountDownLatch l = new CountDownLatch(1);
+        executor.registerWorkers(WorkerOptions.defaults().addListener(new TaskStartedListener() {
+            @Override
+            public void onStarted(String taskId) {
+                assertThat(taskId).isNotEmpty();
+                l.countDown();
+            }
+        }));
+
+        RExecutorFuture<?> future = executor.submit(new RunnableTask());
+
+        l.await();
+
+        executor.shutdown();
+    }
+
+    @Test
+    public void testTaskFinished() throws InterruptedException {
+        RExecutorService executor = redisson.getExecutorService("test1");
+        CountDownLatch l = new CountDownLatch(1);
+        executor.registerWorkers(WorkerOptions.defaults().addListener(new TaskFinishedListener() {
+            @Override
+            public void onFinished(String taskId) {
+                assertThat(taskId).isNotEmpty();
+                l.countDown();
+            }
+        }));
+
+        RExecutorFuture<?> future = executor.submit(new RunnableTask());
+
+        l.await();
+
+        executor.shutdown();
+    }
+
+    @Test
     public void testTaskTimeout() throws InterruptedException {
         RExecutorService executor = redisson.getExecutorService("test1");
         executor.registerWorkers(WorkerOptions.defaults().taskTimeout(1, TimeUnit.SECONDS));
@@ -322,6 +356,8 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Thread.sleep(1050);
 
         assertThat(future.isCancelled()).isTrue();
+
+        executor.shutdown();
     }
 
     @Test

@@ -15,9 +15,12 @@
  */
 package org.redisson.api;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.executor.TaskListener;
 import org.redisson.config.Config;
 import org.springframework.beans.factory.BeanFactory;
 
@@ -33,6 +36,7 @@ public final class WorkerOptions {
     private ExecutorService executorService;
     private BeanFactory beanFactory;
     private long taskTimeout;
+    private List<TaskListener> listeners = new ArrayList<>();
     
     private WorkerOptions() {
     }
@@ -92,9 +96,9 @@ public final class WorkerOptions {
     /**
      * Defines task timeout since moment of task execution start
      *
-     * @param timeout
-     * @param unit
-     * @return
+     * @param timeout - timeout of task
+     * @param unit - time unit
+     * @return self instance
      */
     public WorkerOptions taskTimeout(long timeout, TimeUnit unit) {
         this.taskTimeout = unit.toMillis(timeout);
@@ -105,4 +109,23 @@ public final class WorkerOptions {
         return taskTimeout;
     }
 
+    /**
+     * Adds task listener
+     *
+     * @see org.redisson.api.executor.TaskSuccessListener
+     * @see org.redisson.api.executor.TaskFailureListener
+     * @see org.redisson.api.executor.TaskStartedListener
+     * @see org.redisson.api.executor.TaskFinishedListener
+     *
+     * @param listener - task listener
+     * @return self instance
+     */
+    public WorkerOptions addListener(TaskListener listener) {
+        listeners.add(listener);
+        return this;
+    }
+
+    public List<TaskListener> getListeners() {
+        return listeners;
+    }
 }

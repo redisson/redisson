@@ -312,6 +312,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             es = options.getExecutorService();
         }
 
+        remoteService.setListeners(options.getListeners());
         remoteService.setTaskTimeout(options.getTaskTimeout());
         remoteService.register(RemoteExecutorService.class, service, options.getWorkers(), es);
         workersGroupListenerId = workersTopic.addListener(String.class, new MessageListener<String>() {
