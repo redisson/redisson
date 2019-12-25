@@ -15,8 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 

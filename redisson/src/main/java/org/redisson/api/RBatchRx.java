@@ -15,11 +15,8 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.client.codec.Codec;
-
 import io.reactivex.Maybe;
+import org.redisson.client.codec.Codec;
 
 /**
  * RxJava2 interface for Redis pipeline feature.
