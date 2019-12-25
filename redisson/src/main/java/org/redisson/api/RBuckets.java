@@ -51,13 +51,11 @@ public interface RBuckets extends RBucketsAsync {
      * @param buckets - map of buckets
      */
     void set(Map<String, ?> buckets);
-    
-    /**
-     * Delete multiple objects by name
-     *
-     * @param keys - object names
-     * @return number of removed keys
+
+    /*
+     * Use RKeys.deleteAsync method instead
      */
+    @Deprecated
     long delete(String... keys);
     
 }
