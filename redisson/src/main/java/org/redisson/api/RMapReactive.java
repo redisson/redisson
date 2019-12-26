@@ -171,14 +171,14 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
 
     /**
      * Returns the value to which the specified key is mapped,
-     * or {@code null} if this map contains no mapping for the key.
+     * or empty if this map contains no mapping for the key.
      * <p>
      * If map doesn't contain value for specified key and {@link MapLoader} is defined 
      * then value will be loaded in read-through mode. 
      *
      * @param key the key whose associated value is to be returned
      * @return the value to which the specified key is mapped, or
-     *         {@code null} if this map contains no mapping for the key
+     *         empty if this map contains no mapping for the key
      */
     Mono<V> get(K key);
 
@@ -200,20 +200,20 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
      * @param key - map key
-     * @return deleted value or <code>null</code> if there wasn't any association
+     * @return deleted value or empty if there wasn't any association
      */
     Mono<V> remove(K key);
 
     /**
      * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
-     * If there wasn't any association before then method returns <code>null</code>.
+     * If there wasn't any association before then method returns empty.
      * <p>
      * If {@link MapWriter} is defined then new <code>value</code>is written in write-through mode.
      *
      * @param key - map key
      * @param value - map value
      * @return previous associated value 
-     *         or <code>null</code> if there wasn't any association and change hasn't been made
+     *         or empty if there wasn't any association and change hasn't been made
      */
     Mono<V> replace(K key, V value);
 
@@ -249,7 +249,7 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
      *
      * @param key - map key
      * @param value - map value
-     * @return <code>null</code> if key is a new one in the hash and value was set.
+     * @return empty if key is a new one in the hash and value was set.
      *         Previous value if key already exists in the hash and change hasn't been made.
      */
     Mono<V> putIfAbsent(K key, V value);
