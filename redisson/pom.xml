@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.11.7-SNAPSHOT</version>
+        <version>3.12.0</version>
         <relativePath>../</relativePath>
     </parent>
 
