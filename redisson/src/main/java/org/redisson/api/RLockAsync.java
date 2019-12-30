@@ -26,9 +26,10 @@ import java.util.concurrent.TimeUnit;
 public interface RLockAsync {
 
     /**
-     * Unlocks the lock independently of state
+     * Unlocks the lock independently of its state
      *
-     * @return <code>true</code> if lock existed and now unlocked otherwise <code>false</code>
+     * @return <code>true</code> if lock existed and now unlocked
+     *          otherwise <code>false</code>
      */
     RFuture<Boolean> forceUnlockAsync();
     
@@ -57,13 +58,15 @@ public interface RLockAsync {
 
     /**
      * Acquires the lock.
+     * Waits if necessary until lock became available.
      * 
      * @return void
      */
     RFuture<Void> lockAsync();
 
     /**
-     * Acquires the lock by thread with specified <code>threadId</code>.
+     * Acquires the lock by thread with defined <code>threadId</code>.
+     * Waits if necessary until lock became available.
      * 
      * @param threadId id of thread
      * @return void
@@ -71,39 +74,29 @@ public interface RLockAsync {
     RFuture<Void> lockAsync(long threadId);
     
     /**
-     * Acquires the lock.
+     * Acquires the lock with defined <code>leaseTime</code>.
+     * Waits if necessary until lock became available.
      *
-     * <p>If the lock is not available then the current thread becomes
-     * disabled for thread scheduling purposes and lies dormant until the
-     * lock has been acquired.
+     * Lock will be released automatically after defined <code>leaseTime</code> interval.
      *
-     * If the lock is acquired, it is held until <code>unlock</code> is invoked,
-     * or until leaseTime milliseconds have passed
-     * since the lock was granted - whichever comes first.
-     *
-     * @param leaseTime the maximum time to hold the lock after granting it,
-     *        before automatically releasing it if it hasn't already been released by invoking <code>unlock</code>.
+     * @param leaseTime the maximum time to hold the lock after it's acquisition,
+     *        if it hasn't already been released by invoking <code>unlock</code>.
      *        If leaseTime is -1, hold the lock until explicitly unlocked.
-     * @param unit the time unit of the {@code leaseTime} argument
+     * @param unit the time unit
      * @return void
      */
     RFuture<Void> lockAsync(long leaseTime, TimeUnit unit);
 
     /**
-     * Acquires the lock by thread with specified <code>threadId</code>.
+     * Acquires the lock with defined <code>leaseTime</code> and <code>threadId</code>.
+     * Waits if necessary until lock became available.
      *
-     * <p>If the lock is not available then the current thread becomes
-     * disabled for thread scheduling purposes and lies dormant until the
-     * lock has been acquired.
+     * Lock will be released automatically after defined <code>leaseTime</code> interval.
      *
-     * If the lock is acquired, it is held until <code>unlock</code> is invoked,
-     * or until leaseTime milliseconds have passed
-     * since the lock was granted - whichever comes first.
-     *
-     * @param leaseTime the maximum time to hold the lock after granting it,
-     *        before automatically releasing it if it hasn't already been released by invoking <code>unlock</code>.
+     * @param leaseTime the maximum time to hold the lock after it's acquisition,
+     *        if it hasn't already been released by invoking <code>unlock</code>.
      *        If leaseTime is -1, hold the lock until explicitly unlocked.
-     * @param unit the time unit of the {@code leaseTime} argument
+     * @param unit the time unit
      * @param threadId id of thread
      * @return void
      */
@@ -118,31 +111,35 @@ public interface RLockAsync {
     RFuture<Boolean> tryLockAsync(long threadId);
 
     /**
-     * Tries to acquire the lock. If the lock is not available waits up 
-     * to specified <code>waitTime</code> time interval to acquire it.
-     * 
-     * @param waitTime interval to acquire lock
-     * @param unit the time unit of the {@code waitTime} argument
-     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     * Tries to acquire the lock.
+     * Waits up to defined <code>waitTime</code> if necessary until the lock became available.
+     *
+     * @param waitTime the maximum time to acquire the lock
+     * @param unit time unit
+     * @return <code>true</code> if lock is successfully acquired,
+     *          otherwise <code>false</code> if lock is already set.
      */
     RFuture<Boolean> tryLockAsync(long waitTime, TimeUnit unit);
 
     /**
-     * Tries to acquire the lock. If the lock is not available waits 
-     * up to specified <code>waitTime</code> time interval to acquire it. 
-     * Lock will be release automatically after defined <code>leaseTime</code> interval. 
-     * 
-     * @param waitTime time interval to acquire lock
-     * @param leaseTime time interval after which lock will be released automatically 
-     * @param unit the time unit of the {@code waitTime} and {@code leaseTime} arguments
-     * @return <code>true</code> if lock acquired otherwise <code>false</code>
+     * Tries to acquire the lock with defined <code>leaseTime</code>.
+     * Waits up to defined <code>waitTime</code> if necessary until the lock became available.
+     *
+     * Lock will be released automatically after defined <code>leaseTime</code> interval.
+     *
+     * @param waitTime the maximum time to acquire the lock
+     * @param leaseTime lease time
+     * @param unit time unit
+     * @return <code>true</code> if lock is successfully acquired,
+     *          otherwise <code>false</code> if lock is already set.
      */
     RFuture<Boolean> tryLockAsync(long waitTime, long leaseTime, TimeUnit unit);
 
     /**
-     * Tries to acquire the lock by thread with specified <code>threadId</code>. If the lock is not available waits 
-     * up to specified <code>waitTime</code> time interval to acquire it. 
-     * Lock will be release automatically after defined <code>leaseTime</code> interval. 
+     * Tries to acquire the lock by thread with specified <code>threadId</code> and  <code>leaseTime</code>.
+     * Waits up to defined <code>waitTime</code> if necessary until the lock became available.
+     *
+     * Lock will be released automatically after defined <code>leaseTime</code> interval.
      * 
      * @param threadId id of thread
      * @param waitTime time interval to acquire lock
@@ -160,14 +157,14 @@ public interface RLockAsync {
     RFuture<Integer> getHoldCountAsync();
     
     /**
-     * Checks if this lock locked by any thread
+     * Checks if the lock locked by any thread
      *
      * @return <code>true</code> if locked otherwise <code>false</code>
      */
     RFuture<Boolean> isLockedAsync();
     
     /**
-     * Remaining time to live of this lock 
+     * Remaining time to live of the lock
      *
      * @return time in milliseconds
      *          -2 if the lock does not exist.
