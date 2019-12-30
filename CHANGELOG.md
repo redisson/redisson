@@ -4,6 +4,27 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 26-Dec-2019 - 3.12.0 released
+
+Feature - `RExecutorService` task id injection  
+Feature - `submit()` methods with ttl parameter added to `RExecutorService`  
+Feature - `schedule()` methods with timeToLive parameter added to `RScheduledExecutorService`  
+Feature - `MyBatis` cache implementation added  
+Feature - added implementation of `doSuspend` and `doResume` methods of Spring Transaction Manager  
+Feature - `WorkerOptions.taskTimeout` setting added  
+Feature - `RSemaphore.addPermits` method added  
+Feature - ability to define `TaskFailureListener`, `TaskFinishedListener`, `TaskStartedListener` and `TaskSuccessListener` task listeners with WorkerOptions object  
+
+Improvement - Default workers amount of `RExecutorService` set to 1
+
+Fixed - CommandDecoder throws NPE  
+Fixed - ReplicatedConnectionManager triggers reactivation of slaves with ip address instead of hostname (thanks to @f-sander)  
+Fixed - Reactive/Rxjava2 transaction doesn't unlock lock on rollback or commit  
+Fixed - Spring Transaction Manager doesn't handle Redisson `TransactionException`  
+Fixed - `RBuckets.get` throws NPE for non-existed buckets (thanks to @d10n)  
+Fixed - `RPermitExpirableSemaphore` does not expire  
+Fixed - `RedissonCacheStatisticsAutoConfiguration` should be conditional on CacheMeterBinderProvider presence (thanks to @ehontoria)  
+
 ### 28-Nov-2019 - 3.11.6 released
 
 Feature - `RExecutorServiceAsync.cancelTaskAsync()` method added  
