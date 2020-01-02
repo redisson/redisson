@@ -30,13 +30,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
 import org.springframework.data.redis.PassThroughExceptionTranslationStrategy;
-import org.springframework.data.redis.connection.ReactiveRedisClusterConnection;
-import org.springframework.data.redis.connection.ReactiveRedisConnection;
-import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisClusterConnection;
-import org.springframework.data.redis.connection.RedisConnection;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisSentinelConnection;
+import org.springframework.data.redis.connection.*;
 
 /**
  * Redisson based connection factory
@@ -54,12 +48,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     private Config config;
     private RedissonClient redisson;
-    
+    private boolean hasOwnRedisson;
+
     /**
      * Creates factory with default Redisson configuration
      */
     public RedissonConnectionFactory() {
         this(Redisson.create());
+        hasOwnRedisson = true;
     }
     
     /**
@@ -79,6 +75,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     public RedissonConnectionFactory(Config config) {
         super();
         this.config = config;
+        hasOwnRedisson = true;
     }
 
     @Override
@@ -88,6 +85,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public void destroy() throws Exception {
+        if (hasOwnRedisson) {
+            redisson.shutdown();
+        }
     }
 
     @Override

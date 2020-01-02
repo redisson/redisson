@@ -54,12 +54,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     private Config config;
     private RedissonClient redisson;
-    
+    private boolean hasOwnRedisson;
+
     /**
      * Creates factory with default Redisson configuration
      */
     public RedissonConnectionFactory() {
         this(Redisson.create());
+        hasOwnRedisson = true;
     }
     
     /**
@@ -79,6 +81,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     public RedissonConnectionFactory(Config config) {
         super();
         this.config = config;
+        hasOwnRedisson = true;
     }
 
     @Override
@@ -88,6 +91,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public void destroy() throws Exception {
+        if (hasOwnRedisson) {
+            redisson.shutdown();
+        }
     }
 
     @Override

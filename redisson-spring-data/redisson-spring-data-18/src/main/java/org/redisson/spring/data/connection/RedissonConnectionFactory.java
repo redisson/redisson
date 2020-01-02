@@ -40,7 +40,8 @@ import org.springframework.data.redis.connection.RedisSentinelConnection;
  * @author Nikita Koksharov
  *
  */
-public class RedissonConnectionFactory implements RedisConnectionFactory, InitializingBean, DisposableBean {
+public class RedissonConnectionFactory implements RedisConnectionFactory, 
+                    InitializingBean, DisposableBean {
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
@@ -49,12 +50,14 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     private Config config;
     private RedissonClient redisson;
-    
+    private boolean hasOwnRedisson;
+
     /**
      * Creates factory with default Redisson configuration
      */
     public RedissonConnectionFactory() {
         this(Redisson.create());
+        hasOwnRedisson = true;
     }
     
     /**
@@ -74,6 +77,7 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
     public RedissonConnectionFactory(Config config) {
         super();
         this.config = config;
+        hasOwnRedisson = true;
     }
 
     @Override
@@ -83,6 +87,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
 
     @Override
     public void destroy() throws Exception {
+        if (hasOwnRedisson) {
+            redisson.shutdown();
+        }
     }
 
     @Override
