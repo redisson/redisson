@@ -106,9 +106,11 @@ Used by
        <version>3.12.0</version>
     </dependency>  
 
-
 #### Gradle
     compile 'org.redisson:redisson:3.12.0'  
+
+#### SBT
+    libraryDependencies += "org.redisson" % "redisson" % "3.12.0"
 
 #### Java
 
