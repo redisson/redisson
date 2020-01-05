@@ -570,8 +570,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         RFuture<Boolean> future = unlockInnerAsync(threadId);
 
         future.onComplete((opStatus, e) -> {
+            cancelExpirationRenewal(threadId);
+
             if (e != null) {
-                cancelExpirationRenewal(threadId);
                 result.tryFailure(e);
                 return;
             }
@@ -582,8 +583,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 result.tryFailure(cause);
                 return;
             }
-            
-            cancelExpirationRenewal(threadId);
+
             result.trySuccess(null);
         });
 
