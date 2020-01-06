@@ -25,9 +25,10 @@ import org.redisson.api.map.MapWriter;
 import org.redisson.api.mapreduce.RMapReduce;
 
 /**
- * Distributed implementation of {@link java.util.concurrent.ConcurrentMap}
+ * Redis based implementation of {@link java.util.concurrent.ConcurrentMap}
  * and {@link java.util.Map}
- *
+ * <p>
+ * This map uses serialized state of key instead of hashCode or equals methods.
  * This map doesn't allow to store <code>null</code> as key or value.
  *
  * @author Nikita Koksharov
@@ -55,24 +56,22 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     void loadAll(Set<? extends K> keys, boolean replaceExistingValues, int parallelism);
     
     /**
-     * Returns the value to which the specified key is mapped,
-     * or {@code null} if this map contains no mapping for the key.
+     * Returns the value mapped by defined <code>key</code> or {@code null} if value is absent.
      * <p>
      * If map doesn't contain value for specified key and {@link MapLoader} is defined 
      * then value will be loaded in read-through mode. 
      *
-     * @param key the key whose associated value is to be returned
-     * @return the value to which the specified key is mapped, or
-     *         {@code null} if this map contains no mapping for the key
+     * @param key the key
+     * @return the value mapped by defined <code>key</code> or {@code null} if value is absent
      */
     @Override
     V get(Object key);
     
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in async manner.
+     * Stores the specified <code>value</code> mapped by specified <code>key</code>.
+     * Returns previous value if map entry with specified <code>key</code> already existed.
      * <p>
-     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
      * @param key - map key
      * @param value - map value
@@ -82,8 +81,8 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     V put(K key, V value);
     
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * only if there is no any association with specified<code>key</code>.
+     * Stores the specified <code>value</code> mapped by specified <code>key</code>
+     * only if there is no value with specified<code>key</code> stored before.
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
@@ -153,7 +152,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     RLock getLock(K key);
     
     /**
-     * Returns size of value mapped by key in bytes
+     * Returns size of value mapped by specified <code>key</code> in bytes
      * 
      * @param key - map key
      * @return size of value
@@ -161,7 +160,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     int valueSize(K key);
     
     /**
-     * Atomically adds the given <code>delta</code> to the current value
+     * Adds the given <code>delta</code> to the current value
      * by mapped <code>key</code>.
      *
      * Works only for <b>numeric</b> values!
@@ -173,33 +172,55 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     V addAndGet(K key, Number delta);
 
     /**
-     * Removes <code>key</code> from map and returns associated value in async manner.
+     * Returns <code>true</code> if this map contains map entry
+     * mapped by specified <code>key</code>, otherwise <code>false</code>
+     *
+     * @param key - map key
+     * @return <code>true</code> if this map contains map entry
+     *          mapped by specified <code>key</code>, otherwise <code>false</code>
+     */
+    @Override
+    boolean containsKey(Object key);
+
+    /**
+     * Returns <code>true</code> if this map contains any map entry
+     * with specified <code>value</code>, otherwise <code>false</code>
+     *
+     * @param value - map value
+     * @return <code>true</code> if this map contains any map entry
+     *          with specified <code>value</code>, otherwise <code>false</code>
+     */
+    @Override
+    boolean containsValue(Object value);
+
+    /**
+     * Removes map entry by specified <code>key</code> and returns value.
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
      * @param key - map key
-     * @return deleted value, <code>null</code> if there wasn't any association
+     * @return deleted value, <code>null</code> if map entry doesn't exist
      */
     @Override
     V remove(Object key);
     
     /**
-     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
-     * If there wasn't any association before then method returns <code>null</code>.
+     * Replaces previous value with a new <code>value</code> mapped by specified <code>key</code>.
+     * Returns <code>null</code> if there is no map entry stored before and doesn't store new map entry.
      * <p>
      * If {@link MapWriter} is defined then new <code>value</code>is written in write-through mode.
      *
      * @param key - map key
      * @param value - map value
      * @return previous associated value 
-     *         or <code>null</code> if there wasn't any association and change hasn't been made
+     *         or <code>null</code> if there is no map entry stored before and doesn't store new map entry
      */
     @Override
     V replace(K key, V value);
 
     /**
-     * Replaces previous <code>oldValue</code> with a <code>newValue</code> associated with the <code>key</code>.
-     * If previous value doesn't exist or equal to <code>oldValue</code> then method returns <code>false</code>.
+     * Replaces previous <code>oldValue</code> with a <code>newValue</code> mapped by specified <code>key</code>.
+     * Returns <code>false</code> if previous value doesn't exist or equal to <code>oldValue</code>.
      * <p>
      * If {@link MapWriter} is defined then <code>newValue</code>is written in write-through mode.
      * 
@@ -212,22 +233,21 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     boolean replace(K key, V oldValue, V newValue);
 
     /**
-     * Removes <code>key</code> from map only if it associated with <code>value</code>.
+     * Removes map entry only if it exists with specified <code>key</code> and <code>value</code>.
      * <p>
      * If {@link MapWriter} is defined then <code>key</code>is deleted in write-through mode.
      *
      * @param key - map key
      * @param value - map value
-     * @return <code>true</code> if map entry has been replaced otherwise <code>false</code>.
+     * @return <code>true</code> if map entry has been removed otherwise <code>false</code>.
      */
     @Override
     boolean remove(Object key, Object value);
     
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch.
+     * Stores map entries specified in <code>map</code> object in batch mode.
      * <p>
-     * If {@link MapWriter} is defined then new map entries will be stored in write-through mode. 
+     * If {@link MapWriter} is defined then map entries will be stored in write-through mode.
      *
      * @param map mappings to be stored in this map
      */
@@ -235,20 +255,19 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     void putAll(java.util.Map<? extends K, ? extends V> map);
     
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * in batch. Batch inserted by chunks limited by <code>batchSize</code> amount 
+     * Stores map entries specified in <code>map</code> object in batch mode.
+     * Batch inserted by chunks limited by <code>batchSize</code> value
      * to avoid OOM and/or Redis response timeout error for map with big size. 
      * <p>
-     * If {@link MapWriter} is defined then new map entries are stored in write-through mode. 
+     * If {@link MapWriter} is defined then map entries are stored in write-through mode.
      *
      * @param map mappings to be stored in this map
-     * @param batchSize - map chunk size
+     * @param batchSize - size of map entries batch
      */
     void putAll(Map<? extends K, ? extends V> map, int batchSize);
     
     /**
-     * Gets a map slice contained the mappings with defined <code>keys</code>
-     * by one operation.
+     * Returns map slice contained the mappings with defined <code>keys</code>.
      * <p>
      * If map doesn't contain value/values for specified key/keys and {@link MapLoader} is defined 
      * then value/values will be loaded in read-through mode. 
@@ -261,10 +280,10 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     Map<K, V> getAll(Set<K> keys);
 
     /**
-     * Removes <code>keys</code> from map by one operation
+     * Removes map entries mapped by specified <code>keys</code>.
      * <p>
      * Works faster than <code>{@link #remove(Object)}</code> but not returning
-     * the value associated with <code>key</code>
+     * the value.
      * <p>
      * If {@link MapWriter} is defined then <code>keys</code>are deleted in write-through mode.
      *
@@ -274,12 +293,15 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     long fastRemove(K... keys);
 
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>.
+     * Stores the specified <code>value</code> mapped by specified <code>key</code>.
      * <p>
      * Works faster than <code>{@link #put(Object, Object)}</code> but not returning
-     * the previous value associated with <code>key</code>
+     * previous value.
      * <p>
-     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     * Returns <code>true</code> if key is a new key in the hash and value was set or
+     * <code>false</code> if key already exists in the hash and the value was updated.
+     * <p>
+     * If {@link MapWriter} is defined then map entry is stored in write-through mode.
      *
      * @param key - map key
      * @param value - map value
@@ -289,10 +311,13 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     boolean fastPut(K key, V value);
 
     /**
-     * Replaces previous value with a new <code>value</code> associated with the <code>key</code>.
+     * Replaces previous value with a new <code>value</code> mapped by specified <code>key</code>.
      * <p>
      * Works faster than <code>{@link #replace(Object, Object)}</code> but not returning
-     * the previous value associated with <code>key</code>
+     * the previous value.
+     * <p>
+     * Returns <code>true</code> if key exists and value was updated or
+     * <code>false</code> if key doesn't exists and value wasn't updated.
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
      *
@@ -302,10 +327,13 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      *         <code>false</code> if key doesn't exists and value wasn't updated.
      */
     boolean fastReplace(K key, V value);
-    
+
     /**
-     * Associates the specified <code>value</code> with the specified <code>key</code>
-     * only if there is no any association with specified<code>key</code>.
+     * Stores the specified <code>value</code> mapped by specified <code>key</code>
+     * only if there is no value with specified<code>key</code> stored before.
+     * <p>
+     * Returns <code>true</code> if key is a new one in the hash and value was set or
+     * <code>false</code> if key already exists in the hash and change hasn't been made.
      * <p>
      * Works faster than <code>{@link #putIfAbsent(Object, Object)}</code> but not returning
      * the previous value associated with <code>key</code>
