@@ -1,6 +1,6 @@
 # Redisson - Redis Java client<br/>with features of In-Memory Data Grid
 
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.11.5) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.12.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 JDK compatibility:  1.8 - 13, Android  
@@ -106,9 +106,11 @@ Used by
        <version>3.12.0</version>
     </dependency>  
 
-
 #### Gradle
     compile 'org.redisson:redisson:3.12.0'  
+
+#### SBT
+    libraryDependencies += "org.redisson" % "redisson" % "3.12.0"
 
 #### Java
 
