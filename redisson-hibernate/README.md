@@ -80,8 +80,6 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 <!-- Redisson YAML config (located in filesystem or classpath) -->
 <property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
-<!-- Redisson JSON config (located in filesystem or classpath) -->
-<property name="hibernate.cache.redisson.config" value="/redisson.json" />
 ```
 
 #### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:
