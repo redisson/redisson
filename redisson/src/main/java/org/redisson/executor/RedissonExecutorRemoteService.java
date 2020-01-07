@@ -17,7 +17,9 @@ package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
-import org.redisson.api.*;
+import org.redisson.api.RBlockingQueue;
+import org.redisson.api.RFuture;
+import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
@@ -30,7 +32,6 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -86,7 +87,9 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     }
 
     @Override
-    protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request, RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture, AtomicReference<RRemoteServiceResponse> responseHolder) {
+    protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request,
+                                    RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture,
+                                    RPromise<RRemoteServiceResponse> responsePromise) {
         startedListeners.stream().forEach(l -> l.onStarted(request.getId()));
 
         if (taskTimeout > 0) {
@@ -94,10 +97,10 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                 ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
-        super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responseHolder);
+        super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responsePromise);
 
-        if (responseHolder.get() instanceof RemoteServiceResponse) {
-            RemoteServiceResponse response = (RemoteServiceResponse) responseHolder.get();
+        if (responsePromise.getNow() instanceof RemoteServiceResponse) {
+            RemoteServiceResponse response = (RemoteServiceResponse) responsePromise.getNow();
             if (response.getError() == null) {
                 successListeners.stream().forEach(l -> l.onSucceeded(request.getId(), response.getResult()));
             } else {

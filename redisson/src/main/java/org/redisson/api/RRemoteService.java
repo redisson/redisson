@@ -111,7 +111,33 @@ public interface RRemoteService {
      * @param remoteInterface - remote service interface
      */
     <T> void deregister(Class<T> remoteInterface);
-    
+
+    /**
+     * Tries to execute one awaiting remote request.
+     * Waits up to <code>timeout</code> if necessary until remote request became available.
+     *
+     * @param remoteInterface - remote service interface
+     * @param object - remote service object
+     * @param timeout - maximum wait time until remote request became available
+     * @param timeUnit - time unit
+     * @param <T> - type of remote service
+     * @return <code>true</code> if method was successfully executed and
+     *          <code>false</code> if timeout reached before execution
+     * @throws InterruptedException - if the thread is interrupted
+     */
+    <T> boolean tryExecute(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) throws InterruptedException;
+
+    /**
+     * Tries to execute one awaiting remote request.
+     *
+     * @param remoteInterface - remote service interface
+     * @param object - remote service object
+     * @param <T> - type of remote service
+     * @return <code>true</code> if method was successfully executed and
+     *          <code>false</code> if timeout reached before execution
+     */
+    <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object);
+
     /**
      * Get remote service object for remote invocations.
      * <p>
