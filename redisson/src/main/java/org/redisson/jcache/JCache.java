@@ -57,7 +57,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 
 import org.redisson.Redisson;
-import org.redisson.RedissonBaseMapIterator;
+import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.RedissonObject;
 import org.redisson.ScanResult;
 import org.redisson.api.CacheAsync;

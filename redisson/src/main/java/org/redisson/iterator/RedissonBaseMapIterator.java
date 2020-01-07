@@ -13,7 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.iterator;
+
+import java.util.AbstractMap;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * 
@@ -21,11 +25,20 @@ package org.redisson;
  *
  * @param <V> value type
  */
-abstract class RedissonBaseIterator<V> extends BaseIterator<V, Object> {
+public abstract class RedissonBaseMapIterator<V> extends BaseIterator<V, Entry<Object, Object>> {
 
-    @Override
-    protected V getValue(Object entry) {
-        return (V) entry;
+    @SuppressWarnings("unchecked")
+    protected V getValue(Map.Entry<Object, Object> entry) {
+        return (V) new AbstractMap.SimpleEntry(entry.getKey(), entry.getValue()) {
+
+            @Override
+            public Object setValue(Object value) {
+                return put(entry, value);
+            }
+
+        };
     }
-    
+
+    protected abstract Object put(Entry<Object, Object> entry, Object value);
+
 }

@@ -39,6 +39,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RedissonPromise;
 

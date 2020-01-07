@@ -15,25 +15,8 @@
  */
 package org.redisson;
 
-import java.util.AbstractCollection;
-import java.util.AbstractSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RMultimap;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RSemaphore;
+import io.netty.buffer.ByteBuf;
+import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
@@ -43,10 +26,13 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.misc.Hash;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.buffer.ByteBuf;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Nikita Koksharov
@@ -392,11 +378,28 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
 
         @Override
         public Iterator<K> iterator() {
-            return new RedissonMultiMapKeysIterator<K>(RedissonMultimap.this) {
+            return new RedissonBaseMapIterator<K>() {
                 @Override
                 protected K getValue(java.util.Map.Entry<Object, Object> entry) {
                     return (K) entry.getKey();
                 }
+
+                @Override
+                protected Object put(Entry<Object, Object> entry, Object value) {
+                    return RedissonMultimap.this.put((K) entry.getKey(), (V) value);
+                }
+
+                @Override
+                protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
+                    return RedissonMultimap.this.scanIterator(client, nextIterPos);
+                }
+
+                @Override
+                protected void remove(Entry<Object, Object> value) {
+                    RedissonMultimap.this.fastRemove((K) value.getKey());
+                }
+
+
             };
         }
 

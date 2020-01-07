@@ -15,23 +15,6 @@
  */
 package org.redisson;
 
-import static org.redisson.client.protocol.RedisCommands.EVAL_OBJECT;
-import static org.redisson.client.protocol.RedisCommands.LINDEX;
-import static org.redisson.client.protocol.RedisCommands.LLEN_INT;
-import static org.redisson.client.protocol.RedisCommands.LPOP;
-import static org.redisson.client.protocol.RedisCommands.LPUSH_BOOLEAN;
-import static org.redisson.client.protocol.RedisCommands.LRANGE;
-import static org.redisson.client.protocol.RedisCommands.LREM_SINGLE;
-import static org.redisson.client.protocol.RedisCommands.RPUSH_BOOLEAN;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.NoSuchElementException;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RList;
 import org.redisson.api.RedissonClient;
@@ -45,9 +28,14 @@ import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
 import org.redisson.client.protocol.convertor.Convertor;
 import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonListIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+
+import java.util.*;
+
+import static org.redisson.client.protocol.RedisCommands.*;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}
@@ -505,97 +493,26 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
 
     @Override
     public ListIterator<V> listIterator(int ind) {
-        return new ListIterator<V>() {
-
-            private V prevCurrentValue;
-            private V nextCurrentValue;
-            private V currentValueHasRead;
-            private int currentIndex = ind - 1;
-            private boolean hasBeenModified = true;
+        return new RedissonListIterator<V>(ind) {
 
             @Override
-            public boolean hasNext() {
-                V val = RedissonList.this.getValue(currentIndex+1);
-                if (val != null) {
-                    nextCurrentValue = val;
-                }
-                return val != null;
+            public V getValue(int index) {
+                return RedissonList.this.getValue(index);
             }
 
             @Override
-            public V next() {
-                if (nextCurrentValue == null && !hasNext()) {
-                    throw new NoSuchElementException("No such element at index " + currentIndex);
-                }
-                currentIndex++;
-                currentValueHasRead = nextCurrentValue;
-                nextCurrentValue = null;
-                hasBeenModified = false;
-                return currentValueHasRead;
+            public V remove(int index) {
+                return RedissonList.this.remove(index);
             }
 
             @Override
-            public void remove() {
-                if (currentValueHasRead == null) {
-                    throw new IllegalStateException("Neither next nor previous have been called");
-                }
-                if (hasBeenModified) {
-                    throw new IllegalStateException("Element been already deleted");
-                }
-                RedissonList.this.remove(currentIndex);
-                currentIndex--;
-                hasBeenModified = true;
-                currentValueHasRead = null;
+            public void fastSet(int index, V value) {
+                RedissonList.this.fastSet(index, value);
             }
 
             @Override
-            public boolean hasPrevious() {
-                if (currentIndex < 0) {
-                    return false;
-                }
-                V val = RedissonList.this.getValue(currentIndex);
-                if (val != null) {
-                    prevCurrentValue = val;
-                }
-                return val != null;
-            }
-
-            @Override
-            public V previous() {
-                if (prevCurrentValue == null && !hasPrevious()) {
-                    throw new NoSuchElementException("No such element at index " + currentIndex);
-                }
-                currentIndex--;
-                hasBeenModified = false;
-                currentValueHasRead = prevCurrentValue;
-                prevCurrentValue = null;
-                return currentValueHasRead;
-            }
-
-            @Override
-            public int nextIndex() {
-                return currentIndex + 1;
-            }
-
-            @Override
-            public int previousIndex() {
-                return currentIndex;
-            }
-
-            @Override
-            public void set(V e) {
-                if (hasBeenModified) {
-                    throw new IllegalStateException();
-                }
-
-                RedissonList.this.fastSet(currentIndex, e);
-            }
-
-            @Override
-            public void add(V e) {
-                RedissonList.this.add(currentIndex+1, e);
-                currentIndex++;
-                hasBeenModified = true;
+            public void add(int index, V value) {
+                RedissonList.this.add(index, value);
             }
         };
     }

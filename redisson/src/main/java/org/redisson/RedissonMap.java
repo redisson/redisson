@@ -53,6 +53,7 @@ import org.redisson.client.protocol.convertor.NumberConvertor;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.iterator.RedissonMapIterator;
 import org.redisson.mapreduce.RedissonMapReduce;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;

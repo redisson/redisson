@@ -43,6 +43,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.iterator.RedissonBaseIterator;
 
 /**
  * Set based Multimap Cache values holder

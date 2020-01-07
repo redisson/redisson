@@ -41,6 +41,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompositeIterable;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;

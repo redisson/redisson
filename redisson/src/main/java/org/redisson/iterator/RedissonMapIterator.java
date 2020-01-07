@@ -13,25 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson;
+package org.redisson.iterator;
+
+import org.redisson.RedissonMap;
+import org.redisson.ScanResult;
+import org.redisson.client.RedisClient;
 
 import java.util.Map.Entry;
-
-import org.redisson.client.RedisClient;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <V> value type
+ * @param <M> loaded value type
  */
-public class RedissonMultiMapKeysIterator<V> extends RedissonBaseMapIterator<V> {
+public class RedissonMapIterator<M> extends RedissonBaseMapIterator<M> {
 
-    private final RedissonMultimap map;
+    private final RedissonMap map;
+    private final String pattern;
+    private final int count;
 
-    public RedissonMultiMapKeysIterator(RedissonMultimap map) {
+    public RedissonMapIterator(RedissonMap map, String pattern, int count) {
         this.map = map;
+        this.pattern = pattern;
+        this.count = count;
     }
+
     @Override
     protected Object put(Entry<Object, Object> entry, Object value) {
         return map.put(entry.getKey(), value);
@@ -39,7 +46,7 @@ public class RedissonMultiMapKeysIterator<V> extends RedissonBaseMapIterator<V> 
 
     @Override
     protected ScanResult<Entry<Object, Object>> iterator(RedisClient client, long nextIterPos) {
-        return map.scanIterator(client, nextIterPos);
+        return map.scanIterator(map.getName(), client, nextIterPos, pattern, count);
     }
 
     @Override
