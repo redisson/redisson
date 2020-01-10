@@ -206,13 +206,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
+            scheme = addr.getScheme();
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
                 RedisConnection c = client.connect();
                 connected = true;
                 try {
                     c.sync(RedisCommands.PING);
-                    scheme = addr.getScheme();
                 } catch (RedisAuthRequiredException e) {
                     usePassword = true;
                 }
