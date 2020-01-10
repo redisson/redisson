@@ -94,7 +94,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
-    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+    public RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
@@ -124,7 +124,14 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         RBlockingQueue<String> requestQueue = getBlockingQueue(requestQueueName, StringCodec.INSTANCE);
         return requestQueue.size();
     }
-    
+
+    @Override
+    public RFuture<Integer> getPendingInvocationsAsync(Class<?> remoteInterface) {
+        String requestQueueName = getRequestQueueName(remoteInterface);
+        RBlockingQueue<String> requestQueue = getBlockingQueue(requestQueueName, StringCodec.INSTANCE);
+        return requestQueue.sizeAsync();
+    }
+
     @Override
     public int getFreeWorkers(Class<?> remoteInterface) {
         Entry entry = remoteMap.get(remoteInterface);
@@ -183,13 +190,19 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
-    public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object) {
+    public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit) {
         RPromise<Boolean> result = new RedissonPromise<>();
+        result.setUncancellable();
         String requestQueueName = getRequestQueueName(remoteInterface);
 
         RBlockingQueue<String> requestQueue = getBlockingQueue(requestQueueName, StringCodec.INSTANCE);
-        RFuture<String> poll = requestQueue.pollAsync();
-        poll.onComplete((requestId, e) -> {
+        RFuture<String> pollFuture;
+        if (timeout == -1) {
+            pollFuture = requestQueue.pollAsync();
+        } else {
+            pollFuture = requestQueue.pollAsync(timeout, timeUnit);
+        }
+        pollFuture.onComplete((requestId, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;
@@ -225,6 +238,11 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
             });
         });
         return result;
+    }
+
+    @Override
+    public <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object) {
+        return tryExecuteAsync(remoteInterface, object, -1, null);
     }
     
     private <T> void subscribe(Class<T> remoteInterface, RBlockingQueue<String> requestQueue,

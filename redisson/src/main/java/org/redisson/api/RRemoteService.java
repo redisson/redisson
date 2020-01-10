@@ -72,7 +72,15 @@ public interface RRemoteService {
      * @return invocations amount
      */
     int getPendingInvocations(Class<?> remoteInterface);
-    
+
+    /**
+     * Returns pending invocations amount for handling in free workers.
+     *
+     * @param remoteInterface - remote service interface
+     * @return invocations amount
+     */
+    RFuture<Integer> getPendingInvocationsAsync(Class<?> remoteInterface);
+
     /**
      * Register remote service with single worker
      *
@@ -137,6 +145,20 @@ public interface RRemoteService {
      *          <code>false</code> if timeout reached before execution
      */
     <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object);
+
+    /**
+     * Tries to execute one awaiting remote request.
+     * Waits up to <code>timeout</code> if necessary until remote request became available.
+     *
+     * @param remoteInterface - remote service interface
+     * @param object - remote service object
+     * @param timeout - maximum wait time until remote request became available
+     * @param timeUnit - time unit
+     * @param <T> - type of remote service
+     * @return <code>true</code> if method was successfully executed and
+     *          <code>false</code> if timeout reached before execution
+     */
+    <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit);
 
     /**
      * Get remote service object for remote invocations.
