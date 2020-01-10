@@ -94,7 +94,7 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
     }
 
     @Override
-    public RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
+    protected RFuture<Boolean> removeAsync(String requestQueueName, RequestId taskId) {
         return commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('lrem', KEYS[1], 1, ARGV[1]) > 0 then "
                         + "redis.call('hdel', KEYS[2], ARGV[1]);" +
