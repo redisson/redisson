@@ -17,7 +17,6 @@ package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
-import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
@@ -30,7 +29,6 @@ import org.redisson.remote.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
