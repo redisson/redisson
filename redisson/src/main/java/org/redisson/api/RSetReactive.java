@@ -15,17 +15,17 @@
  */
 package org.redisson.api;
 
-import java.util.Set;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.Set;
+
 /**
- * Reactive interface for RSet object
+ * Reactive interface for Redis based implementation of {@link java.util.Set}
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> type of value
  */
 public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReactive<Set<V>> {
 
@@ -70,8 +70,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
     RLockReactive getLock(V value);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * 
      * @param count - size of elements batch
      * @return iterator
@@ -79,8 +79,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
     Flux<V> iterator(int count);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -90,7 +90,8 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
     Flux<V> iterator(String pattern, int count);
     
     /**
-     * Returns iterator over elements in this set matches <code>pattern</code>. 
+     * Returns elements iterator.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
      * @return iterator
@@ -98,29 +99,34 @@ public interface RSetReactive<V> extends RCollectionReactive<V>, RSortableReacti
     Flux<V> iterator(String pattern);
     
     /**
-     * Removes and returns random elements from set
-     * in async mode
-     * 
-     * @param amount of random values
-     * @return random values
+     * Removes and returns random elements limited by <code>amount</code>
+     *
+     * @param amount of random elements
+     * @return random elements
      */
     Mono<Set<V>> removeRandom(int amount);
     
     /**
-     * Removes and returns random element from set
-     * in async mode
+     * Removes and returns random element
      *
-     * @return value
+     * @return random element
      */
     Mono<V> removeRandom();
 
     /**
-     * Returns random element from set
-     * in async mode
+     * Returns random element
      *
-     * @return value
+     * @return random element
      */
     Mono<V> random();
+
+    /**
+     * Returns random elements from set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Mono<Set<V>> random(int count);
 
     /**
      * Move a member from this set to the given destination set in async mode.

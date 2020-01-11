@@ -22,11 +22,11 @@ import java.util.stream.Stream;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 
 /**
- * Distributed and concurrent implementation of {@link java.util.Set}
+ * Redis based implementation of {@link java.util.Set}
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> type of value
  */
 public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set<V>> {
 
@@ -79,8 +79,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     RLock getLock(V value);
     
     /**
-     * Returns stream of elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * Returns stream of elements fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * 
      * @param count - size of elements batch
      * @return stream of elements
@@ -88,8 +88,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Stream<V> stream(int count);
     
     /**
-     * Returns stream of elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * Returns stream of elements fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -99,7 +99,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Stream<V> stream(String pattern, int count);
     
     /**
-     * Returns stream of elements in this set matches <code>pattern</code>. 
+     * Returns stream of elements.
+     * If pattern is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
      * @return stream of elements
@@ -107,8 +108,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Stream<V> stream(String pattern);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * 
      * @param count - size of elements batch
      * @return iterator
@@ -116,8 +117,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Iterator<V> iterator(int count);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -127,7 +128,8 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     Iterator<V> iterator(String pattern, int count);
     
     /**
-     * Returns iterator over elements in this set matches <code>pattern</code>. 
+     * Returns elements iterator.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
      * @return iterator
@@ -144,24 +146,24 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
     <KOut, VOut> RCollectionMapReduce<V, KOut, VOut> mapReduce();
     
     /**
-     * Removes and returns random elements from set
+     * Removes and returns random elements limited by <code>amount</code>
      * 
-     * @param amount of random values
-     * @return random values
+     * @param amount of random elements
+     * @return random elements
      */
     Set<V> removeRandom(int amount);
     
     /**
-     * Removes and returns random element from set
+     * Removes and returns random element
      *
-     * @return value
+     * @return random element
      */
     V removeRandom();
 
     /**
-     * Returns random element from set
+     * Returns random element
      *
-     * @return value
+     * @return random element
      */
     V random();
 
@@ -169,7 +171,7 @@ public interface RSet<V> extends Set<V>, RExpirable, RSetAsync<V>, RSortable<Set
      * Returns random elements from set limited by <code>count</code>
      *
      * @param count - values amount to return
-     * @return value
+     * @return random elements
      */
     Set<V> random(int count);
     

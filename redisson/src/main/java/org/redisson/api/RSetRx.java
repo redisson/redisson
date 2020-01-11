@@ -22,11 +22,11 @@ import io.reactivex.Maybe;
 import io.reactivex.Single;
 
 /**
- * RxJava2 interface for RSet object
+ * RxJava2 interface for Redis based implementation of {@link java.util.Set}
  *
  * @author Nikita Koksharov
  *
- * @param <V> value
+ * @param <V> type of value
  */
 public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
 
@@ -71,8 +71,8 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     RLockRx getLock(V value);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param. 
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * 
      * @param count - size of elements batch
      * @return iterator
@@ -80,8 +80,8 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     Flowable<V> iterator(int count);
     
     /**
-     * Returns an iterator over elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
+     * Returns elements iterator fetches elements in a batch.
+     * Batch size is defined by <code>count</code> param.
      * If pattern is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
@@ -91,7 +91,8 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     Flowable<V> iterator(String pattern, int count);
     
     /**
-     * Returns iterator over elements in this set matches <code>pattern</code>. 
+     * Returns elements iterator.
+     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
      * 
      * @param pattern - search pattern
      * @return iterator
@@ -99,29 +100,35 @@ public interface RSetRx<V> extends RCollectionRx<V>, RSortableRx<Set<V>> {
     Flowable<V> iterator(String pattern);
     
     /**
-     * Removes and returns random elements from set
-     * in async mode
-     * 
-     * @param amount of random values
-     * @return random values
+     * Removes and returns random elements limited by <code>amount</code>
+     *
+     * @param amount of random elements
+     * @return random elements
      */
     Single<Set<V>> removeRandom(int amount);
     
     /**
-     * Removes and returns random element from set
-     * in async mode
+     * Removes and returns random element
      *
-     * @return value
+     * @return random element
      */
     Maybe<V> removeRandom();
 
     /**
-     * Returns random element from set
-     * in async mode
+     * Returns random element
      *
-     * @return value
+     * @return random element
      */
     Maybe<V> random();
+
+    /**
+     * Returns random elements from set limited by <code>count</code>
+     *
+     * @param count - values amount to return
+     * @return random elements
+     */
+    Single<Set<V>> random(int count);
+
 
     /**
      * Move a member from this set to the given destination set in async mode.
