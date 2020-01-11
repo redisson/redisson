@@ -87,9 +87,8 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
     }
 
     @Override
-    protected <T> void invokeMethod(Class<T> remoteInterface, RBlockingQueue<String> requestQueue, RemoteServiceRequest request,
-                                    RemoteServiceMethod method, String responseName, ExecutorService executor, RFuture<RemoteServiceCancelRequest> cancelRequestFuture,
-                                    RPromise<RRemoteServiceResponse> responsePromise) {
+    protected <T> void invokeMethod(RemoteServiceRequest request, RemoteServiceMethod method,
+                RFuture<RemoteServiceCancelRequest> cancelRequestFuture, RPromise<RRemoteServiceResponse> responsePromise) {
         startedListeners.stream().forEach(l -> l.onStarted(request.getId()));
 
         if (taskTimeout > 0) {
@@ -97,7 +96,7 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                 ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
-        super.invokeMethod(remoteInterface, requestQueue, request, method, responseName, executor, cancelRequestFuture, responsePromise);
+        super.invokeMethod(request, method, cancelRequestFuture, responsePromise);
 
         if (responsePromise.getNow() instanceof RemoteServiceResponse) {
             RemoteServiceResponse response = (RemoteServiceResponse) responsePromise.getNow();

@@ -108,7 +108,7 @@ public interface RRemoteService {
      * @param remoteInterface - remote service interface
      * @param object - remote service object
      * @param workers - workers amount
-     * @param executor - executor service
+     * @param executor - executor service used to invoke methods
      */
     <T> void register(Class<T> remoteInterface, T object, int workers, ExecutorService executor);
     
@@ -137,6 +137,22 @@ public interface RRemoteService {
 
     /**
      * Tries to execute one awaiting remote request.
+     * Waits up to <code>timeout</code> if necessary until remote request became available.
+     *
+     * @param remoteInterface - remote service interface
+     * @param object - remote service object
+     * @param timeout - maximum wait time until remote request became available
+     * @param timeUnit - time unit
+     * @param executorService - executor service used to invoke methods
+     * @param <T> - type of remote service
+     * @return <code>true</code> if method was successfully executed and
+     *          <code>false</code> if timeout reached before execution
+     * @throws InterruptedException - if the thread is interrupted
+     */
+    <T> boolean tryExecute(Class<T> remoteInterface, T object, ExecutorService executorService, long timeout, TimeUnit timeUnit) throws InterruptedException;
+
+    /**
+     * Tries to execute one awaiting remote request.
      *
      * @param remoteInterface - remote service interface
      * @param object - remote service object
@@ -159,6 +175,21 @@ public interface RRemoteService {
      *          <code>false</code> if timeout reached before execution
      */
     <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, long timeout, TimeUnit timeUnit);
+
+    /**
+     * Tries to execute one awaiting remote request.
+     * Waits up to <code>timeout</code> if necessary until remote request became available.
+     *
+     * @param remoteInterface - remote service interface
+     * @param object - remote service object
+     * @param timeout - maximum wait time until remote request became available
+     * @param timeUnit - time unit
+     * @param executorService - executor service used to invoke methods
+     * @param <T> - type of remote service
+     * @return <code>true</code> if method was successfully executed and
+     *          <code>false</code> if timeout reached before execution
+     */
+    <T> RFuture<Boolean> tryExecuteAsync(Class<T> remoteInterface, T object, ExecutorService executorService, long timeout, TimeUnit timeUnit);
 
     /**
      * Get remote service object for remote invocations.
