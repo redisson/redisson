@@ -21,7 +21,6 @@ import org.redisson.api.RFuture;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
-import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
 

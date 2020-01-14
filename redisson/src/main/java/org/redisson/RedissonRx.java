@@ -15,19 +15,17 @@
  */
 package org.redisson;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.reactive.ReactiveProxyBuilder;
-import org.redisson.reactive.RedissonTransferQueueReactive;
 import org.redisson.remote.ResponseEntry;
 import org.redisson.rx.*;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Main infrastructure class allows to get access
