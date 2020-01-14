@@ -92,7 +92,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Redis subscription-connection pool size limit
      * <p>
-     * Default is 50
+     * Default is <code>50</code>
      *
      * @param subscriptionConnectionPoolSize - pool size
      * @return config
@@ -142,7 +142,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle subscription connection amount.
      * <p>
-     * Default is 1
+     * Default is <code>1</code>
      * 
      * @param subscriptionConnectionMinimumIdleSize - connections amount
      * @return config
@@ -159,7 +159,7 @@ public class SingleServerConfig extends BaseConfig<SingleServerConfig> {
     /**
      * Minimum idle Redis connection amount.
      * <p>
-     * Default is <code>10</code>
+     * Default is <code>24</code>
      *
      * @param connectionMinimumIdleSize - connections amount
      * @return config

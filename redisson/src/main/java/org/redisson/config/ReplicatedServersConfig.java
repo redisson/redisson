@@ -75,6 +75,8 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
     }
     /**
      * Replication group scan interval in milliseconds
+     * <p>
+     * Default is <code>1000</code>
      *
      * @param scanInterval in milliseconds
      * @return config
@@ -85,7 +87,8 @@ public class ReplicatedServersConfig extends BaseMasterSlaveServersConfig<Replic
     }
 
     /**
-     * Database index used for Redis connection
+     * Database index used for Redis connection.
+     * <p>
      * Default is <code>0</code>
      *
      * @param database number

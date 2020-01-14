@@ -108,6 +108,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     }
     /**
      * Sentinel scan interval in milliseconds
+     * <p>
+     * Default is <code>1000</code>
      *
      * @param scanInterval in milliseconds
      * @return config

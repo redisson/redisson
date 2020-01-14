@@ -138,7 +138,7 @@ public class Config {
     }
 
     /**
-     * Redis key/value codec. Default is json-codec
+     * Redis key/value codec. Default is FST codec
      *
      * @see org.redisson.client.codec.Codec
      * 
