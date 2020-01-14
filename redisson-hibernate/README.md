@@ -16,10 +16,10 @@ Below is the list of all available factories with local cache and/or data partit
 
 |Class name | Local cache | Data partitioning |
 | ------------- | ------------- | ------------|
-|RedissonRegionFactory<br/>&nbsp; | No | No |
-|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | **Yes** | No |
-|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | No | **Yes** |
-|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | **Yes** | **Yes** |
+|RedissonRegionFactory<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: |
+|RedissonLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: |
+|RedissonClusteredRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: |
+|RedissonClusteredLocalCachedRegionFactory<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: |
 
 ## Hibernate Cache Usage
 
