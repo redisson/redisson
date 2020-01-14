@@ -45,8 +45,12 @@ public class RemotePromise<T> extends RedissonPromise<T> {
         return addFuture;
     }
     
-    public void doCancel() {
-        super.cancel(true);
+    public void doCancel(boolean mayInterruptIfRunning) {
+        super.cancel(mayInterruptIfRunning);
+    }
+
+    public RFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
+        return RemotePromise.newSucceededFuture(false);
     }
 
 }

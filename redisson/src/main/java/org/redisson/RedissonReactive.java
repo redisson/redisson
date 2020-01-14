@@ -26,24 +26,7 @@ import org.redisson.config.Config;
 import org.redisson.config.ConfigSupport;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.eviction.EvictionScheduler;
-import org.redisson.reactive.CommandReactiveService;
-import org.redisson.reactive.ReactiveProxyBuilder;
-import org.redisson.reactive.RedissonBatchReactive;
-import org.redisson.reactive.RedissonBlockingDequeReactive;
-import org.redisson.reactive.RedissonBlockingQueueReactive;
-import org.redisson.reactive.RedissonKeysReactive;
-import org.redisson.reactive.RedissonLexSortedSetReactive;
-import org.redisson.reactive.RedissonListMultimapReactive;
-import org.redisson.reactive.RedissonListReactive;
-import org.redisson.reactive.RedissonMapCacheReactive;
-import org.redisson.reactive.RedissonMapReactive;
-import org.redisson.reactive.RedissonReadWriteLockReactive;
-import org.redisson.reactive.RedissonScoredSortedSetReactive;
-import org.redisson.reactive.RedissonSetCacheReactive;
-import org.redisson.reactive.RedissonSetMultimapReactive;
-import org.redisson.reactive.RedissonSetReactive;
-import org.redisson.reactive.RedissonTopicReactive;
-import org.redisson.reactive.RedissonTransactionReactive;
+import org.redisson.reactive.*;
 import org.redisson.remote.ResponseEntry;
 
 /**
@@ -521,6 +504,24 @@ public class RedissonReactive implements RedissonReactiveClient {
         RedissonBlockingDeque<V> deque = new RedissonBlockingDeque<V>(codec, commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, deque, 
                 new RedissonBlockingDequeReactive<V>(deque), RBlockingDequeReactive.class);
+    }
+
+    @Override
+    public <V> RTransferQueueReactive<V> getTransferQueue(String name) {
+        String remoteName = RedissonObject.suffixName(name, "remoteService");
+        RRemoteService service = getRemoteService(remoteName);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(connectionManager.getCommandExecutor(), name, service);
+        return ReactiveProxyBuilder.create(commandExecutor, queue,
+                new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
+    }
+
+    @Override
+    public <V> RTransferQueueReactive<V> getTransferQueue(String name, Codec codec) {
+        String remoteName = RedissonObject.suffixName(name, "remoteService");
+        RRemoteService service = getRemoteService(remoteName);
+        RedissonTransferQueue<V> queue = new RedissonTransferQueue<V>(codec, connectionManager.getCommandExecutor(), name, service);
+        return ReactiveProxyBuilder.create(commandExecutor, queue,
+                new RedissonTransferQueueReactive<V>(queue), RTransferQueueReactive.class);
     }
 
     @Override

@@ -15,15 +15,6 @@
  */
 package org.redisson.remote;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.RedissonBucket;
 import org.redisson.RedissonList;
 import org.redisson.RedissonMap;
@@ -40,6 +31,16 @@ import org.redisson.codec.CompositeCodec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.executor.RemotePromise;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -225,35 +226,35 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
         if (!optionsCopy.isResultExpected()) {
             return;
         }
-        
+
         responseFuture.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
                 return;
             }
-            
+
             if (res == null) {
                 RemoteServiceTimeoutException ex = new RemoteServiceTimeoutException("No response after "
                         + optionsCopy.getExecutionTimeoutInMillis() + "ms for request: " + result.getRequestId());
                 result.tryFailure(ex);
                 return;
             }
-            
+
             if (res instanceof RemoteServiceCancelResponse) {
-                result.doCancel();
+                result.doCancel(true);
                 return;
             }
-            
+
             RemoteServiceResponse response = (RemoteServiceResponse) res;
             if (response.getError() != null) {
                 result.tryFailure(response.getError());
                 return;
             }
-            
+
             result.trySuccess(response.getResult());
         });
     }
-    
+
     private RemotePromise<Object> createResultPromise(RemoteInvocationOptions optionsCopy,
             RequestId requestId, String requestQueueName, Long ackTimeout) {
         RemotePromise<Object> result = new RemotePromise<Object>(requestId) {
@@ -292,7 +293,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                         return true;
                     }
 
-                    return doCancel(mayInterruptIfRunning);
+                    return executeCancel(mayInterruptIfRunning);
                 }
 
                 boolean removed = commandExecutor.get(remoteService.removeAsync(requestQueueName, requestId));
@@ -301,10 +302,10 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     return true;
                 }
 
-                return doCancel(mayInterruptIfRunning);
+                return executeCancel(mayInterruptIfRunning);
             }
 
-            private boolean doCancel(boolean mayInterruptIfRunning) {
+            private boolean executeCancel(boolean mayInterruptIfRunning) {
                 if (isCancelled()) {
                     return true;
                 }
@@ -313,7 +314,7 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                     return false;
                 }
 
-                cancelExecution(optionsCopy, mayInterruptIfRunning, this);
+                cancelExecution(optionsCopy, mayInterruptIfRunning, this, cancelRequestMapName);
 
                 try {
                     awaitUninterruptibly(60, TimeUnit.SECONDS);
@@ -322,12 +323,107 @@ public class AsyncRemoteProxy extends BaseRemoteProxy {
                 }
                 return isCancelled();
             }
+
+            @Override
+            public RFuture<Boolean> cancelAsync(boolean mayInterruptIfRunning) {
+                return AsyncRemoteProxy.this.cancelAsync(optionsCopy, this, requestId, requestQueueName, ackTimeout, mayInterruptIfRunning);
+            }
         };
         return result;
     }
-    
+
+    private RFuture<Boolean> cancelAsync(RemoteInvocationOptions optionsCopy, RemotePromise<Object> promise,
+                                        RequestId requestId, String requestQueueName, Long ackTimeout, boolean mayInterruptIfRunning) {
+        if (promise.isCancelled()) {
+            return RedissonPromise.newSucceededFuture(true);
+        }
+
+        if (promise.isDone()) {
+            return RedissonPromise.newSucceededFuture(false);
+        }
+
+        RPromise<Boolean> result = new RedissonPromise<>();
+        if (optionsCopy.isAckExpected()) {
+            String ackName = remoteService.getAckName(requestId);
+            RFuture<Boolean> future = commandExecutor.evalWriteAsync(responseQueueName, LongCodec.INSTANCE,
+                    RedisCommands.EVAL_BOOLEAN,
+                    "if redis.call('setnx', KEYS[1], 1) == 1 then "
+                        + "redis.call('pexpire', KEYS[1], ARGV[1]);"
+//                                        + "redis.call('lrem', KEYS[3], 1, ARGV[1]);"
+//                                        + "redis.call('pexpire', KEYS[2], ARGV[2]);"
+                        + "return 1;"
+                    + "end;"
+                    + "return 0;",
+                    Arrays.<Object> asList(ackName),
+//                                    Arrays.<Object> asList(ackName, responseQueueName, requestQueueName),
+                    ackTimeout);
+
+            future.onComplete((ackNotSent, e) -> {
+                if (e != null) {
+                    result.tryFailure(e);
+                    return;
+                }
+
+                if (ackNotSent) {
+                    RList<Object> list = new RedissonList<>(LongCodec.INSTANCE, commandExecutor, requestQueueName, null);
+                    RFuture<Boolean> f = list.removeAsync(requestId.toString());
+                    f.onComplete((res, ex) -> {
+                        if (ex != null) {
+                            result.tryFailure(ex);
+                            return;
+                        }
+
+                        promise.doCancel(mayInterruptIfRunning);
+                        result.trySuccess(true);
+                    });
+                }
+
+                doCancelAsync(mayInterruptIfRunning, result, promise, optionsCopy);
+            });
+            return result;
+        }
+
+        RFuture<Boolean> removeFuture = remoteService.removeAsync(requestQueueName, requestId);
+        removeFuture.onComplete((removed, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            if (removed) {
+                promise.doCancel(mayInterruptIfRunning);
+            }
+
+            doCancelAsync(mayInterruptIfRunning, result, promise, optionsCopy);
+        });
+        return result;
+    }
+
+    private void doCancelAsync(boolean mayInterruptIfRunning, RPromise<Boolean> result, RemotePromise<Object> promise, RemoteInvocationOptions optionsCopy) {
+        if (promise.isCancelled()) {
+            result.trySuccess(true);
+            return;
+        }
+
+        if (promise.isDone()) {
+            result.trySuccess(false);
+            return;
+        }
+
+        cancelExecution(optionsCopy, mayInterruptIfRunning, promise, cancelRequestMapName);
+
+        promise.onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            result.trySuccess(promise.isCancelled());
+        });
+    }
+
     private void cancelExecution(RemoteInvocationOptions optionsCopy,
-            boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise) {
+            boolean mayInterruptIfRunning, RemotePromise<Object> remotePromise, String cancelRequestMapName) {
         RMap<String, RemoteServiceCancelRequest> canceledRequests = new RedissonMap<>(new CompositeCodec(StringCodec.INSTANCE, codec, codec), commandExecutor, cancelRequestMapName, null, null, null);
         canceledRequests.fastPutAsync(remotePromise.getRequestId().toString(), new RemoteServiceCancelRequest(mayInterruptIfRunning, false));
         canceledRequests.expireAsync(60, TimeUnit.SECONDS);

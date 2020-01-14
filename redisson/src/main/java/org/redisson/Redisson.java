@@ -19,68 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.BatchOptions;
-import org.redisson.api.ClusterNodesGroup;
-import org.redisson.api.ExecutorOptions;
-import org.redisson.api.LocalCachedMapOptions;
-import org.redisson.api.MapOptions;
-import org.redisson.api.Node;
-import org.redisson.api.NodesGroup;
-import org.redisson.api.RAtomicDouble;
-import org.redisson.api.RAtomicLong;
-import org.redisson.api.RBatch;
-import org.redisson.api.RBinaryStream;
-import org.redisson.api.RBitSet;
-import org.redisson.api.RBlockingDeque;
-import org.redisson.api.RBlockingQueue;
-import org.redisson.api.RBloomFilter;
-import org.redisson.api.RBoundedBlockingQueue;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBuckets;
-import org.redisson.api.RCountDownLatch;
-import org.redisson.api.RDelayedQueue;
-import org.redisson.api.RDeque;
-import org.redisson.api.RDoubleAdder;
-import org.redisson.api.RGeo;
-import org.redisson.api.RHyperLogLog;
-import org.redisson.api.RKeys;
-import org.redisson.api.RLexSortedSet;
-import org.redisson.api.RList;
-import org.redisson.api.RListMultimap;
-import org.redisson.api.RListMultimapCache;
-import org.redisson.api.RLiveObjectService;
-import org.redisson.api.RLocalCachedMap;
-import org.redisson.api.RLock;
-import org.redisson.api.RLongAdder;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RPatternTopic;
-import org.redisson.api.RPermitExpirableSemaphore;
-import org.redisson.api.RPriorityBlockingDeque;
-import org.redisson.api.RPriorityBlockingQueue;
-import org.redisson.api.RPriorityDeque;
-import org.redisson.api.RPriorityQueue;
-import org.redisson.api.RQueue;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RReadWriteLock;
-import org.redisson.api.RRemoteService;
-import org.redisson.api.RRingBuffer;
-import org.redisson.api.RScheduledExecutorService;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RScript;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RSet;
-import org.redisson.api.RSetCache;
-import org.redisson.api.RSetMultimap;
-import org.redisson.api.RSetMultimapCache;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.RStream;
-import org.redisson.api.RTopic;
-import org.redisson.api.RTransaction;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
-import org.redisson.api.TransactionOptions;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
@@ -543,6 +482,20 @@ public class Redisson implements RedissonClient {
     @Override
     public <V> RQueue<V> getQueue(String name, Codec codec) {
         return new RedissonQueue<V>(codec, connectionManager.getCommandExecutor(), name, this);
+    }
+
+    @Override
+    public <V> RTransferQueue<V> getTransferQueue(String name) {
+        String remoteName = RedissonObject.suffixName(name, "remoteService");
+        RRemoteService service = getRemoteService(remoteName);
+        return new RedissonTransferQueue<V>(connectionManager.getCommandExecutor(), name, service);
+    }
+
+    @Override
+    public <V> RTransferQueue<V> getTransferQueue(String name, Codec codec) {
+        String remoteName = RedissonObject.suffixName(name, "remoteService");
+        RRemoteService service = getRemoteService(remoteName);
+        return new RedissonTransferQueue<V>(codec, connectionManager.getCommandExecutor(), name, service);
     }
 
     @Override
