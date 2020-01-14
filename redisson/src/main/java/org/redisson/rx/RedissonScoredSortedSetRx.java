@@ -48,15 +48,11 @@ public class RedissonScoredSortedSetRx<V>  {
     }
 
     public Flowable<V> takeFirstElements() {
-        return ElementsStream.takeElements(() -> {
-            return instance.takeFirstAsync();
-        });
+        return ElementsStream.takeElements(instance::takeFirstAsync);
     }
     
     public Flowable<V> takeLastElements() {
-        return ElementsStream.takeElements(() -> {
-            return instance.takeLastAsync();
-        });
+        return ElementsStream.takeElements(instance::takeLastAsync);
     }
     
     public String getName() {

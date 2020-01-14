@@ -36,9 +36,7 @@ public class RedissonBlockingQueueRx<V> extends RedissonListRx<V> {
     }
 
     public Flowable<V> takeElements() {
-        return ElementsStream.takeElements(() -> {
-            return queue.takeAsync();
-        });
+        return ElementsStream.takeElements(queue::takeAsync);
     }
     
 }

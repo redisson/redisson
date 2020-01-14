@@ -35,15 +35,11 @@ public class RedissonBlockingDequeRx<V> extends RedissonBlockingQueueRx<V> {
     }
 
     public Flowable<V> takeFirstElements() {
-        return ElementsStream.takeElements(() -> {
-            return queue.takeFirstAsync();
-        });
+        return ElementsStream.takeElements(queue::takeFirstAsync);
     }
     
     public Flowable<V> takeLastElements() {
-        return ElementsStream.takeElements(() -> {
-            return queue.takeLastAsync();
-        });
+        return ElementsStream.takeElements(queue::takeLastAsync);
     }
     
 }
