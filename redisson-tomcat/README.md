@@ -66,12 +66,12 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.11.6.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.11.6&e=jar)
+[redisson-all-3.12.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.12.0&e=jar)
   
 for Tomcat 7.x  
-[redisson-tomcat-7-3.11.6.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.11.6&e=jar)  
+[redisson-tomcat-7-3.12.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.12.0&e=jar)  
 for Tomcat 8.x  
-[redisson-tomcat-8-3.11.6.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.11.6&e=jar)  
+[redisson-tomcat-8-3.12.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.12.0&e=jar)  
 for Tomcat 9.x  
-[redisson-tomcat-9-3.11.6.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.11.6&e=jar)  
+[redisson-tomcat-9-3.12.0.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.12.0&e=jar)  
 
