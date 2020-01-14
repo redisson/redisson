@@ -180,7 +180,6 @@ class BaseConfig<T extends BaseConfig<T>> {
      * <p>
      * Default is <code>1500</code> milliseconds
      *
-     * @see {@link #setRetryInterval(int)}
      * @param retryInterval - time in milliseconds
      * @return config
      */
