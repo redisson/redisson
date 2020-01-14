@@ -14,10 +14,10 @@ Below is the list of all available implementations with local cache and/or data 
 
 |Class name | Local cache | Data partitioning |
 | ------------- | ------------- | ------------|
-|RedissonCache<br/>&nbsp; | No | No |
-|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | **Yes** | No |
-|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | No | **Yes** |
-|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | **Yes** | **Yes** |
+|RedissonCache<br/>&nbsp; | :heavy_multiplication_x: | :heavy_multiplication_x: |
+|RedissonLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub>  | :heavy_check_mark: | :heavy_multiplication_x: |
+|RedissonClusteredCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_multiplication_x: | :heavy_check_mark: |
+|RedissonClusteredLocalCachedCache<br/><sub><i>available only in [Redisson PRO](http://redisson.pro) edition</i></sub> | :heavy_check_mark: | :heavy_check_mark: |
 
 ## MyBatis Cache Usage
 
