@@ -41,14 +41,19 @@ public class RedissonRateLimiterTest extends BaseTest {
     @Test
     public void testZeroTimeout() throws InterruptedException {
         RRateLimiter limiter = redisson.getRateLimiter("myLimiter");
+        assertThat(limiter.availablePermits()).isEqualTo(0);
         limiter.trySetRate(RateType.OVERALL, 5, 1, RateIntervalUnit.SECONDS);
         
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.availablePermits()).isEqualTo(3);
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
+        assertThat(limiter.availablePermits()).isEqualTo(1);
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isTrue();
-        
+
+        assertThat(limiter.availablePermits()).isEqualTo(0);
+
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();
         assertThat(limiter.tryAcquire(1, 0, TimeUnit.SECONDS)).isFalse();

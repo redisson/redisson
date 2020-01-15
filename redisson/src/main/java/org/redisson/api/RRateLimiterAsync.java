@@ -149,5 +149,12 @@ public interface RRateLimiterAsync extends RObjectAsync {
      * @return config object
      */
     RFuture<RateLimiterConfig> getConfigAsync();
-    
+
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    RFuture<Long> availablePermitsAsync();
+
 }

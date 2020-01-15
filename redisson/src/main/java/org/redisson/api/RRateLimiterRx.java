@@ -15,10 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import io.reactivex.Completable;
 import io.reactivex.Single;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reactive interface for Redis based Rate Limiter object.
@@ -145,5 +145,12 @@ public interface RRateLimiterRx extends RObjectRx {
      *         if the waiting time elapsed before a permit was acquired
      */
     Single<Boolean> tryAcquire(long permits, long timeout, TimeUnit unit);
-    
+
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    Single<Long> availablePermits();
+
 }

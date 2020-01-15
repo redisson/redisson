@@ -255,5 +255,16 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
     public RFuture<RateLimiterConfig> getConfigAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, HGETALL, getName());
     }
-    
+
+    @Override
+    public long availablePermits() {
+        return get(availablePermitsAsync());
+    }
+
+    @Override
+    public RFuture<Long> availablePermitsAsync() {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_LONG, getValueName());
+    }
+
+
 }

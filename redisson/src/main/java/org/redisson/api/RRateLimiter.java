@@ -147,5 +147,12 @@ public interface RRateLimiter extends RRateLimiterAsync, RObject {
      * @return config object
      */
     RateLimiterConfig getConfig();
-    
+
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    long availablePermits();
+
 }
