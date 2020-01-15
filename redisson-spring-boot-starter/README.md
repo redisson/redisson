@@ -26,6 +26,18 @@ Gradle
      compile 'org.redisson:redisson-spring-boot-starter:3.12.0'
 ```
 
+
+Downgrade `redisson-spring-data` module according to used Spring Boot version:
+
+|redisson-spring-data version|Spring Boot version|
+|----------------------------|-------------------|
+|redisson-spring-data-16     |1.3.x              |
+|redisson-spring-data-17     |1.4.x              |
+|redisson-spring-data-18     |1.5.x              |
+|redisson-spring-data-20     |2.0.x              |
+|redisson-spring-data-21     |2.1.x              |
+|redisson-spring-data-22     |2.2.x              |
+
 ### 2. Add settings into `application.settings` file
 
 Common spring boot settings or Redisson settings could be used.
