@@ -29,7 +29,7 @@ Gradle
 
 Downgrade `redisson-spring-data` module if necessary to support required Spring Boot version:
 
-|redisson-spring-data version|Spring Boot version|
+|redisson-spring-data<br/>module name|Spring Boot<br/>version|
 |----------------------------|-------------------|
 |redisson-spring-data-16     |1.3.x              |
 |redisson-spring-data-17     |1.4.x              |
