@@ -126,4 +126,18 @@ public interface RSemaphoreRx extends RExpirableRx {
      */
     Completable addPermits(int permits);
 
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    Single<Integer> availablePermits();
+
+    /**
+     * Acquires and returns all permits that are immediately available.
+     *
+     * @return number of permits
+     */
+    Single<Integer> drainPermits();
+
 }

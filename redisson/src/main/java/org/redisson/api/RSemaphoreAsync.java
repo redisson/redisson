@@ -123,4 +123,18 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      */
     RFuture<Void> addPermitsAsync(int permits);
 
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    RFuture<Integer> availablePermitsAsync();
+
+    /**
+     * Acquires and returns all permits that are immediately available.
+     *
+     * @return number of permits
+     */
+    RFuture<Integer> drainPermitsAsync();
+
 }

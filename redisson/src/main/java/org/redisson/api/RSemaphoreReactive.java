@@ -15,9 +15,9 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Reactive interface of Redis based {@link java.util.concurrent.Semaphore}.
@@ -125,5 +125,18 @@ public interface RSemaphoreReactive extends RExpirableReactive {
      */
     Mono<Void> addPermits(int permits);
 
-    
+    /**
+     * Returns amount of available permits.
+     *
+     * @return number of permits
+     */
+    Mono<Integer> availablePermits();
+
+    /**
+     * Acquires and returns all permits that are immediately available.
+     *
+     * @return number of permits
+     */
+    Mono<Integer> drainPermits();
+
 }
