@@ -461,8 +461,7 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
 
     @Override
     public int availablePermits() {
-        RFuture<Integer> future = commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GET_INTEGER, getName());
-        return get(future);
+        return get(availablePermitsAsync());
     }
 
     @Override
