@@ -15,39 +15,17 @@
  */
 package org.redisson.connection;
 
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-
+import io.netty.resolver.AddressResolver;
+import io.netty.util.NetUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.client.RedisAuthRequiredException;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionException;
+import org.redisson.client.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.config.BaseMasterSlaveServersConfig;
-import org.redisson.config.Config;
-import org.redisson.config.MasterSlaveServersConfig;
-import org.redisson.config.ReadMode;
-import org.redisson.config.SentinelServersConfig;
+import org.redisson.config.*;
 import org.redisson.connection.ClientConnectionsEntry.FreezeReason;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
@@ -56,11 +34,16 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.resolver.AddressResolver;
-import io.netty.util.NetUtil;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ScheduledFuture;
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -79,7 +62,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
     
-    private final Map<String, String> natMap;
+    private Map<String, String> natMap;
 
     private boolean usePassword = false;
     private String scheme;
@@ -425,7 +408,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         Set<String> removedSlaves = new HashSet<String>();
                         for (ClientConnectionsEntry e : entry.getAllEntries()) {
                             InetSocketAddress addr = e.getClient().getAddr();
-                            String slaveAddr = createAddress(addr.getAddress().getHostAddress(), addr.getPort());
+                            String slaveAddr = createAddress(addr.getAddress().getHostAddress(), String.valueOf(addr.getPort()));
                             removedSlaves.add(slaveAddr);
                         }
                         removedSlaves.removeAll(currentSlaves);
@@ -497,18 +480,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
     }
 
-    private String createAddress(String host, Object port) {
-        if (host.contains(":")){
-            String pureHost = host.replaceAll("[\\[\\]]", "");
-            host = applyNatMap(pureHost);
-            if (host.contains(":") && !host.startsWith("[")) {
-                host = "[" + host + "]";
-            }
-        } else {
-            host = applyNatMap(host);
-        }
-        
-        return scheme + "://" + host + ":" + port;
+    private String createAddress(String host, String port) {
+        return scheme + "://" + applyNatMap(host, Integer.valueOf(port));
     }
 
     @Override
@@ -661,13 +634,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         super.shutdown();
     }
-    
-    private String applyNatMap(String ip) {
-        String mappedAddress = natMap.get(ip);
+
+    private String applyNatMap(String ip, int port) {
+        String mappedAddress = natMap.get(ip + ":" + port);
+        if (mappedAddress == null) {
+            mappedAddress = natMap.get(ip);
+        }
         if (mappedAddress != null) {
             return mappedAddress;
         }
-        return ip;
+        return ip + ":" + port;
     }
 }
 
