@@ -686,8 +686,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return result;
     }
 
+    @Override
     public RedisURI applyNatMap(RedisURI address) {
         String mappedAddress = natMap.get(address.getHost() + ":" + address.getPort());
+        if (mappedAddress == null && natMap.get(address.getHost()) != null) {
+            mappedAddress = natMap.get(address.getHost()) + ":" + address.getPort();
+        }
         if (mappedAddress != null) {
             return new RedisURI(address.getScheme() + "://" + mappedAddress);
         }

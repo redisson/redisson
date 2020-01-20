@@ -637,8 +637,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private String applyNatMap(String ip, int port) {
         String mappedAddress = natMap.get(ip + ":" + port);
-        if (mappedAddress == null) {
-            mappedAddress = natMap.get(ip);
+        if (mappedAddress == null && natMap.get(ip) != null) {
+            mappedAddress = natMap.get(ip) + ":" + port;
         }
         if (mappedAddress != null) {
             return mappedAddress;
