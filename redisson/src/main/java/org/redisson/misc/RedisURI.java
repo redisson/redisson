@@ -124,7 +124,7 @@ public class RedisURI {
 
     @Override
     public String toString() {
-        return getScheme() + "://" + host + ":" + port;
+        return getScheme() + "://" + trimIpv6Brackets(host) + ":" + port;
     }
     
 }
