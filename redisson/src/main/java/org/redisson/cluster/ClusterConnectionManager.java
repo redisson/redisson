@@ -430,6 +430,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : failedSlaves) {
             currentPart.addFailedSlaveAddress(uri);
             if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
+                disconnectNode(uri);
                 log.warn("slave: {} has down for slot ranges: {}", uri, currentPart.getSlotRanges());
             }
         }
@@ -502,14 +503,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                     if (!newMasterPart.getMasterAddress().equals(currentPart.getMasterAddress())) {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
-                        
+
                         RFuture<RedisClient> future = changeMaster(slot, newUri);
                         future.onComplete((res, e) -> {
                             if (e != null) {
                                 currentPart.setMasterAddress(oldUri);
+                            } else {
+                                disconnectNode(oldUri);
                             }
                         });
-                        
+
                         currentPart.setMasterAddress(newUri);
                     }
                 }

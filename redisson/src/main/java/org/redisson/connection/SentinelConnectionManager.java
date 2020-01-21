@@ -474,6 +474,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (RedisURI uri : currentUris) {
             RedisClient sentinel = SentinelConnectionManager.this.sentinels.remove(uri);
             if (sentinel != null) {
+                disconnectNode(sentinel);
                 sentinel.shutdownAsync();
                 log.warn("sentinel: {} has down", uri);
             }
