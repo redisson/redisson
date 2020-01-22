@@ -15,10 +15,12 @@
  */
 package org.redisson.config;
 
+import org.redisson.api.HostNatMapper;
+import org.redisson.api.HostPortNatMapper;
+import org.redisson.api.NatMapper;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,7 +33,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private List<String> sentinelAddresses = new ArrayList<>();
     
-    private Map<String, String> natMap = Collections.emptyMap();
+    private NatMapper natMapper = NatMapper.direct();
 
     private String masterName;
 
@@ -54,7 +56,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setMasterName(config.getMasterName());
         setDatabase(config.getDatabase());
         setScanInterval(config.getScanInterval());
-        setNatMap(new HashMap<>(config.getNatMap()));
+        setNatMapper(config.getNatMapper());
     }
 
     /**
@@ -118,20 +120,34 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         this.scanInterval = scanInterval;
         return this;
     }
-    
-    public Map<String, String> getNatMap() {
-        return natMap;
-    }
-    
-    /**
-     * Defines NAT mapping. Address as a map key is replaced with mapped address as value.
-     * 
-     * @param natMap - nat mapping
-     * @return config
+
+    /*
+     * Use {@link #setNatMapper(NatMapper)}
      */
+    @Deprecated
     public SentinelServersConfig setNatMap(Map<String, String> natMap) {
-        this.natMap = natMap;
+        HostPortNatMapper mapper = new HostPortNatMapper();
+        mapper.setHostsPortMap(natMap);
+        this.natMapper = mapper;
         return this;
     }
-    
+
+    public NatMapper getNatMapper() {
+        return natMapper;
+    }
+
+    /**
+     * Defines NAT mapper which maps Redis URI object.
+     *
+     * @see HostNatMapper
+     * @see HostPortNatMapper
+     *
+     * @param natMapper - nat mapper object
+     * @return config
+     */
+    public SentinelServersConfig setNatMapper(NatMapper natMapper) {
+        this.natMapper = natMapper;
+        return this;
+    }
+
 }

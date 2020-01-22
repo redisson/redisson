@@ -29,7 +29,11 @@ public class RedisURI {
     private final boolean ssl;
     private final String host;
     private final int port;
-    
+
+    public RedisURI(String scheme, String host, int port) {
+        this(scheme + "://" + host + ":" + port);
+    }
+
     public RedisURI(String uri) {
         if (!uri.startsWith("redis://")
                 && !uri.startsWith("rediss://")) {
