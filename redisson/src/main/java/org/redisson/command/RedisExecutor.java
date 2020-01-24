@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.util.ReferenceCountUtil;
@@ -197,8 +198,15 @@ public class RedisExecutor<V, R> {
                             if (attempt == attempts) {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
-                                        exception = new RedisTimeoutException("Command still hasn't been written into connection! Increase nettyThreads and/or retryInterval settings "
-                                                + "Node source: " + source + ", connection: " + connectionFuture.getNow()
+                                        long totalSize = 0;
+                                        for (Object param : params) {
+                                            if (param instanceof ByteBuf) {
+                                                totalSize += ((ByteBuf) param).readableBytes();
+                                            }
+                                        }
+
+                                        exception = new RedisTimeoutException("Command still hasn't been written into connection! Increase nettyThreads and/or retryInterval settings. Payload size in bytes: " + totalSize
+                                                + ". Node source: " + source + ", connection: " + connectionFuture.getNow()
                                                 + ", command: " + LogHelper.toString(command, params)
                                                 + " after " + attempt + " retry attempts");
                                     }
