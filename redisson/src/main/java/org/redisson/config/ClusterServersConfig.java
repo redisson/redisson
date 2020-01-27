@@ -43,7 +43,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
      */
     private int scanInterval = 5000;
 
-    private boolean checkSlotsCoverage;
+    private boolean checkSlotsCoverage = true;
 
     public ClusterServersConfig() {
     }

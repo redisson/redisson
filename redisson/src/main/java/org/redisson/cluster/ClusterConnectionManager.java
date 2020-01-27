@@ -155,9 +155,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         if (cfg.isCheckSlotsCoverage() && lastPartitions.size() != MAX_SLOT) {
             stopThreads();
             if (failedMasters.isEmpty()) {
-                throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available", lastException);
+                throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Set checkSlotsCoverage = false to avoid this check.", lastException);
             } else {
-                throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Failed masters according to cluster status: " + failedMasters, lastException);
+                throw new RedisConnectionException("Not all slots covered! Only " + lastPartitions.size() + " slots are available. Set checkSlotsCoverage = false to avoid this check. Failed masters according to cluster status: " + failedMasters, lastException);
             }
         }
         
