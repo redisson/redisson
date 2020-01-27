@@ -47,6 +47,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
      */
     private int scanInterval = 1000;
 
+    private boolean checkSentinelsList = true;
+
     public SentinelServersConfig() {
     }
 
@@ -57,6 +59,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setDatabase(config.getDatabase());
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
+        setCheckSentinelsList(config.isCheckSentinelsList());
     }
 
     /**
@@ -150,4 +153,20 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         return this;
     }
 
+    public boolean isCheckSentinelsList() {
+        return checkSentinelsList;
+    }
+
+    /**
+     * Enables sentinels list check during Redisson startup.
+     * <p>
+     * Default is <code>true</code>
+     *
+     * @param checkSentinelsList - boolean value
+     * @return config
+     */
+    public SentinelServersConfig setCheckSentinelsList(boolean checkSentinelsList) {
+        this.checkSentinelsList = checkSentinelsList;
+        return this;
+    }
 }

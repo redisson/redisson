@@ -166,9 +166,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
         }
 
-        if (sentinels.isEmpty()) {
-            stopThreads();
-            throw new RedisConnectionException("At least two sentinels should be defined in Redis configuration! SENTINEL SENTINELS command returns empty result!");
+        if (cfg.isCheckSentinelsList()) {
+            if (sentinels.isEmpty()) {
+                stopThreads();
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result! Set checkSentinelsList = false to avoid this check.");
+            } else if (sentinels.size() < 2) {
+                stopThreads();
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.");
+            }
         }
         
         if (currentMaster.get() == null) {
