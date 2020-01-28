@@ -207,8 +207,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
             byte[] keyBuf = toByteArray(command.getKey());
 
-            String start = toLowerBound(command.getRange(), "-inf");
-            String end = toUpperBound(command.getRange(), "+inf");
+            String start = toLowerBound(command.getRange());
+            String end = toUpperBound(command.getRange());
             
             List<Object> args = new ArrayList<Object>();
             args.add(keyBuf);
@@ -283,26 +283,26 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
     private static final RedisStrictCommand<Long> ZCOUNT = new RedisStrictCommand<Long>("ZCOUNT");
     
-    String toLowerBound(Range range, Object defaultValue) {
+    String toLowerBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getLowerBound().isInclusive()) {
             s.append("(");
         }
         if (!range.getLowerBound().getValue().isPresent() || range.getLowerBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
+            s.append("-inf");
         } else {
             s.append(range.getLowerBound().getValue().get());
         }
         return s.toString();
     }
 
-    String toUpperBound(Range range, Object defaultValue) {
+    String toUpperBound(Range range) {
         StringBuilder s = new StringBuilder();
         if (!range.getUpperBound().isInclusive()) {
             s.append("(");
         }
         if (!range.getUpperBound().getValue().isPresent() || range.getUpperBound().getValue().get().toString().isEmpty()) {
-            s.append(defaultValue);
+            s.append("+inf");
         } else {
             s.append(range.getUpperBound().getValue().get());
         }
@@ -339,7 +339,6 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
         return s.toString();
     }
 
-    
     @Override
     public Flux<NumericResponse<ZCountCommand, Long>> zCount(Publisher<ZCountCommand> commands) {
         return execute(commands, command -> {
@@ -349,8 +348,8 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
             byte[] keyBuf = toByteArray(command.getKey());
             Mono<Long> m = read(keyBuf, StringCodec.INSTANCE, ZCOUNT, 
-                                keyBuf, toLowerBound(command.getRange(), 0),
-                                toUpperBound(command.getRange(), -1));
+                                keyBuf, toLowerBound(command.getRange()),
+                                toUpperBound(command.getRange()));
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
@@ -408,11 +407,11 @@ public class RedissonReactiveZSetCommands extends RedissonBaseReactive implement
 
             Assert.notNull(command.getKey(), "Key must not be null!");
             Assert.notNull(command.getRange(), "Range must not be null!");
-            
+
             byte[] keyBuf = toByteArray(command.getKey());
             Mono<Long> m = write(keyBuf, StringCodec.INSTANCE, ZREMRANGEBYSCORE, 
-                                keyBuf, toLowerBound(command.getRange(), 0),
-                                toUpperBound(command.getRange(), -1));
+                                keyBuf, toLowerBound(command.getRange()),
+                                toUpperBound(command.getRange()));
             return m.map(v -> new NumericResponse<>(command, v));
         });
     }
