@@ -256,32 +256,38 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         }
                     }
                 };
-                
-                for (RedisURI host : sentinelHosts) {
-                    Future<List<InetSocketAddress>> allNodes = sentinelResolver.resolveAll(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
-                    allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
-                        @Override
-                        public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
-                            if (!future.isSuccess()) {
-                                log.error("Unable to resolve " + host.getHost(), future.cause());
-                                return;
-                            }
-                            
-                            Set<RedisURI> newUris = future.getNow().stream()
-                                                .map(addr -> toURI(addr.getAddress().getHostAddress(), "" + addr.getPort()))
-                                                .collect(Collectors.toSet());
 
-                            for (RedisURI uri : newUris) {
-                                if (!sentinels.containsKey(uri)) {
-                                    registerSentinel(uri, getConfig());
-                                }
-                            }
-                        }
-                    });
-                    allNodes.addListener(commonListener);
-                }
+                performSentinelDNSCheck(commonListener);
             }
         }, config.getDnsMonitoringInterval(), TimeUnit.MILLISECONDS);
+    }
+
+    private void performSentinelDNSCheck(FutureListener<List<InetSocketAddress>> commonListener) {
+        for (RedisURI host : sentinelHosts) {
+            Future<List<InetSocketAddress>> allNodes = sentinelResolver.resolveAll(InetSocketAddress.createUnresolved(host.getHost(), host.getPort()));
+            allNodes.addListener(new FutureListener<List<InetSocketAddress>>() {
+                @Override
+                public void operationComplete(Future<List<InetSocketAddress>> future) throws Exception {
+                    if (!future.isSuccess()) {
+                        log.error("Unable to resolve " + host.getHost(), future.cause());
+                        return;
+                    }
+
+                    Set<RedisURI> newUris = future.getNow().stream()
+                            .map(addr -> toURI(addr.getAddress().getHostAddress(), "" + addr.getPort()))
+                            .collect(Collectors.toSet());
+
+                    for (RedisURI uri : newUris) {
+                        if (!sentinels.containsKey(uri)) {
+                            registerSentinel(uri, getConfig());
+                        }
+                    }
+                }
+            });
+            if (commonListener != null) {
+                allNodes.addListener(commonListener);
+            }
+        }
     }
     
     private void scheduleChangeCheck(SentinelServersConfig cfg, Iterator<RedisClient> iterator) {
@@ -306,6 +312,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             if (lastException.get() != null) {
                 log.error("Can't update cluster state", lastException.get());
             }
+            performSentinelDNSCheck(null);
             scheduleChangeCheck(cfg, null);
             return;
         }
