@@ -4,6 +4,28 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 31-Jan-2020 - 3.12.1 released
+
+Feature - `RTransferQueue` object added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections#722-transfer-queue) for more details  
+Feature - `availablePermits`, `availablePermitsAsync` and `drainPermitsAsync` methods added to `RSemaphoreAsync` object  
+Feature - `tryExecute`, `tryExecuteAsync` and `getPendingInvocationsAsync` methods added to `RRemoteService` object  
+Feature - `natMap` setting deprecated in favor of `natMapper`  
+Feature - `checkSentinelsList` setting added  
+Feature - `cleanUpKeysAmount` setting added  
+
+Improvement - perform Sentinel DNS check when all connections fail (thanks to @markusdlugi)  
+
+Fixed - `zRemRangeByScore` and `zcount` methods of `ReactiveZSetCommands` interfaсe don't use `-inf` and `+inf` values  
+Fixed - connections to disconnected Redis nodes aren't removed in sentinel and cluster mode  
+Fixed - `MalformedURLException` thrown during Redis host parsing in cluster mode  
+Fixed - extra square bracket added during IPV6 Redis host conversion  
+Fixed - defined codec's classloader is overwritten with Thread.currentThread().getContextClassLoader()  
+Fixed - RedissonPriorityQueue.add() method throws NPE  
+Fixed - connecting to a password protected Redis Sentinel fails (thanks to @stikku)  
+Fixed - java.lang.IllegalStateException thrown during `org.redisson.spring.cache.RedissonCacheStatisticsAutoConfiguration` introspection  
+Fixed - `RLock` expiration renewal not working after connection problem (thanks to @edallagnol)  
+Fixed - Spring Data `RedissonConnectionFactory` should call shutdown method on destroy on created Redisson instance  
+
 ### 26-Dec-2019 - 3.12.0 released
 
 Feature - `RExecutorService` task id injection  
