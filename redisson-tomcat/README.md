@@ -33,7 +33,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
    * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
    <br/>
 
-   `configPath` - path to Redisson JSON or YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
+   `configPath` - path to Redisson YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
 #### Shared Redisson instance
 
