@@ -84,7 +84,10 @@ public class Config {
     private boolean useScriptCache = false;
 
     private int minCleanUpDelay = 5;
+
     private int maxCleanUpDelay = 30*60;
+
+    private int cleanUpKeysAmount = 100;
     
     /**
      * AddressResolverGroupFactory switch between default and round robin
@@ -104,6 +107,7 @@ public class Config {
 
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
+        setCleanUpKeysAmount(oldConf.getCleanUpKeysAmount());
         setDecodeInExecutor(oldConf.isDecodeInExecutor());
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
@@ -702,9 +706,11 @@ public class Config {
     }
     
     /**
-     * Defines minimal delay of clean up process for expired entries.
+     * Defines minimum delay in seconds for clean up process of expired entries.
      * <p>
-     * Used in JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects
+     * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
+     * <p>
+     * Default is <code>5</code>.
      * 
      * @param minCleanUpDelay - delay in seconds
      * @return config
@@ -719,10 +725,12 @@ public class Config {
     }
     
     /**
-     * Defines maximal delay of clean up process for expired entries.
+     * Defines maximum delay in seconds for clean up process of expired entries.
      * <p>
-     * Used in JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects
-     * 
+     * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
+     * <p>
+     * Default is <code>1800</code>.
+     *
      * @param maxCleanUpDelay - delay in seconds
      * @return config
      */
@@ -731,6 +739,23 @@ public class Config {
         return this;
     }
 
-    
-    
+    public int getCleanUpKeysAmount() {
+        return cleanUpKeysAmount;
+    }
+
+    /**
+     * Defines expired keys amount deleted per single operation during clean up process of expired entries.
+     * <p>
+     * Applied to JCache, RSetCache, RMapCache, RListMultimapCache, RSetMultimapCache objects.
+     * <p>
+     * Default is <code>100</code>.
+     *
+     * @param cleanUpKeysAmount - delay in seconds
+     * @return config
+     */
+    public Config setCleanUpKeysAmount(int cleanUpKeysAmount) {
+        this.cleanUpKeysAmount = cleanUpKeysAmount;
+        return this;
+    }
+
 }

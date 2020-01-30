@@ -36,7 +36,7 @@ abstract class EvictionTask implements Runnable {
     final Deque<Integer> sizeHistory = new LinkedList<Integer>();
     final int minDelay;
     final int maxDelay;
-    final int keysLimit = 100;
+    final int keysLimit;
     
     int delay = 5;
 
@@ -47,6 +47,7 @@ abstract class EvictionTask implements Runnable {
         this.executor = executor;
         this.minDelay = executor.getConnectionManager().getCfg().getMinCleanUpDelay();
         this.maxDelay = executor.getConnectionManager().getCfg().getMaxCleanUpDelay();
+        this.keysLimit = executor.getConnectionManager().getCfg().getCleanUpKeysAmount();
     }
 
     public void schedule() {
