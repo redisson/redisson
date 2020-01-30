@@ -20,7 +20,7 @@ Fixed - connections to disconnected Redis nodes aren't removed in sentinel and c
 Fixed - `MalformedURLException` thrown during Redis host parsing in cluster mode  
 Fixed - extra square bracket added during IPV6 Redis host conversion  
 Fixed - defined codec's classloader is overwritten with Thread.currentThread().getContextClassLoader()  
-Fixed - RedissonPriorityQueue.add() method throws NPE  
+Fixed - `RPriorityQueue.add` method throws NPE  
 Fixed - connecting to a password protected Redis Sentinel fails (thanks to @stikku)  
 Fixed - java.lang.IllegalStateException thrown during `org.redisson.spring.cache.RedissonCacheStatisticsAutoConfiguration` introspection  
 Fixed - `RLock` expiration renewal not working after connection problem (thanks to @edallagnol)  
