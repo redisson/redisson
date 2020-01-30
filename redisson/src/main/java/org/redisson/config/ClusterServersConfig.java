@@ -96,7 +96,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
     /**
      * Enables cluster slots check during Redisson startup.
      * <p>
-     * Default is <code>false</code>
+     * Default is <code>true</code>
      *
      * @param checkSlotsCoverage - boolean value
      * @return config
