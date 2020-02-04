@@ -32,7 +32,7 @@ Maven
          <groupId>org.redisson</groupId>
          <!-- for Hibernate v5.3.3+ - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.12.0</version>
+         <version>3.12.1</version>
      </dependency>
 ```
 
@@ -40,7 +40,7 @@ Gradle
 
 ```groovy
      // for Hibernate v5.3.3+ - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.12.0'
+     compile 'org.redisson:redisson-hibernate-53:3.12.1'
 ```
 
 ### 2. Specify hibernate cache settings
@@ -77,6 +77,9 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 <!-- 2nd level cache activation -->
 <property name="hibernate.cache.use_second_level_cache" value="true" />
 <property name="hibernate.cache.use_query_cache" value="true" />
+
+<!-- Redisson can fallback on database if Redis cache is unavailable -->
+<property name="hibernate.cache.redisson.fallback" value="true" />
 
 <!-- Redisson YAML config (located in filesystem or classpath) -->
 <property name="hibernate.cache.redisson.config" value="/redisson.yaml" />
