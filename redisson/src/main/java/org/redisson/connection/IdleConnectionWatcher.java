@@ -15,21 +15,21 @@
  */
 package org.redisson.connection;
 
-import java.util.Collection;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.channel.ChannelFuture;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.FutureListener;
-import io.netty.util.concurrent.ScheduledFuture;
+import java.util.Collection;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 public class IdleConnectionWatcher {
 
@@ -41,21 +41,24 @@ public class IdleConnectionWatcher {
         private final int maximumAmount;
         private final AsyncSemaphore freeConnectionsCounter;
         private final Collection<? extends RedisConnection> connections;
+        private final Function<RedisConnection, Boolean> deleteHandler;
 
-        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
+        public Entry(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
+                     AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
             super();
             this.minimumAmount = minimumAmount;
             this.maximumAmount = maximumAmount;
             this.connections = connections;
             this.freeConnectionsCounter = freeConnectionsCounter;
+            this.deleteHandler = deleteHandler;
         }
 
     };
 
-    private final Queue<Entry> entries = new ConcurrentLinkedQueue<Entry>();
+    private final Queue<Entry> entries = new ConcurrentLinkedQueue<>();
     private final ScheduledFuture<?> monitorFuture;
 
-    public IdleConnectionWatcher(final ConnectionManager manager, final MasterSlaveServersConfig config) {
+    public IdleConnectionWatcher(ConnectionManager manager, MasterSlaveServersConfig config) {
         monitorFuture = manager.getGroup().scheduleWithFixedDelay(new Runnable() {
 
             @Override
@@ -66,10 +69,11 @@ public class IdleConnectionWatcher {
                         continue;
                     }
 
-                    for (final RedisConnection c : entry.connections) {
-                        final long timeInPool = currTime - c.getLastUsageTime();
+                    for (RedisConnection c : entry.connections) {
+                        long timeInPool = currTime - c.getLastUsageTime();
                         if (timeInPool > config.getIdleConnectionTimeout()
-                                && validateAmount(entry) && entry.connections.remove(c)) {
+                                && validateAmount(entry)
+                                    && entry.deleteHandler.apply(c)) {
                             ChannelFuture future = c.closeAsync();
                             future.addListener(new FutureListener<Void>() {
                                 @Override
@@ -89,8 +93,9 @@ public class IdleConnectionWatcher {
         return entry.maximumAmount - entry.freeConnectionsCounter.getCounter() + entry.connections.size() > entry.minimumAmount;
     }
 
-    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections, AsyncSemaphore freeConnectionsCounter) {
-        entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter));
+    public void add(int minimumAmount, int maximumAmount, Collection<? extends RedisConnection> connections,
+                    AsyncSemaphore freeConnectionsCounter, Function<RedisConnection, Boolean> deleteHandler) {
+        entries.add(new Entry(minimumAmount, maximumAmount, connections, freeConnectionsCounter, deleteHandler));
     }
     
     public void stop() {
