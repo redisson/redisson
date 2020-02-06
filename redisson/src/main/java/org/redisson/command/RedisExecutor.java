@@ -657,7 +657,7 @@ public class RedisExecutor<V, R> {
         return connectionFuture;
     }
     
-    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.soft(0, 0);
+    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.soft(0, 60*60*1000);
 
     protected Codec getCodec(Codec codec) {
         if (codec == null) {
