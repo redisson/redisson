@@ -25,11 +25,11 @@
     </appender>
 
     <logger name="org.redisson" additivity="true">
-        <level value="trace"/>
+        <level value="info"/>
     </logger>
 
     <logger name="org.jboss.netty" additivity="true">
-        <level value="debug"/>
+        <level value="info"/>
     </logger>
 
     <root>
