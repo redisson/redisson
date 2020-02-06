@@ -29,6 +29,7 @@ import org.redisson.api.condition.Conditions;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
+ * @author ouyangshixiong (https://github.com/ouyangshixiong)
  *
  */
 public interface RLiveObjectService {
@@ -249,4 +250,31 @@ public interface RLiveObjectService {
      * @return <code>true</code> if class already registered
      */
     boolean isClassRegistered(Class<?> cls);
+
+    /**
+     * persist rlo objects with cycle, step 1
+     * there maybe lots of rlo object form up graph, so using persist method with RCascade
+     * will cause StackOverFlow or infinite loop.
+     * Think of how we store a graph?
+     * 1. store all the vertexs
+     * 2. store all the edges
+     * @param detachedObject
+     * @param <T>
+     * @return attached redis objects
+     */
+    <T> T persistVertex(T detachedObject);
+
+    /**
+     * persist rlo objects with cycle, step 2
+     * there maybe lots of rlo object form up graph, so using persist method with RCascade
+     * will cause StackOverFlow or infinite loop.
+     * Think of how we store a graph?
+     * 1. store all the vertexs
+     * 2. store all the edges
+     * @param detachedObject same parameter as step 1
+     * @param attachedObject from step 1
+     * @param <T>
+     */
+    <T> void persistEdge(T detachedObject, T attachedObject);
+
 }
