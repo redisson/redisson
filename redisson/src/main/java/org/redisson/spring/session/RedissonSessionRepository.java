@@ -19,12 +19,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.RBucket;
+import org.redisson.api.BatchOptions;
+import org.redisson.api.BatchResult;
+import org.redisson.api.RBatch;
 import org.redisson.api.RMap;
 import org.redisson.api.RPatternTopic;
 import org.redisson.api.RSet;
@@ -198,21 +201,23 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         public String changeSessionId() {
             String oldId = delegate.getId();
             String id = delegate.changeSessionId();
-            if (redisson.getConfig().isClusterConfig()) {
-                Map<String, Object> oldState = map.readAllMap();
-                map.delete();
-                
-                map = redisson.getMap(keyPrefix + id, map.getCodec());
-                map.putAll(oldState);
-                
-                RBucket<String> bucket = redisson.getBucket(getExpiredKey(oldId));
-                long remainTTL = bucket.remainTimeToLive();
-                bucket.delete();
-                redisson.getBucket(getExpiredKey(id)).set("", remainTTL, TimeUnit.MILLISECONDS);
-            } else {
-                map.rename(keyPrefix + id);
-                redisson.getBucket(getExpiredKey(oldId)).rename(getExpiredKey(id));
-            }
+
+            Map<String, Object> oldState = map.readAllMap();
+            map.delete();
+
+            map = redisson.getMap(keyPrefix + id, map.getCodec());
+            map.putAll(oldState);
+
+            RBatch batch = redisson.createBatch(BatchOptions.defaults());
+            batch.getBucket(getExpiredKey(oldId)).remainTimeToLiveAsync();
+            batch.getBucket(getExpiredKey(oldId)).deleteAsync();
+
+            BatchResult<?> res = batch.execute();
+            List<?> list = res.getResponses();
+            Long remainTTL = (Long) list.get(0);
+
+            redisson.getBucket(getExpiredKey(id)).set("", remainTTL, TimeUnit.MILLISECONDS);
+
             return id;
         }
 
