@@ -809,10 +809,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         if (value != null && ClassUtils.isAnnotationPresent(value.getClass(), REntity.class)) {
                             isRlo = true;
                         }
-                        if ( !isRlo){
+                        if (!isRlo){
                             rMap.put(key, value);
-                        }else {
-
                         }
                     }
                 }
@@ -872,7 +870,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             Object fieldId = ClassUtils.getField(value, getRIdFieldName(value.getClass()));
                             value = get(value.getClass(), fieldId);
                         }
-                        if ( isRlo){
+                        if (isRlo){
                             rMap.put(key, value);
                         }
                     }
