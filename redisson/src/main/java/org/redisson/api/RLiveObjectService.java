@@ -29,6 +29,7 @@ import org.redisson.api.condition.Conditions;
  *
  * @author Rui Gu (https://github.com/jackygurui)
  * @author Nikita Koksharov
+ * @author ouyangshixiong (https://github.com/ouyangshixiong)
  *
  */
 public interface RLiveObjectService {
@@ -119,6 +120,8 @@ public interface RLiveObjectService {
     /**
      * Returns proxied attached objects for the detached objects. Stores all the
      * <b>NON NULL</b> field values.
+     * Avoid Cycle reference of rlo objects that cause infinite loop or StackOverFlow Exception
+     * Using graph way to store all rlo objects to redis
      *
      * @param <T> Entity type
      * @param detachedObjects - not proxied objects

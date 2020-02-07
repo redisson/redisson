@@ -30,7 +30,6 @@ import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Condition;
 import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.LiveObjectSearch;
 import org.redisson.liveobject.LiveObjectTemplate;
@@ -162,65 +161,15 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <T> List<T> persist(T... detachedObjects) {
-        CommandBatchService commandExecutor = new CommandBatchService(connectionManager);
-        Map<Class<?>, Class<?>> classCache = new HashMap<>();
-        Map<T, Object> detached2Attached = new LinkedHashMap<>();
-        Map<String, Object> name2id = new HashMap<>();
-
-        for (T detachedObject : detachedObjects) {
-            String idFieldName = getRIdFieldName(detachedObject.getClass());
-            Object id = ClassUtils.getField(detachedObject, idFieldName);
-            if (id == null) {
-                try {
-                    id = generateId(detachedObject.getClass());
-                } catch (NoSuchFieldException e) {
-                    throw new IllegalArgumentException(e);
-                }
-                ClassUtils.setField(detachedObject, idFieldName, id);
-            }
-
-            T attachedObject = attach(detachedObject, commandExecutor, classCache);
-            RMap<String, Object> liveMap = getMap(attachedObject);
-
-            detached2Attached.put(detachedObject, attachedObject);
-            name2id.put(liveMap.getName(), id);
+        List<T> attachedObjects = new ArrayList<>(detachedObjects.length);
+        for (int i = 0; i < detachedObjects.length; i++) {
+            T attachedObject = persistVertex(detachedObjects[i]);
+            attachedObjects.add(attachedObject);
         }
-
-        CommandBatchService checkExecutor = new CommandBatchService(connectionManager);
-        for (Entry<String, Object> entry : name2id.entrySet()) {
-            RMap map = new RedissonMap(checkExecutor, entry.getKey(), null, null, null);
-            map.containsKeyAsync("redisson_live_object");
+        for (int i = 0; i < detachedObjects.length; i++) {
+            persistEdge(detachedObjects[i], attachedObjects.get(i));
         }
-
-        BatchResult<?> checkResponse = checkExecutor.execute();
-        for (int i = 0; i < checkResponse.getResponses().size(); i++) {
-            Boolean value = (Boolean) checkResponse.getResponses().get(i);
-            if (value) {
-                List<Object> list = new ArrayList<>(name2id.values());
-                Object id = list.get(i);
-                throw new IllegalArgumentException("Object with id=" + id + " already exists.");
-            }
-        }
-
-        for (Entry<T, Object> entry : detached2Attached.entrySet()) {
-            T detachedObject = entry.getKey();
-            Object attachedObject = entry.getValue();
-            
-            for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
-                Object object = ClassUtils.getField(detachedObject, field.getName());
-                if (object == null) {
-                    continue;
-                }
-
-                validateAnnotation(detachedObject, field.getName());
-            }
-
-            String idFieldName = getRIdFieldName(detachedObject.getClass());
-            copy(detachedObject, attachedObject, Arrays.asList(idFieldName));
-        }
-
-        commandExecutor.execute();
-        return new ArrayList<>(detached2Attached.keySet());
+        return attachedObjects;
     }
 
 
@@ -748,5 +697,139 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                         ClassLoadingStrategy.Default.WRAPPER)
                 .getLoaded();
         return proxied;
+    }
+
+    private <T> T persistVertex(T detachedObject) {
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
+        Object id = ClassUtils.getField(detachedObject, idFieldName);
+        if (id == null) {
+            try {
+                id = generateId(detachedObject.getClass());
+            } catch (NoSuchFieldException e) {
+                throw new IllegalArgumentException(e);
+            }
+            ClassUtils.setField(detachedObject, idFieldName, id);
+        }
+
+        T attachedObject = attach(detachedObject);
+        RMap<String, Object> liveMap = getMap(attachedObject);
+
+        List<String> excludedFields = new ArrayList<String>();
+        excludedFields.add(idFieldName);
+        boolean fastResult = liveMap.fastPut("redisson_live_object", "1");
+        if (!fastResult) {
+            throw new IllegalArgumentException("This REntity already exists.");
+        }
+
+        for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
+            Object object = ClassUtils.getField(detachedObject, field.getName());
+            if (object == null) {
+                continue;
+            }
+
+            RObject rObject = connectionManager.getCommandExecutor().getObjectBuilder().createObject(id, detachedObject.getClass(), object.getClass(), field.getName());
+            if (rObject != null) {
+                connectionManager.getCommandExecutor().getObjectBuilder().store(rObject, field.getName(), liveMap);
+                if (rObject instanceof SortedSet) {
+                    ((RSortedSet) rObject).trySetComparator(((SortedSet) object).comparator());
+                }
+
+                if (rObject instanceof Collection) {
+                    for (Object obj : (Collection<Object>) object) {
+                        if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
+                            obj = null;
+                        } else {
+                            ((Collection) rObject).add(obj);
+                        }
+                    }
+                } else if (rObject instanceof Map) {
+                    Map<Object, Object> rMap = (Map<Object, Object>) rObject;
+                    Map<?, ?> map = (Map<?, ?>) object;
+                    for (Map.Entry<?, ?> entry : map.entrySet()) {
+                        Object key = entry.getKey();
+                        Object value = entry.getValue();
+
+                        boolean isRlo = false;
+                        if (key != null && ClassUtils.isAnnotationPresent(key.getClass(), REntity.class)) {
+                            isRlo = true;
+                        }
+
+                        if (value != null && ClassUtils.isAnnotationPresent(value.getClass(), REntity.class)) {
+                            isRlo = true;
+                        }
+                        if (!isRlo){
+                            rMap.put(key, value);
+                        }
+                    }
+                }
+                excludedFields.add(field.getName());
+            } else if (ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
+                excludedFields.add(field.getName());
+                BeanUtil.pojo.setSimpleProperty(attachedObject, field.getName(), null);
+            } else {
+                validateAnnotation(detachedObject, field.getName());
+            }
+
+        }
+        copy(detachedObject, attachedObject, excludedFields);
+        return attachedObject;
+    }
+
+    private <T> void persistEdge(T detachedObject, T attachedObject) {
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
+        Object id = ClassUtils.getField(detachedObject, idFieldName);
+        for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
+            Object object = ClassUtils.getField(detachedObject, field.getName());
+            if (object == null) {
+                continue;
+            }
+
+            RObject rObject = connectionManager.getCommandExecutor().getObjectBuilder().createObject(id, detachedObject.getClass(), object.getClass(), field.getName());
+            if (rObject != null) {
+                if (rObject instanceof SortedSet) {
+                    ((RSortedSet) rObject).trySetComparator(((SortedSet) object).comparator());
+                }
+
+                if (rObject instanceof Collection) {
+                    for (Object obj : (Collection<Object>) object) {
+                        if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
+                            Object fieldId = ClassUtils.getField(obj, getRIdFieldName(obj.getClass()));
+                            obj = get(obj.getClass(), fieldId);
+                        }
+                        ((Collection) rObject).add(obj);
+                    }
+                } else if (rObject instanceof Map) {
+                    Map<Object, Object> rMap = (Map<Object, Object>) rObject;
+                    Map<?, ?> map = (Map<?, ?>) object;
+                    for (Map.Entry<?, ?> entry : map.entrySet()) {
+                        Object key = entry.getKey();
+                        Object value = entry.getValue();
+
+                        boolean isRlo = false;
+                        if (key != null && ClassUtils.isAnnotationPresent(key.getClass(), REntity.class)) {
+                            isRlo = true;
+                            Object fieldId = ClassUtils.getField(key, getRIdFieldName(key.getClass()));
+                            key = get(key.getClass(), fieldId);
+                        }
+
+                        if (value != null && ClassUtils.isAnnotationPresent(value.getClass(), REntity.class)) {
+                            isRlo = true;
+                            Object fieldId = ClassUtils.getField(value, getRIdFieldName(value.getClass()));
+                            value = get(value.getClass(), fieldId);
+                        }
+                        if (isRlo){
+                            rMap.put(key, value);
+                        }
+                    }
+                }
+            } else if (ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
+                Object fieldId = ClassUtils.getField(object, getRIdFieldName(object.getClass()));
+                object = get(object.getClass(), fieldId);
+                BeanUtil.pojo.setSimpleProperty(attachedObject, field.getName(), object);
+            } else {
+                validateAnnotation(detachedObject, field.getName());
+            }
+
+        }
     }
 }
