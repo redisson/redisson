@@ -202,21 +202,22 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             String oldId = delegate.getId();
             String id = delegate.changeSessionId();
 
-            Map<String, Object> oldState = map.readAllMap();
-            map.delete();
-
-            map = redisson.getMap(keyPrefix + id, map.getCodec());
-            map.putAll(oldState);
-
             RBatch batch = redisson.createBatch(BatchOptions.defaults());
             batch.getBucket(getExpiredKey(oldId)).remainTimeToLiveAsync();
             batch.getBucket(getExpiredKey(oldId)).deleteAsync();
+            batch.getMap(map.toString()).readAllMapAsync();
+            batch.getMap(map.toString()).deleteAsync();
 
             BatchResult<?> res = batch.execute();
             List<?> list = res.getResponses();
-            Long remainTTL = (Long) list.get(0);
 
-            redisson.getBucket(getExpiredKey(id)).set("", remainTTL, TimeUnit.MILLISECONDS);
+            Long remainTTL = (Long) list.get(0);
+            Map<String, Object> oldState = (Map<String, Object>) list.get(2);
+
+            RBatch batchNew = redisson.createBatch(BatchOptions.defaults());
+            batchNew.getMap(keyPrefix + id, map.getCodec()).putAllAsync(oldState);
+            batchNew.getBucket(getExpiredKey(id)).setAsync("", remainTTL, TimeUnit.MILLISECONDS);
+            batchNew.execute();
 
             return id;
         }
