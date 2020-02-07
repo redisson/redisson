@@ -205,8 +205,8 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             RBatch batch = redisson.createBatch(BatchOptions.defaults());
             batch.getBucket(getExpiredKey(oldId)).remainTimeToLiveAsync();
             batch.getBucket(getExpiredKey(oldId)).deleteAsync();
-            batch.getMap(map.toString()).readAllMapAsync();
-            batch.getMap(map.toString()).deleteAsync();
+            batch.getMap(map.getName()).readAllMapAsync();
+            batch.getMap(map.getName()).deleteAsync();
 
             BatchResult<?> res = batch.execute();
             List<?> list = res.getResponses();
