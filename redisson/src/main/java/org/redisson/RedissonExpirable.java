@@ -15,12 +15,14 @@
  */
 package org.redisson;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RExpirable;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
@@ -88,6 +90,29 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
     @Override
     public RFuture<Long> remainTimeToLiveAsync() {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.PTTL, getName());
+    }
+
+    protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String... keys) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return redis.call('pexpire', KEYS[2], ARGV[1]); ",
+                Arrays.asList(keys),
+                timeUnit.toMillis(timeToLive));
+    }
+
+    protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('pexpireat', KEYS[1], ARGV[1]); " +
+                        "return redis.call('pexpireat', KEYS[2], ARGV[1]); ",
+                Arrays.asList(keys),
+                timestamp);
+    }
+
+    protected RFuture<Boolean> clearExpireAsync(String... keys) {
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                        "redis.call('persist', KEYS[1]); " +
+                        "return redis.call('persist', KEYS[2]); ",
+                Arrays.asList(keys));
     }
 
 }

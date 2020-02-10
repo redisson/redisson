@@ -433,33 +433,21 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
         List<Object> keys = Arrays.<Object>asList(queueName, timeoutSetName);
         return super.sizeInMemoryAsync(keys);
     }
-    
+
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                        "return redis.call('pexpire', KEYS[2], ARGV[1]); ",
-                Arrays.<Object>asList(queueName, timeoutSetName),
-                timeUnit.toMillis(timeToLive));
+        return expireAsync(timeToLive, timeUnit, queueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpireat', KEYS[1], ARGV[1]); " +
-                        "return redis.call('pexpireat', KEYS[2], ARGV[1]); ",
-                Arrays.<Object>asList(queueName, timeoutSetName),
-                timestamp);
+        return expireAtAsync(timestamp, queueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('persist', KEYS[1]); " +
-                        "return redis.call('persist', KEYS[2]); ",
-                Arrays.<Object>asList(queueName, timeoutSetName));
+        return clearExpireAsync(queueName, timeoutSetName);
     }
-
 
     @Override
     public RFuture<V> peekAsync() {
