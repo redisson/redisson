@@ -698,16 +698,20 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
     @Override
     public void preloadCache() {
-        //  Best-attempt warmup - just enumerate as an uncached map (super) and
-        //  add anything found into the cache.  This does not guarantee to find
-        //  entries added during the warmUp, but statistically the cache will have
-        //  few misses after this process
         for (Entry<K, V> entry : super.entrySet()) {
             CacheKey cacheKey = toCacheKey(entry.getKey());
             cachePut(cacheKey, entry.getKey(), entry.getValue());
         }
     }
-    
+
+    @Override
+    public void preloadCache(int count) {
+        for (Entry<K, V> entry : super.entrySet(count)) {
+            CacheKey cacheKey = toCacheKey(entry.getKey());
+            cachePut(cacheKey, entry.getKey(), entry.getValue());
+        }
+    }
+
     @Override
     public void clearLocalCache() {
         get(clearLocalCacheAsync());
