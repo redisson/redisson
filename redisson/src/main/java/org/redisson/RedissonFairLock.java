@@ -274,7 +274,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, getName(), threadsQueueName, timeoutSetName);
+        return deleteAsync(getName(), threadsQueueName, timeoutSetName);
     }
 
     @Override

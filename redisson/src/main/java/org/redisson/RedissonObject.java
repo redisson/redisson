@@ -202,7 +202,11 @@ public abstract class RedissonObject implements RObject {
     public RFuture<Boolean> deleteAsync() {
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DEL_BOOL, getName());
     }
-    
+
+    protected RFuture<Boolean> deleteAsync(String... keys) {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.DEL_OBJECTS, keys);
+    }
+
     @Override
     public boolean unlink() {
         return get(unlinkAsync());

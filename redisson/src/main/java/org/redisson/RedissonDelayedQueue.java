@@ -425,7 +425,7 @@ public class RedissonDelayedQueue<V> extends RedissonExpirable implements RDelay
     
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return commandExecutor.writeAsync(getName(), RedisCommands.DEL_OBJECTS, queueName, timeoutSetName);
+        return deleteAsync(queueName, timeoutSetName);
     }
     
     @Override
