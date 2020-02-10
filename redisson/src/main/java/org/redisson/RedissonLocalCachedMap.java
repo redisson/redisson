@@ -527,7 +527,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 
             }
             msgEncoded = encode(new LocalCachedMapUpdate(entries));
-        } else {
+        } else if (syncStrategy == SyncStrategy.INVALIDATE) {
             msgEncoded = encode(new LocalCachedMapInvalidate(instanceId, hashes));
         }
         
