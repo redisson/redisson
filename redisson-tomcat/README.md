@@ -14,7 +14,7 @@ Current implementation differs from any other Redis based Tomcat Session Manager
 
 ### 1. Add `RedissonSessionManager`
 
-Add `RedissonSessionManager` into `tomcat/conf/context.xml`
+Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tomcat/conf/server.xml`
 
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
@@ -37,7 +37,7 @@ Add `RedissonSessionManager` into `tomcat/conf/context.xml`
 
 #### Shared Redisson instance
 
-`RedissonSessionManager` is created per Web Application and thus creates own Redisson instance. For multiple applications, which use the same Redis setup, amount of Redisson instances could be reduced using JNDI registry:
+For multiple applications using the same Redis setup, amount of Redisson instances could be reduced through JNDI registry:
 
 1. Add shared redisson instance produced by `JndiRedissonFactory` into `tomcat/conf/server.xml` in `GlobalNamingResources` tag area:
 
