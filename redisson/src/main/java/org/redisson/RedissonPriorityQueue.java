@@ -102,8 +102,6 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        
-        loadComparator();
     }
 
     public RedissonPriorityQueue(Codec codec, CommandExecutor commandExecutor, String name, RedissonClient redisson) {
@@ -112,8 +110,6 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-
-        loadComparator();
     }
 
     private void loadComparator() {
@@ -131,6 +127,8 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
                 Class<?> clazz = Class.forName(className);
                 comparator = (Comparator<V>) clazz.newInstance();
+            } else {
+                throw new IllegalStateException("Comparator is not set!");
             }
         } catch (IllegalStateException e) {
             throw e;
@@ -166,6 +164,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     @Override
     public boolean contains(Object o) {
+        checkComparator();
         return binarySearch((V) o, codec).getIndex() >= 0;
     }
 
@@ -232,8 +231,9 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     @Override
     public boolean containsAll(Collection<?> c) {
+        checkComparator();
         for (Object object : c) {
-            if (!contains(object)) {
+            if (binarySearch((V) object, codec).getIndex() < 0) {
                 return false;
             }
         }
@@ -355,14 +355,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         String className = comparator.getClass().getName();
         String comparatorSign = className + ":" + calcClassSign(className);
 
-        Boolean res = commandExecutor.evalWrite(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('llen', KEYS[1]) == 0 then "
-                + "redis.call('set', KEYS[2], ARGV[1]); "
-                + "return 1; "
-                + "else "
-                + "return 0; "
-                + "end",
-                Arrays.<Object>asList(getName(), getComparatorKeyName()), comparatorSign);
+        Boolean res = get(commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.SETNX, getComparatorKeyName(), comparatorSign));
         if (res) {
             this.comparator = comparator;
         }
