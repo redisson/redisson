@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
@@ -436,6 +437,26 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
 
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
         return pollAsync(RedisCommands.RPOPLPUSH, getName(), queueName);
+    }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getName(), getComparatorKeyName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return expireAsync(timeToLive, timeUnit, getName(), getComparatorKeyName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
+        return expireAtAsync(timestamp, getName(), getComparatorKeyName());
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getName(), getComparatorKeyName());
     }
 
 }
