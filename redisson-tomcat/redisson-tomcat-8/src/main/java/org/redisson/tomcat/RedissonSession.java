@@ -15,25 +15,19 @@
  */
 package org.redisson.tomcat;
 
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-
 import org.apache.catalina.session.StandardSession;
-import org.redisson.api.RSet;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.tomcat.RedissonSessionManager.ReadMode;
 import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redisson Session object for Apache Tomcat
@@ -63,14 +57,15 @@ public class RedissonSession extends StandardSession {
     private final Map<String, Object> attrs;
     private RMap<String, Object> map;
     private final RTopic topic;
-    private final RedissonSessionManager.ReadMode readMode;
+    private final ReadMode readMode;
     private final UpdateMode updateMode;
-    
+
     private Set<String> removedAttributes = Collections.emptySet();
-    
+    private Set<String> updatedAttributes = Collections.emptySet();
+
     private final boolean broadcastSessionEvents;
-    
-    public RedissonSession(RedissonSessionManager manager, RedissonSessionManager.ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents) {
+
+    public RedissonSession(RedissonSessionManager manager, ReadMode readMode, UpdateMode updateMode, boolean broadcastSessionEvents) {
         super(manager);
         this.redissonManager = manager;
         this.readMode = readMode;
@@ -80,6 +75,7 @@ public class RedissonSession extends StandardSession {
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            updatedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         }
         
         try {
@@ -101,6 +97,11 @@ public class RedissonSession extends StandardSession {
 
             if (name == null) {
                 return null;
+            }
+
+            if (updatedAttributes.contains(name)
+                    || removedAttributes.contains(name)) {
+                return super.getAttribute(name);
             }
 
             return map.get(name);
@@ -280,7 +281,7 @@ public class RedissonSession extends StandardSession {
     @Override
     public void setAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
-
+        
         if (value == null) {
             return;
         }
@@ -289,6 +290,7 @@ public class RedissonSession extends StandardSession {
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.remove(name);
+            updatedAttributes.add(name);
         }
     }
     
@@ -308,6 +310,7 @@ public class RedissonSession extends StandardSession {
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.add(name);
+            updatedAttributes.remove(name);
         }
     }
     
@@ -345,6 +348,8 @@ public class RedissonSession extends StandardSession {
                 }
             }
         }
+
+        updatedAttributes.clear();
         removedAttributes.clear();
         
         expireSession();

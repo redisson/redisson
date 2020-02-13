@@ -67,6 +67,7 @@ public class RedissonSession extends StandardSession {
     private final UpdateMode updateMode;
     
     private Set<String> removedAttributes = Collections.emptySet();
+    private Set<String> updatedAttributes = Collections.emptySet();
     
     private final boolean broadcastSessionEvents;
     
@@ -80,6 +81,7 @@ public class RedissonSession extends StandardSession {
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+            updatedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
         }
         
         try {
@@ -101,6 +103,11 @@ public class RedissonSession extends StandardSession {
 
             if (name == null) {
                 return null;
+            }
+
+            if (updatedAttributes.contains(name)
+                    || removedAttributes.contains(name)) {
+                return super.getAttribute(name);
             }
 
             return map.get(name);
@@ -289,6 +296,7 @@ public class RedissonSession extends StandardSession {
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.remove(name);
+            updatedAttributes.add(name);
         }
     }
     
@@ -308,6 +316,7 @@ public class RedissonSession extends StandardSession {
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.add(name);
+            updatedAttributes.remove(name);
         }
     }
     
@@ -345,6 +354,8 @@ public class RedissonSession extends StandardSession {
                 }
             }
         }
+
+        updatedAttributes.clear();
         removedAttributes.clear();
         
         expireSession();
