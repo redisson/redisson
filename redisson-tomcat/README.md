@@ -29,15 +29,15 @@ Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tom
    `broadcastSessionEvents` - if `true` then `sessionCreated` and `sessionDestroyed` events are broadcasted across all Tomcat instances and cause all registered HttpSessionListeners to be triggered. Default is `false`.
 
    `updateMode` - Session attributes update mode. Two modes are available:
-   * `DEFAULT` - session attributes are stored into Redis only through setAttribute method. Default mode.
-   * `AFTER_REQUEST` - all session attributes are stored into Redis after each request.
+   * `DEFAULT` - session attributes are stored into Redis only through `Session.setAttribute` method. Default mode.
+   * `AFTER_REQUEST` - all session attributes are stored into Redis after each request. It useful in case when some objects stored in session change own state without `Session.setAttribute` method execution.
    <br/>
 
    `configPath` - path to Redisson YAML config. See [configuration wiki page](https://github.com/redisson/redisson/wiki/2.-Configuration) for more details.
 
 #### Shared Redisson instance
 
-For multiple applications using the same Redis setup, amount of Redisson instances could be reduced through JNDI registry:
+Amount of Redisson instances created by Tomcat for multiple contexts could be reduced through JNDI registry:
 
 1. Add shared redisson instance produced by `JndiRedissonFactory` into `tomcat/conf/server.xml` in `GlobalNamingResources` tag area:
 
