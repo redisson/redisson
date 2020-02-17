@@ -15,18 +15,6 @@
  */
 package org.redisson.command;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
@@ -37,7 +25,6 @@ import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
@@ -45,6 +32,13 @@ import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 import org.redisson.pubsub.AsyncSemaphore;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -135,7 +129,8 @@ public class CommandBatchService extends CommandAsyncService {
     public <V, R> void async(boolean readOnlyMode, NodeSource nodeSource,
             Codec codec, RedisCommand<V> command, Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect) {
         if (isRedisBasedQueue()) {
-            RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
+            boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
+            RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(isReadOnly, nodeSource, codec, command, params, mainPromise,
                     true, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
             executor.execute();
         } else {
@@ -231,7 +226,6 @@ public class CommandBatchService extends CommandAsyncService {
         RPromise<Void> voidPromise = new RedissonPromise<Void>();
         if (this.options.isSkipResult()) {
             voidPromise.onComplete((res, e) -> {
-//              commands = null;
                 executed.set(true);
                 nestedServices.clear();
             });
@@ -242,7 +236,6 @@ public class CommandBatchService extends CommandAsyncService {
                 executed.set(true);
                 if (ex != null) {
                     promise.tryFailure(ex);
-                    commands = null;
                     nestedServices.clear();
                     return;
                 }
@@ -277,14 +270,13 @@ public class CommandBatchService extends CommandAsyncService {
                 BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
                 promise.trySuccess(result);
                 
-                commands = null;
                 nestedServices.clear();
             });
             resultPromise = (RPromise<R>) promise;
         }
 
         AtomicInteger slots = new AtomicInteger(commands.size());
-        
+
         for (Map.Entry<RFuture<?>, List<CommandBatchService>> entry : nestedServices.entrySet()) {
             slots.incrementAndGet();
             for (CommandBatchService service : entry.getValue()) {
@@ -297,7 +289,7 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         for (Map.Entry<MasterSlaveEntry, Entry> e : commands.entrySet()) {
-            RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(new NodeSource(e.getKey()), voidPromise, 
+            RedisCommonBatchExecutor executor = new RedisCommonBatchExecutor(new NodeSource(e.getKey()), voidPromise,
                                                     connectionManager, this.options, e.getValue(), slots);
             executor.execute();
         }
@@ -406,8 +398,6 @@ public class CommandBatchService extends CommandAsyncService {
                     } catch (Exception e) {
                         resultPromise.tryFailure(e);
                     }
-                    
-                    commands = null;
                 });
             }
         }, permits);

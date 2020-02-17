@@ -1,19 +1,7 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
+import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Before;
@@ -22,23 +10,24 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.api.BatchOptions;
+import org.redisson.api.*;
 import org.redisson.api.BatchOptions.ExecutionMode;
-import org.redisson.api.BatchResult;
-import org.redisson.api.RBatch;
-import org.redisson.api.RBucket;
-import org.redisson.api.RFuture;
-import org.redisson.api.RListAsync;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapAsync;
-import org.redisson.api.RMapCacheAsync;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RScript;
 import org.redisson.api.RScript.Mode;
-import org.redisson.api.RedissonClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(Parameterized.class)
 public class RedissonBatchTest extends BaseTest {
@@ -82,6 +71,72 @@ public class RedissonBatchTest extends BaseTest {
         List<?> t = batch.execute();
         System.out.println(t);
     }
+
+    @Test
+    public void testConnectionLeak() throws Exception {
+        Assume.assumeTrue(batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY);
+
+        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(1000);
+
+        Config config = new Config();
+        config.useClusterServers()
+				.setConnectTimeout(500).setPingConnectionInterval(2000)
+                .setMasterConnectionMinimumIdleSize(1)
+                .setMasterConnectionPoolSize(1)
+                .setSlaveConnectionMinimumIdleSize(1)
+                .setSlaveConnectionPoolSize(1)
+                .setTimeout(100)
+                .setRetryAttempts(0)
+                .setRetryInterval(20)
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+		ExecutorService executorService = Executors.newFixedThreadPool(5);
+		AtomicInteger counter = new AtomicInteger(5*100);
+		AtomicBoolean hasErrors = new AtomicBoolean();
+		for (int i = 0; i < 5; i++) {
+			executorService.submit(() -> {
+				for (int j = 0 ; j < 100; j++) {
+					executeBatch(redisson).whenComplete((r, e) -> {
+						counter.decrementAndGet();
+						if (e != null) {
+							hasErrors.set(true);
+						}
+					});
+				}
+			});
+		}
+
+		Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> counter.get() == 0);
+		Assertions.assertThat(hasErrors).isTrue();
+
+		executeBatch(redisson).syncUninterruptibly();
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
+	public RFuture<BatchResult<?>> executeBatch(RedissonClient client) {
+		RBatch batch = client.createBatch(batchOptions);
+		for (int i = 0; i < 10; i++) {
+			String key = "" + i;
+			batch.getBucket(key).getAsync();
+		}
+		return batch.executeAsync();
+	}
 
     @Test
     public void testConvertor() throws InterruptedException, ExecutionException {

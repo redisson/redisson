@@ -34,7 +34,6 @@ import org.redisson.client.protocol.*;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.connection.ConnectionManager;
-import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
@@ -149,11 +148,6 @@ public class RedisExecutor<V, R> {
                 return;
             }
 
-            if (attemptPromise.isDone() || mainPromise.isDone()) {
-                releaseConnection(attemptPromise, connectionFuture);
-                return;
-            }
-
             sendCommand(attemptPromise, connection);
 
             writeFuture.addListener(new ChannelFutureListener() {
@@ -172,11 +166,6 @@ public class RedisExecutor<V, R> {
     }
 
     private void scheduleRetryTimeout(RFuture<RedisConnection> connectionFuture, RPromise<R> attemptPromise) {
-        if (retryInterval == 0 || attempts == 0) {
-            this.timeout = MasterSlaveConnectionManager.DUMMY_TIMEOUT;
-            return;
-        }
-        
         TimerTask retryTimerTask = new TimerTask() {
 
             @Override
@@ -199,9 +188,11 @@ public class RedisExecutor<V, R> {
                                 if (writeFuture != null && writeFuture.cancel(false)) {
                                     if (exception == null) {
                                         long totalSize = 0;
-                                        for (Object param : params) {
-                                            if (param instanceof ByteBuf) {
-                                                totalSize += ((ByteBuf) param).readableBytes();
+                                        if (params != null) {
+                                            for (Object param : params) {
+                                                if (param instanceof ByteBuf) {
+                                                    totalSize += ((ByteBuf) param).readableBytes();
+                                                }
                                             }
                                         }
 
@@ -339,7 +330,7 @@ public class RedisExecutor<V, R> {
                     execute();
                     return;
                 }
-                
+
                 attemptPromise.tryFailure(
                         new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
                                 + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Command: "
