@@ -43,6 +43,7 @@ public class RedissonBloomFilterTest extends BaseTest {
 
         filter.delete();
 
+        assertThat(redisson.getKeys().count()).isZero();
         assertThat(filter.tryInit(55000001L, 0.03)).isTrue();
     }
 

@@ -798,6 +798,8 @@ public class RedissonTopicTest {
 
         Assert.assertFalse(exceptionDetected.get());
 
+        executor1.shutdownNow();
+
         redisson.shutdown();
         sentinel1.stop();
         sentinel2.stop();
