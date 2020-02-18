@@ -27,6 +27,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonNodeInitializer;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
@@ -235,6 +236,7 @@ public class ConfigSupport {
         mapper.addMixIn(Codec.class, ClassMixIn.class);
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
+        mapper.addMixIn(NatMapper.class, ClassMixIn.class);
         
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());

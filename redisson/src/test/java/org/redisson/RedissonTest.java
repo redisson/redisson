@@ -969,12 +969,13 @@ public class RedissonTest {
     }
 
     @Test
-    public void testSentinelJSON() throws IOException {
+    public void testSentinelYAML() throws IOException {
         Config c2 = new Config();
         c2.useSentinelServers().addSentinelAddress("redis://123.1.1.1:1231").setMasterName("mymaster");
-        String t = c2.toJSON();
-        Config c = Config.fromJSON(t);
-        assertThat(c.toJSON()).isEqualTo(t);
+        String t = c2.toYAML();
+        System.out.println(t);
+        Config c = Config.fromYAML(t);
+        assertThat(c.toYAML()).isEqualTo(t);
     }
 
     @Test
