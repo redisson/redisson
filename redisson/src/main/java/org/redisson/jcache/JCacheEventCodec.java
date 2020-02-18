@@ -15,50 +15,34 @@
  */
 package org.redisson.jcache;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
+import org.redisson.codec.BaseEventCodec;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.util.internal.PlatformDependent;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class JCacheEventCodec implements Codec {
+public class JCacheEventCodec extends BaseEventCodec {
 
-    private final Codec codec;
     private final boolean sync;
     
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
-            List<Object> result = new ArrayList<Object>();
-            int keyLen;
-            if (PlatformDependent.isWindows()) {
-                keyLen = buf.readIntLE();
-            } else {
-                keyLen = (int) buf.readLongLE();
-            }
-            ByteBuf keyBuf = buf.readSlice(keyLen);
-            Object key = codec.getMapKeyDecoder().decode(keyBuf, state);
+            List<Object> result = new ArrayList<>();
+
+            Object key = JCacheEventCodec.this.decode(buf, state, codec.getMapKeyDecoder());
             result.add(key);
 
-            int valueLen;
-            if (PlatformDependent.isWindows()) {
-                valueLen = buf.readIntLE();
-            } else {
-                valueLen = (int) buf.readLongLE();
-            }
-            ByteBuf valueBuf = buf.readSlice(valueLen);
-            Object value = codec.getMapValueDecoder().decode(valueBuf, state);
+            Object value = JCacheEventCodec.this.decode(buf, state, codec.getMapValueDecoder());
             result.add(value);
             
             if (sync) {
@@ -70,45 +54,14 @@ public class JCacheEventCodec implements Codec {
         }
     };
 
-    public JCacheEventCodec(Codec codec, boolean sync) {
-        super();
-        this.codec = codec;
+    public JCacheEventCodec(Codec codec, OSType osType, boolean sync) {
+        super(codec, osType);
         this.sync = sync;
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
-    }
-
-    @Override
-    public Encoder getValueEncoder() {
-        throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public ClassLoader getClassLoader() {
-        return getClass().getClassLoader();
     }
 
 }

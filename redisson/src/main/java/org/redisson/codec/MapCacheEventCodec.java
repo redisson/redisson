@@ -15,29 +15,22 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.Encoder;
 
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class MapCacheEventCodec implements Codec {
+public class MapCacheEventCodec extends BaseEventCodec {
 
-    public enum OSType {WINDOWS, HPNONSTOP}
-    
-    private final Codec codec;
-    private final OSType osType;
-    
     private final Decoder<Object> decoder = new Decoder<Object>() {
         @Override
         public Object decode(ByteBuf buf, State state) throws IOException {
@@ -59,96 +52,24 @@ public class MapCacheEventCodec implements Codec {
     };
 
     public MapCacheEventCodec(Codec codec, OSType osType) {
-        super();
-        this.codec = codec;
-        this.osType = osType;
+        super(codec, osType);
     }
     
     public MapCacheEventCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
+        super(newCodec(classLoader, codec), codec.osType);
+    }
+
+    private static Codec newCodec(ClassLoader classLoader, MapCacheEventCodec codec) {
         try {
-            this.codec = codec.codec.getClass().getConstructor(ClassLoader.class, codec.codec.getClass()).newInstance(classLoader, codec.codec);
+            return codec.codec.getClass().getConstructor(ClassLoader.class, codec.codec.getClass()).newInstance(classLoader, codec.codec);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-        this.osType = codec.osType;
-    }
-
-    @Override
-    public Decoder<Object> getMapValueDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapValueEncoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Decoder<Object> getMapKeyDecoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Encoder getMapKeyEncoder() {
-        throw new UnsupportedOperationException();
     }
 
     @Override
     public Decoder<Object> getValueDecoder() {
         return decoder;
-    }
-
-    @Override
-    public Encoder getValueEncoder() {
-        throw new UnsupportedOperationException();
-    }
-
-    private Object decode(ByteBuf buf, State state, Decoder<?> decoder) throws IOException {
-        int keyLen;
-        if (osType == OSType.WINDOWS) {
-            keyLen = buf.readIntLE();
-        } else if (osType == OSType.HPNONSTOP) {
-            keyLen = (int) buf.readLong();
-        } else {
-            keyLen = (int) buf.readLongLE();
-        }
-        ByteBuf keyBuf = buf.readSlice(keyLen);
-        Object key = decoder.decode(keyBuf, state);
-        return key;
-    }
-
-    @Override
-    public ClassLoader getClassLoader() {
-        return getClass().getClassLoader();
-    }
-
-    @Override
-    @SuppressWarnings("AvoidInlineConditionals")
-    public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((codec == null) ? 0 : codec.hashCode());
-        result = prime * result + ((osType == null) ? 0 : osType.hashCode());
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
-            return false;
-        MapCacheEventCodec other = (MapCacheEventCodec) obj;
-        if (codec == null) {
-            if (other.codec != null)
-                return false;
-        } else if (!codec.equals(other.codec))
-            return false;
-        if (osType != other.osType)
-            return false;
-        return true;
     }
 
 }

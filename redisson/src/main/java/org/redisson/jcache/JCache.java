@@ -15,66 +15,22 @@
  */
 package org.redisson.jcache;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
-
-import javax.cache.Cache;
-import javax.cache.CacheException;
-import javax.cache.CacheManager;
-import javax.cache.configuration.CacheEntryListenerConfiguration;
-import javax.cache.configuration.Configuration;
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryCreatedListener;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryExpiredListener;
-import javax.cache.event.CacheEntryListener;
-import javax.cache.event.CacheEntryRemovedListener;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.event.EventType;
-import javax.cache.integration.CacheLoader;
-import javax.cache.integration.CacheLoaderException;
-import javax.cache.integration.CacheWriter;
-import javax.cache.integration.CacheWriterException;
-import javax.cache.integration.CompletionListener;
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.Redisson;
-import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.RedissonObject;
 import org.redisson.ScanResult;
-import org.redisson.api.CacheAsync;
-import org.redisson.api.CacheReactive;
-import org.redisson.api.CacheRx;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RTopic;
+import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.MapScanResult;
+import org.redisson.codec.BaseEventCodec;
 import org.redisson.connection.decoder.MapGetAllDecoder;
+import org.redisson.iterator.RedissonBaseMapIterator;
 import org.redisson.jcache.JMutableEntry.Action;
 import org.redisson.jcache.configuration.JCacheConfiguration;
 import org.redisson.misc.Hash;
@@ -85,7 +41,25 @@ import org.redisson.reactive.ReactiveProxyBuilder;
 import org.redisson.rx.CommandRxService;
 import org.redisson.rx.RxProxyBuilder;
 
-import io.netty.buffer.ByteBuf;
+import javax.cache.Cache;
+import javax.cache.CacheException;
+import javax.cache.CacheManager;
+import javax.cache.configuration.CacheEntryListenerConfiguration;
+import javax.cache.configuration.Configuration;
+import javax.cache.configuration.Factory;
+import javax.cache.event.*;
+import javax.cache.integration.*;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 /**
  * JCache implementation
@@ -3036,7 +3010,20 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         registerCacheEntryListener(cacheEntryListenerConfiguration, true);
     }
 
+    private JCacheEventCodec.OSType osType;
+
     private void registerCacheEntryListener(CacheEntryListenerConfiguration<K, V> cacheEntryListenerConfiguration, boolean addToConfig) {
+        if (osType == null) {
+            RFuture<Map<String, String>> serverFuture = commandExecutor.readAsync((String) null, StringCodec.INSTANCE, RedisCommands.INFO_SERVER);
+            serverFuture.syncUninterruptibly();
+            String os = serverFuture.getNow().get("os");
+            if (os.contains("Windows")) {
+                osType = BaseEventCodec.OSType.WINDOWS;
+            } else if (os.contains("NONSTOP")) {
+                osType = BaseEventCodec.OSType.HPNONSTOP;
+            }
+        }
+
         Factory<CacheEntryListener<? super K, ? super V>> factory = cacheEntryListenerConfiguration.getCacheEntryListenerFactory();
         final CacheEntryListener<? super K, ? super V> listener = factory.create();
         
@@ -3063,7 +3050,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 channelName = getRemovedSyncChannelName();
             }
             
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -3086,7 +3073,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 channelName = getCreatedSyncChannelName();
             }
 
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -3109,7 +3096,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                 channelName = getUpdatedSyncChannelName();
             }
 
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, sync));
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, sync));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {
@@ -3129,7 +3116,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         if (CacheEntryExpiredListener.class.isAssignableFrom(listener.getClass())) {
             String channelName = getExpiredChannelName();
 
-            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, false));
+            RTopic topic = redisson.getTopic(channelName, new JCacheEventCodec(codec, osType, false));
             int listenerId = topic.addListener(List.class, new MessageListener<List<Object>>() {
                 @Override
                 public void onMessage(CharSequence channel, List<Object> msg) {

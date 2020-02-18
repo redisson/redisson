@@ -50,8 +50,8 @@ import org.redisson.client.protocol.decoder.MapCacheScanResult;
 import org.redisson.client.protocol.decoder.MapCacheScanResultReplayDecoder;
 import org.redisson.client.protocol.decoder.MapScanResult;
 import org.redisson.client.protocol.decoder.ObjectMapDecoder;
+import org.redisson.codec.BaseEventCodec;
 import org.redisson.codec.MapCacheEventCodec;
-import org.redisson.codec.MapCacheEventCodec.OSType;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.connection.decoder.MapGetAllDecoder;
 import org.redisson.eviction.EvictionScheduler;
@@ -1882,9 +1882,9 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             serverFuture.syncUninterruptibly();
             String os = serverFuture.getNow().get("os");
             if (os.contains("Windows")) {
-                osType = OSType.WINDOWS;
+                osType = BaseEventCodec.OSType.WINDOWS;
             } else if (os.contains("NONSTOP")) {
-                osType = OSType.HPNONSTOP;
+                osType = BaseEventCodec.OSType.HPNONSTOP;
             }
         }
 
