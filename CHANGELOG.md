@@ -4,6 +4,21 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 18-Feb-2020 - 3.12.2 released
+
+Feature - Hibernate `hibernate.cache.redisson.fallback` setting introduced  
+Feature - added `RLocalCachedMap.preloadCache` method with batch size  
+
+Improvement - `RLocalCachedMap.putAllOperation` method optimization  
+
+Fixed - exception thrown by `org.redisson.jcache.JCacheEventCodec`  
+Fixed - connection leak occured during `RBatch` object usage  
+Fixed - Tomcat session should return the same object during the same request for `readMode = REDIS` and `updateMode = AFTER_REQUEST` settings  
+Fixed - `RPriorityQueue` comparator is not deleted or expired after corresponding methods invocation  
+Fixed - memory leak caused by `ClientConnectionsEntry.allConnections` field  
+Fixed - `maxIdleTimeout = 1 hour` set to `RedisExecutor.CODECS` map  
+Fixed - use `RBatch` for all types of Redis setup (thanks to @basiszwo)  
+
 ### 31-Jan-2020 - 3.12.1 released
 
 Feature - `RTransferQueue` object added. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections#722-transfer-queue) for more details  
