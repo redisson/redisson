@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.redisson.api.RBucket;
 import org.redisson.api.RFuture;
@@ -290,15 +291,21 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
     }
 
     protected <T> RFuture<V> pollAsync(RedisCommand<T> command, Object... params) {
+        return pollAsync(() -> {
+            return commandExecutor.writeAsync(getName(), codec, command, params);
+        });
+    };
+
+    protected final <T, R> RFuture<R> pollAsync(Supplier<RFuture<R>> callable) {
         long threadId = Thread.currentThread().getId();
-        RPromise<V> result = new RedissonPromise<V>();
+        RPromise<R> result = new RedissonPromise<R>();
         lock.lockAsync(threadId).onComplete((r, exc) -> {
             if (exc != null) {
                 result.tryFailure(exc);
                 return;
             }
-            
-            RFuture<V> f = commandExecutor.writeAsync(getName(), codec, command, params);
+
+            RFuture<R> f = callable.get();
             f.onComplete((value, e) -> {
                 if (e != null) {
                     result.tryFailure(e);

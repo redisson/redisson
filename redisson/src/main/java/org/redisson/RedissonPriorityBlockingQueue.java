@@ -220,7 +220,20 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
-        throw new UnsupportedOperationException();
+        return pollAsync(() -> {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+                       "local result = {};"
+                     + "for i = 1, ARGV[1], 1 do " +
+                           "local value = redis.call('lpop', KEYS[1]);" +
+                           "if value ~= false then " +
+                               "table.insert(result, value);" +
+                           "else " +
+                               "return result;" +
+                           "end;" +
+                       "end; " +
+                       "return result;",
+                    Collections.singletonList(getName()), limit);
+        });
     }
 
     @Override
@@ -235,6 +248,6 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public List<V> poll(int limit) {
-        throw new UnsupportedOperationException();
+        return get(pollAsync(limit));
     }
 }
