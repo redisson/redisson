@@ -15,18 +15,17 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.handler.codec.compression.Snappy;
+import io.netty.util.concurrent.FastThreadLocal;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.handler.codec.compression.Snappy;
-import io.netty.util.concurrent.FastThreadLocal;
+import java.io.IOException;
 
 /**
  * Snappy compression codec.
@@ -55,7 +54,7 @@ public class SnappyCodec extends BaseCodec {
     private final Codec innerCodec;
 
     public SnappyCodec() {
-        this(new FstCodec());
+        this(new Kryo5Codec());
     }
 
     public SnappyCodec(Codec innerCodec) {

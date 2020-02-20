@@ -15,8 +15,8 @@
  */
 package org.redisson.codec;
 
-import java.io.IOException;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.handler.State;
@@ -24,8 +24,7 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import org.xerial.snappy.Snappy;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import java.io.IOException;
 
 /**
  * Google's Snappy compression codec.
@@ -44,7 +43,7 @@ public class SnappyCodecV2 extends BaseCodec {
     private final Codec innerCodec;
 
     public SnappyCodecV2() {
-        this(new FstCodec());
+        this(new Kryo5Codec());
     }
 
     public SnappyCodecV2(Codec innerCodec) {

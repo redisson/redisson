@@ -50,7 +50,7 @@ public class LZ4Codec extends BaseCodec {
     private final Codec innerCodec;
 
     public LZ4Codec() {
-        this(new FstCodec());
+        this(new Kryo5Codec());
     }
 
     public LZ4Codec(Codec innerCodec) {
