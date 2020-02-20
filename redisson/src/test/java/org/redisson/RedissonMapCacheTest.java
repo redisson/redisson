@@ -25,6 +25,7 @@ import org.redisson.api.MapOptions;
 import org.redisson.api.MapOptions.WriteMode;
 import org.redisson.api.RMap;
 import org.redisson.api.RMapCache;
+import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -36,6 +37,7 @@ import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
+import org.redisson.config.Config;
 import org.redisson.eviction.EvictionScheduler;
 
 public class RedissonMapCacheTest extends BaseMapTest {
@@ -184,6 +186,30 @@ public class RedissonMapCacheTest extends BaseMapTest {
         expected.put("3", "33");
         assertThat(store).isEqualTo(expected);
         map.destroy();
+    }
+
+    @Test
+    public void testExpirationWithMaxSize() throws InterruptedException {
+        Config config = new Config();
+        config.useSingleServer().setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
+        config.setMaxCleanUpDelay(2);
+        config.setMinCleanUpDelay(1);
+        RedissonClient redisson = Redisson.create(config);
+
+        RMapCache<String, String> map = redisson.getMapCache("test", StringCodec.INSTANCE);
+        assertThat(map.trySetMaxSize(2)).isTrue();
+
+        map.put("1", "1", 3, TimeUnit.SECONDS);
+        map.put("2", "2", 0, TimeUnit.SECONDS, 3, TimeUnit.SECONDS);
+        map.put("3", "3", 3, TimeUnit.SECONDS);
+        map.put("4", "4", 0, TimeUnit.SECONDS, 3, TimeUnit.SECONDS);
+
+        Thread.sleep(5000);
+
+        assertThat(map.size()).isZero();
+
+        assertThat(redisson.getKeys().count()).isEqualTo(2);
+        redisson.shutdown();
     }
 
     @Test
