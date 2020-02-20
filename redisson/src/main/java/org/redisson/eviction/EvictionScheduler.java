@@ -71,7 +71,10 @@ public class EvictionScheduler {
     }
 
     public void remove(String name) {
-        tasks.remove(name);
+        EvictionTask task = tasks.remove(name);
+        if (task != null) {
+            task.getScheduledFuture().cancel(false);
+        }
     }
     
 }

@@ -15,14 +15,15 @@
  */
 package org.redisson.eviction;
 
-import java.util.Deque;
-import java.util.LinkedList;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.util.concurrent.ScheduledFuture;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Deque;
+import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -41,6 +42,8 @@ abstract class EvictionTask implements Runnable {
     int delay = 5;
 
     final CommandAsyncExecutor executor;
+
+    ScheduledFuture<?> scheduledFuture;
     
     EvictionTask(CommandAsyncExecutor executor) {
         super();
@@ -51,7 +54,11 @@ abstract class EvictionTask implements Runnable {
     }
 
     public void schedule() {
-        executor.getConnectionManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
+        scheduledFuture = executor.getConnectionManager().getGroup().schedule(this, delay, TimeUnit.SECONDS);
+    }
+
+    public ScheduledFuture<?> getScheduledFuture() {
+        return scheduledFuture;
     }
 
     abstract RFuture<Integer> execute();
