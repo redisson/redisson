@@ -18,9 +18,10 @@ package org.redisson;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.RBucket;
-import org.redisson.api.RFuture;
+import org.redisson.api.*;
+import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
@@ -195,5 +196,21 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     public V getAndSet(V value, long timeToLive, TimeUnit timeUnit) {
         return get(getAndSetAsync(value, timeToLive, timeUnit));
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof SetObjectListener) {
+            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
+            return topic.addListener(String.class, new PatternMessageListener<String>() {
+                @Override
+                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
+                    if (msg.equals(getName())) {
+                        ((SetObjectListener) listener).onSet(msg);
+                    }
+                }
+            });
+        }
+        return super.addListener(listener);
+    };
 
 }
