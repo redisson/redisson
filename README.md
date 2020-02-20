@@ -1,6 +1,6 @@
 # Redisson - Redis Java client<br/>with features of In-Memory Data Grid
 
-[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](http://www.javadoc.io/doc/org.redisson/redisson/3.12.0) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
+[Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
 JDK compatibility:  1.8 - 13, Android  
@@ -103,14 +103,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.12.1</version>
+       <version>3.12.2</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.12.1'  
+    compile 'org.redisson:redisson:3.12.2'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.12.1"
+    libraryDependencies += "org.redisson" % "redisson" % "3.12.2"
 
 #### Java
 
@@ -168,8 +168,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.12.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.12.1&e=jar),
-[Redisson node 3.12.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.12.1&e=jar)  
+[Redisson 3.12.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.12.2&e=jar),
+[Redisson node 3.12.2](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.12.2&e=jar)  
 
 ## FAQs
 
