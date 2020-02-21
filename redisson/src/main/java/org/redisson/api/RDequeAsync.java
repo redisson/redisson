@@ -27,6 +27,22 @@ import java.util.List;
 public interface RDequeAsync<V> extends RQueueAsync<V> {
 
     /**
+     * Adds element at the head of existing deque.
+     *
+     * @param elements - elements to add
+     * @return length of the list
+     */
+    RFuture<Integer> addFirstIfExistsAsync(V... elements);
+
+    /**
+     * Adds element at the tail of existing deque.
+     *
+     * @param elements - elements to add
+     * @return length of the list
+     */
+    RFuture<Integer> addLastIfExistsAsync(V... elements);
+
+    /**
      * Removes last occurrence of element <code>o</code>
      * 
      * @param o - element

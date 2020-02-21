@@ -241,9 +241,17 @@ public abstract class RedissonObject implements RObject {
     public Codec getCodec() {
         return codec;
     }
-    
+
+    protected List<ByteBuf> encode(Object... values) {
+        List<ByteBuf> result = new ArrayList<>(values.length);
+        for (Object object : values) {
+            result.add(encode(object));
+        }
+        return result;
+    }
+
     protected List<ByteBuf> encode(Collection<?> values) {
-        List<ByteBuf> result = new ArrayList<ByteBuf>(values.size());
+        List<ByteBuf> result = new ArrayList<>(values.size());
         for (Object object : values) {
             result.add(encode(object));
         }

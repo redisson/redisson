@@ -48,6 +48,22 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
         super(codec, commandExecutor, name, redisson);
     }
 
+    public int addFirstIfExists(V... elements) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+
+    public int addLastIfExists(V... elements) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+
+    public RFuture<Integer> addFirstIfExistsAsync(V... elements) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+
+    public RFuture<Integer> addLastIfExistsAsync(V... elements) {
+        throw new UnsupportedOperationException("use add or put method");
+    }
+
     public RFuture<Void> addFirstAsync(V e) {
         throw new UnsupportedOperationException("use add or put method");
     }
@@ -55,7 +71,7 @@ public class RedissonPriorityDeque<V> extends RedissonPriorityQueue<V> implement
     public RFuture<Void> addLastAsync(V e) {
         throw new UnsupportedOperationException("use add or put method");
     }
-    
+
     @Override
     public void addFirst(V e) {
         throw new UnsupportedOperationException("use add or put method");

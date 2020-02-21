@@ -27,6 +27,22 @@ import reactor.core.publisher.Mono;
  */
 public interface RDequeReactive<V> extends RQueueReactive<V> {
 
+    /**
+     * Adds element at the head of existing deque.
+     *
+     * @param elements - elements to add
+     * @return length of the list
+     */
+    Mono<Integer> addFirstIfExists(V... elements);
+
+    /**
+     * Adds element at the tail of existing deque.
+     *
+     * @param elements - elements to add
+     * @return length of the list
+     */
+    Mono<Integer> addLastIfExists(V... elements);
+
     Flux<V> descendingIterator();
 
     /**
