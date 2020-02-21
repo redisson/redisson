@@ -200,9 +200,17 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
         }
     }
 
-    class RedissonAsynchronousByteChannel implements AsynchronousByteChannel {
+    public class RedissonAsynchronousByteChannel implements AsynchronousByteChannel {
 
         volatile int position;
+
+        public long position() {
+            return position;
+        }
+
+        public void position(long newPosition) {
+            this.position = (int) newPosition;
+        }
 
         @Override
         public <A> void read(ByteBuffer dst, A attachment, CompletionHandler<Integer, ? super A> handler) {

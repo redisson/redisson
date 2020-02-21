@@ -89,6 +89,13 @@ public class RedissonRx implements RedissonRxClient {
     }
     
     @Override
+    public RBinaryStreamRx getBinaryStream(String name) {
+        RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, stream,
+                new RedissonBinaryStreamRx(commandExecutor, stream), RBinaryStreamRx.class);
+    }
+
+    @Override
     public RSemaphoreRx getSemaphore(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreRx.class);
     }

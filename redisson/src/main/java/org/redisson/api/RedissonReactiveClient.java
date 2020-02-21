@@ -82,7 +82,15 @@ public interface RedissonReactiveClient {
      * @return RateLimiter object
      */
     RRateLimiterReactive getRateLimiter(String name);
-    
+
+    /**
+     * Returns binary stream holder instance by <code>name</code>
+     *
+     * @param name of binary stream
+     * @return BinaryStream object
+     */
+    RBinaryStreamReactive getBinaryStream(String name);
+
     /**
      * Returns semaphore instance by name
      *

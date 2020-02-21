@@ -101,6 +101,13 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
     
     @Override
+    public RBinaryStreamReactive getBinaryStream(String name) {
+        RedissonBinaryStream stream = new RedissonBinaryStream(commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, stream,
+                new RedissonBinaryStreamReactive(commandExecutor, stream), RBinaryStreamReactive.class);
+    }
+
+    @Override
     public RSemaphoreReactive getSemaphore(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonSemaphore(commandExecutor, name), RSemaphoreReactive.class);
     }

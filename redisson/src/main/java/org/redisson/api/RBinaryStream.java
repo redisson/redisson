@@ -21,7 +21,8 @@ import java.nio.channels.AsynchronousByteChannel;
 import java.nio.channels.SeekableByteChannel;
 
 /**
- * Binary stream holder. Maximum size of stream is limited by available memory of Redis master node.
+ * Binary stream holder stores a sequence of bytes.
+ * Maximum size of stream is limited to 512Mb.
  * 
  * @author Nikita Koksharov
  *
