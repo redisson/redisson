@@ -207,13 +207,24 @@ public interface RKeysAsync {
     RFuture<Long> countAsync();
 
     /**
+     * Swap two databases.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    RFuture<Void> swapdbAsync(int db1, int db2);
+
+    /**
      * Delete all keys of currently selected database
+     *
      * @return void
      */
     RFuture<Void> flushdbAsync();
 
     /**
      * Delete all keys of all existing databases
+     *
      * @return void
      */
     RFuture<Void> flushallAsync();

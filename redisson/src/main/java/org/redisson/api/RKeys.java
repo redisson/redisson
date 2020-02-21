@@ -312,6 +312,11 @@ public interface RKeys extends RKeysAsync {
     long count();
 
     /**
+     * Swap two databases.
+     */
+    void swapdb(int db1, int db2);
+
+    /**
      * Delete all keys of currently selected database
      */
     void flushdb();

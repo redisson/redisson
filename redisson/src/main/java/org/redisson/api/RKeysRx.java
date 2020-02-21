@@ -270,6 +270,15 @@ public interface RKeysRx {
     Completable flushdb();
 
     /**
+     * Swap two databases.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Completable swapdb(int db1, int db2);
+
+    /**
      * Delete all the keys of all the existing databases
      *
      * Uses <code>FLUSHALL</code> Redis command.
@@ -277,5 +286,25 @@ public interface RKeysRx {
      * @return void
      */
     Completable flushall();
+
+    /**
+     * Delete all keys of currently selected database
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Completable flushdbParallel();
+
+    /**
+     * Delete all keys of all existing databases
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Completable flushallParallel();
 
 }

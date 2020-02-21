@@ -519,4 +519,13 @@ public class RedissonKeys implements RKeys {
         return toStream(getKeys(count).iterator());
     }
 
+    @Override
+    public void swapdb(int db1, int db2) {
+        commandExecutor.get(swapdbAsync(db1, db2));
+    }
+
+    @Override
+    public RFuture<Void> swapdbAsync(int db1, int db2) {
+        return commandExecutor.writeAsync(null, RedisCommands.SWAPDB, db1, db2);
+    }
 }

@@ -15,11 +15,10 @@
  */
 package org.redisson.api;
 
-import java.util.Collection;
-import java.util.concurrent.TimeUnit;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -208,21 +207,6 @@ public interface RKeysReactive {
     Mono<Integer> getSlot(String key);
 
     /**
-     * Find keys by key search pattern by one Redis call.
-     *
-     * Uses <code>KEYS</code> Redis command.
-     *
-     *  Supported glob-style patterns:
-     *    h?llo subscribes to hello, hallo and hxllo
-     *    h*llo subscribes to hllo and heeeello
-     *    h[ae]llo subscribes to hello and hallo, but not hillo
-     *
-     * @param pattern - match pattern
-     * @return collection of keys
-     */
-    Mono<Collection<String>> findKeysByPattern(String pattern);
-
-    /**
      * Get random key
      *
      * Uses <code>RANDOM_KEY</code> Redis command.
@@ -284,6 +268,15 @@ public interface RKeysReactive {
     Mono<Void> flushdb();
 
     /**
+     * Swap two databases.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Mono<Void> swapdb(int db1, int db2);
+
+    /**
      * Delete all the keys of all the existing databases
      *
      * Uses <code>FLUSHALL</code> Redis command.
@@ -291,5 +284,25 @@ public interface RKeysReactive {
      * @return void
      */
     Mono<Void> flushall();
+
+    /**
+     * Delete all keys of currently selected database
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Mono<Void> flushdbParallel();
+
+    /**
+     * Delete all keys of all existing databases
+     * in background without blocking server.
+     * <p>
+     * Requires Redis 4.0+
+     *
+     * @return void
+     */
+    Mono<Void> flushallParallel();
 
 }
