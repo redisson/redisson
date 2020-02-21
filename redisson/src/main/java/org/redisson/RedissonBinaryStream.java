@@ -15,6 +15,17 @@
  */
 package org.redisson;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.redisson.api.RBinaryStream;
+import org.redisson.api.RFuture;
+import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,21 +35,6 @@ import java.nio.channels.CompletionHandler;
 import java.nio.channels.SeekableByteChannel;
 import java.util.Arrays;
 import java.util.concurrent.Future;
-
-import io.netty.buffer.Unpooled;
-import org.redisson.api.RBinaryStream;
-import org.redisson.api.RFuture;
-import org.redisson.client.codec.ByteArrayCodec;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.handler.State;
-import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-
-import io.netty.buffer.ByteBuf;
 
 /**
  * 
