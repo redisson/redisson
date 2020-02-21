@@ -160,6 +160,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RBucketsReactive getBuckets() {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBuckets(commandExecutor), RBucketsReactive.class);
+    }
+
+    @Override
+    public RBucketsReactive getBuckets(Codec codec) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonBuckets(codec, commandExecutor), RBucketsReactive.class);
+    }
+
+    @Override
     public <V> List<RBucketReactive<V>> findBuckets(String pattern) {
         RKeys redissonKeys = new RedissonKeys(commandExecutor);
         Iterable<String> keys = redissonKeys.getKeysByPattern(pattern);

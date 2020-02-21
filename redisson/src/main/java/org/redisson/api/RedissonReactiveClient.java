@@ -256,6 +256,22 @@ public interface RedissonReactiveClient {
     <V> RBucketReactive<V> getBucket(String name, Codec codec);
 
     /**
+     * Returns interface for mass operations with Bucket objects.
+     *
+     * @return Buckets
+     */
+    RBucketsReactive getBuckets();
+
+    /**
+     * Returns interface for mass operations with Bucket objects
+     * using provided codec for object.
+     *
+     * @param codec - codec for bucket objects
+     * @return Buckets
+     */
+    RBucketsReactive getBuckets(Codec codec);
+
+    /**
      * Returns a list of object holder instances by a key pattern
      *
      * @param <V> type of value

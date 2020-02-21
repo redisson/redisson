@@ -254,6 +254,22 @@ public interface RedissonRxClient {
     <V> RBucketRx<V> getBucket(String name, Codec codec);
 
     /**
+     * Returns interface for mass operations with Bucket objects.
+     *
+     * @return Buckets
+     */
+    RBucketsRx getBuckets();
+
+    /**
+     * Returns interface for mass operations with Bucket objects
+     * using provided codec for object.
+     *
+     * @param codec - codec for bucket objects
+     * @return Buckets
+     */
+    RBucketsRx getBuckets(Codec codec);
+
+    /**
      * Returns HyperLogLog instance by name.
      * 
      * @param <V> type of values

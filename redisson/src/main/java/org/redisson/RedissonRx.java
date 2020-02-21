@@ -148,6 +148,16 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RBucketsRx getBuckets() {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(commandExecutor), RBucketsRx.class);
+    }
+
+    @Override
+    public RBucketsRx getBuckets(Codec codec) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonBuckets(codec, commandExecutor), RBucketsRx.class);
+    }
+
+    @Override
     public <V> RHyperLogLogRx<V> getHyperLogLog(String name) {
         return RxProxyBuilder.create(commandExecutor, new RedissonHyperLogLog<V>(commandExecutor, name), RHyperLogLogRx.class);
     }
