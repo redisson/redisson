@@ -320,11 +320,14 @@ public interface RedisCommands {
     RedisStrictCommand<Void> RESTORE = new RedisStrictCommand<Void>("RESTORE", new VoidReplayConvertor());
     
     RedisCommand<Object> GET = new RedisCommand<Object>("GET");
+    RedisCommand<Object> GETRANGE = new RedisCommand<Object>("GETRANGE");
+    RedisCommand<Long> SETRANGE = new RedisCommand<Long>("SETRANGE");
     RedisStrictCommand<Long> GET_LONG = new RedisStrictCommand<Long>("GET", new LongReplayConvertor());
     RedisStrictCommand<Integer> GET_INTEGER = new RedisStrictCommand<Integer>("GET", new IntegerReplayConvertor(0));
     RedisStrictCommand<Double> GET_DOUBLE = new RedisStrictCommand<Double>("GET", new DoubleNullSafeReplayConvertor());
     RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET");
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor());
+    RedisCommand<Void> APPEND = new RedisCommand<Void>("APPEND", new VoidReplayConvertor());
     RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor());
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor());
     RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor());
