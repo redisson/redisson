@@ -26,7 +26,7 @@ import org.redisson.RedissonReference;
 import org.redisson.RedissonShutdownException;
 import org.redisson.ScanResult;
 import org.redisson.api.RFuture;
-import org.redisson.cache.ReferenceCacheMap;
+import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.Codec;
@@ -44,7 +44,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 
@@ -648,7 +647,7 @@ public class RedisExecutor<V, R> {
         return connectionFuture;
     }
     
-    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = ReferenceCacheMap.soft(0, 60*60*1000);
+    private static final Map<ClassLoader, Map<Codec, Codec>> CODECS = new LRUCacheMap<>(25, 0, 0);
 
     protected Codec getCodec(Codec codec) {
         if (codec == null) {
@@ -673,7 +672,7 @@ public class RedisExecutor<V, R> {
                 synchronized (CODECS) {
                     map = CODECS.get(threadClassLoader);
                     if (map == null) {
-                        map = new ConcurrentHashMap<Codec, Codec>();
+                        map = new LRUCacheMap<>(200, 0, 0);
                         CODECS.put(threadClassLoader, map);
                     }
                 }
