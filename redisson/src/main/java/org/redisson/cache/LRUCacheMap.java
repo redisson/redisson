@@ -15,13 +15,7 @@
  */
 package org.redisson.cache;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -83,15 +77,20 @@ public class LRUCacheMap<K, V> extends AbstractCacheMap<K, V> {
             if (startIndex == -1) {
                 startIndex = queueIndex;
             }
+
             Collection<CachedValue<K, V>> queue = queues.get(queueIndex);
+            CachedValue<K, V> removedValue = null;
             synchronized (queue) {
                 Iterator<CachedValue<K, V>> iter = queue.iterator();
                 if (iter.hasNext()) {
-                    CachedValue<K, V> value = iter.next();
+                    removedValue = iter.next();
                     iter.remove();
-                    map.remove(value.getKey(), value);
-                    return;
                 }
+            }
+
+            if (removedValue != null) {
+                map.remove(removedValue.getKey(), removedValue);
+                return;
             }
         }
     }

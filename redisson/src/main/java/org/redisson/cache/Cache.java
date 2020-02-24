@@ -16,7 +16,6 @@
 package org.redisson.cache;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -26,7 +25,5 @@ import java.util.concurrent.TimeUnit;
  * @param <V> valu
  */
 public interface Cache<K, V> extends Map<K, V> {
-    
-    V put(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit);
     
 }
