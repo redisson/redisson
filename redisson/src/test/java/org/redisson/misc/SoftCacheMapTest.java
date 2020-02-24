@@ -13,8 +13,8 @@ public class SoftCacheMapTest {
 
     @Test
     public void testMaxIdleTimeEviction() throws InterruptedException {
-        Cache<Integer, Integer> map = ReferenceCacheMap.soft(0, 0);
-        map.put(1, 0, 0, TimeUnit.MILLISECONDS, 400, TimeUnit.MILLISECONDS);
+        Cache<Integer, Integer> map = ReferenceCacheMap.soft(0, 400);
+        map.put(1, 0);
         assertThat(map.get(1)).isEqualTo(0);
         Thread.sleep(200);
         assertThat(map.get(1)).isEqualTo(0);
@@ -28,8 +28,8 @@ public class SoftCacheMapTest {
 
     @Test
     public void testTTLEviction() throws InterruptedException {
-        Cache<Integer, Integer> map = ReferenceCacheMap.soft(0, 0);
-        map.put(1, 0, 500, TimeUnit.MILLISECONDS, 0, TimeUnit.MILLISECONDS);
+        Cache<Integer, Integer> map = ReferenceCacheMap.soft(500, 0);
+        map.put(1, 0);
         assertThat(map.get(1)).isEqualTo(0);
         Thread.sleep(100);
         assertThat(map.get(1)).isEqualTo(0);

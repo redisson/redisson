@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.redisson.cache.AbstractCacheMap;
 import org.redisson.cache.Cache;
 import org.redisson.cache.LFUCacheMap;
 
@@ -12,8 +13,8 @@ public class LFUCacheMapTest {
 
     @Test
     public void testMaxIdleTimeEviction() throws InterruptedException {
-        Cache<Integer, Integer> map = new LFUCacheMap<Integer, Integer>(2, 0, 0);
-        map.put(1, 0, 0, TimeUnit.MILLISECONDS, 400, TimeUnit.MILLISECONDS);
+        Cache<Integer, Integer> map = new LFUCacheMap<Integer, Integer>(2, 0, 400);
+        map.put(1, 0);
         assertThat(map.get(1)).isEqualTo(0);
         Thread.sleep(200);
         assertThat(map.get(1)).isEqualTo(0);
@@ -27,8 +28,8 @@ public class LFUCacheMapTest {
 
     @Test
     public void testTTLEviction() throws InterruptedException {
-        Cache<Integer, Integer> map = new LFUCacheMap<Integer, Integer>(2, 0, 0);
-        map.put(1, 0, 500, TimeUnit.MILLISECONDS, 0, TimeUnit.MILLISECONDS);
+        Cache<Integer, Integer> map = new LFUCacheMap<Integer, Integer>(2, 500, 0);
+        map.put(1, 0);
         assertThat(map.get(1)).isEqualTo(0);
         Thread.sleep(100);
         assertThat(map.get(1)).isEqualTo(0);
