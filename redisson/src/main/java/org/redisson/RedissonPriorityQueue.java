@@ -15,24 +15,7 @@
  */
 package org.redisson;
 
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
-import org.redisson.api.RBucket;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RPriorityQueue;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -40,6 +23,15 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  *
@@ -286,17 +278,18 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return comparator;
     }
 
+    @Override
     public RFuture<V> pollAsync() {
-        return pollAsync(RedisCommands.LPOP, getName());
+        return wrapLockedAsync(RedisCommands.LPOP, getName());
     }
 
-    protected <T> RFuture<V> pollAsync(RedisCommand<T> command, Object... params) {
-        return pollAsync(() -> {
+    protected <T> RFuture<V> wrapLockedAsync(RedisCommand<T> command, Object... params) {
+        return wrapLockedAsync(() -> {
             return commandExecutor.writeAsync(getName(), codec, command, params);
         });
     };
 
-    protected final <T, R> RFuture<R> pollAsync(Supplier<RFuture<R>> callable) {
+    protected final <T, R> RFuture<R> wrapLockedAsync(Supplier<RFuture<R>> callable) {
         long threadId = Thread.currentThread().getId();
         RPromise<R> result = new RedissonPromise<R>();
         lock.lockAsync(threadId).onComplete((r, exc) -> {
@@ -343,7 +336,7 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return getFirst();
     }
 
-//    @Override
+    @Override
     public RFuture<V> peekAsync() {
         return getAsync(0);
     }
@@ -435,8 +428,9 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return get(pollLastAndOfferFirstToAsync(queueName));
     }
 
+    @Override
     public RFuture<V> pollLastAndOfferFirstToAsync(String queueName) {
-        return pollAsync(RedisCommands.RPOPLPUSH, getName(), queueName);
+        return wrapLockedAsync(RedisCommands.RPOPLPUSH, getName(), queueName);
     }
 
     @Override
@@ -459,4 +453,36 @@ public class RedissonPriorityQueue<V> extends RedissonList<V> implements RPriori
         return clearExpireAsync(getName(), getComparatorKeyName());
     }
 
+    @Override
+    public List<V> poll(int limit) {
+        return get(pollAsync(limit));
+    }
+
+    @Override
+    public RFuture<Boolean> offerAsync(V e) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<Boolean> addAsync(V e) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public RFuture<List<V>> pollAsync(int limit) {
+        return wrapLockedAsync(() -> {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
+                       "local result = {};"
+                     + "for i = 1, ARGV[1], 1 do " +
+                           "local value = redis.call('lpop', KEYS[1]);" +
+                           "if value ~= false then " +
+                               "table.insert(result, value);" +
+                           "else " +
+                               "return result;" +
+                           "end;" +
+                       "end; " +
+                       "return result;",
+                    Collections.singletonList(getName()), limit);
+        });
+    }
 }

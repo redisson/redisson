@@ -27,7 +27,7 @@ import java.util.Queue;
  *
  * @param <V> value type
  */
-public interface RPriorityQueue<V> extends Queue<V>, RObject {
+public interface RPriorityQueue<V> extends RQueue<V>, RObject {
 
     /**
      * Returns comparator used by this queue

@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  *
  * @param <V> value type
  */
-public interface RPriorityDeque<V> extends Deque<V>, RPriorityQueue<V> {
+public interface RPriorityDeque<V> extends RDeque<V>, RPriorityQueue<V> {
 
     /**
      * Returns stream of elements contained in this deque in reverse order

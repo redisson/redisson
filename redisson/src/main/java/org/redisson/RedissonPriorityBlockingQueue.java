@@ -72,7 +72,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
     protected <T> void takeAsync(RPromise<V> result, long delay, long timeoutInMicro, RedisCommand<T> command, Object... params) {
         long start = System.currentTimeMillis();
         commandExecutor.getConnectionManager().getGroup().schedule(() -> {
-            RFuture<V> future = pollAsync(command, params);
+            RFuture<V> future = wrapLockedAsync(command, params);
             future.onComplete((res, e) -> {
                     if (e != null && !(e instanceof RedisConnectionException)) {
                         result.tryFailure(e);
@@ -220,7 +220,7 @@ public class RedissonPriorityBlockingQueue<V> extends RedissonPriorityQueue<V> i
 
     @Override
     public RFuture<List<V>> pollAsync(int limit) {
-        return pollAsync(() -> {
+        return wrapLockedAsync(() -> {
             return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
                        "local result = {};"
                      + "for i = 1, ARGV[1], 1 do " +
