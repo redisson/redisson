@@ -237,7 +237,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         AtomicInteger counter = new AtomicInteger();
         new MockUp<TasksRunnerService>() {
             @Mock
-            private void finish(Invocation invocation, String requestId) {
+            private void finish(Invocation invocation, String requestId, boolean removeTask) {
                 if (counter.incrementAndGet() > 1) {
                     invocation.proceed();
                 }
