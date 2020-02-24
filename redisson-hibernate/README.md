@@ -4,7 +4,7 @@ Implements [Hibernate 2nd level Cache](https://docs.jboss.org/hibernate/orm/5.4/
 Supports all Hibernate cache strategies: `READ_ONLY`, `NONSTRICT_READ_WRITE`, `READ_WRITE` and `TRANSACTIONAL`.  
 It's recommended to use FST or Snappy as [codec](https://github.com/redisson/redisson/wiki/4.-data-serialization).
 
-Compatible with Hibernate 5.3.3+
+Compatible with Hibernate 5.3.3+ up to 5.4.x
 
 Redisson provides various Hibernate Cache factories including those with features below:
 
@@ -32,7 +32,7 @@ Maven
          <groupId>org.redisson</groupId>
          <!-- for Hibernate v5.3.3+ - v5.4.x -->
          <artifactId>redisson-hibernate-53</artifactId>
-         <version>3.12.1</version>
+         <version>3.12.2</version>
      </dependency>
 ```
 
@@ -40,7 +40,7 @@ Gradle
 
 ```groovy
      // for Hibernate v5.3.3+ - v5.4.x
-     compile 'org.redisson:redisson-hibernate-53:3.12.1'
+     compile 'org.redisson:redisson-hibernate-53:3.12.2'
 ```
 
 ### 2. Specify hibernate cache settings
