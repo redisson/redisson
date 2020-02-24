@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import java.util.Deque;
 import java.util.stream.Stream;
 
 /**
