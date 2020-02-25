@@ -237,7 +237,7 @@ public class RedissonScheduledExecutorServiceTest extends BaseTest {
     public void testCronExpression() throws InterruptedException, ExecutionException {
         RScheduledExecutorService executor = redisson.getExecutorService("test");
         executor.schedule(new ScheduledRunnableTask("executed"), CronSchedule.of("0/2 * * * * ?”"));
-        Thread.sleep(4200);
+        Thread.sleep(4000);
         assertThat(redisson.getAtomicLong("executed").get()).isEqualTo(2);
     }
 

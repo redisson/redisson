@@ -268,7 +268,6 @@ public class RedissonExecutorServiceTest extends BaseTest {
         Thread.sleep(16000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
         
-        executor.delete();
         redisson.getKeys().delete("counter");
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
