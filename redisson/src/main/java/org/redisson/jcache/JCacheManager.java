@@ -357,7 +357,7 @@ public class JCacheManager implements CacheManager {
         synchronized (this) {
             if (!isClosed()) {
                 if (cacheProvider != null) {
-                    cacheProvider.close( uri, classLoader );
+                    cacheProvider.close(uri, classLoader);
                 }
                 for (Cache<?, ?> cache : caches.values()) {
                     try {
