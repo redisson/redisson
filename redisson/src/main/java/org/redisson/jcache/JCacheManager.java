@@ -66,7 +66,7 @@ public class JCacheManager implements CacheManager {
     
     private final Redisson redisson;
     
-    JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
+    public JCacheManager(Redisson redisson, ClassLoader classLoader, CachingProvider cacheProvider, Properties properties, URI uri) {
         super();
         this.classLoader = classLoader;
         this.cacheProvider = cacheProvider;
@@ -354,9 +354,11 @@ public class JCacheManager implements CacheManager {
             return;
         }
 
-        synchronized (cacheProvider) {
+        synchronized (this) {
             if (!isClosed()) {
-                cacheProvider.close(uri, classLoader);
+                if (cacheProvider != null) {
+                    cacheProvider.close( uri, classLoader );
+                }
                 for (Cache<?, ?> cache : caches.values()) {
                     try {
                         cache.close();
