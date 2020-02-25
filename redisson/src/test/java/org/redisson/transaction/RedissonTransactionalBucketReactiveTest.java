@@ -113,7 +113,7 @@ public class RedissonTransactionalBucketReactiveTest extends BaseReactiveTest {
         RTransactionReactive transaction = redisson.createTransaction(TransactionOptions.defaults());
         RBucketReactive<String> set = transaction.getBucket("test");
         assertThat(sync(set.get())).isEqualTo("123");
-        assertThat(sync(set.size())).isEqualTo(10);
+        assertThat(sync(set.size())).isEqualTo(5);
         assertThat(sync(set.getAndDelete())).isEqualTo("123");
         assertThat(sync(set.size())).isEqualTo(0);
         assertThat(sync(set.get())).isNull();
