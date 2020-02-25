@@ -14,10 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.redisson.BaseTest;
@@ -239,7 +236,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
             map.put("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
                 if (i % 100 == 0) {
-                    Thread.sleep(5);
+                    Thread.sleep(10);
                 }
             }
         }
@@ -248,7 +245,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         sync(batch.execute());
         long executionTime = System.currentTimeMillis() - s;
         if (batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY) {
-            assertThat(executionTime).isLessThan(22000);
+            assertThat(executionTime).isLessThan(27000);
         } else {
             assertThat(executionTime).isLessThan(3500);
         }
