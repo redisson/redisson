@@ -28,12 +28,8 @@
         <level value="info"/>
     </logger>
 
-    <logger name="org.jboss.netty" additivity="true">
-        <level value="info"/>
-    </logger>
-
     <root>
-        <level value="debug"/>
+        <level value="info"/>
         <appender-ref ref="CONSOLE"/>
     </root>
 
