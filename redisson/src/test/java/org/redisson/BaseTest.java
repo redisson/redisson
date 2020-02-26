@@ -22,12 +22,6 @@ public abstract class BaseTest {
                 @Override
                 public void run() {
                     defaultRedisson.shutdown();
-                    try {
-                        RedisRunner.shutDownDefaultRedisServerInstance();
-                    } catch (InterruptedException e) {
-                        // TODO Auto-generated catch block
-                        e.printStackTrace();
-                    }
                 }
             });
         }

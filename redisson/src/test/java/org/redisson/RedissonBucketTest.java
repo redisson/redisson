@@ -23,7 +23,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testDeletedListener() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisProcess instance = new RedisRunner()
                 .nosave()
-                .port(6379)
+                .randomPort()
                 .randomDir()
                 .notifyKeyspaceEvents( 
                                     KEYSPACE_EVENTS_OPTIONS.E,
@@ -31,7 +31,7 @@ public class RedissonBucketTest extends BaseTest {
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         RBucket<Integer> al = redisson.getBucket("test");
@@ -55,7 +55,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testSetListener() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisProcess instance = new RedisRunner()
                 .nosave()
-                .port(6379)
+                .randomPort()
                 .randomDir()
                 .notifyKeyspaceEvents(
                                     KEYSPACE_EVENTS_OPTIONS.E,
@@ -63,7 +63,7 @@ public class RedissonBucketTest extends BaseTest {
                 .run();
 
         Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
         RBucket<Integer> al = redisson.getBucket("test");
@@ -87,7 +87,7 @@ public class RedissonBucketTest extends BaseTest {
     public void testExpiredListener() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisProcess instance = new RedisRunner()
                 .nosave()
-                .port(6379)
+                .randomPort()
                 .randomDir()
                 .notifyKeyspaceEvents( 
                                     KEYSPACE_EVENTS_OPTIONS.E,
@@ -95,7 +95,7 @@ public class RedissonBucketTest extends BaseTest {
                 .run();
         
         Config config = new Config();
-        config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
         
         RBucket<Integer> al = redisson.getBucket("test");
