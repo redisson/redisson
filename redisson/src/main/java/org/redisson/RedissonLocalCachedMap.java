@@ -15,37 +15,14 @@
  */
 package org.redisson;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.api.LocalCachedMapOptions;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLocalCachedMap;
 import org.redisson.api.RedissonClient;
-import org.redisson.cache.Cache;
-import org.redisson.cache.CacheKey;
-import org.redisson.cache.CacheValue;
-import org.redisson.cache.LocalCacheListener;
-import org.redisson.cache.LocalCacheView;
-import org.redisson.cache.LocalCachedMapClear;
-import org.redisson.cache.LocalCachedMapInvalidate;
-import org.redisson.cache.LocalCachedMapUpdate;
-import org.redisson.cache.LocalCachedMessageCodec;
+import org.redisson.cache.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
@@ -62,7 +39,11 @@ import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.buffer.ByteBuf;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 @SuppressWarnings("serial")
 public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements RLocalCachedMap<K, V> {
 
@@ -76,7 +57,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     
     private long cacheUpdateLogTime = TimeUnit.MINUTES.toMillis(10);
     private byte[] instanceId;
-    private Cache<CacheKey, CacheValue> cache;
+    private Map<CacheKey, CacheValue> cache;
     private int invalidateEntryOnChange;
     private SyncStrategy syncStrategy;
 

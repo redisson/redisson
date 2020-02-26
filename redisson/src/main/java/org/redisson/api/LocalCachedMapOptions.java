@@ -105,13 +105,22 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
          */
         WEAK
     };
-    
+
+    public enum CacheProvider {
+
+        REDISSON,
+
+        CAFFEINE
+
+    }
+
     private ReconnectionStrategy reconnectionStrategy;
     private SyncStrategy syncStrategy;
     private EvictionPolicy evictionPolicy;
     private int cacheSize;
     private long timeToLiveInMillis;
     private long maxIdleInMillis;
+    private CacheProvider cacheProvider;
     
     protected LocalCachedMapOptions() {
     }
@@ -123,6 +132,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.cacheSize = copy.cacheSize;
         this.timeToLiveInMillis = copy.timeToLiveInMillis;
         this.maxIdleInMillis = copy.maxIdleInMillis;
+        this.cacheProvider = copy.cacheProvider;
     }
     
     /**
@@ -133,7 +143,9 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      *     new LocalCachedMapOptions()
      *      .cacheSize(0).timeToLive(0).maxIdle(0)
      *      .evictionPolicy(EvictionPolicy.NONE)
-     *      .invalidateEntryOnChange(true);
+     *      .reconnectionStrategy(ReconnectionStrategy.NONE)
+     *      .cacheProvider(CacheProvider.REDISSON)
+     *      .syncStrategy(SyncStrategy.INVALIDATE);
      * </pre>
      * 
      * @param <K> key type
@@ -147,9 +159,14 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .cacheSize(0).timeToLive(0).maxIdle(0)
                     .evictionPolicy(EvictionPolicy.NONE)
                     .reconnectionStrategy(ReconnectionStrategy.NONE)
+                    .cacheProvider(CacheProvider.REDISSON)
                     .syncStrategy(SyncStrategy.INVALIDATE);
     }
-    
+
+    public CacheProvider getCacheProvider() {
+        return cacheProvider;
+    }
+
     public EvictionPolicy getEvictionPolicy() {
         return evictionPolicy;
     }
@@ -167,7 +184,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets local cache size. If size is <code>0</code> then local cache is unbounded.
+     * Defines local cache size. If size is <code>0</code> then local cache is unbounded.
      * 
      * @param cacheSize - size of cache
      * @return LocalCachedMapOptions instance
@@ -204,12 +221,13 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     /**
-     * Sets eviction policy. 
+     * Defines eviction policy.
      * 
      * @param evictionPolicy
      *         <p><code>LRU</code> - uses local cache with LRU (least recently used) eviction policy.
      *         <p><code>LFU</code> - uses local cache with LFU (least frequently used) eviction policy.
      *         <p><code>SOFT</code> - uses local cache with soft references. The garbage collector will evict items from the local cache when the JVM is running out of memory.
+     *         <p><code>WEAK</code> - uses local cache with weak references. The garbage collector will evict items from the local cache when it became weakly reachable.
      *         <p><code>NONE</code> - doesn't use eviction policy, but timeToLive and maxIdleTime params are still working.
      * @return LocalCachedMapOptions instance
      */
@@ -222,7 +240,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     /**
-     * Sets time to live in milliseconds for each map entry in local cache.
+     * Defines time to live in milliseconds of each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param timeToLiveInMillis - time to live in milliseconds
@@ -234,7 +252,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets time to live for each map entry in local cache.
+     * Defines time to live of each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param timeToLive - time to live
@@ -246,7 +264,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets max idle time in milliseconds for each map entry in local cache.
+     * Defines max idle time in milliseconds of each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param maxIdleInMillis - time to live in milliseconds
@@ -258,7 +276,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
 
     /**
-     * Sets max idle time for each map entry in local cache.
+     * Defines max idle time of each map entry in local cache.
      * If value equals to <code>0</code> then timeout is not applied
      * 
      * @param maxIdle - max idle time
@@ -268,7 +286,20 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     public LocalCachedMapOptions<K, V> maxIdle(long maxIdle, TimeUnit timeUnit) {
         return maxIdle(timeUnit.toMillis(maxIdle));
     }
-    
+
+    /**
+     * Defines Cache provider used as local cache store.
+     *
+     * @param cacheProvider
+     *         <p><code>REDISSON</code> - uses Redisson own implementation.
+     *         <p><code>CAFFEINE</code> - uses Caffeine implementation.
+     * @return
+     */
+    public LocalCachedMapOptions<K, V> cacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+        return this;
+    }
+
     @Override
     public LocalCachedMapOptions<K, V> writeBehindBatchSize(int writeBehindBatchSize) {
         return (LocalCachedMapOptions<K, V>) super.writeBehindBatchSize(writeBehindBatchSize);

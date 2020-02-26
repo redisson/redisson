@@ -15,32 +15,15 @@
  */
 package org.redisson.cache;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.RedissonListMultimapCache;
-import org.redisson.RedissonObject;
-import org.redisson.RedissonScoredSortedSet;
-import org.redisson.RedissonSemaphore;
-import org.redisson.RedissonTopic;
-import org.redisson.api.LocalCachedMapOptions;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
+import org.redisson.*;
+import org.redisson.api.*;
 import org.redisson.api.LocalCachedMapOptions.EvictionPolicy;
 import org.redisson.api.LocalCachedMapOptions.ReconnectionStrategy;
 import org.redisson.api.LocalCachedMapOptions.SyncStrategy;
-import org.redisson.api.RFuture;
-import org.redisson.api.RListMultimapCache;
-import org.redisson.api.RObject;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RSemaphore;
-import org.redisson.api.RTopic;
 import org.redisson.api.listener.BaseStatusListener;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -51,9 +34,12 @@ import org.redisson.misc.RedissonPromise;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -72,7 +58,7 @@ public abstract class LocalCacheListener {
     
     private String name;
     private CommandAsyncExecutor commandExecutor;
-    private Cache<?, ?> cache;
+    private Map<?, ?> cache;
     private RObject object;
     private byte[] instanceId = new byte[16];
     private Codec codec;
@@ -107,7 +93,27 @@ public abstract class LocalCacheListener {
         return instanceId;
     }
     
-    public Cache<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+    public Map<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+        if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
+            Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder();
+            if (options.getTimeToLiveInMillis() > 0) {
+                caffeineBuilder.expireAfterWrite(options.getTimeToLiveInMillis(), TimeUnit.MILLISECONDS);
+            }
+            if (options.getMaxIdleInMillis() > 0) {
+                caffeineBuilder.expireAfterAccess(options.getMaxIdleInMillis(), TimeUnit.MILLISECONDS);
+            }
+            if (options.getCacheSize() > 0) {
+                caffeineBuilder.maximumSize(options.getCacheSize());
+            }
+            if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.SOFT) {
+                caffeineBuilder.softValues();
+            }
+            if (options.getEvictionPolicy() == LocalCachedMapOptions.EvictionPolicy.WEAK) {
+                caffeineBuilder.weakValues();
+            }
+            return caffeineBuilder.<CacheKey, CacheValue>build().asMap();
+        }
+
         if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
             return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
@@ -130,7 +136,7 @@ public abstract class LocalCacheListener {
         return disabledKeys.containsKey(key);
     }
     
-    public void add(Cache<?, ?> cache) {
+    public void add(Map<?, ?> cache) {
         this.cache = cache;
         
         invalidationTopic = new RedissonTopic(LocalCachedMessageCodec.INSTANCE, commandExecutor, getInvalidationTopicName());

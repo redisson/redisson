@@ -39,9 +39,9 @@ import io.netty.buffer.ByteBuf;
 public class LocalCacheView<K, V> {
 
     private final RedissonObject object;
-    private final Cache<CacheKey, CacheValue> cache;
+    private final Map<CacheKey, CacheValue> cache;
     
-    public LocalCacheView(Cache<CacheKey, CacheValue> cache, RedissonObject object) {
+    public LocalCacheView(Map<CacheKey, CacheValue> cache, RedissonObject object) {
         this.cache = cache;
         this.object = object;
     }
