@@ -221,7 +221,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     }
     
     /**
-     * Defines eviction policy.
+     * Defines local cache eviction policy.
      * 
      * @param evictionPolicy
      *         <p><code>LRU</code> - uses local cache with LRU (least recently used) eviction policy.
