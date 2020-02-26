@@ -9,7 +9,7 @@ JDK compatibility:  1.8 - 13, Android
 
 * Redis Replicated setup (including support of [AWS ElastiCache](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Replication.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
 * Redis Cluster setup (including support of [AWS ElastiCache Cluster](http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.html) and [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/))  
-* Redis Sentinel  
+* Redis Sentinel setup  
 * Redis with Master with Slave only  
 * Redis single (including support of [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/))  
 * Thread-safe implementation  
