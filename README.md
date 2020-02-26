@@ -24,6 +24,7 @@ JDK compatibility:  1.8 - 13, Android
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
 * Asynchronous connection pool  
 * Lua scripting  
+* Local cache support including Caffeine-based implementation
 * [Distributed Java objects](https://github.com/redisson/redisson/wiki/6.-Distributed-objects)  
     Object holder, Binary stream holder, Geospatial holder, BitSet, AtomicLong, AtomicDouble, PublishSubscribe,
     Bloom filter, HyperLogLog
