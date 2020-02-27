@@ -549,37 +549,6 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
     }
 
     @Test
-    public void testBlockingQueue() {
-
-        RBlockingQueue<Integer> queue = getQueue();
-
-        ExecutorService executor = Executors.newFixedThreadPool(10);
-
-        final AtomicInteger counter = new AtomicInteger();
-        int total = 100;
-        for (int i = 0; i < total; i++) {
-            // runnable won't be executed in any particular order, and hence, int value as well.
-            executor.submit(() -> {
-                getQueue().add(counter.incrementAndGet());
-            });
-        }
-        int count = 0;
-        while (count < total) {
-            try {
-                // blocking
-                int item = queue.take();
-                assertThat(item > 0 && item <= total).isTrue();
-            } catch (InterruptedException exception) {
-                Assert.fail();
-            }
-            count++;
-        }
-
-        assertThat(counter.get()).isEqualTo(total);
-        queue.delete();
-    }
-
-    @Test
     public void testDrainToCollection() throws Exception {
         RBlockingQueue<Object> queue1 = getQueue();
         queue1.put(1);
