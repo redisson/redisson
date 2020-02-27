@@ -15,19 +15,12 @@
  */
 package org.redisson.client.handler;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import org.redisson.client.ChannelName;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.codec.ByteArrayCodec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.QueueCommand;
@@ -40,8 +33,10 @@ import org.redisson.client.protocol.pubsub.PubSubPatternMessage;
 import org.redisson.client.protocol.pubsub.PubSubStatusMessage;
 import org.redisson.misc.LogHelper;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Redis Publish Subscribe protocol decoder
@@ -249,7 +244,7 @@ public class CommandPubSubDecoder extends CommandDecoder {
         }
         
         if (data != null && data.getCommand().getName().equals(RedisCommands.PING.getName())) {
-            return data.getCodec().getValueDecoder();
+            return StringCodec.INSTANCE.getValueDecoder();
         }
         
         return super.selectDecoder(data, parts);
