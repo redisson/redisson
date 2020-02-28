@@ -152,7 +152,7 @@ public class RedissonRateLimiterTest extends BaseTest {
         for (Long value : queue) {
             if (count % 10 == 0) {
                 if (start > 0) {
-                    assertThat(value - start).isGreaterThan(999);
+                    assertThat(value - start).isGreaterThan(990);
                 }
                 start = value;
             }

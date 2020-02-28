@@ -282,6 +282,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
                         service.methodOverload();
                     }
                 } catch (Exception e) {
+                    e.printStackTrace();
                     bool.set(true);
                 }
             }));

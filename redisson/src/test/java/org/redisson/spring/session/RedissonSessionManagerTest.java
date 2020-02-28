@@ -139,6 +139,8 @@ public class RedissonSessionManagerTest {
         write(executor, "test", "1234");
         Cookie cookie = cookieStore.getCookies().get(0);
 
+        Thread.sleep(50);
+
         Assert.assertEquals(1, listener.getSessionCreatedEvents());
         Assert.assertEquals(0, listener.getSessionExpiredEvents());
 
@@ -154,7 +156,9 @@ public class RedissonSessionManagerTest {
         cookieStore.addCookie(cookie);
         executor.use(cookieStore);
         read(executor, "test", "null");
-        
+
+        Thread.sleep(50);
+
         Assert.assertEquals(2, listener.getSessionCreatedEvents());
 
         write(executor, "test", "1234");
