@@ -509,8 +509,8 @@ public class RedissonGeoTest extends BaseTest {
         RGeo<String> geo2 = redisson.getGeo("test2");
         geo2.add(new GeoEntry(13.361389, 38.115556, "Palermo"), new GeoEntry(13.361390, 38.115557, "Catania"));
         Map<String, GeoPosition> ascExpected2 = new LinkedHashMap<String, GeoPosition>();
-        ascExpected2.put("Catania", new GeoPosition(13.361389338970184, 38.115556395496299));
         ascExpected2.put("Palermo", new GeoPosition(13.361389338970184, 38.115556395496299));
+        ascExpected2.put("Catania", new GeoPosition(13.361389338970184, 38.115556395496299));
         assertThat(geo2.radiusWithPosition("Palermo", 200, GeoUnit.KILOMETERS, GeoOrder.DESC, 2).entrySet()).containsExactlyElementsOf(ascExpected2.entrySet());
     }
 

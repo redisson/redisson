@@ -62,7 +62,7 @@ public class RedissonPermitExpirableSemaphoreTest extends BaseConcurrentTest {
         semaphore.trySetPermits(1);
         semaphore.expire(3, TimeUnit.SECONDS);
         semaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
-        Thread.sleep(4000);
+        Thread.sleep(4100);
         assertThat(redisson.getKeys().count()).isZero();
     }
 

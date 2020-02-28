@@ -22,7 +22,7 @@ public class RedissonTransactionalBucketTest extends BaseTest {
         RBucket<String> bucket = transaction.getBucket("test");
         bucket.set("234");
         
-        Thread.sleep(3000);
+        Thread.sleep(4000);
         
         try {
             transaction.commit();

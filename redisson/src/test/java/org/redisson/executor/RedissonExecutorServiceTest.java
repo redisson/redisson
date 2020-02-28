@@ -146,40 +146,41 @@ public class RedissonExecutorServiceTest extends BaseTest {
     public void testFailoverInSentinel() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
+                .randomPort()
                 .randomDir()
                 .run();
         RedisRunner.RedisProcess slave1 = new RedisRunner()
                 .port(6380)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", master.getRedisServerPort())
                 .run();
         RedisRunner.RedisProcess slave2 = new RedisRunner()
                 .port(6381)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", master.getRedisServerPort())
                 .run();
         RedisRunner.RedisProcess sentinel1 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26379)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", master.getRedisServerPort(), 2)
                 .run();
         RedisRunner.RedisProcess sentinel2 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26380)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", master.getRedisServerPort(), 2)
                 .run();
         RedisRunner.RedisProcess sentinel3 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26381)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", master.getRedisServerPort(), 2)
                 .run();
         
         Thread.sleep(5000); 
@@ -493,7 +494,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         assertThat(redisson.getKeys().count()).isZero();
     }
 
-    @Test
+//    @Test
     public void testPerformance() throws InterruptedException {
         RExecutorService e = redisson.getExecutorService("test");
         for (int i = 0; i < 5000; i++) {

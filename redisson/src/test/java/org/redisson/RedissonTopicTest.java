@@ -697,13 +697,14 @@ public class RedissonTopicTest {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
                 .randomDir()
+                .port(6400)
                 .run();
 
         RedisRunner.RedisProcess slave1 = new RedisRunner()
                 .port(6380)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", 6400)
                 .run();
 
         RedisRunner.RedisProcess sentinel1 = new RedisRunner()
@@ -711,7 +712,7 @@ public class RedissonTopicTest {
                 .randomDir()
                 .port(26379)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6400, 2)
                 .sentinelDownAfterMilliseconds("myMaster", 750)
                 .sentinelFailoverTimeout("myMaster", 1250)
                 .run();
@@ -721,7 +722,7 @@ public class RedissonTopicTest {
                 .randomDir()
                 .port(26380)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6400, 2)
                 .sentinelDownAfterMilliseconds("myMaster", 750)
                 .sentinelFailoverTimeout("myMaster", 1250)
                 .run();
@@ -731,7 +732,7 @@ public class RedissonTopicTest {
                 .randomDir()
                 .port(26381)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6400, 2)
                 .sentinelDownAfterMilliseconds("myMaster", 750)
                 .sentinelFailoverTimeout("myMaster", 1250)
                 .run();
@@ -815,39 +816,40 @@ public class RedissonTopicTest {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
                 .randomDir()
+                .port(6399)
                 .run();
         RedisRunner.RedisProcess slave1 = new RedisRunner()
                 .port(6380)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", 6399)
                 .run();
         RedisRunner.RedisProcess slave2 = new RedisRunner()
                 .port(6381)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", 6399)
                 .run();
         RedisRunner.RedisProcess sentinel1 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26379)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6399, 2)
                 .run();
         RedisRunner.RedisProcess sentinel2 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26380)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6399, 2)
                 .run();
         RedisRunner.RedisProcess sentinel3 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26381)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6399, 2)
                 .run();
         
         Thread.sleep(5000); 
@@ -949,39 +951,40 @@ public class RedissonTopicTest {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
                 .randomDir()
+                .port(6440)
                 .run();
         RedisRunner.RedisProcess slave1 = new RedisRunner()
                 .port(6380)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", 6440)
                 .run();
         RedisRunner.RedisProcess slave2 = new RedisRunner()
                 .port(6381)
                 .nosave()
                 .randomDir()
-                .slaveof("127.0.0.1", 6379)
+                .slaveof("127.0.0.1", 6440)
                 .run();
         RedisRunner.RedisProcess sentinel1 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26379)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6440, 2)
                 .run();
         RedisRunner.RedisProcess sentinel2 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26380)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6440, 2)
                 .run();
         RedisRunner.RedisProcess sentinel3 = new RedisRunner()
                 .nosave()
                 .randomDir()
                 .port(26381)
                 .sentinel()
-                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelMonitor("myMaster", "127.0.0.1", 6440, 2)
                 .run();
         
         Thread.sleep(5000); 

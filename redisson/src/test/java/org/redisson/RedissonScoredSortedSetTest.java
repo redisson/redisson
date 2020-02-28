@@ -32,6 +32,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testTakeFirst() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
+
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
@@ -47,6 +49,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testPollFirstFromAny() throws InterruptedException {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
+
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
@@ -65,6 +69,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testPollLastFromAny() throws InterruptedException {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
+
         final RScoredSortedSet<Integer> queue1 = redisson.getScoredSortedSet("queue:pollany");
         Executors.newSingleThreadScheduledExecutor().schedule(() -> {
             RScoredSortedSet<Integer> queue2 = redisson.getScoredSortedSet("queue:pollany1");
@@ -432,6 +438,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     
     @Test
     public void testPollLastTimeout() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
+
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         assertThat(set.pollLast(1, TimeUnit.SECONDS)).isNull();
 
@@ -445,6 +453,8 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testPollFirstTimeout() {
+        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("5.0.0") > 0);
+
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
         assertThat(set.pollFirst(1, TimeUnit.SECONDS)).isNull();
 

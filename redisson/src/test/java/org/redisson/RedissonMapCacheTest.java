@@ -229,11 +229,11 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.fastPutIfAbsent("01", "00")).isTrue();
         assertThat(map.fastPutIfAbsent("02", "00")).isTrue();
         assertThat(map.put("03", "00")).isNull();
-        assertThat(map.fastPutIfAbsent("04", "00", 10, TimeUnit.SECONDS)).isTrue();
-        assertThat(map.fastPut("1", "11", 10, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.fastPutIfAbsent("04", "00", 60, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.fastPut("1", "11", 60, TimeUnit.SECONDS)).isTrue();
         assertThat(map.size()).isEqualTo(2);
-        assertThat(map.fastPut("2", "22", 10, TimeUnit.SECONDS)).isTrue();
-        assertThat(map.fastPut("3", "33", 10, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.fastPut("2", "22", 60, TimeUnit.SECONDS)).isTrue();
+        assertThat(map.fastPut("3", "33", 60, TimeUnit.SECONDS)).isTrue();
 
         assertThat(map.size()).isEqualTo(maxSize.get());
 
@@ -245,7 +245,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         assertThat(map.get("2")).isEqualTo("22");
         assertThat(map.get("0")).isNull();
         assertThat(map.putIfAbsent("2", "3")).isEqualTo("22");
-        assertThat(map.putIfAbsent("3", "4", 10, TimeUnit.SECONDS, 10, TimeUnit.SECONDS)).isEqualTo("33");
+        assertThat(map.putIfAbsent("3", "4", 60, TimeUnit.SECONDS, 60, TimeUnit.SECONDS)).isEqualTo("33");
         assertThat(map.containsKey("2")).isTrue();
         assertThat(map.containsKey("0")).isFalse();
         assertThat(map.containsValue("22")).isTrue();
