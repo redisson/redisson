@@ -122,19 +122,19 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.50</version>
+            <version>8.5.51</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-jasper</artifactId>
-            <version>8.5.40</version>
+            <version>8.5.51</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat</groupId>
             <artifactId>tomcat-jasper</artifactId>
-            <version>8.5.40</version>
+            <version>8.5.51</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -430,20 +430,48 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>2.22.2</version>
-                <configuration>
-                    <includes>
-                      <include>org/redisson/executor/**</include>
-                      <include>org/redisson/executor/transaction/**</include>
-                      <include>org/redisson/executor/rx/**</include>
-                    </includes>
-                    <parallelTestsTimeoutInSeconds>650</parallelTestsTimeoutInSeconds>
-		    <parallelTestsTimeoutForcedInSeconds>650</parallelTestsTimeoutForcedInSeconds>
-                    <forkCount>3</forkCount>
-                    <reuseForks>true</reuseForks>
-                    <argLine>
-                       -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.46/jmockit-1.46.jar
-                    </argLine>
-                </configuration>
+                    <configuration>
+                        <redirectTestOutputToFile>true</redirectTestOutputToFile>
+
+                        <excludes>
+                            <exclude>LRUCacheMapTest</exclude>
+                            <exclude>SoftCacheMapTest</exclude>
+                            <exclude>SpringNamespaceTest</exclude>
+                            <exclude>SpringNamespaceWikiTest</exclude>
+                            <exclude>SpringNamespaceObjectTest</exclude>
+                            <exclude>RedissonBatchTest</exclude>
+                            <exclude>RedissonBatchRxTest</exclude>
+                            <exclude>RedissonFairLockTest</exclude>
+                            <exclude>RedissonStreamTest</exclude>
+                            <exclude>RedissonLockHeavyTest</exclude>
+
+                            <exclude>RedissonDoubleAdderTest</exclude>
+                            <exclude>RedissonListReactiveTest</exclude>
+                            <exclude>RedissonLocalCachedMapSerializationCodecTest</exclude>
+                            <exclude>RedissonLocalCachedMapTest</exclude>
+                            <exclude>RedissonLongAdderTest</exclude>
+                            <exclude>RedissonPriorityBlockingQueueTest</exclude>
+                            <exclude>RedissonCodecTest</exclude>
+                            <exclude>RedissonTest</exclude>
+                            <exclude>RedissonSetReactiveTest</exclude>
+                            <exclude>RedissonSetTest</exclude>
+                            <exclude>RedissonMapCacheReactiveTest</exclude>
+
+    <!--
+                            <exclude>RedissonMapReactiveTest</exclude>
+                            <exclude>RedissonGeoTest</exclude>
+                            <exclude>RedissonScoredSortedSetTest</exclude>
+                            <exclude>RedissonScheduledExecutorServiceTest</exclude>
+                            <exclude>RedissonBlockingQueueTest</exclude>
+                            <exclude>RedissonExecutorServiceTest</exclude>
+    -->
+                        </excludes>
+                        <forkCount>4</forkCount>
+                        <reuseForks>true</reuseForks>
+                        <argLine>
+                           -javaagent:"${settings.localRepository}"/org/jmockit/jmockit/1.46/jmockit-1.46.jar
+                        </argLine>
+                    </configuration>
             </plugin>
 
             <plugin>
