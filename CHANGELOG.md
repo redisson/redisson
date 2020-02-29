@@ -4,6 +4,27 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 28-Feb-2020 - 3.12.3 released
+
+LZ4Codec, SnappyCodec, SnappyCodecV2 codecs now use Kryo5Codec by default  
+
+Feature - `SetObjectListener` added to `RBucket` object  
+Feature - `RBinaryStream` should expose `SeekableByteChannel` and `AsynchronousByteChannel` interfaces  
+Feature - added `RBucketsReactive` and `RBucketsRx` objects  
+Feature - added Caffeine support as alternative local cache implementation  
+Feature - added `RBinaryStreamReactive` and `RBinaryStreamRx` objects  
+Feature - added `RKeys.swapdb` method  
+Feature - added `addFirstIfExists` and `addLastIfExists` methods to `RDeque` object  
+Feature - `RPriorityDeque` extends `RDeque`  
+
+Improvement - type of `RedisExecutor.CODECS` field changed to `LRUCacheMap`  
+
+Fixed - `CommandPubSubDecoder` throws NPE  
+Fixed - `RLock.unlock()` results in ERR hash value if RedisLabs hosting is used  
+Fixed - `RPriorityBlockingQueue.poll()` method with limit implemented  
+Fixed - `redisson__map_cache__last_access__set*` objects continuously grow in size if RMapCache.maxSize defined  
+Fixed - Eviction task is not stopped after `RMapCache.destroy()` method invocation  
+
 ### 18-Feb-2020 - 3.12.2 released
 
 Feature - Hibernate `hibernate.cache.redisson.fallback` setting introduced  
