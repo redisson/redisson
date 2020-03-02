@@ -132,15 +132,15 @@ public class RedissonBatchRxTest extends BaseRxTest {
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = BaseTest.createConfig();
         config.useSingleServer()
-                .setRetryInterval(1500)
-                .setTimeout(3000)
+                .setRetryInterval(100)
+                .setTimeout(200)
                 .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonRxClient redisson = Redisson.createRx(config);
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatchRx batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 300000; i++) {
+        for (int i = 0; i < 25000; i++) {
             batch.getBucket("test").set(123);
         }
         
@@ -226,12 +226,12 @@ public class RedissonBatchRxTest extends BaseRxTest {
     @Test
     public void testWriteTimeout() throws InterruptedException {
         Config config = BaseTest.createConfig();
-        config.useSingleServer().setTimeout(3000);
+        config.useSingleServer().setRetryInterval(700).setTimeout(1500);
         RedissonRxClient redisson = Redisson.createRx(config);
 
         RBatchRx batch = redisson.createBatch(batchOptions);
         RMapCacheRx<String, String> map = batch.getMapCache("test");
-        int total = 200000;
+        int total = 10000;
         for (int i = 0; i < total; i++) {
             map.put("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
@@ -245,9 +245,9 @@ public class RedissonBatchRxTest extends BaseRxTest {
         sync(batch.execute());
         long executionTime = System.currentTimeMillis() - s;
         if (batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY) {
-            assertThat(executionTime).isLessThan(27000);
+            assertThat(executionTime).isLessThan(1000);
         } else {
-            assertThat(executionTime).isLessThan(3500);
+            assertThat(executionTime).isLessThan(300);
         }
         assertThat(sync(redisson.getMapCache("test").size())).isEqualTo(total);
         redisson.shutdown();

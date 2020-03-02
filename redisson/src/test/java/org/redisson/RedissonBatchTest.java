@@ -105,11 +105,11 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
 
 		ExecutorService executorService = Executors.newFixedThreadPool(5);
-		AtomicInteger counter = new AtomicInteger(5*100);
+		AtomicInteger counter = new AtomicInteger(5*150);
 		AtomicBoolean hasErrors = new AtomicBoolean();
 		for (int i = 0; i < 5; i++) {
 			executorService.submit(() -> {
-				for (int j = 0 ; j < 100; j++) {
+				for (int j = 0 ; j < 150; j++) {
 					executeBatch(redisson).whenComplete((r, e) -> {
 						counter.decrementAndGet();
 						if (e != null) {
@@ -120,7 +120,7 @@ public class RedissonBatchTest extends BaseTest {
 			});
 		}
 
-		Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> counter.get() == 0);
+		Awaitility.await().atMost(10, TimeUnit.SECONDS).until(() -> counter.get() == 0);
 		Assertions.assertThat(hasErrors).isTrue();
 
 		executeBatch(redisson).syncUninterruptibly();
@@ -187,15 +187,15 @@ public class RedissonBatchTest extends BaseTest {
     public void testConnectionLeakAfterError() throws InterruptedException {
         Config config = createConfig();
         config.useSingleServer()
-                .setRetryInterval(1500)
-                .setTimeout(3000)
+                .setRetryInterval(100)
+                .setTimeout(200)
                 .setConnectionMinimumIdleSize(1).setConnectionPoolSize(1);
 
         RedissonClient redisson = Redisson.create(config);
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
         RBatch batch = redisson.createBatch(batchOptions);
-        for (int i = 0; i < 300000; i++) {
+        for (int i = 0; i < 25000; i++) {
             batch.getBucket("test").setAsync(123);
         }
         
@@ -281,12 +281,12 @@ public class RedissonBatchTest extends BaseTest {
     @Test
     public void testWriteTimeout() {
         Config config = createConfig();
-        config.useSingleServer().setTimeout(3000);
+        config.useSingleServer().setRetryInterval(700).setTimeout(1500);
         RedissonClient redisson = Redisson.create(config);
 
         RBatch batch = redisson.createBatch(batchOptions);
         RMapCacheAsync<String, String> map = batch.getMapCache("test");
-        int total = 200000;
+        int total = 10000;
         for (int i = 0; i < total; i++) {
             RFuture<String> f = map.putAsync("" + i, "" + i, 5, TimeUnit.MINUTES);
             if (batchOptions.getExecutionMode() == ExecutionMode.REDIS_WRITE_ATOMIC) {
@@ -298,9 +298,9 @@ public class RedissonBatchTest extends BaseTest {
         batch.execute();
         long executionTime = System.currentTimeMillis() - s;
         if (batchOptions.getExecutionMode() == ExecutionMode.IN_MEMORY) {
-            assertThat(executionTime).isLessThan(22000);
+            assertThat(executionTime).isLessThan(1000);
         } else {
-            assertThat(executionTime).isLessThan(3500);
+            assertThat(executionTime).isLessThan(300);
         }
         assertThat(redisson.getMapCache("test").size()).isEqualTo(total);
         redisson.shutdown();
