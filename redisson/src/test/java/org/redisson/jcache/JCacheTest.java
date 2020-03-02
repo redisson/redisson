@@ -47,6 +47,29 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 public class JCacheTest extends BaseTest {
 
     @Test
+    public void testClear() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        cache.put("1", "2");
+        cache.clear();
+        assertThat(cache.get("1")).isNull();
+
+        cache.close();
+        runner.stop();
+    }
+
+    @Test
     public void testAsync() throws Exception {
         RedisProcess runner = new RedisRunner()
                 .nosave()
