@@ -14,6 +14,7 @@
     <name>Redisson/Hibernate cache</name>
 
     <modules>
+        <module>redisson-hibernate-52</module>
         <module>redisson-hibernate-53</module>
     </modules>
 
