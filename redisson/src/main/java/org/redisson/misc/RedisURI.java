@@ -31,7 +31,7 @@ public class RedisURI {
     private final int port;
 
     public RedisURI(String scheme, String host, int port) {
-        this.ssl = scheme.equals("rediss");
+        this.ssl = "rediss".equals(scheme);
         this.host = host;
         this.port = port;
     }
