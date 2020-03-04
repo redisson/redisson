@@ -79,6 +79,8 @@ public class ClusterRunner {
         if (!allAlive) {
             throw new RedisRunner.FailedToStartRedisException();
         }
+        Thread.sleep(1000);
+
         return new ClusterProcesses(processes);
     }
     
