@@ -439,8 +439,6 @@
                             <exclude>SpringNamespaceTest</exclude>
                             <exclude>SpringNamespaceWikiTest</exclude>
                             <exclude>SpringNamespaceObjectTest</exclude>
-                            <exclude>RedissonBatchTest</exclude>
-                            <exclude>RedissonBatchRxTest</exclude>
                             <exclude>RedissonFairLockTest</exclude>
                             <exclude>RedissonStreamTest</exclude>
                             <exclude>RedissonLockHeavyTest</exclude>
@@ -458,6 +456,7 @@
                             <exclude>RedissonMapCacheReactiveTest</exclude>
 
     <!--
+
                             <exclude>RedissonMapReactiveTest</exclude>
                             <exclude>RedissonGeoTest</exclude>
                             <exclude>RedissonScoredSortedSetTest</exclude>

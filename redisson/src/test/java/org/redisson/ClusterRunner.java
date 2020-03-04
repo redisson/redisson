@@ -64,11 +64,20 @@ public class ClusterRunner {
             }
             processes.put(nodes.get(runner), runner.clusterConfigFile(confFile).run());
         }
-        Thread.sleep(1000);
-        for (RedisRunner.RedisProcess process : processes.valueSet()) {
-            if (!process.isAlive()) {
-                throw new RedisRunner.FailedToStartRedisException();
+
+        boolean allAlive = true;
+        for (int i = 0; i < 15; i++) {
+            for (RedisRunner.RedisProcess process : processes.valueSet()) {
+                allAlive &= process.isAlive();
             }
+            if (allAlive) {
+                break;
+            }
+            allAlive = true;
+            Thread.sleep(100);
+        }
+        if (!allAlive) {
+            throw new RedisRunner.FailedToStartRedisException();
         }
         return new ClusterProcesses(processes);
     }

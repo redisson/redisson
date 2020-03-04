@@ -110,7 +110,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         assertThat(sync(b2f2)).isEqualTo(2d);
     }
     
-    @Test(timeout = 15000)
+    @Test(timeout = 20000)
     public void testPerformance() {
         RMapRx<String, String> map = redisson.getMap("map");
         Map<String, String> m = new HashMap<String, String>();
