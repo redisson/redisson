@@ -18,7 +18,6 @@ package org.redisson.config;
 import io.netty.channel.EventLoopGroup;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.FstCodec;
-import org.redisson.codec.MarshallingCodec;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.DnsAddressResolverGroupFactory;
