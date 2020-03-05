@@ -15,13 +15,7 @@
  */
 package org.redisson.config;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
-import java.net.URL;
-import java.util.concurrent.ExecutorService;
-
+import io.netty.channel.EventLoopGroup;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.FstCodec;
 import org.redisson.codec.MarshallingCodec;
@@ -30,7 +24,12 @@ import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.DnsAddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
 
-import io.netty.channel.EventLoopGroup;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+import java.net.URL;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Redisson configuration
@@ -103,7 +102,7 @@ public class Config {
 
         if (oldConf.getCodec() == null) {
             // use it by default
-            oldConf.setCodec(new MarshallingCodec());
+            oldConf.setCodec(new FstCodec());
         }
 
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
