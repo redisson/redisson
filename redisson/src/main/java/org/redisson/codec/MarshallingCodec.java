@@ -182,13 +182,20 @@ public class MarshallingCodec extends BaseCodec {
     private final MarshallerFactory factory;
     private final MarshallingConfiguration configuration;
     private ClassLoader classLoader;
-    
+
+    protected MarshallingConfiguration createConfig() {
+        MarshallingConfiguration config = new MarshallingConfiguration();
+        config.setInstanceCount(16);
+        config.setClassCount(8);
+        return config;
+    }
+
     public MarshallingCodec() {
-        this(Protocol.RIVER, new MarshallingConfiguration());
+        this(Protocol.RIVER, null);
     }
     
     public MarshallingCodec(ClassLoader classLoader) {
-        this(Protocol.RIVER, new MarshallingConfiguration());
+        this(Protocol.RIVER, null);
         configuration.setClassResolver(new SimpleClassResolver(classLoader));
         this.classLoader = classLoader;
     }
@@ -202,6 +209,12 @@ public class MarshallingCodec extends BaseCodec {
     
     public MarshallingCodec(Protocol protocol, MarshallingConfiguration configuration) {
         this.factory = Marshalling.getProvidedMarshallerFactory(protocol.toString().toLowerCase());
+        if (factory == null) {
+            throw new IllegalArgumentException(protocol.toString());
+        }
+        if (configuration == null) {
+            configuration = createConfig();
+        }
         this.configuration = configuration;
     }
     
