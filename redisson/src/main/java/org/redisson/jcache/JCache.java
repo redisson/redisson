@@ -231,14 +231,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
               + "if value == false then "
                   + "return nil; "
               + "end; "
-                  
-              + "local expireDate = 92233720368547758; "
+
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-              
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return nil; "
               + "end; "
               + "return value; ",
@@ -292,13 +287,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                       + "return nil; "
                   + "end; "
                       
-                  + "local expireDate = 92233720368547758; "
                   + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-                  + "if expireDateScore ~= false then "
-                      + "expireDate = tonumber(expireDateScore); "
-                  + "end; "
-                  
-                  + "if expireDate <= tonumber(ARGV[2]) then "
+                  + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                       + "return nil; "
                   + "end; "
                   
@@ -313,13 +303,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return nil; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-              
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return nil; "
               + "end; "
               
@@ -494,8 +479,13 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         RFuture<List<Object>> res = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
               "local added = 0; "
             + "local syncs = 0; "
-            + "for i = 5, #ARGV, 2 do "
-              + "if redis.call('hexists', KEYS[1], ARGV[i]) == 1 then "
+            + "for i = 5, #ARGV, 2 do " +
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]);" +
+                "local exists = redis.call('hexists', KEYS[1], ARGV[i]) == 1;" +
+                "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[3]) then " +
+                    "exists = false;" +
+                "end;" +
+                "if exists then "
                 + "if ARGV[2] == '0' then "
                     + "redis.call('hdel', KEYS[1], ARGV[i]); "
                     + "redis.call('zrem', KEYS[2], ARGV[i]); "
@@ -603,7 +593,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         Long updateTimeout = getUpdateTimeout();
         
         RFuture<List<Object>> res = commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_LIST,
-                "if redis.call('hexists', KEYS[1], ARGV[4]) == 1 then "
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]);" +
+                "local exists = redis.call('hexists', KEYS[1], ARGV[4]) == 1;" +
+                "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[3]) then " +
+                    "exists = false;" +
+                "end;" +
+                "if exists then "
                   + "if ARGV[2] == '0' then "
                       + "redis.call('hdel', KEYS[1], ARGV[4]); "
                       + "redis.call('zrem', KEYS[2], ARGV[4]); "
@@ -747,7 +742,12 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         }
         
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
-                "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then "
+                "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]);" +
+                "local exists = redis.call('hexists', KEYS[1], ARGV[2]) == 1;" +
+                "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[4]) then " +
+                    "exists = false;" +
+                "end;" +
+                "if exists then "
                   + "return 0; "
               + "else "
                   + "if ARGV[1] ~= '-1' then "
@@ -764,7 +764,7 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "end; "
               + "end; ",
              Arrays.<Object>asList(getName(), getTimeoutSetName(), getCreatedChannelName()), 
-             creationTimeout, encodeMapKey(key), encodeMapValue(value));
+             creationTimeout, encodeMapKey(key), encodeMapValue(value), System.currentTimeMillis());
     }
     
     private boolean putIfAbsentValueLocked(K key, Object value) {
@@ -865,12 +865,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                           + "local key = ARGV[i+2]; "
 
                           + "if hasExpire then "
-                              + "local expireDate = 92233720368547758; "
                               + "local expireDateScore = redis.call('zscore', KEYS[2], key); "
-                              + "if expireDateScore ~= false then "
-                                  + "expireDate = tonumber(expireDateScore); "
-                              + "end; "
-                              + "if expireDate <= currentTime then "
+                              + "if expireDateScore ~= false and tonumber(expireDateScore) <= currentTime then "
                                   + "value = false; "
                               + "end; "
                           + "end; "
@@ -900,12 +896,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                                   + "local key = ARGV[i+2]; "
 
                                   + "if hasExpire then "
-                                      + "local expireDate = 92233720368547758; "
                                       + "local expireDateScore = redis.call('zscore', KEYS[2], key); "
-                                      + "if expireDateScore ~= false then "
-                                          + "expireDate = tonumber(expireDateScore); "
-                                      + "end; "
-                                      + "if expireDate <= currentTime then "
+                                      + "if expireDateScore ~= false and tonumber(expireDateScore) <= currentTime then "
                                           + "value = false; "
                                       + "end; "
                                   + "end; "
@@ -978,14 +970,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   "if redis.call('hexists', KEYS[1], ARGV[2]) == 0 then "
                     + "return 0;"
                 + "end;"
-                      
-                + "local expireDate = 92233720368547758; "
+
                 + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-                + "if expireDateScore ~= false then "
-                    + "expireDate = tonumber(expireDateScore); "
-                + "end; "
-                    
-                + "if expireDate <= tonumber(ARGV[1]) then "
+                + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
                     + "return 0; "
                 + "end; "
                 + "return 1;",
@@ -1645,13 +1632,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return {0}; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[1]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
                   + "return {0}; "
               + "end; "
 
@@ -1753,13 +1735,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return 0; "
               + "end; "
           
@@ -1805,13 +1782,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return 0; "
               + "end; "
 
@@ -1966,13 +1938,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "if value == false then "
                       + "table.insert(nulls, i-3); "
                   + "else "
-                      + "local expireDate = 92233720368547758; "
                       + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[i]); "
-                      + "if expireDateScore ~= false then "
-                          + "expireDate = tonumber(expireDateScore); "
-                      + "end; "
-                      
-                      + "if expireDate <= tonumber(ARGV[1]) then "
+                      + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
                           + "table.insert(nulls, i-3); "
                       + "else "
                           + "redis.call('hdel', KEYS[1], ARGV[i]); "
@@ -2085,13 +2052,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return {nil}; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[1]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[1]) then "
                   + "return {nil}; "
               + "end; "
 
@@ -2229,13 +2191,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[3]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[3]) then "
                   + "return 0; "
               + "end; "
 
@@ -2324,13 +2281,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[4]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[3]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[3]) then "
                   + "return 0; "
               + "end; "
 
@@ -2496,13 +2448,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return 0; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return 0; "
               + "end; "
 
@@ -2536,13 +2483,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return nil; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return nil; "
               + "end; "
 
@@ -2574,13 +2516,8 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
                   + "return nil; "
               + "end; "
                   
-              + "local expireDate = 92233720368547758; "
               + "local expireDateScore = redis.call('zscore', KEYS[2], ARGV[3]); "
-              + "if expireDateScore ~= false then "
-                  + "expireDate = tonumber(expireDateScore); "
-              + "end; "
-          
-              + "if expireDate <= tonumber(ARGV[2]) then "
+              + "if expireDateScore ~= false and tonumber(expireDateScore) <= tonumber(ARGV[2]) then "
                   + "return nil; "
               + "end; "
               

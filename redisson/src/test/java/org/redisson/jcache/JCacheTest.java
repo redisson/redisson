@@ -1,5 +1,6 @@
 package org.redisson.jcache;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
@@ -45,6 +46,41 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class JCacheTest extends BaseTest {
+
+    @Test
+    public void testCreatedExpiryPolicy() throws Exception {
+        RedisProcess runner = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(6311)
+                .run();
+
+        URL configUrl = getClass().getResource("redisson-jcache.json");
+        Config cfg = Config.fromJSON(configUrl);
+
+        MutableConfiguration c = new MutableConfiguration();
+        c.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(MILLISECONDS, 500)));
+        Configuration<String, String> config = RedissonConfiguration.fromConfig(cfg, c);
+        Cache<String, String> cache = Caching.getCachingProvider().getCacheManager()
+                .createCache("test", config);
+
+        cache.put("1", "2");
+        Thread.sleep(500);
+        assertThat(cache.get("1")).isNull();
+        cache.put("1", "3");
+        assertThat(cache.get("1")).isEqualTo("3");
+        Thread.sleep(500);
+        assertThat(cache.get("1")).isNull();
+
+        cache.put("1", "4");
+        assertThat(cache.get("1")).isEqualTo("4");
+        Thread.sleep(100);
+        cache.put("1", "5");
+        assertThat(cache.get("1")).isEqualTo("5");
+
+        cache.close();
+        runner.stop();
+    }
 
     @Test
     public void testClear() throws Exception {
