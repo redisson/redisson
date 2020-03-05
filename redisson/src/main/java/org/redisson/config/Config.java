@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.FstCodec;
+import org.redisson.codec.MarshallingCodec;
 import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.DnsAddressResolverGroupFactory;
@@ -102,7 +103,7 @@ public class Config {
 
         if (oldConf.getCodec() == null) {
             // use it by default
-            oldConf.setCodec(new FstCodec());
+            oldConf.setCodec(new MarshallingCodec());
         }
 
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());

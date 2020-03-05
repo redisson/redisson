@@ -185,8 +185,8 @@ public class MarshallingCodec extends BaseCodec {
 
     protected MarshallingConfiguration createConfig() {
         MarshallingConfiguration config = new MarshallingConfiguration();
-        config.setInstanceCount(16);
-        config.setClassCount(8);
+        config.setInstanceCount(32);
+        config.setClassCount(16);
         return config;
     }
 
