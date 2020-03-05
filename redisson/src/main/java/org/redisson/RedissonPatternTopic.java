@@ -90,7 +90,7 @@ public class RedissonPatternTopic implements RPatternTopic {
     }
     
     private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
-        RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
+        RFuture<PubSubConnectionEntry> future = subscribeService.psubscribe(channelName, codec, pubSubListener);
         RPromise<Integer> result = new RedissonPromise<Integer>();
         future.onComplete((res, e) -> {
             if (e != null) {
