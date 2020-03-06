@@ -102,6 +102,8 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         } else {
             ch.pipeline().addLast(new CommandPubSubDecoder(config.getExecutor(), config.isKeepPubSubOrder(), config.isDecodeInExecutor()));
         }
+
+        config.getNettyHook().afterChannelInitialization(ch);
     }
     
     private void initSsl(final RedisClientConfig config, Channel ch) throws KeyStoreException, IOException,

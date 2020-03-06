@@ -63,12 +63,14 @@ public class RedisClientConfig {
     private String sslTruststorePassword;
     private URL sslKeystore;
     private String sslKeystorePassword;
+    private NettyHook nettyHook;
     
     public RedisClientConfig() {
     }
     
     RedisClientConfig(RedisClientConfig config) {
         super();
+        this.nettyHook = config.nettyHook;
         this.addr = config.addr;
         this.address = config.address;
         this.timer = config.timer;
@@ -95,7 +97,14 @@ public class RedisClientConfig {
         this.sslHostname = config.sslHostname;
         this.decodeInExecutor = config.decodeInExecutor;
     }
-    
+
+    public NettyHook getNettyHook() {
+        return nettyHook;
+    }
+    public void setNettyHook(NettyHook nettyHook) {
+        this.nettyHook = nettyHook;
+    }
+
     public String getSslHostname() {
         return sslHostname;
     }

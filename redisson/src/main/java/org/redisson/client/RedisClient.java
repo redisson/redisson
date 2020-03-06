@@ -132,6 +132,7 @@ public final class RedisClient {
         bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, config.getConnectTimeout());
         bootstrap.option(ChannelOption.SO_KEEPALIVE, config.isKeepAlive());
         bootstrap.option(ChannelOption.TCP_NODELAY, config.isTcpNoDelay());
+        config.getNettyHook().afterBoostrapInitialization(bootstrap);
         return bootstrap;
     }
     

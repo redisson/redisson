@@ -16,6 +16,8 @@
 package org.redisson.config;
 
 import io.netty.channel.EventLoopGroup;
+import org.redisson.client.DefaultNettyHook;
+import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.FstCodec;
 import org.redisson.connection.AddressResolverGroupFactory;
@@ -87,7 +89,9 @@ public class Config {
     private int maxCleanUpDelay = 30*60;
 
     private int cleanUpKeysAmount = 100;
-    
+
+    private NettyHook nettyHook = new DefaultNettyHook();
+
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
@@ -97,6 +101,7 @@ public class Config {
     }
 
     public Config(Config oldConf) {
+        setNettyHook(oldConf.getNettyHook());
         setExecutor(oldConf.getExecutor());
 
         if (oldConf.getCodec() == null) {
@@ -138,6 +143,21 @@ public class Config {
             useCustomServers(oldConf.getConnectionManager());
         }
 
+    }
+
+    public NettyHook getNettyHook() {
+        return nettyHook;
+    }
+
+    /**
+     * Netty hook applied to Netty Bootstrap and Channel objects.
+     *
+     * @param nettyHook - netty hook object
+     * @return config
+     */
+    public Config setNettyHook(NettyHook nettyHook) {
+        this.nettyHook = nettyHook;
+        return this;
     }
 
     /**
