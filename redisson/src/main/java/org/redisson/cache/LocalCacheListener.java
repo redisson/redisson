@@ -190,8 +190,10 @@ public abstract class LocalCacheListener {
                         LocalCachedMapClear clearMsg = (LocalCachedMapClear) msg;
                         cache.clear();
 
-                        RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
-                        semaphore.releaseAsync();
+                        if (clearMsg.isReleaseSemaphore()) {
+                            RSemaphore semaphore = getClearSemaphore(clearMsg.getRequestId());
+                            semaphore.releaseAsync();
+                        }
                     }
                     
                     if (msg instanceof LocalCachedMapInvalidate) {
@@ -247,7 +249,7 @@ public abstract class LocalCacheListener {
     public RFuture<Void> clearLocalCacheAsync() {
         RPromise<Void> result = new RedissonPromise<Void>();
         byte[] id = generateId();
-        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id));
+        RFuture<Long> future = invalidationTopic.publishAsync(new LocalCachedMapClear(id, true));
         future.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(e);
@@ -349,7 +351,6 @@ public abstract class LocalCacheListener {
     private RSemaphore getClearSemaphore(byte[] requestId) {
         String id = ByteBufUtil.hexDump(requestId);
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
-        semaphore.expireAsync(60, TimeUnit.SECONDS);
         return semaphore;
     }
 
