@@ -256,7 +256,7 @@ public abstract class LocalCacheListener {
 
             RSemaphore semaphore = getClearSemaphore(id);
             semaphore.expireAsync(60, TimeUnit.SECONDS);
-            semaphore.acquireAsync(res.intValue()).onComplete((r, ex) -> {
+            semaphore.tryAcquireAsync(res.intValue(), 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
                     return;
