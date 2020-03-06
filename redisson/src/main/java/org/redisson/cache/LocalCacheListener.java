@@ -255,6 +255,7 @@ public abstract class LocalCacheListener {
             }
 
             RSemaphore semaphore = getClearSemaphore(id);
+            semaphore.expireAsync(60, TimeUnit.SECONDS);
             semaphore.acquireAsync(res.intValue()).onComplete((r, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
@@ -346,7 +347,7 @@ public abstract class LocalCacheListener {
         });
     }
 
-    protected RSemaphore getClearSemaphore(byte[] requestId) {
+    private RSemaphore getClearSemaphore(byte[] requestId) {
         String id = ByteBufUtil.hexDump(requestId);
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
         return semaphore;
