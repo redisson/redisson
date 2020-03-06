@@ -115,13 +115,13 @@ public abstract class LocalCacheListener {
         }
 
         if (options.getEvictionPolicy() == EvictionPolicy.NONE) {
-            return new NoneCacheMap<CacheKey, CacheValue>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+            return new NoneCacheMap<>(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
         if (options.getEvictionPolicy() == EvictionPolicy.LRU) {
-            return new LRUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+            return new LRUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
         if (options.getEvictionPolicy() == EvictionPolicy.LFU) {
-            return new LFUCacheMap<CacheKey, CacheValue>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
+            return new LFUCacheMap<>(options.getCacheSize(), options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
         }
         if (options.getEvictionPolicy() == EvictionPolicy.SOFT) {
             return ReferenceCacheMap.soft(options.getTimeToLiveInMillis(), options.getMaxIdleInMillis());
@@ -255,7 +255,6 @@ public abstract class LocalCacheListener {
             }
 
             RSemaphore semaphore = getClearSemaphore(id);
-            semaphore.expireAsync(60, TimeUnit.SECONDS);
             semaphore.tryAcquireAsync(res.intValue(), 50, TimeUnit.SECONDS).onComplete((r, ex) -> {
                 if (ex != null) {
                     result.tryFailure(ex);
@@ -350,6 +349,7 @@ public abstract class LocalCacheListener {
     private RSemaphore getClearSemaphore(byte[] requestId) {
         String id = ByteBufUtil.hexDump(requestId);
         RSemaphore semaphore = new RedissonSemaphore(commandExecutor, name + ":clear:" + id);
+        semaphore.expireAsync(60, TimeUnit.SECONDS);
         return semaphore;
     }
 

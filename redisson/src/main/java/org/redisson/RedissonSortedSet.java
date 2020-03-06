@@ -51,20 +51,6 @@ import io.netty.buffer.ByteBuf;
  */
 public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V> {
 
-    private static class NaturalComparator<V> implements Comparator<V>, Serializable {
-
-        private static final long serialVersionUID = 7207038068494060240L;
-
-        static final NaturalComparator NATURAL_ORDER = new NaturalComparator();
-
-        public int compare(V c1, V c2) {
-            Comparable<Object> c1co = (Comparable<Object>) c1;
-            Comparable<Object> c2co = (Comparable<Object>) c2;
-            return c1co.compareTo(c2co);
-        }
-
-    }
-
     public static class BinarySearchResult<V> {
 
         private V value;
@@ -92,7 +78,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
     }
 
-    private Comparator<? super V> comparator = NaturalComparator.NATURAL_ORDER;
+    private Comparator comparator = Comparator.naturalOrder();
 
     CommandExecutor commandExecutor;
     

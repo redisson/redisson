@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -13,6 +14,37 @@ import org.junit.Test;
 import org.redisson.api.RPriorityQueue;
 
 public class RedissonPriorityQueueTest extends BaseTest {
+
+    public static class Entry implements Comparable<Entry>, Serializable {
+
+        private String key;
+        private Integer value;
+
+        public Entry(String key, Integer value) {
+            this.key = key;
+            this.value = value;
+        }
+
+        @Override
+        public int compareTo(Entry o) {
+            return key.compareTo(o.key);
+        }
+
+    }
+
+    @Test
+    public void testComparable() {
+        RPriorityQueue<Entry> queue = redisson.getPriorityQueue("anyQueue");
+        queue.add(new Entry("b", 1));
+        queue.add(new Entry("c", 1));
+        queue.add(new Entry("a", 1));
+
+        // Entry [a:1]
+        Entry e = queue.poll();
+        assertThat(e.key).isEqualTo("a");
+        Entry e1 = queue.poll();
+        assertThat(e1.key).isEqualTo("b");
+    }
 
     @Test
     public void testPollLastAndOfferFirstTo() {
