@@ -332,7 +332,7 @@ public class RedisExecutor<V, R> {
 
                 attemptPromise.tryFailure(
                         new RedisResponseTimeoutException("Redis server response timeout (" + timeoutAmount + " ms) occured"
-                                + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Command: "
+                                + " after " + attempt + " retry attempts. Increase nettyThreads and/or timeout settings. Try to define pingConnectionInterval setting. Command: "
                                 + LogHelper.toString(command, params) + ", channel: " + connection.getChannel()));
             }
         };
