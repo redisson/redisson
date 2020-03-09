@@ -97,7 +97,7 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 `hibernate.cache.redisson.[REGION_NAME].expiration.max_idle_time` - max idle time per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.cache_provider` - Defines Cache provider used as local cache store. REDISSON and CAFFEINE providers are available. Default value: `REDISSON`
+`hibernate.cache.redisson.[REGION_NAME].localcache.cache_provider` - cache provider used as local cache store. `REDISSON` and `CAFFEINE` providers are available. Default value: `REDISSON`
 
 `hibernate.cache.redisson.[REGION_NAME].localcache.max_idle_time` - max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 

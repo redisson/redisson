@@ -29,14 +29,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-mybatis</artifactId>
-         <version>3.12.2</version>
+         <version>3.12.3</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-mybatis:3.12.2'
+     compile 'org.redisson:redisson-mybatis:3.12.3'
 ```
 
 ### 2. Specify MyBatis cache settings
@@ -48,6 +48,8 @@ Redisson allows to define follow settings per Cache instance:
 `maxIdleTime` - defines max idle time per cache entry
 
 `maxSize` - defines max size of entries amount stored in Redis
+
+`localCacheProvider` - cache provider used as local cache store. `REDISSON` and `CAFFEINE` providers are available. Default value: `REDISSON`
 
 `localCacheEvictionPolicy` - local cache eviction policy. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` eviction policies are available.
 
