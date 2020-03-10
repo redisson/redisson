@@ -15,7 +15,7 @@
  */
 package org.redisson.cache;
 
-import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 
@@ -24,6 +24,6 @@ import java.util.Map;
  * @param <K> key
  * @param <V> valu
  */
-public interface Cache<K, V> extends Map<K, V> {
+public interface Cache<K, V> extends ConcurrentMap<K, V> {
     
 }

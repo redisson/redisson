@@ -114,6 +114,20 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
 
     }
 
+    public enum StoreMode {
+
+        /**
+         * Store data only in local cache.
+         */
+        LOCALCACHE,
+
+        /**
+         * Store data only in both Redis and local cache.
+         */
+        LOCALCACHE_REDIS
+
+    }
+
     private ReconnectionStrategy reconnectionStrategy;
     private SyncStrategy syncStrategy;
     private EvictionPolicy evictionPolicy;
@@ -121,6 +135,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private long timeToLiveInMillis;
     private long maxIdleInMillis;
     private CacheProvider cacheProvider;
+    private StoreMode storeMode;
     
     protected LocalCachedMapOptions() {
     }
@@ -133,6 +148,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.timeToLiveInMillis = copy.timeToLiveInMillis;
         this.maxIdleInMillis = copy.maxIdleInMillis;
         this.cacheProvider = copy.cacheProvider;
+        this.storeMode = copy.storeMode;
     }
     
     /**
@@ -160,6 +176,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .evictionPolicy(EvictionPolicy.NONE)
                     .reconnectionStrategy(ReconnectionStrategy.NONE)
                     .cacheProvider(CacheProvider.REDISSON)
+                    .storeMode(StoreMode.LOCALCACHE_REDIS)
                     .syncStrategy(SyncStrategy.INVALIDATE);
     }
 
@@ -287,13 +304,30 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         return maxIdle(timeUnit.toMillis(maxIdle));
     }
 
+    public StoreMode getStoreMode() {
+        return storeMode;
+    }
+
+    /**
+     * Defines store mode of cache data.
+     *
+     * @param storeMode
+     *         <p><code>LOCALCACHE</code> - store data in local cache only.
+     *         <p><code>LOCALCACHE_REDIS</code> - store data in both Redis and local cache.
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> storeMode(StoreMode storeMode) {
+        this.storeMode = storeMode;
+        return this;
+    }
+
     /**
      * Defines Cache provider used as local cache store.
      *
      * @param cacheProvider
      *         <p><code>REDISSON</code> - uses Redisson own implementation.
      *         <p><code>CAFFEINE</code> - uses Caffeine implementation.
-     * @return
+     * @return LocalCachedMapOptions instance
      */
     public LocalCachedMapOptions<K, V> cacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;

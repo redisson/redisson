@@ -15,14 +15,8 @@
  */
 package org.redisson.cache;
 
-import java.util.AbstractCollection;
+import java.util.*;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -473,4 +467,84 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
 
     }
 
+    @Override
+    public V putIfAbsent(K key, V value) {
+        CachedValue<K, V> entry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+        CachedValue<K, V> prevCachedValue = map.putIfAbsent(key, entry);
+        if (prevCachedValue != null) {
+            return prevCachedValue.getValue();
+        }
+
+        if (isFull(key)) {
+            if (!removeExpiredEntries()) {
+                onMapFull();
+            }
+        }
+        onValueCreate(entry);
+        if (prevCachedValue != null) {
+            onValueRemove(prevCachedValue);
+            if (!isValueExpired(prevCachedValue)) {
+                return (V) prevCachedValue.getValue();
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public boolean remove(Object key, Object value) {
+        CachedValue<K, V> e = null;
+        synchronized (map) {
+            CachedValue<K, V> entry = map.get(key);
+            if (entry != null
+                    && entry.getValue().equals(value)
+                        && !isValueExpired(entry)) {
+                map.remove(key);
+                e = entry;
+            }
+        }
+        if (e != null) {
+            onValueRemove(e);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public boolean replace(K key, V oldValue, V newValue) {
+        CachedValue<K, V> e = null;
+        synchronized (map) {
+            CachedValue<K, V> entry = map.get(key);
+            if (entry != null
+                    && entry.getValue().equals(oldValue)
+                        && !isValueExpired(entry)) {
+                CachedValue<K, V> newEntry = create(key, newValue, timeToLiveInMillis, maxIdleInMillis);
+                map.put(key, newEntry);
+                e = entry;
+            }
+        }
+        if (e != null) {
+            onValueRemove(e);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public V replace(K key, V value) {
+        CachedValue<K, V> e = null;
+        synchronized (map) {
+            CachedValue<K, V> entry = map.get(key);
+            if (entry != null
+                    && !isValueExpired(entry)) {
+                CachedValue<K, V> newEntry = create(key, value, timeToLiveInMillis, maxIdleInMillis);
+                map.put(key, newEntry);
+                e = entry;
+            }
+        }
+        if (e != null) {
+            onValueRemove(e);
+            return e.getValue();
+        }
+        return null;
+    }
 }

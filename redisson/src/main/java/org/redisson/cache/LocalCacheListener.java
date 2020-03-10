@@ -93,7 +93,7 @@ public abstract class LocalCacheListener {
         return instanceId;
     }
     
-    public Map<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
+    public ConcurrentMap<CacheKey, CacheValue> createCache(LocalCachedMapOptions<?, ?> options) {
         if (options.getCacheProvider() == LocalCachedMapOptions.CacheProvider.CAFFEINE) {
             Caffeine<Object, Object> caffeineBuilder = Caffeine.newBuilder();
             if (options.getTimeToLiveInMillis() > 0) {
@@ -275,6 +275,10 @@ public abstract class LocalCacheListener {
         });
         
         return result;
+    }
+
+    public RTopic getInvalidationTopic() {
+        return invalidationTopic;
     }
 
     public String getInvalidationTopicName() {
