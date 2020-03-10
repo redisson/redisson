@@ -111,19 +111,19 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 `hibernate.cache.redisson.[REGION_NAME].localcache.time_to_live` - time to live per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` - eviction policy applied to local cache entries when cache size limit reached. LFU, LRU, SOFT, WEAK and NONE policies are available. Default value: NONE
+`hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` - eviction policy applied to local cache entries when cache size limit reached. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` policies are available. Default value: `NONE`
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` - sync strategy used to synchronize local cache changes across all instances. Follow sync strategies are available:
-INVALIDATE - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change
-UPDATE - Update cache entry across all LocalCachedMap instances on map entry change
-NONE - No synchronizations on map changes
+`hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` - sync strategy used to synchronize local cache changes across all instances. Follow sync strategies are available:  
+`INVALIDATE` - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change  
+`UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change  
+`NONE` - No synchronizations on map changes  
 
 Default value: INVALIDATE
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed updates through Hibernate during any connection failures to Redis. Since, local cache updates can't be get in absence of connection to Redis. Follow reconnection strategies are available:
-CLEAR - Clear local cache if map instance has been disconnected for a while.
-LOAD - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.
-NONE - Default. No reconnection handling
+`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis. Follow reconnection strategies are available:  
+`CLEAR` - Clear local cache if map instance has been disconnected for a while.  
+`LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.  
+`NONE` - Default. No reconnection handling  
 
 Default value: NONE
 
