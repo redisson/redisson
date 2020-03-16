@@ -20,7 +20,6 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
-import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.pubsub.AsyncSemaphore;
 import org.slf4j.Logger;
@@ -79,7 +78,9 @@ public class ClientConnectionsEntry {
     }
     
     public boolean isMasterForRead() {
-        return getFreezeReason() == FreezeReason.SYSTEM && getConfig().getReadMode() == ReadMode.MASTER_SLAVE && getNodeType() == NodeType.MASTER;
+        return getFreezeReason() == FreezeReason.SYSTEM
+                        && connectionManager.getConfig().getReadMode() == ReadMode.MASTER_SLAVE
+                            && getNodeType() == NodeType.MASTER;
     }
     
     public void setNodeType(NodeType nodeType) {
@@ -193,10 +194,6 @@ public class ClientConnectionsEntry {
         });
         
         connectionManager.getConnectionEventsHub().fireConnect(conn.getRedisClient().getAddr());
-    }
-
-    public MasterSlaveServersConfig getConfig() {
-        return connectionManager.getConfig();
     }
 
     public RFuture<RedisPubSubConnection> connectPubSub() {
