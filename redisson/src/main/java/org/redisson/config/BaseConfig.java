@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
  *
  * @param <T> config type
  */
-class BaseConfig<T extends BaseConfig<T>> {
+public class BaseConfig<T extends BaseConfig<T>> {
     
     private static final Logger log = LoggerFactory.getLogger("config");
 
