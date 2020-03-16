@@ -414,6 +414,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         c.setPingTimeout(cfg.getPingTimeout());
         c.setLoadBalancer(cfg.getLoadBalancer());
         c.setPassword(cfg.getPassword());
+        c.setUsername(cfg.getUsername());
         c.setClientName(cfg.getClientName());
         c.setMasterConnectionPoolSize(cfg.getMasterConnectionPoolSize());
         c.setSlaveConnectionPoolSize(cfg.getSlaveConnectionPoolSize());
@@ -483,6 +484,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setPingConnectionInterval(config.getPingConnectionInterval())
               .setKeepAlive(config.isKeepAlive())
               .setTcpNoDelay(config.isTcpNoDelay())
+              .setUsername(config.getUsername())
               .setPassword(config.getPassword())
               .setNettyHook(cfg.getNettyHook());
         

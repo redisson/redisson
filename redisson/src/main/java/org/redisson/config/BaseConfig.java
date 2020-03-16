@@ -69,6 +69,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
      */
     private String password;
 
+    private String username;
+
     /**
      * Subscriptions per Redis connection limit
      */
@@ -103,6 +105,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     BaseConfig(T config) {
         setPassword(config.getPassword());
+        setUsername(config.getUsername());
         setSubscriptionsPerConnection(config.getSubscriptionsPerConnection());
         setRetryAttempts(config.getRetryAttempts());
         setRetryInterval(config.getRetryInterval());
@@ -124,7 +127,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Subscriptions per Redis connection limit
-     * Default is 5
+     * <p>
+     * Default is <code>5</code>
      *
      * @param subscriptionsPerConnection amount
      * @return config
@@ -139,7 +143,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     }
 
     /**
-     * Password for Redis authentication. Should be null if not needed
+     * Password for Redis authentication. Should be null if not needed.
+     * <p>
      * Default is <code>null</code>
      *
      * @param password for connection
@@ -152,6 +157,25 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     public String getPassword() {
         return password;
+    }
+
+    /**
+     * Username for Redis authentication. Should be null if not needed
+     * <p>
+     * Default is <code>null</code>
+     * <p>
+     * Requires Redis 6.0+
+     *
+     * @param username for connection
+     * @return config
+     */
+    public T setUsername(String username) {
+        this.username = username;
+        return (T) this;
+    }
+
+    public String getUsername() {
+        return username;
     }
 
     /**
@@ -176,7 +200,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Defines time interval for another one attempt send Redis command 
      * if it hasn't been sent already.
-     * 
      * <p>
      * Default is <code>1500</code> milliseconds
      *
@@ -212,6 +235,8 @@ public class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Setup connection name during connection init
      * via CLIENT SETNAME command
+     * <p>
+     * Default is <code>null</code>
      *
      * @param clientName - name of client
      * @return config
@@ -313,7 +338,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     /**
      * Defines SSL provider used to handle SSL connections.
      * <p>
-     * Default is JDK
+     * Default is <code>JDK</code>
      * 
      * @param sslProvider - ssl provider 
      * @return config
@@ -329,7 +354,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines path to SSL truststore 
-     * 
+     * <p>
+     * Default is <code>null</code>
+     *
      * @param sslTruststore - path
      * @return config
      */
@@ -344,7 +371,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines password for SSL truststore
-     * 
+     * <p>
+     * Default is <code>null</code>
+     *
      * @param sslTruststorePassword - password
      * @return config
      */
@@ -359,7 +388,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines path to SSL keystore
-     * 
+     * <p>
+     * Default is <code>null</code>
+     *
      * @param sslKeystore - path to keystore
      * @return config
      */
@@ -374,7 +405,9 @@ public class BaseConfig<T extends BaseConfig<T>> {
 
     /**
      * Defines password for SSL keystore
-     * 
+     * <p>
+     * Default is <code>null</code>
+     *
      * @param sslKeystorePassword - password
      * @return config
      */
