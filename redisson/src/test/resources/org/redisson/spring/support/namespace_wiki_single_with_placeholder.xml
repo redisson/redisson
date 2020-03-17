@@ -34,7 +34,6 @@
     >
         <redisson:single-server
             idle-connection-timeout="${redisson.idleConnectionTimeout}"
-            ping-timeout="${redisson.pingTimeout}"
             connect-timeout="${redisson.connectTimeout}"
             timeout="${redisson.timeout}"
             retry-attempts="${redisson.retryAttempts}"

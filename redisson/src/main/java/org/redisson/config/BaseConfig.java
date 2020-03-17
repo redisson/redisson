@@ -40,13 +40,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
     private int idleConnectionTimeout = 10000;
 
     /**
-     * Ping timeout used in <code>Node.ping</code> and <code>Node.pingAll<code> operation.
-     * Value in milliseconds.
-     *
-     */
-    private int pingTimeout = 1000;
-
-    /**
      * Timeout during connecting to any Redis server.
      * Value in milliseconds.
      *
@@ -111,7 +104,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         setRetryInterval(config.getRetryInterval());
         setTimeout(config.getTimeout());
         setClientName(config.getClientName());
-        setPingTimeout(config.getPingTimeout());
         setConnectTimeout(config.getConnectTimeout());
         setIdleConnectionTimeout(config.getIdleConnectionTimeout());
         setSslEnableEndpointIdentification(config.isSslEnableEndpointIdentification());
@@ -250,16 +242,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return clientName;
     }
 
-    @Deprecated
-    public T setPingTimeout(int pingTimeout) {
-        this.pingTimeout = pingTimeout;
-        return (T) this;
-    }
-
-    public int getPingTimeout() {
-        return pingTimeout;
-    }
-
     /**
      * Timeout during connecting to any Redis server.
      * <p>
@@ -296,24 +278,6 @@ public class BaseConfig<T extends BaseConfig<T>> {
         return idleConnectionTimeout;
     }
 
-    /*
-     * Use setFailedSlaveReconnectionInterval instead
-     */
-    @Deprecated
-    public T setReconnectionTimeout(int slaveRetryTimeout) {
-        log.warn("'reconnectionTimeout' setting in unavailable. Please use 'failedSlaveReconnectionInterval' setting instead!");
-        return (T) this;
-    }
-
-    /*
-     * Use setFailedSlaveCheckInterval instead
-     */
-    @Deprecated
-    public T setFailedAttempts(int slaveFailedAttempts) {
-        log.warn("'failedAttempts' setting in unavailable. Please use 'failedSlaveCheckInterval' setting instead!");
-        return (T) this;
-    }
-    
     public boolean isSslEnableEndpointIdentification() {
         return sslEnableEndpointIdentification;
     }

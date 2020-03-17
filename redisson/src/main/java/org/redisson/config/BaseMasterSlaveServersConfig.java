@@ -188,21 +188,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
 
     /**
-     * @deprecated use {@link #setSubscriptionConnectionPoolSize(int)}
-     * 
-     * @param slaveSubscriptionConnectionPoolSize - pool size
-     * @return config
-     */
-    @Deprecated
-    public T setSlaveSubscriptionConnectionPoolSize(int slaveSubscriptionConnectionPoolSize) {
-        return setSubscriptionConnectionPoolSize(slaveSubscriptionConnectionPoolSize);
-    }
-    @Deprecated
-    public int getSlaveSubscriptionConnectionPoolSize() {
-        return getSubscriptionConnectionPoolSize();
-    }
-
-    /**
      * Maximum connection pool size for subscription (pub/sub) channels
      * <p>
      * Default is <code>50</code>
@@ -255,21 +240,6 @@ public class BaseMasterSlaveServersConfig<T extends BaseMasterSlaveServersConfig
     }
     public int getMasterConnectionMinimumIdleSize() {
         return masterConnectionMinimumIdleSize;
-    }
-
-    /**
-     * @deprecated use {@link #setSubscriptionConnectionMinimumIdleSize(int)}
-     * 
-     * @param slaveSubscriptionConnectionMinimumIdleSize - pool size
-     * @return config
-     */
-    @Deprecated
-    public T setSlaveSubscriptionConnectionMinimumIdleSize(int slaveSubscriptionConnectionMinimumIdleSize) {
-        return setSubscriptionConnectionMinimumIdleSize(slaveSubscriptionConnectionMinimumIdleSize);
-    }
-    @Deprecated
-    public int getSlaveSubscriptionConnectionMinimumIdleSize() {
-        return getSubscriptionConnectionMinimumIdleSize();
     }
 
     /**

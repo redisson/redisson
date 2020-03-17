@@ -942,22 +942,7 @@ public interface RedissonClient {
      * @return ScheduledExecutorService object
      */
     RScheduledExecutorService getExecutorService(String name, ExecutorOptions options);
-    
-    /**
-     * Returns ScheduledExecutorService by name 
-     * using provided codec for task, response and request serialization
-     * 
-     * Please use getExecutorService(String name, Codec codec) method instead.
-     * 
-     * @deprecated - use {@link #getExecutorService(String, Codec)} instead.
-     * 
-     * @param name - name of object
-     * @param codec - codec for task, response and request
-     * @return ScheduledExecutorService object
-     */
-    @Deprecated
-    RScheduledExecutorService getExecutorService(Codec codec, String name);
-    
+
     /**
      * Returns ScheduledExecutorService by name 
      * using provided codec for task, response and request serialization

@@ -127,7 +127,6 @@ public class SpringNamespaceWikiTest {
             method.setAccessible(true);
             SingleServerConfig single = (SingleServerConfig) method.invoke(config, (Object[]) null);
             assertEquals(10000, single.getIdleConnectionTimeout());
-            assertEquals(20000, single.getPingTimeout());
             assertEquals(30000, single.getConnectTimeout());
             assertEquals(40000, single.getTimeout());
             assertEquals(5, single.getRetryAttempts());

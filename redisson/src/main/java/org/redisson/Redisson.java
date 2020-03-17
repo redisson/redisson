@@ -382,12 +382,6 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    @Deprecated
-    public RScheduledExecutorService getExecutorService(Codec codec, String name) {
-        return getExecutorService(name, codec);
-    }
-
-    @Override
     public RScheduledExecutorService getExecutorService(String name, Codec codec) {
         return getExecutorService(name, codec, ExecutorOptions.defaults());
     }
