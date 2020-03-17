@@ -450,7 +450,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         }
         e.shutdown();
         Assert.assertTrue(e.awaitTermination(30, TimeUnit.SECONDS));
-        List<?> s = sync(batch.execute());
+        List<?> s = sync(batch.execute()).getResponses();
         
         int i = 0;
         for (Object element : s) {
@@ -469,7 +469,7 @@ public class RedissonBatchRxTest extends BaseRxTest {
         batch.getAtomicLong("counter").incrementAndGet();
         batch.getAtomicLong("counter").incrementAndGet();
 
-        List<?> res = sync(batch.execute());
+        List<?> res = sync(batch.execute()).getResponses();
         Assert.assertEquals(5, res.size());
         Assert.assertTrue((Boolean)res.get(0));
         Assert.assertTrue((Boolean)res.get(1));
