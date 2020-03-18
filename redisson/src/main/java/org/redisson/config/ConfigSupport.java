@@ -27,8 +27,10 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.redisson.api.NatMapper;
 import org.redisson.api.RedissonNodeInitializer;
+import org.redisson.client.NettyHook;
 import org.redisson.client.codec.Codec;
 import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.codec.ReferenceCodecProvider;
@@ -237,11 +239,13 @@ public class ConfigSupport {
         mapper.addMixIn(RedissonNodeInitializer.class, ClassMixIn.class);
         mapper.addMixIn(LoadBalancer.class, ClassMixIn.class);
         mapper.addMixIn(NatMapper.class, ClassMixIn.class);
+        mapper.addMixIn(NettyHook.class, ClassMixIn.class);
         
         FilterProvider filterProvider = new SimpleFilterProvider()
                 .addFilter("classFilter", SimpleBeanPropertyFilter.filterOutAllExcept());
         mapper.setFilterProvider(filterProvider);
         mapper.setSerializationInclusion(Include.NON_NULL);
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
 
         if (classLoader != null) {
             TypeFactory tf = TypeFactory.defaultInstance()
