@@ -15,6 +15,11 @@
  */
 package org.redisson.cluster;
 
+/**
+ *
+ * @author Nikita Koksharov
+ *
+ */
 public class ClusterSlotRange {
 
     private final int startSlot;

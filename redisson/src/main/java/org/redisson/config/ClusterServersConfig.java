@@ -123,6 +123,7 @@ public class ClusterServersConfig extends BaseMasterSlaveServersConfig<ClusterSe
 
     /**
      * Defines NAT mapper which maps Redis URI object.
+     * Applied to all Redis connections.
      *
      * @see HostNatMapper
      * @see HostPortNatMapper

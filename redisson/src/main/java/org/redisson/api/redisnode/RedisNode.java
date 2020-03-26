@@ -13,40 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.redisnode;
+
+import org.redisson.client.protocol.Time;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.protocol.Time;
-
 /**
- * Redis node interface
+ * Base Redis node API interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface Node extends NodeAsync {
+public interface RedisNode {
 
-    enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
-    
-    Map<String, String> info(InfoSection section);
-    
     /**
      * Returns current Redis server time in seconds
-     * 
+     *
      * @return time in seconds
      */
     Time time();
-    
-    /**
-     * Returns node type
-     *
-     * @return node type
-     */
-    NodeType getType();
 
     /**
      * Get Redis node address
@@ -71,5 +59,9 @@ public interface Node extends NodeAsync {
      * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
      */
     boolean ping(long timeout, TimeUnit timeUnit);
-    
+
+    enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
+
+    Map<String, String> info(RedisNode.InfoSection section);
+
 }

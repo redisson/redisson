@@ -25,6 +25,7 @@ import org.redisson.connection.ConnectionListener;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public interface NodesGroup<N extends Node> {
 
     /**

@@ -13,24 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.redisnode;
 
-import java.util.Map;
+import java.util.Collection;
 
 /**
- * Redis cluster node interface
+ * Redis Sentinel Master Slave nodes API interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface ClusterNode extends Node {
+public interface RedisSentinelMasterSlave extends RedisMasterSlave {
 
     /**
-     * Execute CLUSTER INFO operation.
+     * Returns collection of Redis Sentinel nodes belongs to this Redis setup.
      *
-     * @return value mapped by field
+     * @return Redis Sentinel nodes
      */
-    Map<String, String> clusterInfo();
-    
+    Collection<RedisSentinel> getSentinels();
+
+    /**
+     * Returns Redis Sentinel node by defined address.
+     * <p>
+     * Address example: <code>redis://127.0.0.1:9233</code>
+     *
+     * @return Redis Sentinel node
+     */
+    RedisSentinel getSentinel(String address);
+
 }

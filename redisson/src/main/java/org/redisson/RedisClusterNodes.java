@@ -19,6 +19,7 @@ import org.redisson.api.ClusterNode;
 import org.redisson.api.ClusterNodesGroup;
 import org.redisson.connection.ConnectionManager;
 
+@Deprecated
 public class RedisClusterNodes extends RedisNodes<ClusterNode> implements ClusterNodesGroup {
 
     public RedisClusterNodes(ConnectionManager connectionManager) {

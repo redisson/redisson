@@ -1,63 +1,24 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.redisson.BaseTest.createInstance;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.util.CharsetUtil;
+import net.bytebuddy.utility.RandomString;
+import org.junit.*;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
-import org.redisson.api.ClusterNode;
-import org.redisson.api.Node;
-import org.redisson.api.Node.InfoSection;
-import org.redisson.api.NodeType;
-import org.redisson.api.NodesGroup;
-import org.redisson.api.RBucket;
-import org.redisson.api.RBuckets;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
-import org.redisson.client.RedisClient;
-import org.redisson.client.RedisClientConfig;
-import org.redisson.client.RedisConnection;
-import org.redisson.client.RedisConnectionException;
-import org.redisson.client.RedisOutOfMemoryException;
+import org.redisson.api.*;
+import org.redisson.api.redisnode.RedisCluster;
+import org.redisson.api.redisnode.RedisClusterMaster;
+import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.Encoder;
 import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterNodeInfo;
 import org.redisson.cluster.ClusterNodeInfo.Flag;
-import org.redisson.codec.FstCodec;
 import org.redisson.codec.JsonJacksonCodec;
 import org.redisson.codec.SerializationCodec;
 import org.redisson.config.Config;
@@ -68,10 +29,17 @@ import org.redisson.connection.ConnectionListener;
 import org.redisson.connection.MasterSlaveConnectionManager;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
-import io.netty.util.CharsetUtil;
-import net.bytebuddy.utility.RandomString;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.redisson.BaseTest.createInstance;
 
 public class RedissonTest {
 
@@ -589,8 +557,8 @@ public class RedissonTest {
         List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
 
         Set<InetSocketAddress> oldMasters = new HashSet<>();
-        Collection<ClusterNode> masterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
-        for (ClusterNode clusterNode : masterNodes) {
+        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        for (RedisClusterMaster clusterNode : masterNodes) {
             oldMasters.add(clusterNode.getAddr());
         }
         
@@ -606,8 +574,8 @@ public class RedissonTest {
         Thread.sleep(TimeUnit.SECONDS.toMillis(30));
         
         RedisProcess newMaster = null;
-        Collection<ClusterNode> newMasterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
-        for (ClusterNode clusterNode : newMasterNodes) {
+        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        for (RedisClusterMaster clusterNode : newMasterNodes) {
             if (!oldMasters.contains(clusterNode.getAddr())) {
                 newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
                 break;
@@ -681,8 +649,8 @@ public class RedissonTest {
         t.join(1000);
 
         Set<InetSocketAddress> oldMasters = new HashSet<>();
-        Collection<ClusterNode> masterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
-        for (ClusterNode clusterNode : masterNodes) {
+        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        for (RedisClusterMaster clusterNode : masterNodes) {
             oldMasters.add(clusterNode.getAddr());
         }
         
@@ -692,8 +660,8 @@ public class RedissonTest {
         Thread.sleep(TimeUnit.SECONDS.toMillis(90));
         
         RedisProcess newMaster = null;
-        Collection<ClusterNode> newMasterNodes = redisson.getClusterNodesGroup().getNodes(NodeType.MASTER);
-        for (ClusterNode clusterNode : newMasterNodes) {
+        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        for (RedisClusterMaster clusterNode : newMasterNodes) {
             if (!oldMasters.contains(clusterNode.getAddr())) {
                 newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
                 break;
@@ -798,80 +766,6 @@ public class RedissonTest {
     }
 
     @Test
-    public void testNode() {
-        Node node = redisson.getNodesGroup().getNode(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        assertThat(node).isNotNull();
-        
-        assertThat(node.info(InfoSection.ALL)).isNotEmpty();
-    }
-    
-    @Test
-    public void testInfo() {
-        Node node = redisson.getNodesGroup().getNodes().iterator().next();
-
-        Map<String, String> allResponse = node.info(InfoSection.ALL);
-        assertThat(allResponse).containsKeys("redis_version", "connected_clients");
-        
-        Map<String, String> defaultResponse = node.info(InfoSection.DEFAULT);
-        assertThat(defaultResponse).containsKeys("redis_version", "connected_clients");
-        
-        Map<String, String> serverResponse = node.info(InfoSection.SERVER);
-        assertThat(serverResponse).containsKey("redis_version");
-        
-        Map<String, String> clientsResponse = node.info(InfoSection.CLIENTS);
-        assertThat(clientsResponse).containsKey("connected_clients");
-
-        Map<String, String> memoryResponse = node.info(InfoSection.MEMORY);
-        assertThat(memoryResponse).containsKey("used_memory_human");
-        
-        Map<String, String> persistenceResponse = node.info(InfoSection.PERSISTENCE);
-        assertThat(persistenceResponse).containsKey("rdb_last_save_time");
-
-        Map<String, String> statsResponse = node.info(InfoSection.STATS);
-        assertThat(statsResponse).containsKey("pubsub_patterns");
-        
-        Map<String, String> replicationResponse = node.info(InfoSection.REPLICATION);
-        assertThat(replicationResponse).containsKey("repl_backlog_first_byte_offset");
-        
-        Map<String, String> cpuResponse = node.info(InfoSection.CPU);
-        assertThat(cpuResponse).containsKey("used_cpu_sys");
-
-        Map<String, String> commandStatsResponse = node.info(InfoSection.COMMANDSTATS);
-        assertThat(commandStatsResponse).containsKey("cmdstat_flushall");
-
-        Map<String, String> clusterResponse = node.info(InfoSection.CLUSTER);
-        assertThat(clusterResponse).containsKey("cluster_enabled");
-
-        Map<String, String> keyspaceResponse = node.info(InfoSection.KEYSPACE);
-        assertThat(keyspaceResponse).isEmpty();
-    }
-    
-    @Test
-    public void testTime() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
-        Assert.assertEquals(1, nodes.getNodes().size());
-        Iterator<Node> iter = nodes.getNodes().iterator();
-
-        Node node1 = iter.next();
-        Time time = node1.time();
-        assertThat(time.getSeconds()).isGreaterThan(time.getMicroseconds());
-        assertThat(time.getSeconds()).isGreaterThan(1000000000);
-        assertThat(time.getMicroseconds()).isGreaterThan(10000);
-    }
-
-    @Test
-    public void testPing() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
-        Assert.assertEquals(1, nodes.getNodes().size());
-        Iterator<Node> iter = nodes.getNodes().iterator();
-
-        Node node1 = iter.next();
-        Assert.assertTrue(node1.ping());
-
-        Assert.assertTrue(nodes.pingAll());
-    }
-
-    @Test
     public void testSentinelStartup() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
@@ -931,35 +825,6 @@ public class RedissonTest {
         slave2.stop();
     }
     
-//    @Test
-    public void testSentinel() {
-        NodesGroup<Node> nodes = redisson.getNodesGroup();
-        Assert.assertEquals(5, nodes.getNodes().size());
-
-        nodes.getNodes().stream().forEach((node) -> {
-            Assert.assertTrue(node.ping());
-        });
-
-        Assert.assertTrue(nodes.pingAll());
-    }
-
-    @Test
-    public void testClusterConfigJSON() throws IOException {
-        Config originalConfig = new Config();
-        originalConfig.useClusterServers().addNodeAddress("redis://123.123.1.23:1902", "redis://9.3.1.0:1902");
-        String t = originalConfig.toJSON();
-        Config c = Config.fromJSON(t);
-        assertThat(c.toJSON()).isEqualTo(t);
-    }
-
-    @Test
-    public void testSingleConfigJSON() throws IOException {
-        RedissonClient r = BaseTest.createInstance();
-        String t = r.getConfig().toJSON();
-        Config c = Config.fromJSON(t);
-        assertThat(c.toJSON()).isEqualTo(t);
-    }
-    
     @Test
     public void testSingleConfigYAML() throws IOException {
         RedissonClient r = BaseTest.createInstance();
@@ -979,15 +844,6 @@ public class RedissonTest {
     }
 
     @Test
-    public void testMasterSlaveConfigJSON() throws IOException {
-        Config c2 = new Config();
-        c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028");
-        String t = c2.toJSON();
-        Config c = Config.fromJSON(t);
-        assertThat(c.toJSON()).isEqualTo(t);
-    }
-
-    @Test
     public void testMasterSlaveConfigYAML() throws IOException {
         Config c2 = new Config();
         c2.useMasterSlaveServers().setMasterAddress("redis://123.1.1.1:1231").addSlaveAddress("redis://82.12.47.12:1028", "redis://82.12.47.14:1028");
@@ -995,39 +851,7 @@ public class RedissonTest {
         Config c = Config.fromYAML(t);
         assertThat(c.toYAML()).isEqualTo(t);
     }
-    
-    @Test
-    public void testNodesInCluster() throws Exception {
-        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
-        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
-        
-        ClusterRunner clusterRunner = new ClusterRunner()
-                .addNode(master1, slot1)
-                .addNode(master2, slot2)
-                .addNode(master3, slot3);
-        ClusterProcesses process = clusterRunner.run();
-        
-        Config config = new Config();
-        config.useClusterServers()
-        .setLoadBalancer(new RandomLoadBalancer())
-        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        for (Node node : redisson.getClusterNodesGroup().getNodes()) {
-            assertThat(node.info(InfoSection.ALL)).isNotEmpty();
-        }
-        assertThat(redisson.getClusterNodesGroup().getNodes(NodeType.SLAVE)).hasSize(3);
-        assertThat(redisson.getClusterNodesGroup().getNodes(NodeType.MASTER)).hasSize(3);
-        assertThat(redisson.getClusterNodesGroup().getNodes()).hasSize(6);
-        
-        redisson.shutdown();
-        process.shutdown();
-    }
-    
+
     @Test
     public void testMovedRedirectInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();

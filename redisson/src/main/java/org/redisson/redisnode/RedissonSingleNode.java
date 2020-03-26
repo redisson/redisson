@@ -13,24 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.redisnode;
 
-import java.util.Map;
+import org.redisson.api.NodeType;
+import org.redisson.api.redisnode.RedisMaster;
+import org.redisson.api.redisnode.RedisSingle;
+import org.redisson.connection.ConnectionManager;
+
+import java.util.Collection;
 
 /**
- * Redis cluster node interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface ClusterNode extends Node {
+public class RedissonSingleNode extends RedissonBaseNodes implements RedisSingle {
 
-    /**
-     * Execute CLUSTER INFO operation.
-     *
-     * @return value mapped by field
-     */
-    Map<String, String> clusterInfo();
-    
+    public RedissonSingleNode(ConnectionManager connectionManager) {
+        super(connectionManager);
+    }
+
+    @Override
+    public RedisMaster getInstance() {
+        Collection<RedisMaster> list = getNodes(NodeType.MASTER);
+        return list.iterator().next();
+    }
 }

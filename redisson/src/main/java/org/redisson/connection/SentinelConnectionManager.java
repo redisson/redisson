@@ -105,12 +105,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     continue;
                 }
                 
-                List<String> master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
-                if (master.isEmpty()) {
+                InetSocketAddress master = connection.sync(RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+                if (master == null) {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
                 
-                RedisURI masterHost = toURI(master.get(0), master.get(1));
+                RedisURI masterHost = toURI(master.getHostString(), String.valueOf(master.getPort()));
                 this.config.setMasterAddress(masterHost.toString());
                 currentMaster.set(masterHost);
                 log.info("master: {} added", masterHost);
@@ -358,14 +358,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
         };
         
-        RFuture<List<String>> masterFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+        RFuture<InetSocketAddress> masterFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
         masterFuture.onComplete((master, e) -> {
             if (e != null) {
                 return;
             }
 
             RedisURI current = currentMaster.get();
-            RedisURI newMaster = toURI(master.get(0), master.get(1));
+            RedisURI newMaster = toURI(master.getHostString(), String.valueOf(master.getPort()));
             if (!newMaster.equals(current)
                     && currentMaster.compareAndSet(current, newMaster)) {
                 RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), newMaster);

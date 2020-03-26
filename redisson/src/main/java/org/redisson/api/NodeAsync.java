@@ -27,6 +27,7 @@ import org.redisson.client.protocol.Time;
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public interface NodeAsync {
 
     RFuture<Map<String, String>> infoAsync(InfoSection section);

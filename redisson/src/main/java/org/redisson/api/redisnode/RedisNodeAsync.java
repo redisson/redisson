@@ -13,47 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.redisnode;
 
-import java.net.InetSocketAddress;
+import org.redisson.api.RFuture;
+import org.redisson.client.protocol.Time;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.client.protocol.Time;
-
 /**
- * Redis node interface
+ * Base Redis node API interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface Node extends NodeAsync {
+public interface RedisNodeAsync {
 
-    enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
-    
-    Map<String, String> info(InfoSection section);
-    
     /**
      * Returns current Redis server time in seconds
-     * 
+     *
      * @return time in seconds
      */
-    Time time();
-    
-    /**
-     * Returns node type
-     *
-     * @return node type
-     */
-    NodeType getType();
-
-    /**
-     * Get Redis node address
-     *
-     * @return node address
-     */
-    InetSocketAddress getAddr();
+    RFuture<Time> timeAsync();
 
     /**
      * Ping Redis node.
@@ -61,7 +42,7 @@ public interface Node extends NodeAsync {
      *
      * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
      */
-    boolean ping();
+    RFuture<Boolean> pingAsync();
 
     /**
      * Ping Redis node with specified timeout.
@@ -70,6 +51,8 @@ public interface Node extends NodeAsync {
      * @param timeUnit - timeout unit
      * @return <code>true</code> if "PONG" reply received, <code>false</code> otherwise
      */
-    boolean ping(long timeout, TimeUnit timeUnit);
-    
+    RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit);
+
+    RFuture<Map<String, String>> infoAsync(RedisNode.InfoSection section);
+
 }

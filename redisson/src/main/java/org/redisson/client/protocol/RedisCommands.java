@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol;
 
+import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -44,41 +45,7 @@ import org.redisson.client.protocol.convertor.TimeObjectDecoder;
 import org.redisson.client.protocol.convertor.TrueReplayConvertor;
 import org.redisson.client.protocol.convertor.TypeConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
-import org.redisson.client.protocol.decoder.ClusterNodesDecoder;
-import org.redisson.client.protocol.decoder.ListFirstObjectDecoder;
-import org.redisson.client.protocol.decoder.ListMultiDecoder2;
-import org.redisson.client.protocol.decoder.ListObjectDecoder;
-import org.redisson.client.protocol.decoder.ListResultReplayDecoder;
-import org.redisson.client.protocol.decoder.ListScanResult;
-import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.Long2MultiDecoder;
-import org.redisson.client.protocol.decoder.MapScanResult;
-import org.redisson.client.protocol.decoder.MapScanResultReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectDecoder;
-import org.redisson.client.protocol.decoder.ObjectFirstScoreReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapEntryReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.ObjectMapReplayDecoder2;
-import org.redisson.client.protocol.decoder.ObjectSetReplayDecoder;
-import org.redisson.client.protocol.decoder.PendingEntryDecoder;
-import org.redisson.client.protocol.decoder.PendingResultDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetPolledObjectDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetReplayDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetScanDecoder;
-import org.redisson.client.protocol.decoder.ScoredSortedSetScanReplayDecoder;
-import org.redisson.client.protocol.decoder.SlotsDecoder;
-import org.redisson.client.protocol.decoder.StreamConsumerInfoDecoder;
-import org.redisson.client.protocol.decoder.StreamGroupInfoDecoder;
-import org.redisson.client.protocol.decoder.StreamIdDecoder;
-import org.redisson.client.protocol.decoder.StreamIdListDecoder;
-import org.redisson.client.protocol.decoder.StreamObjectMapReplayDecoder;
-import org.redisson.client.protocol.decoder.StreamResultDecoder;
-import org.redisson.client.protocol.decoder.StringDataDecoder;
-import org.redisson.client.protocol.decoder.StringListReplayDecoder;
-import org.redisson.client.protocol.decoder.StringMapDataDecoder;
-import org.redisson.client.protocol.decoder.StringReplayDecoder;
-import org.redisson.client.protocol.decoder.TimeLongObjectDecoder;
+import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
 
@@ -446,20 +413,25 @@ public interface RedisCommands {
     RedisStrictCommand<Void> SENTINEL_REMOVE = new RedisStrictCommand<Void>("SENTINEL", "REMOVE", new VoidReplayConvertor());
     RedisStrictCommand<Void> SENTINEL_MONITOR = new RedisStrictCommand<Void>("SENTINEL", "MONITOR", new VoidReplayConvertor());
     
-    RedisStrictCommand<List<String>> SENTINEL_GET_MASTER_ADDR_BY_NAME = new RedisStrictCommand<List<String>>("SENTINEL", "GET-MASTER-ADDR-BY-NAME", new StringListReplayDecoder());
+    RedisStrictCommand<InetSocketAddress> SENTINEL_GET_MASTER_ADDR_BY_NAME = new RedisStrictCommand<>("SENTINEL", "GET-MASTER-ADDR-BY-NAME",
+            new InetSocketAddressDecoder());
     RedisCommand<List<Map<String, String>>> SENTINEL_MASTERS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "MASTERS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
+    RedisCommand<Map<String, String>> SENTINEL_MASTER = new RedisCommand("SENTINEL", "MASTER", new ObjectMapReplayDecoder());
     RedisCommand<List<Map<String, String>>> SENTINEL_SLAVES = new RedisCommand<List<Map<String, String>>>("SENTINEL", "SLAVES",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
     RedisCommand<List<Map<String, String>>> SENTINEL_SENTINELS = new RedisCommand<List<Map<String, String>>>("SENTINEL", "SENTINELS",
             new ListMultiDecoder2(new ListResultReplayDecoder(), new ObjectMapReplayDecoder()));
 
+    RedisStrictCommand<String> CLUSTER_MYID = new RedisStrictCommand<String>("CLUSTER", "MYID");
     RedisStrictCommand<Void> CLUSTER_ADDSLOTS = new RedisStrictCommand<Void>("CLUSTER", "ADDSLOTS");
     RedisStrictCommand<Void> CLUSTER_REPLICATE = new RedisStrictCommand<Void>("CLUSTER", "REPLICATE");
     RedisStrictCommand<Void> CLUSTER_FORGET = new RedisStrictCommand<Void>("CLUSTER", "FORGET");
     RedisCommand<Object> CLUSTER_SLOTS = new RedisCommand<Object>("CLUSTER", "SLOTS", new SlotsDecoder());
     RedisStrictCommand<Void> CLUSTER_RESET = new RedisStrictCommand<Void>("CLUSTER", "RESET");
     RedisStrictCommand<Void> CLUSTER_DELSLOTS = new RedisStrictCommand<Void>("CLUSTER", "DELSLOTS");
+    RedisStrictCommand<Void> CLUSTER_FLUSHSLOTS = new RedisStrictCommand<Void>("CLUSTER", "FLUSHSLOTS");
+    RedisStrictCommand<Long> CLUSTER_COUNTFAILUREREPORTS = new RedisStrictCommand<Long>("CLUSTER", "COUNT-FAILURE-REPORTS");
     RedisStrictCommand<Long> CLUSTER_COUNTKEYSINSLOT = new RedisStrictCommand<Long>("CLUSTER", "COUNTKEYSINSLOT");
     RedisStrictCommand<List<String>> CLUSTER_GETKEYSINSLOT = new RedisStrictCommand<List<String>>("CLUSTER", "GETKEYSINSLOT", new StringListReplayDecoder());
     RedisStrictCommand<Void> CLUSTER_SETSLOT = new RedisStrictCommand<Void>("CLUSTER", "SETSLOT");

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+@Deprecated
 public interface ClusterNodesGroup extends NodesGroup<ClusterNode> {
 
 }

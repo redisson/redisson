@@ -141,6 +141,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     /**
      * Defines NAT mapper which maps Redis URI object.
+     * Applied to all Redis connections.
      *
      * @see HostNatMapper
      * @see HostPortNatMapper

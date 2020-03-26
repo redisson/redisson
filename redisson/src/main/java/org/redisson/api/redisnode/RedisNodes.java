@@ -13,24 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.redisnode;
 
-import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
- * Redis cluster node interface
+ * Base Redis nodes API interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface ClusterNode extends Node {
+public interface RedisNodes {
 
     /**
-     * Execute CLUSTER INFO operation.
+     * Ping all Redis nodes.
+     * Default timeout per Redis node is 1000 milliseconds
      *
-     * @return value mapped by field
+     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
      */
-    Map<String, String> clusterInfo();
-    
+    boolean pingAll();
+
+    /**
+     * Ping all Redis nodes with specified timeout per node
+     *
+     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
+     */
+    boolean pingAll(long timeout, TimeUnit timeUnit);
+
 }

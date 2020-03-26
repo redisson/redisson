@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
@@ -1075,17 +1076,29 @@ public interface RedissonClient {
     Config getConfig();
 
     /**
-     * Get Redis nodes group for server operations
+     * Returns API to manage Redis nodes
      *
-     * @return NodesGroup object
+     * @see org.redisson.api.redisnode.RedisCluster
+     * @see org.redisson.api.redisnode.RedisMasterSlave
+     * @see org.redisson.api.redisnode.RedisSentinelMasterSlave
+     * @see org.redisson.api.redisnode.RedisSingle
+     *
+     * @param clazz Redis nodes API class
+     * @param <T> type of Redis nodes API
+     * @return Redis nodes API object
      */
+    <T extends RedisNodes> T getRedisNodes(Class<T> clazz);
+
+    /*
+     * Use getRedisNodes() method instead
+     */
+    @Deprecated
     NodesGroup<Node> getNodesGroup();
 
-    /**
-     * Get Redis cluster nodes group for server operations
-     *
-     * @return ClusterNodesGroup object
+    /*
+     * Use getRedisNodes() method instead
      */
+    @Deprecated
     ClusterNodesGroup getClusterNodesGroup();
 
     /**

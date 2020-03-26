@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
-
-import java.util.Map;
+package org.redisson.api.redisnode;
 
 /**
- * Redis cluster node interface
+ * Redis Master node API interface
  *
  * @author Nikita Koksharov
  *
  */
-@Deprecated
-public interface ClusterNode extends Node {
+public interface RedisMaster extends RedisNode, RedisMasterAsync {
 
-    /**
-     * Execute CLUSTER INFO operation.
-     *
-     * @return value mapped by field
-     */
-    Map<String, String> clusterInfo();
-    
 }

@@ -388,6 +388,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     }
 
     @Override
+    public <T, R> RFuture<R> writeAsync(RedisClient client, Codec codec, RedisCommand<T> command, Object... params) {
+        MasterSlaveEntry entry = getConnectionManager().getEntry(client);
+        return writeAsync(entry, codec, command, params);
+    }
+
+    @Override
     public <T, R> RFuture<R> writeAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params) {
         RPromise<R> mainPromise = createPromise();
         async(false, new NodeSource(entry), codec, command, params, mainPromise, false);
