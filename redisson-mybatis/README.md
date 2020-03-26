@@ -66,7 +66,7 @@ Redisson allows to define follow settings per Cache instance:
 Examples:
 
 ```xml
-<cache type="org.redisson.hibernate.RedissonCache">
+<cache type="org.redisson.mybatis.RedissonCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
@@ -74,7 +74,7 @@ Examples:
 </cache>
 
 <!-- or -->
-<cache type="org.redisson.hibernate.RedissonLocalCachedCache">
+<cache type="org.redisson.mybatis.RedissonLocalCachedCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
@@ -89,7 +89,7 @@ Examples:
 </cache>
 
 <!-- or -->
-<cache type="org.redisson.hibernate.RedissonClusteredCache">
+<cache type="org.redisson.mybatis.RedissonClusteredCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
@@ -97,7 +97,7 @@ Examples:
 </cache>
 
 <!-- or -->
-<cache type="org.redisson.hibernate.RedissonClusteredLocalCachedCache">
+<cache type="org.redisson.mybatis.RedissonClusteredLocalCachedCache">
   <property name="timeToLive" value="200000"/>
   <property name="maxIdleTime" value="100000"/>
   <property name="maxSize" value="100000"/>
