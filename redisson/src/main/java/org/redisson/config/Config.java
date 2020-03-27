@@ -92,6 +92,8 @@ public class Config {
 
     private NettyHook nettyHook = new DefaultNettyHook();
 
+    private boolean useThreadClassLoader = true;
+
     /**
      * AddressResolverGroupFactory switch between default and round robin
      */
@@ -109,6 +111,7 @@ public class Config {
             oldConf.setCodec(new FstCodec());
         }
 
+        setUseThreadClassLoader(oldConf.isUseThreadClassLoader());
         setMinCleanUpDelay(oldConf.getMinCleanUpDelay());
         setMaxCleanUpDelay(oldConf.getMaxCleanUpDelay());
         setCleanUpKeysAmount(oldConf.getCleanUpKeysAmount());
@@ -777,4 +780,22 @@ public class Config {
         return this;
     }
 
+    public boolean isUseThreadClassLoader() {
+        return useThreadClassLoader;
+    }
+
+    /**
+     * Defines whether to supply Thread ContextClassLoader to Codec.
+     * Usage of Thread.getContextClassLoader() may resolve ClassNotFoundException error.
+     * For example, this error arise if Redisson is used in both Tomcat and deployed application.
+     * <p>
+     * Default is <code>true</code>.
+     *
+     * @param useThreadClassLoader <code>true</code> if Thread ContextClassLoader is used, <code>false</code> otherwise.
+     * @return config
+     */
+    public Config setUseThreadClassLoader(boolean useThreadClassLoader) {
+        this.useThreadClassLoader = useThreadClassLoader;
+        return this;
+    }
 }

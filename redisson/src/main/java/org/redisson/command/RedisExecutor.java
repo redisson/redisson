@@ -651,6 +651,10 @@ public class RedisExecutor<V, R> {
 
     protected Codec getCodec(Codec codec) {
         if (codec == null) {
+            return null;
+        }
+
+        if (!connectionManager.getCfg().isUseThreadClassLoader()) {
             return codec;
         }
 
