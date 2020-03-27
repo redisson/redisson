@@ -530,7 +530,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     @Override
     public List<byte[]> mGet(byte[]... keys) {
-        return write(keys[0], ByteArrayCodec.INSTANCE, MGET, Arrays.asList(keys).toArray());
+        return read(keys[0], ByteArrayCodec.INSTANCE, MGET, Arrays.asList(keys).toArray());
     }
 
     @Override
