@@ -344,7 +344,7 @@ public class RedissonSession extends StandardSession {
             
             if (updateMode == UpdateMode.AFTER_REQUEST) {
                 if (!removedAttributes.isEmpty()) {
-                    topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), removedAttributes));
+                    topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), new HashSet<>(removedAttributes)));
                 }
             }
         }
