@@ -41,6 +41,7 @@ import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
+import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
@@ -67,6 +68,7 @@ public class RedissonSessionManager extends ManagerBase {
 
     private String keyPrefix = "";
     private boolean broadcastSessionEvents = false;
+    private boolean loadSessionAttributes = false;
 
     private final String nodeId = UUID.randomUUID().toString();
 
@@ -95,7 +97,15 @@ public class RedissonSessionManager extends ManagerBase {
     public void setBroadcastSessionEvents(boolean replicateSessionEvents) {
         this.broadcastSessionEvents = replicateSessionEvents;
     }
-    
+
+    public boolean isLoadSessionAttributes() {
+        return loadSessionAttributes;
+    }
+
+    public void setLoadSessionAttributes(boolean loadSessionAttributes) {
+        this.loadSessionAttributes = loadSessionAttributes;
+    }
+
     public String getReadMode() {
         return readMode.toString();
     }
@@ -168,10 +178,21 @@ public class RedissonSessionManager extends ManagerBase {
         final String name = keyPrefix + separator + "redisson:tomcat_session_updates:" + getContext().getName();
         return redisson.getTopic(name);
     }
-    
+
     @Override
     public Session findSession(String id) throws IOException {
-        return findSession(id, true);
+        Session session = findSession(id, true);
+
+        if(loadSessionAttributes && session instanceof RedissonSession) {
+            try {
+                ((RedissonSession)session).loadAttributes();
+            } catch (RedisException e) {
+                log.error("Session attributes load error", e);
+                return null;
+            }
+        }
+
+        return session;
     }
     
     private Session findSession(String id, boolean notify) throws IOException {

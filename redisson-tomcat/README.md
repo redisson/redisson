@@ -19,7 +19,7 @@ Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tom
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	 configPath="${catalina.base}/redisson.conf" 
-	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"/>
+	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false" loadSessionAttributes="false"/>
    ```
    `readMode` - read Session attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
@@ -27,6 +27,8 @@ Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tom
    <br/>
 
    `broadcastSessionEvents` - if `true` then `sessionCreated` and `sessionDestroyed` events are broadcasted across all Tomcat instances and cause all registered HttpSessionListeners to be triggered. Default is `false`.
+   
+   `loadSessionAttributes` - if `true` then when `findSession` method called, all attributes will be loaded from Redis. If some deserialization issues happened, then exception will be thrown. Default is `false`.
 
    `updateMode` - Session attributes update mode. Two modes are available:
    * `DEFAULT` - session attributes are stored into Redis only through `Session.setAttribute` method. Default mode.

@@ -5,6 +5,7 @@
 	         configPath="${catalina.base}/src/test/webapp/WEB-INF/redisson.yaml"
 	         readMode="REDIS"
 	         updateMode="AFTER_REQUEST"
-	         broadcastSessionEvents="true"/>
+	         broadcastSessionEvents="true"
+	         loadSessionAttributes="true" />
 
 </Context>

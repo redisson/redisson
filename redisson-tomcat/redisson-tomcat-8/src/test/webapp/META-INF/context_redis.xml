@@ -4,6 +4,7 @@
 	<Manager className="org.redisson.tomcat.RedissonSessionManager"
 	         configPath="${catalina.base}/src/test/webapp/WEB-INF/redisson.yaml"
 	         readMode="REDIS"
-	         broadcastSessionEvents="true"/>
+	         broadcastSessionEvents="true"
+			 loadSessionAttributes="true"/>
 
 </Context>

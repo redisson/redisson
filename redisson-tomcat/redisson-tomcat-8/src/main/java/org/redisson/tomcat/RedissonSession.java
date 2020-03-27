@@ -106,21 +106,12 @@ public class RedissonSession extends StandardSession {
 
             return map.get(name);
         } else {
-            if (!loaded) {
-                synchronized (this) {
-                    if (!loaded) {
-                        Map<String, Object> storedAttrs = map.readAllMap();
-                        
-                        load(storedAttrs);
-                        loaded = true;
-                    }
-                }
-            }
+            loadAttributes();
         }
 
         return super.getAttribute(name);
     }
-    
+
     @Override
     public Enumeration<String> getAttributeNames() {
         if (readMode == ReadMode.REDIS) {
@@ -395,5 +386,17 @@ public class RedissonSession extends StandardSession {
         super.recycle();
         map = null;
     }
-    
+
+    public void loadAttributes() {
+        if (!loaded) {
+            synchronized (this) {
+                if (!loaded) {
+                    Map<String, Object> storedAttrs = map.readAllMap();
+
+                    load(storedAttrs);
+                    loaded = true;
+                }
+            }
+        }
+    }
 }
