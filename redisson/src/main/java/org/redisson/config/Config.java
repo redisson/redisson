@@ -718,6 +718,7 @@ public class Config {
      * @param decodeInExecutor - <code>true</code> to use executor's threads, <code>false</code> to use netty's threads.
      * @return config
      */
+    @Deprecated
     public Config setDecodeInExecutor(boolean decodeInExecutor) {
         this.decodeInExecutor = decodeInExecutor;
         return this;

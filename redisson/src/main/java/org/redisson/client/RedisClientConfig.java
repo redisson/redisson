@@ -278,6 +278,7 @@ public class RedisClientConfig {
     public boolean isDecodeInExecutor() {
         return decodeInExecutor;
     }
+    @Deprecated
     public RedisClientConfig setDecodeInExecutor(boolean decodeInExecutor) {
         this.decodeInExecutor = decodeInExecutor;
         return this;
