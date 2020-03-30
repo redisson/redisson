@@ -224,7 +224,7 @@ public class RedissonTransaction implements RTransaction {
                 return;
             }
                             
-            RFuture<List<?>> transactionFuture = transactionExecutor.executeAsync();
+            RFuture<BatchResult<?>> transactionFuture = transactionExecutor.executeAsync();
             transactionFuture.onComplete((r, exc) -> {
                 if (exc != null) {
                     result.tryFailure(new TransactionException("Unable to execute transaction", exc));
@@ -581,7 +581,7 @@ public class RedissonTransaction implements RTransaction {
         }
 
         RPromise<Void> result = new RedissonPromise<>();
-        RFuture<List<?>> future = executorService.executeAsync();
+        RFuture<BatchResult<?>> future = executorService.executeAsync();
         future.onComplete((res, e) -> {
             if (e != null) {
                 result.tryFailure(new TransactionException("Unable to rollback transaction", e));

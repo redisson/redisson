@@ -173,7 +173,7 @@ public class CommandBatchService extends CommandAsyncService {
         return promise;
     }
     
-    public RFuture<List<?>> executeAsync() {
+    public RFuture<BatchResult<?>> executeAsync() {
         return executeAsync(BatchOptions.defaults());
     }
     
@@ -184,7 +184,7 @@ public class CommandBatchService extends CommandAsyncService {
         
         if (commands.isEmpty()) {
             executed.set(true);
-            BatchResult<Object> result = new BatchResult<Object>(Collections.emptyList(), 0);
+            BatchResult<Object> result = new BatchResult<>(Collections.emptyList(), 0);
             return (RFuture<R>) RedissonPromise.newSucceededFuture(result);
         }
         

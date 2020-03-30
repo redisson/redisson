@@ -31,10 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 import org.redisson.SlotCallback;
-import org.redisson.api.RFuture;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
+import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
@@ -654,9 +651,9 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         RPromise<R> result = new RedissonPromise<>();
         AtomicReference<Throwable> failed = new AtomicReference<>();
         AtomicLong executed = new AtomicLong(range2key.size());
-        BiConsumer<List<?>, Throwable> listener = (t, u) -> {
+        BiConsumer<BatchResult<?>, Throwable> listener = (t, u) -> {
             if (u == null) {
-                for (T res : (List<T>) t) {
+                for (T res : (List<T>) t.getResponses()) {
                     if (res != null) {
                         callback.onSlotResult(res);
                     }
@@ -690,7 +687,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                 }
             }
 
-            RFuture<List<?>> future = executorService.executeAsync();
+            RFuture<BatchResult<?>> future = executorService.executeAsync();
             future.onComplete(listener);
         }
 
