@@ -113,4 +113,16 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
      */
     void set(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * @see org.redisson.api.listener.SetObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    int addListener(ObjectListener listener);
+
 }

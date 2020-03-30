@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -32,7 +33,6 @@ import org.redisson.api.ObjectListener;
 import org.redisson.api.RFuture;
 import org.redisson.api.RObject;
 import org.redisson.api.RPatternTopic;
-import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -398,30 +398,32 @@ public abstract class RedissonObject implements RObject {
     public RFuture<Void> restoreAndReplaceAsync(byte[] state) {
         return restoreAndReplaceAsync(state, 0, null);
     }
-    
+
+    protected final <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+        return topic.addListener(String.class, (pattern, channel, msg) -> {
+            if (msg.equals(getName())) {
+                consumer.accept(listener, msg);
+            }
+        });
+    }
+
+    protected final <T extends ObjectListener> RFuture<Integer> addListenerAsync(String name, T listener, BiConsumer<T, String> consumer) {
+        RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
+        return topic.addListenerAsync(String.class, (pattern, channel, msg) -> {
+            if (msg.equals(getName())) {
+                consumer.accept(listener, msg);
+            }
+        });
+    }
+
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-            return topic.addListener(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    if (msg.equals(getName())) {
-                        ((ExpiredObjectListener) listener).onExpired(msg);
-                    }
-                }
-            });
+            return addListener("__keyevent@*:expired", (ExpiredObjectListener)listener, ExpiredObjectListener::onExpired);
         }
         if (listener instanceof DeletedObjectListener) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-            return topic.addListener(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    if (msg.equals(getName())) {
-                        ((DeletedObjectListener) listener).onDeleted(msg);
-                    }
-                }
-            });
+            return addListener("__keyevent@*:del", (DeletedObjectListener)listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
     };
@@ -429,26 +431,10 @@ public abstract class RedissonObject implements RObject {
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
-            return topic.addListenerAsync(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    if (msg.equals(getName())) {
-                        ((ExpiredObjectListener) listener).onExpired(msg);
-                    }
-                }
-            });
+            return addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener)listener, ExpiredObjectListener::onExpired);
         }
         if (listener instanceof DeletedObjectListener) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
-            return topic.addListenerAsync(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    if (msg.equals(getName())) {
-                        ((DeletedObjectListener) listener).onDeleted(msg);
-                    }
-                }
-            });
+            return addListenerAsync("__keyevent@*:del", (DeletedObjectListener)listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
     }
@@ -465,14 +451,17 @@ public abstract class RedissonObject implements RObject {
     @Override
     public RFuture<Void> removeListenerAsync(int listenerId) {
         RPromise<Void> result = new RedissonPromise<>();
-        CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
-        
+        CountableListener<Void> listener = new CountableListener<>(result, null, 2);
+        removeListenersAsync(listenerId, listener);
+        return result;
+    }
+
+    protected final void removeListenersAsync(int listenerId, CountableListener<Void> listener) {
         RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:expired");
         expiredTopic.removeListenerAsync(listenerId).onComplete(listener);
-        
+
         RPatternTopic deletedTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:del");
         deletedTopic.removeListenerAsync(listenerId).onComplete(listener);
-        return result;
     }
 
 }

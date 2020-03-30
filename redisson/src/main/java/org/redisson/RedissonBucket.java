@@ -20,10 +20,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
 import org.redisson.api.listener.PatternMessageListener;
+import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.misc.CountableListener;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
 
 /**
  * 
@@ -200,17 +204,36 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
-            RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
-            return topic.addListener(String.class, new PatternMessageListener<String>() {
-                @Override
-                public void onMessage(CharSequence pattern, CharSequence channel, String msg) {
-                    if (msg.equals(getName())) {
-                        ((SetObjectListener) listener).onSet(msg);
-                    }
-                }
-            });
+            return addListener("__keyevent@*:set", (SetObjectListener)listener, SetObjectListener::onSet);
         }
         return super.addListener(listener);
     };
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof SetObjectListener) {
+            return addListenerAsync("__keyevent@*:set", (SetObjectListener)listener, SetObjectListener::onSet);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
+        expiredTopic.removeListener(listenerId);
+
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RPromise<Void> result = new RedissonPromise<>();
+        CountableListener<Void> listener = new CountableListener<>(result, null, 3);
+
+        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:set");
+        setTopic.removeListenerAsync(listenerId).onComplete(listener);
+        removeListenersAsync(listenerId, listener);
+        return result;
+    }
 
 }

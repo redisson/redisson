@@ -15,6 +15,7 @@ import org.redisson.RedisRunner.FailedToStartRedisException;
 import org.redisson.RedisRunner.KEYSPACE_EVENTS_OPTIONS;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
+import org.redisson.api.listener.SetObjectListener;
 import org.redisson.config.Config;
 
 public class RedissonBucketTest extends BaseTest {
@@ -79,8 +80,7 @@ public class RedissonBucketTest extends BaseTest {
         assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
 
         redisson.shutdown();
-        instance.stop();
-    }
+        instance.stop();    }
 
     
     @Test

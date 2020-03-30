@@ -115,4 +115,16 @@ public interface RBucketAsync<V> extends RExpirableAsync {
      */
     RFuture<Void> setAsync(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Adds object event listener
+     *
+     * @see org.redisson.api.ExpiredObjectListener
+     * @see org.redisson.api.DeletedObjectListener
+     * @see org.redisson.api.listener.SetObjectListener
+     *
+     * @param listener - object event listener
+     * @return listener id
+     */
+    RFuture<Integer> addListenerAsync(ObjectListener listener);
+
 }

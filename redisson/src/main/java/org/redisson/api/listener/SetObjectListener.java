@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.redisson.api;
+package org.redisson.api.listener;
+
+import org.redisson.api.ObjectListener;
 
 /**
  * Redisson Object Event listener for <b>set</b> event published by Redis.
