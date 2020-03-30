@@ -15,13 +15,12 @@
  */
 package org.redisson;
 
-import org.redisson.api.RFuture;
-import org.redisson.api.RList;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
+import org.redisson.api.listener.*;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.Codec;
+import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
@@ -30,6 +29,7 @@ import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonListIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
@@ -851,5 +851,91 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
     public List<V> range(int fromIndex, int toIndex) {
         return get(rangeAsync(fromIndex, toIndex));
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof ListAddListener) {
+            return addListener("__keyevent@*:rpush", (ListAddListener) listener, ListAddListener::onListAdd);
+        }
+        if (listener instanceof ListRemoveListener) {
+            return addListener("__keyevent@*:lrem", (ListRemoveListener) listener, ListRemoveListener::onListRemove);
+        }
+        if (listener instanceof ListTrimListener) {
+            return addListener("__keyevent@*:ltrim", (ListTrimListener) listener, ListTrimListener::onListTrim);
+        }
+        if (listener instanceof ListSetListener) {
+            return addListener("__keyevent@*:lset", (ListSetListener) listener, ListSetListener::onListSet);
+        }
+        if (listener instanceof ListInsertListener) {
+            return addListener("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
+        }
+        return super.addListener(listener);
+    };
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ListAddListener) {
+            return addListenerAsync("__keyevent@*:rpush", (ListAddListener) listener, ListAddListener::onListAdd);
+        }
+        if (listener instanceof ListRemoveListener) {
+            return addListenerAsync("__keyevent@*:lrem", (ListRemoveListener) listener, ListRemoveListener::onListRemove);
+        }
+        if (listener instanceof ListTrimListener) {
+            return addListenerAsync("__keyevent@*:ltrim", (ListTrimListener) listener, ListTrimListener::onListTrim);
+        }
+        if (listener instanceof ListSetListener) {
+            return addListenerAsync("__keyevent@*:lset", (ListSetListener) listener, ListSetListener::onListSet);
+        }
+        if (listener instanceof ListInsertListener) {
+            return addListenerAsync("__keyevent@*:linsert", (ListInsertListener) listener, ListInsertListener::onListInsert);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
+        addTopic.removeListener(listenerId);
+
+        RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
+        remTopic.removeListener(listenerId);
+
+        RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
+        trimTopic.removeListener(listenerId);
+
+        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
+        setTopic.removeListener(listenerId);
+
+        RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
+        insertTopic.removeListener(listenerId);
+
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RPromise<Void> result = new RedissonPromise<>();
+        CountableListener<Void> listener = new CountableListener<>(result, null, 5);
+
+        RPatternTopic addTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:rpush");
+        addTopic.removeListenerAsync(listenerId).onComplete(listener);
+
+        RPatternTopic remTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lrem");
+        remTopic.removeListenerAsync(listenerId).onComplete(listener);
+
+        RPatternTopic trimTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:ltrim");
+        trimTopic.removeListenerAsync(listenerId).onComplete(listener);
+
+        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:lset");
+        setTopic.removeListenerAsync(listenerId).onComplete(listener);
+
+        RPatternTopic insertTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:linsert");
+        insertTopic.removeListenerAsync(listenerId).onComplete(listener);
+
+        removeListenersAsync(listenerId, listener);
+
+        return result;
+    }
+
 
 }
