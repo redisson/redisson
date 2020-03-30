@@ -420,10 +420,10 @@ public abstract class RedissonObject implements RObject {
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
-            return addListener("__keyevent@*:expired", (ExpiredObjectListener)listener, ExpiredObjectListener::onExpired);
+            return addListener("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired);
         }
         if (listener instanceof DeletedObjectListener) {
-            return addListener("__keyevent@*:del", (DeletedObjectListener)listener, DeletedObjectListener::onDeleted);
+            return addListener("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
     };
@@ -431,10 +431,10 @@ public abstract class RedissonObject implements RObject {
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof ExpiredObjectListener) {
-            return addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener)listener, ExpiredObjectListener::onExpired);
+            return addListenerAsync("__keyevent@*:expired", (ExpiredObjectListener) listener, ExpiredObjectListener::onExpired);
         }
         if (listener instanceof DeletedObjectListener) {
-            return addListenerAsync("__keyevent@*:del", (DeletedObjectListener)listener, DeletedObjectListener::onDeleted);
+            return addListenerAsync("__keyevent@*:del", (DeletedObjectListener) listener, DeletedObjectListener::onDeleted);
         }
         throw new IllegalArgumentException();
     }

@@ -15,11 +15,10 @@
  */
 package org.redisson;
 
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.*;
-import org.redisson.api.listener.PatternMessageListener;
+import org.redisson.api.ObjectListener;
+import org.redisson.api.RBucket;
+import org.redisson.api.RFuture;
+import org.redisson.api.RPatternTopic;
 import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -28,6 +27,9 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
+
+import java.util.Collections;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -204,7 +206,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public int addListener(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
-            return addListener("__keyevent@*:set", (SetObjectListener)listener, SetObjectListener::onSet);
+            return addListener("__keyevent@*:set", (SetObjectListener) listener, SetObjectListener::onSet);
         }
         return super.addListener(listener);
     };
@@ -212,7 +214,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public RFuture<Integer> addListenerAsync(ObjectListener listener) {
         if (listener instanceof SetObjectListener) {
-            return addListenerAsync("__keyevent@*:set", (SetObjectListener)listener, SetObjectListener::onSet);
+            return addListenerAsync("__keyevent@*:set", (SetObjectListener) listener, SetObjectListener::onSet);
         }
         return super.addListenerAsync(listener);
     }
