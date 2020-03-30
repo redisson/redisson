@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RedissonClient;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.api.redisnode.*;
 import org.redisson.client.protocol.Time;
 import org.redisson.cluster.ClusterSlotRange;
@@ -26,13 +27,13 @@ public class RedissonRedisNodesTest extends BaseTest {
 
     @Test
     public void testNode() {
-        RedisSingle nodes = redisson.getRedisNodes(RedisSingle.class);
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         assertThat(nodes.getInstance().info(RedisNode.InfoSection.ALL)).isNotEmpty();
     }
 
     @Test
     public void testInfo() {
-        RedisSingle nodes = redisson.getRedisNodes(RedisSingle.class);
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         RedisMaster node = nodes.getInstance();
 
         Map<String, String> allResponse = node.info(RedisNode.InfoSection.ALL);
@@ -74,7 +75,7 @@ public class RedissonRedisNodesTest extends BaseTest {
 
     @Test
     public void testTime() {
-        RedisSingle nodes = redisson.getRedisNodes(RedisSingle.class);
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         Time time = nodes.getInstance().time();
 
         assertThat(time.getSeconds()).isGreaterThan(time.getMicroseconds());
@@ -130,7 +131,7 @@ public class RedissonRedisNodesTest extends BaseTest {
         long t = System.currentTimeMillis();
         RedissonClient redisson = Redisson.create(config);
 
-        RedisSentinelMasterSlave nodes = redisson.getRedisNodes(RedisSentinelMasterSlave.class);
+        RedisSentinelMasterSlave nodes = redisson.getRedisNodes(RedisNodes.SENTINEL_MASTER_SLAVE);
         RedisSentinel sentinel = nodes.getSentinels().iterator().next();
         sentinel.failover("myMaster");
 
@@ -168,7 +169,7 @@ public class RedissonRedisNodesTest extends BaseTest {
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
-        RedisCluster nodes = redisson.getRedisNodes(RedisCluster.class);
+        RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
         assertThat(nodes.getMaster("redis://127.0.0.1:6890")).isNotNull();
         assertThat(nodes.getMaster("redis://127.0.0.1:6899")).isNull();
         assertThat(nodes.getMasters()).hasSize(3);
@@ -252,7 +253,7 @@ public class RedissonRedisNodesTest extends BaseTest {
         long t = System.currentTimeMillis();
         RedissonClient redisson = Redisson.create(config);
 
-        RedisSentinelMasterSlave nodes = redisson.getRedisNodes(RedisSentinelMasterSlave.class);
+        RedisSentinelMasterSlave nodes = redisson.getRedisNodes(RedisNodes.SENTINEL_MASTER_SLAVE);
         assertThat(nodes.getSentinels()).hasSize(3);
         assertThat(nodes.getSlaves()).hasSize(2);
         assertThat(nodes.getMaster()).isNotNull();
@@ -311,7 +312,7 @@ public class RedissonRedisNodesTest extends BaseTest {
         .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
         RedissonClient redisson = Redisson.create(config);
 
-        RedisCluster nodes = redisson.getRedisNodes(RedisCluster.class);
+        RedisCluster nodes = redisson.getRedisNodes(RedisNodes.CLUSTER);
         assertThat(nodes.getMasters()).hasSize(3);
         for (RedisClusterMaster node : nodes.getMasters()) {
             assertThat(node.info(RedisNode.InfoSection.ALL)).isNotEmpty();
@@ -327,7 +328,7 @@ public class RedissonRedisNodesTest extends BaseTest {
 
     @Test
     public void testPing() {
-        RedisSingle nodes = redisson.getRedisNodes(RedisSingle.class);
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         RedisMaster node = nodes.getInstance();
 
         Assert.assertTrue(node.ping());

@@ -10,6 +10,7 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
 import org.redisson.api.redisnode.RedisCluster;
 import org.redisson.api.redisnode.RedisClusterMaster;
+import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.codec.StringCodec;
@@ -557,7 +558,7 @@ public class RedissonTest {
         List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
 
         Set<InetSocketAddress> oldMasters = new HashSet<>();
-        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
         for (RedisClusterMaster clusterNode : masterNodes) {
             oldMasters.add(clusterNode.getAddr());
         }
@@ -574,7 +575,7 @@ public class RedissonTest {
         Thread.sleep(TimeUnit.SECONDS.toMillis(30));
         
         RedisProcess newMaster = null;
-        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
         for (RedisClusterMaster clusterNode : newMasterNodes) {
             if (!oldMasters.contains(clusterNode.getAddr())) {
                 newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
@@ -649,7 +650,7 @@ public class RedissonTest {
         t.join(1000);
 
         Set<InetSocketAddress> oldMasters = new HashSet<>();
-        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        Collection<RedisClusterMaster> masterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
         for (RedisClusterMaster clusterNode : masterNodes) {
             oldMasters.add(clusterNode.getAddr());
         }
@@ -660,7 +661,7 @@ public class RedissonTest {
         Thread.sleep(TimeUnit.SECONDS.toMillis(90));
         
         RedisProcess newMaster = null;
-        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisCluster.class).getMasters();
+        Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
         for (RedisClusterMaster clusterNode : newMasterNodes) {
             if (!oldMasters.contains(clusterNode.getAddr())) {
                 newMaster = process.getNodes().stream().filter(x -> x.getRedisServerPort() == clusterNode.getAddr().getPort()).findFirst().get();
