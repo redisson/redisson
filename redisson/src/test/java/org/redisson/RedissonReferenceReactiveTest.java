@@ -58,7 +58,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         batch.getBucket("b1").get();
         batch.getBucket("b2").get();
         batch.getBucket("b3").get();
-        List<RBucketReactive> result = (List<RBucketReactive>) sync(batch.execute());
+        List<RBucketReactive> result = (List<RBucketReactive>) sync(batch.execute()).getResponses();
         assertEquals("b2", result.get(0).getName());
         assertEquals("b3", result.get(1).getName());
         assertEquals("b1", result.get(2).getName());
@@ -80,7 +80,7 @@ public class RedissonReferenceReactiveTest extends BaseReactiveTest {
         b.getBucket("b1").getAsync();
         b.getBucket("b2").getAsync();
         b.getBucket("b3").getAsync();
-        List<RBucket> result = (List<RBucket>)b.execute();
+        List<RBucket> result = (List<RBucket>)b.execute().getResponses();
         assertEquals("b2", result.get(0).getName());
         assertEquals("b3", result.get(1).getName());
         assertEquals("b1", result.get(2).getName());

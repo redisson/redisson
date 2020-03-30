@@ -350,7 +350,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             asyncServiceWithoutResult.executeRunnable(createTaskParameters(task));
         }
         
-        List<Boolean> result = (List<Boolean>) executorRemoteService.executeAdd();
+        List<Boolean> result = executorRemoteService.executeAdd();
         if (!result.get(0)) {
             throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
         }
@@ -613,7 +613,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             result.add(executorFuture);
         }
         
-        List<Boolean> addResult = (List<Boolean>) executorRemoteService.executeAdd();
+        List<Boolean> addResult = executorRemoteService.executeAdd();
         if (!addResult.get(0)) {
             throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
         }
@@ -737,7 +737,7 @@ public class RedissonExecutorService implements RScheduledExecutorService {
             result.add(executorFuture);
         }
         
-        List<Boolean> addResult = (List<Boolean>) executorRemoteService.executeAdd();
+        List<Boolean> addResult = executorRemoteService.executeAdd();
         if (!addResult.get(0)) {
             throw new RejectedExecutionException("Tasks have been rejected. ExecutorService is in shutdown state");
         }

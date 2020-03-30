@@ -45,7 +45,7 @@ public class TasksBatchService extends TasksService {
     }
 
     public List<Boolean> executeAdd() {
-        return (List<Boolean>) batchCommandService.execute();
+        return (List<Boolean>) batchCommandService.execute().getResponses();
     }
     
     public RFuture<List<Boolean>> executeAddAsync() {
