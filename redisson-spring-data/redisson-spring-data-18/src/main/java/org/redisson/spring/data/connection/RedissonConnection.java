@@ -273,11 +273,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         final AtomicReference<Throwable> failed = new AtomicReference<Throwable>();
         final AtomicLong count = new AtomicLong();
         final AtomicLong executed = new AtomicLong(range2key.size());
-        BiConsumer<List<?>, Throwable> listener = new BiConsumer<List<?>, Throwable>() {
+        BiConsumer<BatchResult<?>, Throwable> listener = new BiConsumer<BatchResult<?>, Throwable>() {
             @Override
-            public void accept(List<?> r, Throwable u) {
+            public void accept(BatchResult<?> r, Throwable u) {
                 if (u == null) {    
-                    List<Long> result = (List<Long>) r;
+                    List<Long> result = (List<Long>) r.getResponses();
                     for (Long res : result) {
                         if (res != null) {
                             count.addAndGet(res);
@@ -297,7 +297,7 @@ public class RedissonConnection extends AbstractRedisConnection {
                 es.writeAsync(entry.getKey(), null, command, key);
             }
 
-            RFuture<List<?>> future = es.executeAsync();
+            RFuture<BatchResult<?>> future = es.executeAsync();
             future.onComplete(listener);
         }
 
