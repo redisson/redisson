@@ -15,19 +15,29 @@
  */
 package org.redisson.api.redisnode;
 
+import java.util.concurrent.TimeUnit;
+
 /**
- * Redis Single node API interface
+ * Base Redis nodes API interface
  *
  * @author Nikita Koksharov
  *
  */
-public interface RedisSingle extends BaseRedisNodes {
+public interface BaseRedisNodes {
 
     /**
-     * Returns Redis node
+     * Ping all Redis nodes.
+     * Default timeout per Redis node is 1000 milliseconds
      *
-     * @return Redis node
+     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
      */
-    RedisMaster getInstance();
+    boolean pingAll();
+
+    /**
+     * Ping all Redis nodes with specified timeout per node
+     *
+     * @return <code>true</code> if all nodes replied "PONG", <code>false</code> in other case.
+     */
+    boolean pingAll(long timeout, TimeUnit timeUnit);
 
 }

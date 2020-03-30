@@ -20,10 +20,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.*;
-import org.redisson.api.redisnode.RedisCluster;
-import org.redisson.api.redisnode.RedisMasterSlave;
-import org.redisson.api.redisnode.RedisSentinelMasterSlave;
-import org.redisson.api.redisnode.RedisSingle;
+import org.redisson.api.redisnode.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandExecutor;
 import org.redisson.config.Config;
@@ -646,26 +643,26 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
-    public <T extends org.redisson.api.redisnode.RedisNodes> T getRedisNodes(Class<T> clazz) {
-        if (clazz == RedisSingle.class) {
+    public <T extends BaseRedisNodes> T getRedisNodes(org.redisson.api.redisnode.RedisNodes<T> nodes) {
+        if (nodes.getClazz() == RedisSingle.class) {
             if (config.isSentinelConfig() || config.isClusterConfig()) {
                 throw new IllegalArgumentException("Can't be used in non Redis single configuration");
             }
             return (T) new RedissonSingleNode(connectionManager);
         }
-        if (clazz == RedisCluster.class) {
+        if (nodes.getClazz() == RedisCluster.class) {
             if (!config.isClusterConfig()) {
                 throw new IllegalArgumentException("Can't be used in non Redis Cluster configuration");
             }
             return (T) new RedissonClusterNodes(connectionManager);
         }
-        if (clazz == RedisSentinelMasterSlave.class) {
+        if (nodes.getClazz() == RedisSentinelMasterSlave.class) {
             if (!config.isSentinelConfig()) {
                 throw new IllegalArgumentException("Can't be used in non Redis Sentinel configuration");
             }
             return (T) new RedissonSentinelMasterSlaveNodes(connectionManager);
         }
-        if (clazz == RedisMasterSlave.class) {
+        if (nodes.getClazz() == RedisMasterSlave.class) {
             if (config.isSentinelConfig() || config.isClusterConfig()) {
                 throw new IllegalArgumentException("Can't be used in non Redis Master Slave configuration");
             }

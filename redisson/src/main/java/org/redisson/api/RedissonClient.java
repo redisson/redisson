@@ -15,11 +15,12 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
+import org.redisson.api.redisnode.BaseRedisNodes;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Main Redisson interface for access
@@ -1078,16 +1079,16 @@ public interface RedissonClient {
     /**
      * Returns API to manage Redis nodes
      *
-     * @see org.redisson.api.redisnode.RedisCluster
-     * @see org.redisson.api.redisnode.RedisMasterSlave
-     * @see org.redisson.api.redisnode.RedisSentinelMasterSlave
-     * @see org.redisson.api.redisnode.RedisSingle
+     * @see RedisNodes#CLUSTER
+     * @see RedisNodes#MASTER_SLAVE
+     * @see RedisNodes#SENTINEL_MASTER_SLAVE
+     * @see RedisNodes#SINGLE
      *
-     * @param clazz Redis nodes API class
+     * @param nodes Redis nodes API class
      * @param <T> type of Redis nodes API
      * @return Redis nodes API object
      */
-    <T extends RedisNodes> T getRedisNodes(Class<T> clazz);
+    <T extends BaseRedisNodes> T getRedisNodes(RedisNodes<T> nodes);
 
     /*
      * Use getRedisNodes() method instead

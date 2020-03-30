@@ -17,7 +17,7 @@ package org.redisson.redisnode;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
-import org.redisson.api.redisnode.RedisNodes;
+import org.redisson.api.redisnode.BaseRedisNodes;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ClientConnectionsEntry;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public class RedissonBaseNodes implements RedisNodes {
+public class RedissonBaseNodes implements BaseRedisNodes {
 
     ConnectionManager connectionManager;
 

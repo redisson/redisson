@@ -23,7 +23,7 @@ import java.util.Collection;
  * @author Nikita Koksharov
  *
  */
-public interface RedisCluster extends RedisNodes {
+public interface RedisCluster extends BaseRedisNodes {
 
     /**
      * Returns collection of Redis Master nodes belongs to this Redis Cluster.

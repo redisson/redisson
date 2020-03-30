@@ -23,7 +23,7 @@ import java.util.Collection;
  * @author Nikita Koksharov
  *
  */
-public interface RedisMasterSlave extends RedisNodes {
+public interface RedisMasterSlave extends BaseRedisNodes {
 
     /**
      * Returns Redis Master node belong to this Redis setup.
