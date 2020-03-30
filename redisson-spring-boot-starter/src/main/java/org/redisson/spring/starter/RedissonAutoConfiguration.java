@@ -47,6 +47,7 @@ import org.springframework.util.ReflectionUtils;
 /**
  * 
  * @author Nikita Koksharov
+ * @author Nikos Kakavas (https://github.com/nikakis)
  *
  */
 @Configuration
@@ -54,6 +55,9 @@ import org.springframework.util.ReflectionUtils;
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
+
+    @Autowired(required = false)
+    private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
 
     @Autowired
     private RedissonProperties redissonProperties;
@@ -160,7 +164,11 @@ public class RedissonAutoConfiguration {
                 .setDatabase(redisProperties.getDatabase())
                 .setPassword(redisProperties.getPassword());
         }
-        
+        if (redissonAutoConfigurationCustomizers != null) {
+            for (RedissonAutoConfigurationCustomizer customizer : redissonAutoConfigurationCustomizers) {
+                customizer.customize(config);
+            }
+        }
         return Redisson.create(config);
     }
 
