@@ -191,7 +191,7 @@ public class FstCodec extends BaseCodec {
     }
 
     private static FSTConfiguration copy(ClassLoader classLoader, FstCodec codec) {
-        FSTConfiguration def = FSTConfiguration.createDefaultConfiguration();
+        FSTConfiguration def = codec.config.deriveConfiguration();
         def.setClassLoader(classLoader);
         def.setCoderSpecific(codec.config.getCoderSpecific());
         def.setCrossPlatform(codec.config.isCrossPlatform());
