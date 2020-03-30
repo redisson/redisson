@@ -239,9 +239,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
+            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING_SINGLE, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_SINGLE, params.toArray());
     }
     
     @Override
