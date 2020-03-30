@@ -168,7 +168,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         params.add("JUSTID");
         
-        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
     }
     
     @Override
@@ -184,7 +184,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             params.add(id.toString());
         }
         
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XCLAIM, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XCLAIM, params.toArray());
     }
 
     @Override
@@ -417,9 +417,9 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         }
 
         if (timeout > 0) {
-            return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
+            return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP_BLOCKING, params.toArray());
         }
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XREADGROUP, params.toArray());
     }
 
 
