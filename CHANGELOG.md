@@ -4,6 +4,33 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 30-Mar-2020 - 3.12.4 released
+
+Feature - cacheProvider setting added to `LocalCacheConfiguration`, `ClusteredLocalCachedMapOptions`, `LocalCacheConfiguration` and Hibernate Local Cache regions  
+Feature - `NettyHook` object added  
+Feature - `LocalCachedMapOptions.storeMode` setting added  
+Feature - `nameMapper` setting added to `DropwizardMeterRegistryProvider`  
+Feature - `username` parameter added  
+Feature - `RedissonClient.getRedisNodes()` method added  
+Feature - `Config.useThreadClassLoader` setting added  
+Feature - `ListAddListener`, `ListInsertListener`, `ListRemoveListener`, `ListSetListener`, `ListTrimListener` added to `RList` object 
+
+Improvement - `MarshallingCodec` performance improvements  
+
+Fixed - RedissonSessionRepository doesn't use map's codec during changeSessionId method execution  
+Fixed - use `FSTConfiguration#deriveConfiguration` to preserve ConfType (thanks to Chris Eager)  
+Fixed - MGET executed on Spring Data connection should use SLAVE if readMode = SLAVE (thanks to Gil Milow)  
+Fixed - `XREADGROUP` and `XCLAIM` commands should be executed on Redis master  
+Fixed - `JsonJacksonCodec` unable to serialize removed attributes of Tomcat Session  
+Fixed - "response has been skipped due to timeout" error if pingConnectionInterval setting set and blocking command executed  
+Fixed - semaphore used during local cache clearing process isn't deleted  
+Fixed - `RPatternTopicRx()`, `RPatternTopicReactive()`, `RPatternTopic.addListenerAsync()` methods are don't work  
+Fixed - cache entry can't be updated if `JCache` instance created with `CreatedExpiryPolicy`  
+Fixed - `LocalCachedJCache.get()` method throws NPE  
+Fixed - RedisURI throws MalformedURLException for IPv6 hosts  
+Fixed - `LocalCachedJCache.removeAll()` and `LocalCachedJCache.clear()` methods are don't work  
+
+
 ### 28-Feb-2020 - 3.12.3 released
 
 LZ4Codec, SnappyCodec, SnappyCodecV2 codecs now use Kryo5Codec by default  
