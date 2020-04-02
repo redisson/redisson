@@ -121,7 +121,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 bs.setAsync(indexes[i]);
             }
             try {
-                List<Boolean> result = (List<Boolean>) executorService.execute();
+                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
 
                 for (Boolean val : result.subList(1, result.size()-1)) {
                     if (!val) {
@@ -172,7 +172,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 bs.getAsync(indexes[i]);
             }
             try {
-                List<Boolean> result = (List<Boolean>) executorService.execute();
+                List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
 
                 for (Boolean val : result.subList(1, result.size()-1)) {
                     if (!val) {
