@@ -21,6 +21,7 @@ import org.redisson.api.BatchOptions;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
 import org.redisson.client.RedisException;
+import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommand.ValueType;
@@ -36,10 +37,7 @@ import org.redisson.pubsub.LockPubSub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -312,8 +310,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     protected RFuture<Boolean> renewExpirationAsync(long threadId) {
-        CommandBatchService executorService = createCommandBatchService();
-        RFuture<Boolean> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                         "return 1; " +
@@ -321,8 +318,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         "return 0;",
                 Collections.singletonList(getName()),
                 internalLockLeaseTime, getLockName(threadId));
-        executorService.executeAsync();
-        return result;
     }
 
     void cancelExpirationRenewal(Long threadId) {
@@ -344,11 +339,17 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         }
     }
 
+    protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
+        executorService.executeAsync();
+        return result;
+    }
+
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        CommandBatchService executorService = createCommandBatchService();
-        RFuture<T> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+        return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
                 "if (redis.call('exists', KEYS[1]) == 0) then " +
                         "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
                         "redis.call('pexpire', KEYS[1], ARGV[1]); " +
@@ -361,8 +362,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         "end; " +
                         "return redis.call('pttl', KEYS[1]);",
                 Collections.singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
-        executorService.executeAsync();
-        return result;
     }
 
     private CommandBatchService createCommandBatchService() {
@@ -507,8 +506,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        CommandBatchService executorService = createCommandBatchService();
-        RFuture<Boolean> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
                         + "redis.call('publish', KEYS[2], ARGV[1]); "
                         + "return 1 "
@@ -516,8 +514,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         + "return 0 "
                         + "end",
                 Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
-        executorService.executeAsync();
-        return result;
     }
 
     @Override
@@ -569,8 +565,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        CommandBatchService executorService = createCommandBatchService();
-        RFuture<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        return evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
                         "return nil;" +
                         "end; " +
@@ -585,8 +580,6 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                         "end; " +
                         "return nil;",
                 Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
-        executorService.executeAsync();
-        return result;
     }
     
     @Override
