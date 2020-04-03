@@ -15,6 +15,27 @@
  */
 package org.redisson;
 
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import org.redisson.api.BatchOptions;
+import org.redisson.api.RFuture;
+import org.redisson.api.RLock;
+import org.redisson.client.RedisException;
+import org.redisson.client.codec.LongCodec;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.RedisCommand.ValueType;
+import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
+import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.command.CommandBatchService;
+import org.redisson.connection.MasterSlaveEntry;
+import org.redisson.misc.RPromise;
+import org.redisson.misc.RedissonPromise;
+import org.redisson.pubsub.LockPubSub;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -26,25 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
-
-import org.redisson.api.RFuture;
-import org.redisson.api.RLock;
-import org.redisson.client.RedisException;
-import org.redisson.client.codec.LongCodec;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.RedisCommands;
-import org.redisson.client.protocol.RedisStrictCommand;
-import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
-import org.redisson.command.CommandAsyncExecutor;
-import org.redisson.misc.RPromise;
-import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.LockPubSub;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import io.netty.util.Timeout;
-import io.netty.util.TimerTask;
 
 /**
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
@@ -310,14 +312,17 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     protected RFuture<Boolean> renewExpirationAsync(long threadId) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<Boolean> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                    "return 1; " +
-                "end; " +
-                "return 0;",
-            Collections.<Object>singletonList(getName()), 
-            internalLockLeaseTime, getLockName(threadId));
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return 1; " +
+                        "end; " +
+                        "return 0;",
+                Collections.singletonList(getName()),
+                internalLockLeaseTime, getLockName(threadId));
+        executorService.executeAsync();
+        return result;
     }
 
     void cancelExpirationRenewal(Long threadId) {
@@ -342,21 +347,36 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
-                  "if (redis.call('exists', KEYS[1]) == 0) then " +
-                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
-                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                      "return nil; " +
-                  "end; " +
-                  "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
-                      "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
-                      "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                      "return nil; " +
-                  "end; " +
-                  "return redis.call('pttl', KEYS[1]);",
-                    Collections.<Object>singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<T> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+                "if (redis.call('exists', KEYS[1]) == 0) then " +
+                        "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return nil; " +
+                        "end; " +
+                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                        "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return nil; " +
+                        "end; " +
+                        "return redis.call('pttl', KEYS[1]);",
+                Collections.singletonList(getName()), internalLockLeaseTime, getLockName(threadId));
+        executorService.executeAsync();
+        return result;
     }
-    
+
+    private CommandBatchService createCommandBatchService() {
+        if (commandExecutor instanceof CommandBatchService) {
+            return (CommandBatchService) commandExecutor;
+        }
+
+        MasterSlaveEntry entry = commandExecutor.getConnectionManager().getEntry(getName());
+        BatchOptions options = BatchOptions.defaults()
+                                .syncSlaves(entry.getAvailableSlaves(), 1, TimeUnit.SECONDS);
+
+        return new CommandBatchService(commandExecutor.getConnectionManager(), options);
+    }
+
     private void acquireFailed(long threadId) {
         get(acquireFailedAsync(threadId));
     }
@@ -487,14 +507,17 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     @Override
     public RFuture<Boolean> forceUnlockAsync() {
         cancelExpirationRenewal(null);
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<Boolean> result = executorService.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('del', KEYS[1]) == 1) then "
-                + "redis.call('publish', KEYS[2], ARGV[1]); "
-                + "return 1 "
-                + "else "
-                + "return 0 "
-                + "end",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+                        + "redis.call('publish', KEYS[2], ARGV[1]); "
+                        + "return 1 "
+                        + "else "
+                        + "return 0 "
+                        + "end",
+                Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE);
+        executorService.executeAsync();
+        return result;
     }
 
     @Override
@@ -546,22 +569,24 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     protected RFuture<Boolean> unlockInnerAsync(long threadId) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+        CommandBatchService executorService = createCommandBatchService();
+        RFuture<Boolean> result = commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then " +
-                    "return nil;" +
-                "end; " +
-                "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
-                "if (counter > 0) then " +
-                    "redis.call('pexpire', KEYS[1], ARGV[2]); " +
-                    "return 0; " +
-                "else " +
-                    "redis.call('del', KEYS[1]); " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return 1; "+
-                "end; " +
-                "return nil;",
-                Arrays.<Object>asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
-
+                        "return nil;" +
+                        "end; " +
+                        "local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); " +
+                        "if (counter > 0) then " +
+                        "redis.call('pexpire', KEYS[1], ARGV[2]); " +
+                        "return 0; " +
+                        "else " +
+                        "redis.call('del', KEYS[1]); " +
+                        "redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "return 1; " +
+                        "end; " +
+                        "return nil;",
+                Arrays.asList(getName(), getChannelName()), LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));
+        executorService.executeAsync();
+        return result;
     }
     
     @Override

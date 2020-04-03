@@ -95,7 +95,13 @@ public class LoadBalancerManager {
     public Collection<ClientConnectionsEntry> getEntries() {
         return Collections.unmodifiableCollection(client2Entry.values());
     }
-    
+
+    public int getAvailableSlaves() {
+        return (int) client2Entry.values().stream()
+                                            .filter(e -> !e.isFreezed() && e.getNodeType() == NodeType.SLAVE)
+                                            .count();
+    }
+
     public int getAvailableClients() {
         int count = 0;
         for (ClientConnectionsEntry connectionEntry : client2Entry.values()) {

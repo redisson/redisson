@@ -262,6 +262,10 @@ public class MasterSlaveEntry {
         return slaveBalancer.contains(addr);
     }
 
+    public int getAvailableSlaves() {
+        return slaveBalancer.getAvailableSlaves();
+    }
+
     public int getAvailableClients() {
         return slaveBalancer.getAvailableClients();
     }

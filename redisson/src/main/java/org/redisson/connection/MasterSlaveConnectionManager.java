@@ -541,7 +541,13 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         }
         return null;
     }
-    
+
+    @Override
+    public MasterSlaveEntry getEntry(String name) {
+        int slot = calcSlot(name);
+        return getEntry(slot);
+    }
+
     @Override
     public MasterSlaveEntry getEntry(int slot) {
         return slot2entry.get(slot);

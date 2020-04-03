@@ -460,12 +460,10 @@ public interface RedissonClient {
      */
     RLock getMultiLock(RLock... locks);
     
-    /**
-     * Returns RedLock instance associated with specified <code>locks</code>
-     * 
-     * @param locks - collection of locks
-     * @return RedLock object
+    /*
+     * Use getLock method instead. Returned instance uses Redis Slave synchronization
      */
+    @Deprecated
     RLock getRedLock(RLock... locks);
     
     /**

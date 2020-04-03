@@ -81,7 +81,9 @@ public interface ConnectionManager {
     Codec getCodec();
 
     Collection<MasterSlaveEntry> getEntrySet();
-    
+
+    MasterSlaveEntry getEntry(String name);
+
     MasterSlaveEntry getEntry(int slot);
     
     MasterSlaveEntry getEntry(InetSocketAddress address);
