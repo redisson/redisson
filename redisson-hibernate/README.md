@@ -99,39 +99,73 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 
 #### Redisson allows to define follow cache settings per entity, collection, naturalid, query and timestamp regions:
 
-`hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` - max size of cache. Superfluous entries in Redis are evicted using LRU algorithm. `0` value means unbounded cache. Default value: 0
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].eviction.max_entries` |
+|Description| Max size of cache. Superfluous entries in Redis are evicted using LRU algorithm.<br/>`0` value means unbounded cache. |
+|Default value| `0` |
 
-`hibernate.cache.redisson.[REGION_NAME].expiration.time_to_live` - time to live per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].expiration.time_to_live` |
+|Description| Time to live per cache entry in Redis. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration. |
+|Default value| `0` |
 
-`hibernate.cache.redisson.[REGION_NAME].expiration.max_idle_time` - max idle time per cache entry in Redis. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].expiration.max_idle_time` |
+|Description| Max idle time per cache entry in Redis. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration.  |
+|Default value| `0` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.cache_provider` - cache provider used as local cache store. `REDISSON` and `CAFFEINE` providers are available. Default value: `REDISSON`
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.cache_provider` |
+|Description| Cache provider used as local cache store.<br/>`REDISSON` and `CAFFEINE` providers are available.  |
+|Default value| `REDISSON` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.store_mode` - store mode of cache data. `LOCALCACHE` - store data in local cache only, `LOCALCACHE_REDIS` - store data in both Redis and local cache. Default value: `LOCALCACHE_REDIS`
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.store_mode` |
+|Description| Store mode of cache data.<br/>`LOCALCACHE` - store data in local cache only and use Redis only for data update/invalidation<br/>`LOCALCACHE_REDIS` - store data in both Redis and local cache |
+|Default value| `LOCALCACHE_REDIS` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.max_idle_time` - max idle time per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.max_idle_time` |
+|Description| Max idle time per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration |
+|Default value| `0` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.time_to_live` - time to live per entry in local cache. Defined in milliseconds. `0` value means this setting doesn't affect expiration. Default value: 0
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.time_to_live` |
+|Description| Time to live per entry in local cache. Defined in milliseconds.<br/>`0` value means this setting doesn't affect expiration |
+|Default value| `0` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` - eviction policy applied to local cache entries when cache size limit reached. `LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` policies are available. Default value: `NONE`
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.eviction_policy` |
+|Description| Eviction policy applied to local cache entries when cache size limit reached.<br/>`LFU`, `LRU`, `SOFT`, `WEAK` and `NONE` policies are available. |
+|Default value| `NONE` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` - sync strategy used to synchronize local cache changes across all instances. Follow sync strategies are available:  
-`INVALIDATE` - Default. Invalidate cache entry across all LocalCachedMap instances on map entry change  
-`UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change  
-`NONE` - No synchronizations on map changes  
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.sync_strategy` |
+|Description| Sync strategy used to synchronize local cache changes across all instances.<br/>`INVALIDATE` - Invalidate cache entry across all LocalCachedMap instances on map entry change<br/>`UPDATE` - Update cache entry across all LocalCachedMap instances on map entry change<br/>`NONE` - No synchronizations on map changes |
+|Default value| `INVALIDATE` |
 
-Default value: INVALIDATE
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` |
+|Description| Reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis.<br/>`CLEAR` - Clear local cache if map instance has been disconnected for a while<br/>`LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise<br/>`NONE` - No reconnection handling |
+|Default value| `NONE` |
 
-`hibernate.cache.redisson.[REGION_NAME].localcache.reconnection_strategy` - reconnection strategy used to load missed local cache updates through Hibernate during any connection failures to Redis. Follow reconnection strategies are available:  
-`CLEAR` - Clear local cache if map instance has been disconnected for a while.  
-`LOAD` - Store invalidated entry hash in invalidation log for 10 minutes. Cache keys for stored invalidated entry hashes will be removed if LocalCachedMap instance has been disconnected less than 10 minutes or whole cache will be cleaned otherwise.  
-`NONE` - Default. No reconnection handling  
+| | |
+|-|-|
+|Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.size` |
+|Description| Max size of local cache. Superfluous entries in Redis are evicted using defined eviction policy.<br/>`0` value means unbounded cache. |
+|Default value| `0` |
 
-Default value: NONE
-
-`hibernate.cache.redisson.[REGION_NAME].localcache.size` - max size of local cache. Superfluous entries in Redis are evicted using defined eviction policy.  `0` value means unbounded cache. Default value: 0
-
-_Please note: `*.localcache.*` settings are available for `RedissonClusteredLocalCachedRegionFactory` and `RedissonLocalCachedRegionFactory` classes only._
+_Please note: `hibernate.cache.redisson.[REGION_NAME].localcache.*` settings are available for `RedissonClusteredLocalCachedRegionFactory` and `RedissonLocalCachedRegionFactory` classes only._
 
 #### Default region configuration used for all caches not specified in configuration:
 
