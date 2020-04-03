@@ -197,8 +197,8 @@ abstract class ConnectionPool<T extends RedisConnection> {
             return acquireConnection(command, entry);
         }
         
-        List<InetSocketAddress> failed = new LinkedList<InetSocketAddress>();
-        List<InetSocketAddress> freezed = new LinkedList<InetSocketAddress>();
+        List<InetSocketAddress> failed = new LinkedList<>();
+        List<InetSocketAddress> freezed = new LinkedList<>();
         for (ClientConnectionsEntry entry : entries) {
             if (entry.isFailed()) {
                 failed.add(entry.getClient().getAddr());
@@ -207,12 +207,12 @@ abstract class ConnectionPool<T extends RedisConnection> {
             }
         }
 
-        StringBuilder errorMsg = new StringBuilder(getClass().getSimpleName() + " no available Redis entries. ");
+        StringBuilder errorMsg = new StringBuilder(getClass().getSimpleName() + " no available Redis entries. Master entry host: " + masterSlaveEntry.getClient().getAddr());
         if (!freezed.isEmpty()) {
-            errorMsg.append(" Disconnected hosts: " + freezed);
+            errorMsg.append(" Disconnected hosts: ").append(freezed);
         }
         if (!failed.isEmpty()) {
-            errorMsg.append(" Hosts disconnected due to errors during `failedSlaveCheckInterval`: " + failed);
+            errorMsg.append(" Hosts disconnected due to errors during `failedSlaveCheckInterval`: ").append(failed);
         }
 
         RedisConnectionException exception = new RedisConnectionException(errorMsg.toString());
