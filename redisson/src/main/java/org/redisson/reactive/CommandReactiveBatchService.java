@@ -76,8 +76,8 @@ public class CommandReactiveBatchService extends CommandReactiveService {
         batchService.async(readOnlyMode, nodeSource, codec, command, params, mainPromise, ignoreRedirect);
     }
 
-    public RFuture<BatchResult<?>> executeAsync(BatchOptions options) {
-        return batchService.executeAsync(options);
+    public RFuture<BatchResult<?>> executeAsync() {
+        return batchService.executeAsync();
     }
 
     @Override

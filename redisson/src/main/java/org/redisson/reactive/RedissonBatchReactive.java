@@ -31,14 +31,12 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     private final EvictionScheduler evictionScheduler;
     private final CommandReactiveBatchService executorService;
-    private final BatchOptions options;
     private final CommandReactiveService commandExecutor;
 
     public RedissonBatchReactive(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandReactiveService commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandReactiveBatchService(connectionManager, options);
         this.commandExecutor = commandExecutor;
-        this.options = options;
     }
 
     @Override
@@ -232,7 +230,7 @@ public class RedissonBatchReactive implements RBatchReactive {
 
     @Override
     public Mono<BatchResult<?>> execute() {
-        return commandExecutor.reactive(() -> executorService.executeAsync(options));
+        return commandExecutor.reactive(() -> executorService.executeAsync());
     }
 
     public void enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive) {

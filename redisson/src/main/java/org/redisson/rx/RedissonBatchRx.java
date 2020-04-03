@@ -32,13 +32,11 @@ public class RedissonBatchRx implements RBatchRx {
     private final EvictionScheduler evictionScheduler;
     private final CommandRxBatchService executorService;
     private final CommandRxExecutor commandExecutor;
-    private final BatchOptions options;
-    
+
     public RedissonBatchRx(EvictionScheduler evictionScheduler, ConnectionManager connectionManager, CommandRxExecutor commandExecutor, BatchOptions options) {
         this.evictionScheduler = evictionScheduler;
         this.executorService = new CommandRxBatchService(connectionManager, options);
         this.commandExecutor = commandExecutor;
-        this.options = options;
     }
 
     @Override
@@ -242,7 +240,7 @@ public class RedissonBatchRx implements RBatchRx {
 
     @Override
     public Maybe<BatchResult<?>> execute() {
-        return commandExecutor.flowable(() -> executorService.executeAsync(options)).singleElement();
+        return commandExecutor.flowable(() -> executorService.executeAsync()).singleElement();
     }
     
     public void enableRedissonReferenceSupport(RedissonRxClient redissonRx) {

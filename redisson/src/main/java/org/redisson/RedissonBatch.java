@@ -206,12 +206,12 @@ public class RedissonBatch implements RBatch {
 
     @Override
     public BatchResult<?> execute() {
-        return executorService.execute(BatchOptions.defaults());
+        return executorService.execute();
     }
 
     @Override
     public RFuture<BatchResult<?>> executeAsync() {
-        return executorService.executeAsync(BatchOptions.defaults());
+        return executorService.executeAsync();
     }
     
     @Override
