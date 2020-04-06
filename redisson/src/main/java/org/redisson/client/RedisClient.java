@@ -177,7 +177,7 @@ public final class RedisClient {
         byte[] addr = NetUtil.createByteArrayFromIpAddressString(uri.getHost());
         if (addr != null) {
             try {
-                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr), uri.getPort());
+                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(addr), uri.getPort());
             } catch (UnknownHostException e) {
                 // skip
             }
@@ -196,7 +196,8 @@ public final class RedisClient {
                 }
                 
                 InetSocketAddress resolved = future.getNow();
-                resolvedAddr = createInetSocketAddress(resolved, uri.getHost());
+                byte[] addr = resolved.getAddress().getAddress();
+                resolvedAddr = new InetSocketAddress(InetAddress.getByAddress(uri.getHost(), addr), resolved.getPort());
                 promise.trySuccess(resolvedAddr);
             }
 
@@ -204,15 +205,6 @@ public final class RedisClient {
         return promise;
     }
 
-    private InetSocketAddress createInetSocketAddress(InetSocketAddress resolved, String host) {
-        byte[] addr = NetUtil.createByteArrayFromIpAddressString(resolved.getAddress().getHostAddress());
-        try {
-            return new InetSocketAddress(InetAddress.getByAddress(host, addr), resolved.getPort());
-        } catch (UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
-    }
-    
     public RFuture<RedisConnection> connectAsync() {
         final RPromise<RedisConnection> f = new RedissonPromise<RedisConnection>();
         
