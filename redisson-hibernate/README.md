@@ -127,7 +127,7 @@ By default each Region Factory creates own Redisson instance. For multiple appli
 |-|-|
 |Parameter| `hibernate.cache.redisson.[REGION_NAME].localcache.store_mode` |
 |Description| Store mode of cache data.<br/>`LOCALCACHE` - store data in local cache only and use Redis only for data update/invalidation<br/>`LOCALCACHE_REDIS` - store data in both Redis and local cache |
-|Default value| `LOCALCACHE_REDIS` |
+|Default value| `LOCALCACHE` |
 
 | | |
 |-|-|
