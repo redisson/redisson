@@ -261,7 +261,7 @@ public class RedissonTopic implements RTopic {
     public int countListeners() {
         PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry != null) {
-            return entry.countListeners();
+            return entry.countListeners(channelName);
         }
         return 0;
     }

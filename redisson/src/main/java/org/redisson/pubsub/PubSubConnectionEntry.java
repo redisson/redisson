@@ -15,10 +15,7 @@
  */
 package org.redisson.pubsub;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EventListener;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -49,14 +46,16 @@ public class PubSubConnectionEntry {
     private final ConcurrentMap<ChannelName, SubscribeListener> subscribeChannelListeners = new ConcurrentHashMap<ChannelName, SubscribeListener>();
     private final ConcurrentMap<ChannelName, Queue<RedisPubSubListener<?>>> channelListeners = new ConcurrentHashMap<ChannelName, Queue<RedisPubSubListener<?>>>();
 
+    private static final Queue<RedisPubSubListener<?>> EMPTY_QUEUE = new LinkedList<>();
+
     public PubSubConnectionEntry(RedisPubSubConnection conn, int subscriptionsPerConnection) {
         super();
         this.conn = conn;
         this.subscribedChannelsAmount = new AtomicInteger(subscriptionsPerConnection);
     }
 
-    public int countListeners() {
-        return channelListeners.size();
+    public int countListeners(ChannelName channelName) {
+        return channelListeners.getOrDefault(channelName, EMPTY_QUEUE).size();
     }
     
     public boolean hasListeners(ChannelName channelName) {

@@ -139,8 +139,18 @@ public class RedissonTopicTest {
         int id = topic1.addListener(Long.class, (channel, msg) -> {
         });
         assertThat(topic1.countListeners()).isOne();
+
+        RTopic topic2 = redisson.getTopic("topic2", LongCodec.INSTANCE);
+        assertThat(topic2.countListeners()).isZero();
+        int id2 = topic2.addListener(Long.class, (channel, msg) -> {
+        });
+        assertThat(topic2.countListeners()).isOne();
+
         topic1.removeListener(id);
         assertThat(topic1.countListeners()).isZero();
+
+        topic2.removeListener(id2);
+        assertThat(topic2.countListeners()).isZero();
 
         redisson.shutdown();
     }
