@@ -284,5 +284,9 @@ public class RedissonRateLimiter extends RedissonObject implements RRateLimiter 
                 Arrays.asList(getName(), getValueName(), getClientValueName()));
     }
 
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getName(), getValueName(), getClientValueName());
+    }
 
 }
