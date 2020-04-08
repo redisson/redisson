@@ -229,9 +229,10 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             }
             batchNew.execute();
 
+            map = redisson.getMap(keyPrefix + id, map.getCodec());
+
             return id;
         }
-
     }
 
     private static final Logger log = LoggerFactory.getLogger(RedissonSessionRepository.class);
