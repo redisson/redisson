@@ -61,7 +61,6 @@
         <module>redisson-tomcat</module>
         <module>redisson-spring-data</module>
         <module>redisson-spring-boot-starter</module>
-        <module>redisson-spring-cloud-connector</module>
         <module>redisson-mybatis</module>
         <module>redisson-hibernate</module>
     </modules>
