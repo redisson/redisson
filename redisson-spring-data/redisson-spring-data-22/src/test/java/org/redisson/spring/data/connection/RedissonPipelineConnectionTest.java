@@ -10,6 +10,24 @@ import org.redisson.BaseTest;
 public class RedissonPipelineConnectionTest extends BaseConnectionTest {
 
     @Test
+    public void testDel() {
+        RedissonConnection connection = new RedissonConnection(redisson);
+        byte[] key = "my_key".getBytes();
+        byte[] value = "my_value".getBytes();
+        connection.set(key, value);
+
+        connection.openPipeline();
+        connection.get(key);
+        connection.del(key);
+
+        List<Object> results = connection.closePipeline();
+        byte[] val = (byte[])results.get(0);
+        assertThat(val).isEqualTo(value);
+        Long res = (Long) results.get(1);
+        assertThat(res).isEqualTo(1);
+    }
+
+    @Test
     public void testEcho() {
         RedissonConnection connection = new RedissonConnection(redisson);
         connection.openPipeline();
