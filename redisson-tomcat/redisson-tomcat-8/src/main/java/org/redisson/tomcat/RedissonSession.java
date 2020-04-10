@@ -24,6 +24,7 @@ import org.redisson.tomcat.RedissonSessionManager.UpdateMode;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.security.Principal;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,6 +45,8 @@ public class RedissonSession extends StandardSession {
     private static final String LAST_ACCESSED_TIME_ATTR = "session:lastAccessedTime";
     private static final String CREATION_TIME_ATTR = "session:creationTime";
     private static final String IS_EXPIRATION_LOCKED = "session:isExpirationLocked";
+    private static final String PRINCIPAL_ATTR = "session:principal";
+    private static final String AUTHTYPE_ATTR = "session:authtype";
     
     public static final Set<String> ATTRS = new HashSet<String>(Arrays.asList(
             IS_NEW_ATTR, IS_VALID_ATTR, 
@@ -241,7 +244,25 @@ public class RedissonSession extends StandardSession {
             }
         }
     }
-    
+
+    @Override
+    public void setPrincipal(Principal principal) {
+        super.setPrincipal(principal);
+
+        if (map != null) {
+            fastPut(PRINCIPAL_ATTR, principal);
+        }
+    }
+
+    @Override
+    public void setAuthType(String authType) {
+        super.setAuthType(authType);
+
+        if (map != null) {
+            fastPut(AUTHTYPE_ATTR, authType);
+        }
+    }
+
     @Override
     public void setValid(boolean isValid) {
         super.setValid(isValid);
@@ -326,6 +347,12 @@ public class RedissonSession extends StandardSession {
         newMap.put(MAX_INACTIVE_INTERVAL_ATTR, maxInactiveInterval);
         newMap.put(IS_VALID_ATTR, isValid);
         newMap.put(IS_NEW_ATTR, isNew);
+        if (principal != null) {
+            newMap.put(PRINCIPAL_ATTR, principal);
+        }
+        if (authType != null) {
+            newMap.put(AUTHTYPE_ATTR, authType);
+        }
         if (broadcastSessionEvents) {
             newMap.put(IS_EXPIRATION_LOCKED, isExpirationLocked);
         }
@@ -383,6 +410,14 @@ public class RedissonSession extends StandardSession {
         Boolean isExpirationLocked = (Boolean) attrs.remove(IS_EXPIRATION_LOCKED);
         if (isExpirationLocked != null) {
             this.isExpirationLocked = isExpirationLocked;
+        }
+        Principal p = (Principal) attrs.remove(PRINCIPAL_ATTR);
+        if (p != null) {
+            this.principal = p;
+        }
+        String authType = (String) attrs.remove(AUTHTYPE_ATTR);
+        if (authType != null) {
+            this.authType = authType;
         }
 
         for (Entry<String, Object> entry : attrs.entrySet()) {
