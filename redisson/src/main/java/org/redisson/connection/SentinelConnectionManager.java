@@ -86,7 +86,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         this.sentinelResolver = resolverGroup.getResolver(getGroup().next());
         
         checkAuth(cfg);
-        
+
+        Throwable lastException = null;
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             if (NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null && !addr.getHost().equals("localhost")) {
@@ -151,16 +152,22 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     RFuture<Void> future = registerSentinel(sentinelAddr, this.config);
                     connectionFutures.add(future);
                 }
-                
+
                 RedisURI currentAddr = toURI(client.getAddr().getAddress().getHostAddress(), "" + client.getAddr().getPort());
                 RFuture<Void> f = registerSentinel(currentAddr, this.config);
                 connectionFutures.add(f);
-                
+
                 for (RFuture<Void> future : connectionFutures) {
                     future.awaitUninterruptibly(this.config.getConnectTimeout());
                 }
 
                 break;
+            } catch (RedisConnectionException e) {
+                stopThreads();
+                throw e;
+            } catch (Exception e) {
+                lastException = e;
+                log.warn(e.getMessage());
             } finally {
                 client.shutdownAsync();
             }
@@ -169,16 +176,16 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         if (cfg.isCheckSentinelsList()) {
             if (sentinels.isEmpty()) {
                 stopThreads();
-                throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result! Set checkSentinelsList = false to avoid this check.");
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns empty result! Set checkSentinelsList = false to avoid this check.", lastException);
             } else if (sentinels.size() < 2) {
                 stopThreads();
-                throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.");
+                throw new RedisConnectionException("SENTINEL SENTINELS command returns less than 2 nodes! At least two sentinels should be defined in Redis configuration. Set checkSentinelsList = false to avoid this check.", lastException);
             }
         }
         
         if (currentMaster.get() == null) {
             stopThreads();
-            throw new RedisConnectionException("Can't connect to servers!");
+            throw new RedisConnectionException("Can't connect to servers!", lastException);
         }
         if (this.config.getReadMode() != ReadMode.MASTER && this.config.getSlaveAddresses().isEmpty()) {
             log.warn("ReadMode = " + this.config.getReadMode() + ", but slave nodes are not found!");
