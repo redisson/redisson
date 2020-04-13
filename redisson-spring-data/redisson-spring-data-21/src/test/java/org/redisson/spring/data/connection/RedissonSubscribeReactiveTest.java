@@ -10,9 +10,29 @@ import org.junit.Test;
 import org.springframework.data.redis.connection.ReactiveRedisConnection;
 import org.springframework.data.redis.connection.ReactiveSubscription;
 
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
+import org.springframework.data.redis.listener.ChannelTopic;
 import reactor.core.publisher.Mono;
 
 public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
+
+    @Test
+    public void testTemplate() {
+        RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
+        AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
+
+        ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(factory);
+        template.listenTo(ChannelTopic.of("test")).flatMap(message -> {
+            msg.set(message.getMessage().getBytes());
+            return template.delete("myobj");
+        }).subscribe();
+
+        ReactiveRedisConnection connection = factory.getReactiveConnection();
+        connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
+
+        Awaitility.await().atMost(Duration.ONE_SECOND)
+                    .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
+    }
 
     @Test
     public void testSubscribe() {
