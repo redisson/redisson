@@ -312,6 +312,8 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         @RIndex
         private String name1;
         @RIndex
+        private String name2;
+        @RIndex
         private Integer num1;
         @RIndex
         private Boolean bool1;
@@ -357,9 +359,50 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public void setObj(TestIndexed obj) {
             this.obj = obj;
         }
-        
+
+        public String getName2() {
+            return name2;
+        }
+
+        public void setName2(String name2) {
+            this.name2 = name2;
+        }
     }
-    
+
+    @Test
+    public void testFindEq2() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setNum1(1);
+        t1.setName1("common");
+        t1.setName2(";asdlkfj");
+        t1 = s.persist(t1);
+
+        TestIndexed t2 = new TestIndexed("2");
+        t2.setNum1(1);
+        t2.setName1("common");
+        t2.setName2("893123");
+        t2 = s.persist(t2);
+
+        TestIndexed t3 = new TestIndexed("3");
+        t3.setNum1(1);
+        t3.setName1("common");
+        t3.setName2("hkf;glhsdfg");
+        t3 = s.persist(t3);
+
+        Collection<TestIndexed> objects2 = s.find(TestIndexed.class, Conditions.and(
+                Conditions.eq("num1", 1),
+                Conditions.eq("name1", "jkflasdf"),
+                Conditions.eq("name2", "fdfdf")));
+        assertThat(objects2).isEmpty();
+
+        Collection<TestIndexed> objects1 = s.find(TestIndexed.class, Conditions.and(
+        Conditions.eq("num1", 1),
+        Conditions.eq("name1", "common"),
+        Conditions.eq("name2", "hkf;glhsdfg")));
+        assertThat(objects1).hasSize(1);
+    }
+
     @Test
     public void testFindLe() {
         RLiveObjectService s = redisson.getLiveObjectService();

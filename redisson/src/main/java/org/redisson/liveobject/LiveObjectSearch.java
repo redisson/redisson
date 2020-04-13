@@ -120,6 +120,9 @@ public class LiveObjectSearch {
             } else {
                 allIds.addAll(intersect);
             }
+            if (allIds.isEmpty()) {
+                return allIds;
+            }
         }
 
         if (!checkValueRange(allIds, eqNumericNames, (r, v) -> {
