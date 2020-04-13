@@ -102,7 +102,7 @@ public class CommandBatchService extends CommandAsyncService {
     private ConcurrentMap<MasterSlaveEntry, Entry> commands = new ConcurrentHashMap<>();
     private ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections = new ConcurrentHashMap<>();
     
-    private BatchOptions options;
+    private BatchOptions options = BatchOptions.defaults();
     
     private Map<RFuture<?>, List<CommandBatchService>> nestedServices = new ConcurrentHashMap<>();
 
