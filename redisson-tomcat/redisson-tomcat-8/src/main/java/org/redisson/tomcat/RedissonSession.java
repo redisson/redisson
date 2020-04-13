@@ -51,7 +51,8 @@ public class RedissonSession extends StandardSession {
     public static final Set<String> ATTRS = new HashSet<String>(Arrays.asList(
             IS_NEW_ATTR, IS_VALID_ATTR, 
             THIS_ACCESSED_TIME_ATTR, MAX_INACTIVE_INTERVAL_ATTR, 
-            LAST_ACCESSED_TIME_ATTR, CREATION_TIME_ATTR, IS_EXPIRATION_LOCKED
+            LAST_ACCESSED_TIME_ATTR, CREATION_TIME_ATTR, IS_EXPIRATION_LOCKED,
+            PRINCIPAL_ATTR, AUTHTYPE_ATTR
             ));
     
     private boolean isExpirationLocked;
