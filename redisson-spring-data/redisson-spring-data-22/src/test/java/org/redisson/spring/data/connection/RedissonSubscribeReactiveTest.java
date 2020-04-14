@@ -2,6 +2,7 @@ package org.redisson.spring.data.connection;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
@@ -19,19 +20,24 @@ public class RedissonSubscribeReactiveTest extends BaseConnectionTest {
     @Test
     public void testTemplate() {
         RedissonConnectionFactory factory = new RedissonConnectionFactory(redisson);
-        AtomicReference<byte[]> msg = new AtomicReference<byte[]>();
+        AtomicLong counter = new AtomicLong();
 
         ReactiveStringRedisTemplate template = new ReactiveStringRedisTemplate(factory);
         template.listenTo(ChannelTopic.of("test")).flatMap(message -> {
-            msg.set(message.getMessage().getBytes());
-            return template.delete("myobj");
+            counter.incrementAndGet();
+            return Mono.empty();
+        }).subscribe();
+
+        template.listenTo(ChannelTopic.of("test2")).flatMap(message -> {
+            counter.incrementAndGet();
+            return Mono.empty();
         }).subscribe();
 
         ReactiveRedisConnection connection = factory.getReactiveConnection();
         connection.pubSubCommands().publish(ByteBuffer.wrap("test".getBytes()), ByteBuffer.wrap("msg".getBytes())).block();
 
         Awaitility.await().atMost(Duration.ONE_SECOND)
-                    .until(() -> Arrays.equals("msg".getBytes(), msg.get()));
+                    .until(() -> counter.get() == 1);
     }
 
     @Test
