@@ -247,10 +247,12 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
         }
 
         deletedTopic = this.redisson.getPatternTopic("__keyevent@*:del", StringCodec.INSTANCE);
-        deletedTopic.addListener(String.class, this);
         expiredTopic = this.redisson.getPatternTopic("__keyevent@*:expired", StringCodec.INSTANCE);
-        expiredTopic.addListener(String.class, this);
         createdTopic = this.redisson.getPatternTopic(getEventsChannelPrefix() + "*", StringCodec.INSTANCE);
+
+        // add listeners after all topics are created to avoid race and potential NPE if we get messages right away
+        deletedTopic.addListener(String.class, this);
+        expiredTopic.addListener(String.class, this);
         createdTopic.addListener(String.class, this);
     }
 
