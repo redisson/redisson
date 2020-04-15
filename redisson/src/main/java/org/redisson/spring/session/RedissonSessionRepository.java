@@ -214,14 +214,25 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             Long remainTTL = (Long) list.get(0);
             Map<String, Object> oldState = (Map<String, Object>) list.get(2);
 
-            RBatch batchNew = redisson.createBatch(BatchOptions.defaults());
+            if (remainTTL == -2) {
+                // Either:
+                // - a parallel request also invoked changeSessionId() on this session, and the
+                //   expiredKey for oldId had been deleted
+                // - sessions do not expire
+                remainTTL = delegate.getMaxInactiveInterval().toMillis();
+            }
+
+            RBatch batchNew = redisson.createBatch();
             batchNew.getMap(keyPrefix + id, map.getCodec()).putAllAsync(oldState);
-            batchNew.getBucket(getExpiredKey(id)).setAsync("", remainTTL, TimeUnit.MILLISECONDS);
+            if (remainTTL > 0) {
+                batchNew.getBucket(getExpiredKey(id)).setAsync("", remainTTL, TimeUnit.MILLISECONDS);
+            }
             batchNew.execute();
+
+            map = redisson.getMap(keyPrefix + id, map.getCodec());
 
             return id;
         }
-
     }
 
     private static final Logger log = LoggerFactory.getLogger(RedissonSessionRepository.class);
