@@ -342,7 +342,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     protected <T> RFuture<T> evalWriteAsync(String key, Codec codec, RedisCommand<T> evalCommandType, String script, List<Object> keys, Object... params) {
         CommandBatchService executorService = createCommandBatchService();
         RFuture<T> result = executorService.evalWriteAsync(key, codec, evalCommandType, script, keys, params);
-        executorService.executeAsync();
+        if (!(commandExecutor instanceof CommandBatchService)) {
+            executorService.executeAsync();
+        }
         return result;
     }
 
