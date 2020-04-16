@@ -4,6 +4,23 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 16-Apr-2020 - 3.12.5 released
+
+Improvement - increased `RLock` reliability during failover. `RedLock` was deprecated  
+
+Fixed - Map object is not updated after session change (thanks to @eager)  
+Fixed - `RedissonSessionRepository` doesn't handle PTTL = -2 (thanks to @eager)  
+Fixed - `RedissonSessionRepository` topic listener NPE race condition (thanks to @eager)  
+Fixed - `RedissonReactiveSubscription.subscribe()` and `receive()` methods aren't synchronized  
+Fixed - `RLiveObjectService` search with `Conditions.and()` returns wrong result  
+Fixed - Redisson Tomcat Manager doesn't store principal and authType session attributes  
+Fixed - Redisson is unable to start if first sentinel node in list is down  
+Fixed - Spring Data `RedissonConnection.del()` method doesn't participate in pipeline  
+Fixed - `RTopic.countListeners()` method returns wrong result  
+Fixed - `RRateLimiter.delete()` method doesn't delete all allocated Redis objects  
+Fixed - `RedissonBloomFilter` throws NPE (regression since 3.12.4)  
+Fixed - CommandBatchService throws NPE (regression since 3.12.4)  
+
 ### 30-Mar-2020 - 3.12.4 released
 
 Feature - cacheProvider setting added to `LocalCacheConfiguration`, `ClusteredLocalCachedMapOptions`, `LocalCacheConfiguration` and Hibernate Local Cache regions  
