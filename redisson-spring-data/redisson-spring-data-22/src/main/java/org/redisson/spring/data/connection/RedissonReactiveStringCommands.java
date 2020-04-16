@@ -60,7 +60,11 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
     }
 
     private static final RedisCommand<Boolean> SET = new RedisCommand<Boolean>("SET", new BooleanReplayConvertor());
-    
+
+    private static <T> Mono<BooleanResponse<T>> voidToBooleanResponse(Mono<Void> m, T command) {
+        return m.map(v -> true).defaultIfEmpty(true).onErrorReturn(false).map(v -> new BooleanResponse<>(command, v));
+    }
+
     @Override
     public Flux<BooleanResponse<SetCommand>> set(Publisher<SetCommand> commands) {
         return execute(commands, command -> {
@@ -70,35 +74,35 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
 
             byte[] key = toByteArray(command.getKey());
             byte[] value = toByteArray(command.getValue());
-            
+
             if (!command.getExpiration().isPresent()) {
-                Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value);
-                return m.map(v -> new BooleanResponse<>(command, v));
+                Mono<Void> m = write(key, StringCodec.INSTANCE, SET, key, value);
+                return voidToBooleanResponse(m, command);
             } else if (command.getExpiration().get().isPersistent()) {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value);
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, SET, key, value);
+                    return voidToBooleanResponse(m, command);
                 }
                 if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, SET, key, value, "NX");
+                    return voidToBooleanResponse(m, command);
                 }
                 if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, SET, key, value, "XX");
+                    return voidToBooleanResponse(m, command);
                 }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
+                    return voidToBooleanResponse(m, command);
                 }
                 if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
+                    return voidToBooleanResponse(m, command);
                 }
                 if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
-                    return m.map(v -> new BooleanResponse<>(command, v));
+                    Mono<Void> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
+                    return voidToBooleanResponse(m, command);
                 }
             }
             throw new IllegalArgumentException();
