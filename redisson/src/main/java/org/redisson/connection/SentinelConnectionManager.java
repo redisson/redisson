@@ -492,7 +492,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             if (sentinel != null) {
                 disconnectNode(sentinel);
                 sentinel.shutdownAsync();
-                log.warn("sentinel: {} has down", uri);
+                log.warn("sentinel: {} was down", uri);
             }
         }
     }
@@ -581,11 +581,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void slaveDown(RedisURI uri) {
         if (config.checkSkipSlavesInit()) {
-            log.warn("slave: {} has down", uri);
+            log.warn("slave: {} was down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
             if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
-                log.warn("slave: {} has down", uri);
+                log.warn("slave: {} was down", uri);
             }
         }
     }
