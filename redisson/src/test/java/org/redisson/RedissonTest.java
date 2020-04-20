@@ -486,50 +486,6 @@ public class RedissonTest {
     }
     
     @Test
-    public void testDecoderInExecutor() throws Exception {
-        Config config = new Config();
-        config.setCodec(new SlowCodec());
-        config.setReferenceEnabled(false);
-        config.setThreads(32);
-        config.setNettyThreads(8);
-        config.setDecodeInExecutor(true);
-        config.useSingleServer()
-            .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
-        RedissonClient redisson = Redisson.create(config);
-        
-        CountDownLatch latch = new CountDownLatch(16);
-        AtomicBoolean hasErrors = new AtomicBoolean();
-        for (int i = 0; i < 16; i++) {
-            Thread t = new Thread() {
-                public void run() {
-                    for (int i = 0; i < 10; i++) {
-                        try {
-                            redisson.getBucket("123").set("1");
-                            redisson.getBucket("123").get();
-                            if (hasErrors.get()) {
-                                latch.countDown();
-                                return;
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            hasErrors.set(true);
-                        }
-                        
-                    }
-                    latch.countDown();
-                };
-            };
-            t.start();
-        }
-        
-        assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
-        assertThat(hasErrors).isFalse();
-        
-        redisson.shutdown();
-    }
-
-    
-    @Test
     public void testFailoverWithoutErrorsInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
         RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
