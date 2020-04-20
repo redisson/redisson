@@ -453,6 +453,7 @@
                             <exclude>RedissonTest</exclude>
                             <exclude>RedissonSetReactiveTest</exclude>
                             <exclude>RedissonSetTest</exclude>
+                            <exclude>RedissonRedLockTest</exclude>
                             <exclude>RedissonMapCacheReactiveTest</exclude>
 
     <!--
