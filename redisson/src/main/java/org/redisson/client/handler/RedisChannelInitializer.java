@@ -100,7 +100,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
             ch.pipeline().addLast(new CommandPubSubDecoder(config.getExecutor(), config.isKeepPubSubOrder(), config.isDecodeInExecutor()));
         }
 
-        ch.pipeline().addLast(new LoggingHandler());
+        ch.pipeline().addLast(new ErrorsLoggingHandler());
 
         config.getNettyHook().afterChannelInitialization(ch);
     }

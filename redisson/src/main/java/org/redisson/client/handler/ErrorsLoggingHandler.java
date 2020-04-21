@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
  * @author Nikita Koksharov
  *
  */
-public class LoggingHandler extends ChannelDuplexHandler {
+public class ErrorsLoggingHandler extends ChannelDuplexHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(LoggingHandler.class);
+    private static final Logger log = LoggerFactory.getLogger(ErrorsLoggingHandler.class);
 
     private static final Pattern IGNORABLE_ERROR_MESSAGE = Pattern.compile(
             "^.*(?:connection.*(?:reset|closed|abort|broken)|broken.*pipe).*$", Pattern.CASE_INSENSITIVE);
