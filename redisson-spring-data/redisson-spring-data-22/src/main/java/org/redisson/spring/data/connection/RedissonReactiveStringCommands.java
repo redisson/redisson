@@ -89,15 +89,15 @@ public class RedissonReactiveStringCommands extends RedissonBaseReactive impleme
                 }
             } else {
                 if (!command.getOption().isPresent() || command.getOption().get() == SetOption.UPSERT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
+                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds());
                     return m.map(v -> new BooleanResponse<>(command, v));
                 }
                 if (command.getOption().get() == SetOption.SET_IF_ABSENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
+                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "NX");
                     return m.map(v -> new BooleanResponse<>(command, v));
                 }
                 if (command.getOption().get() == SetOption.SET_IF_PRESENT) {
-                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, RedisCommands.SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
+                    Mono<Boolean> m = write(key, StringCodec.INSTANCE, SET, key, value, "PX", command.getExpiration().get().getExpirationTimeInMilliseconds(), "XX");
                     return m.map(v -> new BooleanResponse<>(command, v));
                 }
             }
