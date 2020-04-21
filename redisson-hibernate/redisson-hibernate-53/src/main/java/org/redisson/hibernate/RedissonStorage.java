@@ -18,6 +18,7 @@ package org.redisson.hibernate;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.support.DomainDataStorageAccess;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.redisson.api.RMapCache;
@@ -81,7 +82,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return null;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
@@ -94,7 +95,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
@@ -107,7 +108,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return false;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
@@ -120,7 +121,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
@@ -133,7 +134,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
@@ -146,7 +147,7 @@ public class RedissonStorage implements DomainDataStorageAccess {
                 logger.error(e.getMessage(), e);
                 return;
             }
-            throw e;
+            throw new CacheException(e);
         }
     }
 
