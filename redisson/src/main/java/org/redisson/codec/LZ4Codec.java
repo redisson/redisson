@@ -50,7 +50,7 @@ public class LZ4Codec extends BaseCodec {
     private final Codec innerCodec;
 
     public LZ4Codec() {
-        this(new Kryo5Codec());
+        this(new MarshallingCodec());
     }
 
     public LZ4Codec(Codec innerCodec) {
@@ -58,7 +58,7 @@ public class LZ4Codec extends BaseCodec {
     }
     
     public LZ4Codec(ClassLoader classLoader) {
-        this(new FstCodec(classLoader));
+        this(new MarshallingCodec(classLoader));
     }
 
     public LZ4Codec(ClassLoader classLoader, LZ4Codec codec) throws ReflectiveOperationException {
