@@ -123,7 +123,7 @@ public class DNSMonitor {
                         MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
                         if (masterSlaveEntry == null) {
                             if (connectionManager instanceof SingleConnectionManager) {
-                                log.error("Unable to find master entry for {}. Multiple IP bindings for single hostname supported only in Redisson PRO!", currentMasterAddr);
+                                log.error("Unable to find master entry for {}. Switch Redisson configuration to proxy mode to use multiple IPs resolved by Redis hostname. More details: https://github.com/redisson/redisson/wiki/2.-Configuration#29-proxy-mode", currentMasterAddr);
                             } else {
                                 log.error("Unable to find master entry for {}", currentMasterAddr);
                             }
