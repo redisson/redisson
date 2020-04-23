@@ -1,9 +1,0 @@
-{
-   "singleServerConfig":{
-      "address": "redis://127.0.0.1:6379"
-   },
-   "codec":{
-      "class":"org.redisson.codec.FstCodec"
-   },
-   "registrationKey": "LJk6V4gqOgTOKZ53Cf2MywSb3/M+AW4igUgBG0pLbj77G2AMBpBkELbiuT9B3HSwqhGN5kxDNtPeUpLdTJLdNaoWSKLO6P9wozkdens3nfi7VE8VEwArQ1naIBLuGMQ5DZ3AHJ4cvYnj0RkAE/lx6sU/uWzBTB1e9jW9sLDSD8M="
-}

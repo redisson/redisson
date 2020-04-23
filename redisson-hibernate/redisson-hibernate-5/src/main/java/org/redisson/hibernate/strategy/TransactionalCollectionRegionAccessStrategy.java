@@ -25,6 +25,7 @@ import org.hibernate.cfg.Settings;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.persister.collection.CollectionPersister;
+import org.redisson.hibernate.region.RedissonCollectionRegion;
 
 /**
  * 
@@ -74,12 +75,12 @@ public class TransactionalCollectionRegionAccessStrategy extends BaseRegionAcces
 
     @Override
     public Object generateCacheKey(Object id, CollectionPersister persister, SessionFactoryImplementor factory, String tenantIdentifier) {
-        return DefaultCacheKeysFactory.staticCreateCollectionKey( id, persister, factory, tenantIdentifier );
+        return ((RedissonCollectionRegion)region).getCacheKeysFactory().createCollectionKey( id, persister, factory, tenantIdentifier );
     }
 
     @Override
     public Object getCacheKeyId(Object cacheKey) {
-        return DefaultCacheKeysFactory.staticGetCollectionId(cacheKey);
+        return ((RedissonCollectionRegion)region).getCacheKeysFactory().getCollectionId(cacheKey);
     }
 
 }

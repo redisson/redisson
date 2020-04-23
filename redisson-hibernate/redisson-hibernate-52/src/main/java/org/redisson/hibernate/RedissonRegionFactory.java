@@ -15,24 +15,10 @@
  */
 package org.redisson.hibernate;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Properties;
-
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
-import org.hibernate.cache.internal.DefaultCacheKeysFactory;
-import org.hibernate.cache.spi.CacheDataDescription;
-import org.hibernate.cache.spi.CacheKeysFactory;
-import org.hibernate.cache.spi.CollectionRegion;
-import org.hibernate.cache.spi.EntityRegion;
-import org.hibernate.cache.spi.NaturalIdRegion;
-import org.hibernate.cache.spi.QueryResultsRegion;
-import org.hibernate.cache.spi.RegionFactory;
-import org.hibernate.cache.spi.TimestampsRegion;
+import org.hibernate.cache.spi.*;
 import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cfg.Environment;
 import org.hibernate.cfg.Settings;
@@ -44,11 +30,13 @@ import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.config.Config;
-import org.redisson.hibernate.region.RedissonCollectionRegion;
-import org.redisson.hibernate.region.RedissonEntityRegion;
-import org.redisson.hibernate.region.RedissonNaturalIdRegion;
-import org.redisson.hibernate.region.RedissonQueryRegion;
-import org.redisson.hibernate.region.RedissonTimestampsRegion;
+import org.redisson.hibernate.region.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Properties;
 
 /**
  * Hibernate Cache region factory based on Redisson. 
@@ -94,7 +82,7 @@ public class RedissonRegionFactory implements RegionFactory {
         
         StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
-                                properties.get(Environment.CACHE_KEYS_FACTORY), new DefaultCacheKeysFactory());
+                                properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
     }
 
     protected RedissonClient createRedissonClient(Properties properties) {

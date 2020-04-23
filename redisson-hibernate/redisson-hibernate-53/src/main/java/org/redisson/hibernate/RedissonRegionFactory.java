@@ -20,7 +20,6 @@ import org.hibernate.boot.spi.SessionFactoryOptions;
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.cfg.spi.DomainDataRegionBuildingContext;
 import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
-import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
@@ -80,15 +79,19 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
     private RedissonClient redisson;
     private CacheKeysFactory cacheKeysFactory;
     private boolean fallback;
-    
+
+    @Override
+    protected CacheKeysFactory getImplicitCacheKeysFactory() {
+        return cacheKeysFactory;
+    }
+
     @Override
     protected void prepareForUse(SessionFactoryOptions settings, @SuppressWarnings("rawtypes") Map properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
         
         StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
-                properties.get(Environment.CACHE_KEYS_FACTORY), DefaultCacheKeysFactory.INSTANCE);
-
+                properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
     }
 
     protected RedissonClient createRedissonClient(Map properties) {
@@ -192,11 +195,11 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
                 regionConfig,
                 this,
                 createDomainDataStorageAccess( regionConfig, buildingContext ),
-                cacheKeysFactory,
+                getImplicitCacheKeysFactory(),
                 buildingContext
         );
     }
-    
+
     @Override
     protected DomainDataStorageAccess createDomainDataStorageAccess(DomainDataRegionConfig regionConfig,
             DomainDataRegionBuildingContext buildingContext) {
