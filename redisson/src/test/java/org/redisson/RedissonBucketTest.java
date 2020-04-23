@@ -119,7 +119,7 @@ public class RedissonBucketTest extends BaseTest {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(54);
+        assertThat(al.sizeInMemory()).isEqualTo(56);
     }
     
     @Test
@@ -172,7 +172,7 @@ public class RedissonBucketTest extends BaseTest {
         assertThat(bucket.size()).isZero();
         bucket.set("1234");
         // json adds quotes
-        assertThat(bucket.size()).isEqualTo(6);
+        assertThat(bucket.size()).isEqualTo(7);
     }
     
     @Test

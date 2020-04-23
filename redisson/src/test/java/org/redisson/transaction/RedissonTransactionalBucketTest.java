@@ -113,7 +113,7 @@ public class RedissonTransactionalBucketTest extends BaseTest {
         RTransaction transaction = redisson.createTransaction(TransactionOptions.defaults());
         RBucket<String> set = transaction.getBucket("test");
         assertThat(set.get()).isEqualTo("123");
-        assertThat(set.size()).isEqualTo(5);
+        assertThat(set.size()).isEqualTo(6);
         assertThat(set.getAndDelete()).isEqualTo("123");
         assertThat(set.size()).isEqualTo(0);
         assertThat(set.get()).isNull();
