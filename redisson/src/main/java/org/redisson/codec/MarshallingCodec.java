@@ -171,10 +171,13 @@ public class MarshallingCodec extends BaseCodec {
             ByteBuf out = ByteBufAllocator.DEFAULT.buffer();
 
             Marshaller marshaller = encoderThreadLocal.get();
-            marshaller.start(new ByteOutputWrapper(out));
-            marshaller.writeObject(in);
-            marshaller.finish();
-            marshaller.close();
+            try {
+                marshaller.start(new ByteOutputWrapper(out));
+                marshaller.writeObject(in);
+            } finally {
+                marshaller.finish();
+                marshaller.close();
+            }
             return out;
         }
     };
