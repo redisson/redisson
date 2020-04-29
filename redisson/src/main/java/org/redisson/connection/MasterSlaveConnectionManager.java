@@ -632,9 +632,9 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     protected RFuture<RedisConnection> createNodeNotFoundFuture(NodeSource source) {
         RedisNodeNotFoundException ex;
         if (source.getSlot() != null && source.getAddr() == null && source.getRedisClient() == null) {
-            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command");
+            ex = new RedisNodeNotFoundException("Node for slot: " + source.getSlot() + " hasn't been discovered yet. Check cluster slots coverage using CLUSTER NODES command. Increase value of retryAttempts and/or retryInterval settings.");
         } else {
-            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet.");
+            ex = new RedisNodeNotFoundException("Node: " + source + " hasn't been discovered yet. Increase value of retryAttempts and/or retryInterval settings.");
         }
         return RedissonPromise.newFailedFuture(ex);
     }
