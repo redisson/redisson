@@ -23,7 +23,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
