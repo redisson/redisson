@@ -23,6 +23,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.client.handler.RedisChannelInitializer;
 import org.redisson.client.handler.RedisChannelInitializer.Type;
@@ -219,6 +220,12 @@ public final class RedisClient {
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (bootstrap.config().group().isShuttingDown()) {
+                        IllegalStateException cause = new IllegalStateException("RedisClient is shutdown");
+                        f.tryFailure(cause);
+                        return;
+                    }
+
                     if (future.isSuccess()) {
                         final RedisConnection c = RedisConnection.getFrom(future.channel());
                         c.getConnectionPromise().onComplete((res, e) -> {
@@ -272,6 +279,12 @@ public final class RedisClient {
             channelFuture.addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (bootstrap.config().group().isShuttingDown()) {
+                        IllegalStateException cause = new IllegalStateException("RedisClient is shutdown");
+                        f.tryFailure(cause);
+                        return;
+                    }
+
                     if (future.isSuccess()) {
                         final RedisPubSubConnection c = RedisPubSubConnection.getFrom(future.channel());
                         c.<RedisPubSubConnection>getConnectionPromise().onComplete((res, e) -> {
