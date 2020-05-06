@@ -45,10 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -468,8 +465,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<Void> checkMasterNodesChange(ClusterServersConfig cfg, Collection<ClusterPartition> newPartitions) {
-        List<ClusterPartition> newMasters = new ArrayList<ClusterPartition>();
         Set<ClusterPartition> lastPartitions = getLastPartitions();
+        Map<RedisURI, ClusterPartition> addedPartitions = new HashMap<>();
+        Set<RedisURI> mastersElected = new HashSet<>();
         for (ClusterPartition newPart : newPartitions) {
             boolean masterFound = false;
             for (ClusterPartition currentPart : lastPartitions) {
@@ -478,7 +476,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
                 masterFound = true;
                 // current master marked as failed
-                if (!newPart.isMasterFail()) {
+                if (!newPart.isMasterFail() || newPart.getSlotsAmount() == 0) {
                     continue;
                 }
                 for (Integer slot : currentPart.getSlots()) {
@@ -488,7 +486,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         RedisURI newUri = newMasterPart.getMasterAddress();
                         RedisURI oldUri = currentPart.getMasterAddress();
 
+                        mastersElected.add(newUri);
+
                         RFuture<RedisClient> future = changeMaster(slot, newUri);
+                        currentPart.setMasterAddress(newUri);
                         future.onComplete((res, e) -> {
                             if (e != null) {
                                 currentPart.setMasterAddress(oldUri);
@@ -496,26 +497,25 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                                 disconnectNode(oldUri);
                             }
                         });
-
-                        currentPart.setMasterAddress(newUri);
                     }
                 }
                 break;
             }
 
             if (!masterFound && newPart.getSlotsAmount() > 0) {
-                newMasters.add(newPart);
+                addedPartitions.put(newPart.getMasterAddress(), newPart);
             }
         }
-        
-        if (newMasters.isEmpty()) {
+
+        addedPartitions.keySet().removeAll(mastersElected);
+        if (addedPartitions.isEmpty()) {
             return RedissonPromise.newSucceededFuture(null);
         }
-        
+
         RPromise<Void> result = new RedissonPromise<Void>();
-        AtomicInteger masters = new AtomicInteger(newMasters.size());
+        AtomicInteger masters = new AtomicInteger(addedPartitions.size());
         Queue<RFuture<Void>> futures = new ConcurrentLinkedQueue<RFuture<Void>>(); 
-        for (ClusterPartition newPart : newMasters) {
+        for (ClusterPartition newPart : addedPartitions.values()) {
             RFuture<Collection<RFuture<Void>>> future = addMasterEntry(newPart, cfg);
             future.onComplete((res, e) -> {
                 if (e == null) {

@@ -650,20 +650,12 @@ public class RedissonTest {
             }
         }
         
-        System.out.println("errors " + errors + " success " + success);
-
-        for (RFuture<?> rFuture : futures) {
-            if (rFuture.isSuccess()) {
-                System.out.println(rFuture.isSuccess());
-            } else {
-                rFuture.cause().printStackTrace();
-            }
-        }
-        
-        assertThat(readonlyErrors).isZero();
-        
         redisson.shutdown();
         process.shutdown();
+
+        assertThat(readonlyErrors).isZero();
+        assertThat(errors).isLessThan(1000);
+        assertThat(success).isGreaterThan(5000);
     }
 
     
