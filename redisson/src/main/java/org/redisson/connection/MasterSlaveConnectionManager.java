@@ -571,15 +571,25 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         if (oldEntry != entry) {
             entry.incReference();
         }
+        shutdownEntry(oldEntry);
         client2entry.put(entry.getClient(), entry);
     }
 
-    protected final MasterSlaveEntry removeEntry(Integer slot) {
+    protected final void removeEntry(Integer slot) {
         MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
-        if (entry.decReference() == 0) {
+        shutdownEntry(entry);
+    }
+
+    private void shutdownEntry(MasterSlaveEntry entry) {
+        if (entry != null && entry.decReference() == 0) {
             client2entry.remove(entry.getClient());
+            entry.shutdownAsync();
+            String slaves = entry.getAllEntries().stream()
+                    .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
+                    .map(e -> e.getClient().toString())
+                    .collect(Collectors.joining(","));
+            log.info("{} master and related slaves: {} removed", entry.getClient().getAddr(), slaves);
         }
-        return entry;
     }
 
     @Override

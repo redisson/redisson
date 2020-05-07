@@ -562,11 +562,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
 
         for (Integer slot : removedSlots) {
-            MasterSlaveEntry entry = removeEntry(slot);
-            if (entry.getReferences() == 0) {
-                entry.shutdownAsync();
-                log.info("{} master and slaves for it removed", entry.getClient().getAddr());
-            }
+            removeEntry(slot);
         }
 
         Integer addedSlots = 0;
@@ -595,7 +591,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
                     continue;
                 }
-                
+
                 MasterSlaveEntry entry = getEntry(currentPartition.slots().nextSetBit(0));
                 BitSet addedSlots = newPartition.copySlots();
                 addedSlots.andNot(currentPartition.slots());
