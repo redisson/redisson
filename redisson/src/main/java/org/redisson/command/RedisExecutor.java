@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.BiConsumer;
 
 /**
@@ -58,6 +59,9 @@ import java.util.function.BiConsumer;
 public class RedisExecutor<V, R> {
     
     static final Logger log = LoggerFactory.getLogger(RedisExecutor.class);
+
+    private static final AtomicIntegerFieldUpdater<RedisExecutor> ATTEMPT_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(RedisExecutor.class, "attempt");
     
     final boolean readOnlyMode; 
     final RedisCommand<V> command; 
@@ -204,7 +208,7 @@ public class RedisExecutor<V, R> {
                                 }
                                 return;
                             }
-                            attempt++;
+                            ATTEMPT_UPDATER.getAndIncrement(RedisExecutor.this);
 
                             scheduleRetryTimeout(connectionFuture, attemptPromise);
                             return;
@@ -232,7 +236,7 @@ public class RedisExecutor<V, R> {
                     return;
                 }
 
-                attempt++;
+                ATTEMPT_UPDATER.getAndIncrement(RedisExecutor.this);
                 if (log.isDebugEnabled()) {
                     log.debug("attempt {} for command {} and params {}",
                             attempt, command, LogHelper.toString(params));
@@ -318,7 +322,7 @@ public class RedisExecutor<V, R> {
                         return;
                     }
 
-                    attempt++;
+                    ATTEMPT_UPDATER.getAndIncrement(RedisExecutor.this);
                     if (log.isDebugEnabled()) {
                         log.debug("attempt {} for command {} and params {}",
                                 attempt, command, LogHelper.toString(params));
@@ -432,7 +436,7 @@ public class RedisExecutor<V, R> {
                     connectionManager.newTimeout(new TimerTask() {
                         @Override
                         public void run(Timeout timeout) throws Exception {
-                            attempt++;
+                            ATTEMPT_UPDATER.getAndIncrement(RedisExecutor.this);
                             execute();
                         }
                     }, Math.min(responseTimeout, 1000), TimeUnit.MILLISECONDS);
