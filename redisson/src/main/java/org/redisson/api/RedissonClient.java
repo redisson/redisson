@@ -50,7 +50,7 @@ public interface RedissonClient {
      * @param <V> type of value
      * @param name - name of instance
      * @param codec - codec for values
-     * @return RStream object
+     * @return RTimeSeries object
      */
     <V> RTimeSeries<V> getTimeSeries(String name, Codec codec);
 

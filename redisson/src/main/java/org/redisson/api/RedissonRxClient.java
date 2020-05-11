@@ -32,6 +32,26 @@ import org.redisson.config.Config;
 public interface RedissonRxClient {
 
     /**
+     * Returns time-series instance by <code>name</code>
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeriesRx<V> getTimeSeries(String name);
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @param codec - codec for values
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeriesRx<V> getTimeSeries(String name, Codec codec);
+
+    /**
      * Returns stream instance by <code>name</code>
      * <p>
      * Requires <b>Redis 5.0.0 and higher.</b>
