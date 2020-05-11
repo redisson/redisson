@@ -24,6 +24,9 @@ import java.util.List;
  * Main Redisson interface for access
  * to all redisson objects with Reactive interface.
  *
+ * @see RedissonRxClient
+ * @see RedissonClient
+ *
  * @author Nikita Koksharov
  *
  */

@@ -27,11 +27,32 @@ import java.util.concurrent.TimeUnit;
  * to all redisson objects with sync/async interface.
  * 
  * @see RedissonReactiveClient
+ * @see RedissonRxClient
  *
  * @author Nikita Koksharov
  *
  */
 public interface RedissonClient {
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeries<V> getTimeSeries(String name);
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @param codec - codec for values
+     * @return RStream object
+     */
+    <V> RTimeSeries<V> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>

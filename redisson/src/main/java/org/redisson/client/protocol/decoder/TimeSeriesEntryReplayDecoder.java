@@ -15,40 +15,37 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.Collections;
-import java.util.List;
-
+import org.redisson.api.TimeSeriesEntry;
+import org.redisson.client.codec.LongCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
+ * @param <T> type of element
  */
-public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
-
-    private final boolean reverse;
-
-    public ObjectListReplayDecoder() {
-        this(false);
-    }
-
-    public ObjectListReplayDecoder(boolean reverse) {
-        this.reverse = reverse;
-    }
-
-    @Override
-    public List<T> decode(List<Object> parts, State state) {
-        if (reverse) {
-            Collections.reverse(parts);
-        }
-        return (List<T>) parts;
-    }
+public class TimeSeriesEntryReplayDecoder<T> implements MultiDecoder<List<TimeSeriesEntry<T>>> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
+        if (paramNum % 2 != 0) {
+            return LongCodec.INSTANCE.getValueDecoder();
+        }
         return null;
     }
+    
+    @Override
+    public List<TimeSeriesEntry<T>> decode(List<Object> parts, State state) {
+        List<TimeSeriesEntry<T>> result = new ArrayList<>();
+        for (int i = 0; i < parts.size(); i += 2) {
+            result.add(new TimeSeriesEntry<T>((Long) parts.get(i + 1), (T) parts.get(i)));
+        }
+        return result;
+    }
+
 }

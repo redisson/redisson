@@ -22,6 +22,10 @@ import org.redisson.config.Config;
  * Main Redisson interface for access
  * to all redisson objects with RxJava2 interface.
  *
+ * @see RedissonReactiveClient
+ * @see RedissonClient
+ *
+ *
  * @author Nikita Koksharov
  *
  */

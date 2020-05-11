@@ -53,7 +53,15 @@ public class EvictionScheduler {
             task.schedule();
         }
     }
-    
+
+    public void scheduleTimeSeries(String name, String timeoutSetName) {
+        EvictionTask task = new TimeSeriesEvictionTask(name, timeoutSetName, executor);
+        EvictionTask prevTask = tasks.putIfAbsent(name, task);
+        if (prevTask == null) {
+            task.schedule();
+        }
+    }
+
     public void schedule(String name, long shiftInMilliseconds) {
         EvictionTask task = new ScoredSetEvictionTask(name, executor, shiftInMilliseconds);
         EvictionTask prevTask = tasks.putIfAbsent(name, task);

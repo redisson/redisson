@@ -160,6 +160,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public <V> RTimeSeries<V> getTimeSeries(String name) {
+        return new RedissonTimeSeries<>(evictionScheduler, connectionManager.getCommandExecutor(), name);
+    }
+
+    @Override
+    public <V> RTimeSeries<V> getTimeSeries(String name, Codec codec) {
+        return new RedissonTimeSeries<>(codec, evictionScheduler, connectionManager.getCommandExecutor(), name);
+    }
+
+    @Override
     public <K, V> RStream<K, V> getStream(String name) {
         return new RedissonStream<K, V>(connectionManager.getCommandExecutor(), name);
     }
