@@ -880,7 +880,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         long ttlTimeout = 0;
         long ttlTimeoutDelta = 0;
         if (ttl > 0) {
-            ttlTimeoutDelta = ttlUnit.toMillis(ttl);;
+            ttlTimeoutDelta = ttlUnit.toMillis(ttl);
             ttlTimeout = System.currentTimeMillis() + ttlTimeoutDelta;
         }
 
