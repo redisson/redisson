@@ -878,8 +878,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         }
 
         long ttlTimeout = 0;
+        long ttlTimeoutDelta = 0;
         if (ttl > 0) {
-            ttlTimeout = System.currentTimeMillis() + ttlUnit.toMillis(ttl);
+            ttlTimeoutDelta = ttlUnit.toMillis(ttl);;
+            ttlTimeout = System.currentTimeMillis() + ttlTimeoutDelta;
         }
 
         long maxIdleTimeout = 0;
@@ -889,7 +891,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             maxIdleTimeout = System.currentTimeMillis() + maxIdleDelta;
         }
 
-        RFuture<V> future = putOperationAsync(key, value, ttlTimeout, maxIdleTimeout, maxIdleDelta);
+        RFuture<V> future = putOperationAsync(key, value, ttlTimeout, maxIdleTimeout, maxIdleDelta, ttlTimeoutDelta);
         if (hasNoWriter()) {
             return future;
         }
@@ -899,7 +901,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     protected RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout,
-            long maxIdleDelta) {
+            long maxIdleDelta, long ttlTimeoutDelta) {
         RFuture<V> future = commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
                 "local insertable = false; "
                         + "local v = redis.call('hget', KEYS[1], ARGV[5]); "
