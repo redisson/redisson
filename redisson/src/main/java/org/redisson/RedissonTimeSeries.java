@@ -160,6 +160,30 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     @Override
+    public boolean remove(long timestamp) {
+        return get(removeAsync(timestamp));
+    }
+
+    @Override
+    public RFuture<Boolean> removeAsync(long timestamp) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+       "local values = redis.call('zrangebyscore', KEYS[1], ARGV[2], ARGV[2]);" +
+             "if #values == 0 then " +
+                 "return 0;" +
+             "end;" +
+
+             "local expirationDate = redis.call('zscore', KEYS[2], values[1]); " +
+             "if expirationDate ~= false and tonumber(expirationDate) <= tonumber(ARGV[1]) then " +
+                 "return 0;" +
+             "end;" +
+             "redis.call('zrem', KEYS[2], values[1]); " +
+             "redis.call('zrem', KEYS[1], values[1]); " +
+             "return 1;",
+            Arrays.asList(getName(), getTimeoutSetName()),
+            System.currentTimeMillis(), timestamp);
+    }
+
+    @Override
     public V last() {
         return get(lastAsync());
     }

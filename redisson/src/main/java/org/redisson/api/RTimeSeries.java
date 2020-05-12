@@ -83,6 +83,14 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
     V get(long timestamp);
 
     /**
+     * Removes object by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return <code>true</code> if an element was removed as a result of this call
+     */
+    boolean remove(long timestamp);
+
+    /**
      * Removes and returns the head elements or {@code null} if this time-series collection is empty.
      *
      * @param count - elements amount

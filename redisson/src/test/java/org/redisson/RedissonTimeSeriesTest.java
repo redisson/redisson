@@ -64,6 +64,10 @@ public class RedissonTimeSeriesTest extends BaseTest {
         assertThat(t.size()).isEqualTo(2);
         assertThat(t.range(1, 4)).containsExactly("10", "40");
         assertThat(t.rangeReversed(1, 4)).containsExactly("40", "10");
+
+        assertThat(t.remove(4)).isTrue();
+        assertThat(t.remove(5)).isFalse();
+        assertThat(t.size()).isEqualTo(1);
     }
 
     @Test

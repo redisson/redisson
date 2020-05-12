@@ -95,6 +95,14 @@ public interface RTimeSeriesReactive<V> extends RExpirableReactive {
     Mono<V> get(long timestamp);
 
     /**
+     * Removes object by specified <code>timestamp</code>.
+     *
+     * @param timestamp - object timestamp
+     * @return <code>true</code> if an element was removed as a result of this call
+     */
+    Mono<Boolean> remove(long timestamp);
+
+    /**
      * Removes and returns the head elements or {@code null} if this time-series collection is empty.
      *
      * @param count - elements amount
