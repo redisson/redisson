@@ -60,10 +60,6 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     String getTimeoutSetName() {
-        return getTimeoutSetName(getName());
-    }
-
-    String getTimeoutSetName(String name) {
         return prefixName("redisson__ts_ttl", name);
     }
 
@@ -491,7 +487,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
                     + "end;"
                 + "end;"
                 + "return {res[1], result};",
-                Arrays.asList(name, getTimeoutSetName(name)),
+                Arrays.asList(name, getTimeoutSetName()),
                 params.toArray());
     }
 
@@ -553,4 +549,31 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
             evictionScheduler.remove(getName());
         }
     }
+
+    @Override
+    public RFuture<Boolean> deleteAsync() {
+        return deleteAsync(getName(), getTimeoutSetName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return expireAsync(timeToLive, timeUnit, getName(), getTimeoutSetName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
+        return expireAtAsync(timestamp, getName(), getTimeoutSetName());
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getName(), getTimeoutSetName());
+    }
+
+    @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        List<Object> keys = Arrays.<Object>asList(getName(), getTimeoutSetName());
+        return super.sizeInMemoryAsync(keys);
+    }
+
 }
