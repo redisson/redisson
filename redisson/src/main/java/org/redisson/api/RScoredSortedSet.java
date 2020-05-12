@@ -145,19 +145,18 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     V pollLast(long timeout, TimeUnit unit);
     
     /**
-     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     * Removes and returns the head elements of this sorted set.
      *
      * @param count - elements amount
-     * @return the head element, 
-     *         or {@code null} if this sorted set is empty
+     * @return the head elements of this sorted set
      */
     Collection<V> pollFirst(int count);
 
     /**
-     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     * Removes and returns the tail elements of this sorted set.
      * 
      * @param count - elements amount
-     * @return the tail element or {@code null} if this sorted set is empty
+     * @return the tail elements of this sorted set
      */
     Collection<V> pollLast(int count);
     

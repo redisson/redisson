@@ -106,18 +106,18 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<V> pollLastAsync(long timeout, TimeUnit unit);
     
     /**
-     * Removes and returns the head elements or {@code null} if this sorted set is empty.
+     * Removes and returns the head elements of this sorted set.
      *
      * @param count - elements amount
-     * @return the head elements
+     * @return the head elements of this sorted set
      */
     RFuture<Collection<V>> pollFirstAsync(int count);
 
     /**
-     * Removes and returns the tail elements or {@code null} if this sorted set is empty.
+     * Removes and returns the tail elements of this sorted set.
      *
      * @param count - elements amount
-     * @return the tail elements
+     * @return the tail elements of this sorted set
      */
     RFuture<Collection<V>> pollLastAsync(int count);
 
