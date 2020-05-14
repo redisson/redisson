@@ -658,7 +658,81 @@ public class RedissonTest {
         assertThat(success).isGreaterThan(5000);
     }
 
-    
+    @Test
+    public void testFailoverInClusterSlave() throws Exception {
+        RedisRunner master1 = new RedisRunner().port(6890).randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RedisProcess slave = process.getNodes().stream().filter(x -> x.getRedisServerPort() == slave1.getPort()).findFirst().get();
+
+        List<RFuture<?>> futures = new ArrayList<RFuture<?>>();
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread t = new Thread() {
+            public void run() {
+                for (int i = 0; i < 200; i++) {
+                    RFuture<?> f1 = redisson.getBucket("i" + i).getAsync();
+                    futures.add(f1);
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
+                    if (i % 100 == 0) {
+                        System.out.println("step: " + i);
+                    }
+                }
+                latch.countDown();
+            };
+        };
+        t.start();
+        t.join(1000);
+
+        slave.stop();
+        System.out.println("slave " + slave.getRedisServerAddressAndPort() + " has been stopped!");
+
+        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+
+        int errors = 0;
+        int success = 0;
+        int readonlyErrors = 0;
+
+        for (RFuture<?> rFuture : futures) {
+            rFuture.awaitUninterruptibly();
+            if (!rFuture.isSuccess()) {
+                errors++;
+            } else {
+                success++;
+            }
+        }
+
+        redisson.shutdown();
+        process.shutdown();
+
+        assertThat(readonlyErrors).isZero();
+        assertThat(errors).isLessThan(50);
+        assertThat(success).isGreaterThan(150);
+    }
+
+
     @Test
     public void testReconnection() throws IOException, InterruptedException, TimeoutException {
         RedisProcess runner = new RedisRunner()
