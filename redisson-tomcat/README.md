@@ -19,8 +19,11 @@ Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tom
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	 configPath="${catalina.base}/redisson.conf" 
-	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"/>
+	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"
+	 keyPrefix=""/>
    ```
+   `keyPrefix` - string prefix applied to all Redis keys. Allows to connection different Tomcat envirounments to the same Redis instance.
+   
    `readMode` - read Session attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
    * `REDIS` - stores attributes into Redis only.  Default mode.
