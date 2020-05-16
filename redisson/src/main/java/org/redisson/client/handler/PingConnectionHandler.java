@@ -75,6 +75,9 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 if (future != null
                         && (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
+                    if (future.cause() != null) {
+                        log.error("Unable to send PING command over channel: " + ctx.channel(), future.cause());
+                    }
                     log.debug("channel: {} closed due to PING response timeout set in {} ms", ctx.channel(), config.getPingConnectionInterval());
                 } else {
                     sendPing(ctx);
