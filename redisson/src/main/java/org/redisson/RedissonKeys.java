@@ -286,7 +286,7 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public long unlink(String... keys) {
-        return commandExecutor.get(deleteAsync(keys));
+        return commandExecutor.get(unlinkAsync(keys));
     }
 
     @Override
