@@ -24,15 +24,13 @@ import org.redisson.client.codec.Codec;
  */
 public interface NamingScheme {
 
+    String getNamePattern(Class<?> entityClass, Class<?> idFieldClass, String idFieldName);
+
     String getName(Class<?> entityClass, Class<?> idFieldClass, String idFieldName, Object idValue);
     
     String getIndexName(Class<?> entityClass, String fieldName);
     
     String getFieldReferenceName(Class<?> entityClass, Object idValue, Class<?> fieldClass, String fieldName, Object fieldValue);
-
-    String resolveClassName(String name);
-
-    String resolveIdFieldName(String name);
 
     Object resolveId(String name);
     

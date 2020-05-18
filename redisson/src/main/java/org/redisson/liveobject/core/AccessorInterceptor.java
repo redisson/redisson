@@ -149,14 +149,18 @@ public class AccessorInterceptor {
             }
             
             if (arg instanceof RObject) {
-                connectionManager.getCommandExecutor().getObjectBuilder().store((RObject) arg, fieldName, liveMap);
+                if (commandExecutor instanceof CommandBatchService) {
+                    commandExecutor.getObjectBuilder().storeAsync((RObject) arg, fieldName, liveMap);
+                } else {
+                    commandExecutor.getObjectBuilder().store((RObject) arg, fieldName, liveMap);
+                }
                 return me;
             }
 
             if (arg == null) {
                 Object oldArg = liveMap.remove(fieldName);
                 if (field.getAnnotation(RIndex.class) != null) {
-                    NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
+                    NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
                     String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
 
                     CommandBatchService ce;

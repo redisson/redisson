@@ -68,7 +68,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    RedissonObjectBuilder objectBuilder;
+    protected RedissonObjectBuilder objectBuilder;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;

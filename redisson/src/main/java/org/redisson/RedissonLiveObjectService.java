@@ -29,6 +29,12 @@ import net.bytebuddy.matcher.ElementMatchers;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Condition;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
@@ -38,6 +44,7 @@ import org.redisson.liveobject.core.*;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.RIdResolver;
 
 import java.lang.reflect.Constructor;
@@ -163,6 +170,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> List<T> persist(T... detachedObjects) {
         CommandBatchService commandExecutor = new CommandBatchService(connectionManager);
+        commandExecutor.setObjectBuilder(connectionManager.getCommandExecutor().getObjectBuilder());
+
         Map<Class<?>, Class<?>> classCache = new HashMap<>();
         Map<T, Object> detached2Attached = new LinkedHashMap<>();
         Map<String, Object> name2id = new HashMap<>();
@@ -261,7 +270,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
 
                 if (rObject instanceof Collection) {
-                    Collection coll = ((Collection) rObject);
+                    Collection coll = (Collection) rObject;
                     if (type == RCascadeType.MERGE) {
                         coll.clear();
                     }
@@ -548,6 +557,32 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     public <T> boolean delete(Class<T> entityClass, Object id) {
         T entity = createLiveObject(entityClass, id);
         return asLiveObject(entity).delete();
+    }
+
+    @Override
+    public <K> Iterable<K> findIds(Class<?> entityClass) {
+        try {
+            String idFieldName = getRIdFieldName(entityClass);
+            Class<?> idFieldType = ClassUtils.getDeclaredField(entityClass, idFieldName).getType();
+            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
+            String pattern = namingScheme.getNamePattern(entityClass, idFieldType, idFieldName);
+            RedissonKeys keys = new RedissonKeys(connectionManager.getCommandExecutor());
+
+            RedisCommand<ListScanResult<String>> command = new RedisCommand<>("SCAN",
+                    new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()), new Convertor<Object>() {
+                @Override
+                public Object convert(Object obj) {
+                    if (!(obj instanceof String)) {
+                        return obj;
+                    }
+                    return namingScheme.resolveId(obj.toString());
+                }
+            });
+
+            return keys.getKeysByPattern(command, pattern, 10);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override

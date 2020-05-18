@@ -36,6 +36,7 @@ import org.redisson.api.RType;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.StringCodec;
+import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
@@ -89,17 +90,21 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public Iterable<String> getKeysByPattern(String pattern, int count) {
-        List<Iterable<String>> iterables = new ArrayList<Iterable<String>>();
+        return getKeysByPattern(RedisCommands.SCAN, pattern, count);
+    }
+
+    public <T> Iterable<T> getKeysByPattern(RedisCommand<?> command, String pattern, int count) {
+        List<Iterable<T>> iterables = new ArrayList<>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
-            Iterable<String> iterable = new Iterable<String>() {
+            Iterable<T> iterable = new Iterable<T>() {
                 @Override
-                public Iterator<String> iterator() {
-                    return createKeysIterator(entry, pattern, count);
+                public Iterator<T> iterator() {
+                    return createKeysIterator(entry, command, pattern, count);
                 }
             };
             iterables.add(iterable);
         }
-        return new CompositeIterable<String>(iterables);
+        return new CompositeIterable<T>(iterables);
     }
 
     @Override
@@ -112,23 +117,28 @@ public class RedissonKeys implements RKeys {
         return getKeysByPattern(null, count);
     }
 
-    public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, long startPos,
-            String pattern, int count) {
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, RedisCommand<?> command, long startPos,
+                                                             String pattern, int count) {
         if (pattern == null) {
-            return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "COUNT",
+            return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, command, startPos, "COUNT",
                     count);
         }
-        return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, RedisCommands.SCAN, startPos, "MATCH",
+        return commandExecutor.readAsync(client, entry, StringCodec.INSTANCE, command, startPos, "MATCH",
                 pattern, "COUNT", count);
     }
 
-    private Iterator<String> createKeysIterator(MasterSlaveEntry entry, String pattern, int count) {
-        return new RedissonBaseIterator<String>() {
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, long startPos,
+            String pattern, int count) {
+        return scanIteratorAsync(client, entry, RedisCommands.SCAN, startPos, "COUNT", count);
+    }
+
+    private <T> Iterator<T> createKeysIterator(MasterSlaveEntry entry, RedisCommand<?> command, String pattern, int count) {
+        return new RedissonBaseIterator<T>() {
 
             @Override
             protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
                 return commandExecutor
-                        .get(RedissonKeys.this.scanIteratorAsync(client, entry, nextIterPos, pattern, count));
+                        .get(RedissonKeys.this.scanIteratorAsync(client, entry, command, nextIterPos, pattern, count));
             }
 
             @Override
@@ -234,7 +244,7 @@ public class RedissonKeys implements RKeys {
                 public void run() {
                     long count = 0;
                     try {
-                        Iterator<String> keysIterator = createKeysIterator(entry, pattern, batchSize);
+                        Iterator<String> keysIterator = createKeysIterator(entry, RedisCommands.SCAN, pattern, batchSize);
                         List<String> keys = new ArrayList<String>();
                         while (keysIterator.hasNext()) {
                             String key = keysIterator.next();

@@ -9,18 +9,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TreeSet;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -1253,6 +1242,21 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         public void setKeywords(List<String> keywords) {
             this.keywords = keywords;
         }
+    }
+
+    @Test
+    public void testFindIds() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed1 t1 = new TestIndexed1();
+        t1.setId("1");
+        t1.setKeywords(Collections.singletonList("132323"));
+        TestIndexed1 t2 = new TestIndexed1();
+        t2.setId("2");
+        t2.setKeywords(Collections.singletonList("fjdklj"));
+        s.persist(t1, t2);
+
+        Iterable<String> ids = s.findIds(TestIndexed1.class);
+        assertThat(ids).containsExactlyInAnyOrder("1", "2");
     }
 
     @Test

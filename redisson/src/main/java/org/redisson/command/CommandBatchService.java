@@ -28,6 +28,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -115,6 +116,10 @@ public class CommandBatchService extends CommandAsyncService {
     public CommandBatchService(ConnectionManager connectionManager, BatchOptions options) {
         super(connectionManager);
         this.options = options;
+    }
+
+    public void setObjectBuilder(RedissonObjectBuilder objectBuilder) {
+        this.objectBuilder = objectBuilder;
     }
     
     public BatchOptions getOptions() {

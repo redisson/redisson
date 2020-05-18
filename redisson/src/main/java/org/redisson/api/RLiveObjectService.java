@@ -71,6 +71,15 @@ public interface RLiveObjectService {
     <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
+     * Returns all entry ids by specified <code>entityClass</code>.
+     *
+     * @param entityClass - entity class
+     * @param <K> Key type
+     * @return collection of ids or empty collection.
+     */
+    <K> Iterable<K> findIds(Class<?> entityClass);
+
+    /**
      * Returns proxied object for the detached object. Discard all the
      * field values already in the detached instance.
      *
