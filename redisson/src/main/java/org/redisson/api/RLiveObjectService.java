@@ -96,7 +96,7 @@ public interface RLiveObjectService {
      * RId, and the object should hold a non null value in that field.
      * 
      * If this object is not in redis then a new hash key will be created to
-     * store it.
+     * store it. Otherwise overrides current object state in Redis with the given object state.
      *
      * @param <T> Entity type
      * @param detachedObject - not proxied object

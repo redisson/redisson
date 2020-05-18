@@ -72,11 +72,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        map.expire(timeToLive, timeUnit);
 //        return instance;
 //    }
-    
+
     private RMap<String, Object> getMap(Object proxied) {
         return ClassUtils.getField(proxied, "liveObjectLiveMap");
     }
-    
+
     private <T> Object generateId(Class<T> entityClass) throws NoSuchFieldException {
         String idFieldName = getRIdFieldName(entityClass);
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
@@ -85,7 +85,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         Object id = resolver.resolve(entityClass, annotation, idFieldName, connectionManager.getCommandExecutor());
         return id;
     }
-    
+
     private RIdResolver<?> getResolver(Class<?> cls, Class<? extends RIdResolver<?>> resolverClass) {
         if (!PROVIDER_CACHE.containsKey(resolverClass)) {
             try {
@@ -125,7 +125,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
         Set<Object> ids = seachEngine.find(entityClass, condition);
-        
+
         return ids.stream()
                     .map(id -> createLiveObject(entityClass, id))
                     .collect(Collectors.toList());
@@ -153,7 +153,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
         return persist(detachedObject, alreadyPersisted, RCascadeType.MERGE);
     }
-    
+
     @Override
     public <T> T persist(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
@@ -205,7 +205,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         for (Entry<T, Object> entry : detached2Attached.entrySet()) {
             T detachedObject = entry.getKey();
             Object attachedObject = entry.getValue();
-            
+
             for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
                 Object object = ClassUtils.getField(detachedObject, field.getName());
                 if (object == null) {
@@ -261,6 +261,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
 
                 if (rObject instanceof Collection) {
+                    Collection coll = ((Collection) rObject);
+                    if (type == RCascadeType.MERGE) {
+                        coll.clear();
+                    }
+
                     for (Object obj : (Collection<Object>) object) {
                         if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
@@ -270,10 +275,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             }
                             obj = persisted;
                         }
-                        ((Collection) rObject).add(obj);
+                        coll.add(obj);
                     }
                 } else if (rObject instanceof Map) {
                     Map<Object, Object> rMap = (Map<Object, Object>) rObject;
+                    if (type == RCascadeType.MERGE) {
+                        rMap.clear();
+                    }
+
                     Map<?, ?> map = (Map<?, ?>) object;
                     for (Entry<?, ?> entry : map.entrySet()) {
                         Object key = entry.getKey();
