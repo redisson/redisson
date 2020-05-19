@@ -71,6 +71,22 @@ public interface RLiveObjectService {
     <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
+     * Counts the entities matches specified <code>condition</code>.
+     * Usage example:
+     * <pre>
+     * long objectsAmount = liveObjectService.count(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"),
+     *                          Conditions.and(Conditions.eq("field2", "value2"), Conditions.eq("field3", "value5"))));
+     * </pre>
+     *
+     * @see Conditions
+     *
+     * @param entityClass - entity class
+     * @param condition - condition object
+     * @return amount of live objects.
+     */
+    long count(Class<?> entityClass, Condition condition);
+
+    /**
      * Returns iterator for all entry ids by specified <code>entityClass</code>.
      * Ids traversed with SCAN operation. Each SCAN operation loads
      * up to <code>count</code> keys per request.

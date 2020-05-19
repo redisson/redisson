@@ -139,6 +139,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
+    public long count(Class<?> entityClass, Condition condition) {
+        Set<Object> ids = seachEngine.find(entityClass, condition);
+        return ids.size();
+    }
+
+    @Override
     public <T> T attach(T detachedObject) {
         validateDetached(detachedObject);
         Class<T> entityClass = (Class<T>) detachedObject.getClass();
