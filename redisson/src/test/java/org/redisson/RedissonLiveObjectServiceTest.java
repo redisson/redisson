@@ -1833,9 +1833,20 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     @Test
     public void testDeleteNotExisted() {
         RLiveObjectService service = redisson.getLiveObjectService();
-        assertThat(service.delete(Customer.class, "id")).isFalse();
+        assertThat(service.delete(Customer.class, "id")).isZero();
     }
-    
+
+    @Test
+    public void testDeleteMultipleIds() {
+        Customer customer1 = new Customer("1");
+        Customer customer2 = new Customer("2");
+        RLiveObjectService ls = redisson.getLiveObjectService();
+        ls.persist(customer1, customer2);
+        assertThat(ls.delete(Customer.class, "1", "2")).isEqualTo(2);
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+
     @Test
     public void testDelete() {
         Customer customer = new Customer("12");
@@ -2115,7 +2126,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
-    @Test
+    @Test(timeout = 30*1000)
     public void testBatchedPersist() {
         RLiveObjectService s = redisson.getLiveObjectService();
 

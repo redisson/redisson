@@ -15,21 +15,16 @@
  */
 package org.redisson.liveobject.core;
 
-import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
-import net.bytebuddy.description.field.FieldList;
 import net.bytebuddy.implementation.bind.annotation.*;
-import org.redisson.RedissonKeys;
+import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonMap;
-import org.redisson.RedissonScoredSortedSet;
-import org.redisson.RedissonSetMultimap;
-import org.redisson.api.*;
-import org.redisson.api.annotation.RIndex;
+import org.redisson.api.RFuture;
+import org.redisson.api.RMap;
 import org.redisson.client.RedisException;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.liveobject.misc.ClassUtils;
-import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.Method;
@@ -57,8 +52,11 @@ public class LiveObjectInterceptor {
     private final String idFieldName;
     private final Class<?> idFieldType;
     private final NamingScheme namingScheme;
+    private final RedissonLiveObjectService service;
 
-    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager, Class<?> entityClass, String idFieldName) {
+    public LiveObjectInterceptor(CommandAsyncExecutor commandExecutor, ConnectionManager connectionManager,
+                                 RedissonLiveObjectService service, Class<?> entityClass, String idFieldName) {
+        this.service = service;
         this.commandExecutor = commandExecutor;
         this.connectionManager = connectionManager;
         this.originalClass = entityClass;
@@ -81,7 +79,7 @@ public class LiveObjectInterceptor {
             @FieldValue("liveObjectId") Object id,
             @FieldProxy("liveObjectId") Setter idSetter,
             @FieldProxy("liveObjectId") Getter idGetter,
-            @FieldValue("liveObjectLiveMap") RMap<?, ?> map,
+            @FieldValue("liveObjectLiveMap") RMap<String, ?> map,
             @FieldProxy("liveObjectLiveMap") Setter mapSetter,
             @FieldProxy("liveObjectLiveMap") Getter mapGetter
     ) throws Exception {
@@ -120,29 +118,14 @@ public class LiveObjectInterceptor {
         }
 
         if ("delete".equals(method.getName())) {
-            FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
             CommandBatchService ce;
             if (commandExecutor instanceof CommandBatchService) {
                 ce = (CommandBatchService) commandExecutor;
             } else {
                 ce = new CommandBatchService(connectionManager);
             }
-            for (InDefinedShape field : fields) {
-                String fieldName = field.getName();
-                Object value = map.get(fieldName);
 
-                NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
-                String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-
-                if (value instanceof Number) {
-                    RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
-                    set.removeAsync(((RLiveObject) me).getLiveObjectId());
-                } else {
-                    RMultimapAsync<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                    idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
-                }
-            }
-            RFuture<Long> deleteFuture = new RedissonKeys(ce).deleteAsync(map.getName());
+            RFuture<Long> deleteFuture = service.delete(me, map, ce);
             ce.execute();
             
             return deleteFuture.getNow() > 0;
@@ -150,6 +133,7 @@ public class LiveObjectInterceptor {
 
         return method.invoke(map, args);
     }
+
 
     private String getMapKey(Object id) {
         return namingScheme.getName(originalClass, idFieldType, idFieldName, id);

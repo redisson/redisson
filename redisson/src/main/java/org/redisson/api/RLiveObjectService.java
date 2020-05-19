@@ -183,15 +183,15 @@ public interface RLiveObjectService {
     <T> void delete(T attachedObject);
 
     /**
-     * Deletes object by class and id including all nested objects.
+     * Deletes object by class and ids including all nested objects.
      *
      * @param <T> Entity type
      * @param entityClass - object class
-     * @param id - object id
+     * @param ids - object ids
      * 
-     * @return <code>true</code> if entity was deleted successfully, <code>false</code> otherwise 
+     * @return amount of deleted objects
      */
-    <T> boolean delete(Class<T> entityClass, Object id);
+    <T> long delete(Class<T> entityClass, Object... ids);
     
     /**
      * To cast the instance to RLiveObject instance.

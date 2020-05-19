@@ -38,7 +38,7 @@ public class BatchResult<E> {
      * 
      * @return list of objects
      */
-    public List<?> getResponses() {
+    public List<E> getResponses() {
         return responses;
     }
 
