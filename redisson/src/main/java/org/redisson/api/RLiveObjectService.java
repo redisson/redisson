@@ -71,13 +71,27 @@ public interface RLiveObjectService {
     <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
-     * Returns all entry ids by specified <code>entityClass</code>.
+     * Returns iterator for all entry ids by specified <code>entityClass</code>.
+     * Ids traversed with SCAN operation. Each SCAN operation loads
+     * up to <code>count</code> keys per request.
      *
      * @param entityClass - entity class
      * @param <K> Key type
      * @return collection of ids or empty collection.
      */
     <K> Iterable<K> findIds(Class<?> entityClass);
+
+    /**
+     * Returns iterator for all entry ids by specified <code>entityClass</code>.
+     * Ids traversed with SCAN operation. Each SCAN operation loads
+     * up to <code>count</code> keys per request.
+     *
+     * @param entityClass - entity class
+     * @param count - keys loaded per request to Redis
+     * @param <K> Key type
+     * @return collection of ids or empty collection.
+     */
+    <K> Iterable<K> findIds(Class<?> entityClass, int count);
 
     /**
      * Returns proxied object for the detached object. Discard all the

@@ -561,6 +561,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <K> Iterable<K> findIds(Class<?> entityClass) {
+        return findIds(entityClass, 10);
+    }
+
+    @Override
+    public <K> Iterable<K> findIds(Class<?> entityClass, int count) {
         try {
             String idFieldName = getRIdFieldName(entityClass);
             Class<?> idFieldType = ClassUtils.getDeclaredField(entityClass, idFieldName).getType();
@@ -579,7 +584,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
             });
 
-            return keys.getKeysByPattern(command, pattern, 10);
+            return keys.getKeysByPattern(command, pattern, count);
         } catch (NoSuchFieldException e) {
             throw new IllegalStateException(e);
         }
