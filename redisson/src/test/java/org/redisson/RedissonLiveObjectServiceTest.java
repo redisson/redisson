@@ -607,6 +607,30 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testCountEq() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setName1("test1");
+        t1.setNum1(100);
+        t1 = s.persist(t1);
+
+        TestIndexed t2 = new TestIndexed("2");
+        t2 = s.persist(t2);
+        t2.setName1("test1");
+        t2.setObj(t1);
+        t2.setNum1(100);
+
+        long ids = s.count(TestIndexed.class, Conditions.eq("name1", "test1"));
+        assertThat(ids).isEqualTo(2);
+
+        long ids2 = s.count(TestIndexed.class, Conditions.eq("name1", "test2"));
+        assertThat(ids2).isZero();
+
+        long ids3 = s.count(TestIndexed.class, Conditions.eq("num1", 100));
+        assertThat(ids3).isEqualTo(2);
+    }
+
+    @Test
     public void testFindEq() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
