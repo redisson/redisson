@@ -227,6 +227,11 @@ public class CommandBatchService extends CommandAsyncService {
                 executed.set(true);
                 if (ex != null) {
                     promise.tryFailure(ex);
+
+                    for (Entry e : commands.values()) {
+                        e.getCommands().forEach(t -> t.tryFailure(ex));
+                    }
+
                     nestedServices.clear();
                     return;
                 }
