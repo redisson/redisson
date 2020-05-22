@@ -128,7 +128,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.51</version>
+            <version>8.5.55</version>
             <scope>test</scope>
         </dependency>
         <dependency>
