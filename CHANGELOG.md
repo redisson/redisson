@@ -4,6 +4,28 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 25-May-2020 - 3.13.0 released
+Feature - __TimeSeries object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#723-time-series) for more details  
+Feature - `RLiveObjectService.findIds()` method implemented  
+Feature - `RLiveObjectService.count()` method implemented  
+Feature - `RLiveObjectService.delete()` method accepts multiple ids  
+
+Improvement - __default codec changed to MarshallingCodec__  
+
+Fixed - Lock acquisition hangs if Redis failed  
+Fixed - `RLiveObjectService.merge()` method doesn't override collection state  
+Fixed - `PingConnectionHandler` doesn't report errors if PING command can't be sent  
+Fixed - `RObject.unlink()` method calls `deleteAsync()` inside instead of `unlinkAsync()` method (thanks to @AayushyaVajpayee)  
+Fixed - NPE thrown after logout Tomcat application  
+Fixed - Tomcat `UpdateValue` object throws NPE if getNext() returns null  
+Fixed - `RedissonTransactionalMapCache.put()` method inserts entries with incorrect TTLs  
+Fixed - connections to Redis master/slave are doubled after redis cluster failover  
+Fixed - `RejectedExecutionException` thrown by `RedisClient.connectAsync()` method during shutdown process  
+Fixed - cache isn't applied to hibernate collection, that is joined by non primary key field  
+Fixed - hibernate 5.3 doesn't wrap cache exception into CacheException object  
+Fixed - RedissonReactiveStringCommands.set using wrong SET RedisCommand (thanks to @xJoeWoo)  
+Fixed - netty errors should be logged at ERROR level  
+
 ### 16-Apr-2020 - 3.12.5 released
 
 Improvement - increased `RLock` reliability during failover. `RedLock` was deprecated  
