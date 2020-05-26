@@ -20,6 +20,7 @@
         <module>redisson-spring-data-20</module>
         <module>redisson-spring-data-21</module>
         <module>redisson-spring-data-22</module>
+        <module>redisson-spring-data-23</module>
     </modules>
 
     <build>
