@@ -291,6 +291,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     commandData.tryFailure(e);
                 }
             }
+
+            if (i == 0 && commandBatch.isSkipResult() && commandBatch.isSyncSlaves()) {
+                checkpoint();
+                state().setBatchIndex(commandBatch.getCommands().size() - 1);
+                return;
+            }
+
             i++;
             if (commandData != null && !commandData.isSuccess()) {
                 error = commandData.cause();

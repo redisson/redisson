@@ -281,7 +281,7 @@ public class RedisExecutor<V, R> {
 
     private void scheduleResponseTimeout(RPromise<R> attemptPromise, RedisConnection connection) {
         long timeoutTime = responseTimeout;
-        if (command != null 
+        if (command != null
                 && (RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
                         || RedisCommands.BLOCKING_COMMANDS.contains(command))) {
             Long popTimeout = null;
@@ -606,7 +606,7 @@ public class RedisExecutor<V, R> {
             list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
             RPromise<Void> main = new RedissonPromise<Void>();
-            writeFuture = connection.send(new CommandsData(main, list, false));
+            writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",

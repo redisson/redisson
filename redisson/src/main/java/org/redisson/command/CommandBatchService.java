@@ -216,7 +216,8 @@ public class CommandBatchService extends CommandAsyncService {
         
         RPromise<BatchResult<?>> promise = new RedissonPromise<>();
         RPromise<Void> voidPromise = new RedissonPromise<Void>();
-        if (this.options.isSkipResult()) {
+        if (this.options.isSkipResult()
+                && this.options.getSyncSlaves() == 0) {
             voidPromise.onComplete((res, e) -> {
                 executed.set(true);
                 nestedServices.clear();
@@ -247,7 +248,8 @@ public class CommandBatchService extends CommandAsyncService {
                     if (isWaitCommand(commandEntry)) {
                         syncedSlaves = (Integer) commandEntry.getPromise().getNow();
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
-                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
+                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
+                            && !this.options.isSkipResult()) {
                         
                         if (commandEntry.getPromise().isCancelled()) {
                             continue;

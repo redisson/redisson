@@ -112,7 +112,7 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
             return;
         }
         
-        writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued));
+        writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued, options.getSyncSlaves() > 0));
     }
     
     protected boolean isWaitCommand(CommandData<?, ?> c) {
