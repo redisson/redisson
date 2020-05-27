@@ -437,6 +437,10 @@ public class RedissonRemoteService extends BaseRemoteService implements RRemoteS
         });
 
         java.util.concurrent.Future<?> submitFuture = executor.submit(() -> {
+            if (commandExecutor.getConnectionManager().isShuttingDown()) {
+                return;
+            }
+
             invokeMethod(request, method, cancelRequestFuture, responsePromise);
         });
 

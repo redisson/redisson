@@ -683,15 +683,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         connectionWatcher.stop();
 
-        if (cfg.getExecutor() == null) {
-            executor.shutdown();
-            try {
-                executor.awaitTermination(timeout, unit);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
         for (MasterSlaveEntry entry : getEntrySet()) {
@@ -702,6 +693,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         resolverGroup.close();
 
         shutdownLatch.close();
+        if (cfg.getExecutor() == null) {
+            executor.shutdown();
+            try {
+                executor.awaitTermination(timeout, unit);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         shutdownPromise.trySuccess(null);
         shutdownLatch.awaitUninterruptibly();
         

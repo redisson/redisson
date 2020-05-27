@@ -15,10 +15,7 @@ import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.redisson.BaseTest;
-import org.redisson.RedisRunner;
-import org.redisson.Redisson;
-import org.redisson.RedissonNode;
+import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.api.annotation.RInject;
 import org.redisson.api.executor.TaskFinishedListener;
@@ -114,7 +111,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         e.execute();
     }
 
-    @Test
+//    @Test
     public void testTaskFinishing() throws Exception {
         AtomicInteger counter = new AtomicInteger();
         new MockUp<TasksRunnerService>() {
@@ -241,6 +238,12 @@ public class RedissonExecutorServiceTest extends BaseTest {
             private void finish(Invocation invocation, String requestId, boolean removeTask) {
                 if (counter.incrementAndGet() > 1) {
                     invocation.proceed();
+                } else {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         };
@@ -255,21 +258,30 @@ public class RedissonExecutorServiceTest extends BaseTest {
         
         RExecutorService executor = redisson.getExecutorService("test2", ExecutorOptions.defaults().taskRetryInterval(10, TimeUnit.SECONDS));
         RExecutorFuture<?> f = executor.submit(new IncrementRunnableTask("counter"));
-        f.get();
+        assertThat(executor.getTaskCount()).isEqualTo(1);
+        Thread.sleep(1000);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(1);
-        Thread.sleep(2000);
+        Thread.sleep(1000);
+        System.out.println("shutdown");
         node.shutdown();
+
+        assertThat(executor.getTaskCount()).isEqualTo(1);
 
         node = RedissonNode.create(nodeConfig);
         node.start();
-        
+
+        assertThat(executor.getTaskCount()).isEqualTo(1);
+
         Thread.sleep(8500);
+        assertThat(executor.getTaskCount()).isEqualTo(0);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
 
         Thread.sleep(16000);
+        assertThat(executor.getTaskCount()).isEqualTo(0);
         assertThat(redisson.getAtomicLong("counter").get()).isEqualTo(2);
-        
+
         redisson.getKeys().delete("counter");
+        f.get();
         assertThat(redisson.getKeys().count()).isEqualTo(1);
     }
     
