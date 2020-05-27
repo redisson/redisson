@@ -245,7 +245,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
     public StreamInfo.XInfoConsumers xInfoConsumers(byte[] key, String groupName) {
         return connection.write(key, StringCodec.INSTANCE, new RedisCommand<StreamInfo.XInfoConsumers>("XINFO", "CONSUMERS",
                         new ListMultiDecoder2(new XInfoConsumersReplayDecoder(groupName),
-                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder())), key);
+                            new ObjectListReplayDecoder(), new ObjectListReplayDecoder())), key, groupName);
     }
 
     private static class PendingMessagesSummaryReplayDecoder implements MultiDecoder<PendingMessagesSummary> {
