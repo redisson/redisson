@@ -12,7 +12,7 @@ Feature - `RLiveObjectService.delete()` method accepts multiple ids
 
 Improvement - __default codec changed to MarshallingCodec__  
 
-Fixed - Lock acquisition hangs if Redis failed  
+Fixed - Lock acquisition hangs if Redis failed (regression since 3.12.5)  
 Fixed - `RLiveObjectService.merge()` method doesn't override collection state  
 Fixed - `PingConnectionHandler` doesn't report errors if PING command can't be sent  
 Fixed - `RObject.unlink()` method calls `deleteAsync()` inside instead of `unlinkAsync()` method (thanks to @AayushyaVajpayee)  
