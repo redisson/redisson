@@ -206,19 +206,24 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @Override
     public Object executeCallable(TaskParameters params) {
+        Object res;
         try {
             RFuture<Long> future = renewRetryTime(params.getRequestId());
             future.sync();
 
             Callable<?> callable = decode(params);
-            Object res = callable.call();
-            finish(params.getRequestId(), true);
-            return res;
+            res = callable.call();
+        } catch (RedissonShutdownException e) {
+            throw e;
         } catch (RedisException e) {
+            finish(params.getRequestId(), true);
             throw e;
         } catch (Exception e) {
+            finish(params.getRequestId(), true);
             throw new IllegalArgumentException(e);
         }
+        finish(params.getRequestId(), true);
+        return res;
     }
 
     protected void scheduleRetryTimeRenewal(String requestId, Long retryInterval) {
@@ -329,17 +334,22 @@ public class TasksRunnerService implements RemoteExecutorService {
         try {
             if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
                 RFuture<Long> future = renewRetryTime(params.getRequestId());
-                future.sync();
+                try {
+                    future.sync();
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
             }
 
             Runnable runnable = decode(params);
             runnable.run();
-            finish(params.getRequestId(), removeTask);
-        } catch (RedisException e) {
+        } catch (RedissonShutdownException e) {
             throw e;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
+        } catch (RedisException e) {
+            finish(params.getRequestId(), removeTask);
+            throw e;
         }
+        finish(params.getRequestId(), removeTask);
     }
     
     @Override
