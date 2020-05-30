@@ -90,6 +90,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         Throwable lastException = null;
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
+            addr = applyNatMap(addr);
             if (NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null && !addr.getHost().equals("localhost")) {
                 sentinelHosts.add(addr);
             }
@@ -202,6 +203,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             scheme = addr.getScheme();
+            addr = applyNatMap(addr);
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
                 RedisConnection c = client.connect();
