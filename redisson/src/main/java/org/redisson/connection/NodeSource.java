@@ -37,8 +37,7 @@ public class NodeSource {
         this.entry = entry;
     }
 
-    public NodeSource(MasterSlaveEntry entry, Integer slot) {
-        this.entry = entry;
+    public NodeSource(Integer slot) {
         this.slot = slot;
     }
 
