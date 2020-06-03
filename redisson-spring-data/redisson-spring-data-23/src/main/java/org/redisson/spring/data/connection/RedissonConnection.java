@@ -229,7 +229,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     public Long del(byte[]... keys) {
         return write(keys[0], LongCodec.INSTANCE, RedisCommands.DEL, Arrays.asList(keys).toArray());
     }
-    
+
+    @Override
+    public Long unlink(byte[]... keys) {
+        return write(keys[0], LongCodec.INSTANCE, RedisCommands.UNLINK, Arrays.asList(keys).toArray());
+    }
+
     private static final RedisStrictCommand<DataType> TYPE = new RedisStrictCommand<DataType>("TYPE", new DataTypeConvertor());
 
     @Override
