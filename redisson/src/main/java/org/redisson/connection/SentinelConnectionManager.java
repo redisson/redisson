@@ -87,13 +87,18 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         
         checkAuth(cfg);
 
-        Throwable lastException = null;
         for (String address : cfg.getSentinelAddresses()) {
             RedisURI addr = new RedisURI(address);
             addr = applyNatMap(addr);
             if (NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null && !addr.getHost().equals("localhost")) {
                 sentinelHosts.add(addr);
             }
+        }
+
+        Throwable lastException = null;
+        for (String address : cfg.getSentinelAddresses()) {
+            RedisURI addr = new RedisURI(address);
+            addr = applyNatMap(addr);
 
             RedisClient client = createClient(NodeType.SENTINEL, addr, this.config.getConnectTimeout(), this.config.getTimeout(), null);
             try {
@@ -111,6 +116,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 if (master == null) {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
+
+                RFuture<Void> sentinelFuture = registerSentinel(addr, this.config, null);
+                sentinelFuture.sync();
                 
                 RedisURI masterHost = toURI(master.getHostString(), String.valueOf(master.getPort()));
                 this.config.setMasterAddress(masterHost.toString());
