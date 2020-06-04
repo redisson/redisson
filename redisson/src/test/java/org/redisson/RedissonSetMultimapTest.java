@@ -1,21 +1,14 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
+import org.redisson.api.RSet;
+import org.redisson.api.RSetMultimap;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.junit.Test;
-import org.redisson.RedissonListMultimapTest.SimpleKey;
-import org.redisson.RedissonListMultimapTest.SimpleValue;
-import org.redisson.api.RSetMultimap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonSetMultimapTest extends BaseTest {
 
@@ -119,6 +112,22 @@ public class RedissonSetMultimapTest extends BaseTest {
             return true;
         }
 
+    }
+
+    @Test
+    public void testRemoveAll2() {
+        RSetMultimap<String, Long> testMap = redisson.getSetMultimap( "test-2" );
+        testMap.clear();
+        testMap.put( "t1", 1L );
+        testMap.put( "t1", 2L );
+        testMap.put( "t1", 3L );
+        RSet<Long> set = testMap.get( "t1" );
+        set.removeAll( Arrays.asList( 1L, 2L ) );
+        assertThat(testMap.size()).isOne();
+        assertThat(testMap.get( "t1" ).size()).isEqualTo(1);
+        testMap.clear();
+        assertThat(testMap.size()).isZero();
+        assertThat(testMap.get( "t1" ).size()).isZero();
     }
 
     @Test
