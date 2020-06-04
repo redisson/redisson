@@ -131,7 +131,8 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
-        ConnectionEntry connectionEntry = connections.get(source.getEntry());
+        MasterSlaveEntry msEntry = getEntry(source);
+        ConnectionEntry connectionEntry = connections.get(msEntry);
 
         boolean syncSlaves = options.getSyncSlaves() > 0;
 
@@ -161,7 +162,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 connectionEntry.setFirstCommand(false);
             } else {
                 if (RedisCommands.EXEC.getName().equals(command.getName())) {
-                    Entry entry = commands.get(source.getEntry());
+                    Entry entry = commands.get(msEntry);
 
                     List<CommandData<?, ?>> list = new ArrayList<>();
 
@@ -196,10 +197,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected RFuture<RedisConnection> getConnection() {
-        ConnectionEntry entry = connections.get(source.getEntry());
+        MasterSlaveEntry msEntry = getEntry(source);
+        ConnectionEntry entry = connections.get(msEntry);
         if (entry == null) {
             entry = new ConnectionEntry();
-            ConnectionEntry oldEntry = connections.putIfAbsent(source.getEntry(), entry);
+            ConnectionEntry oldEntry = connections.putIfAbsent(msEntry, entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }
