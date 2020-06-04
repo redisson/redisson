@@ -117,9 +117,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     throw new RedisConnectionException("Master node is undefined! SENTINEL GET-MASTER-ADDR-BY-NAME command returns empty result!");
                 }
 
-                RFuture<Void> sentinelFuture = registerSentinel(addr, this.config, null);
-                sentinelFuture.sync();
-                
                 RedisURI masterHost = toURI(master.getHostString(), String.valueOf(master.getPort()));
                 this.config.setMasterAddress(masterHost.toString());
                 currentMaster.set(masterHost);
