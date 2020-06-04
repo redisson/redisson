@@ -49,7 +49,7 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
      *
      * @return list of head elements
      */
-    Flux<V> poll(int limit);
+    Mono<List<V>> poll(int limit);
 
     /**
      * Inserts the specified element into this queue.

@@ -50,7 +50,7 @@ public interface RQueueRx<V> extends RCollectionRx<V> {
      *
      * @return list of head elements
      */
-    Flowable<V> poll(int limit);
+    Single<List<V>> poll(int limit);
 
     /**
      * Inserts the specified element into this queue.
