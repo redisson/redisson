@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
