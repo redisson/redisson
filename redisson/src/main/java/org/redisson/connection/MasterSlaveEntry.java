@@ -114,10 +114,14 @@ public class MasterSlaveEntry {
 
     private RFuture<RedisClient> setupMasterEntry(RedisClient client) {
         RPromise<RedisClient> result = new RedissonPromise<RedisClient>();
+        result.onComplete((res, e) -> {
+            if (e != null) {
+                client.shutdownAsync();
+            }
+        });
         RFuture<InetSocketAddress> addrFuture = client.resolveAddr();
         addrFuture.onComplete((res, e) -> {
             if (e != null) {
-                client.shutdownAsync();
                 result.tryFailure(e);
                 return;
             }
@@ -128,15 +132,15 @@ public class MasterSlaveEntry {
                     config.getMasterConnectionPoolSize(),
                     config.getSubscriptionConnectionMinimumIdleSize(),
                     config.getSubscriptionConnectionPoolSize(), 
-                    connectionManager, 
-                                    NodeType.MASTER);
+                    connectionManager,
+                    NodeType.MASTER);
     
             int counter = 1;
             if (config.getSubscriptionMode() == SubscriptionMode.MASTER) {
                 counter++;
             }
             
-            CountableListener<RedisClient> listener = new CountableListener<RedisClient>(result, client, counter);
+            CountableListener<RedisClient> listener = new CountableListener<>(result, client, counter);
             RFuture<Void> writeFuture = writeConnectionPool.add(masterEntry);
             writeFuture.onComplete(listener);
             
