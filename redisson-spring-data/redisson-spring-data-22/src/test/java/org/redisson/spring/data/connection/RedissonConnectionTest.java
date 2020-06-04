@@ -1,7 +1,5 @@
 package org.redisson.spring.data.connection;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.junit.Test;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.connection.RedisZSetCommands;
@@ -9,7 +7,17 @@ import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testSetExpiration2() {
+        assertThat(connection.set("key".getBytes(), "value".getBytes(), Expiration.milliseconds(10), SetOption.SET_IF_ABSENT)).isTrue();
+        assertThat(connection.set("key".getBytes(), "value".getBytes(), Expiration.milliseconds(10), SetOption.SET_IF_ABSENT)).isFalse();
+        assertThat(connection.set("key".getBytes(), "value".getBytes(), Expiration.milliseconds(10), SetOption.SET_IF_ABSENT)).isFalse();
+        assertThat(connection.get("key".getBytes())).isEqualTo("value".getBytes());
+    }
 
     @Test
     public void testZSet() {
