@@ -528,7 +528,7 @@ public class RedissonTest {
         
         System.out.println("master " + master.getRedisServerAddressAndPort() + " has been stopped!");
         
-        Thread.sleep(TimeUnit.SECONDS.toMillis(30));
+        Thread.sleep(TimeUnit.SECONDS.toMillis(40));
         
         RedisProcess newMaster = null;
         Collection<RedisClusterMaster> newMasterNodes = redisson.getRedisNodes(RedisNodes.CLUSTER).getMasters();
@@ -540,7 +540,7 @@ public class RedissonTest {
         }
         
         assertThat(newMaster).isNotNull();
-        
+
         for (RFuture<?> rFuture : futures) {
             rFuture.awaitUninterruptibly();
             if (!rFuture.isSuccess()) {
@@ -687,7 +687,7 @@ public class RedissonTest {
         CountDownLatch latch = new CountDownLatch(1);
         Thread t = new Thread() {
             public void run() {
-                for (int i = 0; i < 200; i++) {
+                for (int i = 0; i < 600; i++) {
                     RFuture<?> f1 = redisson.getBucket("i" + i).getAsync();
                     futures.add(f1);
                     try {
@@ -706,10 +706,10 @@ public class RedissonTest {
         t.start();
         t.join(1000);
 
-        slave.stop();
+        slave.restart(20);
         System.out.println("slave " + slave.getRedisServerAddressAndPort() + " has been stopped!");
 
-        assertThat(latch.await(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(latch.await(60, TimeUnit.SECONDS)).isTrue();
 
         int errors = 0;
         int success = 0;
@@ -718,6 +718,7 @@ public class RedissonTest {
         for (RFuture<?> rFuture : futures) {
             rFuture.awaitUninterruptibly();
             if (!rFuture.isSuccess()) {
+                rFuture.cause().printStackTrace();
                 errors++;
             } else {
                 success++;
@@ -728,8 +729,8 @@ public class RedissonTest {
         process.shutdown();
 
         assertThat(readonlyErrors).isZero();
-        assertThat(errors).isLessThan(50);
-        assertThat(success).isGreaterThan(150);
+        assertThat(errors).isLessThan(70);
+        assertThat(success).isGreaterThan(600 - 70);
     }
 
 
