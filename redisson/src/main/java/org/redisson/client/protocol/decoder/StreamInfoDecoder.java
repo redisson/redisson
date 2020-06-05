@@ -25,8 +25,8 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 /**
- * 
- * @author Nikita Koksharov
+ *
+ * @author Nikita Koksharov, Fabian Witte
  *
  */
 public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object>> {
@@ -38,29 +38,70 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {
-        StreamInfo<Object, Object> info = new StreamInfo<>();
-        info.setLength(((Long) parts.get(1)).intValue());
-        info.setRadixTreeKeys(((Long) parts.get(3)).intValue());
-        info.setRadixTreeNodes(((Long) parts.get(5)).intValue());
-        info.setGroups(((Long) parts.get(7)).intValue());
-        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(parts.get(9)));
+        StreamInfoWrapper fields = new StreamInfoWrapper(parts);
 
-        List<?> firstEntry = (List<?>) parts.get(11);
+        StreamInfo<Object, Object> info = new StreamInfo<>();
+        info.setLength(((Long) fields.get(StreamInfoWrapper.Key.LENGTH)).intValue());
+        info.setRadixTreeKeys(((Long) fields.get(StreamInfoWrapper.Key.RADIX_TREE_KEYS)).intValue());
+        info.setRadixTreeNodes(((Long) fields.get(StreamInfoWrapper.Key.RADIX_TREE_NODES)).intValue());
+        info.setGroups(((Long) fields.get(StreamInfoWrapper.Key.GROUPS)).intValue());
+        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(fields.get(StreamInfoWrapper.Key.LAST_GENERATED_ID)));
+
+        List<?> firstEntry = (List<?>) fields.get(StreamInfoWrapper.Key.FIRST_ENTRY);
         if (firstEntry != null) {
-            StreamMessageId firstId = StreamIdConvertor.INSTANCE.convert(firstEntry.get(0));
-            Map<Object, Object> firstData = (Map<Object, Object>) firstEntry.get(1);
-            StreamInfo.Entry<Object, Object> first = new StreamInfo.Entry<>(firstId, firstData);
+            StreamInfo.Entry<Object, Object> first = createStreamInfoEntry(firstEntry);
             info.setFirstEntry(first);
         }
 
-        List<?> lastEntry = (List<?>) parts.get(13);
+        List<?> lastEntry = (List<?>) fields.get(StreamInfoWrapper.Key.LAST_ENTRY);
         if (lastEntry != null) {
-            StreamMessageId lastId = StreamIdConvertor.INSTANCE.convert(lastEntry.get(0));
-            Map<Object, Object> lastData = (Map<Object, Object>) lastEntry.get(1);
-            StreamInfo.Entry<Object, Object> last = new StreamInfo.Entry<>(lastId, lastData);
+            StreamInfo.Entry<Object, Object> last = createStreamInfoEntry(lastEntry);
             info.setLastEntry(last);
         }
         return info;
+    }
+
+    private StreamInfo.Entry<Object, Object> createStreamInfoEntry(List<?> fieldValue) {
+        StreamMessageId id = StreamIdConvertor.INSTANCE.convert(fieldValue.get(0));
+        Map<Object, Object> data = (Map<Object, Object>) fieldValue.get(1);
+        return new StreamInfo.Entry<>(id, data);
+    }
+
+    /**
+     * Wrapper for StreamInfo fields.
+     */
+    private static final class StreamInfoWrapper {
+        private enum Key {
+            LENGTH("length"),
+            RADIX_TREE_KEYS("radix-tree-keys"),
+            RADIX_TREE_NODES("radix-tree-nodes"),
+            GROUPS("groups"),
+            LAST_GENERATED_ID("last-generated-id"),
+            FIRST_ENTRY("first-entry"),
+            LAST_ENTRY("last-entry");
+
+            private final String value;
+
+            Key(String value) {
+                this.value = value;
+            }
+        }
+
+        private List<Object> parts;
+
+        private StreamInfoWrapper(List<Object> parts) {
+            this.parts = parts;
+        }
+
+        public Object get(Key key) {
+            int index = parts.indexOf(key.value);
+
+            if (index > -1) {
+                return parts.get(index+1);
+            } else {
+                return null;
+            }
+        }
     }
 
 }
