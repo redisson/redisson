@@ -17,6 +17,8 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
@@ -30,6 +32,13 @@ import org.redisson.client.protocol.convertor.StreamIdConvertor;
  *
  */
 public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object>> {
+    private static final String LENGTH_KEY = "length";
+    private static final String RADIX_TREE_KEYS_KEY = "radix-tree-keys";
+    private static final String RADIX_TREE_NODES_KEY = "radix-tree-nodes";
+    private static final String GROUPS_KEY = "groups";
+    private static final String LAST_GENERATED_ID_KEY = "last-generated-id";
+    private static final String FIRST_ENTRY_KEY = "first-entry";
+    private static final String LAST_ENTRY_KEY = "last-entry";
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
@@ -38,22 +47,24 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {
-        StreamInfoWrapper fields = new StreamInfoWrapper(parts);
+        Map<String, Object> map = IntStream.range(0, parts.size()).boxed().collect(
+                Collectors.groupingBy(e -> e / 2, Collectors.mapping(e -> parts.get(e), Collectors.toList())))
+                .values().stream().collect(Collectors.toMap(e -> (String) e.get(0), e -> e.get(1)));
 
         StreamInfo<Object, Object> info = new StreamInfo<>();
-        info.setLength(((Long) fields.get(StreamInfoWrapper.Key.LENGTH)).intValue());
-        info.setRadixTreeKeys(((Long) fields.get(StreamInfoWrapper.Key.RADIX_TREE_KEYS)).intValue());
-        info.setRadixTreeNodes(((Long) fields.get(StreamInfoWrapper.Key.RADIX_TREE_NODES)).intValue());
-        info.setGroups(((Long) fields.get(StreamInfoWrapper.Key.GROUPS)).intValue());
-        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(fields.get(StreamInfoWrapper.Key.LAST_GENERATED_ID)));
+        info.setLength(((Long) map.get(LENGTH_KEY)).intValue());
+        info.setRadixTreeKeys(((Long) map.get(RADIX_TREE_KEYS_KEY)).intValue());
+        info.setRadixTreeNodes(((Long) map.get(RADIX_TREE_NODES_KEY)).intValue());
+        info.setGroups(((Long) map.get(GROUPS_KEY)).intValue());
+        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(map.get(LAST_GENERATED_ID_KEY)));
 
-        List<?> firstEntry = (List<?>) fields.get(StreamInfoWrapper.Key.FIRST_ENTRY);
+        List<?> firstEntry = (List<?>) map.get(FIRST_ENTRY_KEY);
         if (firstEntry != null) {
             StreamInfo.Entry<Object, Object> first = createStreamInfoEntry(firstEntry);
             info.setFirstEntry(first);
         }
 
-        List<?> lastEntry = (List<?>) fields.get(StreamInfoWrapper.Key.LAST_ENTRY);
+        List<?> lastEntry = (List<?>) map.get(LAST_ENTRY_KEY);
         if (lastEntry != null) {
             StreamInfo.Entry<Object, Object> last = createStreamInfoEntry(lastEntry);
             info.setLastEntry(last);
@@ -66,42 +77,4 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
         Map<Object, Object> data = (Map<Object, Object>) fieldValue.get(1);
         return new StreamInfo.Entry<>(id, data);
     }
-
-    /**
-     * Wrapper for StreamInfo fields.
-     */
-    private static final class StreamInfoWrapper {
-        private enum Key {
-            LENGTH("length"),
-            RADIX_TREE_KEYS("radix-tree-keys"),
-            RADIX_TREE_NODES("radix-tree-nodes"),
-            GROUPS("groups"),
-            LAST_GENERATED_ID("last-generated-id"),
-            FIRST_ENTRY("first-entry"),
-            LAST_ENTRY("last-entry");
-
-            private final String value;
-
-            Key(String value) {
-                this.value = value;
-            }
-        }
-
-        private List<Object> parts;
-
-        private StreamInfoWrapper(List<Object> parts) {
-            this.parts = parts;
-        }
-
-        public Object get(Key key) {
-            int index = parts.indexOf(key.value);
-
-            if (index > -1) {
-                return parts.get(index+1);
-            } else {
-                return null;
-            }
-        }
-    }
-
 }
