@@ -299,7 +299,7 @@ public interface RedisCommands {
     RedisCommand<Object> GETSET = new RedisCommand<Object>("GETSET");
     RedisCommand<Void> SET = new RedisCommand<Void>("SET", new VoidReplayConvertor());
     RedisCommand<Void> APPEND = new RedisCommand<Void>("APPEND", new VoidReplayConvertor());
-    RedisCommand<Boolean> SETPXNX = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor());
+    RedisCommand<Boolean> SET_BOOLEAN = new RedisCommand<Boolean>("SET", new BooleanNotNullReplayConvertor());
     RedisCommand<Boolean> SETNX = new RedisCommand<Boolean>("SETNX", new BooleanReplayConvertor());
     RedisCommand<Void> PSETEX = new RedisCommand<Void>("PSETEX", new VoidReplayConvertor());
 

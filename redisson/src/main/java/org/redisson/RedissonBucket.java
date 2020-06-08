@@ -175,7 +175,7 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
         if (value == null) {
             throw new IllegalArgumentException("Value can't be null");
         }
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SETPXNX, getName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "NX");
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET_BOOLEAN, getName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "NX");
     }
 
     @Override
@@ -186,6 +186,41 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     @Override
     public boolean trySet(V value) {
         return get(trySetAsync(value));
+    }
+
+    @Override
+    public boolean setIfExists(V value) {
+        return get(setIfExistsAsync(value));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfExistsAsync(V value) {
+        if (value == null) {
+            return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                  "local currValue = redis.call('get', KEYS[1]); " +
+                        "if currValue ~= false then " +
+                            "redis.call('del', KEYS[1]); " +
+                            "return 1;" +
+                        "end;" +
+                        "return 0; ",
+                    Collections.singletonList(getName()));
+        }
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET_BOOLEAN, getName(), encode(value), "XX");
+    }
+
+    @Override
+    public boolean setIfExists(V value, long timeToLive, TimeUnit timeUnit) {
+        return get(setIfExistsAsync(value, timeToLive, timeUnit));
+    }
+
+    @Override
+    public RFuture<Boolean> setIfExistsAsync(V value, long timeToLive, TimeUnit timeUnit) {
+        if (value == null) {
+            throw new IllegalArgumentException("Value can't be null");
+        }
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET_BOOLEAN, getName(), encode(value), "PX", timeUnit.toMillis(timeToLive), "XX");
     }
 
     @Override

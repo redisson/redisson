@@ -217,6 +217,23 @@ public class RedissonBucketTest extends BaseTest {
     }
 
     @Test
+    public void testSetIfExists() throws InterruptedException {
+        RBucket<String> r1 = redisson.getBucket("test1");
+        assertThat(r1.setIfExists("0")).isFalse();
+        assertThat(r1.isExists()).isFalse();
+        r1.set("1");
+        assertThat(r1.setIfExists("2")).isTrue();
+        assertThat(r1.get()).isEqualTo("2");
+
+        RBucket<String> r2 = redisson.getBucket("test2");
+        r2.set("1");
+        assertThat(r2.setIfExists("2", 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(r2.get()).isEqualTo("2");
+        Thread.sleep(1000);
+        assertThat(r2.isExists()).isFalse();
+    }
+
+    @Test
     public void testTrySet() {
         RBucket<String> r1 = redisson.getBucket("testTrySet");
         assertThat(r1.trySet("3")).isTrue();

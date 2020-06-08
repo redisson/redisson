@@ -15,9 +15,9 @@
  */
 package org.redisson.api;
 
-import java.util.concurrent.TimeUnit;
-
 import reactor.core.publisher.Mono;
+
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -55,6 +55,26 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      *         element was already set
      */
     Mono<Boolean> trySet(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
+     * Sets value only if it's already exists.
+     *
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element wasn't set
+     */
+    Mono<Boolean> setIfExists(V value);
+
+    /**
+     * Sets value only if it's already exists.
+     *
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return {@code true} if successful, or {@code false} if
+     *         element wasn't set
+     */
+    Mono<Boolean> setIfExists(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
      * Atomically sets the value to the given updated value
