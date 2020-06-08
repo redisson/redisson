@@ -47,9 +47,11 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {
-        Map<String, Object> map = IntStream.range(0, parts.size()).boxed().collect(
-                Collectors.groupingBy(e -> e / 2, Collectors.mapping(e -> parts.get(e), Collectors.toList())))
-                .values().stream().collect(Collectors.toMap(e -> (String) e.get(0), e -> e.get(1)));
+        Map<String, Object> map = IntStream.range(0, parts.size())
+                                    .filter(i -> i % 2 == 0)
+                                    .mapToObj(i -> parts.subList(i, i+2))
+                                    .filter(p -> p.get(1) != null)
+                                    .collect(Collectors.toMap(e -> (String) e.get(0), e -> e.get(1)));
 
         StreamInfo<Object, Object> info = new StreamInfo<>();
         info.setLength(((Long) map.get(LENGTH_KEY)).intValue());
