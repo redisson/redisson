@@ -179,19 +179,27 @@ public class MasterSlaveEntry {
         
         return slaveDown(entry);
     }
-    
+
     private boolean slaveDown(ClientConnectionsEntry entry) {
         if (entry.isMasterForRead()) {
             return false;
         }
-        
+
         // add master as slave if no more slaves available
         if (!config.checkSkipSlavesInit() && slaveBalancer.getAvailableClients() == 0) {
             if (slaveBalancer.unfreeze(masterEntry.getClient().getAddr(), FreezeReason.SYSTEM)) {
                 log.info("master {} used as slave", masterEntry.getClient().getAddr());
             }
         }
-        
+
+        return nodeDown(entry);
+    }
+
+    public void masterDown() {
+        nodeDown(masterEntry);
+    }
+
+    public boolean nodeDown(ClientConnectionsEntry entry) {
         entry.reset();
         
         for (RedisConnection connection : entry.getAllConnections()) {
@@ -205,7 +213,7 @@ public class MasterSlaveEntry {
             }
         }
         entry.getAllConnections().clear();
-        
+
         for (RedisPubSubConnection connection : entry.getAllSubscribeConnections()) {
             connection.closeAsync();
             connectionManager.getSubscribeService().reattachPubSub(connection);

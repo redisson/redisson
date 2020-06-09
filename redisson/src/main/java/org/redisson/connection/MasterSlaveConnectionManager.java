@@ -570,8 +570,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         MasterSlaveEntry oldEntry = slot2entry.getAndSet(slot, entry);
         if (oldEntry != entry) {
             entry.incReference();
+            shutdownEntry(oldEntry);
         }
-        shutdownEntry(oldEntry);
         client2entry.put(entry.getClient(), entry);
     }
 
@@ -583,6 +583,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     private void shutdownEntry(MasterSlaveEntry entry) {
         if (entry != null && entry.decReference() == 0) {
             client2entry.remove(entry.getClient());
+            entry.getAllEntries().forEach(e -> entry.nodeDown(e));
+            entry.masterDown();
             entry.shutdownAsync();
             String slaves = entry.getAllEntries().stream()
                     .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
