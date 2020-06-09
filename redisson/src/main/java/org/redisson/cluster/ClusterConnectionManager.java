@@ -506,6 +506,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 }
                 
                 if (masters.decrementAndGet() == 0) {
+                    if (futures.isEmpty()) {
+                        result.trySuccess(null);
+                        return;
+                    }
+
                     AtomicInteger nodes = new AtomicInteger(futures.size());
                     for (RFuture<Void> nodeFuture : futures) {
                         nodeFuture.onComplete((r, ex) -> {
