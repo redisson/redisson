@@ -35,8 +35,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @AutoConfigureAfter(CacheAutoConfiguration.class)
-@ConditionalOnBean({CacheManager.class, RedissonCache.class})
-@ConditionalOnClass(CacheMeterBinderProvider.class)
+@ConditionalOnBean(CacheManager.class)
+@ConditionalOnClass({CacheMeterBinderProvider.class, RedissonCache.class})
 public class RedissonCacheStatisticsAutoConfiguration {
     
     @Bean
