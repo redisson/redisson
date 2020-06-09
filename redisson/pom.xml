@@ -203,7 +203,7 @@
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.0.0-RC4</version>
+            <version>5.0.0-RC6</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
