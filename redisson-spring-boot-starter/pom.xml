@@ -9,7 +9,7 @@
     </parent>
 
     <properties>
-        <spring-boot.version>2.2.0.RELEASE</spring-boot.version>
+        <spring-boot.version>2.3.0.RELEASE</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>
@@ -129,7 +129,7 @@
 
         <dependency>
             <groupId>org.redisson</groupId>
-            <artifactId>redisson-spring-data-22</artifactId>
+            <artifactId>redisson-spring-data-23</artifactId>
             <version>${project.version}</version>
         </dependency>
 
