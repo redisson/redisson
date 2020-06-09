@@ -15,18 +15,7 @@
  */
 package org.redisson;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import org.redisson.api.RFuture;
-import org.redisson.api.RRateLimiter;
-import org.redisson.api.RateIntervalUnit;
-import org.redisson.api.RateLimiterConfig;
-import org.redisson.api.RateType;
+import org.redisson.api.*;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.handler.State;
@@ -39,12 +28,15 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class RedissonRateLimiter extends RedissonObject implements RRateLimiter {
+public class RedissonRateLimiter extends RedissonExpirable implements RRateLimiter {
 
     public RedissonRateLimiter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);

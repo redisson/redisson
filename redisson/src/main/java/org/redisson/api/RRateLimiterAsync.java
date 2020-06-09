@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * @author Nikita Koksharov
  *
  */
-public interface RRateLimiterAsync extends RObjectAsync {
+public interface RRateLimiterAsync extends RExpirableAsync {
 
     /**
      * Initializes RateLimiter's state and stores config to Redis server.

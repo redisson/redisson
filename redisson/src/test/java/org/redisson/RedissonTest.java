@@ -729,8 +729,8 @@ public class RedissonTest {
         process.shutdown();
 
         assertThat(readonlyErrors).isZero();
-        assertThat(errors).isLessThan(70);
-        assertThat(success).isGreaterThan(600 - 70);
+        assertThat(errors).isLessThan(130);
+        assertThat(success).isGreaterThan(600 - 130);
     }
 
 
