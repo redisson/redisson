@@ -41,11 +41,12 @@ import java.util.stream.Stream;
  */
 public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSeries<V> {
 
-    private EvictionScheduler evictionScheduler;
+    private final EvictionScheduler evictionScheduler;
 
     public RedissonTimeSeries(EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(connectionManager, name);
 
+        this.evictionScheduler = evictionScheduler;
         if (evictionScheduler != null) {
             evictionScheduler.scheduleTimeSeries(getName(), getTimeoutSetName());
         }
@@ -54,6 +55,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     public RedissonTimeSeries(Codec codec, EvictionScheduler evictionScheduler, CommandAsyncExecutor connectionManager, String name) {
         super(codec, connectionManager, name);
 
+        this.evictionScheduler = evictionScheduler;
         if (evictionScheduler != null) {
             evictionScheduler.scheduleTimeSeries(getName(), getTimeoutSetName());
         }
