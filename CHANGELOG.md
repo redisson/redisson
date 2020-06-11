@@ -4,6 +4,27 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 09-Jun-2020 - 3.13.1 released
+Feature - Spring Data Redis 2.3.0 integration  
+Feature - `setIfExists` method added to `RBucket`, `RBucketRx`, `RBucketReactive` interfaces  
+Feature - RExpirable interface added to RRateLimiter  
+
+Fixed - Topic channels connected to master node aren't resubscribed  
+Fixed - RedissonCacheStatisticsAutoConfiguration conditions aren't match  
+Fixed - `RTimeSeries.destroy()` method doesn't work  
+Fixed - Redis Cluster topology scanning stopped if error occured while adding new master  
+Fixed - StreamInfoDecoder to adapt to layout of XINFO response (thanks to @fawitte)  
+Fixed - Redis Cluster manager throws error Slot hasn't been discovered yet after failover  
+Fixed - Spring Data Redis `RedisConnection.set()` method returns null  
+Fixed - `RQueueReactive.poll(int limit)` method should return `Mono<List<V>>`  
+Fixed - `RQueueRx.poll(int limit)` method should return `Single<List<V>>`  
+Fixed - `RedissonSetMultimap.removeAll` method removes reference to nested set  
+Fixed - `WriteRedisConnectionException` is thrown after Redis Cluster failover  
+Fixed - `RBatch` object doesn't wait ending of sync slaves process  
+Fixed - ssl connection can't be established if Redis Sentinel was discovered by DNSMonitor  
+Fixed - some tasks are not executed if RedissonNode shutdown  
+Fixed - `NatMapper` is not applied to the first online Sentinel in list  
+
 ### 25-May-2020 - 3.13.0 released
 Feature - __TimeSeries object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#723-time-series) for more details  
 Feature - `RLiveObjectService.findIds()` method implemented  
