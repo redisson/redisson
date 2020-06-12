@@ -426,7 +426,8 @@ public class RedisExecutor<V, R> {
             }
             
             if (attemptFuture.cause() instanceof RedisLoadingException
-                    || attemptFuture.cause() instanceof RedisTryAgainException) {
+                    || attemptFuture.cause() instanceof RedisTryAgainException
+                        || attemptFuture.cause() instanceof RedisClusterDownException) {
                 if (attempt < attempts) {
                     onException();
                     connectionManager.newTimeout(new TimerTask() {
