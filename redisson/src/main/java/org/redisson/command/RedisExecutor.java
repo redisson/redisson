@@ -286,14 +286,10 @@ public class RedisExecutor<V, R> {
                         || RedisCommands.BLOCKING_COMMANDS.contains(command))) {
             Long popTimeout = null;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
-                boolean found = false;
-                for (Object param : params) {
-                    if (found) {
-                        popTimeout = Long.valueOf(param.toString()) / 1000;
+                for (int i = 0; i < params.length; i++) {
+                    if ("BLOCK".equals(params[i])) {
+                        popTimeout = Long.valueOf(params[i+1].toString()) / 1000;
                         break;
-                    }
-                    if ("BLOCK".equals(param)) {
-                        found = true; 
                     }
                 }
             } else {
