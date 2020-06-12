@@ -16,6 +16,7 @@
 package org.redisson.client;
 
 /**
+ * This error occurs when write operation over Redis connection can't be executed.
  * 
  * @author Nikita Koksharov
  *
