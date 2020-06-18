@@ -283,7 +283,7 @@
          	</executions>
                 <configuration>
                     <level>public</level>
-                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <doclint>none</doclint>
                     <quiet>true</quiet>
                 </configuration>
             </plugin>
