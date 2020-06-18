@@ -28,7 +28,7 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder {
+public class StreamObjectMapReplayDecoder extends ObjectMapReplayDecoder<Object, Object> {
 
     private Decoder<Object> codec;
     

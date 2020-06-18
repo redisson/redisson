@@ -439,6 +439,7 @@ public interface RedisCommands {
     RedisStrictCommand<Void> CLUSTER_MEET = new RedisStrictCommand<Void>("CLUSTER", "MEET");
     
     RedisStrictCommand<List<String>> CONFIG_GET = new RedisStrictCommand<List<String>>("CONFIG", "GET", new StringListReplayDecoder());
+    RedisStrictCommand<Map<String, String>> CONFIG_GET_MAP = new RedisStrictCommand<>("CONFIG", "GET", new ObjectMapReplayDecoder());
     RedisStrictCommand<Void> CONFIG_SET = new RedisStrictCommand<Void>("CONFIG", "SET", new VoidReplayConvertor());
     RedisStrictCommand<Void> CONFIG_RESETSTAT = new RedisStrictCommand<Void>("CONFIG", "RESETSTAT", new VoidReplayConvertor());
     RedisStrictCommand<List<String>> CLIENT_LIST = new RedisStrictCommand<List<String>>("CLIENT", "LIST", new StringToListConvertor());

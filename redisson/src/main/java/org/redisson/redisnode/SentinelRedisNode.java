@@ -247,4 +247,25 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
     public RFuture<Void> failoverAsync(String masterName) {
         return executeAsync(null, null, -1, RedisCommands.SENTINEL_FAILOVER, masterName);
     }
+
+    @Override
+    public Map<String, String> getConfig(String parameter) {
+        return getConfigAsync(parameter).syncUninterruptibly().getNow();
+    }
+
+    @Override
+    public void setConfig(String parameter, String value) {
+        setConfigAsync(parameter, value).syncUninterruptibly().getNow();
+    }
+
+    @Override
+    public RFuture<Map<String, String>> getConfigAsync(String parameter) {
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.CONFIG_GET_MAP, parameter);
+    }
+
+    @Override
+    public RFuture<Void> setConfigAsync(String parameter, String value) {
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.CONFIG_SET, parameter, value);
+    }
+
 }

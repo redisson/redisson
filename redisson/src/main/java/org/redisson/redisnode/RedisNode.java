@@ -317,4 +317,24 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
         throw new IllegalStateException();
     }
 
+    @Override
+    public Map<String, String> getConfig(String parameter) {
+        return commandExecutor.get(getConfigAsync(parameter));
+    }
+
+    @Override
+    public void setConfig(String parameter, String value) {
+        commandExecutor.get(setConfigAsync(parameter, value));
+    }
+
+    @Override
+    public RFuture<Map<String, String>> getConfigAsync(String parameter) {
+        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.CONFIG_GET_MAP, parameter);
+    }
+
+    @Override
+    public RFuture<Void> setConfigAsync(String parameter, String value) {
+        return commandExecutor.writeAsync(client, StringCodec.INSTANCE, RedisCommands.CONFIG_SET, parameter, value);
+    }
+
 }
