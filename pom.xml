@@ -251,7 +251,7 @@
                     <release>${release.version}</release>
 -->
                     <optimize>true</optimize>
-                    <showDeprecations>true</showDeprecations>
+                    <showDeprecation>true</showDeprecation>
                 </configuration>
                 <executions>
                     <execution>
