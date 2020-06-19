@@ -83,12 +83,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling-river</artifactId>
-            <version>2.0.9.Final</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <version>3.15.0</version>
@@ -470,12 +464,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <archive>  
+                    <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
                         </manifestEntries>
-                    </archive> 
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -488,11 +482,11 @@
                     <execution>
                         <id>bundle-manifest</id>
                         <phase>process-classes</phase>
-                        <goals>    
+                        <goals>
                             <goal>manifest</goal>
-                        </goals>   
+                        </goals>
                     </execution>
-                </executions>				
+                </executions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
