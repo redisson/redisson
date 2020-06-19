@@ -455,6 +455,16 @@ public class RedissonSetMultimapTest extends BaseTest {
         
         RSetMultimap<String, String> map2 = redisson.getSetMultimap("simple1");
         assertThat(map2.delete()).isFalse();
+
+        RSetMultimap<String, String> multiset = redisson.getSetMultimap( "test" );
+        multiset.put("1", "01");
+        multiset.put("1", "02");
+        multiset.put("1", "03");
+        RSet<String> set = multiset.get( "1" );
+
+        set.delete();
+        assertThat(multiset.size()).isZero();
+        assertThat(multiset.get("1").size()).isZero();
     }
 
     @Test

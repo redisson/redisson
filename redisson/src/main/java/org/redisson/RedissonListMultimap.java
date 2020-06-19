@@ -226,7 +226,8 @@ public class RedissonListMultimap<K, V> extends RedissonMultimap<K, V> implement
             @Override
             public RFuture<Boolean> deleteAsync() {
                 ByteBuf keyState = encodeMapKey(key);
-                return RedissonListMultimap.this.fastRemoveAsync(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
+                return RedissonListMultimap.this.fastRemoveAsync(Arrays.asList(keyState),
+                        Arrays.asList(RedissonListMultimap.this.getName(), setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
             }
             
             @Override
