@@ -384,7 +384,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <linkXref>true</linkXref>
+                    <linkXRef>true</linkXRef>
                     <minimumTokens>100</minimumTokens>
                     <targetJdk>${source.version}</targetJdk>
                     <verbose>true</verbose>
