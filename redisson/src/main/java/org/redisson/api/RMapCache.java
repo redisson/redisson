@@ -42,7 +42,7 @@ import org.redisson.api.map.event.MapEntryListener;
 public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDestroyable {
 
     /**
-     * Sets max size of the map.
+     * Sets max size of the map and overrides current value.
      * Superfluous elements are evicted using LRU algorithm.
      * 
      * @param maxSize - max size
