@@ -29,10 +29,6 @@
         <tag>redisson-parent-0.9.0</tag>
     </scm>
 
-    <prerequisites>
-        <maven>3.0.5</maven>
-    </prerequisites>
-
     <licenses>
         <license>
             <name>Apache v2</name>
