@@ -655,10 +655,6 @@ public class RedisExecutor<V, R> {
             return codec;
         }
 
-        if (codec.getClassLoader() != codec.getClass().getClassLoader()) {
-            return codec;
-        }
-
         for (Class<?> clazz : BaseCodec.SKIPPED_CODECS) {
             if (clazz.isAssignableFrom(codec.getClass())) {
                 return codec;
