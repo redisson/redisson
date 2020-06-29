@@ -130,7 +130,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 }
                 return false;
             } catch (RedisException e) {
-                if (!e.getMessage().contains("Bloom filter config has been changed")) {
+                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
                     throw e;
                 }
             }
@@ -182,7 +182,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
                 return true;
             } catch (RedisException e) {
-                if (!e.getMessage().contains("Bloom filter config has been changed")) {
+                if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
                     throw e;
                 }
             }
@@ -278,7 +278,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
         try {
             executorService.execute();
         } catch (RedisException e) {
-            if (!e.getMessage().contains("Bloom filter config has been changed")) {
+            if (e.getMessage() == null || !e.getMessage().contains("Bloom filter config has been changed")) {
                 throw e;
             }
             readConfig();
