@@ -1,13 +1,19 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import java.math.BigDecimal;
-
 import org.junit.Test;
 import org.redisson.api.RAtomicDouble;
 
+import java.math.BigDecimal;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class RedissonAtomicDoubleTest extends BaseTest {
+
+    @Test
+    public void testGetAndSet() {
+        RAtomicDouble al = redisson.getAtomicDouble("test");
+        assertThat(al.getAndSet(12)).isEqualTo(0);
+    }
 
     @Test
     public void testGetZero() {

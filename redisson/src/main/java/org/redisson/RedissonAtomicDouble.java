@@ -126,7 +126,7 @@ public class RedissonAtomicDouble extends RedissonExpirable implements RAtomicDo
 
     @Override
     public RFuture<Double> getAndSetAsync(double newValue) {
-        return commandExecutor.writeAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.GETSET, getName(), BigDecimal.valueOf(newValue).toPlainString());
+        return commandExecutor.writeAsync(getName(), DoubleCodec.INSTANCE, RedisCommands.GETSET_DOUBLE, getName(), BigDecimal.valueOf(newValue).toPlainString());
     }
 
     @Override

@@ -22,10 +22,19 @@ package org.redisson.client.protocol.convertor;
  */
 public class DoubleReplayConvertor implements Convertor<Double> {
 
+    private Double nullValue;
+
+    public DoubleReplayConvertor() {
+    }
+
+    public DoubleReplayConvertor(Double nullValue) {
+        this.nullValue = nullValue;
+    }
+
     @Override
     public Double convert(Object obj) {
         if (obj == null || obj.toString().isEmpty()) {
-            return null;
+            return nullValue;
         }
         return Double.valueOf(obj.toString());
     }
