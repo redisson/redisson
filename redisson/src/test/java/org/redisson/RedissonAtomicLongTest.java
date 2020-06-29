@@ -9,6 +9,12 @@ import org.redisson.api.RAtomicLong;
 public class RedissonAtomicLongTest extends BaseTest {
 
     @Test
+    public void testGetAndSet() {
+        RAtomicLong al = redisson.getAtomicLong("test");
+        Assert.assertEquals(0, al.getAndSet(12));
+    }
+
+    @Test
     public void testGetZero() {
         RAtomicLong ad2 = redisson.getAtomicLong("test");
         assertThat(ad2.get()).isZero();

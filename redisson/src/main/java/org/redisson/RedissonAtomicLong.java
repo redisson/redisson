@@ -124,7 +124,7 @@ public class RedissonAtomicLong extends RedissonExpirable implements RAtomicLong
 
     @Override
     public RFuture<Long> getAndSetAsync(long newValue) {
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETSET, getName(), newValue);
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.GETSET_LONG, getName(), newValue);
     }
 
     @Override
