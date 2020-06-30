@@ -115,7 +115,6 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
 
         String fallbackValue = (String) properties.getOrDefault(FALLBACK, "false");
         fallback = Boolean.valueOf(fallbackValue);
-        
         return Redisson.create(config);
     }
     
@@ -215,21 +214,21 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         }
         
         RMapCache<Object, Object> mapCache = getCache(regionConfig.getRegionName(), buildingContext.getSessionFactory().getProperties(), defaultKey);
-        return new RedissonStorage(mapCache, buildingContext.getSessionFactory().getProperties(), defaultKey);
+        return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), buildingContext.getSessionFactory().getProperties(), defaultKey);
     }
     
     @Override
     protected StorageAccess createQueryResultsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
         RMapCache<Object, Object> mapCache = getCache(regionName, sessionFactory.getProperties(), QUERY_DEF);
-        return new RedissonStorage(mapCache, sessionFactory.getProperties(), QUERY_DEF);
+        return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), sessionFactory.getProperties(), QUERY_DEF);
     }
 
     @Override
     protected StorageAccess createTimestampsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
         RMapCache<Object, Object> mapCache = getCache(regionName, sessionFactory.getProperties(), TIMESTAMPS_DEF);
-        return new RedissonStorage(mapCache, sessionFactory.getProperties(), TIMESTAMPS_DEF);
+        return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), sessionFactory.getProperties(), TIMESTAMPS_DEF);
     }
 
     protected RMapCache<Object, Object> getCache(String regionName, Map properties, String defaultKey) {

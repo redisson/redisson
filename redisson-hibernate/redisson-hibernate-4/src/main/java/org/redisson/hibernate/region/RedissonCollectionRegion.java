@@ -15,8 +15,6 @@
  */
 package org.redisson.hibernate.region;
 
-import java.util.Properties;
-
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.CollectionRegion;
@@ -25,10 +23,13 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.CollectionRegionAccessStrategy;
 import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.hibernate.strategy.NonStrictReadWriteCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadOnlyCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadWriteCollectionRegionAccessStrategy;
 import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrategy;
+
+import java.util.Properties;
 
 /**
  * 
@@ -38,13 +39,13 @@ import org.redisson.hibernate.strategy.TransactionalCollectionRegionAccessStrate
 public class RedissonCollectionRegion extends BaseRegion implements CollectionRegion {
 
     private final Settings settings;
-    
-    public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
-            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
-        super(mapCache, regionFactory, metadata, properties, defaultKey);
+
+    public RedissonCollectionRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory,
+                                    CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
+        super(mapCache, connectionManager, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
     }
-
+    
     @Override
     public CollectionRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

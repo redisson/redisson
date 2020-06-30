@@ -20,6 +20,7 @@ import java.util.Properties;
 import org.hibernate.cache.spi.RegionFactory;
 import org.hibernate.cache.spi.TimestampsRegion;
 import org.redisson.api.RMapCache;
+import org.redisson.connection.ConnectionManager;
 
 /**
  * 
@@ -28,9 +29,9 @@ import org.redisson.api.RMapCache;
  */
 public class RedissonTimestampsRegion extends BaseRegion implements TimestampsRegion {
 
-    public RedissonTimestampsRegion(RMapCache<Object, Object> mapCache, 
+    public RedissonTimestampsRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager,
             RegionFactory regionFactory, Properties properties, String defaultKey) {
-        super(mapCache, regionFactory, null, properties, defaultKey);
+        super(mapCache, connectionManager, regionFactory, null, properties, defaultKey);
     }
 
 }
