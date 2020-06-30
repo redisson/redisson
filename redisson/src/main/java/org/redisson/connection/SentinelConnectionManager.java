@@ -159,8 +159,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     connectionFutures.add(future);
                 }
 
-                RedisURI currentAddr = toURI(client.getAddr().getAddress().getHostAddress(), "" + client.getAddr().getPort());
-                RFuture<Void> f = registerSentinel(currentAddr, this.config, null);
+                RFuture<Void> f = registerSentinel(addr, this.config, null);
                 connectionFutures.add(f);
 
                 for (RFuture<Void> future : connectionFutures) {
