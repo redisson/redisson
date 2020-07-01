@@ -78,7 +78,7 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
 
     private RedissonClient redisson;
     private CacheKeysFactory cacheKeysFactory;
-    private boolean fallback;
+    protected boolean fallback;
 
     @Override
     protected CacheKeysFactory getImplicitCacheKeysFactory() {
