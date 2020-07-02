@@ -458,7 +458,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 
         RFuture<List<Map<String, String>>> sentinelsFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_SENTINELS, cfg.getMasterName());
         sentinelsFuture.onComplete((list, e) -> {
-            if (e != null) {
+            if (e != null || list.isEmpty()) {
                 return;
             }
             
