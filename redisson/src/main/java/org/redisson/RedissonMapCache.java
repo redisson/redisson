@@ -1959,7 +1959,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         List<Object> keys = Arrays.<Object>asList(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName());
         return super.sizeInMemoryAsync(keys);
     }
-    
+
+    @Override
+    public void clear() {
+        RFuture<Boolean> future = deleteAsync(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName());
+        get(future);
+    }
+
     @Override
     public RFuture<Boolean> deleteAsync() {
         return deleteAsync(getName(), getTimeoutSetName(), getIdleSetName(), getLastAccessTimeSetName(), getOptionsName());
