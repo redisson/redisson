@@ -52,7 +52,12 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     String getReadWriteTimeoutNamePrefix(long threadId) {
         return suffixName(getName(), getLockName(threadId)) + ":rwlock_timeout"; 
     }
-    
+
+    @Override
+    public String getName() {
+        return super.getName()+"_rw";
+    }
+
     @Override
     <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
