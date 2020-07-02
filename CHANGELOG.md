@@ -4,6 +4,23 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 02-Jul-2020 - 3.13.2 released
+Feature - Partitioning (sharding) of Redis setup using [ShardedRedisson](https://github.com/redisson/redisson/wiki/5.-Data-partitioning-(sharding)#2-partitioning-sharding-of-redis-setup) object  
+Feature - `CLUSTERDOWN` error handling  
+Feature - `getConfig`, `setConfig` methods added to `RedisNode` interface  
+
+Fixed - empty sentinels list handling  
+Fixed - RMapCache.clear() method clears maxSize option  
+Fixed - Redisson slowdowns access to hibernate in fallback mode  
+Fixed - Sentinel hostname isn't used for ssl connection during Redisson startup  
+Fixed - `RBloomFilter` methods throw NPE if RedisException thrown  
+Fixed - `RAtomicDouble.getAndSet()` method throws NPE  
+Fixed - `RAtomicLong.getAndSet()` method throws NPE  
+Fixed - ClassCastException thrown in Tomcat environment  
+Fixed - RSetMultimap.get().delete() and RListMultimap.get().delete() methods throw exception  
+Fixed - blocking commands connected to Redis Cluster aren't resubscribed after Master node failover  
+Fixed - connection leak if SSL connection got reconnected  
+
 ### 09-Jun-2020 - 3.13.1 released
 Feature - Spring Data Redis 2.3.0 integration  
 Feature - `setIfExists` method added to `RBucket`, `RBucketRx`, `RBucketReactive` interfaces  
