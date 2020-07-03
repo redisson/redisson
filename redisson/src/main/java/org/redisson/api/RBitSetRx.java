@@ -15,10 +15,11 @@
  */
 package org.redisson.api;
 
-import java.util.BitSet;
-
 import io.reactivex.Completable;
 import io.reactivex.Single;
+
+import java.util.BitSet;
+
 
 /**
  * RxJava2 interface for BitSet object
@@ -28,6 +29,118 @@ import io.reactivex.Single;
  */
 public interface RBitSetRx extends RExpirableRx {
 
+    /**
+     * Returns byte number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Single<Byte> getByte(long offset);
+
+    /**
+     * Returns previous value of byte number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Single<Byte> setByte(long offset, byte value);
+
+    /**
+     * Increments current byte value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Single<Byte> incrementAndGetByte(long offset, byte increment);
+
+    /**
+     * Returns short number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Single<Short> getShort(long offset);
+
+    /**
+     * Returns previous value of short number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Single<Short> setShort(long offset, short value);
+
+    /**
+     * Increments current short value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Single<Short> incrementAndGetShort(long offset, short increment);
+
+    /**
+     * Returns integer number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Single<Integer> getInteger(long offset);
+
+    /**
+     * Returns previous value of integer number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Single<Integer> setInteger(long offset, int value);
+
+    /**
+     * Increments current integer value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Single<Integer> incrementAndGetInteger(long offset, int increment);
+
+    /**
+     * Returns long number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Single<Long> getLong(long offset);
+
+    /**
+     * Returns previous value of long number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Single<Long> setLong(long offset, long value);
+
+    /**
+     * Increments current long value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Single<Long> incrementAndGetLong(long offset, long increment);
+    
     Single<byte[]> toByteArray();
 
     /**

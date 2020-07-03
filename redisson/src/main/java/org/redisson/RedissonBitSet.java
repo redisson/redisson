@@ -15,12 +15,6 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.List;
-
 import org.redisson.api.RBitSet;
 import org.redisson.api.RFuture;
 import org.redisson.client.codec.ByteArrayCodec;
@@ -29,6 +23,8 @@ import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+
+import java.util.*;
 
 /**
  * 
@@ -39,6 +35,138 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
 
     public RedissonBitSet(CommandAsyncExecutor connectionManager, String name) {
         super(null, connectionManager, name);
+    }
+
+    @Override
+    public byte getByte(long offset) {
+        return get(getByteAsync(offset));
+    }
+
+    @Override
+    public byte setByte(long offset, byte value) {
+        return get(setByteAsync(offset, value));
+    }
+
+    @Override
+    public byte incrementAndGetByte(long offset, byte increment) {
+        return get(incrementAndGetByteAsync(offset, increment));
+    }
+
+    @Override
+    public short getShort(long offset) {
+        return get(getShortAsync(offset));
+    }
+
+    @Override
+    public short setShort(long offset, short value) {
+        return get(setShortAsync(offset, value));
+    }
+
+    @Override
+    public short incrementAndGetShort(long offset, short increment) {
+        return get(incrementAndGetShortAsync(offset, increment));
+    }
+
+    @Override
+    public int getInteger(long offset) {
+        return get(getIntegerAsync(offset));
+    }
+
+    @Override
+    public int setInteger(long offset, int value) {
+        return get(setIntegerAsync(offset, value));
+    }
+
+    @Override
+    public int incrementAndGetInteger(long offset, int increment) {
+        return get(incrementAndGetIntegerAsync(offset, increment));
+    }
+
+    @Override
+    public long getLong(long offset) {
+        return get(getLongAsync(offset));
+    }
+
+    @Override
+    public long setLong(long offset, long value) {
+        return get(setLongAsync(offset, value));
+    }
+
+    @Override
+    public long incrementAndGetLong(long offset, long increment) {
+        return get(incrementAndGetLongAsync(offset, increment));
+    }
+
+    @Override
+    public RFuture<Byte> getByteAsync(long offset) {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getName(), "GET", "i8", offset);
+    }
+
+    @Override
+    public RFuture<Byte> setByteAsync(long offset, byte value) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getName(), "SET", "i8", offset, value);
+    }
+
+    @Override
+    public RFuture<Byte> incrementAndGetByteAsync(long offset, byte increment) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_BYTE,
+                                            getName(), "INCRBY", "i8", offset, increment);
+    }
+
+    @Override
+    public RFuture<Short> getShortAsync(long offset) {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getName(), "GET", "i16", offset);
+    }
+
+    @Override
+    public RFuture<Short> setShortAsync(long offset, short value) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getName(), "SET", "i16", offset, value);
+    }
+
+    @Override
+    public RFuture<Short> incrementAndGetShortAsync(long offset, short increment) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_SHORT,
+                                            getName(), "INCRBY", "i16", offset, increment);
+    }
+
+    @Override
+    public RFuture<Integer> getIntegerAsync(long offset) {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getName(), "GET", "i32", offset);
+    }
+
+    @Override
+    public RFuture<Integer> setIntegerAsync(long offset, int value) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getName(), "SET", "i32", offset, value);
+    }
+
+    @Override
+    public RFuture<Integer> incrementAndGetIntegerAsync(long offset, int increment) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_INT,
+                                            getName(), "INCRBY", "i32", offset, increment);
+    }
+
+    @Override
+    public RFuture<Long> getLongAsync(long offset) {
+        return commandExecutor.readAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getName(), "GET", "i64", offset);
+    }
+
+    @Override
+    public RFuture<Long> setLongAsync(long offset, long value) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getName(), "SET", "i64", offset, value);
+    }
+
+    @Override
+    public RFuture<Long> incrementAndGetLongAsync(long offset, long increment) {
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.BITFIELD_LONG,
+                                            getName(), "INCRBY", "i64", offset, increment);
     }
 
     @Override

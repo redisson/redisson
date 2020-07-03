@@ -25,40 +25,152 @@ import java.util.BitSet;
  */
 public interface RBitSetAsync extends RExpirableAsync {
 
+    /**
+     * Returns byte number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    RFuture<Byte> getByteAsync(long offset);
+
+    /**
+     * Returns previous value of byte number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    RFuture<Byte> setByteAsync(long offset, byte value);
+
+    /**
+     * Increments current byte value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Byte> incrementAndGetByteAsync(long offset, byte increment);
+
+    /**
+     * Returns short number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    RFuture<Short> getShortAsync(long offset);
+
+    /**
+     * Returns previous value of short number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    RFuture<Short> setShortAsync(long offset, short value);
+
+    /**
+     * Increments current short value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Short> incrementAndGetShortAsync(long offset, short increment);
+
+    /**
+     * Returns integer number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    RFuture<Integer> getIntegerAsync(long offset);
+
+    /**
+     * Returns previous value of integer number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    RFuture<Integer> setIntegerAsync(long offset, int value);
+
+    /**
+     * Increments current integer value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Integer> incrementAndGetIntegerAsync(long offset, int increment);
+
+    /**
+     * Returns long number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    RFuture<Long> getLongAsync(long offset);
+
+    /**
+     * Returns previous value of long number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    RFuture<Long> setLongAsync(long offset, long value);
+
+    /**
+     * Increments current long value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    RFuture<Long> incrementAndGetLongAsync(long offset, long increment);
+
     RFuture<byte[]> toByteArrayAsync();
 
     /**
      * Returns "logical size" = index of highest set bit plus one.
      * Returns zero if there are no any set bit.
-     * 
+     *
      * @return "logical size" = index of highest set bit plus one
      */
     RFuture<Long> lengthAsync();
 
     /**
      * Set all bits to <code>value</code> from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
-     * 
+     *
      * @param fromIndex inclusive
      * @param toIndex exclusive
      * @param value true = 1, false = 0
      * @return void
-     * 
+     *
      */
     RFuture<Void> setAsync(long fromIndex, long toIndex, boolean value);
 
     /**
      * Set all bits to zero from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
-     * 
+     *
      * @param fromIndex inclusive
      * @param toIndex exclusive
      * @return void
-     * 
+     *
      */
     RFuture<Void> clearAsync(long fromIndex, long toIndex);
 
     /**
      * Copy bits state of source BitSet object to this object
-     * 
+     *
      * @param bs - BitSet source
      * @return void
      */
@@ -66,14 +178,14 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     /**
      * Executes NOT operation over all bits
-     * 
+     *
      * @return void
      */
     RFuture<Void> notAsync();
 
     /**
      * Set all bits to one from <code>fromIndex</code> (inclusive) to <code>toIndex</code> (exclusive)
-     * 
+     *
      * @param fromIndex inclusive
      * @param toIndex exclusive
      * @return void
@@ -82,14 +194,14 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     /**
      * Returns number of set bits.
-     * 
+     *
      * @return number of set bits.
      */
     RFuture<Long> sizeAsync();
 
     /**
      * Returns <code>true</code> if bit set to one and <code>false</code> overwise.
-     * 
+     *
      * @param bitIndex - index of bit
      * @return <code>true</code> if bit set to one and <code>false</code> overwise.
      */
@@ -97,26 +209,26 @@ public interface RBitSetAsync extends RExpirableAsync {
 
     /**
      * Set bit to one at specified bitIndex
-     * 
+     *
      * @param bitIndex - index of bit
-     * @return <code>true</code> - if previous value was true, 
+     * @return <code>true</code> - if previous value was true,
      * <code>false</code> - if previous value was false
      */
     RFuture<Boolean> setAsync(long bitIndex);
 
     /**
      * Set bit to <code>value</code> at specified <code>bitIndex</code>
-     * 
+     *
      * @param bitIndex - index of bit
      * @param value true = 1, false = 0
-     * @return <code>true</code> - if previous value was true, 
+     * @return <code>true</code> - if previous value was true,
      * <code>false</code> - if previous value was false
      */
     RFuture<Boolean> setAsync(long bitIndex, boolean value);
 
     /**
      * Returns the number of bits set to one.
-     * 
+     *
      * @return number of bits
      */
     RFuture<Long> cardinalityAsync();
@@ -125,14 +237,14 @@ public interface RBitSetAsync extends RExpirableAsync {
      * Set bit to zero at specified <code>bitIndex</code>
      *
      * @param bitIndex - index of bit
-     * @return <code>true</code> - if previous value was true, 
+     * @return <code>true</code> - if previous value was true,
      * <code>false</code> - if previous value was false
      */
     RFuture<Boolean> clearAsync(long bitIndex);
 
     /**
      * Set all bits to zero
-     * 
+     *
      * @return void
      */
     RFuture<Void> clearAsync();
@@ -140,7 +252,7 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Executes OR operation over this object and specified bitsets.
      * Stores result into this object.
-     * 
+     *
      * @param bitSetNames - name of stored bitsets
      * @return void
      */
@@ -149,7 +261,7 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Executes AND operation over this object and specified bitsets.
      * Stores result into this object.
-     * 
+     *
      * @param bitSetNames - name of stored bitsets
      * @return void
      */
@@ -158,7 +270,7 @@ public interface RBitSetAsync extends RExpirableAsync {
     /**
      * Executes XOR operation over this object and specified bitsets.
      * Stores result into this object.
-     * 
+     *
      * @param bitSetNames - name of stored bitsets
      * @return void
      */

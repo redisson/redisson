@@ -15,9 +15,9 @@
  */
 package org.redisson.api;
 
-import java.util.BitSet;
-
 import reactor.core.publisher.Mono;
+
+import java.util.BitSet;
 
 /**
  * Reactive interface for BitSet object
@@ -26,6 +26,118 @@ import reactor.core.publisher.Mono;
  *
  */
 public interface RBitSetReactive extends RExpirableReactive {
+
+    /**
+     * Returns byte number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Mono<Byte> getByte(long offset);
+
+    /**
+     * Returns previous value of byte number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Mono<Byte> setByte(long offset, byte value);
+
+    /**
+     * Increments current byte value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Mono<Byte> incrementAndGetByte(long offset, byte increment);
+
+    /**
+     * Returns short number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Mono<Short> getShort(long offset);
+
+    /**
+     * Returns previous value of short number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Mono<Short> setShort(long offset, short value);
+
+    /**
+     * Increments current short value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Mono<Short> incrementAndGetShort(long offset, short increment);
+
+    /**
+     * Returns integer number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Mono<Integer> getInteger(long offset);
+
+    /**
+     * Returns previous value of integer number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Mono<Integer> setInteger(long offset, int value);
+
+    /**
+     * Increments current integer value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Mono<Integer> incrementAndGetInteger(long offset, int increment);
+
+    /**
+     * Returns long number at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @return number
+     */
+    Mono<Long> getLong(long offset);
+
+    /**
+     * Returns previous value of long number and replaces it
+     * with defined <code>value</code> at specified <code>offset</code>
+     *
+     * @param offset - offset of number
+     * @param value - value of number
+     * @return previous value of number
+     */
+    Mono<Long> setLong(long offset, long value);
+
+    /**
+     * Increments current long value on defined <code>increment</code> value at specified <code>offset</code>
+     * and returns result.
+     *
+     * @param offset - offset of number
+     * @param increment - increment value
+     * @return result value
+     */
+    Mono<Long> incrementAndGetLong(long offset, long increment);
 
     Mono<byte[]> toByteArray();
 

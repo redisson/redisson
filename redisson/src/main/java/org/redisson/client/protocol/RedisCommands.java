@@ -15,39 +15,19 @@
  */
 package org.redisson.client.protocol;
 
-import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 import org.redisson.api.RType;
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand.ValueType;
-import org.redisson.client.protocol.convertor.BitsSizeReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanAmountReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNotNullReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNullReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNullSafeReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanNumberReplayConvertor;
-import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
-import org.redisson.client.protocol.convertor.DoubleNullSafeReplayConvertor;
-import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
-import org.redisson.client.protocol.convertor.IntegerReplayConvertor;
-import org.redisson.client.protocol.convertor.LongReplayConvertor;
-import org.redisson.client.protocol.convertor.StreamIdConvertor;
-import org.redisson.client.protocol.convertor.StringToListConvertor;
-import org.redisson.client.protocol.convertor.TimeObjectDecoder;
-import org.redisson.client.protocol.convertor.TrueReplayConvertor;
-import org.redisson.client.protocol.convertor.TypeConvertor;
-import org.redisson.client.protocol.convertor.VoidReplayConvertor;
+import org.redisson.client.protocol.convertor.*;
 import org.redisson.client.protocol.decoder.*;
 import org.redisson.client.protocol.pubsub.PubSubStatusDecoder;
 import org.redisson.cluster.ClusterNodeInfo;
+
+import java.net.InetSocketAddress;
+import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * 
@@ -67,6 +47,15 @@ public interface RedisCommands {
     
     RedisStrictCommand<Integer> KEYSLOT = new RedisStrictCommand<Integer>("CLUSTER", "KEYSLOT", new IntegerReplayConvertor());
     RedisStrictCommand<RType> TYPE = new RedisStrictCommand<RType>("TYPE", new TypeConvertor());
+
+    RedisStrictCommand<Object> BITFIELD_LONG = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ListFirstObjectDecoder(), new LongReplayConvertor());
+    RedisStrictCommand<Object> BITFIELD_INT = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ListFirstObjectDecoder(), new IntegerReplayConvertor(0));
+    RedisStrictCommand<Object> BITFIELD_BYTE = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ListFirstObjectDecoder(), new ByteReplayConvertor());
+    RedisStrictCommand<Object> BITFIELD_SHORT = new RedisStrictCommand<>("BITFIELD", null,
+                                                    new ListFirstObjectDecoder(), new ShortReplayConvertor());
 
     RedisStrictCommand<Boolean> GETBIT = new RedisStrictCommand<Boolean>("GETBIT", new BooleanReplayConvertor());
     RedisStrictCommand<Long> BITS_SIZE = new RedisStrictCommand<Long>("STRLEN", new BitsSizeReplayConvertor());
