@@ -67,7 +67,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             super();
         }
         
-        public void addThreadId(long threadId) {
+        public synchronized void addThreadId(long threadId) {
             Integer counter = threadIds.get(threadId);
             if (counter == null) {
                 counter = 1;
@@ -76,16 +76,16 @@ public class RedissonLock extends RedissonExpirable implements RLock {
             }
             threadIds.put(threadId, counter);
         }
-        public boolean hasNoThreads() {
+        public synchronized boolean hasNoThreads() {
             return threadIds.isEmpty();
         }
-        public Long getFirstThreadId() {
+        public synchronized Long getFirstThreadId() {
             if (threadIds.isEmpty()) {
                 return null;
             }
             return threadIds.keySet().iterator().next();
         }
-        public void removeThreadId(long threadId) {
+        public synchronized void removeThreadId(long threadId) {
             Integer counter = threadIds.get(threadId);
             if (counter == null) {
                 return;
