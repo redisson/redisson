@@ -286,7 +286,7 @@ public class RedisExecutor<V, R> {
                         || RedisCommands.BLOCKING_COMMANDS.contains(command))) {
             Long popTimeout = null;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
-                for (int i = 0; i < params.length; i++) {
+                for (int i = 0; i < params.length-1; i++) {
                     if ("BLOCK".equals(params[i])) {
                         popTimeout = Long.valueOf(params[i+1].toString()) / 1000;
                         break;

@@ -66,8 +66,8 @@ public class RedissonBinaryStream extends RedissonBucket<byte[]> implements RBin
     
     class RedissonInputStream extends InputStream {
 
-        private int index;
-        private int mark;
+        private long index;
+        private long mark;
         
         @Override
         public long skip(long n) throws IOException {
