@@ -120,7 +120,7 @@ public class MapWriteBehindTask {
     }
 
     public void addTask(MapWriterTask task) {
-        writeBehindTasks.add(task);
+        writeBehindTasks.addAsync(task);
     }
 
     public void stop() {
