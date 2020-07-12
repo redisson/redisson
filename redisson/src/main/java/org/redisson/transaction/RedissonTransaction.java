@@ -348,7 +348,7 @@ public class RedissonTransaction implements RTransaction {
                 RedissonLocalCachedMap<?, ?> map = (RedissonLocalCachedMap<?, ?>) mapOperation.getMap();
                 
                 HashKey hashKey = new HashKey(transactionalOperation.getName(), transactionalOperation.getCodec());
-                byte[] key = map.toCacheKey(mapOperation.getKey()).getKeyHash();
+                byte[] key = map.getLocalCacheView().toCacheKey(mapOperation.getKey()).getKeyHash();
                 HashValue value = hashes.get(hashKey);
                 if (value == null) {
                     value = new HashValue();
@@ -442,7 +442,7 @@ public class RedissonTransaction implements RTransaction {
                 RedissonLocalCachedMap<?, ?> map = (RedissonLocalCachedMap<?, ?>) mapOperation.getMap();
                 
                 HashKey hashKey = new HashKey(transactionalOperation.getName(), transactionalOperation.getCodec());
-                byte[] key = map.toCacheKey(mapOperation.getKey()).getKeyHash();
+                byte[] key = map.getLocalCacheView().toCacheKey(mapOperation.getKey()).getKeyHash();
                 HashValue value = hashes.get(hashKey);
                 if (value == null) {
                     value = new HashValue();
