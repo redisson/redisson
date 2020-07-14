@@ -15,11 +15,8 @@
  */
 package org.redisson.transaction;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-
 import org.redisson.RedissonSetCache;
+import org.redisson.ScanIterator;
 import org.redisson.api.RCollectionAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -31,6 +28,10 @@ import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.set.AddCacheOperation;
 import org.redisson.transaction.operation.set.MoveOperation;
 import org.redisson.transaction.operation.set.RemoveCacheOperation;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 
@@ -53,7 +54,7 @@ public class TransactionalSetCache<V> extends BaseTransactionalSet<V> {
     @Override
     protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
             String pattern, int count) {
-        return ((RedissonSetCache<?>) set).scanIterator(name, client, startPos, pattern, count);
+        return ((ScanIterator) set).scanIterator(name, client, startPos, pattern, count);
     }
 
     @Override

@@ -19,7 +19,7 @@ import io.reactivex.Flowable;
 import io.reactivex.Single;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonObject;
-import org.redisson.RedissonSet;
+import org.redisson.ScanIterator;
 import org.redisson.api.*;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
@@ -62,7 +62,7 @@ public class RedissonSetRx<V> {
         return new SetRxIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonSet<V>) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
+                return ((ScanIterator) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, pattern, count);
             }
         }.create();
     }
