@@ -612,9 +612,9 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
 
         if (readOptions.getBlock() != null && readOptions.getBlock() > 0) {
-            return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP_BLOCKING, params.toArray());
+            return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP_BLOCKING, params.toArray());
         }
-        return connection.read(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP, params.toArray());
+        return connection.write(streams[0].getKey(), ByteArrayCodec.INSTANCE, XREADGROUP, params.toArray());
     }
 
     @Override
