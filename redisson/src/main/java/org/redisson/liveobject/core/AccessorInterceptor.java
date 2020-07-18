@@ -63,9 +63,11 @@ public class AccessorInterceptor {
 
     @RuntimeType
     @SuppressWarnings("NestedIfDepth")
-    public Object intercept(@Origin Method method, @SuperCall Callable<?> superMethod,
-            @AllArguments Object[] args, @This Object me,
-            @FieldValue("liveObjectLiveMap") RMap<String, Object> liveMap) throws Exception {
+    public Object intercept(@Origin Method method,
+                            @SuperCall Callable<?> superMethod,
+                            @AllArguments Object[] args,
+                            @This Object me,
+                            @FieldValue("liveObjectLiveMap") RMap<String, Object> liveMap) throws Exception {
         if (isGetter(method, getREntityIdFieldName(me))) {
             return ((RLiveObject) me).getLiveObjectId();
         }
@@ -158,32 +160,7 @@ public class AccessorInterceptor {
             }
 
             if (arg == null) {
-                Object oldArg = liveMap.remove(fieldName);
-                if (field.getAnnotation(RIndex.class) != null) {
-                    NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
-                    String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-
-                    CommandBatchService ce;
-                    if (commandExecutor instanceof CommandBatchService) {
-                        ce = (CommandBatchService) commandExecutor;
-                    } else {
-                        ce = new CommandBatchService(connectionManager);
-                    }
-
-                    if (oldArg instanceof Number) {
-                        RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
-                        set.removeAsync(((RLiveObject) me).getLiveObjectId());
-                    } else {
-                        RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                        if (oldArg instanceof RLiveObject) {
-                            map.removeAsync(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
-                        } else {
-                            map.removeAsync(oldArg, ((RLiveObject) me).getLiveObjectId());
-                        }
-                    }
-
-                    ce.execute();
-                }
+                removeIndex(me, liveMap, fieldName, field);
             } else {
                 storeIndex(field, me, arg);
 
@@ -198,31 +175,64 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
-    protected void storeIndex(Field field, Object me, Object arg) {
-        if (field.getAnnotation(RIndex.class) != null) {
-            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
-            String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
+    private void removeIndex(Object me, RMap<String, Object> liveMap, String fieldName, Field field) {
+        Object oldArg = liveMap.remove(fieldName);
+        if (field.getAnnotation(RIndex.class) == null) {
+            return;
+        }
 
-            boolean skipExecution = false;
-            CommandBatchService ce;
-            if (commandExecutor instanceof CommandBatchService) {
-                ce = (CommandBatchService) commandExecutor;
-                skipExecution = true;
+        NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
+        String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
+
+        CommandBatchService ce;
+        if (commandExecutor instanceof CommandBatchService) {
+            ce = (CommandBatchService) commandExecutor;
+        } else {
+            ce = new CommandBatchService(connectionManager);
+        }
+
+        if (oldArg instanceof Number) {
+            RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+            set.removeAsync(((RLiveObject) me).getLiveObjectId());
+        } else {
+            RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+            if (oldArg instanceof RLiveObject) {
+                map.removeAsync(((RLiveObject) oldArg).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
             } else {
-                ce = new CommandBatchService(connectionManager);
+                map.removeAsync(oldArg, ((RLiveObject) me).getLiveObjectId());
             }
+        }
 
-            if (arg instanceof Number) {
-                RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
-                set.addAsync(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
-            } else {
-                RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
-            }
+        ce.execute();
+    }
 
-            if (!skipExecution) {
-                ce.execute();
-            }
+    private void storeIndex(Field field, Object me, Object arg) {
+        if (field.getAnnotation(RIndex.class) == null) {
+            return;
+        }
+
+        NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
+        String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
+
+        boolean skipExecution = false;
+        CommandBatchService ce;
+        if (commandExecutor instanceof CommandBatchService) {
+            ce = (CommandBatchService) commandExecutor;
+            skipExecution = true;
+        } else {
+            ce = new CommandBatchService(connectionManager);
+        }
+
+        if (arg instanceof Number) {
+            RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+            set.addAsync(((Number) arg).doubleValue(), ((RLiveObject) me).getLiveObjectId());
+        } else {
+            RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+            map.putAsync(arg, ((RLiveObject) me).getLiveObjectId());
+        }
+
+        if (!skipExecution) {
+            ce.execute();
         }
     }
 
