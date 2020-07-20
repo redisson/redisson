@@ -103,30 +103,36 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             return;
         }
-        
-        BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
-        RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-        super.handleSuccess(sentPromise, connectionFuture, null);
-        semaphore.release();
+
+        try {
+            BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
+            RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
+            super.handleSuccess(sentPromise, connectionFuture, null);
+        } finally {
+            semaphore.release();
+        }
     }
     
     @Override
     protected void handleError(RFuture<RedisConnection> connectionFuture, Throwable cause) {
-        if (mainPromise instanceof BatchPromise) {
-            BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
-            RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-            sentPromise.tryFailure(cause);
-            mainPromise.tryFailure(cause);
-            if (executed.compareAndSet(false, true)) {
-                connectionFuture.getNow().forceFastReconnectAsync().onComplete((res, e) -> {
-                    RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
-                });
+        try {
+            if (mainPromise instanceof BatchPromise) {
+                BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
+                RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
+                sentPromise.tryFailure(cause);
+                mainPromise.tryFailure(cause);
+                if (executed.compareAndSet(false, true)) {
+                    connectionFuture.getNow().forceFastReconnectAsync().onComplete((res, e) -> {
+                        RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
+                    });
+                }
+                return;
             }
-            semaphore.release();
-            return;
-        }
 
-        super.handleError(connectionFuture, cause);
+            super.handleError(connectionFuture, cause);
+        } finally {
+            semaphore.release();
+        }
     }
     
     @Override
