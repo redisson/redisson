@@ -160,7 +160,8 @@ public class AccessorInterceptor {
             }
 
             if (arg == null) {
-                removeIndex(me, liveMap, fieldName, field);
+                Object oldArg = liveMap.remove(fieldName);
+                removeIndex(me, oldArg, fieldName, field);
             } else {
                 storeIndex(field, me, arg);
 
@@ -175,8 +176,7 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
-    private void removeIndex(Object me, RMap<String, Object> liveMap, String fieldName, Field field) {
-        Object oldArg = liveMap.remove(fieldName);
+    private void removeIndex(Object me, Object oldArg, String fieldName, Field field) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
         }
