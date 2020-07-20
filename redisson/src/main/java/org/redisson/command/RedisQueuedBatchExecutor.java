@@ -85,6 +85,9 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         if (RedisCommands.EXEC.getName().equals(command.getName())) {
             super.releaseConnection(attemptPromise, connectionFuture);
         }
+        if (RedisCommands.DISCARD.getName().equals(command.getName())) {
+            super.releaseConnection(attemptPromise, connectionFuture);
+        }
     }
     
     @Override
