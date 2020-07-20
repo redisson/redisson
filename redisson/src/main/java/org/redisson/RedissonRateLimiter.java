@@ -29,6 +29,7 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -41,7 +42,11 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     public RedissonRateLimiter(CommandAsyncExecutor commandExecutor, String name) {
         super(commandExecutor, name);
     }
-    
+
+    String getPermitsName() {
+        return suffixName(getName(), "permits");
+    }
+
     String getValueName() {
         return suffixName(getName(), "value");
     }
@@ -185,20 +190,37 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
               
               + "local currentValue = redis.call('get', valueName); "
               + "if currentValue ~= false then "
+                     + "local expiredValues = redis.call('zrangebyscore', KEYS[4], 0, tonumber(ARGV[2]) - interval); "
+                     + "local released = 0; "
+                     + "for i, v in ipairs(expiredValues) do "
+                          + "local random, permits = struct.unpack('fI', v);"
+                          + "released = released + permits;"
+                     + "end; "
+
+                     + "if released > 0 then "
+                          + "redis.call('zrem', KEYS[4], unpack(expiredValues)); "
+                          + "currentValue = tonumber(currentValue) + released; "
+                          + "redis.call('set', valueName, currentValue);"
+                     + "end;"
+
                      + "if tonumber(currentValue) < tonumber(ARGV[1]) then "
-                         + "return redis.call('pttl', valueName); "
+                         + "local nearest = redis.call('zrangebyscore', KEYS[4], '(' .. (tonumber(ARGV[2]) - interval), tonumber(ARGV[2]), 'withscores', 'limit', 0, 1); "
+                         + "local random, permits = struct.unpack('fI', nearest[1]);"
+                         + "return tonumber(nearest[2]) - (tonumber(ARGV[2]) - interval);"
                      + "else "
+                         + "redis.call('zadd', KEYS[4], ARGV[2], struct.pack('fI', ARGV[3], ARGV[1])); "
                          + "redis.call('decrby', valueName, ARGV[1]); "
                          + "return nil; "
                      + "end; "
               + "else "
                      + "assert(tonumber(rate) >= tonumber(ARGV[1]), 'Requested permits amount could not exceed defined rate'); "
-                     + "redis.call('set', valueName, rate, 'px', interval); "
+                     + "redis.call('set', valueName, rate); "
+                     + "redis.call('zadd', KEYS[4], ARGV[2], struct.pack('fI', ARGV[3], ARGV[1])); "
                      + "redis.call('decrby', valueName, ARGV[1]); "
                      + "return nil; "
               + "end;",
-                Arrays.asList(getName(), getValueName(), getClientValueName()),
-                value);
+                Arrays.asList(getName(), getValueName(), getClientValueName(), getPermitsName()),
+                value, System.currentTimeMillis(), ThreadLocalRandom.current().nextLong());
     }
 
     @Override
@@ -268,17 +290,46 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
               + "local currentValue = redis.call('get', valueName); "
               + "if currentValue == false then "
-                     + "redis.call('set', valueName, rate, 'px', interval); "
+                     + "redis.call('set', valueName, rate); "
                      + "return rate; "
               + "else "
+                     + "local expiredValues = redis.call('zrangebyscore', KEYS[4], 0, tonumber(ARGV[1]) - interval); "
+                     + "local released = 0; "
+                     + "for i, v in ipairs(expiredValues) do "
+                          + "local random, permits = struct.unpack('dI', v);"
+                          + "released = released + permits;"
+                     + "end; "
+
+                     + "if released > 0 then "
+                          + "redis.call('zrem', KEYS[4], unpack(expiredValues)); "
+                          + "currentValue = tonumber(currentValue) + released; "
+                          + "redis.call('set', valueName, currentValue);"
+                     + "end;"
+
                      + "return currentValue; "
               + "end;",
-                Arrays.asList(getName(), getValueName(), getClientValueName()));
+                Arrays.asList(getName(), getValueName(), getClientValueName(), getPermitsName()),
+                System.currentTimeMillis());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
+        return expireAsync(timeToLive, timeUnit, getName(), getValueName(), getClientValueName(), getPermitsName());
+    }
+
+    @Override
+    public RFuture<Boolean> expireAtAsync(long timestamp) {
+        return expireAtAsync(timestamp, getName(), getValueName(), getClientValueName(), getPermitsName());
+    }
+
+    @Override
+    public RFuture<Boolean> clearExpireAsync() {
+        return clearExpireAsync(getName(), getValueName(), getClientValueName(), getPermitsName());
     }
 
     @Override
     public RFuture<Boolean> deleteAsync() {
-        return deleteAsync(getName(), getValueName(), getClientValueName());
+        return deleteAsync(getName(), getValueName(), getClientValueName(), getPermitsName());
     }
 
 }
