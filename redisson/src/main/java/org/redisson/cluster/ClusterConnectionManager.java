@@ -642,14 +642,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     
     @Override
     public int calcSlot(String key) {
-        if (key == null) {
-            return 0;
-        }
-
-        int start = key.indexOf('{');
-        if (start != -1) {
-            int end = key.indexOf('}');
-            key = key.substring(start+1, end);
+        if (key == null) return 0;
+        int st = key.indexOf('{');
+        if (st >= 0) {
+            int ed = -1;
+            for (int i = st + 1, len = key.length(); i < len; i++) {
+                if (key.charAt(i) != '}') continue;
+                ed = i;
+                break;
+            }
+            if (ed > st + 1) {
+                key = key.substring(st + 1, ed);
+            }
         }
 
         int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
