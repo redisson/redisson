@@ -15,19 +15,13 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
+import net.bytebuddy.implementation.bind.annotation.*;
 import org.redisson.RedissonReference;
 import org.redisson.RedissonScoredSortedSet;
 import org.redisson.RedissonSetMultimap;
 import org.redisson.api.*;
 import org.redisson.api.annotation.REntity;
 import org.redisson.api.annotation.REntity.TransformationMode;
-import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
@@ -36,12 +30,11 @@ import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
 
-import net.bytebuddy.implementation.bind.annotation.AllArguments;
-import net.bytebuddy.implementation.bind.annotation.FieldValue;
-import net.bytebuddy.implementation.bind.annotation.Origin;
-import net.bytebuddy.implementation.bind.annotation.RuntimeType;
-import net.bytebuddy.implementation.bind.annotation.SuperCall;
-import net.bytebuddy.implementation.bind.annotation.This;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * This class is going to be instantiated and becomes a <b>static</b> field of
