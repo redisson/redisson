@@ -519,11 +519,14 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     private RFuture<Void> registerSentinel(RedisURI addr, MasterSlaveServersConfig c, String sslHostname) {
-        RedisClient sentinel = sentinels.get(addr);
-        if (sentinel != null) {
-            return RedissonPromise.newSucceededFuture(null);
+        boolean isHostname = NetUtil.createByteArrayFromIpAddressString(addr.getHost()) == null;
+        if (!isHostname) {
+            RedisClient sentinel = sentinels.get(addr);
+            if (sentinel != null) {
+                return RedissonPromise.newSucceededFuture(null);
+            }
         }
-        
+
         RedisClient client = createClient(NodeType.SENTINEL, addr, c.getConnectTimeout(), c.getTimeout(), sslHostname);
         RPromise<Void> result = new RedissonPromise<Void>();
         RFuture<InetSocketAddress> future = client.resolveAddr();
@@ -531,6 +534,15 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             if (e != null) {
                 result.tryFailure(e);
                 return;
+            }
+
+            RedisURI ipAddr = toURI(client.getAddr().getAddress().getHostAddress(), "" + client.getAddr().getPort());
+            if (isHostname) {
+                RedisClient sentinel = sentinels.get(ipAddr);
+                if (sentinel != null) {
+                    result.trySuccess(null);
+                    return;
+                }
             }
 
             RFuture<RedisConnection> f = client.connectAsync();
@@ -547,8 +559,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                         return;
                     }
                     
-                    if (sentinels.putIfAbsent(addr, client) == null) {
-                        log.info("sentinel: {} added", addr);
+                    if (sentinels.putIfAbsent(ipAddr, client) == null) {
+                        log.info("sentinel: {} added", ipAddr);
                     }
                     result.trySuccess(null);
                 });
