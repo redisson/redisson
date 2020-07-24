@@ -17,6 +17,7 @@ package org.redisson;
 
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
+import jodd.introspector.ClassIntrospector;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
@@ -235,6 +236,8 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             String idFieldName = getRIdFieldName(detachedObject.getClass());
             copy(detachedObject, attachedObject, Arrays.asList(idFieldName));
         }
+
+        ClassIntrospector.get().reset();
 
         commandExecutor.execute();
         return new ArrayList<>(detached2Attached.keySet());
