@@ -694,9 +694,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private String getRIdFieldName(Class<?> cls) {
-        return Introspectior.getFieldsWithAnnotation(cls, RId.class)
-                .getOnly()
-                .getName();
+        return Introspectior.getREntityIdFieldName(cls);
     }
 
     private <T> T instantiateLiveObject(Class<T> proxyClass, Object id) {

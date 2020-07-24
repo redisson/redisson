@@ -229,6 +229,7 @@ public class CommandBatchService extends CommandAsyncService {
                 && this.options.getSyncSlaves() == 0) {
             voidPromise.onComplete((res, e) -> {
                 executed.set(true);
+                commands.clear();
                 nestedServices.clear();
                 promise.trySuccess(new BatchResult<>(Collections.emptyList(), 0));
             });
@@ -242,6 +243,7 @@ public class CommandBatchService extends CommandAsyncService {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
 
+                    commands.clear();
                     nestedServices.clear();
                     return;
                 }
@@ -276,7 +278,8 @@ public class CommandBatchService extends CommandAsyncService {
                 
                 BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
                 promise.trySuccess(result);
-                
+
+                commands.clear();
                 nestedServices.clear();
             });
         }

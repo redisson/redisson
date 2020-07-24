@@ -76,7 +76,7 @@ public class AccessorInterceptor {
             return null;
         }
 
-        String fieldName = getFieldName(method);
+        String fieldName = getFieldName(me.getClass().getSuperclass(), method);
         Field field = ClassUtils.getDeclaredField(me.getClass().getSuperclass(), fieldName);
         Class<?> fieldType = field.getType();
         
@@ -236,13 +236,20 @@ public class AccessorInterceptor {
         }
     }
 
-    private String getFieldName(Method method) {
+    private String getFieldName(Class<?> clazz, Method method) {
         String name = method.getName();
         int i = 4;
         if (name.startsWith("is")) {
             i = 3;
         }
-        return name.substring(i - 1, i).toLowerCase() + name.substring(i);
+
+        try {
+            String fieldName = name.substring(i - 1, i).toLowerCase() + name.substring(i);
+            ClassUtils.getDeclaredField(clazz, fieldName);
+            return fieldName;
+        } catch (NoSuchFieldException e) {
+            return name.substring(i - 1);
+        }
     }
 
     private boolean isGetter(Method method, String fieldName) {
@@ -259,10 +266,7 @@ public class AccessorInterceptor {
     }
 
     private static String getREntityIdFieldName(Object o) {
-        return Introspectior
-                .getFieldsWithAnnotation(o.getClass().getSuperclass(), RId.class)
-                .getOnly()
-                .getName();
+        return Introspectior.getREntityIdFieldName(o.getClass().getSuperclass());
     }
 
 }

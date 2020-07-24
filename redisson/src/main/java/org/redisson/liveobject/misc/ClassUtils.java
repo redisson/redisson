@@ -108,18 +108,31 @@ public class ClassUtils {
         }
     }
 
+    private static final Object NO_FIELD = new Object();
+    private static final Map<String, Object> FIELD_CACHE = new LRUCacheMap<>(1000, 0, 0);
+
     public static Field getDeclaredField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
-        for (Class<?> c : getClassHierarchy(clazz)) {
-            for (Field field : c.getDeclaredFields()) {
-                if (field.getName().equals(fieldName)) {
-                    return field;
+        Object field = FIELD_CACHE.get(clazz.getName() + ":" + fieldName);
+        if (field == null) {
+            for (Class<?> c : getClassHierarchy(clazz)) {
+                for (Field f : c.getDeclaredFields()) {
+                    if (f.getName().equals(fieldName)) {
+                        FIELD_CACHE.put(clazz.getName() + ":" + fieldName, f);
+                        return f;
+                    }
                 }
             }
+        }
+        if (field instanceof Field) {
+            return (Field) field;
+        }
+        if (field == null) {
+            FIELD_CACHE.put(clazz.getName() + ":" + fieldName, NO_FIELD);
         }
         throw new NoSuchFieldException("No such field: " + fieldName);
     }
     
-    private static final Map<Class<?>, Boolean> ANNOTATED_CLASSES = new LRUCacheMap<Class<?>, Boolean>(500, 0, 0);
+    private static final Map<Class<?>, Boolean> ANNOTATED_CLASSES = new LRUCacheMap<>(500, 0, 0);
 
     public static boolean isAnnotationPresent(Class<?> clazz, Class<? extends Annotation> annotation) {
         if (clazz.getName().startsWith("java.")) {
