@@ -661,7 +661,9 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     @Override
     public RedisURI applyNatMap(RedisURI address) {
-        return natMapper.map(address);
+        RedisURI result = natMapper.map(address);
+        log.debug("nat mapped uri: {} to {}", address, result);
+        return result;
     }
 
 }
