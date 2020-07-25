@@ -76,9 +76,9 @@ public class AccessorInterceptor {
         if (isGetter(method, fieldName)) {
             Object result = liveMap.get(fieldName);
             if (result == null) {
-                RObject ar = connectionManager.getCommandExecutor().getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
+                RObject ar = commandExecutor.getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), fieldType, fieldName);
                 if (ar != null) {
-                    connectionManager.getCommandExecutor().getObjectBuilder().store(ar, fieldName, liveMap);
+                    commandExecutor.getObjectBuilder().store(ar, fieldName, liveMap);
                     return ar;
                 }
             }
@@ -90,7 +90,7 @@ public class AccessorInterceptor {
                 return result;
             }
             if (result instanceof RedissonReference) {
-                return connectionManager.getCommandExecutor().getObjectBuilder().fromReference((RedissonReference) result);
+                return commandExecutor.getObjectBuilder().fromReference((RedissonReference) result);
             }
             return result;
         }
@@ -106,7 +106,7 @@ public class AccessorInterceptor {
                 storeIndex(field, me, liveObject.getLiveObjectId());
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
-                NamingScheme ns = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(rEntity);
+                NamingScheme ns = commandExecutor.getObjectBuilder().getNamingScheme(rEntity);
 
                 if (commandExecutor instanceof CommandBatchService) {
                     liveMap.fastPutAsync(fieldName, new RedissonReference(rEntity,
@@ -126,7 +126,7 @@ public class AccessorInterceptor {
                     && TransformationMode.ANNOTATION_BASED
                             .equals(ClassUtils.getAnnotation(me.getClass().getSuperclass(),
                             REntity.class).fieldTransformation())) {
-                RObject rObject = connectionManager.getCommandExecutor().getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
+                RObject rObject = commandExecutor.getObjectBuilder().createObject(((RLiveObject) me).getLiveObjectId(), me.getClass().getSuperclass(), arg.getClass(), fieldName);
                 if (arg != null) {
                     if (rObject instanceof Collection) {
                         Collection<?> c = (Collection<?>) rObject;
@@ -204,7 +204,7 @@ public class AccessorInterceptor {
             return;
         }
 
-        NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
+        NamingScheme namingScheme = commandExecutor.getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
         String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), field.getName());
 
         boolean skipExecution = false;
