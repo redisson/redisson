@@ -644,11 +644,6 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T> RExpirable asRExpirable(T instance) {
-        return (RExpirable) instance;
-    }
-
-    @Override
     public <T, K, V> RMap<K, V> asRMap(T instance) {
         return (RMap) instance;
     }
