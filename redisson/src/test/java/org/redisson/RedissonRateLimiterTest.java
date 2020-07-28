@@ -20,6 +20,17 @@ import org.redisson.api.RateType;
 public class RedissonRateLimiterTest extends BaseTest {
 
     @Test
+    public void testExpire() throws InterruptedException {
+        RRateLimiter rr = redisson.getRateLimiter("limiter");
+        rr.trySetRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
+        rr.tryAcquire();
+
+        rr.expire(1, TimeUnit.SECONDS);
+        Thread.sleep(1100);
+        assertThat(redisson.getKeys().count()).isZero();
+    }
+
+    @Test
     public void testAcquisitionInterval() throws InterruptedException {
         RRateLimiter rr = redisson.getRateLimiter("acquire");
         rr.trySetRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
