@@ -94,25 +94,38 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
 
     protected RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit, String... keys) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                        "return redis.call('pexpire', KEYS[2], ARGV[1]); ",
-                Arrays.asList(keys),
-                timeUnit.toMillis(timeToLive));
+                  "local result = 0;"
+                + "for j = 1, #KEYS, 1 do "
+                    + "local expireSet = redis.call('pexpire', KEYS[j], ARGV[1]); "
+                    + "if expireSet == 1 then "
+                        + "result = expireSet;"
+                    + "end; "
+                + "end; "
+                + "return result; ", Arrays.asList(keys), timeUnit.toMillis(timeToLive));
     }
 
     protected RFuture<Boolean> expireAtAsync(long timestamp, String... keys) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpireat', KEYS[1], ARGV[1]); " +
-                        "return redis.call('pexpireat', KEYS[2], ARGV[1]); ",
-                Arrays.asList(keys),
-                timestamp);
+                  "local result = 0;"
+                + "for j = 1, #KEYS, 1 do "
+                    + "local expireSet = redis.call('pexpireat', KEYS[j], ARGV[1]); "
+                    + "if expireSet == 1 then "
+                        + "result = expireSet;"
+                    + "end; "
+                + "end; "
+                + "return result; ", Arrays.asList(keys), timestamp);
     }
 
     protected RFuture<Boolean> clearExpireAsync(String... keys) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('persist', KEYS[1]); " +
-                        "return redis.call('persist', KEYS[2]); ",
-                Arrays.asList(keys));
+                  "local result = 0;"
+                + "for j = 1, #KEYS, 1 do "
+                    + "local expireSet = redis.call('persist', KEYS[j], ARGV[1]); "
+                    + "if expireSet == 1 then "
+                        + "result = expireSet;"
+                    + "end; "
+                + "end; "
+                + "return result; ", Arrays.asList(keys));
     }
 
 }
