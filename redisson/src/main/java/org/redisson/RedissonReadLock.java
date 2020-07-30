@@ -54,7 +54,7 @@ public class RedissonReadLock extends RedissonLock implements RLock {
     }
     
     @Override
-    <T> RFuture<T> tryLockInnerAsync(long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
+    <T> RFuture<T> tryLockInnerAsync(long waitTime, long leaseTime, TimeUnit unit, long threadId, RedisStrictCommand<T> command) {
         internalLockLeaseTime = unit.toMillis(leaseTime);
 
         return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
