@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.awaitility.Awaitility;
 import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -1137,7 +1138,49 @@ public class RedissonTopicTest {
         t.start();
         return t;
     }
-    
+
+    @Test
+    public void testClusterSharding() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger counter = new AtomicInteger();
+        for (int i = 0; i < 10; i++) {
+            int j = i;
+            RTopic topic = redisson.getTopic("test" + i);
+            topic.addListener(Integer.class, (c, v) -> {
+                assertThat(v).isEqualTo(j);
+                counter.incrementAndGet();
+            });
+        }
+
+        for (int i = 0; i < 10; i++) {
+            RTopic topic = redisson.getTopic("test" + i);
+            topic.publish(i);
+        }
+
+        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> counter.get() == 10);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
     @Test
     public void testReattachInClusterSlave() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
