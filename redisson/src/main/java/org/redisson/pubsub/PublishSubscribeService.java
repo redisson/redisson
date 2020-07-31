@@ -400,6 +400,10 @@ public class PublishSubscribeService {
         return result;
     }
 
+    public void remove(MasterSlaveEntry entry) {
+        freePubSubMap.remove(entry);
+    }
+
     public RFuture<Codec> unsubscribe(ChannelName channelName, PubSubType topicType) {
         if (connectionManager.isShuttingDown()) {
             return RedissonPromise.newSucceededFuture(null);

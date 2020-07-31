@@ -586,6 +586,8 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             entry.getAllEntries().forEach(e -> entry.nodeDown(e));
             entry.masterDown();
             entry.shutdownAsync();
+            subscribeService.remove(entry);
+
             String slaves = entry.getAllEntries().stream()
                     .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
                     .map(e -> e.getClient().toString())
