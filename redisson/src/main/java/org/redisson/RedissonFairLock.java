@@ -295,31 +295,17 @@ public class RedissonFairLock extends RedissonLock implements RLock {
 
     @Override
     public RFuture<Boolean> expireAsync(long timeToLive, TimeUnit timeUnit) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
-                        "redis.call('pexpire', KEYS[2], ARGV[1]); " +
-                        "return redis.call('pexpire', KEYS[3], ARGV[1]); ",
-                Arrays.asList(getName(), threadsQueueName, timeoutSetName),
-                timeUnit.toMillis(timeToLive));
+        return expireAsync(timeToLive, timeUnit, getName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> expireAtAsync(long timestamp) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('pexpireat', KEYS[1], ARGV[1]); " +
-                        "redis.call('pexpireat', KEYS[2], ARGV[1]); " +
-                        "return redis.call('pexpireat', KEYS[3], ARGV[1]); ",
-                Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName),
-                timestamp);
+        return expireAtAsync(timestamp, getName(), threadsQueueName, timeoutSetName);
     }
 
     @Override
     public RFuture<Boolean> clearExpireAsync() {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
-                        "redis.call('persist', KEYS[1]); " +
-                        "redis.call('persist', KEYS[2]); " +
-                        "return redis.call('persist', KEYS[3]); ",
-                Arrays.<Object>asList(getName(), threadsQueueName, timeoutSetName));
+        return clearExpireAsync(getName(), threadsQueueName, timeoutSetName);
     }
 
     
