@@ -151,6 +151,10 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseConnection(RedisConnection connection) {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (client != connection.getRedisClient()) {
             connection.closeAsync();
             return;
@@ -225,6 +229,10 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (client != connection.getRedisClient()) {
             connection.closeAsync();
             return;
