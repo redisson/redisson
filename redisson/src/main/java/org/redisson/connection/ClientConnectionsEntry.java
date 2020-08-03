@@ -49,11 +49,11 @@ public class ClientConnectionsEntry {
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
     private volatile boolean freezed;
-    private FreezeReason freezeReason;
+    private volatile FreezeReason freezeReason;
     final RedisClient client;
 
     private volatile NodeType nodeType;
-    private ConnectionManager connectionManager;
+    private final ConnectionManager connectionManager;
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
