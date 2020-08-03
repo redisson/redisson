@@ -93,7 +93,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
         }
 
         AtomicInteger initializedConnections = new AtomicInteger(minimumIdleSize);
-        int startAmount = Math.min(50, minimumIdleSize);
+        int startAmount = Math.min(10, minimumIdleSize);
         AtomicInteger requests = new AtomicInteger(startAmount);
         for (int i = 0; i < startAmount; i++) {
             createConnection(checkFreezed, requests, entry, initPromise, minimumIdleSize, initializedConnections);
