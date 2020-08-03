@@ -366,7 +366,6 @@ abstract class ConnectionPool<T extends RedisConnection> {
             public void run(Timeout timeout) throws Exception {
                 synchronized (entry) {
                     if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                            || !entry.isFreezed()
                             || connectionManager.isShuttingDown()) {
                         return;
                     }
@@ -375,8 +374,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                 RFuture<RedisConnection> connectionFuture = entry.getClient().connectAsync();
                 connectionFuture.onComplete((c, e) -> {
                         synchronized (entry) {
-                            if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                    || !entry.isFreezed()) {
+                            if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
                                 return;
                             }
                         }
@@ -396,8 +394,7 @@ abstract class ConnectionPool<T extends RedisConnection> {
                             public void accept(String t, Throwable u) {
                                 try {
                                     synchronized (entry) {
-                                        if (entry.getFreezeReason() != FreezeReason.RECONNECT
-                                                || !entry.isFreezed()) {
+                                        if (entry.getFreezeReason() != FreezeReason.RECONNECT) {
                                             return;
                                         }
                                     }

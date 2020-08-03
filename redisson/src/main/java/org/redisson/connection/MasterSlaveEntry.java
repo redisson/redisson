@@ -325,7 +325,6 @@ public class MasterSlaveEntry {
                     config.getSubscriptionConnectionPoolSize(), connectionManager, nodeType);
             if (freezed) {
                 synchronized (entry) {
-                    entry.setFreezed(freezed);
                     entry.setFreezeReason(FreezeReason.SYSTEM);
                 }
             }
@@ -453,8 +452,10 @@ public class MasterSlaveEntry {
             
             writeConnectionPool.remove(oldMaster);
             pubSubConnectionPool.remove(oldMaster);
-            
-            oldMaster.freezeMaster(FreezeReason.MANAGER);
+
+            synchronized (oldMaster) {
+                oldMaster.setFreezeReason(FreezeReason.MANAGER);
+            }
             slaveDown(oldMaster);
 
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
