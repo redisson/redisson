@@ -607,7 +607,6 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         RedisURI master = currentMaster.get();
         RedisURI slaveMaster = toURI(slaveMasterHost, slaveMasterPort);
         if (!master.equals(slaveMaster)) {
-            log.warn("Skipped slave up {} for master {} differs from current {}", slaveAddr, slaveMaster, master);
             return false;
         }
         return true;
