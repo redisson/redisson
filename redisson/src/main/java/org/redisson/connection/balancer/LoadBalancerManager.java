@@ -115,16 +115,16 @@ public class LoadBalancerManager {
     public boolean unfreeze(RedisURI address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = getEntry(address);
         if (entry == null) {
-            throw new IllegalStateException("Can't find " + address + " in slaves!");
+            throw new IllegalStateException("Can't find " + address + " in slaves! Available slaves: " + client2Entry.keySet());
         }
 
         return unfreeze(entry, freezeReason);
     }
     
-    public boolean unfreeze(InetSocketAddress address, FreezeReason freezeReason) {
+    public boolean  unfreeze(InetSocketAddress address, FreezeReason freezeReason) {
         ClientConnectionsEntry entry = getEntry(address);
         if (entry == null) {
-            throw new IllegalStateException("Can't find " + address + " in slaves!");
+            throw new IllegalStateException("Can't find " + address + " in slaves! Available slaves: " + client2Entry.keySet());
         }
 
         return unfreeze(entry, freezeReason);

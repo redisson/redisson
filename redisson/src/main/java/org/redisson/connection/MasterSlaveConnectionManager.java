@@ -16,13 +16,7 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -363,16 +357,23 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             if (config.checkSkipSlavesInit()) {
                 entry = new SingleEntry(this, config);
             } else {
-                entry = createMasterSlaveEntry(config);
+                entry = new MasterSlaveEntry(this, config);
             }
-            RFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
-            f.syncUninterruptibly();
-        
+            RFuture<RedisClient> masterFuture = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+            masterFuture.syncUninterruptibly();
+
+            if (!config.checkSkipSlavesInit()) {
+                List<RFuture<Void>> fs = entry.initSlaveBalancer(getDisconnectedNodes(), masterFuture.getNow());
+                for (RFuture<Void> future : fs) {
+                    future.syncUninterruptibly();
+                }
+            }
+
             for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
                 addEntry(slot, entry);
             }
             
-            startDNSMonitoring(f.getNow());
+            startDNSMonitoring(masterFuture.getNow());
         } catch (Exception e) {
             stopThreads();
             throw e;
@@ -387,16 +388,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             dnsMonitor.start();
         }
     }
-    
-    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<RedisURI>emptySet());
-        for (RFuture<Void> future : fs) {
-            future.syncUninterruptibly();
-        }
-        return entry;
-    }
 
+    protected Collection<RedisURI> getDisconnectedNodes() {
+        return Collections.emptySet();
+    }
+    
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
 

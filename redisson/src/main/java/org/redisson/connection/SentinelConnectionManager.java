@@ -498,7 +498,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             if (sentinel != null) {
                 disconnectNode(sentinel);
                 sentinel.shutdownAsync();
-                log.warn("sentinel: {} was down", uri);
+                log.warn("sentinel: {} is down", uri);
             }
         }
     }
@@ -509,13 +509,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     }
 
     @Override
-    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(disconnectedSlaves);
-        for (RFuture<Void> future : fs) {
-            future.syncUninterruptibly();
-        }
-        return entry;
+    protected Collection<RedisURI> getDisconnectedNodes() {
+        return disconnectedSlaves;
     }
 
     private RFuture<Void> registerSentinel(RedisURI addr, MasterSlaveServersConfig c, String sslHostname) {
@@ -599,11 +594,11 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
     private void slaveDown(RedisURI uri) {
         if (config.checkSkipSlavesInit()) {
-            log.warn("slave: {} was down", uri);
+            log.warn("slave: {} is down", uri);
         } else {
             MasterSlaveEntry entry = getEntry(singleSlotRange.getStartSlot());
             if (entry.slaveDown(uri, FreezeReason.MANAGER)) {
-                log.warn("slave: {} was down", uri);
+                log.warn("slave: {} is down", uri);
             }
         }
     }
@@ -620,12 +615,12 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     
     private void slaveUp(RedisURI uri) {
         if (config.checkSkipSlavesInit()) {
-            log.info("slave: {} has up", uri);
+            log.info("slave: {} is up", uri);
             return;
         }
 
         if (getEntry(singleSlotRange.getStartSlot()).slaveUp(uri, FreezeReason.MANAGER)) {
-            log.info("slave: {} has up", uri);
+            log.info("slave: {} is up", uri);
         }
     }
 

@@ -85,13 +85,13 @@ public class MasterSlaveEntry {
         return config;
     }
 
-    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes) {
+    public List<RFuture<Void>> initSlaveBalancer(Collection<RedisURI> disconnectedNodes, RedisClient master) {
         boolean freezeMasterAsSlave = !config.getSlaveAddresses().isEmpty()
                     && !config.checkSkipSlavesInit()
                         && disconnectedNodes.size() < config.getSlaveAddresses().size();
 
         List<RFuture<Void>> result = new LinkedList<RFuture<Void>>();
-        RFuture<Void> f = addSlave(new RedisURI(config.getMasterAddress()), freezeMasterAsSlave, NodeType.MASTER);
+        RFuture<Void> f = addSlave(master.getAddr(), master.getConfig().getAddress(), freezeMasterAsSlave, NodeType.MASTER);
         result.add(f);
         for (String address : config.getSlaveAddresses()) {
             RedisURI uri = new RedisURI(address);
@@ -456,7 +456,7 @@ public class MasterSlaveEntry {
             synchronized (oldMaster) {
                 oldMaster.setFreezeReason(FreezeReason.MANAGER);
             }
-            slaveDown(oldMaster);
+            nodeDown(oldMaster);
 
             slaveBalancer.changeType(oldMaster.getClient().getAddr(), NodeType.SLAVE);
             slaveBalancer.changeType(newMasterClient.getAddr(), NodeType.MASTER);
