@@ -4,7 +4,7 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
-### 05-Jul-2020 - 3.13.3 released
+### 05-Aug-2020 - 3.13.3 released
 Feature - BITFIELD command support added to `RBitSet` object  
 
 Improvement - reset ClassIntrospector instance after `RLiveObjectService.persist()` method invocation  
