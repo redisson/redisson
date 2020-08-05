@@ -4,6 +4,27 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 05-Jul-2020 - 3.13.3 released
+Feature - BITFIELD command support added to `RBitSet` object  
+
+Improvement - reset ClassIntrospector instance after `RLiveObjectService.persist()` method invocation  
+Improvement - amount of simultaneously created connections during pool initialization reduced to 10  
+
+Fixed - "SlaveConnectionPool no available Redis entries" error is thrown after failover  
+Fixed - check RedisConnection status befor RedisConnection object join freeConnections (thanks to @mikawudi)  
+Fixed - different topics subscribed to the same Redis node in Cluster  
+Fixed - `RFairLock.tryLock()` method doesn't apply waitTimeout parameter  
+Fixed - `RLiveObjectService.delete()` method works asynchronously  
+Fixed - deserialization exception is thrown if `RMapCache.EntryRemovedListener` is set  
+Fixed - incorrect registration of Sentinel node defined with hostname  
+Fixed - OOM arise during `RLiveObjectService.persist()` method invocation  
+Fixed - MarshallingCodec throws IllegalArgumentException: RIVER  
+Fixed - `RLock.lock()` method throws java.util.NoSuchElementException  
+Fixed - Spring Data Redis xReadGroup should use write operation  
+Fixed - Spring Data Redis connection in multi mode may cause thread hang  
+Fixed - Spring Data Redis connection in multi mode may cause connection leak  
+Fixed - `RRateLimiter` rate interval might be exceeded  
+
 ### 02-Jul-2020 - 3.13.2 released
 Feature - Partitioning (sharding) of Redis setup using [ShardedRedisson](https://github.com/redisson/redisson/wiki/5.-Data-partitioning-(sharding)#2-partitioning-sharding-of-redis-setup) object  
 Feature - `CLUSTERDOWN` error handling  
