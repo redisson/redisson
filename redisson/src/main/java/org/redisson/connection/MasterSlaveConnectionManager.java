@@ -354,23 +354,20 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected void initSingleEntry() {
         try {
-            MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
-                entry = new SingleEntry(this, config);
+                masterSlaveEntry = new SingleEntry(this, config);
             } else {
-                entry = new MasterSlaveEntry(this, config);
+                masterSlaveEntry = new MasterSlaveEntry(this, config);
             }
-            RFuture<RedisClient> masterFuture = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+            RFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
             masterFuture.syncUninterruptibly();
 
             if (!config.checkSkipSlavesInit()) {
-                List<RFuture<Void>> fs = entry.initSlaveBalancer(getDisconnectedNodes(), masterFuture.getNow());
+                List<RFuture<Void>> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes(), masterFuture.getNow());
                 for (RFuture<Void> future : fs) {
                     future.syncUninterruptibly();
                 }
             }
-
-            masterSlaveEntry = entry;
 
             startDNSMonitoring(masterFuture.getNow());
         } catch (Exception e) {
