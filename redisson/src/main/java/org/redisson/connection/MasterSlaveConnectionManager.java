@@ -147,7 +147,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final ElementsSubscribeService elementsSubscribeService = new ElementsSubscribeService(this);
 
-    private PublishSubscribeService subscribeService;
+    protected PublishSubscribeService subscribeService;
     
     private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
@@ -521,41 +521,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         return masterSlaveEntry;
     }
 
-    protected void removeClient(RedisClient client) {
-    }
-
-    protected void addClient(MasterSlaveEntry entry) {
-    }
-
-    protected final RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
-        final MasterSlaveEntry entry = getEntry(slot);
-        final RedisClient oldClient = entry.getClient();
-        RFuture<RedisClient> future = entry.changeMaster(address);
-        future.onComplete((res, e) -> {
-            if (e == null) {
-                removeClient(oldClient);
-                addClient(entry);
-            }
-        });
-        return future;
+    protected RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
+        MasterSlaveEntry entry = getEntry(slot);
+        return entry.changeMaster(address);
     }
     
-    protected final void shutdownEntry(MasterSlaveEntry entry) {
-        if (entry != null && entry.decReference() == 0) {
-            removeClient(entry.getClient());
-            entry.getAllEntries().forEach(e -> entry.nodeDown(e));
-            entry.masterDown();
-            entry.shutdownAsync();
-            subscribeService.remove(entry);
-
-            String slaves = entry.getAllEntries().stream()
-                    .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
-                    .map(e -> e.getClient().toString())
-                    .collect(Collectors.joining(","));
-            log.info("{} master and related slaves: {} removed", entry.getClient().getAddr(), slaves);
-        }
-    }
-
     @Override
     public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);

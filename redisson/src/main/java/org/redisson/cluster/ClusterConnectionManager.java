@@ -202,12 +202,18 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         return null;
     }
 
-    protected void removeClient(RedisClient client) {
-        client2entry.remove(client);
-    }
-
-    protected void addClient(MasterSlaveEntry entry) {
-        client2entry.put(entry.getClient(), entry);
+    @Override
+    protected RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
+        MasterSlaveEntry entry = getEntry(slot);
+        RedisClient oldClient = entry.getClient();
+        RFuture<RedisClient> future = super.changeMaster(slot, address);
+        future.onComplete((res, e) -> {
+            if (e == null) {
+                client2entry.remove(oldClient);
+                client2entry.put(entry.getClient(), entry);
+            }
+        });
+        return future;
     }
 
     @Override
@@ -227,6 +233,22 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private void removeEntry(Integer slot) {
         MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
         shutdownEntry(entry);
+    }
+
+    private void shutdownEntry(MasterSlaveEntry entry) {
+        if (entry != null && entry.decReference() == 0) {
+            client2entry.remove(entry.getClient());
+            entry.getAllEntries().forEach(e -> entry.nodeDown(e));
+            entry.masterDown();
+            entry.shutdownAsync();
+            subscribeService.remove(entry);
+
+            String slaves = entry.getAllEntries().stream()
+                    .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
+                    .map(e -> e.getClient().toString())
+                    .collect(Collectors.joining(","));
+            log.info("{} master and related slaves: {} removed", entry.getClient().getAddr(), slaves);
+        }
     }
 
     @Override

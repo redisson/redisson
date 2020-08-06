@@ -480,7 +480,9 @@ public class MasterSlaveEntry {
 
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, 2);
-        masterEntry.getClient().shutdownAsync().onComplete(listener);
+        if (masterEntry != null) {
+            masterEntry.getClient().shutdownAsync().onComplete(listener);
+        }
         slaveBalancer.shutdownAsync().onComplete(listener);
         return result;
     }
