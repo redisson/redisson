@@ -209,12 +209,20 @@ public class CommandPubSubDecoder extends CommandDecoder {
             return commandData.getCommand().getReplayMultiDecoder();
         } else if ("message".equals(command)) {
             byte[] channelName = (byte[]) parts.get(1);
-            return entries.get(new ChannelName(channelName)).getDecoder();
+            PubSubEntry entry = entries.get(new ChannelName(channelName));
+            if (entry == null) {
+                return null;
+            }
+            return entry.getDecoder();
         } else if ("pmessage".equals(command)) {
             byte[] patternName = (byte[]) parts.get(1);
-            return entries.get(new ChannelName(patternName)).getDecoder();
+            PubSubEntry entry = entries.get(new ChannelName(patternName));
+            if (entry == null) {
+                return null;
+            }
+            return entry.getDecoder();
         } else if ("pong".equals(command)) {
-            return new ListObjectDecoder<Object>(0);
+            return new ListObjectDecoder<>(0);
         }
 
         return data.getCommand().getReplayMultiDecoder();
