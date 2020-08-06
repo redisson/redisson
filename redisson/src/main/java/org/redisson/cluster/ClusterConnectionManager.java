@@ -48,6 +48,7 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
 /**
@@ -70,7 +71,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     private String configEndpointHostName;
     
     private final NatMapper natMapper;
-    
+
+    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
+
+    private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
+
     public ClusterConnectionManager(ClusterServersConfig cfg, Config config, UUID id) {
         super(config, id);
 
@@ -153,7 +158,77 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         
         scheduleClusterChangeCheck(cfg, null);
     }
-    
+
+    @Override
+    public Collection<MasterSlaveEntry> getEntrySet() {
+        return client2entry.values();
+    }
+
+    protected MasterSlaveEntry getEntry(RedisURI addr) {
+        for (MasterSlaveEntry entry : client2entry.values()) {
+            if (RedisURI.compare(entry.getClient().getAddr(), addr)) {
+                return entry;
+            }
+            if (entry.hasSlave(addr)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public MasterSlaveEntry getEntry(RedisClient redisClient) {
+        MasterSlaveEntry entry = client2entry.get(redisClient);
+        if (entry != null) {
+            return entry;
+        }
+
+        for (MasterSlaveEntry mentry : client2entry.values()) {
+            if (mentry.hasSlave(redisClient)) {
+                return mentry;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public MasterSlaveEntry getEntry(InetSocketAddress address) {
+        for (MasterSlaveEntry entry : client2entry.values()) {
+            InetSocketAddress addr = entry.getClient().getAddr();
+            if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
+    protected void removeClient(RedisClient client) {
+        client2entry.remove(client);
+    }
+
+    protected void addClient(MasterSlaveEntry entry) {
+        client2entry.put(entry.getClient(), entry);
+    }
+
+    @Override
+    public MasterSlaveEntry getEntry(int slot) {
+        return slot2entry.get(slot);
+    }
+
+    private void addEntry(Integer slot, MasterSlaveEntry entry) {
+        MasterSlaveEntry oldEntry = slot2entry.getAndSet(slot, entry);
+        if (oldEntry != entry) {
+            entry.incReference();
+            shutdownEntry(oldEntry);
+        }
+        client2entry.put(entry.getClient(), entry);
+    }
+
+    private void removeEntry(Integer slot) {
+        MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
+        shutdownEntry(entry);
+    }
+
     @Override
     protected RedisClientConfig createRedisConfig(NodeType type, RedisURI address, int timeout, int commandTimeout, String sslHostname) {
         RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
