@@ -290,6 +290,29 @@ public class RedissonStreamCommands implements RedisStreamCommands {
                             new ObjectListReplayDecoder(), new ObjectListReplayDecoder())), key, groupName);
     }
 
+    private static class PendingMessageReplayDecoder implements MultiDecoder<PendingMessage> {
+
+        private String groupName;
+
+        public PendingMessageReplayDecoder(String groupName) {
+            this.groupName = groupName;
+        }
+
+        @Override
+        public Decoder<Object> getDecoder(int paramNum, State state) {
+            return null;
+        }
+
+        @Override
+        public PendingMessage decode(List<Object> parts, State state) {
+            PendingMessage pm = new PendingMessage(RecordId.of(parts.get(0).toString()),
+                    Consumer.from(groupName, parts.get(1).toString()),
+                    Duration.of(Long.valueOf(parts.get(2).toString()), ChronoUnit.MILLIS),
+                    Long.valueOf(parts.get(3).toString()));
+            return pm;
+        }
+    }
+
     private static class PendingMessagesReplayDecoder implements MultiDecoder<PendingMessages> {
 
         private final String groupName;
@@ -307,16 +330,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
         @Override
         public PendingMessages decode(List<Object> parts, State state) {
-            List<List<Object>> list = (List<List<Object>>) (Object) parts;
-            List<PendingMessage> pendingMessages = new ArrayList<>();
-            for (List<Object> entry : list) {
-                PendingMessage pm = new PendingMessage(RecordId.of(entry.get(0).toString()),
-                        Consumer.from(groupName, entry.get(1).toString()),
-                        Duration.of(Long.valueOf(entry.get(2).toString()), ChronoUnit.MILLIS),
-                        Long.valueOf(entry.get(3).toString()));
-
-                pendingMessages.add(pm);
-            }
+            List<PendingMessage> pendingMessages = (List<PendingMessage>) (Object) parts;
             return new PendingMessages(groupName, range, pendingMessages);
         }
     }
@@ -327,6 +341,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         Assert.notNull(groupName, "Group name must not be null!");
 
         List<Object> params = new ArrayList<>();
+        params.add(key);
         params.add(groupName);
 
         params.add(((Range.Bound<String>)options.getRange().getLowerBound()).getValue().orElse("-"));
@@ -334,13 +349,18 @@ public class RedissonStreamCommands implements RedisStreamCommands {
 
         if (options.getCount() != null) {
             params.add(options.getCount());
+        } else {
+            params.add(10);
         }
         if (options.getConsumerName() != null) {
             params.add(options.getConsumerName());
         }
 
         return connection.write(key, StringCodec.INSTANCE, new RedisCommand<>("XPENDING",
-                            new PendingMessagesReplayDecoder(groupName, options.getRange())), params.toArray());
+                            new ListMultiDecoder2(
+                            new PendingMessagesReplayDecoder(groupName, options.getRange()),
+                            new PendingMessageReplayDecoder(groupName))),
+        params.toArray());
     }
 
     @Override

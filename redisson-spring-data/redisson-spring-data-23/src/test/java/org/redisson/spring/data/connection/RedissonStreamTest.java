@@ -1,14 +1,10 @@
 package org.redisson.spring.data.connection;
 
 import org.junit.Test;
-import org.redisson.api.RStream;
-import org.redisson.api.StreamConsumer;
-import org.redisson.api.StreamMessageId;
 import org.springframework.data.redis.connection.stream.*;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,6 +12,24 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Nikita Koksharov
  */
 public class RedissonStreamTest extends BaseConnectionTest {
+
+    @Test
+    public void testPending() {
+        connection.streamCommands().xGroupCreate("test".getBytes(), "testGroup", ReadOffset.latest(), true);
+
+        PendingMessages p = connection.streamCommands().xPending("test".getBytes(), Consumer.from("testGroup", "test1"));
+        assertThat(p.size()).isEqualTo(0);
+
+        connection.streamCommands().xAdd("test".getBytes(), Collections.singletonMap("1".getBytes(), "1".getBytes()));
+        connection.streamCommands().xAdd("test".getBytes(), Collections.singletonMap("2".getBytes(), "2".getBytes()));
+        connection.streamCommands().xAdd("test".getBytes(), Collections.singletonMap("3".getBytes(), "3".getBytes()));
+
+        List<ByteRecord> l = connection.streamCommands().xReadGroup(Consumer.from("testGroup", "test1"), StreamOffset.create("test".getBytes(), ReadOffset.from(">")));
+        assertThat(l.size()).isEqualTo(3);
+
+        PendingMessages p2 = connection.streamCommands().xPending("test".getBytes(), Consumer.from("testGroup", "test1"));
+        assertThat(p2.size()).isEqualTo(3);
+    }
 
     @Test
     public void testGroups() {
