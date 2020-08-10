@@ -357,7 +357,7 @@ public class RedissonStreamCommands implements RedisStreamCommands {
         }
 
         return connection.write(key, StringCodec.INSTANCE, new RedisCommand<>("XPENDING",
-                            new ListMultiDecoder2(
+                            new ListMultiDecoder2<PendingMessages>(
                             new PendingMessagesReplayDecoder(groupName, options.getRange()),
                             new PendingMessageReplayDecoder(groupName))),
         params.toArray());
