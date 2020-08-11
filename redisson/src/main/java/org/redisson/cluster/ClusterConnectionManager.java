@@ -121,6 +121,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         failedMasters.add(partition.getMasterAddress().toString());
                         continue;
                     }
+                    if (partition.getMasterAddress() == null) {
+                        throw new IllegalStateException("Master node: " + partition.getNodeId() + " doesn't have address.");
+                    }
+
                     RFuture<Void> masterFuture = addMasterEntry(partition, cfg);
                     masterFutures.add(masterFuture);
                 }
