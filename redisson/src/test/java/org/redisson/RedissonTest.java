@@ -877,6 +877,38 @@ public class RedissonTest {
     }
 
     @Test
+    public void testEvalCache() throws InterruptedException, IOException {
+        RedisRunner master1 = new RedisRunner().port(6896).randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().port(6891).randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().port(6892).randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().port(6900).randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().port(6901).randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().port(6902).randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.setUseScriptCache(true);
+        config.useClusterServers()
+                .setLoadBalancer(new RandomLoadBalancer())
+                .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RTimeSeries<String> t = redisson.getTimeSeries("test");
+        t.add(4, "40");
+        t.add(2, "20");
+        t.add(1, "10", 1, TimeUnit.SECONDS);
+
+        t.size();
+    }
+
+    @Test
     public void testMovedRedirectInCluster() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
         RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();

@@ -465,27 +465,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private RFuture<String> loadScript(List<Object> keys, String script) {
-        if (!keys.isEmpty()) {
-            Object key = keys.get(0);
-            if (key instanceof byte[]) {
-                return writeAsync((byte[]) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
-            }
-            return writeAsync((String) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+    private RFuture<String> loadScript(RedisClient client, String script) {
+        MasterSlaveEntry entry = getConnectionManager().getEntry(client);
+        if (entry.getClient().equals(client)) {
+            return writeAsync(entry, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
         }
-        
-        return writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-            volatile String result;
-            @Override
-            public void onSlotResult(String result) {
-                this.result = result;
-            }
-            
-            @Override
-            public String onFinish() {
-                return result;
-            }
-        }, script);
+        return readAsync(client, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
     }
     
     protected boolean isEvalCacheActive() {
@@ -540,12 +525,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.add(keys.size());
             args.addAll(keys);
             args.addAll(Arrays.asList(params));
-            async(false, nodeSource, codec, cmd, args.toArray(), promise, false);
-            
+
+            RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
+                                                        args.toArray(), promise, false, connectionManager, objectBuilder);
+            executor.execute();
+
             promise.onComplete((res, e) -> {
                 if (e != null) {
                     if (e.getMessage().startsWith("NOSCRIPT")) {
-                        RFuture<String> loadFuture = loadScript(keys, script);
+                        RFuture<String> loadFuture = loadScript(executor.getRedisClient(), script);
                         loadFuture.onComplete((r, ex) -> {
                             if (ex != null) {
                                 free(pps);
@@ -559,7 +547,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             newargs.add(keys.size());
                             newargs.addAll(keys);
                             newargs.addAll(Arrays.asList(pps));
-                            async(false, nodeSource, codec, command, newargs.toArray(), mainPromise, false);
+
+                            NodeSource ns = nodeSource;
+                            if (ns.getRedisClient() == null) {
+                                ns = new NodeSource(nodeSource, executor.getRedisClient());
+                            }
+
+                            async(readOnlyMode, ns, codec, command, newargs.toArray(), mainPromise, false);
                         });
                     } else {
                         free(pps);

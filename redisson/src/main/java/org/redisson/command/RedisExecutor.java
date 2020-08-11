@@ -67,6 +67,7 @@ public class RedisExecutor<V, R> {
     final RedissonObjectBuilder objectBuilder;
     final ConnectionManager connectionManager;
 
+    RFuture<RedisConnection> connectionFuture;
     NodeSource source;
     Codec codec;
     volatile int attempt;
@@ -634,8 +635,11 @@ public class RedisExecutor<V, R> {
         });
     }
 
+    public RedisClient getRedisClient() {
+        return connectionFuture.getNow().getRedisClient();
+    }
+
     protected RFuture<RedisConnection> getConnection() {
-        RFuture<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             connectionFuture = connectionManager.connectionReadOp(source, command);
         } else {
