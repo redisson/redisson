@@ -1044,8 +1044,8 @@ public class RedissonTest {
         Assume.assumeFalse(RedissonRuntimeEnvironment.isTravis);
         Config redisConfig = new Config();
         redisConfig.useSingleServer()
-        .setConnectionMinimumIdleSize(10000)
-        .setConnectionPoolSize(10000)
+        .setConnectionMinimumIdleSize(5000)
+        .setConnectionPoolSize(5000)
         .setAddress(RedisRunner.getDefaultRedisServerBindAddressAndPort());
         RedissonClient r = Redisson.create(redisConfig);
         r.shutdown();
