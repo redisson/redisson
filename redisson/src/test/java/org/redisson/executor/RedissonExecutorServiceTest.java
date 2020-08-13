@@ -5,13 +5,13 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -291,7 +291,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
         e.execute(new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"), 
                     new IncrementRunnableTask("myCounter"), new IncrementRunnableTask("myCounter"));
         
-        await().atMost(Duration.FIVE_SECONDS).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
+        await().atMost(Duration.ofSeconds(5)).until(() -> redisson.getAtomicLong("myCounter").get() == 4);
         redisson.getKeys().delete("myCounter");
         assertThat(redisson.getKeys().count()).isZero();
     }

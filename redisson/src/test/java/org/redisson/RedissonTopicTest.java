@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -23,7 +24,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -245,7 +245,7 @@ public class RedissonTopicTest {
         });
         topic1.publish(123L);
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(stringMessageReceived);
 
         redisson1.shutdown();
     }
@@ -275,7 +275,7 @@ public class RedissonTopicTest {
 
             stringTopic.publish("testmsg");
             
-            await().atMost(Duration.ONE_SECOND).until(() -> stringMessageReceived.get() == 2);
+            await().atMost(Duration.ofSeconds(1)).until(() -> stringMessageReceived.get() == 2);
             
             stringTopic.removeListener(listenerId);
             patternTopic.removeListener(patternListenerId);
@@ -311,8 +311,8 @@ public class RedissonTopicTest {
         });
         longTopic.publish(1L);
         
-        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
-        await().atMost(Duration.ONE_SECOND).untilTrue(longMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(longMessageReceived);
     }
     
     @Test
@@ -1175,7 +1175,7 @@ public class RedissonTopicTest {
             topic.publish(i);
         }
 
-        Awaitility.await().atMost(Duration.FIVE_SECONDS).until(() -> counter.get() == 10);
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> counter.get() == 10);
 
         redisson.shutdown();
         process.shutdown();

@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -17,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.joor.Reflect;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -892,7 +892,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
         map.destroy();
     }
@@ -953,7 +953,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_MINUTE).untilTrue(ref);
+        await().atMost(Duration.ofMinutes(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -976,7 +976,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -1012,7 +1012,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 

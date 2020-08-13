@@ -1,17 +1,6 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
@@ -19,12 +8,23 @@ import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.RBlockingQueue;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
-import org.redisson.api.redisnode.RedisClusterMaster;
-import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 public class RedissonBlockingQueueTest extends RedissonQueueTest {
 
@@ -354,7 +354,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         t.join(1000);
 
         t.interrupt();
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(interrupted);
+        Awaitility.await().atMost(Duration.ofSeconds(1)).untilTrue(interrupted);
 
         RBlockingQueue<Integer> q = getQueue(redisson);
         q.add(1);
@@ -381,7 +381,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
         t.join(1000);
         
         t.interrupt();
-        Awaitility.await().atMost(Duration.ONE_SECOND).untilTrue(interrupted);
+        Awaitility.await().atMost(Duration.ofSeconds(1)).untilTrue(interrupted);
     }
     
     @Test
@@ -675,7 +675,7 @@ public class RedissonBlockingQueueTest extends RedissonQueueTest {
             q.add(i);
         }
 
-        Awaitility.await().atMost(Duration.ONE_SECOND).until(() -> {
+        Awaitility.await().atMost(Duration.ofSeconds(1)).until(() -> {
             return values.size() == 10;
         });
 
