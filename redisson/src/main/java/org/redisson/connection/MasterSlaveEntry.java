@@ -23,7 +23,6 @@ import org.redisson.client.RedisConnection;
 import org.redisson.client.RedisPubSubConnection;
 import org.redisson.client.protocol.CommandData;
 import org.redisson.client.protocol.RedisCommand;
-import org.redisson.cluster.ClusterConnectionManager;
 import org.redisson.config.MasterSlaveServersConfig;
 import org.redisson.config.ReadMode;
 import org.redisson.config.SubscriptionMode;
