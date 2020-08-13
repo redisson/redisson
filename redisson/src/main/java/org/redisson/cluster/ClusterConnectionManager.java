@@ -289,12 +289,12 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
 
             MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
-                entry = new SingleEntry(ClusterConnectionManager.this, config);
+                entry = new SingleEntry(ClusterConnectionManager.this, config, configEndpointHostName);
             } else {
                 Set<String> slaveAddresses = partition.getSlaveAddresses().stream().map(r -> r.toString()).collect(Collectors.toSet());
                 config.setSlaveAddresses(slaveAddresses);
 
-                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config);
+                entry = new MasterSlaveEntry(ClusterConnectionManager.this, config, configEndpointHostName);
             }
 
             RFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
@@ -700,10 +700,6 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         }
     }
     
-    public String getConfigEndpointHostName() {
-        return configEndpointHostName;
-    }
-
     private int indexOf(byte[] array, byte element) {
         for (int i = 0; i < array.length; ++i) {
             if (array[i] == element) {

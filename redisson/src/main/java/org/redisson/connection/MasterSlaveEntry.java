@@ -66,19 +66,17 @@ public class MasterSlaveEntry {
 
     final AtomicBoolean active = new AtomicBoolean(true);
     
-    String sslHostname;
+    final String sslHostname;
     
-    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
+    public MasterSlaveEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config, String sslHostname) {
         this.connectionManager = connectionManager;
         this.config = config;
 
         slaveBalancer = new LoadBalancerManager(config, connectionManager, this);
         writeConnectionPool = new MasterConnectionPool(config, connectionManager, this);
         pubSubConnectionPool = new MasterPubSubConnectionPool(config, connectionManager, this);
-        
-        if (connectionManager instanceof ClusterConnectionManager) {
-            sslHostname = ((ClusterConnectionManager) connectionManager).getConfigEndpointHostName();
-        }
+
+        this.sslHostname = sslHostname;
     }
 
     public MasterSlaveServersConfig getConfig() {
