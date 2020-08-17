@@ -15,20 +15,6 @@
  */
 package org.redisson;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RScoredSortedSet;
 import org.redisson.api.RedissonClient;
@@ -47,6 +33,20 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
 import org.redisson.misc.RedissonPromise;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 /**
  * 
@@ -205,11 +205,42 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<Long> addAndGetAllRevRank(Map<? extends V, Double> map) {
+        return get(addAndGetAllRevRankAsync(map));
+    }
+
+    @Override
     public RFuture<Integer> addAndGetRevRankAsync(double score, V object) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_INTEGER,
                 "redis.call('zadd', KEYS[1], ARGV[1], ARGV[2]);" +
                 "return redis.call('zrevrank', KEYS[1], ARGV[2]); ",
                 Collections.<Object>singletonList(getName()), new BigDecimal(score).toPlainString(), encode(object));
+    }
+
+    @Override
+    public RFuture<Collection<Long>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
+        final List<Object> params = new ArrayList<Object>(map.size() * 2);
+        for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
+            if (t.getKey() == null) {
+                throw new NullPointerException("map key can't be null");
+            }
+            if (t.getValue() == null) {
+                throw new NullPointerException("map value can't be null");
+            }
+            params.add(encode(t.getKey()));
+            params.add(BigDecimal.valueOf(t.getValue()).toPlainString());
+        }
+
+        return commandExecutor.evalReadAsync((String) null, LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
+                    "local r = {} " +
+                    "for i, v in ipairs(ARGV) do " +
+                        "if i % 2 == 0 then " +
+                            "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i-1]); " +
+                            "r[#r+1] = redis.call('zrevrank', KEYS[1], ARGV[i-1]); " +
+                        "end; " +
+                    "end;" +
+                    "return r;",
+                Collections.singletonList(getName()), params.toArray());
     }
 
     @Override
@@ -373,8 +404,24 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<Double> getAllScore(List<V> keys) {
+        return get(getAllScoreAsync(keys));
+    }
+
+    @Override
     public RFuture<Double> getScoreAsync(V o) {
         return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.ZSCORE, getName(), encode(o));
+    }
+
+    @Override
+    public RFuture<Collection<Double>> getAllScoreAsync(Collection<V> elements) {
+        return commandExecutor.evalReadAsync((String) null, DoubleCodec.INSTANCE, RedisCommands.EVAL_LIST,
+                "local r = {} " +
+                "for i, v in ipairs(ARGV) do " +
+                    "r[#r+1] = redis.call('ZSCORE', KEYS[1], ARGV[i]); " +
+                "end;" +
+                "return r;",
+                Collections.singletonList(getName()), encode(elements).toArray());
     }
 
     @Override

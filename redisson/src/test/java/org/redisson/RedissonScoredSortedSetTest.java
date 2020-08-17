@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -1226,6 +1227,21 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         res2 = set2.getScore("1");
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
     }
+
+    @Test
+    public void testAddAndGetAll() throws InterruptedException {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        set.add(100.2, "1");
+
+        Double res2 = set.addScore("1", new Double(12.1));
+        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+        res2 = set.getScore("1");
+        Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
+
+        Collection<Double> res = set.getAllScore(Arrays.asList("1", "42", "100"));
+        Assert.assertArrayEquals(new Double[] {112.3d, null, null},
+                res.toArray());
+    }
     
     @Test
     public void testAddScoreAndGetRank() throws InterruptedException {
@@ -1265,7 +1281,18 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         assertThat(score).isEqualTo(14);
     }
 
+    @Test
+    public void testAddAndGetAllRevRank() throws InterruptedException {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        Map<String, Double> map = new LinkedHashMap<>();
+        map.put("alice", 10d);
+        map.put("bob", 1d);
+        Collection<Long> res = set.addAndGetAllRevRank(map);
+        Assert.assertArrayEquals(new Long[]{0L, 1L}, res.toArray());
 
+        assertThat(set.revRank("alice")).isEqualTo(0);
+        assertThat(set.revRank("bob")).isEqualTo(1);
+    }
 
     @Test
     public void testIntersection() {

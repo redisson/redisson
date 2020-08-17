@@ -17,6 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -264,6 +265,14 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Double getScore(V o);
 
     /**
+     * Returns scores of elements.
+     *
+     * @param elements - elements
+     * @return element scores
+     */
+    Collection<Double> getAllScore(List<V> elements);
+
+    /**
      * Adds element to this set, overrides previous score if it has been already added.
      *
      * @param score - object score
@@ -289,6 +298,14 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @return reverse rank
      */
     Integer addAndGetRevRank(double score, V object);
+
+    /**
+     * Adds elements to this set, overrides previous score if it has been already added.
+     * Finally returns reverse rank collection of the items
+     * @param map - map of object and scores, make sure to use an ordered map
+     * @return collection of reverse ranks
+     */
+    Collection<Long> addAndGetAllRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.
