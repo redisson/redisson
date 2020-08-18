@@ -4,6 +4,87 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 05-Aug-2020 - 3.13.3 released
+Feature - BITFIELD command support added to `RBitSet` object  
+
+Improvement - reset ClassIntrospector instance after `RLiveObjectService.persist()` method invocation  
+Improvement - amount of simultaneously created connections during pool initialization reduced to 10  
+
+Fixed - "SlaveConnectionPool no available Redis entries" error is thrown after failover  
+Fixed - check RedisConnection status befor RedisConnection object join freeConnections (thanks to @mikawudi)  
+Fixed - different topics subscribed to the same Redis node in Cluster  
+Fixed - `RFairLock.tryLock()` method doesn't apply waitTimeout parameter  
+Fixed - `RLiveObjectService.delete()` method works asynchronously  
+Fixed - deserialization exception is thrown if `RMapCache.EntryRemovedListener` is set  
+Fixed - incorrect registration of Sentinel node defined with hostname  
+Fixed - OOM arise during `RLiveObjectService.persist()` method invocation  
+Fixed - MarshallingCodec throws IllegalArgumentException: RIVER  
+Fixed - `RLock.lock()` method throws java.util.NoSuchElementException  
+Fixed - Spring Data Redis xReadGroup should use write operation  
+Fixed - Spring Data Redis connection in multi mode may cause thread hang  
+Fixed - Spring Data Redis connection in multi mode may cause connection leak  
+Fixed - `RRateLimiter` rate interval might be exceeded  
+
+### 02-Jul-2020 - 3.13.2 released
+Feature - Partitioning (sharding) of Redis setup using [ShardedRedisson](https://github.com/redisson/redisson/wiki/5.-Data-partitioning-(sharding)#2-partitioning-sharding-of-redis-setup) object  
+Feature - `CLUSTERDOWN` error handling  
+Feature - `getConfig`, `setConfig` methods added to `RedisNode` interface  
+
+Fixed - empty sentinels list handling  
+Fixed - RMapCache.clear() method clears maxSize option  
+Fixed - Redisson slowdowns access to hibernate in fallback mode  
+Fixed - Sentinel hostname isn't used for ssl connection during Redisson startup  
+Fixed - `RBloomFilter` methods throw NPE if RedisException thrown  
+Fixed - `RAtomicDouble.getAndSet()` method throws NPE  
+Fixed - `RAtomicLong.getAndSet()` method throws NPE  
+Fixed - ClassCastException thrown in Tomcat environment  
+Fixed - RSetMultimap.get().delete() and RListMultimap.get().delete() methods throw exception  
+Fixed - blocking commands connected to Redis Cluster aren't resubscribed after Master node failover  
+Fixed - connection leak if SSL connection got reconnected  
+
+### 09-Jun-2020 - 3.13.1 released
+Feature - Spring Data Redis 2.3.0 integration  
+Feature - `setIfExists` method added to `RBucket`, `RBucketRx`, `RBucketReactive` interfaces  
+Feature - RExpirable interface added to RRateLimiter  
+
+Fixed - Topic channels connected to master node aren't resubscribed  
+Fixed - RedissonCacheStatisticsAutoConfiguration conditions aren't match  
+Fixed - `RTimeSeries.destroy()` method doesn't work  
+Fixed - Redis Cluster topology scanning stopped if error occured while adding new master  
+Fixed - StreamInfoDecoder to adapt to layout of XINFO response (thanks to @fawitte)  
+Fixed - Redis Cluster manager throws error Slot hasn't been discovered yet after failover  
+Fixed - Spring Data Redis `RedisConnection.set()` method returns null  
+Fixed - `RQueueReactive.poll(int limit)` method should return `Mono<List<V>>`  
+Fixed - `RQueueRx.poll(int limit)` method should return `Single<List<V>>`  
+Fixed - `RedissonSetMultimap.removeAll` method removes reference to nested set  
+Fixed - `WriteRedisConnectionException` is thrown after Redis Cluster failover  
+Fixed - `RBatch` object doesn't wait ending of sync slaves process  
+Fixed - ssl connection can't be established if Redis Sentinel was discovered by DNSMonitor  
+Fixed - some tasks are not executed if RedissonNode shutdown  
+Fixed - `NatMapper` is not applied to the first online Sentinel in list  
+
+### 25-May-2020 - 3.13.0 released
+Feature - __TimeSeries object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/7.-distributed-collections/#723-time-series) for more details  
+Feature - `RLiveObjectService.findIds()` method implemented  
+Feature - `RLiveObjectService.count()` method implemented  
+Feature - `RLiveObjectService.delete()` method accepts multiple ids  
+
+Improvement - __default codec changed to MarshallingCodec__  
+
+Fixed - Lock acquisition hangs if Redis failed (regression since 3.12.5)  
+Fixed - `RLiveObjectService.merge()` method doesn't override collection state  
+Fixed - `PingConnectionHandler` doesn't report errors if PING command can't be sent  
+Fixed - `RObject.unlink()` method calls `deleteAsync()` inside instead of `unlinkAsync()` method (thanks to @AayushyaVajpayee)  
+Fixed - NPE thrown after logout Tomcat application  
+Fixed - Tomcat `UpdateValue` object throws NPE if getNext() returns null  
+Fixed - `RedissonTransactionalMapCache.put()` method inserts entries with incorrect TTLs  
+Fixed - connections to Redis master/slave are doubled after redis cluster failover  
+Fixed - `RejectedExecutionException` thrown by `RedisClient.connectAsync()` method during shutdown process  
+Fixed - cache isn't applied to hibernate collection, that is joined by non primary key field  
+Fixed - hibernate 5.3 doesn't wrap cache exception into CacheException object  
+Fixed - RedissonReactiveStringCommands.set using wrong SET RedisCommand (thanks to @xJoeWoo)  
+Fixed - netty errors should be logged at ERROR level  
+
 ### 16-Apr-2020 - 3.12.5 released
 
 Improvement - increased `RLock` reliability during failover. `RedLock` was deprecated  

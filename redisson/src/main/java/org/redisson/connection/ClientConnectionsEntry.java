@@ -48,12 +48,11 @@ public class ClientConnectionsEntry {
 
     public enum FreezeReason {MANAGER, RECONNECT, SYSTEM}
 
-    private volatile boolean freezed;
-    private FreezeReason freezeReason;
+    private volatile FreezeReason freezeReason;
     final RedisClient client;
 
     private volatile NodeType nodeType;
-    private ConnectionManager connectionManager;
+    private final ConnectionManager connectionManager;
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
@@ -110,7 +109,7 @@ public class ClientConnectionsEntry {
     }
 
     public boolean isFreezed() {
-        return freezed;
+        return freezeReason != null;
     }
 
     public void setFreezeReason(FreezeReason freezeReason) {
@@ -121,10 +120,6 @@ public class ClientConnectionsEntry {
         return freezeReason;
     }
 
-    public void setFreezed(boolean freezed) {
-        this.freezed = freezed;
-    }
-    
     public void reset() {
         freeConnectionsCounter.removeListeners();
         freeSubscribeConnectionsCounter.removeListeners();
@@ -151,6 +146,10 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseConnection(RedisConnection connection) {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (client != connection.getRedisClient()) {
             connection.closeAsync();
             return;
@@ -225,6 +224,10 @@ public class ClientConnectionsEntry {
     }
 
     public void releaseSubscribeConnection(RedisPubSubConnection connection) {
+        if (connection.isClosed()) {
+            return;
+        }
+
         if (client != connection.getRedisClient()) {
             connection.closeAsync();
             return;
@@ -242,19 +245,12 @@ public class ClientConnectionsEntry {
         freeSubscribeConnectionsCounter.release();
     }
 
-    public void freezeMaster(FreezeReason reason) {
-        synchronized (this) {
-            setFreezed(true);
-            setFreezeReason(reason);
-        }
-    }
-
     @Override
     public String toString() {
         return "[freeSubscribeConnectionsAmount=" + freeSubscribeConnections.size()
                 + ", freeSubscribeConnectionsCounter=" + freeSubscribeConnectionsCounter
                 + ", freeConnectionsAmount=" + freeConnections.size() + ", freeConnectionsCounter="
-                + freeConnectionsCounter + ", freezed=" + freezed + ", freezeReason=" + freezeReason
+                + freeConnectionsCounter + ", freezeReason=" + freezeReason
                 + ", client=" + client + ", nodeType=" + nodeType + ", firstFail=" + firstFailTime
                 + "]";
     }

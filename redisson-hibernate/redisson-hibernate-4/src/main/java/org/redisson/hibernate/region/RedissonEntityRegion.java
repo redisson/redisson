@@ -15,8 +15,6 @@
  */
 package org.redisson.hibernate.region;
 
-import java.util.Properties;
-
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.EntityRegion;
@@ -25,10 +23,13 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.EntityRegionAccessStrategy;
 import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.hibernate.strategy.NonStrictReadWriteEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadOnlyEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadWriteEntityRegionAccessStrategy;
 import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
+
+import java.util.Properties;
 
 /**
  * 
@@ -38,13 +39,13 @@ import org.redisson.hibernate.strategy.TransactionalEntityRegionAccessStrategy;
 public class RedissonEntityRegion extends BaseRegion implements EntityRegion {
 
     private final Settings settings;
-    
-    public RedissonEntityRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
-            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
-        super(mapCache, regionFactory, metadata, properties, defaultKey);
+
+    public RedissonEntityRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory,
+                                CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
+        super(mapCache, connectionManager, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
     }
-
+    
     @Override
     public EntityRegionAccessStrategy buildAccessStrategy(AccessType accessType) throws CacheException {
         if (accessType == AccessType.READ_ONLY) {

@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.awaitility.Duration;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -244,7 +245,7 @@ public class RedissonTopicTest {
         });
         topic1.publish(123L);
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(stringMessageReceived);
 
         redisson1.shutdown();
     }
@@ -274,7 +275,7 @@ public class RedissonTopicTest {
 
             stringTopic.publish("testmsg");
             
-            await().atMost(Duration.ONE_SECOND).until(() -> stringMessageReceived.get() == 2);
+            await().atMost(Duration.ofSeconds(1)).until(() -> stringMessageReceived.get() == 2);
             
             stringTopic.removeListener(listenerId);
             patternTopic.removeListener(patternListenerId);
@@ -310,8 +311,8 @@ public class RedissonTopicTest {
         });
         longTopic.publish(1L);
         
-        await().atMost(Duration.ONE_SECOND).untilTrue(stringMessageReceived);
-        await().atMost(Duration.ONE_SECOND).untilTrue(longMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(stringMessageReceived);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(longMessageReceived);
     }
     
     @Test
@@ -1137,7 +1138,49 @@ public class RedissonTopicTest {
         t.start();
         return t;
     }
-    
+
+    @Test
+    public void testClusterSharding() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slave3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slave1)
+                .addNode(master2, slave2)
+                .addNode(master3, slave3);
+        ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+        .setLoadBalancer(new RandomLoadBalancer())
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        AtomicInteger counter = new AtomicInteger();
+        for (int i = 0; i < 10; i++) {
+            int j = i;
+            RTopic topic = redisson.getTopic("test" + i);
+            topic.addListener(Integer.class, (c, v) -> {
+                assertThat(v).isEqualTo(j);
+                counter.incrementAndGet();
+            });
+        }
+
+        for (int i = 0; i < 10; i++) {
+            RTopic topic = redisson.getTopic("test" + i);
+            topic.publish(i);
+        }
+
+        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> counter.get() == 10);
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
     @Test
     public void testReattachInClusterSlave() throws Exception {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();

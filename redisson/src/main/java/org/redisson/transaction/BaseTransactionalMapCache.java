@@ -50,10 +50,10 @@ public class BaseTransactionalMapCache<K, V> extends BaseTransactionalMap<K, V> 
         return fastPutOperationAsync(key, value, new MapCacheFastPutOperation(map, key, value, ttl, ttlUnit, maxIdleTime, maxIdleUnit, transactionId, threadId));
     }
     
-    public RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta) {
+    public RFuture<V> putOperationAsync(K key, V value, long ttlTimeout, long maxIdleTimeout, long maxIdleDelta, long ttlTimeoutDelta) {
         long threadId = Thread.currentThread().getId();
-        return putOperationAsync(key, value, new MapCachePutOperation(map, key, value, 
-                ttlTimeout, TimeUnit.MILLISECONDS, maxIdleTimeout, TimeUnit.MILLISECONDS, transactionId, threadId));
+        return putOperationAsync(key, value, new MapCachePutOperation(map, key, value,
+                ttlTimeoutDelta, TimeUnit.MILLISECONDS, maxIdleDelta, TimeUnit.MILLISECONDS, transactionId, threadId));
     }
     
     public RFuture<Boolean> fastPutIfAbsentAsync(K key, V value, long ttl, TimeUnit ttlUnit, long maxIdleTime, TimeUnit maxIdleUnit) {

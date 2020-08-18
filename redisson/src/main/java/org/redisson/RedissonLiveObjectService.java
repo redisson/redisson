@@ -17,6 +17,7 @@ package org.redisson;
 
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
+import jodd.introspector.ClassIntrospector;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.description.field.FieldDescription;
 import net.bytebuddy.description.field.FieldDescription.InDefinedShape;
@@ -29,6 +30,12 @@ import net.bytebuddy.matcher.ElementMatchers;
 import org.redisson.api.*;
 import org.redisson.api.annotation.*;
 import org.redisson.api.condition.Condition;
+import org.redisson.client.protocol.RedisCommand;
+import org.redisson.client.protocol.convertor.Convertor;
+import org.redisson.client.protocol.decoder.ListMultiDecoder2;
+import org.redisson.client.protocol.decoder.ListScanResult;
+import org.redisson.client.protocol.decoder.ListScanResultReplayDecoder;
+import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
 import org.redisson.connection.ConnectionManager;
@@ -38,6 +45,7 @@ import org.redisson.liveobject.core.*;
 import org.redisson.liveobject.misc.AdvBeanCopy;
 import org.redisson.liveobject.misc.ClassUtils;
 import org.redisson.liveobject.misc.Introspectior;
+import org.redisson.liveobject.resolver.NamingScheme;
 import org.redisson.liveobject.resolver.RIdResolver;
 
 import java.lang.reflect.Constructor;
@@ -72,21 +80,20 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 //        map.expire(timeToLive, timeUnit);
 //        return instance;
 //    }
-    
+
     private RMap<String, Object> getMap(Object proxied) {
         return ClassUtils.getField(proxied, "liveObjectLiveMap");
     }
-    
-    private <T> Object generateId(Class<T> entityClass) throws NoSuchFieldException {
-        String idFieldName = getRIdFieldName(entityClass);
+
+    private <T> Object generateId(Class<T> entityClass, String idFieldName) throws NoSuchFieldException {
         RId annotation = ClassUtils.getDeclaredField(entityClass, idFieldName)
                 .getAnnotation(RId.class);
-        RIdResolver<?> resolver = getResolver(entityClass, annotation.generator());
+        RIdResolver<?> resolver = getResolver(annotation.generator());
         Object id = resolver.resolve(entityClass, annotation, idFieldName, connectionManager.getCommandExecutor());
         return id;
     }
-    
-    private RIdResolver<?> getResolver(Class<?> cls, Class<? extends RIdResolver<?>> resolverClass) {
+
+    private RIdResolver<?> getResolver(Class<? extends RIdResolver<?>> resolverClass) {
         if (!PROVIDER_CACHE.containsKey(resolverClass)) {
             try {
                 PROVIDER_CACHE.putIfAbsent(resolverClass, resolverClass.newInstance());
@@ -125,10 +132,16 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> Collection<T> find(Class<T> entityClass, Condition condition) {
         Set<Object> ids = seachEngine.find(entityClass, condition);
-        
+
         return ids.stream()
                     .map(id -> createLiveObject(entityClass, id))
                     .collect(Collectors.toList());
+    }
+
+    @Override
+    public long count(Class<?> entityClass, Condition condition) {
+        Set<Object> ids = seachEngine.find(entityClass, condition);
+        return ids.size();
     }
 
     @Override
@@ -153,7 +166,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
         return persist(detachedObject, alreadyPersisted, RCascadeType.MERGE);
     }
-    
+
     @Override
     public <T> T persist(T detachedObject) {
         Map<Object, Object> alreadyPersisted = new HashMap<Object, Object>();
@@ -163,21 +176,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     @Override
     public <T> List<T> persist(T... detachedObjects) {
         CommandBatchService commandExecutor = new CommandBatchService(connectionManager);
+        commandExecutor.setObjectBuilder(connectionManager.getCommandExecutor().getObjectBuilder());
+
         Map<Class<?>, Class<?>> classCache = new HashMap<>();
         Map<T, Object> detached2Attached = new LinkedHashMap<>();
         Map<String, Object> name2id = new HashMap<>();
 
         for (T detachedObject : detachedObjects) {
-            String idFieldName = getRIdFieldName(detachedObject.getClass());
-            Object id = ClassUtils.getField(detachedObject, idFieldName);
-            if (id == null) {
-                try {
-                    id = generateId(detachedObject.getClass());
-                } catch (NoSuchFieldException e) {
-                    throw new IllegalArgumentException(e);
-                }
-                ClassUtils.setField(detachedObject, idFieldName, id);
-            }
+            Object id = getId(detachedObject);
 
             T attachedObject = attach(detachedObject, commandExecutor, classCache);
             RMap<String, Object> liveMap = getMap(attachedObject);
@@ -188,7 +194,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
         CommandBatchService checkExecutor = new CommandBatchService(connectionManager);
         for (Entry<String, Object> entry : name2id.entrySet()) {
-            RMap map = new RedissonMap(checkExecutor, entry.getKey(), null, null, null);
+            RMap<String, Object> map = new RedissonMap<>(checkExecutor, entry.getKey(), null, null, null);
             map.containsKeyAsync("redisson_live_object");
         }
 
@@ -205,10 +211,12 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         for (Entry<T, Object> entry : detached2Attached.entrySet()) {
             T detachedObject = entry.getKey();
             Object attachedObject = entry.getValue();
-            
+
             for (FieldDescription.InDefinedShape field : Introspectior.getAllFields(detachedObject.getClass())) {
                 Object object = ClassUtils.getField(detachedObject, field.getName());
-                if (object == null) {
+                if (object == null
+                        || object instanceof Collection
+                            || ClassUtils.isAnnotationPresent(object.getClass(), REntity.class)) {
                     continue;
                 }
 
@@ -219,28 +227,36 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             copy(detachedObject, attachedObject, Arrays.asList(idFieldName));
         }
 
+        ClassIntrospector.get().reset();
+
         commandExecutor.execute();
         return new ArrayList<>(detached2Attached.keySet());
     }
 
-
-    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
+    private <T> Object getId(T detachedObject) {
         String idFieldName = getRIdFieldName(detachedObject.getClass());
         Object id = ClassUtils.getField(detachedObject, idFieldName);
         if (id == null) {
             try {
-                id = generateId(detachedObject.getClass());
+                id = generateId(detachedObject.getClass(), idFieldName);
             } catch (NoSuchFieldException e) {
                 throw new IllegalArgumentException(e);
             }
             ClassUtils.setField(detachedObject, idFieldName, id);
         }
+        return id;
+    }
+
+
+    private <T> T persist(T detachedObject, Map<Object, Object> alreadyPersisted, RCascadeType type) {
+        Object id = getId(detachedObject);
 
         T attachedObject = attach(detachedObject);
         alreadyPersisted.put(detachedObject, attachedObject);
         RMap<String, Object> liveMap = getMap(attachedObject);
 
-        List<String> excludedFields = new ArrayList<String>();
+        List<String> excludedFields = new ArrayList<>();
+        String idFieldName = getRIdFieldName(detachedObject.getClass());
         excludedFields.add(idFieldName);
         boolean fastResult = liveMap.fastPut("redisson_live_object", "1");
         if (type == RCascadeType.PERSIST && !fastResult) {
@@ -261,6 +277,11 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
 
                 if (rObject instanceof Collection) {
+                    Collection coll = (Collection) rObject;
+                    if (type == RCascadeType.MERGE) {
+                        coll.clear();
+                    }
+
                     for (Object obj : (Collection<Object>) object) {
                         if (obj != null && ClassUtils.isAnnotationPresent(obj.getClass(), REntity.class)) {
                             Object persisted = alreadyPersisted.get(obj);
@@ -270,10 +291,14 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                             }
                             obj = persisted;
                         }
-                        ((Collection) rObject).add(obj);
+                        coll.add(obj);
                     }
                 } else if (rObject instanceof Map) {
                     Map<Object, Object> rMap = (Map<Object, Object>) rObject;
+                    if (type == RCascadeType.MERGE) {
+                        rMap.clear();
+                    }
+
                     Map<?, ?> map = (Map<?, ?>) object;
                     for (Entry<?, ?> entry : map.entrySet()) {
                         Object key = entry.getKey();
@@ -536,19 +561,82 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     @Override
-    public <T> boolean delete(Class<T> entityClass, Object id) {
-        T entity = createLiveObject(entityClass, id);
-        return asLiveObject(entity).delete();
+    public <T> long delete(Class<T> entityClass, Object... ids) {
+        CommandBatchService ce = new CommandBatchService(connectionManager);
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass.getSuperclass(), RIndex.class);
+        Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
+
+        for (Object id: ids) {
+            T entity = createLiveObject(entityClass, id);
+            delete(entity, asRMap(entity), ce, fieldNames);
+        }
+
+        BatchResult<Long> r = (BatchResult<Long>) ce.execute();
+        return r.getResponses().stream().mapToLong(s -> s).sum();
+    }
+
+    private RFuture<Long> delete(Object me, RMap<String, ?> map, CommandBatchService ce, Set<String> fieldNames) {
+        Map<String, ?> values = map.getAll(fieldNames);
+        for (String fieldName : fieldNames) {
+            Object value = values.get(fieldName);
+            if (value == null) {
+                continue;
+            }
+
+            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
+            String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
+
+            if (value instanceof Number) {
+                RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
+                set.removeAsync(((RLiveObject) me).getLiveObjectId());
+            } else {
+                RMultimapAsync<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
+            }
+        }
+        return new RedissonKeys(ce).deleteAsync(map.getName());
+    }
+
+    public RFuture<Long> delete(Object me, RMap<String, ?> map, CommandBatchService ce) {
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
+        Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
+        return delete(me, map, ce, fieldNames);
+    }
+
+    @Override
+    public <K> Iterable<K> findIds(Class<?> entityClass) {
+        return findIds(entityClass, 10);
+    }
+
+    @Override
+    public <K> Iterable<K> findIds(Class<?> entityClass, int count) {
+        try {
+            String idFieldName = getRIdFieldName(entityClass);
+            Class<?> idFieldType = ClassUtils.getDeclaredField(entityClass, idFieldName).getType();
+            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
+            String pattern = namingScheme.getNamePattern(entityClass, idFieldType, idFieldName);
+            RedissonKeys keys = new RedissonKeys(connectionManager.getCommandExecutor());
+
+            RedisCommand<ListScanResult<String>> command = new RedisCommand<>("SCAN",
+                    new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()), new Convertor<Object>() {
+                @Override
+                public Object convert(Object obj) {
+                    if (!(obj instanceof String)) {
+                        return obj;
+                    }
+                    return namingScheme.resolveId(obj.toString());
+                }
+            });
+
+            return keys.getKeysByPattern(command, pattern, count);
+        } catch (NoSuchFieldException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     @Override
     public <T> RLiveObject asLiveObject(T instance) {
         return (RLiveObject) instance;
-    }
-
-    @Override
-    public <T> RExpirable asRExpirable(T instance) {
-        return (RExpirable) instance;
     }
 
     @Override
@@ -597,22 +685,20 @@ public class RedissonLiveObjectService implements RLiveObjectService {
     }
 
     private String getRIdFieldName(Class<?> cls) {
-        return Introspectior.getFieldsWithAnnotation(cls, RId.class)
-                .getOnly()
-                .getName();
+        return Introspectior.getREntityIdFieldName(cls);
     }
 
     private <T> T instantiateLiveObject(Class<T> proxyClass, Object id) {
         if (id == null) {
             throw new IllegalStateException("Non-null value is required for the field with RId annotation.");
         }
-        T instance = instantiate(proxyClass, id);
+        T instance = instantiate(proxyClass);
         asLiveObject(instance).setLiveObjectId(id);
         return instance;
     }
 
     private <T, K> T instantiateDetachedObject(Class<T> cls, K id) {
-        T instance = instantiate(cls, id);
+        T instance = instantiate(cls);
         String fieldName = getRIdFieldName(cls);
         if (ClassUtils.getField(instance, fieldName) == null) {
             ClassUtils.setField(instance, fieldName, id);
@@ -620,7 +706,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         return instance;
     }
 
-    private <T> T instantiate(Class<T> cls, Object id) {
+    private <T> T instantiate(Class<T> cls) {
         try {
             for (Constructor<?> constructor : cls.getDeclaredConstructors()) {
                 if (constructor.getParameterTypes().length == 0) {
@@ -704,7 +790,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                                 .install(LiveObjectInterceptor.Getter.class,
                                         LiveObjectInterceptor.Setter.class))
                         .to(new LiveObjectInterceptor(commandExecutor, connectionManager,
-                                entityClass, getRIdFieldName(entityClass))))
+                                this, entityClass, getRIdFieldName(entityClass))))
 //                .intercept(MethodDelegation.to(
 //                                new LiveObjectInterceptor(redisson, codecProvider, entityClass,
 //                                        getRIdFieldName(entityClass)))

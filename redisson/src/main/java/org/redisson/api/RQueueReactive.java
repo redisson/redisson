@@ -15,10 +15,9 @@
  */
 package org.redisson.api;
 
-import java.util.List;
-
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 /**
  * Reactive interface for Queue object
@@ -49,7 +48,7 @@ public interface RQueueReactive<V> extends RCollectionReactive<V> {
      *
      * @return list of head elements
      */
-    Flux<V> poll(int limit);
+    Mono<List<V>> poll(int limit);
 
     /**
      * Inserts the specified element into this queue.

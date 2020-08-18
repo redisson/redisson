@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -21,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.awaitility.Awaitility;
-import org.awaitility.Duration;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
@@ -144,7 +144,7 @@ public class RedissonReadWriteLockTest extends BaseConcurrentTest {
         RLock l2 = rw1.writeLock();
         assertThat(l2.tryLock(1000, 1000, TimeUnit.MILLISECONDS)).isTrue();
 
-        await().atMost(Duration.TEN_SECONDS).until(() -> {
+        await().atMost(Duration.ofSeconds(10)).until(() -> {
             RReadWriteLock rw2 = redisson.getReadWriteLock("test2s3");
             try {
                 return !rw2.writeLock().tryLock(3000, 1000, TimeUnit.MILLISECONDS);

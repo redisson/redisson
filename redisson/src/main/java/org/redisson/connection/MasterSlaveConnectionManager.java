@@ -16,18 +16,11 @@
 package org.redisson.connection;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.stream.Collectors;
 
 import org.redisson.ElementsSubscribeService;
@@ -134,8 +127,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
     
     protected MasterSlaveServersConfig config;
 
-    private final AtomicReferenceArray<MasterSlaveEntry> slot2entry = new AtomicReferenceArray<>(MAX_SLOT);
-    private final Map<RedisClient, MasterSlaveEntry> client2entry = new ConcurrentHashMap<>();
+    private MasterSlaveEntry masterSlaveEntry;
 
     private final Promise<Void> shutdownPromise = ImmediateEventExecutor.INSTANCE.newPromise();
 
@@ -155,7 +147,7 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     private final ElementsSubscribeService elementsSubscribeService = new ElementsSubscribeService(this);
 
-    private PublishSubscribeService subscribeService;
+    protected PublishSubscribeService subscribeService;
     
     private final Map<Object, RedisConnection> nodeConnections = new ConcurrentHashMap<>();
     
@@ -336,7 +328,10 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public Collection<MasterSlaveEntry> getEntrySet() {
-        return client2entry.values();
+        if (masterSlaveEntry != null) {
+            return Collections.singletonList(masterSlaveEntry);
+        }
+        return Collections.emptyList();
     }
     
     protected void initTimer(MasterSlaveServersConfig config) {
@@ -359,20 +354,22 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     protected void initSingleEntry() {
         try {
-            MasterSlaveEntry entry;
             if (config.checkSkipSlavesInit()) {
-                entry = new SingleEntry(this, config);
+                masterSlaveEntry = new SingleEntry(this, config, null);
             } else {
-                entry = createMasterSlaveEntry(config);
+                masterSlaveEntry = new MasterSlaveEntry(this, config, null);
             }
-            RFuture<RedisClient> f = entry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
-            f.syncUninterruptibly();
-        
-            for (int slot = singleSlotRange.getStartSlot(); slot < singleSlotRange.getEndSlot() + 1; slot++) {
-                addEntry(slot, entry);
+            RFuture<RedisClient> masterFuture = masterSlaveEntry.setupMasterEntry(new RedisURI(config.getMasterAddress()));
+            masterFuture.syncUninterruptibly();
+
+            if (!config.checkSkipSlavesInit()) {
+                List<RFuture<Void>> fs = masterSlaveEntry.initSlaveBalancer(getDisconnectedNodes(), masterFuture.getNow());
+                for (RFuture<Void> future : fs) {
+                    future.syncUninterruptibly();
+                }
             }
-            
-            startDNSMonitoring(f.getNow());
+
+            startDNSMonitoring(masterFuture.getNow());
         } catch (Exception e) {
             stopThreads();
             throw e;
@@ -387,16 +384,11 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
             dnsMonitor.start();
         }
     }
-    
-    protected MasterSlaveEntry createMasterSlaveEntry(MasterSlaveServersConfig config) {
-        MasterSlaveEntry entry = new MasterSlaveEntry(this, config);
-        List<RFuture<Void>> fs = entry.initSlaveBalancer(java.util.Collections.<RedisURI>emptySet());
-        for (RFuture<Void> future : fs) {
-            future.syncUninterruptibly();
-        }
-        return entry;
-    }
 
+    protected Collection<RedisURI> getDisconnectedNodes() {
+        return Collections.emptySet();
+    }
+    
     protected MasterSlaveServersConfig create(BaseMasterSlaveServersConfig<?> cfg) {
         MasterSlaveServersConfig c = new MasterSlaveServersConfig();
 
@@ -506,40 +498,16 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(InetSocketAddress address) {
-        for (MasterSlaveEntry entry : client2entry.values()) {
-            InetSocketAddress addr = entry.getClient().getAddr();
-            if (addr.getAddress().equals(address.getAddress()) && addr.getPort() == address.getPort()) {
-                return entry;
-            }
-        }
-        return null;
+        return masterSlaveEntry;
     }
     
     protected MasterSlaveEntry getEntry(RedisURI addr) {
-        for (MasterSlaveEntry entry : client2entry.values()) {
-            if (RedisURI.compare(entry.getClient().getAddr(), addr)) {
-                return entry;
-            }
-            if (entry.hasSlave(addr)) {
-                return entry;
-            }
-        }
-        return null;
+        return masterSlaveEntry;
     }
 
     @Override
     public MasterSlaveEntry getEntry(RedisClient redisClient) {
-        MasterSlaveEntry entry = client2entry.get(redisClient);
-        if (entry != null) {
-            return entry;
-        }
-        
-        for (MasterSlaveEntry mentry : client2entry.values()) {
-            if (mentry.hasSlave(redisClient)) {
-                return mentry;
-            }
-        }
-        return null;
+        return masterSlaveEntry;
     }
 
     @Override
@@ -550,48 +518,14 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
 
     @Override
     public MasterSlaveEntry getEntry(int slot) {
-        return slot2entry.get(slot);
+        return masterSlaveEntry;
+    }
+
+    protected RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
+        MasterSlaveEntry entry = getEntry(slot);
+        return entry.changeMaster(address);
     }
     
-    protected final RFuture<RedisClient> changeMaster(int slot, RedisURI address) {
-        final MasterSlaveEntry entry = getEntry(slot);
-        final RedisClient oldClient = entry.getClient();
-        RFuture<RedisClient> future = entry.changeMaster(address);
-        future.onComplete((res, e) -> {
-            if (e == null) {
-                client2entry.remove(oldClient);
-                client2entry.put(entry.getClient(), entry);
-            }
-        });
-        return future;
-    }
-    
-    protected final void addEntry(Integer slot, MasterSlaveEntry entry) {
-        MasterSlaveEntry oldEntry = slot2entry.getAndSet(slot, entry);
-        if (oldEntry != entry) {
-            entry.incReference();
-        }
-        shutdownEntry(oldEntry);
-        client2entry.put(entry.getClient(), entry);
-    }
-
-    protected final void removeEntry(Integer slot) {
-        MasterSlaveEntry entry = slot2entry.getAndSet(slot, null);
-        shutdownEntry(entry);
-    }
-
-    private void shutdownEntry(MasterSlaveEntry entry) {
-        if (entry != null && entry.decReference() == 0) {
-            client2entry.remove(entry.getClient());
-            entry.shutdownAsync();
-            String slaves = entry.getAllEntries().stream()
-                    .filter(e -> !e.getClient().getAddr().equals(entry.getClient().getAddr()))
-                    .map(e -> e.getClient().toString())
-                    .collect(Collectors.joining(","));
-            log.info("{} master and related slaves: {} removed", entry.getClient().getAddr(), slaves);
-        }
-    }
-
     @Override
     public RFuture<RedisConnection> connectionWriteOp(NodeSource source, RedisCommand<?> command) {
         MasterSlaveEntry entry = getEntry(source);
@@ -683,15 +617,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         
         connectionWatcher.stop();
 
-        if (cfg.getExecutor() == null) {
-            executor.shutdown();
-            try {
-                executor.awaitTermination(timeout, unit);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-
         RPromise<Void> result = new RedissonPromise<Void>();
         CountableListener<Void> listener = new CountableListener<Void>(result, null, getEntrySet().size());
         for (MasterSlaveEntry entry : getEntrySet()) {
@@ -702,6 +627,15 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
         resolverGroup.close();
 
         shutdownLatch.close();
+        if (cfg.getExecutor() == null) {
+            executor.shutdown();
+            try {
+                executor.awaitTermination(timeout, unit);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
         shutdownPromise.trySuccess(null);
         shutdownLatch.awaitUninterruptibly();
         

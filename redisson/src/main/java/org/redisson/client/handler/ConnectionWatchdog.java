@@ -105,7 +105,7 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
             return;
         }
 
-        log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr(), connection);
+        log.debug("reconnecting {} to {} ", connection, connection.getRedisClient().getAddr());
 
         try {
             bootstrap.connect(connection.getRedisClient().getAddr()).addListener(new ChannelFutureListener() {

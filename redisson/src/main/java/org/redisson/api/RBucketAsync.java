@@ -68,6 +68,26 @@ public interface RBucketAsync<V> extends RExpirableAsync {
     RFuture<Boolean> trySetAsync(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
+     * Sets value only if it's already exists.
+     *
+     * @param value - value to set
+     * @return {@code true} if successful, or {@code false} if
+     *         element wasn't set
+     */
+    RFuture<Boolean> setIfExistsAsync(V value);
+
+    /**
+     * Sets value only if it's already exists.
+     *
+     * @param value - value to set
+     * @param timeToLive - time to live interval
+     * @param timeUnit - unit of time to live interval
+     * @return {@code true} if successful, or {@code false} if
+     *         element wasn't set
+     */
+    RFuture<Boolean> setIfExistsAsync(V value, long timeToLive, TimeUnit timeUnit);
+
+    /**
      * Atomically sets the value to the given updated value
      * only if serialized state of the current value equals 
      * to serialized state of the expected value.

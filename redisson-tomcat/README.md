@@ -19,8 +19,11 @@ Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tom
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
 	 configPath="${catalina.base}/redisson.conf" 
-	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"/>
+	 readMode="REDIS" updateMode="DEFAULT" broadcastSessionEvents="false"
+	 keyPrefix=""/>
    ```
+   `keyPrefix` - string prefix applied to all Redis keys. Allows to connection different Tomcat envirounments to the same Redis instance.
+   
    `readMode` - read Session attributes mode. Two modes are available:
    * `MEMORY` - stores attributes into local Tomcat Session and Redis. Further Session updates propagated to local Tomcat Session using Redis-based events.
    * `REDIS` - stores attributes into Redis only.  Default mode.
@@ -66,12 +69,12 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.12.4&e=jar)
+[redisson-all-3.13.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.3&e=jar)
   
 for Tomcat 7.x  
-[redisson-tomcat-7-3.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.12.4&e=jar)  
+[redisson-tomcat-7-3.13.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.13.3&e=jar)  
 for Tomcat 8.x  
-[redisson-tomcat-8-3.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.12.4&e=jar)  
+[redisson-tomcat-8-3.13.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.13.3&e=jar)  
 for Tomcat 9.x  
-[redisson-tomcat-9-3.12.4.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.12.4&e=jar)  
+[redisson-tomcat-9-3.13.3.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.13.3&e=jar)  
 

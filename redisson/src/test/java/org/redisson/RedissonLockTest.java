@@ -4,9 +4,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.WriteRedisConnectionException;
 import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,7 +49,26 @@ public class RedissonLockTest extends BaseConcurrentTest {
             System.out.println(Thread.currentThread().getName() + " ends.");
         }
     }
-    
+
+    @Test(expected = WriteRedisConnectionException.class)
+    public void testRedisFailed() throws IOException, InterruptedException {
+        RedisRunner.RedisProcess master = new RedisRunner()
+                .port(6377)
+                .nosave()
+                .randomDir()
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://127.0.0.1:6377");
+        RedissonClient redisson = Redisson.create(config);
+
+        RLock lock = redisson.getLock("myLock");
+        // kill RedisServer while main thread is sleeping.
+        master.stop();
+        Thread.sleep(3000);
+        lock.tryLock(5, 10, TimeUnit.SECONDS);
+    }
+
     @Test
     public void testTryLockWait() throws InterruptedException {
         testSingleInstanceConcurrency(1, r -> {

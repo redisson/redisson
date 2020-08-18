@@ -201,6 +201,7 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
                         ctx.fireChannelActive();
                     } else {
                         RedisConnection connection = RedisConnection.getFrom(ctx.channel());
+                        connection.closeAsync();
                         connection.getConnectionPromise().tryFailure(e.cause());
                     }
                 }

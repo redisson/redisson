@@ -83,7 +83,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.getList(getName());
+        list = (RedissonList<V>) redisson.<V>getList(getName());
     }
 
     public RedissonSortedSet(Codec codec, CommandExecutor commandExecutor, String name, Redisson redisson) {
@@ -92,7 +92,7 @@ public class RedissonSortedSet<V> extends RedissonObject implements RSortedSet<V
 
         comparatorHolder = redisson.getBucket(getComparatorKeyName(), StringCodec.INSTANCE);
         lock = redisson.getLock("redisson_sortedset_lock:{" + getName() + "}");
-        list = (RedissonList<V>) redisson.getList(getName(), codec);
+        list = (RedissonList<V>) redisson.<V>getList(getName(), codec);
     }
     
     @Override

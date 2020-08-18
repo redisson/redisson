@@ -259,7 +259,7 @@ public class RedissonSession extends StandardSession {
     public void setAuthType(String authType) {
         super.setAuthType(authType);
 
-        if (map != null) {
+        if (map != null && authType != null) {
             fastPut(AUTHTYPE_ATTR, authType);
         }
     }

@@ -53,6 +53,29 @@ public interface RedisNodeAsync {
      */
     RFuture<Boolean> pingAsync(long timeout, TimeUnit timeUnit);
 
+    /**
+     * Returns information about Redis node.
+     *
+     * @param section - section of information
+     * @return information
+     */
     RFuture<Map<String, String>> infoAsync(RedisNode.InfoSection section);
+
+    /**
+     * Get value of Redis configuration parameter.
+     *
+     * @param parameter - name of parameter
+     * @return value of parameter
+     */
+    RFuture<Map<String, String>> getConfigAsync(String parameter);
+
+    /**
+     * Set value of Redis configuration parameter.
+     *
+     * @param parameter - name of parameter
+     * @param value - value of parameter
+     * @return void
+     */
+    RFuture<Void> setConfigAsync(String parameter, String value);
 
 }

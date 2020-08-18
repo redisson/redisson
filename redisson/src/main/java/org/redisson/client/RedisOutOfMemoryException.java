@@ -16,7 +16,7 @@
 package org.redisson.client;
 
 /**
- * This error occurs in case when Redis server free memory has been exhausted. 
+ * This error occurs in case when Redis server free memory exhausted.
  * 
  * @author Nikita Koksharov
  *

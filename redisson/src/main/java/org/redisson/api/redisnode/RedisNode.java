@@ -62,6 +62,28 @@ public interface RedisNode {
 
     enum InfoSection {ALL, DEFAULT, SERVER, CLIENTS, MEMORY, PERSISTENCE, STATS, REPLICATION, CPU, COMMANDSTATS, CLUSTER, KEYSPACE}
 
+    /**
+     * Returns information about Redis node.
+     *
+     * @param section - section of information
+     * @return information
+     */
     Map<String, String> info(RedisNode.InfoSection section);
+
+    /**
+     * Get value of Redis configuration parameter.
+     *
+     * @param parameter - name of parameter
+     * @return value of parameter
+     */
+    Map<String, String> getConfig(String parameter);
+
+    /**
+     * Set value of Redis configuration parameter.
+     *
+     * @param parameter - name of parameter
+     * @param value - value of parameter
+     */
+    void setConfig(String parameter, String value);
 
 }

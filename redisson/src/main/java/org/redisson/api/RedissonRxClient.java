@@ -22,10 +22,34 @@ import org.redisson.config.Config;
  * Main Redisson interface for access
  * to all redisson objects with RxJava2 interface.
  *
+ * @see RedissonReactiveClient
+ * @see RedissonClient
+ *
+ *
  * @author Nikita Koksharov
  *
  */
 public interface RedissonRxClient {
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeriesRx<V> getTimeSeries(String name);
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @param codec - codec for values
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeriesRx<V> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>
@@ -107,7 +131,9 @@ public interface RedissonRxClient {
     RPermitExpirableSemaphoreRx getPermitExpirableSemaphore(String name);
     
     /**
-     * Returns readWriteLock instance by name.
+     * Returns ReadWriteLock instance by name.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
      * @param name - name of object
      * @return Lock object
@@ -115,9 +141,11 @@ public interface RedissonRxClient {
     RReadWriteLockRx getReadWriteLock(String name);
     
     /**
-     * Returns lock instance by name.
+     * Returns Lock instance by name.
      * <p>
      * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      * 
      * @param name - name of object
      * @return Lock object
@@ -125,9 +153,11 @@ public interface RedissonRxClient {
     RLockRx getFairLock(String name);
     
     /**
-     * Returns lock instance by name.
+     * Returns Lock instance by name.
      * <p>
-     * Implements a <b>non-fair</b> locking so doesn't guarantee an acquire order by threads.
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
      * @param name - name of object
      * @return Lock object

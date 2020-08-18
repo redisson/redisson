@@ -3,6 +3,7 @@ package org.redisson;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.time.Duration;
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -16,16 +17,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import org.awaitility.Duration;
+import org.awaitility.Awaitility;
 import org.joor.Reflect;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.redisson.api.MapOptions;
+import org.redisson.api.*;
 import org.redisson.api.MapOptions.WriteMode;
-import org.redisson.api.RMap;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RedissonClient;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
 import org.redisson.api.map.event.EntryExpiredListener;
@@ -41,6 +39,31 @@ import org.redisson.config.Config;
 import org.redisson.eviction.EvictionScheduler;
 
 public class RedissonMapCacheTest extends BaseMapTest {
+
+    @Test
+    public void testRemoveListener() {
+        RMapCache<Long, String> rMapCache = redisson.getMapCache("test",
+         LocalCachedMapOptions.<Long, String>defaults().evictionPolicy(LocalCachedMapOptions.EvictionPolicy.LRU)
+        .timeToLive(-1));
+        rMapCache.trySetMaxSize(5);
+        AtomicBoolean removed = new AtomicBoolean();
+        rMapCache.addListener(new EntryRemovedListener() {
+            @Override
+            public void onRemoved(EntryEvent event) {
+                removed.set(true);
+            }
+        });
+
+        rMapCache.put(1L, "1");
+        rMapCache.put(2L, "2");
+        rMapCache.put(3L, "3");
+        rMapCache.put(4L, "4");
+        rMapCache.put(5L, "5");
+
+        rMapCache.put(6L, "6");
+
+        Awaitility.await().atMost(5, TimeUnit.SECONDS).untilTrue(removed);
+    }
 
     @Test
     public void testDestroy() {
@@ -869,7 +892,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
         map.destroy();
     }
@@ -930,7 +953,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_MINUTE).untilTrue(ref);
+        await().atMost(Duration.ofMinutes(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -953,7 +976,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 
@@ -989,7 +1012,7 @@ public class RedissonMapCacheTest extends BaseMapTest {
         });
         runnable.run();
 
-        await().atMost(Duration.ONE_SECOND).untilTrue(ref);
+        await().atMost(Duration.ofSeconds(1)).untilTrue(ref);
         map.removeListener(createListener1);
     }
 

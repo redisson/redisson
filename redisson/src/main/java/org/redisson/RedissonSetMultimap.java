@@ -190,11 +190,13 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
                 encode(args, c);
                 
                 return commandExecutor.evalWriteAsync(RedissonSetMultimap.this.getName(), codec, RedisCommands.EVAL_BOOLEAN_AMOUNT,
-                        "local count = redis.call('srem', KEYS[2], unpack(ARGV, 2, #ARGV));" + 
-                        "redis.call('hdel', KEYS[1], ARGV[1]); " +
-                        "if count > 0 then "
-                          + "return 1;"
-                      + "end;" +
+                        "local count = redis.call('srem', KEYS[2], unpack(ARGV, 2, #ARGV));" +
+                        "if count > 0 then " +
+                            "if redis.call('scard', KEYS[2]) == 0 then " +
+                                "redis.call('hdel', KEYS[1], ARGV[1]); " +
+                            "end; " +
+                            "return 1;" +
+                        "end;" +
                         "return 0; ",
                     Arrays.<Object>asList(RedissonSetMultimap.this.getName(), setName), 
                     args.toArray());
@@ -203,7 +205,8 @@ public class RedissonSetMultimap<K, V> extends RedissonMultimap<K, V> implements
             @Override
             public RFuture<Boolean> deleteAsync() {
                 ByteBuf keyState = encodeMapKey(key);
-                return RedissonSetMultimap.this.fastRemoveAsync(Arrays.<Object>asList(keyState), Arrays.<Object>asList(setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
+                return RedissonSetMultimap.this.fastRemoveAsync(Arrays.asList(keyState),
+                        Arrays.asList(RedissonSetMultimap.this.getName(), setName), RedisCommands.EVAL_BOOLEAN_AMOUNT);
             }
             
             @Override

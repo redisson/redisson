@@ -33,12 +33,19 @@ public class NodeSource {
     private Redirect redirect;
     private MasterSlaveEntry entry;
 
+    public NodeSource(NodeSource nodeSource, RedisClient redisClient) {
+        this.slot = nodeSource.slot;
+        this.addr = nodeSource.addr;
+        this.redisClient = redisClient;
+        this.redirect = nodeSource.getRedirect();
+        this.entry = nodeSource.getEntry();
+    }
+
     public NodeSource(MasterSlaveEntry entry) {
         this.entry = entry;
     }
 
-    public NodeSource(MasterSlaveEntry entry, Integer slot) {
-        this.entry = entry;
+    public NodeSource(Integer slot) {
         this.slot = slot;
     }
 
@@ -77,7 +84,7 @@ public class NodeSource {
     public RedisClient getRedisClient() {
         return redisClient;
     }
-    
+
     public RedisURI getAddr() {
         return addr;
     }

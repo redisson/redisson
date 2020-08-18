@@ -71,6 +71,45 @@ public interface RLiveObjectService {
     <T> Collection<T> find(Class<T> entityClass, Condition condition);
 
     /**
+     * Counts the entities matches specified <code>condition</code>.
+     * Usage example:
+     * <pre>
+     * long objectsAmount = liveObjectService.count(MyObject.class, Conditions.or(Conditions.in("field", "value1", "value2"),
+     *                          Conditions.and(Conditions.eq("field2", "value2"), Conditions.eq("field3", "value5"))));
+     * </pre>
+     *
+     * @see Conditions
+     *
+     * @param entityClass - entity class
+     * @param condition - condition object
+     * @return amount of live objects.
+     */
+    long count(Class<?> entityClass, Condition condition);
+
+    /**
+     * Returns iterator for all entry ids by specified <code>entityClass</code>.
+     * Ids traversed with SCAN operation. Each SCAN operation loads
+     * up to <code>count</code> keys per request.
+     *
+     * @param entityClass - entity class
+     * @param <K> Key type
+     * @return collection of ids or empty collection.
+     */
+    <K> Iterable<K> findIds(Class<?> entityClass);
+
+    /**
+     * Returns iterator for all entry ids by specified <code>entityClass</code>.
+     * Ids traversed with SCAN operation. Each SCAN operation loads
+     * up to <code>count</code> keys per request.
+     *
+     * @param entityClass - entity class
+     * @param count - keys loaded per request to Redis
+     * @param <K> Key type
+     * @return collection of ids or empty collection.
+     */
+    <K> Iterable<K> findIds(Class<?> entityClass, int count);
+
+    /**
      * Returns proxied object for the detached object. Discard all the
      * field values already in the detached instance.
      *
@@ -96,7 +135,7 @@ public interface RLiveObjectService {
      * RId, and the object should hold a non null value in that field.
      * 
      * If this object is not in redis then a new hash key will be created to
-     * store it.
+     * store it. Otherwise overrides current object state in Redis with the given object state.
      *
      * @param <T> Entity type
      * @param detachedObject - not proxied object
@@ -144,15 +183,15 @@ public interface RLiveObjectService {
     <T> void delete(T attachedObject);
 
     /**
-     * Deletes object by class and id including all nested objects.
+     * Deletes object by class and ids including all nested objects.
      *
      * @param <T> Entity type
      * @param entityClass - object class
-     * @param id - object id
+     * @param ids - object ids
      * 
-     * @return <code>true</code> if entity was deleted successfully, <code>false</code> otherwise 
+     * @return amount of deleted objects
      */
-    <T> boolean delete(Class<T> entityClass, Object id);
+    <T> long delete(Class<T> entityClass, Object... ids);
     
     /**
      * To cast the instance to RLiveObject instance.
@@ -162,13 +201,6 @@ public interface RLiveObjectService {
      * @return RLiveObject compatible object
      */
     <T> RLiveObject asLiveObject(T instance);
-
-    /**
-     * Use {@link #asRMap(Object)} method instead
-     * 
-     */
-    @Deprecated
-    <T> RExpirable asRExpirable(T instance);
 
     /**
      * To cast the instance to RMap instance.

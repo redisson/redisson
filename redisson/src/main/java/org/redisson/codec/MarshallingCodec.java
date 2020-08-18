@@ -16,6 +16,7 @@
 package org.redisson.codec;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import org.jboss.marshalling.ByteInput;
 import org.jboss.marshalling.ByteOutput;
@@ -211,7 +212,7 @@ public class MarshallingCodec extends BaseCodec {
     }
     
     public MarshallingCodec(Protocol protocol, MarshallingConfiguration configuration) {
-        this.factory = Marshalling.getProvidedMarshallerFactory(protocol.toString().toLowerCase());
+        this.factory = Marshalling.getProvidedMarshallerFactory(protocol.toString().toLowerCase(Locale.ENGLISH));
         if (factory == null) {
             throw new IllegalArgumentException(protocol.toString());
         }

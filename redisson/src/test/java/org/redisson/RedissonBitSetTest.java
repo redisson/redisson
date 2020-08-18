@@ -9,6 +9,35 @@ import org.redisson.api.RBitSet;
 public class RedissonBitSetTest extends BaseTest {
 
     @Test
+    public void testIncrement() {
+        RBitSet bs2 = redisson.getBitSet("testbitset1");
+        assertThat(bs2.setByte(2, (byte)12)).isZero();
+        assertThat(bs2.getByte(2)).isEqualTo((byte)12);
+
+        assertThat(bs2.incrementAndGetByte(2, (byte)12)).isEqualTo((byte) 24);
+        assertThat(bs2.getByte(2)).isEqualTo((byte)24);
+    }
+
+    @Test
+    public void testSetGetNumber() {
+        RBitSet bs = redisson.getBitSet("testbitset");
+        assertThat(bs.setLong(2, 12L)).isZero();
+        assertThat(bs.getLong(2)).isEqualTo(12);
+
+        RBitSet bs2 = redisson.getBitSet("testbitset1");
+        assertThat(bs2.setByte(2, (byte)12)).isZero();
+        assertThat(bs2.getByte(2)).isEqualTo((byte)12);
+
+        RBitSet bs3 = redisson.getBitSet("testbitset2");
+        assertThat(bs3.setShort(2, (short)2312)).isZero();
+        assertThat(bs3.getShort(2)).isEqualTo((short)2312);
+
+        RBitSet bs4 = redisson.getBitSet("testbitset3");
+        assertThat(bs4.setInteger(2, 323241)).isZero();
+        assertThat(bs4.getInteger(2)).isEqualTo(323241);
+    }
+
+    @Test
     public void testIndexRange() {
         RBitSet bs = redisson.getBitSet("testbitset");
         long topIndex = Integer.MAX_VALUE*2L;

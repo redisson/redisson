@@ -239,6 +239,29 @@ public class RedissonBatchTest extends BaseTest {
     }
 
     @Test
+    public void testSyncSlavesWait() {
+        Config config = createConfig();
+        config.useSingleServer()
+                .setConnectionMinimumIdleSize(1)
+                .setConnectionPoolSize(1);
+
+        RedissonClient redisson = Redisson.create(config);
+
+        try {
+                    batchOptions
+                    .skipResult()
+                    .syncSlaves(2, 1, TimeUnit.SECONDS);
+            RBatch batch = redisson.createBatch(batchOptions);
+            RBucketAsync<Integer> bucket = batch.getBucket("1");
+            bucket.setAsync(1);
+            batch.execute();
+            String[] t = redisson.getKeys().getKeysStreamByPattern("*").toArray(String[]::new);
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    @Test
     public void testSyncSlaves() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
         RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();

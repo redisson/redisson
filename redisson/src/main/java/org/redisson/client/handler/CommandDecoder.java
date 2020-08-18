@@ -291,6 +291,13 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                     commandData.tryFailure(e);
                 }
             }
+
+            if (i == 0 && commandBatch.isSkipResult() && commandBatch.isSyncSlaves()) {
+                checkpoint();
+                state().setBatchIndex(commandBatch.getCommands().size() - 1);
+                return;
+            }
+
             i++;
             if (commandData != null && !commandData.isSuccess()) {
                 error = commandData.cause();
@@ -349,6 +356,9 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                         + ". channel: " + channel + " data: " + data));
             } else if (error.startsWith("NOAUTH")) {
                 data.tryFailure(new RedisAuthRequiredException(error
+                        + ". channel: " + channel + " data: " + data));
+            } else if (error.startsWith("CLUSTERDOWN")) {
+                data.tryFailure(new RedisClusterDownException(error
                         + ". channel: " + channel + " data: " + data));
             } else {
                 if (data != null) {

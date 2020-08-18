@@ -15,11 +15,14 @@
  */
 package org.redisson.command;
 
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.BatchResult;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisTimeoutException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.BatchCommandData;
 import org.redisson.client.protocol.CommandData;
@@ -28,6 +31,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
+import org.redisson.liveobject.core.RedissonObjectBuilder;
 import org.redisson.misc.CountableListener;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
@@ -37,8 +41,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -116,6 +122,10 @@ public class CommandBatchService extends CommandAsyncService {
         super(connectionManager);
         this.options = options;
     }
+
+    public void setObjectBuilder(RedissonObjectBuilder objectBuilder) {
+        this.objectBuilder = objectBuilder;
+    }
     
     public BatchOptions getOptions() {
         return options;
@@ -167,7 +177,11 @@ public class CommandBatchService extends CommandAsyncService {
         });
         return promise;
     }
-    
+
+    public boolean isExecuted() {
+        return executed.get();
+    }
+
     public RFuture<BatchResult<?>> executeAsync() {
         if (executed.get()) {
             throw new IllegalStateException("Batch already executed!");
@@ -211,9 +225,11 @@ public class CommandBatchService extends CommandAsyncService {
         
         RPromise<BatchResult<?>> promise = new RedissonPromise<>();
         RPromise<Void> voidPromise = new RedissonPromise<Void>();
-        if (this.options.isSkipResult()) {
+        if (this.options.isSkipResult()
+                && this.options.getSyncSlaves() == 0) {
             voidPromise.onComplete((res, e) -> {
                 executed.set(true);
+                commands.clear();
                 nestedServices.clear();
                 promise.trySuccess(new BatchResult<>(Collections.emptyList(), 0));
             });
@@ -222,6 +238,12 @@ public class CommandBatchService extends CommandAsyncService {
                 executed.set(true);
                 if (ex != null) {
                     promise.tryFailure(ex);
+
+                    for (Entry e : commands.values()) {
+                        e.getCommands().forEach(t -> t.tryFailure(ex));
+                    }
+
+                    commands.clear();
                     nestedServices.clear();
                     return;
                 }
@@ -237,7 +259,8 @@ public class CommandBatchService extends CommandAsyncService {
                     if (isWaitCommand(commandEntry)) {
                         syncedSlaves = (Integer) commandEntry.getPromise().getNow();
                     } else if (!commandEntry.getCommand().getName().equals(RedisCommands.MULTI.getName())
-                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())) {
+                            && !commandEntry.getCommand().getName().equals(RedisCommands.EXEC.getName())
+                            && !this.options.isSkipResult()) {
                         
                         if (commandEntry.getPromise().isCancelled()) {
                             continue;
@@ -255,7 +278,8 @@ public class CommandBatchService extends CommandAsyncService {
                 
                 BatchResult<Object> result = new BatchResult<Object>(responses, syncedSlaves);
                 promise.trySuccess(result);
-                
+
+                commands.clear();
                 nestedServices.clear();
             });
         }
@@ -288,9 +312,35 @@ public class CommandBatchService extends CommandAsyncService {
         }
         
         RPromise<R> resultPromise = new RedissonPromise<R>();
+        Timeout timeout;
+        if (semaphore.getCounter() < permits) {
+            long responseTimeout;
+            if (options.getResponseTimeout() > 0) {
+                responseTimeout = options.getResponseTimeout();
+            } else {
+                responseTimeout = connectionManager.getConfig().getTimeout();
+            }
+
+            timeout = connectionManager.newTimeout(new TimerTask() {
+                @Override
+                public void run(Timeout timeout) throws Exception {
+                    resultPromise.tryFailure(new RedisTimeoutException("Response timeout for queued commands " + responseTimeout + ": " +
+                            commands.values().stream()
+                                    .flatMap(e -> e.getCommands().stream().map(d -> d.getCommand()))
+                                    .collect(Collectors.toList())));
+                }
+            }, responseTimeout, TimeUnit.MILLISECONDS);
+        } else {
+            timeout = null;
+        }
+
         semaphore.acquire(new Runnable() {
             @Override
             public void run() {
+                if (timeout != null) {
+                    timeout.cancel();
+                }
+
                 for (Entry entry : commands.values()) {
                     for (BatchCommandData<?, ?> command : entry.getCommands()) {
                         if (command.getPromise().isDone() && !command.getPromise().isSuccess()) {

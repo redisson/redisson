@@ -15,10 +15,8 @@
  */
 package org.redisson.transaction;
 
-import java.util.List;
-import java.util.Set;
-
 import org.redisson.RedissonSet;
+import org.redisson.ScanIterator;
 import org.redisson.api.RCollectionAsync;
 import org.redisson.api.RFuture;
 import org.redisson.api.RLock;
@@ -30,6 +28,9 @@ import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.set.AddOperation;
 import org.redisson.transaction.operation.set.MoveOperation;
 import org.redisson.transaction.operation.set.RemoveOperation;
+
+import java.util.List;
+import java.util.Set;
 
 /**
  * 
@@ -52,7 +53,7 @@ public class TransactionalSet<V> extends BaseTransactionalSet<V> {
     @Override
     protected ListScanResult<Object> scanIteratorSource(String name, RedisClient client, long startPos,
             String pattern, int count) {
-        return ((RedissonSet<?>) set).scanIterator(name, client, startPos, pattern, count);
+        return ((ScanIterator) set).scanIterator(name, client, startPos, pattern, count);
     }
 
     @Override

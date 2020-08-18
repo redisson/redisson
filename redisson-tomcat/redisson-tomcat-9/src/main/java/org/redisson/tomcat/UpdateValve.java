@@ -40,6 +40,10 @@ public class UpdateValve extends ValveBase {
 
     @Override
     public void invoke(Request request, Response response) throws IOException, ServletException {
+        if (getNext() == null) {
+            return;
+        }
+
         //check if we already filtered/processed this request 
         if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);

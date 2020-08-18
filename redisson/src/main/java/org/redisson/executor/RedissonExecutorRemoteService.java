@@ -17,6 +17,7 @@ package org.redisson.executor;
 
 import org.redisson.RedissonExecutorService;
 import org.redisson.RedissonRemoteService;
+import org.redisson.RedissonShutdownException;
 import org.redisson.api.RFuture;
 import org.redisson.api.RMap;
 import org.redisson.api.executor.*;
@@ -25,7 +26,10 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.misc.RPromise;
 import org.redisson.remote.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentMap;
@@ -38,6 +42,8 @@ import java.util.stream.Collectors;
  *
  */
 public class RedissonExecutorRemoteService extends RedissonRemoteService {
+
+    private static final Logger log = LoggerFactory.getLogger(RedissonExecutorRemoteService.class);
 
     private String tasksExpirationTimeName;
     private String tasksCounterName;
@@ -94,7 +100,28 @@ public class RedissonExecutorRemoteService extends RedissonRemoteService {
                 ((RPromise) cancelRequestFuture).trySuccess(new RemoteServiceCancelRequest(true, false));
             }, taskTimeout, TimeUnit.MILLISECONDS);
         }
-        super.invokeMethod(request, method, cancelRequestFuture, responsePromise);
+
+        try {
+            Object result = method.getMethod().invoke(method.getBean(), request.getArgs());
+
+            RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), result);
+            responsePromise.trySuccess(response);
+        } catch (Exception e) {
+            if (e instanceof InvocationTargetException
+                && e.getCause() instanceof RedissonShutdownException) {
+                if (cancelRequestFuture != null) {
+                    cancelRequestFuture.cancel(false);
+                }
+                return;
+            }
+            RemoteServiceResponse response = new RemoteServiceResponse(request.getId(), e.getCause());
+            responsePromise.trySuccess(response);
+            log.error("Can't execute: " + request, e);
+        }
+
+        if (cancelRequestFuture != null) {
+            cancelRequestFuture.cancel(false);
+        }
 
         if (responsePromise.getNow() instanceof RemoteServiceResponse) {
             RemoteServiceResponse response = (RemoteServiceResponse) responsePromise.getNow();

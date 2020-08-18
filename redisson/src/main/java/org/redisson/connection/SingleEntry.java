@@ -28,8 +28,8 @@ import org.redisson.misc.RedisURI;
  */
 public class SingleEntry extends MasterSlaveEntry {
 
-    public SingleEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config) {
-        super(connectionManager, config);
+    public SingleEntry(ConnectionManager connectionManager, MasterSlaveServersConfig config, String sslHostname) {
+        super(connectionManager, config, sslHostname);
     }
 
     @Override

@@ -36,6 +36,11 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
+    public String getNamePattern(Class<?> entityClass, Class<?> idFieldClass, String idFieldName) {
+        return "redisson_live_object:{" + "*" + "}:" + entityClass.getName() + ":" + idFieldName + ":" + idFieldClass.getName();
+    }
+
+    @Override
     public String getName(Class<?> entityClass, Class<?> idFieldClass, String idFieldName, Object idValue) {
         try {
             String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
@@ -53,17 +58,6 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
         } catch (IOException ex) {
             throw new IllegalArgumentException("Unable to encode \"" + fieldName + "\" [" + fieldValue + "] into byte[]", ex);
         }
-    }
-
-    @Override
-    public String resolveClassName(String name) {
-        return name.substring(name.lastIndexOf("}:") + 2, name.indexOf(":"));
-    }
-
-    @Override
-    public String resolveIdFieldName(String name) {
-        String s = name.substring(0, name.lastIndexOf(":"));
-        return s.substring(s.lastIndexOf(":") + 1);
     }
 
     @Override

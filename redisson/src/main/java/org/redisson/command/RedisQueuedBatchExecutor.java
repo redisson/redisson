@@ -85,6 +85,9 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
         if (RedisCommands.EXEC.getName().equals(command.getName())) {
             super.releaseConnection(attemptPromise, connectionFuture);
         }
+        if (RedisCommands.DISCARD.getName().equals(command.getName())) {
+            super.releaseConnection(attemptPromise, connectionFuture);
+        }
     }
     
     @Override
@@ -103,36 +106,45 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             return;
         }
-        
-        BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
-        RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-        super.handleSuccess(sentPromise, connectionFuture, null);
-        semaphore.release();
+
+        try {
+            BatchPromise<R> batchPromise = (BatchPromise<R>) promise;
+            RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
+            super.handleSuccess(sentPromise, connectionFuture, null);
+        } finally {
+            semaphore.release();
+        }
     }
     
     @Override
     protected void handleError(RFuture<RedisConnection> connectionFuture, Throwable cause) {
-        if (mainPromise instanceof BatchPromise) {
-            BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
-            RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
-            sentPromise.tryFailure(cause);
-            mainPromise.tryFailure(cause);
-            if (executed.compareAndSet(false, true)) {
-                connectionFuture.getNow().forceFastReconnectAsync().onComplete((res, e) -> {
-                    RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
-                });
+        try {
+            if (mainPromise instanceof BatchPromise) {
+                BatchPromise<R> batchPromise = (BatchPromise<R>) mainPromise;
+                RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
+                sentPromise.tryFailure(cause);
+                mainPromise.tryFailure(cause);
+                if (executed.compareAndSet(false, true)) {
+                    connectionFuture.getNow().forceFastReconnectAsync().onComplete((res, e) -> {
+                        RedisQueuedBatchExecutor.super.releaseConnection(mainPromise, connectionFuture);
+                    });
+                }
+                return;
             }
-            semaphore.release();
-            return;
-        }
 
-        super.handleError(connectionFuture, cause);
+            super.handleError(connectionFuture, cause);
+        } finally {
+            semaphore.release();
+        }
     }
     
     @Override
     protected void sendCommand(RPromise<R> attemptPromise, RedisConnection connection) {
-        ConnectionEntry connectionEntry = connections.get(source.getEntry());
-        
+        MasterSlaveEntry msEntry = getEntry(source);
+        ConnectionEntry connectionEntry = connections.get(msEntry);
+
+        boolean syncSlaves = options.getSyncSlaves() > 0;
+
         if (source.getRedirect() == Redirect.ASK) {
             List<CommandData<?, ?>> list = new ArrayList<CommandData<?, ?>>(2);
             RPromise<Void> promise = new RedissonPromise<Void>();
@@ -143,7 +155,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             }
             list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
             RPromise<Void> main = new RedissonPromise<Void>();
-            writeFuture = connection.send(new CommandsData(main, list, true));
+            writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
@@ -155,11 +167,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                 list.add(new CommandData<Void, Void>(new RedissonPromise<Void>(), codec, RedisCommands.MULTI, new Object[]{}));
                 list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
                 RPromise<Void> main = new RedissonPromise<Void>();
-                writeFuture = connection.send(new CommandsData(main, list, true));
+                writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
                 connectionEntry.setFirstCommand(false);
             } else {
                 if (RedisCommands.EXEC.getName().equals(command.getName())) {
-                    Entry entry = commands.get(source.getEntry());
+                    Entry entry = commands.get(msEntry);
 
                     List<CommandData<?, ?>> list = new ArrayList<>();
 
@@ -180,12 +192,13 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
                     }
 
                     RPromise<Void> main = new RedissonPromise<Void>();
-                    writeFuture = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands()), options.isSkipResult(), false, true));
+                    writeFuture = connection.send(new CommandsData(main, list, new ArrayList(entry.getCommands()),
+                                options.isSkipResult(), false, true, syncSlaves));
                 } else {
                     RPromise<Void> main = new RedissonPromise<Void>();
                     List<CommandData<?, ?>> list = new ArrayList<>();
                     list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
-                    writeFuture = connection.send(new CommandsData(main, list, true));
+                    writeFuture = connection.send(new CommandsData(main, list, true, syncSlaves));
                 }
             }
         }
@@ -193,10 +206,11 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
     
     @Override
     protected RFuture<RedisConnection> getConnection() {
-        ConnectionEntry entry = connections.get(source.getEntry());
+        MasterSlaveEntry msEntry = getEntry(source);
+        ConnectionEntry entry = connections.get(msEntry);
         if (entry == null) {
             entry = new ConnectionEntry();
-            ConnectionEntry oldEntry = connections.putIfAbsent(source.getEntry(), entry);
+            ConnectionEntry oldEntry = connections.putIfAbsent(msEntry, entry);
             if (oldEntry != null) {
                 entry = oldEntry;
             }

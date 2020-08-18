@@ -248,7 +248,9 @@ public class RedisConnection implements RedisCommands {
     
     private void close() {
         CommandData<?, ?> command = getCurrentCommand();
-        if (command != null && command.isBlockingCommand()) {
+        if (!isActive()
+                || (command != null && command.isBlockingCommand())
+                    || !connectionPromise.isDone()) {
             channel.close();
         } else {
             RFuture<Void> f = async(RedisCommands.QUIT);

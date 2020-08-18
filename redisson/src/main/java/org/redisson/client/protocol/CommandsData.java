@@ -33,17 +33,18 @@ public class CommandsData implements QueueCommand {
     private final boolean skipResult;
     private final boolean atomic;
     private final boolean queued;
+    private final boolean syncSlaves;
 
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean queued) {
-        this(promise, commands, null, false, false, queued);
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean queued, boolean syncSlaves) {
+        this(promise, commands, null, false, false, queued, syncSlaves);
     }
     
-    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued) {
-        this(promise, commands, null, skipResult, atomic, queued);
+    public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, boolean skipResult, boolean atomic, boolean queued, boolean syncSlaves) {
+        this(promise, commands, null, skipResult, atomic, queued, syncSlaves);
     }
     
     public CommandsData(RPromise<Void> promise, List<CommandData<?, ?>> commands, List<CommandData<?, ?>> attachedCommands, 
-            boolean skipResult, boolean atomic, boolean queued) {
+            boolean skipResult, boolean atomic, boolean queued, boolean syncSlaves) {
         super();
         this.promise = promise;
         this.commands = commands;
@@ -51,6 +52,11 @@ public class CommandsData implements QueueCommand {
         this.atomic = atomic;
         this.attachedCommands = attachedCommands;
         this.queued = queued;
+        this.syncSlaves = syncSlaves;
+    }
+
+    public boolean isSyncSlaves() {
+        return syncSlaves;
     }
 
     public RPromise<Void> getPromise() {

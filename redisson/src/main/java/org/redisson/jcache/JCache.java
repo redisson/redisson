@@ -1717,6 +1717,9 @@ public class JCache<K, V> extends RedissonObject implements Cache<K, V>, CacheAs
         } else {
             RFuture<Boolean> result = removeValue(key);
             result.onComplete((res, ex) -> {
+                if (ex != null) {
+                    return;
+                }
                 if (res) {
                     cacheManager.getStatBean(this).addRemovals(1);
                 }

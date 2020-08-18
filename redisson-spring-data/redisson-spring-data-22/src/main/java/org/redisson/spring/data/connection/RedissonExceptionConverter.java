@@ -44,6 +44,10 @@ public class RedissonExceptionConverter implements Converter<Exception, DataAcce
             return new ClusterRedirectException(ex.getSlot(), ex.getUrl().getHost(), ex.getUrl().getPort(), source);
         }
 
+        if (source instanceof RedisTimeoutException) {
+            return new QueryTimeoutException(source.getMessage(), source);
+        }
+
         if (source instanceof RedisException) {
             return new InvalidDataAccessApiUsageException(source.getMessage(), source);
         }
@@ -52,10 +56,6 @@ public class RedissonExceptionConverter implements Converter<Exception, DataAcce
             return (DataAccessException) source;
         }
         
-        if (source instanceof RedisTimeoutException) {
-            return new QueryTimeoutException(source.getMessage(), source);
-        }
-
         return null;
     }
 

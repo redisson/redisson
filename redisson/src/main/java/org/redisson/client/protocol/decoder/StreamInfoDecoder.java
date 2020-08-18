@@ -17,6 +17,8 @@ package org.redisson.client.protocol.decoder;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
@@ -25,11 +27,18 @@ import org.redisson.client.protocol.Decoder;
 import org.redisson.client.protocol.convertor.StreamIdConvertor;
 
 /**
- * 
- * @author Nikita Koksharov
+ *
+ * @author Nikita Koksharov, Fabian Witte
  *
  */
 public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object>> {
+    private static final String LENGTH_KEY = "length";
+    private static final String RADIX_TREE_KEYS_KEY = "radix-tree-keys";
+    private static final String RADIX_TREE_NODES_KEY = "radix-tree-nodes";
+    private static final String GROUPS_KEY = "groups";
+    private static final String LAST_GENERATED_ID_KEY = "last-generated-id";
+    private static final String FIRST_ENTRY_KEY = "first-entry";
+    private static final String LAST_ENTRY_KEY = "last-entry";
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
@@ -38,29 +47,36 @@ public class StreamInfoDecoder implements MultiDecoder<StreamInfo<Object, Object
 
     @Override
     public StreamInfo<Object, Object> decode(List<Object> parts, State state) {
-        StreamInfo<Object, Object> info = new StreamInfo<>();
-        info.setLength(((Long) parts.get(1)).intValue());
-        info.setRadixTreeKeys(((Long) parts.get(3)).intValue());
-        info.setRadixTreeNodes(((Long) parts.get(5)).intValue());
-        info.setGroups(((Long) parts.get(7)).intValue());
-        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(parts.get(9)));
+        Map<String, Object> map = IntStream.range(0, parts.size())
+                                    .filter(i -> i % 2 == 0)
+                                    .mapToObj(i -> parts.subList(i, i+2))
+                                    .filter(p -> p.get(1) != null)
+                                    .collect(Collectors.toMap(e -> (String) e.get(0), e -> e.get(1)));
 
-        List<?> firstEntry = (List<?>) parts.get(11);
+        StreamInfo<Object, Object> info = new StreamInfo<>();
+        info.setLength(((Long) map.get(LENGTH_KEY)).intValue());
+        info.setRadixTreeKeys(((Long) map.get(RADIX_TREE_KEYS_KEY)).intValue());
+        info.setRadixTreeNodes(((Long) map.get(RADIX_TREE_NODES_KEY)).intValue());
+        info.setGroups(((Long) map.get(GROUPS_KEY)).intValue());
+        info.setLastGeneratedId(StreamIdConvertor.INSTANCE.convert(map.get(LAST_GENERATED_ID_KEY)));
+
+        List<?> firstEntry = (List<?>) map.get(FIRST_ENTRY_KEY);
         if (firstEntry != null) {
-            StreamMessageId firstId = StreamIdConvertor.INSTANCE.convert(firstEntry.get(0));
-            Map<Object, Object> firstData = (Map<Object, Object>) firstEntry.get(1);
-            StreamInfo.Entry<Object, Object> first = new StreamInfo.Entry<>(firstId, firstData);
+            StreamInfo.Entry<Object, Object> first = createStreamInfoEntry(firstEntry);
             info.setFirstEntry(first);
         }
 
-        List<?> lastEntry = (List<?>) parts.get(13);
+        List<?> lastEntry = (List<?>) map.get(LAST_ENTRY_KEY);
         if (lastEntry != null) {
-            StreamMessageId lastId = StreamIdConvertor.INSTANCE.convert(lastEntry.get(0));
-            Map<Object, Object> lastData = (Map<Object, Object>) lastEntry.get(1);
-            StreamInfo.Entry<Object, Object> last = new StreamInfo.Entry<>(lastId, lastData);
+            StreamInfo.Entry<Object, Object> last = createStreamInfoEntry(lastEntry);
             info.setLastEntry(last);
         }
         return info;
     }
 
+    private StreamInfo.Entry<Object, Object> createStreamInfoEntry(List<?> fieldValue) {
+        StreamMessageId id = StreamIdConvertor.INSTANCE.convert(fieldValue.get(0));
+        Map<Object, Object> data = (Map<Object, Object>) fieldValue.get(1);
+        return new StreamInfo.Entry<>(id, data);
+    }
 }

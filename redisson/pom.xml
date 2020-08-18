@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.12.6-SNAPSHOT</version>
+        <version>3.13.4-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -74,7 +74,7 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-core</artifactId>
-            <version>3.3.4.RELEASE</version>
+            <version>3.3.9.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>io.reactivex.rxjava2</groupId>
@@ -83,21 +83,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.jboss.marshalling</groupId>
-            <artifactId>jboss-marshalling-river</artifactId>
-            <version>2.0.9.Final</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <version>3.15.0</version>
+            <version>3.16.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>3.1.6</version>
+            <version>4.0.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -128,7 +122,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.51</version>
+            <version>8.5.55</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -203,7 +197,7 @@
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>kryo</artifactId>
-            <version>5.0.0-RC4</version>
+            <version>5.0.0-RC6</version>
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
@@ -263,12 +257,12 @@
         <dependency>
             <groupId>net.bytebuddy</groupId>
             <artifactId>byte-buddy</artifactId>
-            <version>1.10.7</version>
+            <version>1.10.14</version>
         </dependency>
         <dependency>
             <groupId>org.jodd</groupId>
             <artifactId>jodd-bean</artifactId>
-            <version>5.0.13</version>
+            <version>5.1.6</version>
         </dependency>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -351,7 +345,7 @@
                 <dependency>
                   <groupId>com.github.spotbugs</groupId>
                   <artifactId>spotbugs</artifactId>
-                  <version>4.0.0-beta4</version>
+                  <version>4.1.1</version>
                 </dependency>
               </dependencies>
             </plugin>
@@ -373,7 +367,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-pmd-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
                 <executions>
                     <execution>
                         <phase>verify</phase>
@@ -384,7 +378,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <linkXref>true</linkXref>
+                    <linkXRef>true</linkXRef>
                     <minimumTokens>100</minimumTokens>
                     <targetJdk>${source.version}</targetJdk>
                     <verbose>true</verbose>
@@ -470,12 +464,12 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <archive>  
+                    <archive>
                         <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
                         <manifestEntries>
                             <Build-Time>${maven.build.timestamp}</Build-Time>
                         </manifestEntries>
-                    </archive> 
+                    </archive>
                 </configuration>
             </plugin>
 
@@ -488,11 +482,11 @@
                     <execution>
                         <id>bundle-manifest</id>
                         <phase>process-classes</phase>
-                        <goals>    
+                        <goals>
                             <goal>manifest</goal>
-                        </goals>   
+                        </goals>
                     </execution>
-                </executions>				
+                </executions>
                 <configuration>
                     <instructions>
                         <Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>

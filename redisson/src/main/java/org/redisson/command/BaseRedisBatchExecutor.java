@@ -59,26 +59,32 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
         this.index = index;
         this.executed = executed;
     }
+
+    protected final MasterSlaveEntry getEntry(NodeSource source) {
+        if (source.getSlot() != null) {
+            return connectionManager.getEntry(source.getSlot());
+        }
+        return source.getEntry();
+    }
     
     protected final void addBatchCommandData(Object[] batchParams) {
-        if (source.getEntry() != null) {
-            Entry entry = commands.get(source.getEntry());
-            if (entry == null) {
-                entry = new Entry();
-                Entry oldEntry = commands.putIfAbsent(source.getEntry(), entry);
-                if (oldEntry != null) {
-                    entry = oldEntry;
-                }
+        MasterSlaveEntry msEntry = getEntry(source);
+        Entry entry = commands.get(msEntry);
+        if (entry == null) {
+            entry = new Entry();
+            Entry oldEntry = commands.putIfAbsent(msEntry, entry);
+            if (oldEntry != null) {
+                entry = oldEntry;
             }
-            
-            if (!readOnlyMode) {
-                entry.setReadOnlyMode(false);
-            }
-            
-            Codec codecToUse = getCodec(codec);
-            BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
-            entry.getCommands().add(commandData);
         }
+
+        if (!readOnlyMode) {
+            entry.setReadOnlyMode(false);
+        }
+
+        Codec codecToUse = getCodec(codec);
+        BatchCommandData<V, R> commandData = new BatchCommandData<V, R>(mainPromise, codecToUse, command, batchParams, index.incrementAndGet());
+        entry.getCommands().add(commandData);
     }
         
 }

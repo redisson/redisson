@@ -206,24 +206,31 @@ public class TasksRunnerService implements RemoteExecutorService {
     
     @Override
     public Object executeCallable(TaskParameters params) {
-        renewRetryTime(params.getRequestId());
-        
+        Object res;
         try {
+            RFuture<Long> future = renewRetryTime(params.getRequestId());
+            future.sync();
+
             Callable<?> callable = decode(params);
-            return callable.call();
+            res = callable.call();
         } catch (RedissonShutdownException e) {
-            return null;
-            // skip
+            throw e;
         } catch (RedisException e) {
+            finish(params.getRequestId(), true);
             throw e;
         } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        } finally {
             finish(params.getRequestId(), true);
+            throw new IllegalArgumentException(e);
         }
+        finish(params.getRequestId(), true);
+        return res;
     }
 
-    protected void scheduleRetryTimeRenewal(String requestId, long retryInterval) {
+    protected void scheduleRetryTimeRenewal(String requestId, Long retryInterval) {
+        if (retryInterval == null) {
+            return;
+        }
+
         ((Redisson) redisson).getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -232,7 +239,7 @@ public class TasksRunnerService implements RemoteExecutorService {
         }, Math.max(1000, retryInterval / 2), TimeUnit.MILLISECONDS);
     }
 
-    protected void renewRetryTime(String requestId) {
+    protected RFuture<Long> renewRetryTime(String requestId) {
         RFuture<Long> future = commandExecutor.evalWriteAsync(name, LongCodec.INSTANCE, RedisCommands.EVAL_LONG,
                 // check if executor service not in shutdown state
                   "local name = ARGV[2];"
@@ -260,7 +267,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                 System.currentTimeMillis(), requestId);
         future.onComplete((res, e) -> {
             if (e != null) {
-                scheduleRetryTimeRenewal(requestId, 10000);
+                scheduleRetryTimeRenewal(requestId, 10000L);
                 return;
             }
             
@@ -268,6 +275,7 @@ public class TasksRunnerService implements RemoteExecutorService {
                 scheduleRetryTimeRenewal(requestId, res);
             }
         });
+        return future;
     }
     
     @SuppressWarnings("unchecked")
@@ -323,22 +331,25 @@ public class TasksRunnerService implements RemoteExecutorService {
     }
 
     public void executeRunnable(TaskParameters params, boolean removeTask) {
-        if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
-            renewRetryTime(params.getRequestId());
-        }
-
         try {
+            if (params.getRequestId() != null && params.getRequestId().startsWith("00")) {
+                RFuture<Long> future = renewRetryTime(params.getRequestId());
+                try {
+                    future.sync();
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+
             Runnable runnable = decode(params);
             runnable.run();
         } catch (RedissonShutdownException e) {
-            // skip
-        } catch (RedisException e) {
             throw e;
-        } catch (Exception e) {
-            throw new IllegalArgumentException(e);
-        } finally {
+        } catch (RedisException e) {
             finish(params.getRequestId(), removeTask);
+            throw e;
         }
+        finish(params.getRequestId(), removeTask);
     }
     
     @Override

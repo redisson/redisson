@@ -68,7 +68,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     static final Logger log = LoggerFactory.getLogger(CommandAsyncService.class);
 
     final ConnectionManager connectionManager;
-    RedissonObjectBuilder objectBuilder;
+    protected RedissonObjectBuilder objectBuilder;
 
     public CommandAsyncService(ConnectionManager connectionManager) {
         this.connectionManager = connectionManager;
@@ -352,14 +352,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
     private NodeSource getNodeSource(String key) {
         int slot = connectionManager.calcSlot(key);
-        MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        return new NodeSource(entry, slot);
+        return new NodeSource(slot);
     }
 
     private NodeSource getNodeSource(byte[] key) {
         int slot = connectionManager.calcSlot(key);
-        MasterSlaveEntry entry = connectionManager.getEntry(slot);
-        return new NodeSource(entry, slot);
+        return new NodeSource(slot);
     }
     
     @Override
@@ -467,27 +465,12 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         return mainPromise;
     }
 
-    private RFuture<String> loadScript(List<Object> keys, String script) {
-        if (!keys.isEmpty()) {
-            Object key = keys.get(0);
-            if (key instanceof byte[]) {
-                return writeAsync((byte[]) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
-            }
-            return writeAsync((String) key, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
+    private RFuture<String> loadScript(RedisClient client, String script) {
+        MasterSlaveEntry entry = getConnectionManager().getEntry(client);
+        if (entry.getClient().equals(client)) {
+            return writeAsync(entry, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
         }
-        
-        return writeAllAsync(RedisCommands.SCRIPT_LOAD, new SlotCallback<String, String>() {
-            volatile String result;
-            @Override
-            public void onSlotResult(String result) {
-                this.result = result;
-            }
-            
-            @Override
-            public String onFinish() {
-                return result;
-            }
-        }, script);
+        return readAsync(client, StringCodec.INSTANCE, RedisCommands.SCRIPT_LOAD, script);
     }
     
     protected boolean isEvalCacheActive() {
@@ -542,12 +525,15 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             args.add(keys.size());
             args.addAll(keys);
             args.addAll(Arrays.asList(params));
-            async(false, nodeSource, codec, cmd, args.toArray(), promise, false);
-            
+
+            RedisExecutor<T, R> executor = new RedisExecutor<>(readOnlyMode, nodeSource, codec, cmd,
+                                                        args.toArray(), promise, false, connectionManager, objectBuilder);
+            executor.execute();
+
             promise.onComplete((res, e) -> {
                 if (e != null) {
                     if (e.getMessage().startsWith("NOSCRIPT")) {
-                        RFuture<String> loadFuture = loadScript(keys, script);
+                        RFuture<String> loadFuture = loadScript(executor.getRedisClient(), script);
                         loadFuture.onComplete((r, ex) -> {
                             if (ex != null) {
                                 free(pps);
@@ -561,7 +547,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                             newargs.add(keys.size());
                             newargs.addAll(keys);
                             newargs.addAll(Arrays.asList(pps));
-                            async(false, nodeSource, codec, command, newargs.toArray(), mainPromise, false);
+
+                            NodeSource ns = nodeSource;
+                            if (ns.getRedisClient() == null) {
+                                ns = new NodeSource(nodeSource, executor.getRedisClient());
+                            }
+
+                            async(readOnlyMode, ns, codec, command, newargs.toArray(), mainPromise, false);
                         });
                     } else {
                         free(pps);
@@ -636,30 +628,24 @@ public class CommandAsyncService implements CommandAsyncExecutor {
             return writeAsync((String) null, codec, command, keys);
         }
 
-        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<MasterSlaveEntry, List<String>>();
+        Map<MasterSlaveEntry, List<String>> range2key = new HashMap<>();
         for (String key : keys) {
             int slot = connectionManager.calcSlot(key);
             MasterSlaveEntry entry = connectionManager.getEntry(slot);
-            List<String> list = range2key.get(entry);
-            if (list == null) {
-                list = new ArrayList<String>();
-                range2key.put(entry, list);
-            }
+            List<String> list = range2key.computeIfAbsent(entry, k -> new ArrayList<>());
             list.add(key);
         }
 
         RPromise<R> result = new RedissonPromise<>();
+        AtomicLong executed = new AtomicLong(keys.length);
         AtomicReference<Throwable> failed = new AtomicReference<>();
-        AtomicLong executed = new AtomicLong(range2key.size());
-        BiConsumer<BatchResult<?>, Throwable> listener = (t, u) -> {
-            if (u == null) {
-                for (T res : (List<T>) t.getResponses()) {
-                    if (res != null) {
-                        callback.onSlotResult(res);
-                    }
-                }
+        BiConsumer<T, Throwable> listener = (res, ex) -> {
+            if (ex != null) {
+                failed.set(ex);
             } else {
-                failed.set(u);
+                if (res != null) {
+                    callback.onSlotResult(res);
+                }
             }
 
             if (executed.decrementAndGet() == 0) {
@@ -673,7 +659,13 @@ public class CommandAsyncService implements CommandAsyncExecutor {
 
         for (Entry<MasterSlaveEntry, List<String>> entry : range2key.entrySet()) {
             // executes in batch due to CROSSLOT error
-            CommandBatchService executorService = new CommandBatchService(connectionManager);
+            CommandBatchService executorService;
+            if (this instanceof CommandBatchService) {
+                executorService = (CommandBatchService) this;
+            } else {
+                executorService = new CommandBatchService(connectionManager);
+            }
+
             for (String key : entry.getValue()) {
                 RedisCommand<T> c = command;
                 RedisCommand<T> newCommand = callback.createCommand(key);
@@ -681,14 +673,17 @@ public class CommandAsyncService implements CommandAsyncExecutor {
                     c = newCommand;
                 }
                 if (readOnly) {
-                    executorService.readAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.readAsync(entry.getKey(), codec, c, key);
+                    f.onComplete(listener);
                 } else {
-                    executorService.writeAsync(entry.getKey(), codec, c, key);
+                    RFuture<T> f = executorService.writeAsync(entry.getKey(), codec, c, key);
+                    f.onComplete(listener);
                 }
             }
 
-            RFuture<BatchResult<?>> future = executorService.executeAsync();
-            future.onComplete(listener);
+            if (!(this instanceof CommandBatchService)) {
+                executorService.executeAsync();
+            }
         }
 
         return result;

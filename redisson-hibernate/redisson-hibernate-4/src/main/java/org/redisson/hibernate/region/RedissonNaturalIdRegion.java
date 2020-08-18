@@ -15,8 +15,6 @@
  */
 package org.redisson.hibernate.region;
 
-import java.util.Properties;
-
 import org.hibernate.cache.CacheException;
 import org.hibernate.cache.spi.CacheDataDescription;
 import org.hibernate.cache.spi.NaturalIdRegion;
@@ -25,10 +23,13 @@ import org.hibernate.cache.spi.access.AccessType;
 import org.hibernate.cache.spi.access.NaturalIdRegionAccessStrategy;
 import org.hibernate.cfg.Settings;
 import org.redisson.api.RMapCache;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.hibernate.strategy.NonStrictReadWriteNaturalIdRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadOnlyNaturalIdRegionAccessStrategy;
 import org.redisson.hibernate.strategy.ReadWriteNaturalIdRegionAccessStrategy;
 import org.redisson.hibernate.strategy.TransactionalNaturalIdRegionAccessStrategy;
+
+import java.util.Properties;
 
 /**
  * 
@@ -38,10 +39,10 @@ import org.redisson.hibernate.strategy.TransactionalNaturalIdRegionAccessStrateg
 public class RedissonNaturalIdRegion extends BaseRegion implements NaturalIdRegion {
 
     private final Settings settings;
-    
-    public RedissonNaturalIdRegion(RMapCache<Object, Object> mapCache, RegionFactory regionFactory,
-            CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
-        super(mapCache, regionFactory, metadata, properties, defaultKey);
+
+    public RedissonNaturalIdRegion(RMapCache<Object, Object> mapCache, ConnectionManager connectionManager, RegionFactory regionFactory,
+                                   CacheDataDescription metadata, Settings settings, Properties properties, String defaultKey) {
+        super(mapCache, connectionManager, regionFactory, metadata, properties, defaultKey);
         this.settings = settings;
     }
 

@@ -119,7 +119,7 @@ public class RedissonBucketTest extends BaseTest {
         Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("4.0.0") > 0);
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
-        assertThat(al.sizeInMemory()).isEqualTo(56);
+        assertThat(al.sizeInMemory()).isEqualTo(54);
     }
     
     @Test
@@ -214,6 +214,23 @@ public class RedissonBucketTest extends BaseTest {
         assertThat(r1.getAndSet(null)).isEqualTo(Arrays.asList("1"));
         assertThat(r1.get()).isNull();
         assertThat(r1.isExists()).isFalse();
+    }
+
+    @Test
+    public void testSetIfExists() throws InterruptedException {
+        RBucket<String> r1 = redisson.getBucket("test1");
+        assertThat(r1.setIfExists("0")).isFalse();
+        assertThat(r1.isExists()).isFalse();
+        r1.set("1");
+        assertThat(r1.setIfExists("2")).isTrue();
+        assertThat(r1.get()).isEqualTo("2");
+
+        RBucket<String> r2 = redisson.getBucket("test2");
+        r2.set("1");
+        assertThat(r2.setIfExists("2", 1, TimeUnit.SECONDS)).isTrue();
+        assertThat(r2.get()).isEqualTo("2");
+        Thread.sleep(1000);
+        assertThat(r2.isExists()).isFalse();
     }
 
     @Test

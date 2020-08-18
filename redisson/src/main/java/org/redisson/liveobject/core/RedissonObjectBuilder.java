@@ -119,6 +119,15 @@ public class RedissonObjectBuilder {
     public ReferenceCodecProvider getReferenceCodecProvider() {
         return codecProvider;
     }
+
+    public void storeAsync(RObject ar, String fieldName, RMap<String, Object> liveMap) {
+        Codec codec = ar.getCodec();
+        if (codec != null) {
+            codecProvider.registerCodec((Class) codec.getClass(), codec);
+        }
+        liveMap.fastPutAsync(fieldName,
+                new RedissonReference(ar.getClass(), ar.getName(), codec));
+    }
     
     public void store(RObject ar, String fieldName, RMap<String, Object> liveMap) {
         Codec codec = ar.getCodec();

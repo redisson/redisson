@@ -84,6 +84,14 @@ public class RedissonRedisNodesTest extends BaseTest {
     }
 
     @Test
+    public void testConfig() {
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
+        assertThat(nodes.getInstance().getConfig("appendonly").get("appendonly")).isEqualTo("no");
+        nodes.getInstance().setConfig("appendonly", "yes");
+        assertThat(nodes.getInstance().getConfig("appendonly").get("appendonly")).isEqualTo("yes");
+    }
+
+    @Test
     public void testSentinelFailover() throws IOException, InterruptedException {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()

@@ -1,22 +1,13 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.Test;
+import org.redisson.api.RList;
+import org.redisson.api.RListMultimap;
 
 import java.io.Serializable;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import org.junit.Test;
-import org.redisson.RedissonSetMultimapTest.SimpleKey;
-import org.redisson.RedissonSetMultimapTest.SimpleValue;
-import org.redisson.api.RListMultimap;
-import org.redisson.api.RSetMultimap;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonListMultimapTest extends BaseTest {
 
@@ -121,7 +112,20 @@ public class RedissonListMultimapTest extends BaseTest {
         }
 
     }
-    
+
+    @Test
+    public void testDelete() {
+        RListMultimap<String, String> testList = redisson.getListMultimap( "test" );
+        testList.put("1", "01");
+        testList.put("1", "02");
+        testList.put("1", "03");
+        RList<String> list = testList.get( "1" );
+
+        list.delete();
+        assertThat(testList.size()).isZero();
+        assertThat(testList.get("1").size()).isZero();
+    }
+
     @Test
     public void testReadAllKeySet() {
         RListMultimap<String, String> map = redisson.getListMultimap("test1");

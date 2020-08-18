@@ -28,6 +28,7 @@ import org.redisson.client.codec.*;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
+import org.redisson.client.protocol.convertor.BooleanNullSafeReplayConvertor;
 import org.redisson.client.protocol.convertor.BooleanReplayConvertor;
 import org.redisson.client.protocol.convertor.DoubleReplayConvertor;
 import org.redisson.client.protocol.convertor.VoidReplayConvertor;
@@ -84,6 +85,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void close() throws DataAccessException {
         super.close();
         
+        if (isQueueing()) {
+            CommandBatchService es = (CommandBatchService) executorService;
+            if (!es.isExecuted()) {
+                discard();
+            }
+        }
         closed = true;
     }
     
@@ -477,7 +484,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(keys[0], ByteArrayCodec.INSTANCE, MGET, Arrays.asList(keys).toArray());
     }
 
-    private static final RedisCommand<Boolean> SET = new RedisCommand<Boolean>("SET", new BooleanReplayConvertor());
+    private static final RedisCommand<Boolean> SET = new RedisCommand<>("SET", new BooleanNullSafeReplayConvertor());
     
     @Override
     public Boolean set(byte[] key, byte[] value) {

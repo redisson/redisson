@@ -111,6 +111,12 @@ public class RedissonConnection extends AbstractRedisConnection {
     public void close() throws DataAccessException {
         super.close();
         
+        if (isQueueing()) {
+            CommandBatchService es = (CommandBatchService) executorService;
+            if (!es.isExecuted()) {
+                discard();
+            }
+        }
         closed = true;
     }
     

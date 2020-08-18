@@ -357,6 +357,20 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public <V> RTimeSeriesReactive<V> getTimeSeries(String name) {
+        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(evictionScheduler, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, timeSeries,
+                new RedissonTimeSeriesReactive<V>(timeSeries, this), RTimeSeriesReactive.class);
+    }
+
+    @Override
+    public <V> RTimeSeriesReactive<V> getTimeSeries(String name, Codec codec) {
+        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(codec, evictionScheduler, commandExecutor, name);
+        return ReactiveProxyBuilder.create(commandExecutor, timeSeries,
+                new RedissonTimeSeriesReactive<V>(timeSeries, this), RTimeSeriesReactive.class);
+    }
+
+    @Override
     public <V> RSetCacheReactive<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
         return ReactiveProxyBuilder.create(commandExecutor, set, 

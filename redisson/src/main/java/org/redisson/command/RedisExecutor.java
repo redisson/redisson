@@ -67,6 +67,7 @@ public class RedisExecutor<V, R> {
     final RedissonObjectBuilder objectBuilder;
     final ConnectionManager connectionManager;
 
+    RFuture<RedisConnection> connectionFuture;
     NodeSource source;
     Codec codec;
     volatile int attempt;
@@ -281,19 +282,15 @@ public class RedisExecutor<V, R> {
 
     private void scheduleResponseTimeout(RPromise<R> attemptPromise, RedisConnection connection) {
         long timeoutTime = responseTimeout;
-        if (command != null 
+        if (command != null
                 && (RedisCommands.BLOCKING_COMMAND_NAMES.contains(command.getName())
                         || RedisCommands.BLOCKING_COMMANDS.contains(command))) {
             Long popTimeout = null;
             if (RedisCommands.BLOCKING_COMMANDS.contains(command)) {
-                boolean found = false;
-                for (Object param : params) {
-                    if (found) {
-                        popTimeout = Long.valueOf(param.toString()) / 1000;
+                for (int i = 0; i < params.length-1; i++) {
+                    if ("BLOCK".equals(params[i])) {
+                        popTimeout = Long.valueOf(params[i+1].toString()) / 1000;
                         break;
-                    }
-                    if ("BLOCK".equals(param)) {
-                        found = true; 
                     }
                 }
             } else {
@@ -426,7 +423,8 @@ public class RedisExecutor<V, R> {
             }
             
             if (attemptFuture.cause() instanceof RedisLoadingException
-                    || attemptFuture.cause() instanceof RedisTryAgainException) {
+                    || attemptFuture.cause() instanceof RedisTryAgainException
+                        || attemptFuture.cause() instanceof RedisClusterDownException) {
                 if (attempt < attempts) {
                     onException();
                     connectionManager.newTimeout(new TimerTask() {
@@ -606,7 +604,7 @@ public class RedisExecutor<V, R> {
             list.add(new CommandData<Void, Void>(promise, codec, RedisCommands.ASKING, new Object[]{}));
             list.add(new CommandData<V, R>(attemptPromise, codec, command, params));
             RPromise<Void> main = new RedissonPromise<Void>();
-            writeFuture = connection.send(new CommandsData(main, list, false));
+            writeFuture = connection.send(new CommandsData(main, list, false, false));
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("acquired connection for command {} and params {} from slot {} using node {}... {}",
@@ -637,8 +635,11 @@ public class RedisExecutor<V, R> {
         });
     }
 
+    public RedisClient getRedisClient() {
+        return connectionFuture.getNow().getRedisClient();
+    }
+
     protected RFuture<RedisConnection> getConnection() {
-        RFuture<RedisConnection> connectionFuture;
         if (readOnlyMode) {
             connectionFuture = connectionManager.connectionReadOp(source, command);
         } else {
@@ -655,10 +656,6 @@ public class RedisExecutor<V, R> {
         }
 
         if (!connectionManager.getCfg().isUseThreadClassLoader()) {
-            return codec;
-        }
-
-        if (codec.getClassLoader() != codec.getClass().getClassLoader()) {
             return codec;
         }
 

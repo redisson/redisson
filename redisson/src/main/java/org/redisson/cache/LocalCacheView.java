@@ -252,7 +252,7 @@ public class LocalCacheView<K, V> {
         }
     }
 
-    private CacheKey toCacheKey(ByteBuf encodedKey) {
+    public CacheKey toCacheKey(ByteBuf encodedKey) {
         return new CacheKey(Hash.hash128toArray(encodedKey));
     }
     

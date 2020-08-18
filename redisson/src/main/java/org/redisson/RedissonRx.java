@@ -334,6 +334,20 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public <V> RTimeSeriesRx<V> getTimeSeries(String name) {
+        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(evictionScheduler, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, timeSeries,
+                new RedissonTimeSeriesRx<V>(timeSeries, this), RTimeSeriesRx.class);
+    }
+
+    @Override
+    public <V> RTimeSeriesRx<V> getTimeSeries(String name, Codec codec) {
+        RTimeSeries<V> timeSeries = new RedissonTimeSeries<V>(codec, evictionScheduler, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, timeSeries,
+                new RedissonTimeSeriesRx<V>(timeSeries, this), RTimeSeriesRx.class);
+    }
+
+    @Override
     public <V> RSetCacheRx<V> getSetCache(String name) {
         RSetCache<V> set = new RedissonSetCache<V>(evictionScheduler, commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, set, 

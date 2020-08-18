@@ -27,11 +27,32 @@ import java.util.concurrent.TimeUnit;
  * to all redisson objects with sync/async interface.
  * 
  * @see RedissonReactiveClient
+ * @see RedissonRxClient
  *
  * @author Nikita Koksharov
  *
  */
 public interface RedissonClient {
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeries<V> getTimeSeries(String name);
+
+    /**
+     * Returns time-series instance by <code>name</code>
+     * using provided <code>codec</code> for values.
+     *
+     * @param <V> type of value
+     * @param name - name of instance
+     * @param codec - codec for values
+     * @return RTimeSeries object
+     */
+    <V> RTimeSeries<V> getTimeSeries(String name, Codec codec);
 
     /**
      * Returns stream instance by <code>name</code>
@@ -446,6 +467,8 @@ public interface RedissonClient {
      * Returns Lock instance by name.
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
      * @param name - name of object
      * @return Lock object
@@ -470,6 +493,8 @@ public interface RedissonClient {
      * Returns Lock instance by name.
      * <p>
      * Implements a <b>fair</b> locking so it guarantees an acquire order by threads.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      * 
      * @param name - name of object
      * @return Lock object
@@ -478,6 +503,8 @@ public interface RedissonClient {
     
     /**
      * Returns ReadWriteLock instance by name.
+     * <p>
+     * To increase reliability during failover, all operations wait for propagation to all Redis slaves.
      *
      * @param name - name of object
      * @return Lock object

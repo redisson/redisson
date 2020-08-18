@@ -27,14 +27,14 @@ import org.redisson.client.protocol.Decoder;
  * @author Nikita Koksharov
  *
  */
-public class ObjectMapReplayDecoder implements MultiDecoder<Map<Object, Object>> {
+public class ObjectMapReplayDecoder<K, V> implements MultiDecoder<Map<K, V>> {
 
     @Override
-    public Map<Object, Object> decode(List<Object> parts, State state) {
-        Map<Object, Object> result = new LinkedHashMap<Object, Object>(parts.size()/2);
+    public Map<K, V> decode(List<Object> parts, State state) {
+        Map<K, V> result = new LinkedHashMap<>(parts.size()/2);
         for (int i = 0; i < parts.size(); i++) {
             if (i % 2 != 0) {
-                result.put(parts.get(i-1), parts.get(i));
+                result.put((K) parts.get(i-1), (V) parts.get(i));
             }
         }
         return result;
