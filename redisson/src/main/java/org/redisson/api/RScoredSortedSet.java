@@ -305,7 +305,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Collection<Long> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Collection<Integer> addAndGetAllRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

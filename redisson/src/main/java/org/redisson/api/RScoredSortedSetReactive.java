@@ -287,7 +287,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Mono<Collection<Long>> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Mono<Collection<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

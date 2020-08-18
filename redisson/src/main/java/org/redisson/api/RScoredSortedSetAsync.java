@@ -264,7 +264,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    RFuture<Collection<Long>> addAndGetAllRevRankAsync(Map<? extends V, Double> map);
+    RFuture<Collection<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

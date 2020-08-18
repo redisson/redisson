@@ -288,7 +288,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Single<Collection<Long>> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Single<Collection<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
     
     /**
      * Adds element to this set only if has not been added before.

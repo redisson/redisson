@@ -23,6 +23,7 @@ import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.DoubleCodec;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.LongCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -205,7 +206,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Collection<Long> addAndGetAllRevRank(Map<? extends V, Double> map) {
+    public Collection<Integer> addAndGetAllRevRank(Map<? extends V, Double> map) {
         return get(addAndGetAllRevRankAsync(map));
     }
 
@@ -218,7 +219,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public RFuture<Collection<Long>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
+    public RFuture<Collection<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
         final List<Object> params = new ArrayList<Object>(map.size() * 2);
         for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
             if (t.getKey() == null) {
@@ -231,7 +232,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             params.add(BigDecimal.valueOf(t.getValue()).toPlainString());
         }
 
-        return commandExecutor.evalReadAsync((String) null, LongCodec.INSTANCE, RedisCommands.EVAL_LIST,
+        return commandExecutor.evalReadAsync((String) null, IntegerCodec.INSTANCE, RedisCommands.EVAL_INT_LIST,
                     "local r = {} " +
                     "for i, v in ipairs(ARGV) do " +
                         "if i % 2 == 0 then " +

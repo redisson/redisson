@@ -1283,12 +1283,12 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
     @Test
     public void testAddAndGetAllRevRank() throws InterruptedException {
-        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         Map<String, Double> map = new LinkedHashMap<>();
         map.put("alice", 10d);
         map.put("bob", 1d);
-        Collection<Long> res = set.addAndGetAllRevRank(map);
-        Assert.assertArrayEquals(new Long[]{0L, 1L}, res.toArray());
+        Collection<Integer> res = set.addAndGetAllRevRank(map);
+        Assert.assertArrayEquals(new Integer[]{0, 1}, res.toArray());
 
         assertThat(set.revRank("alice")).isEqualTo(0);
         assertThat(set.revRank("bob")).isEqualTo(1);
