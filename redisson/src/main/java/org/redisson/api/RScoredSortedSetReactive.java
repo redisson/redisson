@@ -242,7 +242,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param elements - elements
      * @return element scores
      */
-    Mono<Collection<Double>> getAllScore(Collection<V> elements);
+    Mono<List<Double>> getAllScore(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.

@@ -409,7 +409,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Collection<Double> getAllScore(List<V> keys) {
+    public List<Double> getAllScore(List<V> keys) {
         return get(getAllScoreAsync(keys));
     }
 
@@ -419,7 +419,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public RFuture<Collection<Double>> getAllScoreAsync(Collection<V> elements) {
+    public RFuture<List<Double>> getAllScoreAsync(Collection<V> elements) {
         return commandExecutor.evalReadAsync((String) null, DoubleCodec.INSTANCE, RedisCommands.EVAL_LIST,
                 "local r = {} " +
                 "for i, v in ipairs(ARGV) do " +

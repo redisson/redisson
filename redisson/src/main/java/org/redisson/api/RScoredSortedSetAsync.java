@@ -230,7 +230,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param elements - elements
      * @return element scores
      */
-    RFuture<Collection<Double>> getAllScoreAsync(Collection<V> elements);
+    RFuture<List<Double>> getAllScoreAsync(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.

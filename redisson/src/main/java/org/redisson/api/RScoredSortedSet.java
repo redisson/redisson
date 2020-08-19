@@ -269,7 +269,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param elements - elements
      * @return element scores
      */
-    Collection<Double> getAllScore(List<V> elements);
+    List<Double> getAllScore(List<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
