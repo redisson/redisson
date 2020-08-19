@@ -206,7 +206,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public Collection<Integer> addAndGetAllRevRank(Map<? extends V, Double> map) {
+    public List<Integer> addAndGetAllRevRank(Map<? extends V, Double> map) {
         return get(addAndGetAllRevRankAsync(map));
     }
 
@@ -219,7 +219,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public RFuture<Collection<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
+    public RFuture<List<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
         final List<Object> params = new ArrayList<Object>(map.size() * 2);
         for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
             if (t.getKey() == null) {
@@ -237,6 +237,10 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
                     "for i, v in ipairs(ARGV) do " +
                         "if i % 2 == 0 then " +
                             "redis.call('zadd', KEYS[1], ARGV[i], ARGV[i-1]); " +
+                        "end; " +
+                    "end;" +
+                    "for i, v in ipairs(ARGV) do " +
+                        "if i % 2 == 0 then " +
                             "r[#r+1] = redis.call('zrevrank', KEYS[1], ARGV[i-1]); " +
                         "end; " +
                     "end;" +

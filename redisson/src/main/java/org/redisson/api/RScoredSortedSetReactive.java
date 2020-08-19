@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -283,11 +284,11 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
 
     /**
      * Adds elements to this set, overrides previous score if it has been already added.
-     * Finally returns reverse rank collection of the items
+     * Finally returns reverse rank list of the items
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Mono<Collection<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Mono<List<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.
