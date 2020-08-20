@@ -18,14 +18,7 @@ package org.redisson.codec;
 import java.io.IOException;
 import java.util.Locale;
 
-import org.jboss.marshalling.ByteInput;
-import org.jboss.marshalling.ByteOutput;
-import org.jboss.marshalling.Marshaller;
-import org.jboss.marshalling.MarshallerFactory;
-import org.jboss.marshalling.Marshalling;
-import org.jboss.marshalling.MarshallingConfiguration;
-import org.jboss.marshalling.SimpleClassResolver;
-import org.jboss.marshalling.Unmarshaller;
+import org.jboss.marshalling.*;
 import org.redisson.client.codec.BaseCodec;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
@@ -195,7 +188,7 @@ public class MarshallingCodec extends BaseCodec {
     }
 
     public MarshallingCodec() {
-        this(Protocol.RIVER, null);
+        this(MarshallingCodec.class.getClassLoader());
     }
     
     public MarshallingCodec(ClassLoader classLoader) {
@@ -206,8 +199,18 @@ public class MarshallingCodec extends BaseCodec {
     
     public MarshallingCodec(ClassLoader classLoader, MarshallingCodec codec) {
         this.factory = codec.factory;
-        this.configuration = codec.configuration;
-        this.configuration.setClassResolver(new SimpleClassResolver(classLoader));
+        MarshallingConfiguration config = new MarshallingConfiguration();
+        config.setBufferSize(codec.configuration.getBufferSize());
+        config.setClassCount(codec.configuration.getClassCount());
+        config.setClassExternalizerFactory(codec.configuration.getClassExternalizerFactory());
+        config.setClassResolver(new SimpleClassResolver(classLoader));
+        config.setClassTable(codec.configuration.getClassTable());
+        config.setExceptionListener(codec.configuration.getExceptionListener());
+        config.setObjectPreResolver(codec.configuration.getObjectPreResolver());
+        config.setObjectResolver(codec.configuration.getObjectResolver());
+        config.setSerializabilityChecker(codec.configuration.getSerializabilityChecker());
+        config.setVersion(codec.configuration.getVersion());
+        this.configuration = config;
         this.classLoader = classLoader;
     }
     
