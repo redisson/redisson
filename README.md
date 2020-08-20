@@ -135,7 +135,7 @@ RedissonRxClient redissonRx = Redisson.createRx(config);
 ```
 
 ```java
-// 3. Get Redis based Map
+// 3. Get Redis based implementation of java.util.concurrent.ConcurrentMap
 RMap<MyKey, MyValue> map = redisson.getMap("myMap");
 
 RMapReactive<MyKey, MyValue> mapReactive = redissonReactive.getMap("myMap");
@@ -144,7 +144,7 @@ RMapRx<MyKey, MyValue> mapRx = redissonRx.getMap("myMap");
 ```
 
 ```java
-// 4. Get Redis based Lock
+// 4. Get Redis based implementation of java.util.concurrent.locks.Lock
 RLock lock = redisson.getLock("myLock");
 
 RLockReactive lockReactive = redissonReactive.getLock("myLock");
@@ -153,7 +153,7 @@ RLockRx lockRx = redissonRx.getLock("myLock");
 ```
 
 ```java
-// 4. Get Redis based ExecutorService
+// 4. Get Redis based implementation of java.util.concurrent.ExecutorService
 RExecutorService executor = redisson.getExecutorService("myExecutorService");
 
 // over 50 Redis based Java objects and services ...
