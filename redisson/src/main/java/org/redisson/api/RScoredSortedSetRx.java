@@ -243,7 +243,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param elements - elements
      * @return element scores
      */
-    Maybe<List<Double>> getAllScore(Collection<V> elements);
+    Single<List<Double>> getAllScore(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
