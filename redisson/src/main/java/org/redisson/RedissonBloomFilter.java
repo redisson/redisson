@@ -66,7 +66,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     private volatile int hashIterations;
 
     private final CommandExecutor commandExecutor;
-    private final String configName;
+    private String configName;
 
     protected RedissonBloomFilter(CommandExecutor commandExecutor, String name) {
         super(commandExecutor, name);
@@ -325,6 +325,42 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     public int getHashIterations() {
         Integer result = commandExecutor.read(configName, IntegerCodec.INSTANCE, RedisCommands.HGET, configName, "hashIterations");
         return check(result);
+    }
+
+    @Override
+    public RFuture<Void> renameAsync(String newName) {
+        String newConfigName = suffixName(newName, "config");
+        RFuture<Void> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,
+                "redis.call('rename', KEYS[1], ARGV[1]); "
+                        + " return redis.call('rename', KEYS[2], ARGV[2]); ",
+                Arrays.<Object>asList(getName(), configName), newName, newConfigName);
+        f.onComplete((value, e) -> {
+            if (e == null) {
+                this.name = newName;
+                this.configName = newConfigName;
+            }
+        });
+        return f;
+    }
+
+    @Override
+    public RFuture<Boolean> renamenxAsync(String newName) {
+        String newConfigName = suffixName(newName, "config");
+        RFuture<Boolean> f = commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "local r = redis.call('renamenx', KEYS[1], ARGV[1]); "
+                        + "if r == 0 then "
+                        + "  return 0; "
+                        + "else  "
+                        + "  return redis.call('renamenx', KEYS[2], ARGV[2]); "
+                        + "end; ",
+                Arrays.<Object>asList(getName(), configName), newName, newConfigName);
+        f.onComplete((value, e) -> {
+            if (e == null && value) {
+                this.name = newName;
+                this.configName = newConfigName;
+            }
+        });
+        return f;
     }
 
     private <V> V check(V result) {

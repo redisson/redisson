@@ -85,4 +85,40 @@ public class RedissonBloomFilterTest extends BaseTest {
         assertThat(filter.count()).isEqualTo(2);
     }
 
+    @Test
+    public void testRename() {
+        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        filter.tryInit(550000000L, 0.03);
+        assertThat(filter.add("123")).isTrue();
+        filter.rename("new_filter");
+
+        RBloomFilter<String> filter2 = redisson.getBloomFilter("new_filter");
+        assertThat(filter2.count()).isEqualTo(1);
+
+        RBloomFilter<String> filter3 = redisson.getBloomFilter("filter");
+        assertThat(filter3.isExists()).isFalse();
+    }
+
+    @Test
+    public void testRenamenx() {
+        RBloomFilter<String> filter = redisson.getBloomFilter("filter");
+        filter.tryInit(550000000L, 0.03);
+        assertThat(filter.add("123")).isTrue();
+        assertThat(filter.contains("123")).isTrue();
+
+        RBloomFilter<String> filter2 = redisson.getBloomFilter("filter2");
+        filter2.tryInit(550000000L, 0.03);
+        assertThat(filter2.add("234")).isTrue();
+
+        assertThat(filter.renamenx("filter2")).isFalse();
+        assertThat(filter.count()).isEqualTo(1);
+
+        assertThat(filter.renamenx("new_filter")).isTrue();
+        RBloomFilter<String> oldFilter = redisson.getBloomFilter("filter");
+        assertThat(oldFilter.isExists()).isFalse();
+
+        RBloomFilter<String> newFilter = redisson.getBloomFilter("new_filter");
+        assertThat(newFilter.count()).isEqualTo(1);
+        assertThat(newFilter.contains("123")).isTrue();
+    }
 }
