@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -237,6 +238,14 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Maybe<Double> getScore(V o);
 
     /**
+     * Returns scores of elements.
+     *
+     * @param elements - elements
+     * @return element scores
+     */
+    Single<List<Double>> getAllScore(Collection<V> elements);
+
+    /**
      * Adds element to this set, overrides previous score if it has been already added.
      *
      * @param score - object score
@@ -273,6 +282,14 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return reverse rank
      */
     Single<Integer> addAndGetRevRank(double score, V object);
+
+    /**
+     * Adds elements to this set, overrides previous score if it has been already added.
+     * Finally returns reverse rank list of the items
+     * @param map - map of object and scores, make sure to use an ordered map
+     * @return collection of reverse ranks
+     */
+    Single<List<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
     
     /**
      * Adds element to this set only if has not been added before.
