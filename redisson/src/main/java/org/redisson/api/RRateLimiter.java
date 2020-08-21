@@ -36,6 +36,18 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      *         otherwise
      */
     boolean trySetRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
+    /**
+     * Updates RateLimiter's state and stores config to Redis server.
+     *
+     * @param mode - rate mode
+     * @param rate - rate
+     * @param rateInterval - rate time interval
+     * @param rateIntervalUnit - rate time interval unit
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    boolean updateRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
     
     /**
      * Acquires a permit only if one is available at the

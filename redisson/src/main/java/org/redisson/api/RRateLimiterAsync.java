@@ -142,7 +142,21 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      *         if the waiting time elapsed before a permit was acquired
      */
     RFuture<Boolean> tryAcquireAsync(long permits, long timeout, TimeUnit unit);
-    
+
+
+    /**
+     * Updates RateLimiter's state and stores config to Redis server.
+     *
+     *
+     * @param mode - rate mode
+     * @param rate - rate
+     * @param rateInterval - rate time interval
+     * @param rateIntervalUnit - rate time interval unit
+     * @return {@code true} if rate was set and {@code false}
+     *         otherwise
+     */
+    RFuture<Boolean> updateRateAsync(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+
     /**
      * Returns current configuration of this RateLimiter object.
      * 
