@@ -217,6 +217,14 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> revRankAsync(V o);
 
     /**
+     * Returns ranks of elements, with the scores ordered from high to low.
+     *
+     * @param elements - elements
+     * @return ranks or <code>null</code> if value does not exist
+     */
+    RFuture<List<Integer>> revRankAsync(Collection<V> elements);
+
+    /**
      * Returns score of element or <code>null</code> if it doesn't exist.
      * 
      * @param o - element
@@ -230,7 +238,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param elements - elements
      * @return element scores
      */
-    RFuture<List<Double>> getAllScoreAsync(Collection<V> elements);
+    RFuture<List<Double>> getScoreAsync(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -265,7 +273,7 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    RFuture<List<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map);
+    RFuture<List<Integer>> addAndGetRevRankAsync(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

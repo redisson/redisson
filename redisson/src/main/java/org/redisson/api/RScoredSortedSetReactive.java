@@ -229,6 +229,14 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Integer> revRank(V o);
 
     /**
+     * Returns ranks of elements, with the scores ordered from high to low.
+     *
+     * @param elements - elements
+     * @return ranks or <code>null</code> if value does not exist
+     */
+    Mono<List<Integer>> revRankAsync(Collection<V> elements);
+
+    /**
      * Returns score of element or <code>null</code> if it doesn't exist.
      * 
      * @param o - element
@@ -242,7 +250,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param elements - elements
      * @return element scores
      */
-    Mono<List<Double>> getAllScore(Collection<V> elements);
+    Mono<List<Double>> getScore(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -288,7 +296,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Mono<List<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Mono<List<Integer>> addAndGetRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

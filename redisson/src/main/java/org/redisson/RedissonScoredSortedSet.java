@@ -206,8 +206,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public List<Integer> addAndGetAllRevRank(Map<? extends V, Double> map) {
-        return get(addAndGetAllRevRankAsync(map));
+    public List<Integer> addAndGetRevRank(Map<? extends V, Double> map) {
+        return get(addAndGetRevRankAsync(map));
     }
 
     @Override
@@ -219,7 +219,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public RFuture<List<Integer>> addAndGetAllRevRankAsync(Map<? extends V, Double> map) {
+    public RFuture<List<Integer>> addAndGetRevRankAsync(Map<? extends V, Double> map) {
         final List<Object> params = new ArrayList<Object>(map.size() * 2);
         for (java.util.Map.Entry<? extends V, Double> t : map.entrySet()) {
             if (t.getKey() == null) {
@@ -409,8 +409,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public List<Double> getAllScore(List<V> keys) {
-        return get(getAllScoreAsync(keys));
+    public List<Double> getScore(List<V> keys) {
+        return get(getScoreAsync(keys));
     }
 
     @Override
@@ -419,7 +419,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
-    public RFuture<List<Double>> getAllScoreAsync(Collection<V> elements) {
+    public RFuture<List<Double>> getScoreAsync(Collection<V> elements) {
         return commandExecutor.evalReadAsync((String) null, DoubleCodec.INSTANCE, RedisCommands.EVAL_LIST,
                 "local r = {} " +
                 "for i, v in ipairs(ARGV) do " +
@@ -749,6 +749,22 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public Integer revRank(V o) {
         return get(revRankAsync(o));
+    }
+
+    @Override
+    public RFuture<List<Integer>> revRankAsync(Collection<V> elements) {
+        return commandExecutor.evalReadAsync((String) null, IntegerCodec.INSTANCE, RedisCommands.EVAL_INT_LIST,
+                        "local r = {} " +
+                        "for i, v in ipairs(ARGV) do " +
+                            "r[#r+1] = redis.call('zrevrank', KEYS[1], ARGV[i]); " +
+                        "end;" +
+                        "return r;",
+                Collections.singletonList(getName()), encode(elements).toArray());
+    }
+
+    @Override
+    public List<Integer> revRank(Collection<V> elements) {
+        return get(revRankAsync(elements));
     }
 
     @Override

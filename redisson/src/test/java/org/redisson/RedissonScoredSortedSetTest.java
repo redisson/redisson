@@ -595,6 +595,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         set.add(0.7, "g");
 
         assertThat(set.revRank("d")).isEqualTo(3);
+        assertThat(set.revRank(Arrays.asList("d", "a", "g", "abc", "f"))).isEqualTo(Arrays.asList(3, 6, 0, null, 1));
         assertThat(set.rank("abc")).isNull();
     }
     
@@ -1238,7 +1239,7 @@ public class RedissonScoredSortedSetTest extends BaseTest {
         res2 = set.getScore("1");
         Assert.assertTrue(new Double(112.3).compareTo(res2) == 0);
 
-        Collection<Double> res = set.getAllScore(Arrays.asList("1", "42", "100"));
+        Collection<Double> res = set.getScore(Arrays.asList("1", "42", "100"));
         Assert.assertArrayEquals(new Double[] {112.3d, null, null},
                 res.toArray());
     }
@@ -1282,13 +1283,13 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
-    public void testAddAndGetAllRevRank() throws InterruptedException {
+    public void testAddAndGetRevRankCollection() throws InterruptedException {
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple", StringCodec.INSTANCE);
         Map<String, Double> map = new LinkedHashMap<>();
         map.put("one", 1d);
         map.put("three", 3d);
         map.put("two", 2d);
-        Collection<Integer> res = set.addAndGetAllRevRank(map);
+        Collection<Integer> res = set.addAndGetRevRank(map);
         Assert.assertArrayEquals(new Integer[]{2, 0, 1}, res.toArray());
 
         assertThat(set.revRank("one")).isEqualTo(2);

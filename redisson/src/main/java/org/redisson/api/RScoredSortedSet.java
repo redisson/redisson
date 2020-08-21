@@ -256,6 +256,14 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     Integer revRank(V o);
 
     /**
+     * Returns ranks of elements, with the scores ordered from high to low.
+     *
+     * @param elements - elements
+     * @return ranks or <code>null</code> if value does not exist
+     */
+    List<Integer> revRank(Collection<V> elements);
+
+    /**
      * Returns score of element or <code>null</code> if it doesn't exist.
      * 
      * @param o - element
@@ -269,7 +277,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param elements - elements
      * @return element scores
      */
-    List<Double> getAllScore(List<V> elements);
+    List<Double> getScore(List<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -304,7 +312,7 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    List<Integer> addAndGetAllRevRank(Map<? extends V, Double> map);
+    List<Integer> addAndGetRevRank(Map<? extends V, Double> map);
 
     /**
      * Adds element to this set only if has not been added before.

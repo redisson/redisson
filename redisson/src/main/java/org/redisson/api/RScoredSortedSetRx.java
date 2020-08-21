@@ -230,6 +230,14 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Maybe<Integer> revRank(V o);
 
     /**
+     * Returns ranks of elements, with the scores ordered from high to low.
+     *
+     * @param elements - elements
+     * @return ranks or <code>null</code> if value does not exist
+     */
+    Single<List<Integer>> revRank(Collection<V> elements);
+
+    /**
      * Returns score of element or <code>null</code> if it doesn't exist.
      * 
      * @param o - element
@@ -243,7 +251,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param elements - elements
      * @return element scores
      */
-    Single<List<Double>> getAllScore(Collection<V> elements);
+    Single<List<Double>> getScore(Collection<V> elements);
 
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -289,7 +297,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param map - map of object and scores, make sure to use an ordered map
      * @return collection of reverse ranks
      */
-    Single<List<Integer>> addAndGetAllRevRank(Map<? extends V, Double> map);
+    Single<List<Integer>> addAndGetRevRank(Map<? extends V, Double> map);
     
     /**
      * Adds element to this set only if has not been added before.
