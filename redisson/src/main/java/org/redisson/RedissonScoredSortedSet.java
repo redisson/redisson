@@ -232,7 +232,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
             params.add(BigDecimal.valueOf(t.getValue()).toPlainString());
         }
 
-        return commandExecutor.evalReadAsync((String) null, IntegerCodec.INSTANCE, RedisCommands.EVAL_INT_LIST,
+        return commandExecutor.evalWriteAsync((String) null, IntegerCodec.INSTANCE, RedisCommands.EVAL_INT_LIST,
                     "local r = {} " +
                     "for i, v in ipairs(ARGV) do " +
                         "if i % 2 == 0 then " +
