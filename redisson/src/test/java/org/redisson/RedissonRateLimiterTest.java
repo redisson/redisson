@@ -61,7 +61,7 @@ public class RedissonRateLimiterTest extends BaseTest {
     public void testUpdateRateConfig() {
         RRateLimiter rr = redisson.getRateLimiter("acquire");
         assertThat(rr.trySetRate(RateType.OVERALL, 1, 5, RateIntervalUnit.SECONDS)).isTrue();
-        rr.updateRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
+        rr.setRate(RateType.OVERALL, 2, 5, RateIntervalUnit.SECONDS);
 
         assertThat(rr.getConfig().getRate()).isEqualTo(2);
         assertThat(rr.getConfig().getRateInterval()).isEqualTo(5000);
