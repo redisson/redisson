@@ -47,7 +47,7 @@ public interface RRateLimiter extends RRateLimiterAsync, RExpirable {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
-    boolean updateRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+    boolean setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
     
     /**
      * Acquires a permit only if one is available at the
