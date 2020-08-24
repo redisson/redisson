@@ -18,7 +18,7 @@ package org.redisson.spring.starter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- *
+ * 
  * @author Nikita Koksharov
  * @author AnJia (https://anjia0532.github.io/)
  *
@@ -45,5 +45,5 @@ public class RedissonProperties {
     public void setConfigBlock(String configBlock) {
         this.configBlock = configBlock;
     }
-
+        
 }
