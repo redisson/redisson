@@ -45,11 +45,11 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.ReflectionUtils;
 
 /**
- *
+ * 
  * @author Nikita Koksharov
  * @author Nikos Kakavas (https://github.com/nikakis)
  * @author AnJia (https://anjia0532.github.io/)
- *
+ * 
  */
 @Configuration
 @ConditionalOnClass({Redisson.class, RedisOperations.class})
@@ -65,13 +65,13 @@ public class RedissonAutoConfiguration {
 
     @Autowired
     private RedissonProperties redissonProperties;
-
+    
     @Autowired
     private RedisProperties redisProperties;
-
+    
     @Autowired
     private ApplicationContext ctx;
-
+    
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -93,7 +93,7 @@ public class RedissonAutoConfiguration {
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
         return new RedissonConnectionFactory(redisson);
     }
-
+    
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
@@ -110,7 +110,7 @@ public class RedissonAutoConfiguration {
         } else {
             timeout = (Integer)timeoutValue;
         }
-
+        
         if (redissonProperties.getConfigBlock() != null) {
             try {
                 config = Config.fromYAML(redissonProperties.getConfigBlock());
@@ -137,14 +137,14 @@ public class RedissonAutoConfiguration {
         } else if (redisProperties.getSentinel() != null) {
             Method nodesMethod = ReflectionUtils.findMethod(Sentinel.class, "getNodes");
             Object nodesValue = ReflectionUtils.invokeMethod(nodesMethod, redisProperties.getSentinel());
-
+            
             String[] nodes;
             if (nodesValue instanceof String) {
                 nodes = convert(Arrays.asList(((String)nodesValue).split(",")));
             } else {
                 nodes = convert((List<String>)nodesValue);
             }
-
+            
             config = new Config();
             config.useSentinelServers()
                 .setMasterName(redisProperties.getSentinel().getMaster())
@@ -156,9 +156,9 @@ public class RedissonAutoConfiguration {
             Object clusterObject = ReflectionUtils.invokeMethod(clusterMethod, redisProperties);
             Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
             List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
-
+            
             String[] nodes = convert(nodesObject);
-
+            
             config = new Config();
             config.useClusterServers()
                 .addNodeAddress(nodes)
@@ -171,7 +171,7 @@ public class RedissonAutoConfiguration {
             if (method != null && (Boolean)ReflectionUtils.invokeMethod(method, redisProperties)) {
                 prefix = REDISS_PROTOCOL_PREFIX;
             }
-
+            
             config.useSingleServer()
                 .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
                 .setConnectTimeout(timeout)
@@ -204,5 +204,5 @@ public class RedissonAutoConfiguration {
         return is;
     }
 
-
+    
 }
