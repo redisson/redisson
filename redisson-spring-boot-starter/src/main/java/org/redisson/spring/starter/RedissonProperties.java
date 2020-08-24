@@ -46,5 +46,4 @@ public class RedissonProperties {
         this.configBlock = configBlock;
     }
 
-
 }
