@@ -718,7 +718,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         int start = indexOf(key, (byte) '{');
         if (start != -1) {
             int end = indexOf(key, (byte) '}');
-            key = Arrays.copyOfRange(key, start+1, end);
+            if (end != -1 && start + 1 < end) {
+                key = Arrays.copyOfRange(key, start + 1, end);
+            }
         }
         
         int result = CRC16.crc16(key) % MAX_SLOT;
@@ -734,7 +736,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
         int start = key.indexOf('{');
         if (start != -1) {
             int end = key.indexOf('}');
-            key = key.substring(start+1, end);
+            if (end != -1 && start + 1 < end) {
+                key = key.substring(start + 1, end);
+            }
         }
 
         int result = CRC16.crc16(key.getBytes()) % MAX_SLOT;
