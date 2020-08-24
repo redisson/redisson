@@ -47,10 +47,9 @@ public interface RRateLimiterRx extends RExpirableRx {
      * @param rate - rate
      * @param rateInterval - rate time interval
      * @param rateIntervalUnit - rate time interval unit
-     * @return {@code true} if rate was set and {@code false}
-     *         otherwise
+     *
      */
-    Single<Boolean> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+    Single<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
      * Acquires a permit only if one is available at the

@@ -46,10 +46,9 @@ public interface RRateLimiterReactive extends RExpirableReactive {
      * @param rate - rate
      * @param rateInterval - rate time interval
      * @param rateIntervalUnit - rate time interval unit
-     * @return {@code true} if rate was set and {@code false}
-     *         otherwise
+     *
      */
-    Mono<Boolean> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+    Mono<Void> setRate(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
      * Acquires a permit only if one is available at the
