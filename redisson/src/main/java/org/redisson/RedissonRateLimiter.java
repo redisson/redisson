@@ -244,13 +244,13 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
     }
 
     @Override
-    public boolean setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-        return get(setRateAsync(type, rate, rateInterval, unit));
+    public void setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+        setRateAsync(type, rate, rateInterval, unit);
     }
 
     @Override
-    public RFuture<Boolean> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+    public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                 "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
                         + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"

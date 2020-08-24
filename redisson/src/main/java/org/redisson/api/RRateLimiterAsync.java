@@ -155,7 +155,7 @@ public interface RRateLimiterAsync extends RExpirableAsync {
      * @return {@code true} if rate was set and {@code false}
      *         otherwise
      */
-    RFuture<Boolean> setRateAsync(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
+    RFuture<Void> setRateAsync(RateType mode, long rate, long rateInterval, RateIntervalUnit rateIntervalUnit);
 
     /**
      * Returns current configuration of this RateLimiter object.
