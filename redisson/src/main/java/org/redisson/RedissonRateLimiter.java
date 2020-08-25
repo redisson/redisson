@@ -254,7 +254,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                 "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
                         + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
                         + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
-                        + "return redis.call('del', KEYS[2], KEYS[3]);",
+                        + "redis.call('del', KEYS[2], KEYS[3]);",
                 Arrays.asList(getName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
     
