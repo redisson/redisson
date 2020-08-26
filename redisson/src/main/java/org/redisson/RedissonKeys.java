@@ -41,6 +41,7 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.command.CommandBatchService;
+import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.misc.CompositeIterable;
@@ -61,6 +62,10 @@ public class RedissonKeys implements RKeys {
     public RedissonKeys(CommandAsyncExecutor commandExecutor) {
         super();
         this.commandExecutor = commandExecutor;
+    }
+
+    public ConnectionManager getConnectionManager() {
+        return commandExecutor.getConnectionManager();
     }
 
     @Override
