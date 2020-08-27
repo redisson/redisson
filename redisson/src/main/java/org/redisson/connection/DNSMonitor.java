@@ -119,14 +119,12 @@ public class DNSMonitor {
                     InetSocketAddress newMasterAddr = future.getNow();
                     if (!newMasterAddr.getAddress().equals(currentMasterAddr.getAddress())) {
                         log.info("Detected DNS change. Master {} has changed ip from {} to {}", 
-                                entry.getKey(), currentMasterAddr.getAddress().getHostAddress(), newMasterAddr.getAddress().getHostAddress());
+                                entry.getKey(), currentMasterAddr.getAddress().getHostAddress(),
+                                newMasterAddr.getAddress().getHostAddress());
+
                         MasterSlaveEntry masterSlaveEntry = connectionManager.getEntry(currentMasterAddr);
                         if (masterSlaveEntry == null) {
-                            if (connectionManager instanceof SingleConnectionManager) {
-                                log.error("Unable to find master entry for {}. Switch Redisson configuration to proxy mode to use multiple IPs resolved by Redis hostname. More details: https://github.com/redisson/redisson/wiki/2.-Configuration#29-proxy-mode", currentMasterAddr);
-                            } else {
-                                log.error("Unable to find master entry for {}", currentMasterAddr);
-                            }
+                            log.error("Unable to find entry for current master {}", currentMasterAddr);
                             return;
                         }
                         masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
