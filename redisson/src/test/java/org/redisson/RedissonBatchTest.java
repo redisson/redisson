@@ -194,22 +194,19 @@ public class RedissonBatchTest extends BaseTest {
         RedissonClient redisson = Redisson.create(config);
         
         BatchOptions batchOptions = BatchOptions.defaults().executionMode(ExecutionMode.REDIS_WRITE_ATOMIC);
-        RBatch batch = redisson.createBatch(batchOptions);
+        RBatch batch1 = redisson.createBatch(batchOptions);
         for (int i = 0; i < 25000; i++) {
-            batch.getBucket("test").setAsync(123);
+            batch1.getBucket("test").setAsync(123);
         }
-        
-        try {
-            batch.execute();
-            Assert.fail();
-        } catch (Exception e) {
-            // skip
-        }
-        
+
+        Assertions.assertThatThrownBy(() -> {
+            batch1.execute();
+        });
+
         redisson.getBucket("test3").set(4);
         assertThat(redisson.getBucket("test3").get()).isEqualTo(4);
         
-        batch = redisson.createBatch(batchOptions);
+        RBatch batch = redisson.createBatch(batchOptions);
         batch.getBucket("test1").setAsync(1);
         batch.getBucket("test2").setAsync(2);
         batch.execute();
