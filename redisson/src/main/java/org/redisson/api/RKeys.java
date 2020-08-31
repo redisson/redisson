@@ -26,6 +26,33 @@ import java.util.stream.Stream;
 public interface RKeys extends RKeysAsync {
 
     /**
+     * Get keys using iterator with defined <code>limit</code>.
+     * Keys are traversed with SCAN operation.
+     *
+     * @param limit - limit of keys amount
+     * @return Iterable object
+     */
+    Iterable<String> getKeysWithLimit(int limit);
+
+    /**
+     * Get keys using iterator with defined <code>limit</code>.
+     * Keys are traversed with SCAN operation.
+     * <p>
+     *  Supported glob-style patterns:
+     *  <p>
+     *    h?llo subscribes to hello, hallo and hxllo
+     *    <p>
+     *    h*llo subscribes to hllo and heeeello
+     *    <p>
+     *    h[ae]llo subscribes to hello and hallo, but not hillo
+     *
+     * @param limit - limit of keys amount
+     * @param pattern - match pattern
+     * @return Iterable object
+     */
+    Iterable<String> getKeysWithLimit(String pattern, int limit);
+
+    /**
      * Move object to another database
      *
      * @param name of object
@@ -183,7 +210,7 @@ public interface RKeys extends RKeysAsync {
      * @return Iterable object
      */
     Iterable<String> getKeysByPattern(String pattern, int count);
-    
+
     /**
      * Get all keys using iterator. Keys traversing with SCAN operation. 
      * Each SCAN operation loads up to <code>10</code> keys per request. 

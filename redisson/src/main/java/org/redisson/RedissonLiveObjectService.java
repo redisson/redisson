@@ -628,7 +628,7 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 }
             });
 
-            return keys.getKeysByPattern(command, pattern, count);
+            return keys.getKeysByPattern(command, pattern, 0, count);
         } catch (NoSuchFieldException e) {
             throw new IllegalStateException(e);
         }

@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -24,6 +23,41 @@ import org.redisson.config.Config;
 import org.redisson.connection.balancer.RandomLoadBalancer;
 
 public class RedissonKeysTest extends BaseTest {
+
+    @Test
+    public void testReadKeys() {
+        for (int i = 0; i < 10; i++) {
+            redisson.getBucket("test" + i).set(i);
+        }
+
+        Iterable<String> keys = redisson.getKeys().getKeysWithLimit(3);
+        assertThat(keys).hasSize(3);
+
+        Iterable<String> keys2 = redisson.getKeys().getKeysWithLimit(20);
+        assertThat(keys2).hasSize(10);
+    }
+
+    @Test
+    public void testReadKeysPattern() {
+        for (int i = 0; i < 10; i++) {
+            redisson.getBucket("test" + i).set(i);
+        }
+        for (int i = 0; i < 5; i++) {
+            redisson.getBucket("red" + i).set(i);
+        }
+
+        Iterable<String> keys = redisson.getKeys().getKeysWithLimit("test*", 3);
+        assertThat(keys).hasSize(3);
+
+        Iterable<String> keys2 = redisson.getKeys().getKeysWithLimit("test*", 20);
+        assertThat(keys2).hasSize(10);
+
+        Iterable<String> keys3 = redisson.getKeys().getKeysWithLimit("red*", 3);
+        assertThat(keys3).hasSize(3);
+
+        Iterable<String> keys4 = redisson.getKeys().getKeysWithLimit("red*", 10);
+        assertThat(keys4).hasSize(5);
+    }
 
     @Test
     public void testTouch() {

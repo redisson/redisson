@@ -25,9 +25,12 @@ public class CompositeIterator<T> implements Iterator<T> {
 
     private Iterator<Iterator<T>> listIterator;
     private Iterator<T> currentIterator;
+    private int limit;
+    private int counter;
 
-    public CompositeIterator(Iterator<Iterator<T>> iterators) {
+    public CompositeIterator(Iterator<Iterator<T>> iterators, int limit) {
         listIterator = iterators;
+        this.limit = limit;
     }
 
     @Override
@@ -37,13 +40,24 @@ public class CompositeIterator<T> implements Iterator<T> {
                 Iterator<T> iterator = listIterator.next();
                 currentIterator = iterator;
                 if (iterator.hasNext()) {
-                    return true;
+                    if (limit == 0) {
+                        return true;
+                    } else {
+                        return limit >= counter + 1;
+                    }
                 }
             }
             return false;
         }
 
-        return currentIterator.hasNext();
+        if (currentIterator.hasNext()) {
+            if (limit == 0) {
+                return true;
+            } else {
+                return limit >= counter + 1;
+            }
+        }
+        return false;
     }
 
     @Override
@@ -52,6 +66,7 @@ public class CompositeIterator<T> implements Iterator<T> {
             throw new NoSuchElementException();
         }
 
+        counter++;
         return currentIterator.next();
     }
 

@@ -95,10 +95,10 @@ public class RedissonKeys implements RKeys {
 
     @Override
     public Iterable<String> getKeysByPattern(String pattern, int count) {
-        return getKeysByPattern(RedisCommands.SCAN, pattern, count);
+        return getKeysByPattern(RedisCommands.SCAN, pattern, 0, count);
     }
 
-    public <T> Iterable<T> getKeysByPattern(RedisCommand<?> command, String pattern, int count) {
+    public <T> Iterable<T> getKeysByPattern(RedisCommand<?> command, String pattern, int limit, int count) {
         List<Iterable<T>> iterables = new ArrayList<>();
         for (MasterSlaveEntry entry : commandExecutor.getConnectionManager().getEntrySet()) {
             Iterable<T> iterable = new Iterable<T>() {
@@ -109,7 +109,17 @@ public class RedissonKeys implements RKeys {
             };
             iterables.add(iterable);
         }
-        return new CompositeIterable<T>(iterables);
+        return new CompositeIterable<T>(iterables, limit);
+    }
+
+    @Override
+    public Iterable<String> getKeysWithLimit(int limit) {
+        return getKeysWithLimit(null, limit);
+    }
+
+    @Override
+    public Iterable<String> getKeysWithLimit(String pattern, int limit) {
+        return getKeysByPattern(RedisCommands.SCAN, pattern, limit, limit);
     }
 
     @Override
