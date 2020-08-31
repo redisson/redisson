@@ -63,7 +63,7 @@ public class RedissonTransferQueueTest extends BaseTest {
                 long time = System.currentTimeMillis();
                 queue.transfer(3);
                 assertThat(takeExecuted.get()).isTrue();
-                assertThat(System.currentTimeMillis() - time).isGreaterThan(2950);
+                assertThat(System.currentTimeMillis() - time).isGreaterThan(2850);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
