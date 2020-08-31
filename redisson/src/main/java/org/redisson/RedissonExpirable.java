@@ -120,7 +120,7 @@ abstract class RedissonExpirable extends RedissonObject implements RExpirable {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
                   "local result = 0;"
                 + "for j = 1, #KEYS, 1 do "
-                    + "local expireSet = redis.call('persist', KEYS[j], ARGV[1]); "
+                    + "local expireSet = redis.call('persist', KEYS[j]); "
                     + "if expireSet == 1 then "
                         + "result = expireSet;"
                     + "end; "
