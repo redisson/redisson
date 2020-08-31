@@ -21,6 +21,16 @@ import org.redisson.config.Config;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testIdleTime() throws InterruptedException {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234);
+
+        Thread.sleep(5000);
+
+        assertThat(al.getIdleTime()).isBetween(4L, 6L);
+    }
+
+    @Test
     public void testDeletedListener() throws FailedToStartRedisException, IOException, InterruptedException {
         RedisProcess instance = new RedisRunner()
                 .nosave()

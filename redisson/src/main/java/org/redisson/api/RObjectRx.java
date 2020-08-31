@@ -30,6 +30,13 @@ import io.reactivex.Single;
  */
 public interface RObjectRx {
 
+    /**
+     * Returns number of seconds spent since last write or read operation over this object.
+     *
+     * @return number of seconds
+     */
+    Single<Long> getIdleTime();
+
     String getName();
     
     Codec getCodec();

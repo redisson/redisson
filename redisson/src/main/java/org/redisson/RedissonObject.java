@@ -399,6 +399,15 @@ public abstract class RedissonObject implements RObject {
         return restoreAndReplaceAsync(state, 0, null);
     }
 
+    public Long getIdleTime() {
+        return get(getIdleTimeAsync());
+    }
+
+    @Override
+    public RFuture<Long> getIdleTimeAsync() {
+        return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.OBJECT_IDLETIME, getName());
+    }
+
     protected final <T extends ObjectListener> int addListener(String name, T listener, BiConsumer<T, String> consumer) {
         RPatternTopic topic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, name);
         return topic.addListener(String.class, (pattern, channel, msg) -> {

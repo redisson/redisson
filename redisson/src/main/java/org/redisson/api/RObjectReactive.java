@@ -29,6 +29,13 @@ import reactor.core.publisher.Mono;
  */
 public interface RObjectReactive {
 
+    /**
+     * Returns number of seconds spent since last write or read operation over this object.
+     *
+     * @return number of seconds
+     */
+    Mono<Long> getIdleTime();
+
     String getName();
     
     Codec getCodec();

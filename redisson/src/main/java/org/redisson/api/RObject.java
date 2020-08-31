@@ -28,6 +28,13 @@ import org.redisson.client.codec.Codec;
 public interface RObject extends RObjectAsync {
 
     /**
+     * Returns number of seconds spent since last write or read operation over this object.
+     *
+     * @return number of seconds
+     */
+    Long getIdleTime();
+
+    /**
      * Returns bytes amount used by object in Redis memory. 
      * 
      * @return size in bytes
