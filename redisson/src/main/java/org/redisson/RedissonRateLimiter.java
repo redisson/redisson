@@ -242,6 +242,21 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
               + "return redis.call('hsetnx', KEYS[1], 'type', ARGV[3]);",
                 Collections.singletonList(getName()), rate, unit.toMillis(rateInterval), type.ordinal());
     }
+
+    @Override
+    public void setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+        setRateAsync(type, rate, rateInterval, unit);
+    }
+
+    @Override
+    public RFuture<Void> setRateAsync(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
+         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hset', KEYS[1], 'rate', ARGV[1]);"
+                        + "redis.call('hset', KEYS[1], 'interval', ARGV[2]);"
+                        + "redis.call('hset', KEYS[1], 'type', ARGV[3]);"
+                        + "redis.call('del', KEYS[2], KEYS[3]);",
+                Arrays.asList(getName(), getValueName(), getPermitsName()), rate, unit.toMillis(rateInterval), type.ordinal());
+    }
     
     private static final RedisCommand HGETALL = new RedisCommand("HGETALL", new MultiDecoder<RateLimiterConfig>() {
         @Override
