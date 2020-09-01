@@ -29,6 +29,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Redisson Session object for Apache Tomcat
@@ -64,8 +65,9 @@ public class RedissonSession extends StandardSession {
     private final ReadMode readMode;
     private final UpdateMode updateMode;
 
+    private final AtomicInteger usages = new AtomicInteger();
+    private Map<String, Object> loadedAttributes = Collections.emptyMap();
     private Set<String> removedAttributes = Collections.emptySet();
-    private Set<String> updatedAttributes = Collections.emptySet();
 
     private final boolean broadcastSessionEvents;
 
@@ -79,7 +81,9 @@ public class RedissonSession extends StandardSession {
         
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
-            updatedAttributes = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
+        }
+        if (readMode == ReadMode.REDIS) {
+            loadedAttributes = new ConcurrentHashMap<>();
         }
         
         try {
@@ -103,12 +107,19 @@ public class RedissonSession extends StandardSession {
                 return null;
             }
 
-            if (updatedAttributes.contains(name)
-                    || removedAttributes.contains(name)) {
+            if (removedAttributes.contains(name)) {
                 return super.getAttribute(name);
             }
 
-            return map.get(name);
+            Object value = loadedAttributes.get(name);
+            if (value == null) {
+                value = map.get(name);
+                if (value != null) {
+                    loadedAttributes.put(name, value);
+                }
+            }
+
+            return value;
         } else {
             if (!loaded) {
                 synchronized (this) {
@@ -170,6 +181,7 @@ public class RedissonSession extends StandardSession {
             topic.publish(new AttributesClearMessage(redissonManager.getNodeId(), getId()));
         }
         map = null;
+        loadedAttributes.clear();
     }
     
     @Override
@@ -310,9 +322,11 @@ public class RedissonSession extends StandardSession {
         if (updateMode == UpdateMode.DEFAULT && map != null) {
             fastPut(name, value);
         }
+        if (readMode == ReadMode.REDIS) {
+            loadedAttributes.put(name, value);
+        }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.remove(name);
-            updatedAttributes.add(name);
         }
     }
     
@@ -330,9 +344,11 @@ public class RedissonSession extends StandardSession {
                 topic.publish(new AttributeRemoveMessage(redissonManager.getNodeId(), getId(), new HashSet<String>(Arrays.asList(name))));
             }
         }
+        if (readMode == ReadMode.REDIS) {
+            loadedAttributes.remove(name);
+        }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.add(name);
-            updatedAttributes.remove(name);
         }
     }
     
@@ -377,8 +393,8 @@ public class RedissonSession extends StandardSession {
             }
         }
 
-        updatedAttributes.clear();
         removedAttributes.clear();
+        loadedAttributes.clear();
         
         expireSession();
     }
@@ -430,6 +446,16 @@ public class RedissonSession extends StandardSession {
     public void recycle() {
         super.recycle();
         map = null;
+        loadedAttributes.clear();
     }
-    
+
+    public void startUsage() {
+        usages.incrementAndGet();
+    }
+
+    public void endUsage() {
+        if (usages.decrementAndGet() == 0) {
+            loadedAttributes.clear();
+        }
+    }
 }

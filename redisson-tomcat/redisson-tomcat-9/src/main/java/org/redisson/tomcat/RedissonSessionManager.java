@@ -17,11 +17,7 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpSession;
@@ -33,6 +29,7 @@ import org.apache.catalina.Session;
 import org.apache.catalina.SessionEvent;
 import org.apache.catalina.SessionListener;
 import org.apache.catalina.session.ManagerBase;
+import org.apache.catalina.valves.ValveBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
@@ -70,7 +67,7 @@ public class RedissonSessionManager extends ManagerBase {
 
     private final String nodeId = UUID.randomUUID().toString();
 
-    private static UpdateValve updateValve;
+    private static ValveBase updateValve;
 
     private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -260,6 +257,11 @@ public class RedissonSessionManager extends ManagerBase {
             if (updateMode == UpdateMode.AFTER_REQUEST) {
                 if (updateValve == null) {
                     updateValve = new UpdateValve();
+                    pipeline.addValve(updateValve);
+                }
+            } else if (readMode == ReadMode.REDIS) {
+                if (updateValve == null) {
+                    updateValve = new UsageValve();
                     pipeline.addValve(updateValve);
                 }
             }

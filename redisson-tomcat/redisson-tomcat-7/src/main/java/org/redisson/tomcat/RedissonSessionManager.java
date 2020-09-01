@@ -17,28 +17,19 @@ package org.redisson.tomcat;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpSession;
 
-import org.apache.catalina.Context;
-import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleState;
-import org.apache.catalina.Pipeline;
-import org.apache.catalina.Session;
-import org.apache.catalina.SessionEvent;
-import org.apache.catalina.SessionListener;
+import org.apache.catalina.*;
 import org.apache.catalina.session.ManagerBase;
+import org.apache.catalina.valves.ValveBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
-import org.redisson.api.RMap;
 import org.redisson.api.RSet;
+import org.redisson.api.RMap;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
@@ -71,7 +62,7 @@ public class RedissonSessionManager extends ManagerBase {
 
     private final String nodeId = UUID.randomUUID().toString();
 
-    private static UpdateValve updateValve;
+    private static ValveBase updateValve;
 
     private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -151,7 +142,7 @@ public class RedissonSessionManager extends ManagerBase {
         }
         return session;
     }
-    
+
     public RSet<String> getNotifiedNodes(String sessionId) {
         String separator = keyPrefix == null || keyPrefix.isEmpty() ? "" : ":";
         String name = keyPrefix + separator + "redisson:tomcat_notified_nodes:" + sessionId;
@@ -186,7 +177,7 @@ public class RedissonSessionManager extends ManagerBase {
                     log.error("Can't read session object by id: " + id, e);
                 }
 
-                if (attrs.isEmpty() || (broadcastSessionEvents && getNotifiedNodes(id).contains(nodeId))) {  
+                if (attrs.isEmpty() || (broadcastSessionEvents && getNotifiedNodes(id).contains(nodeId))) {
                     log.info("Session " + id + " can't be found");
                     return null;    
                 }
@@ -207,7 +198,6 @@ public class RedissonSessionManager extends ManagerBase {
         
         return result;
     }
-
     
     @Override
     public Session createEmptySession() {
@@ -219,7 +209,7 @@ public class RedissonSessionManager extends ManagerBase {
         super.add(session);
         ((RedissonSession)session).save();
     }
-    
+
     @Override
     public void remove(Session session, boolean update) {
         super.remove(session, update);
@@ -228,7 +218,7 @@ public class RedissonSessionManager extends ManagerBase {
             ((RedissonSession)session).delete();
         }
     }
-    
+
     public RedissonClient getRedisson() {
         return redisson;
     }
@@ -262,6 +252,11 @@ public class RedissonSessionManager extends ManagerBase {
             if (updateMode == UpdateMode.AFTER_REQUEST) {
                 if (updateValve == null) {
                     updateValve = new UpdateValve();
+                    pipeline.addValve(updateValve);
+                }
+            } else if (readMode == ReadMode.REDIS) {
+                if (updateValve == null) {
+                    updateValve = new UsageValve();
                     pipeline.addValve(updateValve);
                 }
             }
