@@ -1542,6 +1542,10 @@ public class RedissonConnection extends AbstractRedisConnection {
     }
 
     protected void filterResults(BatchResult<?> result) {
+        if (result.getResponses().isEmpty()) {
+            return;
+        }
+
         int t = 0;
         for (Integer index : indexToRemove) {
             index -= t;
