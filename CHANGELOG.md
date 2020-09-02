@@ -4,6 +4,27 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 02-Sep-2020 - 3.13.4 released
+Feature - batch support for `revRank`, `getScore`, `addAndGetRevRank` methods added to RScoredSortedSet object (thanks to @johnou)  
+Feature - `RRateLimiter.setRate` method added (thanks to @AbhishekChandrasekaran)  
+Feature - `RObject.getIdleTime()` method added  
+Feature - `RKeys.getKeysWithLimit()` method added  
+
+Fixed - `RRateLimiter.availablePermits()` method throws exception (regression since 3.13.3)  
+Fixed - compatibility with Spring Data Redis 2.3.3  
+Fixed - `UnsupportedOperationException` is thrown if Spring Data Redis connection executed in pipelined mode  
+Fixed - multiple Tomcat requests share different instances stored in the same session in `readMode=REDIS`  
+Fixed - Spring Data Redis can't be used with proxied RedissonClient instance  
+Fixed - Classloading issues when `MarshallingCodec` used in Tomcat  
+Fixed - Redis cluster slot calculation doesn't work properly if brace isn't closed (thanks to @dengliming)  
+Fixed - `RBloomFilter` rename method doesn't rename config object (thanks to @dengliming)  
+Fixed - `slf4j-simple` dependency excluded from redisson-all  
+Fixed - `JCache.removeAsync` method throws NPE if operation fails  
+Fixed - all cached Lua scripts are executed on Redis master nodes only  
+Fixed - `XPENDING` command causes syntax error in redisson-spring-data-23  
+Fixed - `CommandPubSubDecoder` throws NPE  
+Fixed - `MasterSlaveConnectionManager` allocates superfluous 113Kb of memory for non-cluster Redis setup  
+
 ### 05-Aug-2020 - 3.13.3 released
 Feature - BITFIELD command support added to `RBitSet` object  
 
