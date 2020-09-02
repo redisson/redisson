@@ -245,7 +245,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
 
     @Override
     public void setRate(RateType type, long rate, long rateInterval, RateIntervalUnit unit) {
-        setRateAsync(type, rate, rateInterval, unit);
+        get(setRateAsync(type, rate, rateInterval, unit));
     }
 
     @Override
@@ -319,7 +319,7 @@ public class RedissonRateLimiter extends RedissonExpirable implements RRateLimit
                      + "local expiredValues = redis.call('zrangebyscore', permitsName, 0, tonumber(ARGV[1]) - interval); "
                      + "local released = 0; "
                      + "for i, v in ipairs(expiredValues) do "
-                          + "local random, permits = struct.unpack('dI', v);"
+                          + "local random, permits = struct.unpack('fI', v);"
                           + "released = released + permits;"
                      + "end; "
 
