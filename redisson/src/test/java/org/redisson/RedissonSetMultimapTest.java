@@ -214,6 +214,15 @@ public class RedissonSetMultimapTest extends BaseTest {
         assertThat(multimap1.keySize()).isEqualTo(0);
     }
 
+    @Test
+    public void testSizeInMemory() {
+        RSetMultimap<String, String> set = redisson.getSetMultimap("test");
+        set.put("1", "2");
+        assertThat(set.sizeInMemory()).isEqualTo(229);
+
+        set.put("1", "3");
+        assertThat(set.sizeInMemory()).isEqualTo(259);
+    }
     
     @Test
     public void testSize() {

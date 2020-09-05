@@ -55,6 +55,20 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
     }
 
     @Override
+    public RFuture<Long> sizeInMemoryAsync() {
+        return commandExecutor.evalWriteAsync(getName(), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
+                "local keys = redis.call('hgetall', KEYS[1]); " +
+                "local size = 0; " +
+                "for i, v in ipairs(keys) do " +
+                    "if i % 2 == 0 then " +
+                        "local name = ARGV[1] .. v; " +
+                        "size = size + redis.call('memory', 'usage', name); " +
+                    "end;" +
+                "end; " +
+                "return size; ", Arrays.asList(getName()), prefix);
+    }
+
+    @Override
     public RLock getFairLock(K key) {
         String lockName = getLockByMapKey(key, "fairlock");
         return new RedissonFairLock(commandExecutor, lockName);

@@ -3,6 +3,7 @@ package org.redisson;
 import org.junit.Test;
 import org.redisson.api.RList;
 import org.redisson.api.RListMultimap;
+import org.redisson.api.RSetMultimap;
 
 import java.io.Serializable;
 import java.util.*;
@@ -111,6 +112,16 @@ public class RedissonListMultimapTest extends BaseTest {
             return true;
         }
 
+    }
+
+    @Test
+    public void testSizeInMemory() {
+        RListMultimap<String, String> list = redisson.getListMultimap("test");
+        list.put("1", "2");
+        assertThat(list.sizeInMemory()).isEqualTo(160);
+
+        list.put("1", "3");
+        assertThat(list.sizeInMemory()).isEqualTo(166);
     }
 
     @Test
