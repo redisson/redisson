@@ -15,6 +15,8 @@
  */
 package org.redisson.spring.support;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
 
 /**
@@ -22,9 +24,13 @@ import org.springframework.beans.factory.xml.NamespaceHandlerSupport;
  * @author Rui Gu (https://github.com/jackygurui)
  */
 public class RedissonNamespaceHandlerSupport extends NamespaceHandlerSupport {
-    
+
+    static final Logger log = LoggerFactory.getLogger(RedissonNamespaceHandlerSupport.class);
+
     @Override
     public void init() {
+        log.error("Spring XML configuration is deprecated and will be removed in future!");
+
         RedissonNamespaceParserSupport helper
                 = new RedissonNamespaceParserSupport();
         
