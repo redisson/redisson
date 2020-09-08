@@ -156,6 +156,9 @@ public class RedissonSessionManagerTest {
             // Trigger a read on the first server, it will pull the latest value from redis for "test", and be returned correctly
             // HOWEVER, it will trigger a session.save() from the UpdateValve, which will write back everything in
             // the local attr map back to redis, including the stale value of "test"
+
+            // with READ_MODE REDIS, and not AFTER_REQUEST, this will fail due to the new UsageValve not calling session.endUsage()
+            // on the first request which creates a sessions. This leaves around a stale loadedAttributes map
             read(executor, "test", "from_server2");
             // This should have the result of from_server2, but because server1 in the previous call wrote back its stale in memory value
             // due to the session.save() call, it has the incorrect value now.

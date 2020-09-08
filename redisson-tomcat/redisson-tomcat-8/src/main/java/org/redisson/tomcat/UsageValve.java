@@ -22,6 +22,7 @@ import org.apache.catalina.valves.ValveBase;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.Optional;
 
 /**
  * Redisson Valve object for Apache Tomcat
@@ -48,23 +49,23 @@ public class UsageValve extends ValveBase {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             RedissonSession s = null;
             try {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
-                    if (s != null) {
-                        s.startUsage();
-                    }
-                }
-
+                getRedissonSession(request).ifPresent(RedissonSession::startUsage);
                 getNext().invoke(request, response);
             } finally {
                 request.removeNote(ALREADY_FILTERED_NOTE);
-                if (s != null) {
-                    s.endUsage();
-                }
+                getRedissonSession(request).ifPresent(RedissonSession::endUsage);
             }
         } else {
             getNext().invoke(request, response);
+        }
+    }
+
+    private Optional<RedissonSession> getRedissonSession(Request request) throws IOException {
+        HttpSession session = request.getSession(false);
+        if(session != null) {
+            return Optional.ofNullable((RedissonSession)request.getContext().getManager().findSession(session.getId()));
+        } else {
+            return Optional.empty();
         }
     }
 

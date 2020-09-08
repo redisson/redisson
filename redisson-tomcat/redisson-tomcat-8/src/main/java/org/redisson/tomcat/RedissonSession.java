@@ -65,7 +65,8 @@ public class RedissonSession extends StandardSession {
     private final ReadMode readMode;
     private final UpdateMode updateMode;
 
-    private final AtomicInteger usages = new AtomicInteger();
+    // Initialize to one, since upon creation there is one usage
+    private final AtomicInteger usages = new AtomicInteger(1);
     private Map<String, Object> loadedAttributes = Collections.emptyMap();
     private Set<String> removedAttributes = Collections.emptySet();
 
