@@ -110,12 +110,6 @@ public interface RSemaphoreAsync extends RExpirableAsync {
      */
     RFuture<Boolean> tryAcquireAsync(int permits, long waitTime, TimeUnit unit);
 
-    /*
-     * Use addPermits instead
-     */
-    @Deprecated
-    RFuture<Void> reducePermitsAsync(int permits);
-
     /**
      * Increases or decreases the number of available permits by defined value.
      *

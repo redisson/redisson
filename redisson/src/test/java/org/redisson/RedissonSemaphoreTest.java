@@ -56,7 +56,7 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         s.trySetPermits(10);
         
         s.acquire(10);
-        s.reducePermits(5);
+        s.addPermits(-5);
         assertThat(s.availablePermits()).isEqualTo(-5);
         s.release(10);
         assertThat(s.availablePermits()).isEqualTo(5);

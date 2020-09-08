@@ -488,16 +488,6 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     }
 
     @Override
-    public void reducePermits(int permits) {
-        get(reducePermitsAsync(permits));
-    }
-
-    @Override
-    public RFuture<Void> reducePermitsAsync(int permits) {
-        return addPermitsAsync(-permits);
-    }
-
-    @Override
     public void addPermits(int permits) {
         get(addPermitsAsync(permits));
     }
