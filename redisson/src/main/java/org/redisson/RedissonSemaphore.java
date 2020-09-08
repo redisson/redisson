@@ -491,16 +491,18 @@ public class RedissonSemaphore extends RedissonExpirable implements RSemaphore {
     public void reducePermits(int permits) {
         get(reducePermitsAsync(permits));
     }
-    
+
     @Override
     public RFuture<Void> reducePermitsAsync(int permits) {
         return addPermitsAsync(-permits);
     }
-    
+
+    @Override
     public void addPermits(int permits) {
-        get(reducePermitsAsync(permits));
+        get(addPermitsAsync(permits));
     }
 
+    @Override
     public RFuture<Void> addPermitsAsync(int permits) {
         return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,
                 "local value = redis.call('get', KEYS[1]); " +

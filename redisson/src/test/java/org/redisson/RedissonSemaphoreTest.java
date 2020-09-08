@@ -34,7 +34,22 @@ public class RedissonSemaphoreTest extends BaseConcurrentTest {
         assertThat(s.trySetPermits(15)).isFalse();
         assertThat(s.availablePermits()).isEqualTo(10);
     }
-    
+
+    @Test
+    public void testAddPermits() throws InterruptedException {
+        RSemaphore s = redisson.getSemaphore("test");
+        s.trySetPermits(10);
+
+        s.acquire(10);
+        assertThat(s.availablePermits()).isEqualTo(0);
+        s.addPermits(4);
+        assertThat(s.availablePermits()).isEqualTo(4);
+        s.release(10);
+        assertThat(s.availablePermits()).isEqualTo(14);
+        s.acquire(5);
+        assertThat(s.availablePermits()).isEqualTo(9);
+    }
+
     @Test
     public void testReducePermits() throws InterruptedException {
         RSemaphore s = redisson.getSemaphore("test");
