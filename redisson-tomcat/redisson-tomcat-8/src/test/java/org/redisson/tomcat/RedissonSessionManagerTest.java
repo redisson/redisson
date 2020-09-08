@@ -79,28 +79,95 @@ public class RedissonSessionManagerTest {
     @Test
     public void testUpdateTwoServers() throws Exception {
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
-        server1.start();
-
-        Executor executor = Executor.newInstance();
-        BasicCookieStore cookieStore = new BasicCookieStore();
-        executor.use(cookieStore);
-        
-        write(executor, "test", "1234");
-
         TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
-        server2.start();
+        try {
+            server1.start();
+            server2.start();
 
-        read(8081, executor, "test", "1234");
-        read(executor, "test", "1234");
-        write(executor, "test", "324");
-        read(8081, executor, "test", "324");
-        
-        Executor.closeIdleConnections();
-        server1.stop();
-        server2.stop();
+            Executor executor = Executor.newInstance();
+            BasicCookieStore cookieStore = new BasicCookieStore();
+            executor.use(cookieStore);
+
+            write(executor, "test", "1234");
+
+            read(8081, executor, "test", "1234");
+            read(executor, "test", "1234");
+            write(executor, "test", "324");
+            read(8081, executor, "test", "324");
+        } finally {
+            Executor.closeIdleConnections();
+            server1.stop();
+            server2.stop();
+        }
     }
 
-    
+    @Test
+    public void testUpdateTwoServers_extraRead_otherValue() throws Exception {
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        try {
+            server1.start();
+            server2.start();
+
+            Executor executor = Executor.newInstance();
+            BasicCookieStore cookieStore = new BasicCookieStore();
+            executor.use(cookieStore);
+
+            // Write to both servers, so that each of their in memory `attr` fields on the RedissonSession are populated
+            // with values
+            write(executor, "test", "from_server1");
+            write(executor, "other", "from_server1");
+
+            write(8081, executor, "test", "from_server2");
+            write(8081, executor, "other", "from_server2");
+
+            // Trigger a read on the first server, it will pull the latest value from redis for "test", and be read correctly
+            // HOWEVER, it will trigger a session.save() from the UpdateValve, which will write back everything in
+            // the local attr map back to redis
+            read(executor, "test", "from_server2");
+            // This should have the result of from_server2, but because server1 in the previous call wrote back its stale in memory value
+            // due to the session.save() call, it has the incorrect value now.
+            read(executor, "other", "from_server2");
+
+        } finally {
+            Executor.closeIdleConnections();
+            server1.stop();
+            server2.stop();
+        }
+    }
+
+    @Test
+    public void testUpdateTwoServers_extraRead_sameValue() throws Exception {
+        TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
+        TomcatServer server2 = new TomcatServer("myapp", 8081, "src/test/");
+        try {
+            server1.start();
+            server2.start();
+
+            Executor executor = Executor.newInstance();
+            BasicCookieStore cookieStore = new BasicCookieStore();
+            executor.use(cookieStore);
+
+            // Write to both servers, so that each of their in memory `attr` fields on the RedissonSession are populated
+            write(executor, "test", "from_server1");
+
+            write(8081, executor, "test", "from_server2");
+
+            // Trigger a read on the first server, it will pull the latest value from redis for "test", and be returned correctly
+            // HOWEVER, it will trigger a session.save() from the UpdateValve, which will write back everything in
+            // the local attr map back to redis, including the stale value of "test"
+            read(executor, "test", "from_server2");
+            // This should have the result of from_server2, but because server1 in the previous call wrote back its stale in memory value
+            // due to the session.save() call, it has the incorrect value now.
+            read(executor, "test", "from_server2");
+
+        } finally {
+            Executor.closeIdleConnections();
+            server1.stop();
+            server2.stop();
+        }
+    }
+
     @Test
     public void testExpiration() throws Exception {
         TomcatServer server1 = new TomcatServer("myapp", 8080, "src/test/");
@@ -243,9 +310,14 @@ public class RedissonSessionManagerTest {
         
         Assert.assertEquals(0, r.getKeys().count());
     }
-    
+
     private void write(Executor executor, String key, String value) throws IOException, ClientProtocolException {
-        String url = "http://localhost:8080/myapp/write?key=" + key + "&value=" + value;
+        write(8080, executor, key, value);
+    }
+
+    private void write(
+        final int port, Executor executor, String key, String value) throws IOException, ClientProtocolException {
+        String url = "http://localhost:" + port + "/myapp/write?key=" + key + "&value=" + value;
         String response = executor.execute(Request.Get(url)).returnContent().asString();
         Assert.assertEquals("OK", response);
     }

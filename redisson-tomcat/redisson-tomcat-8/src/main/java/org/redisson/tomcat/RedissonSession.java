@@ -373,9 +373,10 @@ public class RedissonSession extends StandardSession {
         if (broadcastSessionEvents) {
             newMap.put(IS_EXPIRATION_LOCKED, isExpirationLocked);
         }
-        
-        if (attrs != null) {
-            for (Entry<String, Object> entry : attrs.entrySet()) {
+
+        Map<String,Object> attrMap = readMode == ReadMode.REDIS ? loadedAttributes : attrs;
+        if (attrMap != null) {
+            for (Entry<String, Object> entry : attrMap.entrySet()) {
                 newMap.put(entry.getKey(), entry.getValue());
             }
         }

@@ -67,7 +67,9 @@ public class RedissonSessionManager extends ManagerBase {
 
     private final String nodeId = UUID.randomUUID().toString();
 
-    private static ValveBase updateValve;
+    // For the test, by placing this in a static there is only 1 update valve, and its registered to the first
+    // Tomcat instance, so that server2 never triggers the update valve, as they both have their own Engine/pipeline instances
+    private ValveBase updateValve;
 
     private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
