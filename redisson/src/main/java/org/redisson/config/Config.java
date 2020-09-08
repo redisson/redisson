@@ -24,7 +24,6 @@ import org.redisson.connection.AddressResolverGroupFactory;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.DnsAddressResolverGroupFactory;
 import org.redisson.connection.ReplicatedConnectionManager;
-import org.redisson.spring.support.RedissonNamespaceHandlerSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
