@@ -15,21 +15,6 @@
  */
 package org.redisson.transaction;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.redisson.RedissonBuckets;
 import org.redisson.RedissonKeys;
 import org.redisson.RedissonMultiLock;
@@ -40,10 +25,14 @@ import org.redisson.client.codec.Codec;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.transaction.operation.DeleteOperation;
 import org.redisson.transaction.operation.TransactionalOperation;
 import org.redisson.transaction.operation.bucket.BucketSetOperation;
 import org.redisson.transaction.operation.bucket.BucketsTrySetOperation;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 
