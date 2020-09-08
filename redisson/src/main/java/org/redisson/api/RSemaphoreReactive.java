@@ -112,12 +112,6 @@ public interface RSemaphoreReactive extends RExpirableReactive {
      */
     Mono<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
-    /*
-     * Use addPermits instead
-     */
-    @Deprecated
-    Mono<Void> reducePermits(int permits);
-
     /**
      * Increases or decreases the number of available permits by defined value.
      *

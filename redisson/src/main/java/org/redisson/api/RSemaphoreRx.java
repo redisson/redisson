@@ -113,12 +113,6 @@ public interface RSemaphoreRx extends RExpirableRx {
      */
     Single<Boolean> tryAcquire(int permits, long waitTime, TimeUnit unit);
 
-    /*
-     * Use addPermits instead
-     */
-    @Deprecated
-    Completable reducePermits(int permits);
-
     /**
      * Increases or decreases the number of available permits by defined value.
      *
