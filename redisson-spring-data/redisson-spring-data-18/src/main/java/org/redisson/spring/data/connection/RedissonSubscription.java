@@ -59,7 +59,8 @@ public class RedissonSubscription extends AbstractSubscription {
                         return;
                     }
 
-                    DefaultMessage msg = new DefaultMessage(((ChannelName) ch).getName(), (byte[])message);
+                    byte[] m = toBytes(message);
+                    DefaultMessage msg = new DefaultMessage(((ChannelName) ch).getName(), m);
                     getListener().onMessage(msg, null);
                 }
             });
@@ -82,7 +83,8 @@ public class RedissonSubscription extends AbstractSubscription {
         RedisPubSubListener<?> listener2 = new BaseRedisPubSubListener() {
             @Override
             public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
-                DefaultMessage msg = new DefaultMessage(((ChannelName)channel).getName(), (byte[])message);
+                byte[] m = toBytes(message);
+                DefaultMessage msg = new DefaultMessage(((ChannelName)channel).getName(), m);
                 getListener().onMessage(msg, ((ChannelName)pattern).getName());
             }
         };
@@ -95,6 +97,13 @@ public class RedissonSubscription extends AbstractSubscription {
         for (RFuture<?> future : list) {
             connectionManager.getCommandExecutor().syncSubscription(future);
         }
+    }
+
+    private byte[] toBytes(Object message) {
+        if (message instanceof String) {
+            return  ((String) message).getBytes();
+        }
+        return (byte[]) message;
     }
 
     @Override
