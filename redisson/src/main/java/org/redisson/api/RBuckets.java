@@ -52,10 +52,4 @@ public interface RBuckets extends RBucketsAsync {
      */
     void set(Map<String, ?> buckets);
 
-    /*
-     * Use RKeys.delete method instead
-     */
-    @Deprecated
-    long delete(String... keys);
-    
 }

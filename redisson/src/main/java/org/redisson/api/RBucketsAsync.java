@@ -53,10 +53,4 @@ public interface RBucketsAsync {
      */
     RFuture<Void> setAsync(Map<String, ?> buckets);
     
-    /*
-     * Use RKeys.deleteAsync method instead
-     */
-    @Deprecated
-    RFuture<Long> deleteAsync(String... keys);
-    
 }

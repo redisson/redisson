@@ -144,15 +144,4 @@ public class RedissonBuckets implements RBuckets {
         return commandExecutor.writeAsync(params.get(0).toString(), RedisCommands.MSET, params.toArray());
     }
 
-    @Override
-    public RFuture<Long> deleteAsync(String... keys) {
-        RedissonKeys ks = new RedissonKeys(commandExecutor);
-        return ks.deleteAsync(keys);
-    }
-
-    @Override
-    public long delete(String... keys) {
-        return commandExecutor.get(deleteAsync(keys));
-    }
-
 }
