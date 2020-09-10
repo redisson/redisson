@@ -66,7 +66,7 @@ public class RedissonSession extends StandardSession {
     private final UpdateMode updateMode;
 
     // Initialize to one, since upon creation there is one usage
-    private final AtomicInteger usages = new AtomicInteger(1);
+    private final AtomicInteger usages = new AtomicInteger(0);
     private Map<String, Object> loadedAttributes = Collections.emptyMap();
     private Set<String> removedAttributes = Collections.emptySet();
 
@@ -456,7 +456,11 @@ public class RedissonSession extends StandardSession {
     }
 
     public void endUsage() {
-        if (usages.decrementAndGet() == 0) {
+        int remainingUsages = usages.decrementAndGet();
+        // If a Session was created mid request it will start with 0 usages, and potentially go negative when
+        // this method is called. We want to leave the variable at 0 in that case
+        usages.compareAndSet(-1, 0);
+        if (remainingUsages <= 0) {
             loadedAttributes.clear();
         }
     }

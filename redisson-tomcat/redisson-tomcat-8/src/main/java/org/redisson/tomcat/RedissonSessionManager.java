@@ -29,12 +29,11 @@ import org.apache.catalina.Session;
 import org.apache.catalina.SessionEvent;
 import org.apache.catalina.SessionListener;
 import org.apache.catalina.session.ManagerBase;
-import org.apache.catalina.valves.ValveBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
-import org.redisson.api.RSet;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
@@ -66,10 +65,6 @@ public class RedissonSessionManager extends ManagerBase {
     private boolean broadcastSessionEvents = false;
 
     private final String nodeId = UUID.randomUUID().toString();
-
-    // For the test, by placing this in a static there is only 1 update valve, and its registered to the first
-    // Tomcat instance, so that server2 never triggers the update valve, as they both have their own Engine/pipeline instances
-    private ValveBase updateValve;
 
     private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
@@ -256,16 +251,17 @@ public class RedissonSessionManager extends ManagerBase {
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
             contextInUse.add(getContext().getName());
-            if (updateMode == UpdateMode.AFTER_REQUEST) {
-                if (updateValve == null) {
-                    updateValve = new UpdateValve();
-                    pipeline.addValve(updateValve);
-                }
-            } else if (readMode == ReadMode.REDIS) {
-                if (updateValve == null) {
-                    updateValve = new UsageValve();
-                    pipeline.addValve(updateValve);
-                }
+
+            if (this.readMode == RedissonSessionManager.ReadMode.REDIS &&
+                Arrays.stream(pipeline.getValves())
+                    .noneMatch(valve -> valve instanceof UsageValve)) {
+                pipeline.addValve(new UsageValve());
+            }
+
+            if (this.updateMode == RedissonSessionManager.UpdateMode.AFTER_REQUEST &&
+                Arrays.stream(pipeline.getValves())
+                    .noneMatch(valve -> valve instanceof UpdateValve)) {
+                pipeline.addValve(new UpdateValve());
             }
         }
         
@@ -370,10 +366,15 @@ public class RedissonSessionManager extends ManagerBase {
             contextInUse.remove(getContext().getName());
             //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
             if (contextInUse.isEmpty()) {
-                if (updateValve != null) {
-                    pipeline.removeValve(updateValve);
-                    updateValve = null;
-                }
+                Arrays.stream(pipeline.getValves())
+                    .filter(valve -> valve instanceof UpdateValve)
+                    .findFirst()
+                    .ifPresent(pipeline::removeValve);
+
+                Arrays.stream(pipeline.getValves())
+                    .filter(valve -> valve instanceof UsageValve)
+                    .findFirst()
+                    .ifPresent(pipeline::removeValve);
             }
         }
         
