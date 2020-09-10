@@ -15,10 +15,6 @@
  */
 package org.redisson;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-
 import org.redisson.api.RFuture;
 import org.redisson.api.RTopic;
 import org.redisson.api.listener.MessageListener;
@@ -39,7 +35,8 @@ import org.redisson.pubsub.AsyncSemaphore;
 import org.redisson.pubsub.PubSubConnectionEntry;
 import org.redisson.pubsub.PublishSubscribeService;
 
-import io.netty.buffer.ByteBuf;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Distributed topic implementation. Messages are delivered to all message listeners across Redis cluster.
@@ -66,7 +63,7 @@ public class RedissonTopic implements RTopic {
         this.codec = codec;
         this.subscribeService = commandExecutor.getConnectionManager().getSubscribeService();
     }
-    
+
     @Override
     public List<String> getChannelNames() {
         return Collections.singletonList(name);
@@ -79,24 +76,9 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public RFuture<Long> publishAsync(Object message) {
-        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBLISH, name, encode(message));
+        return commandExecutor.writeAsync(name, StringCodec.INSTANCE, RedisCommands.PUBLISH, name, commandExecutor.encode(codec, message));
     }
 
-    protected ByteBuf encode(Object value) {
-        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
-            if (reference != null) {
-                value = reference;
-            }
-        }
-        
-        try {
-            return codec.getValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-    
     @Override
     public int addListener(StatusListener listener) {
         return addListener(new PubSubStatusListener(listener, name));
@@ -107,13 +89,13 @@ public class RedissonTopic implements RTopic {
         PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, (MessageListener<M>) listener, name);
         return addListener(pubSubListener);
     }
-    
+
     @Override
     public RFuture<Integer> addListenerAsync(StatusListener listener) {
         PubSubStatusListener pubSubListener = new PubSubStatusListener(listener, name);
         return addListenerAsync((RedisPubSubListener<?>) pubSubListener);
     }
-    
+
     @Override
     public <M> RFuture<Integer> addListenerAsync(Class<M> type, MessageListener<M> listener) {
         PubSubMessageListener<M> pubSubListener = new PubSubMessageListener<M>(type, listener, name);
@@ -125,7 +107,7 @@ public class RedissonTopic implements RTopic {
         commandExecutor.syncSubscription(future);
         return System.identityHashCode(pubSubListener);
     }
-    
+
     private RFuture<Integer> addListenerAsync(RedisPubSubListener<?> pubSubListener) {
         RFuture<PubSubConnectionEntry> future = subscribeService.subscribe(codec, channelName, pubSubListener);
         RPromise<Integer> result = new RedissonPromise<Integer>();
@@ -134,7 +116,7 @@ public class RedissonTopic implements RTopic {
                 result.tryFailure(e);
                 return;
             }
-            
+
             result.trySuccess(System.identityHashCode(pubSubListener));
         });
         return result;
@@ -144,7 +126,7 @@ public class RedissonTopic implements RTopic {
     public void removeAllListeners() {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
-        
+
         PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
@@ -165,12 +147,12 @@ public class RedissonTopic implements RTopic {
             throw new RedisTimeoutException("Remove listeners operation timeout: (" + timeout + "ms) for " + name + " topic");
         }
     }
-    
+
     @Override
     public void removeListener(MessageListener<?> listener) {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
-        
+
         PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();
@@ -185,7 +167,7 @@ public class RedissonTopic implements RTopic {
         }
 
     }
-    
+
     @Override
     public RFuture<Void> removeListenerAsync(MessageListener<?> listener) {
         RPromise<Void> promise = new RedissonPromise<Void>();
@@ -197,7 +179,7 @@ public class RedissonTopic implements RTopic {
                 promise.trySuccess(null);
                 return;
             }
-            
+
             entry.removeListener(channelName, listener);
             if (!entry.hasListeners(channelName)) {
                 subscribeService.unsubscribe(channelName, semaphore)
@@ -235,12 +217,12 @@ public class RedissonTopic implements RTopic {
         });
         return promise;
     }
-    
+
     @Override
     public void removeListener(Integer... listenerIds) {
         AsyncSemaphore semaphore = subscribeService.getSemaphore(channelName);
         acquire(semaphore);
-        
+
         PubSubConnectionEntry entry = subscribeService.getPubSubEntry(channelName);
         if (entry == null) {
             semaphore.release();

@@ -15,24 +15,8 @@
  */
 package org.redisson;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BiConsumer;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import org.redisson.api.DeletedObjectListener;
-import org.redisson.api.ExpiredObjectListener;
-import org.redisson.api.ObjectListener;
-import org.redisson.api.RFuture;
-import org.redisson.api.RObject;
-import org.redisson.api.RPatternTopic;
+import io.netty.buffer.ByteBuf;
+import org.redisson.api.*;
 import org.redisson.client.codec.ByteArrayCodec;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
@@ -43,7 +27,11 @@ import org.redisson.misc.Hash;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import io.netty.buffer.ByteBuf;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Base Redisson object
@@ -295,48 +283,15 @@ public abstract class RedissonObject implements RObject {
     }
     
     public ByteBuf encode(Object value) {
-        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
-            if (reference != null) {
-                value = reference;
-            }
-        }
-        
-        try {
-            return codec.getValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return commandExecutor.encode(codec, value);
     }
     
     public ByteBuf encodeMapKey(Object value) {
-        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
-            if (reference != null) {
-                value = reference;
-            }
-        }
-        
-        try {
-            return codec.getMapKeyEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return commandExecutor.encodeMapKey(codec, value);
     }
 
     public ByteBuf encodeMapValue(Object value) {
-        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
-            if (reference != null) {
-                value = reference;
-            }
-        }
-
-        try {
-            return codec.getMapValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
+        return commandExecutor.encodeMapValue(codec, value);
     }
 
     @Override

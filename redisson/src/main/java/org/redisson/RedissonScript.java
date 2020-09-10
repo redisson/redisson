@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.buffer.ByteBuf;
 import org.redisson.api.RFuture;
 import org.redisson.api.RScript;
 import org.redisson.client.codec.Codec;
@@ -24,7 +23,6 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.command.CommandAsyncExecutor;
 
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -195,26 +193,11 @@ public class RedissonScript implements RScript {
     private List<Object> encode(Collection<?> values, Codec codec) {
         List<Object> result = new ArrayList<Object>(values.size());
         for (Object object : values) {
-            result.add(encode(object, codec));
+            result.add(commandExecutor.encode(codec, object));
         }
         return result;
     }
     
-    private ByteBuf encode(Object value, Codec codec) {
-        if (commandExecutor.isRedissonReferenceSupportEnabled()) {
-            RedissonReference reference = commandExecutor.getObjectBuilder().toReference(value);
-            if (reference != null) {
-                value = reference;
-            }
-        }
-        
-        try {
-            return codec.getValueEncoder().encode(value);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        }
-    }
-
     @Override
     public <R> RFuture<R> evalShaAsync(String key, Mode mode, String shaDigest, ReturnType returnType,
             List<Object> keys, Object... values) {

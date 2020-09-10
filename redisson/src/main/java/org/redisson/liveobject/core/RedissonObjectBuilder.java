@@ -15,50 +15,24 @@
  */
 package org.redisson.liveobject.core;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Deque;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentMap;
-
-import org.redisson.RedissonBlockingDeque;
-import org.redisson.RedissonBlockingQueue;
-import org.redisson.RedissonDeque;
-import org.redisson.RedissonList;
-import org.redisson.RedissonLiveObjectService;
-import org.redisson.RedissonMap;
-import org.redisson.RedissonQueue;
-import org.redisson.RedissonReference;
-import org.redisson.RedissonSet;
-import org.redisson.RedissonSortedSet;
-import org.redisson.api.RLiveObject;
-import org.redisson.api.RMap;
-import org.redisson.api.RObject;
-import org.redisson.api.RObjectReactive;
-import org.redisson.api.RObjectRx;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.RedissonReactiveClient;
-import org.redisson.api.RedissonRxClient;
+import org.redisson.*;
+import org.redisson.api.*;
 import org.redisson.api.annotation.REntity;
-import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RObjectField;
 import org.redisson.client.codec.Codec;
 import org.redisson.codec.DefaultReferenceCodecProvider;
 import org.redisson.codec.ReferenceCodecProvider;
 import org.redisson.config.Config;
 import org.redisson.liveobject.misc.ClassUtils;
-import org.redisson.liveobject.misc.Introspectior;
 import org.redisson.liveobject.resolver.NamingScheme;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 
@@ -144,7 +118,7 @@ public class RedissonObjectBuilder {
             if (mappedClass != null) {
                 Codec fieldCodec = getFieldCodec(clazz, mappedClass, fieldName);
                 NamingScheme fieldNamingScheme = getNamingScheme(clazz, fieldCodec);
-                String referenceName = fieldNamingScheme.getFieldReferenceName(clazz, id, mappedClass, fieldName, null);
+                String referenceName = fieldNamingScheme.getFieldReferenceName(clazz, id, mappedClass, fieldName);
                 
                 return createRObject(redisson, mappedClass, referenceName, fieldCodec);
             }
@@ -305,13 +279,9 @@ public class RedissonObjectBuilder {
             if (object instanceof RLiveObject) {
                 Class<? extends Object> rEntity = object.getClass().getSuperclass();
                 NamingScheme ns = getNamingScheme(rEntity);
-                String name = Introspectior
-                        .getFieldsWithAnnotation(rEntity, RId.class)
-                        .getOnly().getName();
-                Class<?> type = ClassUtils.getDeclaredField(rEntity, name).getType();
-                
+
                 return new RedissonReference(rEntity,
-                        ns.getName(rEntity, type, name, ((RLiveObject) object).getLiveObjectId()));
+                        ns.getName(rEntity, ((RLiveObject) object).getLiveObjectId()));
             }
         } catch (Exception e) {
             throw new IllegalArgumentException(e);

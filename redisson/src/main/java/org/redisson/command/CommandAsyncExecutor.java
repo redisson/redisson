@@ -15,9 +15,7 @@
  */
 package org.redisson.command;
 
-import java.util.Collection;
-import java.util.List;
-
+import io.netty.buffer.ByteBuf;
 import org.redisson.SlotCallback;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -30,6 +28,9 @@ import org.redisson.client.protocol.RedisCommand;
 import org.redisson.connection.ConnectionManager;
 import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -47,8 +48,6 @@ public interface CommandAsyncExecutor {
     CommandAsyncExecutor enableRedissonReferenceSupport(RedissonReactiveClient redissonReactive);
     
     CommandAsyncExecutor enableRedissonReferenceSupport(RedissonRxClient redissonReactive);
-    
-    boolean isRedissonReferenceSupportEnabled();
     
     <V> RedisException convertException(RFuture<V> future);
 
@@ -117,6 +116,12 @@ public interface CommandAsyncExecutor {
     <T, R> RFuture<R> readRandomAsync(MasterSlaveEntry entry, Codec codec, RedisCommand<T> command, Object... params);
     
     <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames);
+
+    ByteBuf encode(Codec codec, Object value);
+
+    ByteBuf encodeMapKey(Codec codec, Object value);
+
+    ByteBuf encodeMapValue(Codec codec, Object value);
 
     <T, R> RFuture<R> readBatchedAsync(Codec codec, RedisCommand<T> command, SlotCallback<T, R> callback, String... keys);
     

@@ -36,27 +36,27 @@ public class DefaultNamingScheme extends AbstractNamingScheme implements NamingS
     }
 
     @Override
-    public String getNamePattern(Class<?> entityClass, Class<?> idFieldClass, String idFieldName) {
-        return "redisson_live_object:{" + "*" + "}:" + entityClass.getName() + ":" + idFieldName + ":" + idFieldClass.getName();
+    public String getNamePattern(Class<?> entityClass) {
+        return "redisson_live_object:{" + "*" + "}:" + entityClass.getName();
     }
 
     @Override
-    public String getName(Class<?> entityClass, Class<?> idFieldClass, String idFieldName, Object idValue) {
+    public String getName(Class<?> entityClass, Object idValue) {
         try {
             String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
-            return "redisson_live_object:{"+ encode + "}:" + entityClass.getName() + ":" + idFieldName + ":" + idFieldClass.getName();
+            return "redisson_live_object:{"+ encode + "}:" + entityClass.getName();
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Unable to encode \"" + idFieldName + "\" [" + idValue + "] into byte[]", ex);
+            throw new IllegalArgumentException("Unable create name for '" + entityClass + "' with id:" + idValue, ex);
         }
     }
 
     @Override
-    public String getFieldReferenceName(Class<?> entityClass, Object idValue, Class<?> fieldClass, String fieldName, Object fieldValue) {
+    public String getFieldReferenceName(Class<?> entityClass, Object idValue, Class<?> fieldClass, String fieldName) {
         try {
             String encode = bytesToHex(codec.getMapKeyEncoder().encode(idValue));
-            return "redisson_live_object_field:{" + encode + "}:" + entityClass.getName() + ":" + fieldName + ":" + fieldClass.getName();
+            return "redisson_live_object_field:{" + encode + "}:" + entityClass.getName() + ":" + fieldName;
         } catch (IOException ex) {
-            throw new IllegalArgumentException("Unable to encode \"" + fieldName + "\" [" + fieldValue + "] into byte[]", ex);
+            throw new IllegalArgumentException("Unable create name for '" + entityClass + "' and field:'" + fieldName + "' with id:" + idValue, ex);
         }
     }
 

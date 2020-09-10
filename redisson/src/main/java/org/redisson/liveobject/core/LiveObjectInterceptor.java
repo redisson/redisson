@@ -136,7 +136,7 @@ public class LiveObjectInterceptor {
 
 
     private String getMapKey(Object id) {
-        return namingScheme.getName(originalClass, idFieldType, idFieldName, id);
+        return namingScheme.getName(originalClass, id);
     }
 
 }

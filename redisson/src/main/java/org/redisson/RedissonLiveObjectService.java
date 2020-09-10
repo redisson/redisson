@@ -610,28 +610,22 @@ public class RedissonLiveObjectService implements RLiveObjectService {
 
     @Override
     public <K> Iterable<K> findIds(Class<?> entityClass, int count) {
-        try {
-            String idFieldName = getRIdFieldName(entityClass);
-            Class<?> idFieldType = ClassUtils.getDeclaredField(entityClass, idFieldName).getType();
-            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
-            String pattern = namingScheme.getNamePattern(entityClass, idFieldType, idFieldName);
-            RedissonKeys keys = new RedissonKeys(connectionManager.getCommandExecutor());
+        NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
+        String pattern = namingScheme.getNamePattern(entityClass);
+        RedissonKeys keys = new RedissonKeys(connectionManager.getCommandExecutor());
 
-            RedisCommand<ListScanResult<String>> command = new RedisCommand<>("SCAN",
-                    new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()), new Convertor<Object>() {
-                @Override
-                public Object convert(Object obj) {
-                    if (!(obj instanceof String)) {
-                        return obj;
-                    }
-                    return namingScheme.resolveId(obj.toString());
+        RedisCommand<ListScanResult<String>> command = new RedisCommand<>("SCAN",
+                new ListMultiDecoder2(new ListScanResultReplayDecoder(), new ObjectListReplayDecoder<Object>()), new Convertor<Object>() {
+            @Override
+            public Object convert(Object obj) {
+                if (!(obj instanceof String)) {
+                    return obj;
                 }
-            });
+                return namingScheme.resolveId(obj.toString());
+            }
+        });
 
-            return keys.getKeysByPattern(command, pattern, 0, count);
-        } catch (NoSuchFieldException e) {
-            throw new IllegalStateException(e);
-        }
+        return keys.getKeysByPattern(command, pattern, 0, count);
     }
 
     @Override

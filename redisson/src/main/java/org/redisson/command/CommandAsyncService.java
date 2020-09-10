@@ -15,6 +15,7 @@
  */
 package org.redisson.command;
 
+import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,6 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
+import org.redisson.RedissonReference;
 import org.redisson.SlotCallback;
 import org.redisson.api.*;
 import org.redisson.cache.LRUCacheMap;
@@ -104,8 +106,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         codecProvider.registerCodec((Class<Codec>) codec.getClass(), codec);
     }
 
-    @Override
-    public boolean isRedissonReferenceSupportEnabled() {
+    private boolean isRedissonReferenceSupportEnabled() {
         return objectBuilder != null;
     }
 
@@ -694,7 +695,55 @@ public class CommandAsyncService implements CommandAsyncExecutor {
     public RedissonObjectBuilder getObjectBuilder() {
         return objectBuilder;
     }
-    
+
+    @Override
+    public ByteBuf encode(Codec codec, Object value) {
+        if (isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = getObjectBuilder().toReference(value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
+        try {
+            return codec.getValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    @Override
+    public ByteBuf encodeMapKey(Codec codec, Object value) {
+        if (isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = getObjectBuilder().toReference(value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
+        try {
+            return codec.getMapKeyEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
+    @Override
+    public ByteBuf encodeMapValue(Codec codec, Object value) {
+        if (isRedissonReferenceSupportEnabled()) {
+            RedissonReference reference = getObjectBuilder().toReference(value);
+            if (reference != null) {
+                value = reference;
+            }
+        }
+
+        try {
+            return codec.getMapValueEncoder().encode(value);
+        } catch (IOException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
+
     @Override
     public <V> RFuture<V> pollFromAnyAsync(String name, Codec codec, RedisCommand<Object> command, long secondsTimeout, String... queueNames) {
         if (connectionManager.isClusterMode() && queueNames.length > 0) {

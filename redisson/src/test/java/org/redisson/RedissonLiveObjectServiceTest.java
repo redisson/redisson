@@ -631,6 +631,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testIndexUpdate() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setName1("test1");
+        t1 = s.persist(t1);
+
+        Collection<TestIndexed> objects0 = s.find(TestIndexed.class, Conditions.eq("name1", "test1"));
+        assertThat(objects0.iterator().next().getId()).isEqualTo(t1.getId());
+
+        t1.setName1("test2");
+
+        Collection<TestIndexed> objects2 = s.find(TestIndexed.class, Conditions.eq("name1", "test1"));
+        assertThat(objects2.isEmpty()).isTrue();
+        Collection<TestIndexed> objects3 = s.find(TestIndexed.class, Conditions.eq("name1", "test2"));
+        assertThat(objects3.iterator().next().getId()).isEqualTo(t1.getId());
+    }
+
+    @Test
     public void testFindEq() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
@@ -703,16 +721,16 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertEquals("1", t.getName());
 
         DefaultNamingScheme scheme = new DefaultNamingScheme(redisson.getConfig().getCodec());
-        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, String.class, "name", "1")).isExists());
+        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, "1")).isExists());
         t.setName("3333");
 
         assertEquals("3333", t.getName());
-        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, String.class, "name", "3333")).isExists());
+        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, "3333")).isExists());
         t.setValue("111");
         assertEquals("111", t.getValue());
-        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, String.class, "name", "3333")).isExists());
-        assertTrue(!redisson.getMap(scheme.getName(TestREntity.class, String.class, "name", "1")).isExists());
-        assertEquals("111", redisson.getMap(scheme.getName(TestREntity.class, String.class, "name", "3333")).get("value"));
+        assertTrue(redisson.getMap(scheme.getName(TestREntity.class, "3333")).isExists());
+        assertTrue(!redisson.getMap(scheme.getName(TestREntity.class, "1")).isExists());
+        assertEquals("111", redisson.getMap(scheme.getName(TestREntity.class, "3333")).get("value"));
 
 //        ((RLiveObject) t).getLiveObjectLiveMap().put("value", "555");
 //        assertEquals("555", redisson.getMap(REntity.DefaultNamingScheme.INSTANCE.getName(TestREntity.class, "name", "3333")).get("value"));
@@ -2150,7 +2168,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         }
     }
 
-    @Test(timeout = 30*1000)
+    @Test(timeout = 40*1000)
     public void testBatchedPersist() {
         RLiveObjectService s = redisson.getLiveObjectService();
 
