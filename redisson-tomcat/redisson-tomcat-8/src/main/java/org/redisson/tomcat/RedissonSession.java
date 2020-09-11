@@ -161,10 +161,13 @@ public class RedissonSession extends StandardSession {
                 throw new IllegalStateException
                     (sm.getString("standardSession.getAttributeNames.ise"));
             }
-            Set<String> keys = map.readAllKeySet();
-            return keys.toArray(new String[keys.size()]);
+            Set<String> attributeKeys = new HashSet<>();
+            attributeKeys.addAll(map.readAllKeySet());
+            attributeKeys.addAll(loadedAttributes.keySet());
+            attributeKeys.removeAll(removedAttributes);
+            return attributeKeys.toArray(new String[attributeKeys.size()]);
         }
-        
+
         return super.getValueNames();
     }
     
