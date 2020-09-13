@@ -165,8 +165,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<Integer> valueSizeAsync(K key) {
         checkKey(key);
-        
-        return commandExecutor.readAsync(getName(), codec, RedisCommands.HSTRLEN, getName(key), encodeMapKey(key));
+
+        String name = getName(key);
+        return commandExecutor.readAsync(name, codec, RedisCommands.HSTRLEN, name, encodeMapKey(key));
     }
 
     protected void checkKey(Object key) {
@@ -188,8 +189,9 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkKey(key);
-        
-        return commandExecutor.readAsync(getName(key), codec, RedisCommands.HEXISTS, getName(key), encodeMapKey(key));
+
+        String name = getName(key);
+        return commandExecutor.readAsync(name, codec, RedisCommands.HEXISTS, name, encodeMapKey(key));
     }
 
     @Override
@@ -538,13 +540,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                  "if redis.call('hsetnx', KEYS[1], ARGV[1], ARGV[2]) == 1 then "
                     + "return nil "
                 + "else "
                     + "return redis.call('hget', KEYS[1], ARGV[1]) "
                 + "end",
-                Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+                Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -567,7 +570,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
-        return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSETNX, getName(key), encodeMapKey(key), encodeMapValue(value));
+        String name = getName(key);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.HSETNX, name, encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -590,13 +594,14 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> removeOperationAsync(Object key, Object value) {
-        RFuture<Boolean> future = commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
+        String name = getName(key);
+        RFuture<Boolean> future = commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                         + "return redis.call('hdel', KEYS[1], ARGV[1]) "
                 + "else "
                     + "return 0 "
                 + "end",
-            Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+            Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
         return future;
     }
 
@@ -631,14 +636,15 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> replaceOperationAsync(K key, V oldValue, V newValue) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hget', KEYS[1], ARGV[1]) == ARGV[2] then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[3]); "
                     + "return 1; "
                 + "else "
                     + "return 0; "
                 + "end",
-                Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
+                Collections.singletonList(name), encodeMapKey(key), encodeMapValue(oldValue), encodeMapValue(newValue));
     }
 
     @Override
@@ -661,7 +667,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<V> replaceOperationAsync(K key, V value) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
                     + "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
@@ -669,7 +676,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 + "else "
                     + "return nil; "
                 + "end",
-            Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+            Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
     }
     
     @Override
@@ -692,19 +699,21 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> fastReplaceOperationAsync(K key, V value) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_BOOLEAN,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then "
                     + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                     + "return 1; "
                 + "else "
                     + "return 0; "
                 + "end",
-            Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+            Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
     }
     
 
     public RFuture<V> getOperationAsync(K key) {
-        return commandExecutor.readAsync(getName(key), codec, RedisCommands.HGET, getName(key), encodeMapKey(key));
+        String name = getName(key);
+        return commandExecutor.readAsync(name, codec, RedisCommands.HGET, name, encodeMapKey(key));
     }
     
     @Override
@@ -887,11 +896,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<V> putOperationAsync(K key, V value) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
                 + "return v",
-                Collections.singletonList(getName(key)), encodeMapKey(key), encodeMapValue(value));
+                Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -907,11 +917,12 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<V> removeOperationAsync(K key) {
-        return commandExecutor.evalWriteAsync(getName(key), codec, RedisCommands.EVAL_MAP_VALUE,
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
                 "local v = redis.call('hget', KEYS[1], ARGV[1]); "
                 + "redis.call('hdel', KEYS[1], ARGV[1]); "
                 + "return v",
-                Collections.singletonList(getName(key)), encodeMapKey(key));
+                Collections.singletonList(name), encodeMapKey(key));
     }
 
     @Override
@@ -928,7 +939,8 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     }
 
     protected RFuture<Boolean> fastPutOperationAsync(K key, V value) {
-        return commandExecutor.writeAsync(getName(key), codec, RedisCommands.HSET, getName(key), encodeMapKey(key), encodeMapValue(value));
+        String name = getName(key);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.HSET, name, encodeMapKey(key), encodeMapValue(value));
     }
 
     @Override
@@ -1058,9 +1070,10 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
 
     protected RFuture<V> addAndGetOperationAsync(K key, Number value) {
         ByteBuf keyState = encodeMapKey(key);
-        RFuture<V> future = commandExecutor.writeAsync(getName(key), StringCodec.INSTANCE,
+        String name = getName(key);
+        RFuture<V> future = commandExecutor.writeAsync(name, StringCodec.INSTANCE,
                 new RedisCommand<>("HINCRBYFLOAT", new NumberConvertor(value.getClass())),
-                getName(key), keyState, new BigDecimal(value.toString()).toPlainString());
+                name, keyState, new BigDecimal(value.toString()).toPlainString());
         return future;
     }
 
