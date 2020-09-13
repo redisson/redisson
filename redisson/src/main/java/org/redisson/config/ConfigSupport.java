@@ -104,11 +104,14 @@ public class ConfigSupport {
     }
     
     private String resolveEnvParams(String content) {
-        Pattern pattern = Pattern.compile("\\$\\{(\\w+(:-.+?)?)\\}");
+        Pattern pattern = Pattern.compile("\\$\\{([\\w\\.]+(:-.+?)?)\\}");
         Matcher m = pattern.matcher(content);
         while (m.find()) {
             String[] parts = m.group(1).split(":-");
             String v = System.getenv(parts[0]);
+            if (v == null) {
+                v = System.getProperty(parts[0]);
+            }
             if (v != null) {
                 content = content.replace(m.group(), v);
             } else if (parts.length == 2) {
