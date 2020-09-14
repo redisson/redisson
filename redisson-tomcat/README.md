@@ -8,7 +8,7 @@ Supports Apache Tomcat 7.x, 8.x, 9.x
 
 ## Usage
 
-### 1. Define session manager
+### 1. Add session manager
 
 Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tomcat/conf/server.xml`
 
