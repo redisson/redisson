@@ -51,6 +51,10 @@ public class UpdateValve extends ValveBase {
                 getNext().invoke(request, response);
             } finally {
                 request.removeNote(ALREADY_FILTERED_NOTE);
+                if (request.getContext() == null) {
+                    return;
+                }
+
                 final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
                 try {
                     ClassLoader applicationClassLoader = request.getContext().getLoader().getClassLoader();

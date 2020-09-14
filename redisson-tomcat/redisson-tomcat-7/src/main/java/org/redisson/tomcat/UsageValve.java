@@ -48,11 +48,13 @@ public class UsageValve extends ValveBase {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
             RedissonSession s = null;
             try {
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
-                    if (s != null) {
-                        s.startUsage();
+                if (request.getContext() != null) {
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
+                        if (s != null) {
+                            s.startUsage();
+                        }
                     }
                 }
 
