@@ -6,13 +6,9 @@ Supports Apache Tomcat 7.x, 8.x, 9.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
-## Advantages
-
-Current implementation differs from any other Redis based Tomcat Session Manager in terms of efficient storage and optimized writes. Each session attribute is written into Redis during each `HttpSession.setAttribute` invocation. While other solutions serialize whole session each time.
-
 ## Usage
 
-### 1. Add `RedissonSessionManager`
+### 1. Add session manager
 
 Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tomcat/conf/server.xml`
 
