@@ -114,7 +114,8 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.evalReadAsync(getName(o), codec, RedisCommands.EVAL_BOOLEAN,
+        String name = getName(o);
+        return commandExecutor.evalReadAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                     "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[2]); " + 
                      "if expireDateScore ~= false then " +
                          "if tonumber(expireDateScore) <= tonumber(ARGV[1]) then " +
@@ -125,7 +126,7 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
                      "else " +
                          "return 0;" +
                      "end; ",
-               Arrays.<Object>asList(getName(o)), System.currentTimeMillis(), encode(o));
+               Arrays.<Object>asList(name), System.currentTimeMillis(), encode(o));
     }
 
     @Override
@@ -243,14 +244,15 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
         ByteBuf objectState = encode(value);
 
         long timeoutDate = System.currentTimeMillis() + unit.toMillis(ttl);
-        return commandExecutor.evalWriteAsync(getName(value), codec, RedisCommands.EVAL_BOOLEAN,
+        String name = getName(value);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
                 "local expireDateScore = redis.call('zscore', KEYS[1], ARGV[3]); " +
                 "redis.call('zadd', KEYS[1], ARGV[2], ARGV[3]); " +
                 "if expireDateScore ~= false and tonumber(expireDateScore) > tonumber(ARGV[1]) then " +
                     "return 0;" +
                 "end; " +
                 "return 1; ",
-                Arrays.<Object>asList(getName(value)), System.currentTimeMillis(), timeoutDate, objectState);
+                Arrays.asList(name), System.currentTimeMillis(), timeoutDate, objectState);
     }
 
     @Override
@@ -260,7 +262,8 @@ public class RedissonSetCache<V> extends RedissonExpirable implements RSetCache<
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.ZREM, getName(o), encode(o));
+        String name = getName(o);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.ZREM, name, encode(o));
     }
 
     @Override

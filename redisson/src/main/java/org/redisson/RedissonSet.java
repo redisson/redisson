@@ -91,7 +91,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> containsAsync(Object o) {
-        return commandExecutor.readAsync(getName(o), codec, RedisCommands.SISMEMBER, getName(o), encode(o));
+        String name = getName(o);
+        return commandExecutor.readAsync(name, codec, RedisCommands.SISMEMBER, name, encode(o));
     }
 
     @Override
@@ -160,7 +161,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> addAsync(V e) {
-        return commandExecutor.writeAsync(getName(e), codec, RedisCommands.SADD_SINGLE, getName(e), encode(e));
+        String name = getName(e);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.SADD_SINGLE, name, encode(e));
     }
 
     @Override
@@ -205,7 +207,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> removeAsync(Object o) {
-        return commandExecutor.writeAsync(getName(o), codec, RedisCommands.SREM_SINGLE, getName(o), encode(o));
+        String name = getName(o);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.SREM_SINGLE, name, encode(o));
     }
 
     @Override
@@ -215,7 +218,8 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
 
     @Override
     public RFuture<Boolean> moveAsync(String destination, V member) {
-        return commandExecutor.writeAsync(getName(member), codec, RedisCommands.SMOVE, getName(member), destination, encode(member));
+        String name = getName(member);
+        return commandExecutor.writeAsync(name, codec, RedisCommands.SMOVE, name, destination, encode(member));
     }
 
     @Override
