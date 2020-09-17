@@ -226,6 +226,8 @@ public class RedissonSessionRepository implements FindByIndexNameSessionReposito
             batchNew.getMap(keyPrefix + id, map.getCodec()).putAllAsync(oldState);
             if (remainTTL > 0) {
                 batchNew.getBucket(getExpiredKey(id)).setAsync("", remainTTL, TimeUnit.MILLISECONDS);
+                // Add 60 seconds to the map expiration, to match updateExpiration()
+                batchNew.getMap(keyPrefix + id, map.getCodec()).expireAsync(remainTTL + 60 * 1000L, TimeUnit.MILLISECONDS);
             }
             batchNew.execute();
 
