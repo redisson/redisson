@@ -29,14 +29,22 @@ package org.redisson.api;
 public interface RRingBuffer<V> extends RQueue<V>, RRingBufferAsync<V> {
 
     /**
-     * Sets queue capacity only if it is not set before.
+     * Sets capacity of the queue only if it wasn't set before.
      *
      * @param capacity - queue capacity
      * @return <code>true</code> if capacity set successfully
      *         <code>false</code> if capacity already set
      */
     boolean trySetCapacity(int capacity);
-    
+
+    /**
+     * Sets capacity of the queue and overrides current value.
+     * Trims queue if previous capacity value was greater than new.
+     *
+     * @param capacity - queue capacity
+     */
+    void setCapacity(int capacity);
+
     /**
      * Returns remaining capacity of this queue
      * 

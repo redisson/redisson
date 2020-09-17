@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import io.reactivex.Completable;
 import io.reactivex.Single;
 
 /**
@@ -38,7 +39,15 @@ public interface RRingBufferRx<V> extends RQueueRx<V> {
      *         <code>false</code> if capacity already set
      */
     Single<Boolean> trySetCapacity(int capacity);
-    
+
+    /**
+     * Sets capacity of the queue and overrides current value.
+     * Trims queue if previous capacity value was greater than new.
+     *
+     * @param capacity - queue capacity
+     */
+    Completable setCapacity(int capacity);
+
     /**
      * Returns remaining capacity of this queue
      * 

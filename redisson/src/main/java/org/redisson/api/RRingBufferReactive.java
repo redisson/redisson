@@ -38,7 +38,15 @@ public interface RRingBufferReactive<V> extends RQueueReactive<V> {
      *         <code>false</code> if capacity already set
      */
     Mono<Boolean> trySetCapacity(int capacity);
-    
+
+    /**
+     * Sets capacity of the queue and overrides current value.
+     * Trims queue if previous capacity value was greater than new.
+     *
+     * @param capacity - queue capacity
+     */
+    Mono<Void> setCapacity(int capacity);
+
     /**
      * Returns remaining capacity of this queue
      * 
