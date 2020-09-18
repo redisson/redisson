@@ -67,6 +67,7 @@ public class RedissonSession extends StandardSession {
 
     private final AtomicInteger usages = new AtomicInteger();
     private Map<String, Object> loadedAttributes = Collections.emptyMap();
+    private Map<String, Object> updatedAttributes = Collections.emptyMap();
     private Set<String> removedAttributes = Collections.emptySet();
 
     private final boolean broadcastSessionEvents;
@@ -84,6 +85,7 @@ public class RedissonSession extends StandardSession {
         }
         if (readMode == ReadMode.REDIS) {
             loadedAttributes = new ConcurrentHashMap<>();
+            updatedAttributes = new ConcurrentHashMap<>();
         }
         
         try {
@@ -182,6 +184,7 @@ public class RedissonSession extends StandardSession {
         }
         map = null;
         loadedAttributes.clear();
+        updatedAttributes.clear();
     }
     
     @Override
@@ -324,6 +327,7 @@ public class RedissonSession extends StandardSession {
         }
         if (readMode == ReadMode.REDIS) {
             loadedAttributes.put(name, value);
+            updatedAttributes.put(name, value);
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.remove(name);
@@ -346,6 +350,7 @@ public class RedissonSession extends StandardSession {
         }
         if (readMode == ReadMode.REDIS) {
             loadedAttributes.remove(name);
+            updatedAttributes.remove(name);
         }
         if (updateMode == UpdateMode.AFTER_REQUEST) {
             removedAttributes.add(name);
@@ -373,15 +378,20 @@ public class RedissonSession extends StandardSession {
         if (broadcastSessionEvents) {
             newMap.put(IS_EXPIRATION_LOCKED, isExpirationLocked);
         }
-        
-        if (attrs != null) {
-            for (Entry<String, Object> entry : attrs.entrySet()) {
-                newMap.put(entry.getKey(), entry.getValue());
+
+        if (readMode == ReadMode.MEMORY) {
+            if (attrs != null) {
+                for (Entry<String, Object> entry : attrs.entrySet()) {
+                    newMap.put(entry.getKey(), entry.getValue());
+                }
             }
+        } else {
+            newMap.putAll(updatedAttributes);
+            updatedAttributes.clear();
         }
-        
+
         map.putAll(newMap);
-        map.fastRemove(removedAttributes.toArray(new String[removedAttributes.size()]));
+        map.fastRemove(removedAttributes.toArray(new String[0]));
         
         if (readMode == ReadMode.MEMORY) {
             topic.publish(createPutAllMessage(newMap));
@@ -394,8 +404,7 @@ public class RedissonSession extends StandardSession {
         }
 
         removedAttributes.clear();
-        loadedAttributes.clear();
-        
+
         expireSession();
     }
     
@@ -437,8 +446,10 @@ public class RedissonSession extends StandardSession {
             this.authType = authType;
         }
 
-        for (Entry<String, Object> entry : attrs.entrySet()) {
-            super.setAttribute(entry.getKey(), entry.getValue(), false);
+        if (readMode == ReadMode.MEMORY) {
+            for (Entry<String, Object> entry : attrs.entrySet()) {
+                super.setAttribute(entry.getKey(), entry.getValue(), false);
+            }
         }
     }
     
@@ -447,6 +458,8 @@ public class RedissonSession extends StandardSession {
         super.recycle();
         map = null;
         loadedAttributes.clear();
+        updatedAttributes.clear();
+        removedAttributes.clear();
     }
 
     public void startUsage() {
@@ -454,7 +467,9 @@ public class RedissonSession extends StandardSession {
     }
 
     public void endUsage() {
-        if (usages.decrementAndGet() == 0) {
+        // don't decrement usages if startUsage wasn't called
+//        if (usages.decrementAndGet() == 0) {
+        if (usages.get() == 0 || usages.decrementAndGet() == 0) {
             loadedAttributes.clear();
         }
     }

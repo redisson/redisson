@@ -15,26 +15,13 @@
  */
 package org.redisson.tomcat;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.http.HttpSession;
-
-import org.apache.catalina.LifecycleException;
-import org.apache.catalina.LifecycleState;
-import org.apache.catalina.Pipeline;
-import org.apache.catalina.Session;
-import org.apache.catalina.SessionEvent;
-import org.apache.catalina.SessionListener;
+import org.apache.catalina.*;
 import org.apache.catalina.session.ManagerBase;
-import org.apache.catalina.valves.ValveBase;
 import org.apache.juli.logging.Log;
 import org.apache.juli.logging.LogFactory;
 import org.redisson.Redisson;
-import org.redisson.api.RSet;
 import org.redisson.api.RMap;
+import org.redisson.api.RSet;
 import org.redisson.api.RTopic;
 import org.redisson.api.RedissonClient;
 import org.redisson.api.listener.MessageListener;
@@ -42,6 +29,11 @@ import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.codec.CompositeCodec;
 import org.redisson.config.Config;
+
+import javax.servlet.http.HttpSession;
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Redisson Session Manager for Apache Tomcat
@@ -66,10 +58,6 @@ public class RedissonSessionManager extends ManagerBase {
     private boolean broadcastSessionEvents = false;
 
     private final String nodeId = UUID.randomUUID().toString();
-
-    private static ValveBase updateValve;
-
-    private static Set<String> contextInUse = Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     private MessageListener messageListener;
     
@@ -253,16 +241,20 @@ public class RedissonSessionManager extends ManagerBase {
         
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
-            contextInUse.add(getContext().getName());
-            if (updateMode == UpdateMode.AFTER_REQUEST) {
-                if (updateValve == null) {
-                    updateValve = new UpdateValve();
-                    pipeline.addValve(updateValve);
+            if (readMode == ReadMode.REDIS) {
+                Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).findAny();
+                if (res.isPresent()) {
+                    ((UsageValve)res.get()).incUsage();
+                } else {
+                    pipeline.addValve(new UsageValve());
                 }
-            } else if (readMode == ReadMode.REDIS) {
-                if (updateValve == null) {
-                    updateValve = new UsageValve();
-                    pipeline.addValve(updateValve);
+            }
+            if (updateMode == UpdateMode.AFTER_REQUEST) {
+                Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UpdateValve.class).findAny();
+                if (res.isPresent()) {
+                    ((UpdateValve)res.get()).incUsage();
+                } else {
+                    pipeline.addValve(new UpdateValve());
                 }
             }
         }
@@ -365,13 +357,19 @@ public class RedissonSessionManager extends ManagerBase {
         
         Pipeline pipeline = getEngine().getPipeline();
         synchronized (pipeline) {
-            contextInUse.remove(getContext().getName());
-            //remove valves when all of the RedissonSessionManagers (web apps) are not in use anymore
-            if (contextInUse.isEmpty()) {
-                if (updateValve != null) {
-                    pipeline.removeValve(updateValve);
-                    updateValve = null;
-                }
+            if (readMode == ReadMode.REDIS) {
+                Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).forEach(v -> {
+                    if (((UsageValve)v).decUsage() == 0){
+                        pipeline.removeValve(v);
+                    }
+                });
+            }
+            if (updateMode == UpdateMode.AFTER_REQUEST) {
+                Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UpdateValve.class).forEach(v -> {
+                    if (((UpdateValve)v).decUsage() == 0){
+                        pipeline.removeValve(v);
+                    }
+                });
             }
         }
         

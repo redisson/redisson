@@ -22,6 +22,7 @@ import org.apache.catalina.valves.ValveBase;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Redisson Valve object for Apache Tomcat
@@ -33,8 +34,18 @@ public class UsageValve extends ValveBase {
 
     private static final String ALREADY_FILTERED_NOTE = UsageValve.class.getName() + ".ALREADY_FILTERED_NOTE";
 
+    private final AtomicInteger usage = new AtomicInteger(1);
+
     public UsageValve() {
         super(true);
+    }
+
+    public void incUsage() {
+        usage.incrementAndGet();
+    }
+
+    public int decUsage() {
+        return usage.decrementAndGet();
     }
 
     @Override
@@ -46,12 +57,11 @@ public class UsageValve extends ValveBase {
         //check if we already filtered/processed this request
         if (request.getNote(ALREADY_FILTERED_NOTE) == null) {
             request.setNote(ALREADY_FILTERED_NOTE, Boolean.TRUE);
-            RedissonSession s = null;
             try {
                 if (request.getContext() != null) {
                     HttpSession session = request.getSession(false);
                     if (session != null) {
-                        s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
+                        RedissonSession s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
                         if (s != null) {
                             s.startUsage();
                         }
@@ -61,8 +71,14 @@ public class UsageValve extends ValveBase {
                 getNext().invoke(request, response);
             } finally {
                 request.removeNote(ALREADY_FILTERED_NOTE);
-                if (s != null) {
-                    s.endUsage();
+                if (request.getContext() != null) {
+                    HttpSession session = request.getSession(false);
+                    if (session != null) {
+                        RedissonSession s = (RedissonSession) request.getContext().getManager().findSession(session.getId());
+                        if (s != null) {
+                            s.endUsage();
+                        }
+                    }
                 }
             }
         } else {
