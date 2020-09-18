@@ -212,13 +212,7 @@ public class RedissonSession extends StandardSession {
         super.access();
         
         if (map != null) {
-            Map<String, Object> newMap = new HashMap<String, Object>(2);
-            newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
-            newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
-            map.putAll(newMap);
-            if (readMode == ReadMode.MEMORY) {
-                topic.publish(createPutAllMessage(newMap));
-            }
+            fastPut(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
             expireSession();
         }
     }
@@ -310,10 +304,22 @@ public class RedissonSession extends StandardSession {
         boolean oldValue = isNew;
         super.endAccess();
 
-        if (isNew != oldValue && map != null) {
-            fastPut(IS_NEW_ATTR, isNew);
+        if (map != null) {
+            if (isNew != oldValue) {
+                fastPut(IS_NEW_ATTR, isNew);
+            }
+
+            Map<String, Object> newMap = new HashMap<>(2);
+            newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
+            newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
+            map.putAll(newMap);
+            if (readMode == ReadMode.MEMORY) {
+                topic.publish(createPutAllMessage(newMap));
+            }
+            expireSession();
         }
     }
+
     
     public void superSetAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
@@ -341,7 +347,42 @@ public class RedissonSession extends StandardSession {
     public void superRemoveAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
     }
-    
+
+    @Override
+    public boolean isValid() {
+        if (!this.isValid) {
+            return false;
+        } else if (this.expiring) {
+            return true;
+        } else if (ACTIVITY_CHECK && this.accessCount.get() > 0) {
+            return true;
+        } else {
+            if (this.maxInactiveInterval > 0) {
+                long idleTime = getIdleTimeInternal();
+                if (map != null && readMode == ReadMode.REDIS) {
+                    if (idleTime >= getMaxInactiveInterval() * 1000) {
+                        load(map.getAll(RedissonSession.ATTRS));
+                        idleTime = getIdleTimeInternal();
+                    }
+                }
+
+                if (idleTime >= getMaxInactiveInterval() * 1000) {
+                    this.expire(true);
+                }
+            }
+
+            return this.isValid;
+        }
+    }
+
+    private long getIdleTimeInternal() {
+        long timeNow = System.currentTimeMillis();
+        if (LAST_ACCESS_AT_START) {
+            return timeNow - lastAccessedTime;
+        }
+        return timeNow - thisAccessedTime;
+    }
+
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);

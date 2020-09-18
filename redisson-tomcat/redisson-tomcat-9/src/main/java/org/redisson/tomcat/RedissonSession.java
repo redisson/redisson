@@ -212,13 +212,7 @@ public class RedissonSession extends StandardSession {
         super.access();
         
         if (map != null) {
-            Map<String, Object> newMap = new HashMap<String, Object>(2);
-            newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
-            newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
-            map.putAll(newMap);
-            if (readMode == ReadMode.MEMORY) {
-                topic.publish(createPutAllMessage(newMap));
-            }
+            fastPut(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
             expireSession();
         }
     }
@@ -310,10 +304,22 @@ public class RedissonSession extends StandardSession {
         boolean oldValue = isNew;
         super.endAccess();
 
-        if (isNew != oldValue && map != null) {
-            fastPut(IS_NEW_ATTR, isNew);
+        if (map != null) {
+            if (isNew != oldValue) {
+                fastPut(IS_NEW_ATTR, isNew);
+            }
+
+            Map<String, Object> newMap = new HashMap<>(2);
+            newMap.put(LAST_ACCESSED_TIME_ATTR, lastAccessedTime);
+            newMap.put(THIS_ACCESSED_TIME_ATTR, thisAccessedTime);
+            map.putAll(newMap);
+            if (readMode == ReadMode.MEMORY) {
+                topic.publish(createPutAllMessage(newMap));
+            }
+            expireSession();
         }
     }
+
     
     public void superSetAttribute(String name, Object value, boolean notify) {
         super.setAttribute(name, value, notify);
@@ -341,7 +347,19 @@ public class RedissonSession extends StandardSession {
     public void superRemoveAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
     }
-    
+
+    @Override
+    public long getIdleTimeInternal() {
+        long idleTime = super.getIdleTimeInternal();
+        if (map != null && readMode == ReadMode.REDIS) {
+            if (idleTime >= getMaxInactiveInterval() * 1000) {
+                load(map.getAll(RedissonSession.ATTRS));
+                idleTime = super.getIdleTimeInternal();
+            }
+        }
+        return idleTime;
+    }
+
     @Override
     protected void removeAttributeInternal(String name, boolean notify) {
         super.removeAttributeInternal(name, notify);
