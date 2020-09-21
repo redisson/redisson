@@ -24,6 +24,8 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Reactive interface for Redis based implementation
@@ -38,6 +40,49 @@ import java.util.Set;
  * @param <V> value
  */
 public interface RMapReactive<K, V> extends RExpirableReactive {
+
+    /**
+     * Associates specified key with the given value if key isn't already associated with a value.
+     * Otherwise, replaces the associated value with the results of the given
+     * remapping function, or removes if the result is {@code null}.
+     *
+     * @param key - map key
+     * @param value - value to be merged with the existing value
+     *        associated with the key or to be associated with the key,
+     *        if no existing value
+     * @param remappingFunction - the function is invoked with the existing value to compute new value
+     * @return new value associated with the specified key or
+     *         {@code null} if no value associated with the key
+     */
+    Mono<V> merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction);
+
+    /**
+     * Computes a new mapping for the specified key and its current mapped value.
+     *
+     * @param key - map key
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or {@code null} if none
+     */
+    Mono<V> compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
+
+    /**
+     * Computes a mapping for the specified key if it's not mapped before.
+     *
+     * @param key - map key
+     * @param mappingFunction - function to compute a value
+     * @return current or new computed value associated with
+     *         the specified key, or {@code null} if the computed value is null
+     */
+    Mono<V> computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
+
+    /**
+     * Computes a mapping for the specified key only if it's already mapped.
+     *
+     * @param key - map key
+     * @param remappingFunction - function to compute a value
+     * @return the new value associated with the specified key, or null if none
+     */
+    Mono<V> computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction);
 
     /**
      * Loads all map entries to this Redis map using {@link org.redisson.api.map.MapLoader}.

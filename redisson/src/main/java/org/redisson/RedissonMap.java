@@ -16,19 +16,9 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.util.AbstractCollection;
-import java.util.AbstractSet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.redisson.api.MapOptions;
@@ -150,6 +140,365 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public int size() {
         return get(sizeAsync());
+    }
+
+    @Override
+    public V merge(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        checkValue(value);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            V oldValue = get(key);
+            V newValue = value;
+            if (oldValue != null) {
+                newValue = remappingFunction.apply(oldValue, value);
+            }
+
+            if(newValue == null) {
+                fastRemove(key);
+            } else {
+                fastPut(key, newValue);
+            }
+            return newValue;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> mergeAsync(K key, V value, BiFunction<? super V, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        checkValue(value);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        RPromise<V> result = new RedissonPromise<>();
+        long threadId = Thread.currentThread().getId();
+        lock.lockAsync(threadId).onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            RFuture<V> oldValueFuture = getAsync(key);
+            oldValueFuture.onComplete((oldValue, ex) -> {
+                if (ex != null) {
+                    lock.unlockAsync(threadId);
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                RPromise<V> newValuePromise = new RedissonPromise<>();
+                if (oldValue != null) {
+                    commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                        V newValue;
+                        try {
+                            newValue = remappingFunction.apply(oldValue, value);
+                        } catch (Exception exception) {
+                            lock.unlockAsync(threadId);
+                            result.tryFailure(exception);
+                            return;
+                        }
+                        newValuePromise.trySuccess(newValue);
+                    });
+                } else {
+                    newValuePromise.trySuccess(value);
+                }
+                newValuePromise.onComplete((newValue, ee) -> {
+                    RFuture<?> future;
+                    if (newValue != null) {
+                        future = fastPutAsync(key, newValue);
+                    } else {
+                        future = fastRemoveAsync(key);
+                    }
+                    future.onComplete((res, exc) -> {
+                        lock.unlockAsync(threadId);
+                        if (exc != null) {
+                            result.tryFailure(exc);
+                            return;
+                        }
+
+                        result.trySuccess(newValue);
+                    });
+                });
+            });
+        });
+        return result;
+    }
+
+    @Override
+    public RFuture<V> computeAsync(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        RPromise<V> result = new RedissonPromise<>();
+        long threadId = Thread.currentThread().getId();
+        lock.lockAsync(threadId).onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            RFuture<V> oldValueFuture = getAsync(key);
+            oldValueFuture.onComplete((oldValue, ex) -> {
+                if (ex != null) {
+                    lock.unlockAsync(threadId);
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                    V newValue;
+                    try {
+                        newValue = remappingFunction.apply(key, oldValue);
+                    } catch (Exception exception) {
+                        lock.unlockAsync(threadId);
+                        result.tryFailure(exception);
+                        return;
+                    }
+
+                    if (newValue == null) {
+                        if (oldValue != null) {
+                            fastRemoveAsync(key).onComplete((res, exc) -> {
+                                lock.unlockAsync(threadId);
+                                if (exc != null) {
+                                    result.tryFailure(exc);
+                                    return;
+                                }
+
+                                result.trySuccess(newValue);
+                            });
+                            return;
+                        }
+                    } else {
+                        fastPutAsync(key, newValue).onComplete((res, exc) -> {
+                            lock.unlockAsync(threadId);
+                            if (exc != null) {
+                                result.tryFailure(exc);
+                                return;
+                            }
+
+                            result.trySuccess(newValue);
+                        });
+                        return;
+                    }
+
+                    lock.unlockAsync(threadId);
+                    result.trySuccess(newValue);
+                });
+            });
+        });
+        return result;
+
+    }
+
+    @Override
+    public V compute(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            V oldValue = get(key);
+
+            V newValue = remappingFunction.apply(key, oldValue);
+            if (newValue == null) {
+                if (oldValue != null) {
+                    fastRemove(key);
+                }
+            } else {
+                fastPut(key, newValue);
+            }
+            return newValue;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> computeIfAbsentAsync(K key, Function<? super K, ? extends V> mappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(mappingFunction);
+
+        RLock lock = getLock(key);
+        RPromise<V> result = new RedissonPromise<>();
+        long threadId = Thread.currentThread().getId();
+        lock.lockAsync(threadId).onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+
+            RFuture<V> oldValueFuture = getAsync(key);
+            oldValueFuture.onComplete((oldValue, ex) -> {
+                if (ex != null) {
+                    lock.unlockAsync(threadId);
+                    result.tryFailure(ex);
+                    return;
+                }
+
+                if (oldValue != null) {
+                    lock.unlockAsync(threadId);
+                    result.trySuccess(oldValue);
+                    return;
+                }
+
+                commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                    V newValue;
+                    try {
+                        newValue = mappingFunction.apply(key);
+                    } catch (Exception exception) {
+                        lock.unlockAsync(threadId);
+                        result.tryFailure(exception);
+                        return;
+                    }
+                    if (newValue != null) {
+                        fastPutAsync(key, newValue).onComplete((res, exc) -> {
+                            lock.unlockAsync(threadId);
+                            if (exc != null) {
+                                result.tryFailure(exc);
+                                return;
+                            }
+
+                            result.trySuccess(newValue);
+                        });
+                        return;
+                    }
+
+                    lock.unlockAsync(threadId);
+                    result.trySuccess(null);
+                });
+            });
+        });
+        return result;
+    }
+
+    @Override
+    public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(mappingFunction);
+
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            V value = get(key);
+            if (value == null) {
+                V newValue = mappingFunction.apply(key);
+                if (newValue != null) {
+                    fastPut(key, newValue);
+                    return newValue;
+                }
+                return null;
+            }
+            return value;
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    @Override
+    public RFuture<V> computeIfPresentAsync(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        RPromise<V> result = new RedissonPromise<>();
+        long threadId = Thread.currentThread().getId();
+        lock.lockAsync(threadId).onComplete((r, e) -> {
+            if (e != null) {
+                result.tryFailure(e);
+                return;
+            }
+            RFuture<V> oldValueFuture = getAsync(key);
+            oldValueFuture.onComplete((oldValue, ex) -> {
+                if (ex != null) {
+                    lock.unlockAsync(threadId);
+                    result.tryFailure(e);
+                    return;
+                }
+
+                if (oldValue == null) {
+                    lock.unlockAsync(threadId);
+                    result.trySuccess(null);
+                    return;
+                }
+
+                commandExecutor.getConnectionManager().getExecutor().execute(() -> {
+                    V newValue;
+                    try {
+                        newValue = remappingFunction.apply(key, oldValue);
+                    } catch (Exception exception) {
+                        lock.unlockAsync(threadId);
+                        result.tryFailure(exception);
+                        return;
+                    }
+                    if (newValue != null) {
+                        RFuture<Boolean> replaceFuture = replaceAsync(key, oldValue, newValue);
+                        replaceFuture.onComplete((re, ex1) -> {
+                            lock.unlockAsync(threadId);
+                            if (ex1 != null) {
+                                result.tryFailure(ex1);
+                                return;
+                            }
+
+                            if (re) {
+                                result.trySuccess(newValue);
+                            } else {
+                                result.trySuccess(oldValue);
+                            }
+                        });
+                    } else if (remove(key, oldValue)) {
+                        RFuture<Boolean> removeFuture = removeAsync(key, oldValue);
+                        removeFuture.onComplete((re, ex1) -> {
+                            lock.unlockAsync(threadId);
+                            if (ex1 != null) {
+                                result.tryFailure(ex1);
+                                return;
+                            }
+
+                            if (re) {
+                                result.trySuccess(null);
+                            } else {
+                                result.trySuccess(oldValue);
+                            }
+                        });
+                    }
+                });
+            });
+        });
+        return result;
+    }
+
+    @Override
+    public V computeIfPresent(K key, BiFunction<? super K, ? super V, ? extends V> remappingFunction) {
+        checkKey(key);
+        Objects.requireNonNull(remappingFunction);
+
+        RLock lock = getLock(key);
+        lock.lock();
+        try {
+            V oldValue = get(key);
+            if (oldValue == null) {
+                return null;
+            }
+
+            V newValue = remappingFunction.apply(key, oldValue);
+            if (newValue != null) {
+                if (replace(key, oldValue, newValue)) {
+                    return newValue;
+                }
+            } else if (remove(key, oldValue)) {
+                return null;
+            }
+            return oldValue;
+        } finally {
+            lock.unlock();
+        }
     }
 
     @Override

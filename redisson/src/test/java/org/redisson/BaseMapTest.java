@@ -143,7 +143,72 @@ public abstract class BaseMapTest extends BaseTest {
             ((RDestroyable) map).destroy();
         }
     }
-    
+
+    @Test
+    public void testComputeIfPresent() {
+        RMap<String, String> map = getMap("map");
+        map.computeIfPresent("1", (key, value) -> {
+            return "12";
+        });
+        assertThat(map.get("1")).isNull();
+
+        map.put("1", "10");
+        map.computeIfPresent("1", (key, value) -> {
+            assertThat(value).isEqualTo("10");
+            return "12";
+        });
+        assertThat(map.get("1")).isEqualTo("12");
+    }
+
+    @Test
+    public void testComputeIfAbsent() {
+        RMap<String, String> map = getMap("map");
+        map.computeIfAbsent("1", (key) -> {
+            assertThat(key).isEqualTo("1");
+            return "12";
+        });
+        assertThat(map.get("1")).isEqualTo("12");
+
+        map.computeIfAbsent("1", (key) -> {
+            assertThat(key).isEqualTo("1");
+            return "13";
+        });
+        assertThat(map.get("1")).isEqualTo("12");
+    }
+
+    @Test
+    public void testMerge() {
+        RMap<String, String> map = getMap("map");
+        map.merge("1", "2", (key, oldValue) -> {
+            return "12";
+        });
+        assertThat(map.get("1")).isEqualTo("2");
+
+        map.merge("1", "2", (key, oldValue) -> {
+            return "12";
+        });
+        assertThat(map.get("1")).isEqualTo("12");
+
+        map.merge("1", "2", (key, oldValue) -> {
+            return null;
+        });
+        assertThat(map.get("1")).isNull();
+    }
+
+    @Test
+    public void testCompute() {
+        RMap<String, String> map = getMap("map");
+        map.compute("1", (key, oldValue) -> {
+            return "12";
+        });
+        assertThat(map.get("1")).isEqualTo("12");
+
+        map.compute("1", (key, oldValue) -> {
+            return null;
+        });
+        assertThat(map.get("1")).isNull();
+    }
+
     @Test
     public void testGetAllWithStringKeys() {
         RMap<String, Integer> map = getMap("getAllStrings");
