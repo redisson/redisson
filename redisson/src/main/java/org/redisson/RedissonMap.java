@@ -157,7 +157,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
                 newValue = remappingFunction.apply(oldValue, value);
             }
 
-            if(newValue == null) {
+            if (newValue == null) {
                 fastRemove(key);
             } else {
                 fastPut(key, newValue);
