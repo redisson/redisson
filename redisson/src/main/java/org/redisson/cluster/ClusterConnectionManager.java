@@ -674,10 +674,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 addedSlots.andNot(currentPartition.slots());
                 currentPartition.addSlots(addedSlots);
 
-                for (Integer slot : (Iterable<Integer>) addedSlots.stream()::iterator) {
+                addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
-                }
+                });
                 if (!addedSlots.isEmpty()) {
                     log.info("{} slots added to {}", addedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
@@ -686,12 +686,11 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 removedSlots.andNot(newPartition.slots());
                 currentPartition.removeSlots(removedSlots);
 
-                for (Integer removeSlot : (Iterable<Integer>) removedSlots.stream()::iterator) {
+                removedSlots.stream().forEach(removeSlot -> {
                     if (lastPartitions.remove(removeSlot, currentPartition)) {
                         removeEntry(removeSlot);
                     }
-                }
-
+                });
                 if (!removedSlots.isEmpty()) {
                     log.info("{} slots removed from {}", removedSlots.cardinality(), currentPartition.getMasterAddress());
                 }
