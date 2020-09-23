@@ -935,6 +935,7 @@ public class RedissonTest {
         RedisClient c = RedisClient.create(cfg);
         RedisConnection cc = c.connect();
         List<ClusterNodeInfo> cn = cc.sync(RedisCommands.CLUSTER_NODES);
+        c.shutdownAsync();
         cn = cn.stream().filter(i -> i.containsFlag(Flag.MASTER)).collect(Collectors.toList());
         Iterator<ClusterNodeInfo> nodesIter = cn.iterator();
         
@@ -984,11 +985,14 @@ public class RedissonTest {
             RedisClient ccc = RedisClient.create(cc1);
             RedisConnection connection = ccc.connect();
             connection.sync(RedisCommands.CLUSTER_SETSLOT, slot, "NODE", destination.getNodeId());
+            ccc.shutdownAsync();
         }
         
         redisson.getBucket(key).set("123");
         redisson.getBucket(key).get();
-        
+
+        sourceClient.shutdown();
+        destinationClient.shutdown();
         redisson.shutdown();
         process.shutdown();
     }
