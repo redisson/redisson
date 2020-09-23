@@ -97,7 +97,7 @@ public class RedissonTopic implements RTopic {
 
     @Override
     public <M> int addListener(Class<M> type, MessageListener<? extends M> listener) {
-        RFuture<Integer> future = addListenerAsync(type, (MessageListener<M>)listener);
+        RFuture<Integer> future = addListenerAsync(type, (MessageListener<M>) listener);
         commandExecutor.syncSubscription(future);
         return future.getNow();
     }
@@ -119,7 +119,7 @@ public class RedissonTopic implements RTopic {
         RPromise<Integer> result = new RedissonPromise<>();
         result.onComplete((res, e) -> {
             if (e != null) {
-                ((RPromise<PubSubConnectionEntry>)future).tryFailure(e);
+                ((RPromise<PubSubConnectionEntry>) future).tryFailure(e);
             }
         });
         future.onComplete((res, e) -> {
