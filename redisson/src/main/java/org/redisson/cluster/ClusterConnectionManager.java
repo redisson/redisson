@@ -663,6 +663,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
     }
     
     private void checkSlotsMigration(Collection<ClusterPartition> newPartitions) {
+        Set<Integer> changedSlots = new HashSet<>();
         for (ClusterPartition currentPartition : getLastPartitions()) {
             for (ClusterPartition newPartition : newPartitions) {
                 if (!currentPartition.getNodeId().equals(newPartition.getNodeId())) {
@@ -677,6 +678,7 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 addedSlots.stream().forEach(slot -> {
                     addEntry(slot, entry);
                     lastPartitions.put(slot, currentPartition);
+                    changedSlots.add(slot);
                 });
                 if (!addedSlots.isEmpty()) {
                     log.info("{} slots added to {}", addedSlots.cardinality(), currentPartition.getMasterAddress());
@@ -686,9 +688,10 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 removedSlots.andNot(newPartition.slots());
                 currentPartition.removeSlots(removedSlots);
 
-                removedSlots.stream().forEach(removeSlot -> {
-                    if (lastPartitions.remove(removeSlot, currentPartition)) {
-                        removeEntry(removeSlot);
+                removedSlots.stream().forEach(slot -> {
+                    if (lastPartitions.remove(slot, currentPartition)) {
+                        removeEntry(slot);
+                        changedSlots.add(slot);
                     }
                 });
                 if (!removedSlots.isEmpty()) {
@@ -697,6 +700,8 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 break;
             }
         }
+
+        changedSlots.forEach(subscribeService::reattachPubSub);
     }
     
     private int indexOf(byte[] array, byte element) {

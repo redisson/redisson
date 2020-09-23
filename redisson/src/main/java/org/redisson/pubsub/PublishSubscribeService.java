@@ -518,6 +518,27 @@ public class PublishSubscribeService {
         freePubSubConnections.add(entry);
     }
 
+    public void reattachPubSub(int slot) {
+        name2PubSubConnection.entrySet().stream()
+            .filter(e -> connectionManager.calcSlot(e.getKey().getName()) == slot)
+            .forEach(entry -> {
+                PubSubConnectionEntry pubSubEntry = entry.getValue();
+                Codec codec = pubSubEntry.getConnection().getChannels().get(entry.getKey());
+                if (codec != null) {
+                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey());
+                    unsubscribe(entry.getKey(), PubSubType.UNSUBSCRIBE);
+                    subscribe(codec, entry.getKey(), listeners.toArray(new RedisPubSubListener[0]));
+                }
+
+                Codec patternCodec = pubSubEntry.getConnection().getPatternChannels().get(entry.getKey());
+                if (patternCodec != null) {
+                    Queue<RedisPubSubListener<?>> listeners = pubSubEntry.getListeners(entry.getKey());
+                    unsubscribe(entry.getKey(), PubSubType.PUNSUBSCRIBE);
+                    psubscribe(entry.getKey(), patternCodec, listeners.toArray(new RedisPubSubListener[0]));
+                }
+            });
+    }
+
     public void reattachPubSub(RedisPubSubConnection redisPubSubConnection) {
         for (Queue<PubSubConnectionEntry> queue : freePubSubMap.values()) {
             for (PubSubConnectionEntry entry : queue) {

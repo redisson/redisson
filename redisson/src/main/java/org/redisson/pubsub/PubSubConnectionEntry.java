@@ -62,12 +62,8 @@ public class PubSubConnectionEntry {
         return channelListeners.containsKey(channelName);
     }
 
-    public Collection<RedisPubSubListener<?>> getListeners(ChannelName channelName) {
-        Collection<RedisPubSubListener<?>> result = channelListeners.get(channelName);
-        if (result == null) {
-            return Collections.emptyList();
-        }
-        return result;
+    public Queue<RedisPubSubListener<?>> getListeners(ChannelName channelName) {
+        return channelListeners.getOrDefault(channelName, EMPTY_QUEUE);
     }
 
     public void addListener(ChannelName channelName, RedisPubSubListener<?> listener) {
@@ -100,14 +96,6 @@ public class PubSubConnectionEntry {
         conn.addListener(listener);
     }
 
-    public boolean removeAllListeners(ChannelName channelName) {
-        Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
-        for (RedisPubSubListener<?> listener : listeners) {
-            removeListener(channelName, listener);
-        }
-        return listeners.isEmpty();
-    }
-    
     // TODO optimize
     public boolean removeListener(ChannelName channelName, EventListener msgListener) {
         Queue<RedisPubSubListener<?>> listeners = channelListeners.get(channelName);
@@ -188,7 +176,7 @@ public class PubSubConnectionEntry {
         return listener;
     }
     
-    public ChannelFuture unsubscribe(final ChannelName channel, final RedisPubSubListener<?> listener) {
+    public ChannelFuture unsubscribe(ChannelName channel, RedisPubSubListener<?> listener) {
         conn.addListener(new BaseRedisPubSubListener() {
             @Override
             public boolean onStatus(PubSubType type, CharSequence ch) {
