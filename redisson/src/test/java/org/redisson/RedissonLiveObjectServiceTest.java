@@ -1203,7 +1203,7 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         ts.setCode("CODE");
         TestClass persisted = service.persist(ts);
         assertTrue(service.isExists(persisted));
-        service.delete(TestClass.class, new ObjectId(100));
+        assertThat(service.delete(TestClass.class, new ObjectId(100))).isEqualTo(1);
         assertFalse(service.isExists(persisted));
     }
 

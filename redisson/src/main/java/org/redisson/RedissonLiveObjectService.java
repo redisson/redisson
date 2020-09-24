@@ -571,8 +571,10 @@ public class RedissonLiveObjectService implements RLiveObjectService {
             delete(entity, asRMap(entity), ce, fieldNames);
         }
 
-        BatchResult<Long> r = (BatchResult<Long>) ce.execute();
-        return r.getResponses().stream().mapToLong(s -> s).sum();
+        BatchResult<Object> r = (BatchResult<Object>) ce.execute();
+        return r.getResponses().stream()
+                .filter(s -> s instanceof Long)
+                .mapToLong(s -> (Long) s).sum();
     }
 
     private RFuture<Long> delete(Object me, RMap<String, ?> map, CommandBatchService ce, Set<String> fieldNames) {
