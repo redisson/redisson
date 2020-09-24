@@ -126,7 +126,7 @@ public class LiveObjectInterceptor {
                 ce = new CommandBatchService(connectionManager);
             }
 
-            Object idd = ((RLiveObject)me).getLiveObjectId();
+            Object idd = ((RLiveObject) me).getLiveObjectId();
             RFuture<Long> deleteFuture = service.delete(idd, me.getClass().getSuperclass(), namingScheme, ce);
             ce.execute();
             
