@@ -981,6 +981,18 @@ public class RedissonMapCacheTest extends BaseMapTest {
     }
 
     @Test
+    public void testEntryUpdate() throws InterruptedException {
+        RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
+        map.put(1, 1, 1, TimeUnit.SECONDS);
+        assertThat(map.get(1)).isEqualTo(1);
+
+        Thread.sleep(1000);
+
+        assertThat(map.put(1, 1, 0, TimeUnit.SECONDS)).isNull();
+        assertThat(map.get(1)).isEqualTo(1);
+    }
+
+    @Test
     public void testRemovedListener() {
         RMapCache<Integer, Integer> map = redisson.getMapCache("simple");
 

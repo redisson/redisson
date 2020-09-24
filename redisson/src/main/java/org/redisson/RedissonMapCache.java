@@ -507,7 +507,10 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "        exists = true;" +
                 "    end;" +
                 "end;" +
-                "" +
+
+                "redis.call('zrem', KEYS[2], ARGV[2]); " +
+                "redis.call('zrem', KEYS[3], ARGV[2]); " +
+
                 "local value = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]);" +
                 "redis.call('hset', KEYS[1], ARGV[2], value);" +
                 "local currentTime = tonumber(ARGV[1]);" +
