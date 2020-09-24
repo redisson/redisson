@@ -19,6 +19,7 @@ import net.bytebuddy.implementation.bind.annotation.*;
 import org.redisson.RedissonLiveObjectService;
 import org.redisson.RedissonMap;
 import org.redisson.api.RFuture;
+import org.redisson.api.RLiveObject;
 import org.redisson.api.RMap;
 import org.redisson.client.RedisException;
 import org.redisson.command.CommandAsyncExecutor;
@@ -125,7 +126,8 @@ public class LiveObjectInterceptor {
                 ce = new CommandBatchService(connectionManager);
             }
 
-            RFuture<Long> deleteFuture = service.delete(me, map, ce);
+            Object idd = ((RLiveObject)me).getLiveObjectId();
+            RFuture<Long> deleteFuture = service.delete(idd, me.getClass().getSuperclass(), namingScheme, ce);
             ce.execute();
             
             return deleteFuture.getNow() > 0;

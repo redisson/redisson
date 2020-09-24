@@ -566,9 +566,9 @@ public class RedissonLiveObjectService implements RLiveObjectService {
         FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass.getSuperclass(), RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
 
+        NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(entityClass);
         for (Object id: ids) {
-            T entity = createLiveObject(entityClass, id);
-            delete(entity, asRMap(entity), ce, fieldNames);
+            delete(id, entityClass, namingScheme, ce, fieldNames);
         }
 
         BatchResult<Object> r = (BatchResult<Object>) ce.execute();
@@ -577,32 +577,35 @@ public class RedissonLiveObjectService implements RLiveObjectService {
                 .mapToLong(s -> (Long) s).sum();
     }
 
-    private RFuture<Long> delete(Object me, RMap<String, ?> map, CommandBatchService ce, Set<String> fieldNames) {
-        Map<String, ?> values = map.getAll(fieldNames);
+    private RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce, Set<String> fieldNames) {
+        String mapName = namingScheme.getName(entityClass, id);
+        Object liveObjectId = namingScheme.resolveId(mapName);
+
+        RMap<String, Object> liveMap = new RedissonMap<>(namingScheme.getCodec(), connectionManager.getCommandExecutor(),
+                                                mapName, null, null, null);
+        Map<String, ?> values = liveMap.getAll(fieldNames);
         for (String fieldName : fieldNames) {
             Object value = values.get(fieldName);
             if (value == null) {
                 continue;
             }
 
-            NamingScheme namingScheme = connectionManager.getCommandExecutor().getObjectBuilder().getNamingScheme(me.getClass().getSuperclass());
-            String indexName = namingScheme.getIndexName(me.getClass().getSuperclass(), fieldName);
-
+            String indexName = namingScheme.getIndexName(entityClass, fieldName);
             if (value instanceof Number) {
                 RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
-                set.removeAsync(((RLiveObject) me).getLiveObjectId());
+                set.removeAsync(liveObjectId);
             } else {
                 RMultimapAsync<Object, Object> idsMultimap = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                idsMultimap.removeAsync(value, ((RLiveObject) me).getLiveObjectId());
+                idsMultimap.removeAsync(value, liveObjectId);
             }
         }
-        return new RedissonKeys(ce).deleteAsync(map.getName());
+        return new RedissonKeys(ce).deleteAsync(mapName);
     }
 
-    public RFuture<Long> delete(Object me, RMap<String, ?> map, CommandBatchService ce) {
-        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(me.getClass().getSuperclass(), RIndex.class);
+    public RFuture<Long> delete(Object id, Class<?> entityClass, NamingScheme namingScheme, CommandBatchService ce) {
+        FieldList<InDefinedShape> fields = Introspectior.getFieldsWithAnnotation(entityClass, RIndex.class);
         Set<String> fieldNames = fields.stream().map(f -> f.getName()).collect(Collectors.toSet());
-        return delete(me, map, ce, fieldNames);
+        return delete(id, entityClass, namingScheme, ce, fieldNames);
     }
 
     @Override
