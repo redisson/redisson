@@ -144,7 +144,7 @@ public class RedissonKeys implements RKeys {
 
     public RFuture<ListScanResult<Object>> scanIteratorAsync(RedisClient client, MasterSlaveEntry entry, long startPos,
             String pattern, int count) {
-        return scanIteratorAsync(client, entry, RedisCommands.SCAN, startPos, "COUNT", count);
+        return scanIteratorAsync(client, entry, RedisCommands.SCAN, startPos, pattern, count);
     }
 
     private <T> Iterator<T> createKeysIterator(MasterSlaveEntry entry, RedisCommand<?> command, String pattern, int count) {

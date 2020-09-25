@@ -30,10 +30,13 @@ public class RedissonKeysReactiveTest extends BaseReactiveTest {
         sync(redisson.getBucket("test12").set("someValue"));
 
         Iterator<String> iterator = toIterator(redisson.getKeys().getKeysByPattern("test?"));
+        int size = 0;
         for (; iterator.hasNext();) {
             String key = iterator.next();
             assertThat(key).isIn("test1", "test2");
+            size += 1;
         }
+        assertThat(size).isEqualTo(2);
     }
 
     @Test
