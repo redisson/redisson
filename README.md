@@ -169,7 +169,7 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## FAQs
 
-[Q: I saw a RedisTimeOutException, What does it mean? What shall I do? Can Redisson Team fix it?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-i-saw-a-redistimeoutexception-what-does-it-mean-what-shall-i-do-can-redisson-team-fix-it)
+[Q: What is the cause of RedisTimeoutException?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-what-is-the-cause-of-redistimeoutexception)
 
 [Q: When do I need to shut down a Redisson instance, at the end of each request or the end of the life of a thread?](https://github.com/redisson/redisson/wiki/16.-FAQ#q-when-do-i-need-to-shut-down-a-redisson-instance-at-the-end-of-each-request-or-the-end-of-the-life-of-a-thread)
 
