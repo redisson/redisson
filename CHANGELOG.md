@@ -8,7 +8,7 @@ Redisson Releases History
 
 **breaking change** - `spring.redis.redisson.config` setting renamed to `spring.redis.redisson.file`  
 
-Feature - `RClusteredTopic` object added
+Feature - `RClusteredTopic` object added  
 Feature - `RRingBuffer.setCapacity()` method added  
 Feature - `merge()`, `compute()`, `computeIfAbsent()`, `computeIfPresent()` methods implemented for RMap-based objects  
 Feature - spring config server support (thanks @anjia0532)  
