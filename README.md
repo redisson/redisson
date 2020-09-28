@@ -99,14 +99,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.13.4</version>
+       <version>3.13.5</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.13.4'  
+    compile 'org.redisson:redisson:3.13.5'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.13.4"
+    libraryDependencies += "org.redisson" % "redisson" % "3.13.5"
 
 #### Java
 
