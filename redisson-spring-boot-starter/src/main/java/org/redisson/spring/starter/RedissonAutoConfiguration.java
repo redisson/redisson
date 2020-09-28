@@ -45,9 +45,10 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * 
+ *
  * @author Nikita Koksharov
  * @author Nikos Kakavas (https://github.com/nikakis)
+ * @author AnJia (https://anjia0532.github.io/)
  *
  */
 @Configuration
@@ -56,18 +57,21 @@ import org.springframework.util.ReflectionUtils;
 @EnableConfigurationProperties({RedissonProperties.class, RedisProperties.class})
 public class RedissonAutoConfiguration {
 
+    private static final String REDIS_PROTOCOL_PREFIX = "redis://";
+    private static final String REDISS_PROTOCOL_PREFIX = "rediss://";
+
     @Autowired(required = false)
     private List<RedissonAutoConfigurationCustomizer> redissonAutoConfigurationCustomizers;
 
     @Autowired
     private RedissonProperties redissonProperties;
-    
+
     @Autowired
     private RedisProperties redisProperties;
-    
+
     @Autowired
     private ApplicationContext ctx;
-    
+
     @Bean
     @ConditionalOnMissingBean(name = "redisTemplate")
     public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory) {
@@ -89,7 +93,7 @@ public class RedissonAutoConfiguration {
     public RedissonConnectionFactory redissonConnectionFactory(RedissonClient redisson) {
         return new RedissonConnectionFactory(redisson);
     }
-    
+
     @Bean(destroyMethod = "shutdown")
     @ConditionalOnMissingBean(RedissonClient.class)
     public RedissonClient redisson() throws IOException {
@@ -106,16 +110,26 @@ public class RedissonAutoConfiguration {
         } else {
             timeout = (Integer)timeoutValue;
         }
-        
+
         if (redissonProperties.getConfig() != null) {
             try {
+                config = Config.fromYAML(redissonProperties.getConfig());
+            } catch (IOException e) {
+                try {
+                    config = Config.fromJSON(redissonProperties.getConfig());
+                } catch (IOException e1) {
+                    throw new IllegalArgumentException("Can't parse config", e1);
+                }
+            }
+        } else if (redissonProperties.getFile() != null) {
+            try {
                 InputStream is = getConfigStream();
-                config = Config.fromJSON(is);
+                config = Config.fromYAML(is);
             } catch (IOException e) {
                 // trying next format
                 try {
                     InputStream is = getConfigStream();
-                    config = Config.fromYAML(is);
+                    config = Config.fromJSON(is);
                 } catch (IOException e1) {
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
@@ -123,14 +137,14 @@ public class RedissonAutoConfiguration {
         } else if (redisProperties.getSentinel() != null) {
             Method nodesMethod = ReflectionUtils.findMethod(Sentinel.class, "getNodes");
             Object nodesValue = ReflectionUtils.invokeMethod(nodesMethod, redisProperties.getSentinel());
-            
+
             String[] nodes;
             if (nodesValue instanceof String) {
                 nodes = convert(Arrays.asList(((String)nodesValue).split(",")));
             } else {
                 nodes = convert((List<String>)nodesValue);
             }
-            
+
             config = new Config();
             config.useSentinelServers()
                 .setMasterName(redisProperties.getSentinel().getMaster())
@@ -142,9 +156,9 @@ public class RedissonAutoConfiguration {
             Object clusterObject = ReflectionUtils.invokeMethod(clusterMethod, redisProperties);
             Method nodesMethod = ReflectionUtils.findMethod(clusterObject.getClass(), "getNodes");
             List<String> nodesObject = (List) ReflectionUtils.invokeMethod(nodesMethod, clusterObject);
-            
+
             String[] nodes = convert(nodesObject);
-            
+
             config = new Config();
             config.useClusterServers()
                 .addNodeAddress(nodes)
@@ -152,12 +166,12 @@ public class RedissonAutoConfiguration {
                 .setPassword(redisProperties.getPassword());
         } else {
             config = new Config();
-            String prefix = "redis://";
+            String prefix = REDIS_PROTOCOL_PREFIX;
             Method method = ReflectionUtils.findMethod(RedisProperties.class, "isSsl");
             if (method != null && (Boolean)ReflectionUtils.invokeMethod(method, redisProperties)) {
-                prefix = "rediss://";
+                prefix = REDISS_PROTOCOL_PREFIX;
             }
-            
+
             config.useSingleServer()
                 .setAddress(prefix + redisProperties.getHost() + ":" + redisProperties.getPort())
                 .setConnectTimeout(timeout)
@@ -175,8 +189,8 @@ public class RedissonAutoConfiguration {
     private String[] convert(List<String> nodesObject) {
         List<String> nodes = new ArrayList<String>(nodesObject.size());
         for (String node : nodesObject) {
-            if (!node.startsWith("redis://") && !node.startsWith("rediss://")) {
-                nodes.add("redis://" + node);
+            if (!node.startsWith(REDIS_PROTOCOL_PREFIX) && !node.startsWith(REDISS_PROTOCOL_PREFIX)) {
+                nodes.add(REDIS_PROTOCOL_PREFIX + node);
             } else {
                 nodes.add(node);
             }
@@ -190,5 +204,5 @@ public class RedissonAutoConfiguration {
         return is;
     }
 
-    
+
 }
