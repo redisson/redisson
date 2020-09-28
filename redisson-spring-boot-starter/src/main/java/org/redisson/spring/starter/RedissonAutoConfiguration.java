@@ -111,17 +111,17 @@ public class RedissonAutoConfiguration {
             timeout = (Integer)timeoutValue;
         }
 
-        if (redissonProperties.getConfigBlock() != null) {
+        if (redissonProperties.getConfig() != null) {
             try {
-                config = Config.fromYAML(redissonProperties.getConfigBlock());
+                config = Config.fromYAML(redissonProperties.getConfig());
             } catch (IOException e) {
                 try {
-                    config = Config.fromJSON(redissonProperties.getConfigBlock());
+                    config = Config.fromJSON(redissonProperties.getConfig());
                 } catch (IOException e1) {
                     throw new IllegalArgumentException("Can't parse config", e1);
                 }
             }
-        } else if (redissonProperties.getConfig() != null) {
+        } else if (redissonProperties.getFile() != null) {
             try {
                 InputStream is = getConfigStream();
                 config = Config.fromYAML(is);

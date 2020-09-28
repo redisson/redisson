@@ -64,8 +64,8 @@ spring:
     
   #path to config - redisson.yaml
   redisson: 
-    config: classpath:redisson.yaml
-    configBlock: |
+    file: classpath:redisson.yaml
+    config: |
       clusterServersConfig:
         idleConnectionTimeout: 10000
         connectTimeout: 10000

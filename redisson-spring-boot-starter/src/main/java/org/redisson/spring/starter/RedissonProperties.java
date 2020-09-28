@@ -28,7 +28,7 @@ public class RedissonProperties {
 
     private String config;
 
-    private String configBlock;
+    private String file;
 
     public String getConfig() {
         return config;
@@ -38,12 +38,11 @@ public class RedissonProperties {
         this.config = config;
     }
 
-    public String getConfigBlock() {
-        return configBlock;
+    public String getFile() {
+        return file;
     }
 
-    public void setConfigBlock(String configBlock) {
-        this.configBlock = configBlock;
+    public void setFile(String file) {
+        this.file = file;
     }
-
 }
