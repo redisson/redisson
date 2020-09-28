@@ -3,7 +3,7 @@
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
 Based on high-performance async and lock-free Java Redis client and [Netty](http://netty.io) framework.  
-JDK compatibility:  1.8 - 14, Android  
+JDK compatibility:  1.8 - 15, Android  
 
 ## Features
 
@@ -164,8 +164,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.13.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.13.4&e=jar),
-[Redisson node 3.13.4](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.4&e=jar)  
+[Redisson 3.13.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.13.5&e=jar),
+[Redisson node 3.13.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.5&e=jar)  
 
 ## FAQs
 
