@@ -140,7 +140,11 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
 
     @Override
     public boolean addAll(List<T> objects) {
-        List<long[]> hashesList = new ArrayList<>();
+        if (objects == null) {
+            throw new NullPointerException();
+        }
+
+        List<long[]> hashesList = new ArrayList<>(objects.size());
         for (T t : objects) {
             long[] hashes = hash(t);
             hashesList.add(hashes);
