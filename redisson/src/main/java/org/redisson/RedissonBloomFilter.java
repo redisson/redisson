@@ -29,11 +29,7 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.RBitSetAsync;
@@ -162,11 +158,15 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
             CommandBatchService executorService = new CommandBatchService(commandExecutor.getConnectionManager());
             addConfigCheck(hashIterations, size, executorService);
             RBitSetAsync bs = createBitSet(executorService);
+            Set<Long> indexSet = new HashSet<>();
             for (long[] hashes: hashesList) {
                 long[] indexes = hash(hashes[0], hashes[1], hashIterations, size);
                 for (int i = 0; i < indexes.length; i++) {
-                    bs.setAsync(indexes[i]);
+                    indexSet.add(indexes[i]);
                 }
+            }
+            for (Long index : indexSet) {
+                bs.setAsync(index);
             }
             try {
                 List<Boolean> result = (List<Boolean>) executorService.execute().getResponses();
