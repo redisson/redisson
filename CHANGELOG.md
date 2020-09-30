@@ -4,6 +4,30 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 28-Sep-2020 - 3.13.5 released
+
+**breaking change** - `spring.redis.redisson.config` setting renamed to `spring.redis.redisson.file`  
+
+Feature - `RClusteredTopic` object added  
+Feature - `RRingBuffer.setCapacity()` method added  
+Feature - `merge()`, `compute()`, `computeIfAbsent()`, `computeIfPresent()` methods implemented for RMap-based objects  
+Feature - spring config server support (thanks @anjia0532)  
+
+Improvement - expand config variables from system properties if not found as environment variables (thanks to @jribble)  
+
+Fixed - `RKeys.keysByPattern()` method doesn't use pattern (thanks to @sh1nj1)  
+Fixed - `RObjectLiveService.delete()` method throws `ClassCastException`  
+Fixed - fail to insert key with TTL = 0 if the same key was previously set with non-zero TTL  
+Fixed - Pubsub channel isn't reattached to a new master after slot migration  
+Fixed - `PingConnectionHandler` throws `CancellationException`  
+Fixed - shared session between several Tomcats expires earlier if `readMode=Redis` and `broadcastSessionEvents=false`  
+Fixed - incorrect session attributes being returned in `UpdateMode=AFTER_REQUEST` and `ReadMode=REDIS`  
+Fixed - Tomcat UpdateValve object throws NullPointerException if url context doesn't exist  
+Fixed - old value of RLiveObject's field isn't removed from index  
+Fixed - Spring Data Redis `RedissonSubscription.onPatternMessage()` method throws `ClassCastException`  
+Fixed - `RSemaphore.addPermits()` method doesn't work  
+Fixed - `RMultimap.sizeInMemory()` method doesn't take in account size of all associated objects  
+
 ### 02-Sep-2020 - 3.13.4 released
 Feature - batch support for `revRank`, `getScore`, `addAndGetRevRank` methods added to RScoredSortedSet object (thanks to @johnou)  
 Feature - `RRateLimiter.setRate` method added (thanks to @AbhishekChandrasekaran)  
