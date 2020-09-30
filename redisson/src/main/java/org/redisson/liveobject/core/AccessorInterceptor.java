@@ -188,7 +188,8 @@ public class AccessorInterceptor {
             RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {
-            if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)) {
+            if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
+                    || connectionManager.isClusterMode()) {
                 Object value = liveMap.remove(field.getName());
                 RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
                 map.removeAsync(((RLiveObject) value).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
