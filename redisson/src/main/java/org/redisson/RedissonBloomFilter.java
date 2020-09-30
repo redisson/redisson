@@ -31,6 +31,7 @@ package org.redisson;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -139,7 +140,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
     }
 
     @Override
-    public boolean addAll(List<T> objects) {
+    public boolean addAll(Collection<T> objects) {
         if (objects == null) {
             throw new NullPointerException();
         }
