@@ -36,8 +36,9 @@ public interface RBloomFilter<T> extends RExpirable {
     boolean add(T object);
 
     /**
-     * Adds element
+     * Add elements
      *
+     * @param objects - element to add
      * @return <code>true</code> if elements has been added successfully
      *         <code>false</code> if elements is already present
      */
