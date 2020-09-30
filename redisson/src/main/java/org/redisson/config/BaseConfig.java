@@ -86,7 +86,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
     
     private String sslKeystorePassword;
 
-    private int pingConnectionInterval;
+    private int pingConnectionInterval = 30000;
 
     private boolean keepAlive;
     
@@ -388,7 +388,7 @@ public class BaseConfig<T extends BaseConfig<T>> {
      * Defines PING command sending interval per connection to Redis.
      * <code>0</code> means disable.
      * <p>
-     * Default is <code>0</code>
+     * Default is <code>30000</code>
      * 
      * @param pingConnectionInterval - time in milliseconds
      * @return config
