@@ -40,6 +40,7 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.connection.MasterSlaveEntry;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.connection.ClusterInfo;
 import org.springframework.data.redis.connection.DefaultedRedisClusterConnection;
 import org.springframework.data.redis.connection.RedisClusterNode;
@@ -428,6 +429,68 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
                 return new ScanIteration<byte[]>(pos, res.getValues());
             }
         }.open();
+    }
+
+    @Override
+    public void rename(byte[] oldName, byte[] newName) {
+
+        if (isPipelined()) {
+            throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
+        }
+
+        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+            super.rename(oldName, newName);
+            return;
+        }
+
+        final byte[] value = dump(oldName);
+
+        if (null != value) {
+
+            final Long sourceTtlInSeconds = ttl(oldName);
+
+            final long ttlInMilliseconds;
+            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
+                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            } else {
+                ttlInMilliseconds = 0;
+            }
+
+            restore(newName, ttlInMilliseconds, value);
+            del(oldName);
+        }
+    }
+
+    @Override
+    public Boolean renameNX(byte[] oldName, byte[] newName) {
+        if (isPipelined()) {
+            throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
+        }
+
+        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+            return super.renameNX(oldName, newName);
+        }
+
+        final byte[] value = dump(oldName);
+
+        if (null != value && !exists(newName)) {
+
+            final Long sourceTtlInSeconds = ttl(oldName);
+
+            final long ttlInMilliseconds;
+            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
+                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            } else {
+                ttlInMilliseconds = 0;
+            }
+
+            restore(newName, ttlInMilliseconds, value);
+            del(oldName);
+
+            return true;
+        }
+
+        return false;
     }
 
 }
