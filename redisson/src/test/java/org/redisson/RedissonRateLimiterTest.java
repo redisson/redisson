@@ -164,7 +164,22 @@ public class RedissonRateLimiterTest extends BaseTest {
             Thread.sleep(1050);
         }
     }
-    
+
+    @Test
+    public void testRemove() {
+        RRateLimiter rateLimiter = redisson.getRateLimiter("test");
+        assertThat(rateLimiter.delete()).isFalse();
+
+        rateLimiter.trySetRate(RateType.OVERALL, 5L, 5L, RateIntervalUnit.MINUTES);
+        assertThat(redisson.getKeys().count()).isEqualTo(1);
+
+        rateLimiter.tryAcquire();
+
+        boolean deleted = rateLimiter.delete();
+        assertThat(redisson.getKeys().count()).isEqualTo(0);
+        assertThat(deleted).isTrue();
+    }
+
     @Test
     public void testConcurrency() throws InterruptedException {
         RRateLimiter rr = redisson.getRateLimiter("test");
