@@ -106,6 +106,10 @@ public abstract class RedissonObject implements RObject {
     }
     
     public final RFuture<Long> sizeInMemoryAsync(List<Object> keys) {
+        return sizeInMemoryAsync(commandExecutor, keys);
+    }
+
+    public final RFuture<Long> sizeInMemoryAsync(CommandAsyncExecutor commandExecutor, List<Object> keys) {
         return commandExecutor.evalWriteAsync((String) keys.get(0), StringCodec.INSTANCE, RedisCommands.EVAL_LONG,
                   "local total = 0;"
                 + "for j = 1, #KEYS, 1 do "
