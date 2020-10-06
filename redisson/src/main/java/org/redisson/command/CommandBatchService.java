@@ -141,11 +141,11 @@ public class CommandBatchService extends CommandAsyncService {
         if (isRedisBasedQueue()) {
             boolean isReadOnly = options.getExecutionMode() == ExecutionMode.REDIS_READ_ATOMIC;
             RedisExecutor<V, R> executor = new RedisQueuedBatchExecutor<>(isReadOnly, nodeSource, codec, command, params, mainPromise,
-                    true, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
+                    false, connectionManager, objectBuilder, commands, connections, options, index, executed, semaphore);
             executor.execute();
         } else {
             RedisExecutor<V, R> executor = new RedisBatchExecutor<>(readOnlyMode, nodeSource, codec, command, params, mainPromise, 
-                    true, connectionManager, objectBuilder, commands, options, index, executed);
+                    false, connectionManager, objectBuilder, commands, options, index, executed);
             executor.execute();
         }
         
@@ -227,8 +227,21 @@ public class CommandBatchService extends CommandAsyncService {
         RPromise<Void> voidPromise = new RedissonPromise<Void>();
         if (this.options.isSkipResult()
                 && this.options.getSyncSlaves() == 0) {
-            voidPromise.onComplete((res, e) -> {
+            voidPromise.onComplete((res, ex) -> {
                 executed.set(true);
+
+                if (ex != null) {
+                    for (Entry e : commands.values()) {
+                        e.getCommands().forEach(t -> t.tryFailure(ex));
+                    }
+
+                    promise.tryFailure(ex);
+
+                    commands.clear();
+                    nestedServices.clear();
+                    return;
+                }
+
                 commands.clear();
                 nestedServices.clear();
                 promise.trySuccess(new BatchResult<>(Collections.emptyList(), 0));
@@ -237,11 +250,11 @@ public class CommandBatchService extends CommandAsyncService {
             voidPromise.onComplete((res, ex) -> {
                 executed.set(true);
                 if (ex != null) {
-                    promise.tryFailure(ex);
-
                     for (Entry e : commands.values()) {
                         e.getCommands().forEach(t -> t.tryFailure(ex));
                     }
+
+                    promise.tryFailure(ex);
 
                     commands.clear();
                     nestedServices.clear();

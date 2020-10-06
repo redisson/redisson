@@ -51,7 +51,7 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
     
     public RedisCommonBatchExecutor(NodeSource source, RPromise<Void> mainPromise, 
             ConnectionManager connectionManager, BatchOptions options, Entry entry, AtomicInteger slots) {
-        super(entry.isReadOnlyMode(), source, null, null, null, mainPromise, true, connectionManager, null);
+        super(entry.isReadOnlyMode(), source, null, null, null, mainPromise, false, connectionManager, null);
         this.options = options;
         this.entry = entry;
         this.slots = slots;
