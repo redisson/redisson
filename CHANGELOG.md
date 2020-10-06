@@ -1,6 +1,5 @@
 Redisson Releases History
 ================================
-### Please Note: trunk is current development branch.
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
