@@ -214,9 +214,11 @@ public interface RBitSet extends RExpirable, RBitSetAsync {
      * 
      * @param bitIndex - index of bit
      * @param value true = 1, false = 0
-     * 
+     * @return <code>true</code> - if previous value was true,
+     * <code>false</code> - if previous value was false
+     *
     */
-    void set(long bitIndex, boolean value);
+    boolean set(long bitIndex, boolean value);
 
     byte[] toByteArray();
 

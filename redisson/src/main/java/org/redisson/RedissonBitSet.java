@@ -205,8 +205,8 @@ public class RedissonBitSet extends RedissonExpirable implements RBitSet {
     }
 
     @Override
-    public void set(long bitIndex, boolean value) {
-        get(setAsync(bitIndex, value));
+    public boolean set(long bitIndex, boolean value) {
+        return get(setAsync(bitIndex, value));
     }
 
     @Override

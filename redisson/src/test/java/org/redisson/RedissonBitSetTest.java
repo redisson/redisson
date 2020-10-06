@@ -114,8 +114,8 @@ public class RedissonBitSetTest extends BaseTest {
         assertThat(bitset.cardinality()).isZero();
         assertThat(bitset.size()).isZero();
 
-        bitset.set(10, true);
-        bitset.set(31, true);
+        assertThat(bitset.set(10, true)).isFalse();
+        assertThat(bitset.set(31, true)).isFalse();
         assertThat(bitset.get(0)).isFalse();
         assertThat(bitset.get(31)).isTrue();
         assertThat(bitset.get(10)).isTrue();
