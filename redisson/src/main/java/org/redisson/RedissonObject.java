@@ -49,6 +49,9 @@ public abstract class RedissonObject implements RObject {
         this.codec = codec;
         this.name = name;
         this.commandExecutor = commandExecutor;
+        if (name == null) {
+            throw new NullPointerException("name can't be null");
+        }
     }
 
     public RedissonObject(CommandAsyncExecutor commandExecutor, String name) {
