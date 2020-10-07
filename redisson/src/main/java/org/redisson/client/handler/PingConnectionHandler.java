@@ -75,6 +75,13 @@ public class PingConnectionHandler extends ChannelInboundHandlerAdapter {
                 if (connection.isClosed()) {
                     return;
                 }
+
+                CommandData<?, ?> commandData = connection.getCurrentCommand();
+                if (commandData != null && commandData.isBlockingCommand()) {
+                    sendPing(ctx);
+                    return;
+                }
+
                 if (future != null
                         && (future.cancel(false) || !future.isSuccess())) {
                     ctx.channel().close();
