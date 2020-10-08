@@ -424,7 +424,10 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * Returns iterator over values collection of this map.
      * Values are loaded in batch. Batch size is <code>10</code>. 
      * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     *
      *  Supported glob-style patterns:
      *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
@@ -444,7 +447,10 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * Returns iterator over values collection of this map.
      * Values are loaded in batch. Batch size is defined by <code>count</code> param.
      * If <code>keyPattern</code> is not null then only values mapped by matched keys of this pattern are loaded.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     *
      *  Supported glob-style patterns:
      *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
@@ -485,7 +491,10 @@ public interface RMapRx<K, V> extends RExpirableRx {
     /**
      * Returns iterator over key set of this map. 
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     *
      *  Supported glob-style patterns:
      *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
@@ -505,7 +514,10 @@ public interface RMapRx<K, V> extends RExpirableRx {
      * Returns iterator over key set of this map.
      * If <code>pattern</code> is not null then only keys match this pattern are loaded.
      * Keys are loaded in batch. Batch size is defined by <code>count</code> param.
-     * 
+     * <p>
+     * Use <code>org.redisson.client.codec.StringCodec</code> for Map keys.
+     * <p>
+     *
      *  Supported glob-style patterns:
      *  <p>
      *    h?llo subscribes to hello, hallo and hxllo
