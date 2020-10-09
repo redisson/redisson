@@ -668,16 +668,8 @@ public class RedisExecutor<V, R> {
         Codec codecToUse = codec;
         ClassLoader threadClassLoader = Thread.currentThread().getContextClassLoader();
         if (threadClassLoader != null) {
-            Map<Codec, Codec> map = CODECS.get(threadClassLoader);
-            if (map == null) {
-                synchronized (CODECS) {
-                    map = CODECS.get(threadClassLoader);
-                    if (map == null) {
-                        map = new LRUCacheMap<>(200, 0, 0);
-                        CODECS.put(threadClassLoader, map);
-                    }
-                }
-            }
+            Map<Codec, Codec> map = CODECS.computeIfAbsent(threadClassLoader, k ->
+                                            new LRUCacheMap<>(200, 0, 0));
             codecToUse = map.get(codec);
             if (codecToUse == null) {
                 try {

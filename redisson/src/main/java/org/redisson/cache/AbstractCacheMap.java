@@ -481,12 +481,6 @@ public abstract class AbstractCacheMap<K, V> implements Cache<K, V> {
             }
         }
         onValueCreate(entry);
-        if (prevCachedValue != null) {
-            onValueRemove(prevCachedValue);
-            if (!isValueExpired(prevCachedValue)) {
-                return (V) prevCachedValue.getValue();
-            }
-        }
         return null;
     }
 
