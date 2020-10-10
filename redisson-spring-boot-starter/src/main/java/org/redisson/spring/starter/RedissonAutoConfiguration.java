@@ -199,7 +199,7 @@ public class RedissonAutoConfiguration {
     }
 
     private InputStream getConfigStream() throws IOException {
-        Resource resource = ctx.getResource(redissonProperties.getConfig());
+        Resource resource = ctx.getResource(redissonProperties.getFile());
         InputStream is = resource.getInputStream();
         return is;
     }
