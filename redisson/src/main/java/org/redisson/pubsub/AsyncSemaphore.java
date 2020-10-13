@@ -15,11 +15,9 @@
  */
 package org.redisson.pubsub;
 
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -30,8 +28,8 @@ public class AsyncSemaphore {
 
     private static class Entry {
         
-        private Runnable runnable;
-        private int permits;
+        private final Runnable runnable;
+        private final int permits;
         
         Entry(Runnable runnable, int permits) {
             super();
@@ -47,131 +45,94 @@ public class AsyncSemaphore {
             return runnable;
         }
 
-        @Override
-        @SuppressWarnings("AvoidInlineConditionals")
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((runnable == null) ? 0 : runnable.hashCode());
-            return result;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            Entry other = (Entry) obj;
-            if (runnable == null) {
-                if (other.runnable != null)
-                    return false;
-            } else if (!runnable.equals(other.runnable))
-                return false;
-            return true;
-        }
-        
-        
     }
-    
-    private volatile int counter;
-    private final Set<Entry> listeners = new LinkedHashSet<Entry>();
+
+    private final AtomicInteger counter;
+    private final Queue<Entry> listeners = new ConcurrentLinkedQueue<>();
+    private final Set<Runnable> removedListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public AsyncSemaphore(int permits) {
-        counter = permits;
+        counter = new AtomicInteger(permits);
     }
     
     public boolean tryAcquire(long timeoutMillis) {
-        final CountDownLatch latch = new CountDownLatch(1);
-        final Runnable listener = new Runnable() {
-            @Override
-            public void run() {
-                latch.countDown();
-            }
-        };
-        acquire(listener);
+        CountDownLatch latch = new CountDownLatch(1);
+        Runnable runnable = () -> latch.countDown();
+        acquire(runnable);
         
         try {
-            boolean res = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
-            if (!res) {
-                if (!remove(listener)) {
-                    release();
-                }
+            boolean r = latch.await(timeoutMillis, TimeUnit.MILLISECONDS);
+            if (!r) {
+                remove(runnable);
             }
-            return res;
+            return r;
         } catch (InterruptedException e) {
+            remove(runnable);
             Thread.currentThread().interrupt();
-            if (!remove(listener)) {
-                release();
-            }
             return false;
         }
     }
 
     public int queueSize() {
-        synchronized (this) {
-            return listeners.size();
-        }
+        return listeners.size() - removedListeners.size();
     }
     
     public void removeListeners() {
-        synchronized (this) {
-            listeners.clear();
-        }
+        listeners.clear();
+        removedListeners.clear();
     }
     
     public void acquire(Runnable listener) {
         acquire(listener, 1);
     }
-    
+
     public void acquire(Runnable listener, int permits) {
-        boolean run = false;
-        
-        synchronized (this) {
-            if (counter < permits) {
-                listeners.add(new Entry(listener, permits));
-                return;
-            } else {
-                counter -= permits;
-                run = true;
-            }
+        if (permits <= 0) {
+            throw new IllegalArgumentException("permits can't be negative");
         }
-        
-        if (run) {
-            listener.run();
-        }
-    }
-    
-    public boolean remove(Runnable listener) {
-        synchronized (this) {
-            return listeners.remove(new Entry(listener, 0));
-        }
+        listeners.add(new Entry(listener, permits));
+        tryRun();
     }
 
-    public int getCounter() {
-        return counter;
-    }
-    
-    public void release() {
-        Entry entryToAcquire = null;
-        
-        synchronized (this) {
-            counter++;
-            Iterator<Entry> iter = listeners.iterator();
-            if (iter.hasNext()) {
-                Entry entry = iter.next();
-                if (entry.getPermits() <= counter) {
-                    iter.remove();
-                    entryToAcquire = entry;
+    private void tryRun() {
+        Entry entry;
+        while (true) {
+            entry = listeners.peek();
+            if (entry == null) {
+                return;
+            }
+
+            int value = counter.get();
+            if (entry.getPermits() > value) {
+                return;
+            }
+
+            if (listeners.peek() == entry
+                    && counter.compareAndSet(value, value - entry.getPermits())) {
+                listeners.poll();
+
+                if (removedListeners.remove(entry.getRunnable())) {
+                    counter.addAndGet(entry.getPermits());
+                } else {
+                    break;
                 }
             }
         }
-        
-        if (entryToAcquire != null) {
-            acquire(entryToAcquire.getRunnable(), entryToAcquire.getPermits());
-        }
+
+        entry.runnable.run();
+    }
+    
+    public void remove(Runnable listener) {
+        removedListeners.add(listener);
+    }
+
+    public int getCounter() {
+        return counter.get();
+    }
+    
+    public void release() {
+        counter.incrementAndGet();
+        tryRun();
     }
 
     @Override
