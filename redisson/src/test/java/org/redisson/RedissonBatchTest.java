@@ -181,10 +181,10 @@ public class RedissonBatchTest extends BaseTest {
 			executorService.submit(() -> {
 				for (int j = 0 ; j < 150; j++) {
 					executeBatch(redisson).whenComplete((r, e) -> {
-						counter.decrementAndGet();
-						if (e != null) {
-							hasErrors.set(true);
-						}
+                        if (e != null) {
+                            hasErrors.set(true);
+                        }
+                        counter.decrementAndGet();
 					});
 				}
 			});
