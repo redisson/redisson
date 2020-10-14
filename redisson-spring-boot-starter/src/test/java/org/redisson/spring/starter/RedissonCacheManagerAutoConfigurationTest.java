@@ -13,7 +13,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @SpringBootTest(
         classes = RedissonApplication.class,
         properties = {
-            "spring.redis.redisson.config=classpath:redisson.yaml",
+            "spring.redis.redisson.file=classpath:redisson.yaml",
             "spring.redis.timeout=10000",
             "spring.cache.type=redis",
         })

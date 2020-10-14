@@ -24,7 +24,7 @@ import java.util.List;
         classes = RedissonRestApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
-            "spring.redis.redisson.config=classpath:redisson.yaml",
+            "spring.redis.redisson.file=classpath:redisson.yaml",
             "spring.session.store-type=redis",
             "spring.session.timeout.seconds=900",
         })
