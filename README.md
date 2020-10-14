@@ -99,14 +99,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.13.5</version>
+       <version>3.13.6</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.13.5'  
+    compile 'org.redisson:redisson:3.13.6'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.13.5"
+    libraryDependencies += "org.redisson" % "redisson" % "3.13.6"
 
 #### Java
 
@@ -164,8 +164,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.13.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.13.5&e=jar),
-[Redisson node 3.13.5](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.5&e=jar)  
+[Redisson 3.13.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.13.6&e=jar),
+[Redisson node 3.13.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.6&e=jar)  
 
 ## FAQs
 
