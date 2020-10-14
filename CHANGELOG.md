@@ -3,6 +3,22 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 13-Sep-2020 - 3.13.6 released
+
+Improvement - set pingConnectionInterval = 30000 by default
+
+Fixed - CROSSLOT error thrown during RLiveObject update  
+Fixed - `RRateLimiter.delete()` method returns false  
+Fixed - `RBitSet.set(long bitIndex, boolean value)` should return boolean  
+Fixed - `RBatch` doesn't handle `MOVED`, `ASK` Redis errors in Redis  
+Fixed - "response has been skipped due to timeout" warnings were removed  
+Fixed - additional check for blocking command added in PingConnectionHandler  
+Fixed - object's name should be checked for null  
+Fixed - redisson-spring-boot-starter doesn't load config file  
+Fixed - `RTransaction` should be executed in IN_MEMORY_ATOMIC mode  
+Fixed - high contention during connection acquisition from connection pool  
+
+
 ### 28-Sep-2020 - 3.13.5 released
 
 **breaking change** - `spring.redis.redisson.config` setting renamed to `spring.redis.redisson.file`  
