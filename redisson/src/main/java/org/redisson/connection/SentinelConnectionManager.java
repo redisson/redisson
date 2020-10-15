@@ -212,12 +212,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             try {
                 RedisConnection c = client.connect();
                 connected = true;
-                try {
-                    c.sync(RedisCommands.PING);
-                } catch (RedisAuthRequiredException e) {
-                    usePassword = true;
-                }
+                c.sync(RedisCommands.PING);
                 break;
+            } catch (RedisAuthRequiredException e) {
+                usePassword = true;
             } catch (RedisConnectionException e) {
                 log.warn("Can't connect to sentinel server. {}", e.getMessage());
             } catch (Exception e) {
