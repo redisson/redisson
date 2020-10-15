@@ -26,17 +26,28 @@ public class StreamMessageId {
     /**
      * Defines id to receive Stream entries never delivered to any other consumer.
      * <p> 
-     * Used in {@link RStream#readGroup} methods
+     * Used in {@link RStream#readGroup} method
      */
     public static final StreamMessageId NEVER_DELIVERED = new StreamMessageId(-1);
-    
+
     /**
-     * Defines minimal id. Used in {@link RStream#range} methods
+     * Defines auto-generated id.
+     * <p>
+     * Used in {@link RStream#add} method
+     */
+    public static final StreamMessageId AUTO_GENERATED = new StreamMessageId(-1);
+
+    /**
+     * Defines minimal id.
+     * <p>
+     * Used in {@link RStream#range} methods
      */
     public static final StreamMessageId MIN = new StreamMessageId(-1);
     
     /**
-     * Defines maximal id. Used in {@link RStream#range} methods
+     * Defines maximal id.
+     * <p>
+     * Used in {@link RStream#range} methods
      */
     public static final StreamMessageId MAX = new StreamMessageId(-1);
     
@@ -127,6 +138,9 @@ public class StreamMessageId {
         }
         if (this == ALL) {
             return "0";
+        }
+        if (this == AUTO_GENERATED) {
+            return "*";
         }
 
         return id0 + "-" + id1;
