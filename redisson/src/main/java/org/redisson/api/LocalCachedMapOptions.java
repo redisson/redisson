@@ -43,7 +43,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         NONE,
         
         /**
-         * Clear local cache if map instance has been disconnected for a while.
+         * Clear local cache if map instance disconnected.
          */
         CLEAR,
         
