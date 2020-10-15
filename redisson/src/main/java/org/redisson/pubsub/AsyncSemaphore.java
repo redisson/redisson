@@ -26,29 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class AsyncSemaphore {
 
-    private static class Entry {
-        
-        private final Runnable runnable;
-        private final int permits;
-        
-        Entry(Runnable runnable, int permits) {
-            super();
-            this.runnable = runnable;
-            this.permits = permits;
-        }
-        
-        public int getPermits() {
-            return permits;
-        }
-        
-        public Runnable getRunnable() {
-            return runnable;
-        }
-
-    }
-
     private final AtomicInteger counter;
-    private final Queue<Entry> listeners = new ConcurrentLinkedQueue<>();
+    private final Queue<Runnable> listeners = new ConcurrentLinkedQueue<>();
     private final Set<Runnable> removedListeners = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public AsyncSemaphore(int permits) {
@@ -83,48 +62,31 @@ public class AsyncSemaphore {
     }
     
     public void acquire(Runnable listener) {
-        acquire(listener, 1);
+        listeners.add(listener);
+        tryRun();
     }
 
-    public void acquire(Runnable listener, int permits) {
-        if (permits <= 0) {
-            throw new IllegalArgumentException("permits should be non-zero");
-        }
-        listeners.add(new Entry(listener, permits));
-        tryRun(1);
-    }
-
-    private void tryRun(int permits) {
+    private void tryRun() {
         if (counter.get() == 0
                 || listeners.peek() == null) {
             return;
         }
 
-        if (counter.addAndGet(-permits) >= 0) {
-            Entry e = listeners.peek();
-            if (e == null) {
-                counter.addAndGet(permits);
-                return;
-            }
-            if (e.getPermits() != permits) {
-                counter.addAndGet(permits);
-                tryRun(e.getPermits());
-                return;
-            }
-            Entry entry = listeners.poll();
-            if (entry == null) {
-                counter.addAndGet(permits);
+        if (counter.decrementAndGet() >= 0) {
+            Runnable listener = listeners.poll();
+            if (listener == null) {
+                counter.incrementAndGet();
                 return;
             }
 
-            if (removedListeners.remove(entry.getRunnable())) {
-                counter.addAndGet(entry.getPermits());
-                tryRun(1);
+            if (removedListeners.remove(listener)) {
+                counter.incrementAndGet();
+                tryRun();
             } else {
-                entry.runnable.run();
+                listener.run();
             }
         } else {
-            counter.addAndGet(permits);
+            counter.incrementAndGet();
         }
     }
 
@@ -138,7 +100,7 @@ public class AsyncSemaphore {
 
     public void release() {
         counter.incrementAndGet();
-        tryRun(1);
+        tryRun();
     }
 
     @Override

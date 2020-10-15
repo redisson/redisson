@@ -15,22 +15,12 @@
  */
 package org.redisson.command;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.redisson.api.BatchOptions;
 import org.redisson.api.BatchOptions.ExecutionMode;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisConnection;
 import org.redisson.client.codec.Codec;
-import org.redisson.client.protocol.BatchCommandData;
-import org.redisson.client.protocol.CommandData;
-import org.redisson.client.protocol.CommandsData;
-import org.redisson.client.protocol.RedisCommand;
-import org.redisson.client.protocol.RedisCommands;
+import org.redisson.client.protocol.*;
 import org.redisson.command.CommandBatchService.ConnectionEntry;
 import org.redisson.command.CommandBatchService.Entry;
 import org.redisson.connection.ConnectionManager;
@@ -38,10 +28,16 @@ import org.redisson.connection.MasterSlaveEntry;
 import org.redisson.connection.NodeSource;
 import org.redisson.connection.NodeSource.Redirect;
 import org.redisson.liveobject.core.RedissonObjectBuilder;
+import org.redisson.misc.AsyncCountDownLatch;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
-import org.redisson.pubsub.AsyncSemaphore;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 
@@ -53,19 +49,19 @@ import org.redisson.pubsub.AsyncSemaphore;
 public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R> {
 
     private final ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections;
-    private final AsyncSemaphore semaphore;
+    private final AsyncCountDownLatch latch;
     
     @SuppressWarnings("ParameterNumber")
     public RedisQueuedBatchExecutor(boolean readOnlyMode, NodeSource source, Codec codec, RedisCommand<V> command,
             Object[] params, RPromise<R> mainPromise, boolean ignoreRedirect, ConnectionManager connectionManager,
             RedissonObjectBuilder objectBuilder, ConcurrentMap<MasterSlaveEntry, Entry> commands,
             ConcurrentMap<MasterSlaveEntry, ConnectionEntry> connections, BatchOptions options, AtomicInteger index,
-            AtomicBoolean executed, AsyncSemaphore semaphore) {
+            AtomicBoolean executed, AsyncCountDownLatch latch) {
         super(readOnlyMode, source, codec, command, params, mainPromise, ignoreRedirect, connectionManager, objectBuilder,
                 commands, options, index, executed);
         
         this.connections = connections;
-        this.semaphore = semaphore;
+        this.latch = latch;
     }
     
     @Override
@@ -112,7 +108,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
             RPromise<R> sentPromise = (RPromise<R>) batchPromise.getSentPromise();
             super.handleSuccess(sentPromise, connectionFuture, null);
         } finally {
-            semaphore.release();
+            latch.countDown();
         }
     }
     
@@ -134,7 +130,7 @@ public class RedisQueuedBatchExecutor<V, R> extends BaseRedisBatchExecutor<V, R>
 
             super.handleError(connectionFuture, cause);
         } finally {
-            semaphore.release();
+            latch.countDown();
         }
     }
     
