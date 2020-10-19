@@ -190,26 +190,58 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(commandExecutor, name), 
-                new RedissonListMultimapRx<K, V>(commandExecutor, name), RListMultimapRx.class);
+        RedissonListMultimap<K, V> listMultimap = new RedissonListMultimap<>(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
     }
 
     @Override
     public <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonListMultimap<K, V>(codec, commandExecutor, name), 
-                new RedissonListMultimapRx<K, V>(codec, commandExecutor, name), RListMultimapRx.class);
+        RedissonListMultimap<K, V> listMultimap = new RedissonListMultimap<>(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapRx<K, V>(listMultimap, commandExecutor), RListMultimapRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name) {
+        RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name, Codec codec) {
+        RedissonListMultimapCache<K, V> listMultimap = new RedissonListMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, listMultimap,
+                new RedissonListMultimapCacheRx<K, V>(listMultimap, commandExecutor), RListMultimapCacheRx.class);
     }
 
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(commandExecutor, name), 
-                new RedissonSetMultimapRx<K, V>(commandExecutor, name, this), RSetMultimapRx.class);
+        RedissonSetMultimap<K, V> setMultimap = new RedissonSetMultimap<>(commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapRx.class);
     }
 
     @Override
     public <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec) {
-        return RxProxyBuilder.create(commandExecutor, new RedissonSetMultimap<K, V>(codec, commandExecutor, name), 
-                new RedissonSetMultimapRx<K, V>(codec, commandExecutor, name, this), RSetMultimapRx.class);
+        RedissonSetMultimap<K, V> setMultimap = new RedissonSetMultimap<>(codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name) {
+        RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheRx.class);
+    }
+
+    @Override
+    public <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name, Codec codec) {
+        RedissonSetMultimapCache<K, V> setMultimap = new RedissonSetMultimapCache<>(evictionScheduler, codec, commandExecutor, name);
+        return RxProxyBuilder.create(commandExecutor, setMultimap,
+                new RedissonSetMultimapCacheRx<K, V>(setMultimap, commandExecutor, this), RSetMultimapCacheRx.class);
     }
 
     @Override

@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.checkerframework.checker.units.qual.K;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
@@ -368,6 +369,31 @@ public interface RedissonRxClient {
     <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec);
 
     /**
+     * Returns List based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RListMultimapCacheRx object
+     */
+    <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name);
+
+    /**
+     * Returns List based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RListMultimapCacheRx object
+     */
+    <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name, Codec codec);
+
+    /**
      * Returns Set based Multimap instance by name.
      * 
      * @param <K> type of key
@@ -388,7 +414,32 @@ public interface RedissonRxClient {
      * @return SetMultimap object
      */
     <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec);
-    
+
+    /**
+     * Returns Set based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RSetMultimapCacheRx object
+     */
+    <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RSetMultimapCacheRx object
+     */
+    <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name, Codec codec);
+
     /**
      * Returns map instance by name.
      *
