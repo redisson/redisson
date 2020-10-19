@@ -587,7 +587,10 @@ public interface RedissonClient {
 
     /**
      * Returns topic instance by name.
-     * 
+     * <p>
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
+     *
      * @param name - name of object
      * @return Topic object
      */
@@ -596,12 +599,43 @@ public interface RedissonClient {
     /**
      * Returns topic instance by name
      * using provided codec for messages.
+     * <p>
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
      *
      * @param name - name of object
      * @param codec - codec for message
      * @return Topic object
      */
     RTopic getTopic(String name, Codec codec);
+
+    /**
+     * Returns reliable topic instance by name.
+     * <p>
+     * Dedicated Redis connection is allocated per instance (subscriber) of this object.
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param name - name of object
+     * @return ReliableTopic object
+     */
+    RReliableTopic getReliableTopic(String name);
+
+    /**
+     * Returns reliable topic instance by name
+     * using provided codec for messages.
+     * <p>
+     * Dedicated Redis connection is allocated per instance (subscriber) of this object.
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return ReliableTopic object
+     */
+    RReliableTopic getReliableTopic(String name, Codec codec);
 
     /**
      * Returns topic instance satisfies by pattern name.

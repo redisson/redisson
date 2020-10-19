@@ -299,6 +299,16 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RReliableTopicReactive getReliableTopic(String name) {
+         return ReactiveProxyBuilder.create(commandExecutor, new RedissonReliableTopic(commandExecutor, name), RReliableTopicReactive.class);
+    }
+
+    @Override
+    public RReliableTopicReactive getReliableTopic(String name, Codec codec) {
+         return ReactiveProxyBuilder.create(commandExecutor, new RedissonReliableTopic(codec, commandExecutor, name), RReliableTopicReactive.class);
+    }
+
+    @Override
     public RPatternTopicReactive getPatternTopic(String pattern) {
          return ReactiveProxyBuilder.create(commandExecutor, new RedissonPatternTopic(commandExecutor, pattern), RPatternTopicReactive.class);
     }

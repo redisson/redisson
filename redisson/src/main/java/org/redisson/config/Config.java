@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URL;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Redisson configuration
@@ -82,6 +83,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
 
+    private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
+
     private boolean keepPubSubOrder = true;
 
     private boolean decodeInExecutor = false;
@@ -130,6 +133,7 @@ public class Config {
         setEventLoopGroup(oldConf.getEventLoopGroup());
         setTransportMode(oldConf.getTransportMode());
         setAddressResolverGroupFactory(oldConf.getAddressResolverGroupFactory());
+        setReliableTopicWatchdogTimeout(oldConf.getReliableTopicWatchdogTimeout());
 
         if (oldConf.getSingleServerConfig() != null) {
             setSingleServerConfig(new SingleServerConfig(oldConf.getSingleServerConfig()));
@@ -808,6 +812,27 @@ public class Config {
      */
     public Config setUseThreadClassLoader(boolean useThreadClassLoader) {
         this.useThreadClassLoader = useThreadClassLoader;
+        return this;
+    }
+
+    public long getReliableTopicWatchdogTimeout() {
+        return reliableTopicWatchdogTimeout;
+    }
+
+    /**
+     * Reliable Topic subscriber expires after <code>timeout</code> if watchdog
+     * didn't extend it to next <code>timeout</code> time interval.
+     * <p>
+     * This prevents against infinity grow of stored messages in topic due to Redisson client crush or
+     * any other reason when subscriber can't consumer messages anymore.
+     * <p>
+     * Default is 600000 milliseconds
+     *
+     * @param timeout timeout in milliseconds
+     * @return config
+     */
+    public Config setReliableTopicWatchdogTimeout(long timeout) {
+        this.reliableTopicWatchdogTimeout = timeout;
         return this;
     }
 }

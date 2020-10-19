@@ -466,6 +466,16 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RReliableTopic getReliableTopic(String name) {
+        return new RedissonReliableTopic(connectionManager.getCommandExecutor(), name);
+    }
+
+    @Override
+    public RReliableTopic getReliableTopic(String name, Codec codec) {
+        return new RedissonReliableTopic(codec, connectionManager.getCommandExecutor(), name);
+    }
+
+    @Override
     public RPatternTopic getPatternTopic(String pattern) {
         return new RedissonPatternTopic(connectionManager.getCommandExecutor(), pattern);
     }

@@ -517,6 +517,34 @@ public interface RedissonReactiveClient {
     RTopicReactive getTopic(String name, Codec codec);
 
     /**
+     * Returns reliable topic instance by name.
+     * <p>
+     * Dedicated Redis connection is allocated per instance (subscriber) of this object.
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param name - name of object
+     * @return ReliableTopic object
+     */
+    RReliableTopicReactive getReliableTopic(String name);
+
+    /**
+     * Returns reliable topic instance by name
+     * using provided codec for messages.
+     * <p>
+     * Dedicated Redis connection is allocated per instance (subscriber) of this object.
+     * Messages are delivered to all listeners attached to the same Redis setup.
+     * <p>
+     * Requires <b>Redis 5.0.0 and higher.</b>
+     *
+     * @param name - name of object
+     * @param codec - codec for message
+     * @return ReliableTopic object
+     */
+    RReliableTopicReactive getReliableTopic(String name, Codec codec);
+
+    /**
      * Returns topic instance satisfies by pattern name.
      *
      *  Supported glob-style patterns:
