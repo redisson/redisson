@@ -15,13 +15,14 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
@@ -45,7 +46,7 @@ public class StreamResultDecoder implements MultiDecoder<Object> {
             List<List<Object>> streamEntries = (List<List<Object>>) entries.get(1);
             if (!streamEntries.isEmpty()) {
                 String name = (String) entries.get(0);
-                Map<StreamMessageId, Map<Object, Object>> ee = new HashMap<>();
+                Map<StreamMessageId, Map<Object, Object>> ee = new LinkedHashMap<>();
                 result.put(name, ee);
                 
                 for (List<Object> se : streamEntries) {
