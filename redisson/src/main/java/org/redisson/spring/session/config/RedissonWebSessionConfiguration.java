@@ -15,8 +15,6 @@
  */
 package org.redisson.spring.session.config;
 
-import java.util.Map;
-
 import org.redisson.api.RedissonClient;
 import org.redisson.spring.session.ReactiveRedissonSessionRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -26,7 +24,8 @@ import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.session.config.annotation.web.server.SpringWebSessionConfiguration;
-import org.springframework.web.server.session.WebSessionManager;
+
+import java.util.Map;
 
 /**
  * Deprecated. Use spring-session implementation based on Redisson Redis Data module

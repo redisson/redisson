@@ -15,15 +15,14 @@
  */
 package org.redisson.spring.session.config;
 
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.session.MapSession;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.session.MapSession;
-import org.springframework.web.server.session.WebSessionManager;
 
 /**
  * Deprecated. Use spring-session implementation based on Redisson Redis Data module
