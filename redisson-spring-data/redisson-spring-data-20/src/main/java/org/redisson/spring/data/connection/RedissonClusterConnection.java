@@ -17,7 +17,6 @@ package org.redisson.spring.data.connection;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +38,7 @@ import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.client.protocol.decoder.ObjectListReplayDecoder;
 import org.redisson.client.protocol.decoder.StringMapDataDecoder;
 import org.redisson.connection.MasterSlaveEntry;
+import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.connection.ClusterInfo;
 import org.springframework.data.redis.connection.RedisClusterConnection;
 import org.springframework.data.redis.connection.RedisClusterNode;
@@ -380,6 +380,68 @@ public class RedissonClusterConnection extends RedissonConnection implements Red
         RFuture<List<String>> f = executorService.readAsync(entry, StringCodec.INSTANCE, RedisCommands.CLIENT_LIST);
         List<String> list = syncFuture(f);
         return CONVERTER.convert(list.toArray(new String[list.size()]));
+    }
+
+    @Override
+    public void rename(byte[] oldName, byte[] newName) {
+
+        if (isPipelined()) {
+            throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
+        }
+
+        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+            super.rename(oldName, newName);
+            return;
+        }
+
+        final byte[] value = dump(oldName);
+
+        if (null != value) {
+
+            final Long sourceTtlInSeconds = ttl(oldName);
+
+            final long ttlInMilliseconds;
+            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
+                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            } else {
+                ttlInMilliseconds = 0;
+            }
+
+            restore(newName, ttlInMilliseconds, value);
+            del(oldName);
+        }
+    }
+
+    @Override
+    public Boolean renameNX(byte[] oldName, byte[] newName) {
+        if (isPipelined()) {
+            throw new InvalidDataAccessResourceUsageException("Clustered rename is not supported in a pipeline");
+        }
+
+        if (redisson.getConnectionManager().calcSlot(oldName) == redisson.getConnectionManager().calcSlot(newName)) {
+            return super.renameNX(oldName, newName);
+        }
+
+        final byte[] value = dump(oldName);
+
+        if (null != value && !exists(newName)) {
+
+            final Long sourceTtlInSeconds = ttl(oldName);
+
+            final long ttlInMilliseconds;
+            if (null != sourceTtlInSeconds && sourceTtlInSeconds > 0) {
+                ttlInMilliseconds = sourceTtlInSeconds * 1000;
+            } else {
+                ttlInMilliseconds = 0;
+            }
+
+            restore(newName, ttlInMilliseconds, value);
+            del(oldName);
+
+            return true;
+        }
+
+        return false;
     }
 
 }
