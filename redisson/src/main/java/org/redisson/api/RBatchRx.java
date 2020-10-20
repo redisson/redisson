@@ -98,7 +98,32 @@ public interface RBatchRx {
      * @return SetMultimap object
      */
     <K, V> RSetMultimapRx<K, V> getSetMultimap(String name, Codec codec);
-    
+
+    /**
+     * Returns Set based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RSetMultimapCacheRx object
+     */
+    <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name);
+
+    /**
+     * Returns Set based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular set multimap {@link #getSetMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RSetMultimapCacheRx object
+     */
+    <K, V> RSetMultimapCacheRx<K, V> getSetMultimapCache(String name, Codec codec);
+
     /**
      * Returns set-based cache instance by <code>name</code>.
      * Uses map (value_hash, value) under the hood for minimal memory consumption.
@@ -209,7 +234,33 @@ public interface RBatchRx {
      * @return ListMultimap object
      */
     <K, V> RListMultimapRx<K, V> getListMultimap(String name, Codec codec);
-    
+
+
+    /**
+     * Returns List based Multimap cache instance by name.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @return RListMultimapCacheRx object
+     */
+    <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name);
+
+    /**
+     * Returns List based Multimap cache instance by name using provided codec for both map keys and values.
+     * Supports key eviction by specifying a time to live.
+     * If eviction is not required then it's better to use regular list multimap {@link #getListMultimap(String, Codec)}.
+     *
+     * @param <K> type of key
+     * @param <V> type of value
+     * @param name - name of object
+     * @param codec - codec for keys and values
+     * @return RListMultimapCacheRx object
+     */
+    <K, V> RListMultimapCacheRx<K, V> getListMultimapCache(String name, Codec codec);
+
     /**
      * Returns map instance by name.
      *

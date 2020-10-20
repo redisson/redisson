@@ -3,7 +3,13 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
-### 13-Sep-2020 - 3.13.6 released
+### Unreleased
+
+Feature - `RListMultimapCacheRx` and `RSetMultimapCacheRx` interfaces added, usable from `RedissonRx` and `RBatchRx` APIs
+
+Fixed - `RedissonSetMultimapRx` could throw a class cast exception on its `get()` method because it actually contained a list based multimap instance
+
+### 13-Oct-2020 - 3.13.6 released
 
 Improvement - set pingConnectionInterval = 30000 by default
 
