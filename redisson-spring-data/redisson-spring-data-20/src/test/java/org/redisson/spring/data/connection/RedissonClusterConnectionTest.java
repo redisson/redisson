@@ -1,31 +1,31 @@
 package org.redisson.spring.data.connection;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.redisson.ClusterRunner;
+import org.redisson.ClusterRunner.ClusterProcesses;
+import org.redisson.RedisRunner;
+import org.redisson.RedisRunner.FailedToStartRedisException;
+import org.redisson.Redisson;
+import org.redisson.api.RedissonClient;
+import org.redisson.config.Config;
+import org.redisson.config.SubscriptionMode;
+import org.redisson.connection.balancer.RandomLoadBalancer;
+import org.springframework.data.redis.connection.ClusterInfo;
+import org.springframework.data.redis.connection.RedisClusterNode;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisNode.NodeType;
+import org.springframework.data.redis.core.types.RedisClientInfo;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.assertj.core.api.Assertions.*;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.redisson.ClusterRunner;
-import org.redisson.RedisRunner;
-import org.redisson.RedisRunner.FailedToStartRedisException;
-import org.redisson.Redisson;
-import org.redisson.ClusterRunner.ClusterProcesses;
-import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
-import org.redisson.config.SubscriptionMode;
-import org.redisson.connection.MasterSlaveConnectionManager;
-import org.redisson.connection.balancer.RandomLoadBalancer;
-import org.springframework.data.redis.connection.ClusterInfo;
-import org.springframework.data.redis.connection.RedisClusterNode;
-import org.springframework.data.redis.connection.RedisNode.NodeType;
-import org.springframework.data.redis.core.types.RedisClientInfo;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
 
 public class RedissonClusterConnectionTest {
 
@@ -127,8 +127,8 @@ public class RedissonClusterConnectionTest {
     public void testClusterGetClusterInfo() {
         ClusterInfo info = connection.clusterGetClusterInfo();
         assertThat(info.getSlotsFail()).isEqualTo(0);
-        assertThat(info.getSlotsOk()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
-        assertThat(info.getSlotsAssigned()).isEqualTo(MasterSlaveConnectionManager.MAX_SLOT);
+        assertThat(info.getSlotsOk()).isEqualTo(MAX_SLOT);
+        assertThat(info.getSlotsAssigned()).isEqualTo(MAX_SLOT);
     }
     
     @Test
@@ -218,5 +218,12 @@ public class RedissonClusterConnectionTest {
         RedisClusterNode master = map.keySet().iterator().next();
         return master;
     }
-    
+
+    @Test
+    public void testConnectionFactoryReturnsClusterConnection() {
+        RedisConnectionFactory connectionFactory = new RedissonConnectionFactory(redisson);
+
+        assertThat(connectionFactory.getConnection()).isInstanceOf(RedissonClusterConnection.class);
+    }
+
 }

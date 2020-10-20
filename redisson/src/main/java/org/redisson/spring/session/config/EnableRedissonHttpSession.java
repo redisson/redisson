@@ -15,37 +15,18 @@
  */
 package org.redisson.spring.session.config;
 
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.session.MapSession;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
-import org.springframework.session.MapSession;
-import org.springframework.session.web.http.SessionRepositoryFilter;
-
 /**
- * Enables Redisson's Spring Session implementation backed by Redis and
- * exposes {@link SessionRepositoryFilter} as a bean named "springSessionRepositoryFilter".
- * <p>
- * Redisson instance should be registered as bean in application context.
- * Usage example:
- * <pre>
- * <code>
- * {@literal @Configuration}
- * {@literal EnableRedissonHttpSession}
- * public class RedissonHttpSessionConfig {
- *    
- *    {@literal @Bean}
- *    public RedissonClient redisson() {
- *        return Redisson.create();
- *    }
- *    
- * }
- * </code>
- * </pre>
- * 
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
+ *
  * @author Nikita Koksharov
  *
  */
@@ -53,6 +34,7 @@ import org.springframework.session.web.http.SessionRepositoryFilter;
 @Target(ElementType.TYPE)
 @Import(RedissonHttpSessionConfiguration.class)
 @Configuration
+@Deprecated
 public @interface EnableRedissonHttpSession {
 
     int maxInactiveIntervalInSeconds() default MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;
