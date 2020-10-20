@@ -21,7 +21,7 @@ import org.redisson.api.RListRx;
 
 /**
  *
- * @author Nikita Koksharov
+ * @author Marnix Kammer
  *
  * @param <K> key type
  * @param <V> value type

@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Rx-ified version of {@link RMultimapCache}.
  *
- * @author Nikita Koksharov
+ * @author Marnix Kammer
  *
  * @param <K> key type
  * @param <V> value type

@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import org.checkerframework.checker.units.qual.K;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
