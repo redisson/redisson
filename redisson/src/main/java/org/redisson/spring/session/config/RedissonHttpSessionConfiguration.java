@@ -29,16 +29,13 @@ import org.springframework.session.config.annotation.web.http.SpringHttpSessionC
 import org.springframework.session.web.http.SessionRepositoryFilter;
 
 /**
- * Exposes the {@link SessionRepositoryFilter} as the bean
- * named "springSessionRepositoryFilter".
- * <p>
- * Redisson instance should be registered as bean 
- * in application context.
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
  * 
  * @author Nikita Koksharov
  *
  */
 @Configuration
+@Deprecated
 public class RedissonHttpSessionConfiguration extends SpringHttpSessionConfiguration implements ImportAware {
 
     private Integer maxInactiveIntervalInSeconds;

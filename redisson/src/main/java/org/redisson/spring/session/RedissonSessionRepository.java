@@ -51,10 +51,12 @@ import org.springframework.session.events.SessionExpiredEvent;
 import org.springframework.util.StringUtils;
 
 /**
- * 
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
+ *
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class RedissonSessionRepository implements FindByIndexNameSessionRepository<RedissonSessionRepository.RedissonSession>, 
                                                     PatternMessageListener<String> {
 

@@ -26,25 +26,7 @@ import org.springframework.session.MapSession;
 import org.springframework.web.server.session.WebSessionManager;
 
 /**
- * Enables Redisson's Spring Session implementation backed by Redis and
- * exposes {@link WebSessionManager} as a bean named "webSessionManager".
- * <p>
- * Redisson instance should be registered as bean in application context.
- * Usage example:
- * <pre>
- * <code>
- * {@literal @Configuration}
- * {@literal EnableRedissonHttpSession}
- * public class RedissonHttpSessionConfig {
- *    
- *    {@literal @Bean}
- *    public RedissonClient redisson() {
- *        return Redisson.create();
- *    }
- *    
- * }
- * </code>
- * </pre>
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
  * 
  * @author Nikita Koksharov
  *
@@ -53,6 +35,7 @@ import org.springframework.web.server.session.WebSessionManager;
 @Target(ElementType.TYPE)
 @Import(RedissonWebSessionConfiguration.class)
 @Configuration
+@Deprecated
 public @interface EnableRedissonWebSession {
 
     int maxInactiveIntervalInSeconds() default MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS;

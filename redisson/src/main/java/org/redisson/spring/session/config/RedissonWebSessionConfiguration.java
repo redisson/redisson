@@ -29,16 +29,13 @@ import org.springframework.session.config.annotation.web.server.SpringWebSession
 import org.springframework.web.server.session.WebSessionManager;
 
 /**
- * Exposes the {@link WebSessionManager} as the bean
- * named "webSessionManager".
- * <p>
- * Redisson instance should be registered as bean 
- * in application context.
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
  * 
  * @author Nikita Koksharov
  *
  */
 @Configuration
+@Deprecated
 public class RedissonWebSessionConfiguration extends SpringWebSessionConfiguration implements ImportAware {
 
     private Integer maxInactiveIntervalInSeconds;

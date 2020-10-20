@@ -23,10 +23,12 @@ import org.springframework.session.ReactiveSessionRepository;
 import reactor.core.publisher.Mono;
 
 /**
- * 
+ * Deprecated. Use spring-session implementation based on Redisson Redis Data module
+ *
  * @author Nikita Koksharov
  *
  */
+@Deprecated
 public class ReactiveRedissonSessionRepository implements ReactiveSessionRepository<RedissonSession> {
 
     private final RedissonSessionRepository repository;
