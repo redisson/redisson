@@ -106,6 +106,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
 
     @Override
     public RedisConnection getConnection() {
+        if (redisson.getConfig().isClusterConfig()) {
+            return new RedissonClusterConnection(redisson);
+        }
         return new RedissonConnection(redisson);
     }
 
