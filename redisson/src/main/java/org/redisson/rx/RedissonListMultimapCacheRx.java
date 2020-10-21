@@ -15,34 +15,29 @@
  */
 package org.redisson.rx;
 
-import org.redisson.RedissonSet;
-import org.redisson.RedissonSetMultimap;
-import org.redisson.api.RSetRx;
-import org.redisson.api.RedissonRxClient;
+import org.redisson.RedissonList;
+import org.redisson.RedissonListMultimapCache;
+import org.redisson.api.RListRx;
 
 /**
- * 
- * @author Nikita Koksharov
+ *
+ * @author Marnix Kammer
  *
  * @param <K> key type
  * @param <V> value type
  */
-public class RedissonSetMultimapRx<K, V> {
+public class RedissonListMultimapCacheRx<K, V> {
 
-    private final RedissonRxClient redisson;
+    private final RedissonListMultimapCache<K, V> instance;
     private final CommandRxExecutor commandExecutor;
-    private final RedissonSetMultimap<K, V> instance;
-    
-    public RedissonSetMultimapRx(RedissonSetMultimap<K, V> instance, CommandRxExecutor commandExecutor, RedissonRxClient redisson) {
+
+    public RedissonListMultimapCacheRx(RedissonListMultimapCache<K, V> instance, CommandRxExecutor commandExecutor) {
         this.instance = instance;
-        this.redisson = redisson;
         this.commandExecutor = commandExecutor;
     }
 
-    public RSetRx<V> get(K key) {
-        RedissonSet<V> set = (RedissonSet<V>) instance.get(key);
-        return RxProxyBuilder.create(commandExecutor, set, 
-                new RedissonSetRx<V>(set, redisson), RSetRx.class);
+    public RListRx<V> get(K key) {
+        RedissonList<V> list = (RedissonList<V>) instance.get(key);
+        return RxProxyBuilder.create(commandExecutor, list, new RedissonListRx<>(list), RListRx.class);
     }
-
 }
