@@ -790,6 +790,78 @@ public class RedissonTest {
     }
 
     @Test
+    public void testSentinelStartupWithPassword() throws Exception {
+        RedisRunner.RedisProcess master = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .requirepass("123")
+                .run();
+        RedisRunner.RedisProcess slave1 = new RedisRunner()
+                .port(6380)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .requirepass("123")
+                .masterauth("123")
+                .run();
+        RedisRunner.RedisProcess slave2 = new RedisRunner()
+                .port(6381)
+                .nosave()
+                .randomDir()
+                .slaveof("127.0.0.1", 6379)
+                .requirepass("123")
+                .masterauth("123")
+                .run();
+        RedisRunner.RedisProcess sentinel1 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26379)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelAuthPass("myMaster", "123")
+                .requirepass("123")
+                .run();
+        RedisRunner.RedisProcess sentinel2 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26380)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelAuthPass("myMaster", "123")
+                .requirepass("123")
+                .run();
+        RedisRunner.RedisProcess sentinel3 = new RedisRunner()
+                .nosave()
+                .randomDir()
+                .port(26381)
+                .sentinel()
+                .sentinelMonitor("myMaster", "127.0.0.1", 6379, 2)
+                .sentinelAuthPass("myMaster", "123")
+                .requirepass("123")
+                .run();
+
+        Thread.sleep(5000);
+
+        Config config = new Config();
+        config.useSentinelServers()
+            .setLoadBalancer(new RandomLoadBalancer())
+            .setPassword("123")
+            .addSentinelAddress(sentinel3.getRedisServerAddressAndPort()).setMasterName("myMaster");
+
+        long t = System.currentTimeMillis();
+        RedissonClient redisson = Redisson.create(config);
+        assertThat(System.currentTimeMillis() - t).isLessThan(2000L);
+        redisson.shutdown();
+
+        sentinel1.stop();
+        sentinel2.stop();
+        sentinel3.stop();
+        master.stop();
+        slave1.stop();
+        slave2.stop();
+    }
+
+    @Test
     public void testSentinelStartup() throws Exception {
         RedisRunner.RedisProcess master = new RedisRunner()
                 .nosave()
