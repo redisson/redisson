@@ -127,7 +127,7 @@ public class RedissonSessionManager extends ManagerBase {
             session.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEvent(SessionEvent event) {
-                    if (event.getType() == Session.SESSION_DESTROYED_EVENT) {
+                    if (event.getType().equals(Session.SESSION_DESTROYED_EVENT)) {
                         getTopic().publish(new SessionDestroyedMessage(getNodeId(), session.getId()));
                     }
                 }
