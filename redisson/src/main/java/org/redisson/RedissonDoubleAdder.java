@@ -17,7 +17,6 @@ package org.redisson;
 
 import java.util.concurrent.atomic.DoubleAdder;
 
-import org.redisson.api.RAtomicDouble;
 import org.redisson.api.RDoubleAdder;
 import org.redisson.api.RFuture;
 import org.redisson.api.RedissonClient;
@@ -31,12 +30,12 @@ import org.redisson.command.CommandAsyncExecutor;
 public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RDoubleAdder {
 
     private final DoubleAdder counter = new DoubleAdder();
-    private final RAtomicDouble atomicDouble;
+    private final RedissonClient redisson;
     
     public RedissonDoubleAdder(CommandAsyncExecutor connectionManager, String name, RedissonClient redisson) {
         super(connectionManager, name, redisson);
         
-        atomicDouble = redisson.getAtomicDouble(getName());
+        this.redisson = redisson;
     }
 
     @Override
@@ -45,13 +44,13 @@ public class RedissonDoubleAdder extends RedissonBaseAdder<Double> implements RD
     }
     
     @Override
-    protected RFuture<Double> addAndGetAsync() {
-        return atomicDouble.getAndAddAsync(counter.sum());
+    protected RFuture<Double> addAndGetAsync(String id) {
+        return redisson.getAtomicDouble(getCounterName(id)).getAndAddAsync(counter.sum());
     }
     
     @Override
-    protected RFuture<Double> getAndDeleteAsync() {
-        return atomicDouble.getAndDeleteAsync();
+    protected RFuture<Double> getAndDeleteAsync(String id) {
+        return redisson.getAtomicDouble(getCounterName(id)).getAndDeleteAsync();
     }
 
     @Override
