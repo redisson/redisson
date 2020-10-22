@@ -24,27 +24,6 @@ public class RedissonLocalCachedMapSerializationCodecTest extends RedissonLocalC
         return Redisson.create(config);
     }
 
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            defaultRedisson = createInstance();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        } else {
-            if (redisson == null) {
-                redisson = defaultRedisson;
-            }
-            redisson.getKeys().flushall();
-        }
-    }
-
     @Test @Override
     public void testAddAndGet() throws InterruptedException {
         // this method/test won't work with Java Serialization

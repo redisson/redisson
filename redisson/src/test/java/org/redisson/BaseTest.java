@@ -3,6 +3,7 @@ package org.redisson;
 import java.io.IOException;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.redisson.api.RedissonClient;
@@ -10,43 +11,24 @@ import org.redisson.config.Config;
 
 public abstract class BaseTest {
     
-    protected RedissonClient redisson;
-    protected static RedissonClient defaultRedisson;
+    protected static RedissonClient redisson;
 
     @BeforeClass
     public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            defaultRedisson = createInstance();
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    defaultRedisson.shutdown();
-                }
-            });
-        }
+        RedisRunner.startDefaultRedisServerInstance();
+        redisson = createInstance();
+    }
+
+    @AfterClass
+    public static void afterClass() throws InterruptedException {
+        redisson.shutdown();
+        RedisRunner.shutDownDefaultRedisServerInstance();
     }
 
     @Before
     public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        } else {
-            if (redisson == null) {
-                redisson = defaultRedisson;
-            }
-            if (flushBetweenTests()) {
-                redisson.getKeys().flushall();
-            }
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisServerInstance();
+        if (flushBetweenTests()) {
+            redisson.getKeys().flushall();
         }
     }
 

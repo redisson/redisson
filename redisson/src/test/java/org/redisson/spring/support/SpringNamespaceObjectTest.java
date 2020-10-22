@@ -115,10 +115,10 @@ public class SpringNamespaceObjectTest extends BaseTest {
     public static void startContext() {
         TestREntity entity = new TestREntity("live-object");
         entity.setValue("1");
-        defaultRedisson.getLiveObjectService().merge(entity);
+        redisson.getLiveObjectService().merge(entity);
         entity = new TestREntity("live-object-ext");
         entity.setValue("1");
-        defaultRedisson.getLiveObjectService().merge(entity);
+        redisson.getLiveObjectService().merge(entity);
         
         System.setProperty("redisAddress", RedisRunner.getDefaultRedisServerBindAddressAndPort());
         context = new ClassPathXmlApplicationContext("classpath:org/redisson/spring/support/redisson_objects.xml");

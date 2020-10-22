@@ -44,9 +44,7 @@ public class RedissonExecutorServiceTest extends BaseTest {
     }
 
     @After
-    @Override
     public void after() throws InterruptedException {
-        super.after();
         node.shutdown();
     }
 
