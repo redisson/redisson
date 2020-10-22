@@ -4,11 +4,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.util.CharsetUtil;
 import net.bytebuddy.utility.RandomString;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Assume;
+import org.junit.Test;
 import org.redisson.ClusterRunner.ClusterProcesses;
 import org.redisson.RedisRunner.RedisProcess;
 import org.redisson.api.*;
-import org.redisson.api.redisnode.RedisCluster;
 import org.redisson.api.redisnode.RedisClusterMaster;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.*;
@@ -40,13 +41,9 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.redisson.BaseTest.createInstance;
 
-public class RedissonTest {
+public class RedissonTest extends BaseTest {
 
-    protected RedissonClient redisson;
-    protected static RedissonClient defaultRedisson;
-    
 //    @Test
     public void testLeak() throws InterruptedException {
         Config config = new Config();
@@ -120,43 +117,6 @@ public class RedissonTest {
         assertThat(map.size()).isEqualTo(iterations);
         
         localRedisson.shutdown();
-    }
-    
-    @BeforeClass
-    public static void beforeClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            defaultRedisson = BaseTest.createInstance();
-        }
-    }
-
-    @AfterClass
-    public static void afterClass() throws IOException, InterruptedException {
-        if (!RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.shutDownDefaultRedisServerInstance();
-            defaultRedisson.shutdown();
-        }
-    }
-
-    @Before
-    public void before() throws IOException, InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            RedisRunner.startDefaultRedisServerInstance();
-            redisson = createInstance();
-        } else {
-            if (redisson == null) {
-                redisson = defaultRedisson;
-            }
-            redisson.getKeys().flushall();
-        }
-    }
-
-    @After
-    public void after() throws InterruptedException {
-        if (RedissonRuntimeEnvironment.isTravis) {
-            redisson.shutdown();
-            RedisRunner.shutDownDefaultRedisServerInstance();
-        }
     }
     
     public static class Dummy {
