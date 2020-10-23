@@ -703,9 +703,6 @@ public class Config {
      * Most Redisson methods are Lua-script based and this setting turned
      * on could increase speed of such methods execution and save network traffic.
      * <p>
-     * NOTE: <code>readMode</code> option is not taken into account for such calls 
-     * as Redis slave redirects execution of cached Lua-script on Redis master node. 
-     * <p>
      * Default is <code>false</code>.
      * 
      * @param useScriptCache - <code>true</code> if Lua-script caching is required, <code>false</code> otherwise.
