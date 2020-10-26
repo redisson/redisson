@@ -68,6 +68,8 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private boolean usePassword = false;
     private String scheme;
 
+    private volatile AtomicBoolean hasException = new AtomicBoolean(false);
+
     public SentinelConnectionManager(SentinelServersConfig cfg, Config config, UUID id) {
         super(config, id);
         
@@ -371,25 +373,31 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                 }
             }
         };
-        
-        RFuture<InetSocketAddress> masterFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
-        masterFuture.onComplete((master, e) -> {
-            if (e != null) {
-                return;
-            }
 
-            RedisURI current = currentMaster.get();
-            RedisURI newMaster = toURI(master.getHostString(), String.valueOf(master.getPort()));
-            if (!newMaster.equals(current)
-                    && currentMaster.compareAndSet(current, newMaster)) {
-                RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), newMaster);
-                changeFuture.onComplete((res, ex) -> {
-                    if (ex != null) {
-                        currentMaster.compareAndSet(newMaster, current);
-                    }
-                });
+        BiConsumer<InetSocketAddress, Throwable> masterListener = new BiConsumer<InetSocketAddress, Throwable>() {
+            @Override
+            public void accept(InetSocketAddress master, Throwable e) {
+                if (e != null) {
+                    hasException.set(true);
+                    return;
+                }
+
+                RedisURI current = currentMaster.get();
+                RedisURI newMaster = toURI(master.getHostString(), String.valueOf(master.getPort()));
+                if ((!newMaster.equals(current) || hasException.get())
+                        && currentMaster.compareAndSet(current, newMaster)) {
+                    RFuture<RedisClient> changeFuture = changeMaster(singleSlotRange.getStartSlot(), newMaster);
+                    hasException.set(false);
+                    changeFuture.onComplete((res, ex) -> {
+                        if (ex != null) {
+                            currentMaster.compareAndSet(newMaster, current);
+                        }
+                    });
+                }
             }
-        });
+        };
+        RFuture<InetSocketAddress> masterFuture = connection.async(StringCodec.INSTANCE, RedisCommands.SENTINEL_GET_MASTER_ADDR_BY_NAME, cfg.getMasterName());
+        masterFuture.onComplete(masterListener);
         masterFuture.onComplete(commonListener);
         
         if (!config.checkSkipSlavesInit()) {
