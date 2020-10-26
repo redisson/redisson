@@ -21,10 +21,7 @@ import org.springframework.data.redis.connection.RedisNode.NodeType;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 
 import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.redisson.connection.MasterSlaveConnectionManager.MAX_SLOT;
@@ -181,6 +178,16 @@ public class RedissonClusterConnectionTest {
         assertThat(info.size()).isGreaterThan(10);
     }
 
+    @Test
+    public void testDel() {
+        List<byte[]> keys = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            byte[] key = ("test" + i).getBytes();
+            keys.add(key);
+            connection.set(key, ("test" + i).getBytes());
+        }
+        connection.del(keys.toArray(new byte[0][]));
+    }
     
     @Test
     public void testResetConfigStats() {
