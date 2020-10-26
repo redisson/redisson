@@ -201,6 +201,11 @@ public class RedissonReactive implements RedissonReactiveClient {
     }
 
     @Override
+    public RIdGeneratorReactive getIdGenerator(String name) {
+        return ReactiveProxyBuilder.create(commandExecutor, new RedissonIdGenerator(commandExecutor, name), RIdGeneratorReactive.class);
+    }
+
+    @Override
     public <V> RListReactive<V> getList(String name) {
         return ReactiveProxyBuilder.create(commandExecutor, new RedissonList<V>(commandExecutor, name, null), 
                 new RedissonListReactive<V>(commandExecutor, name), RListReactive.class);

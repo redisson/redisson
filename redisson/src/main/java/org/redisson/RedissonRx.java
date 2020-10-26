@@ -175,6 +175,11 @@ public class RedissonRx implements RedissonRxClient {
     }
 
     @Override
+    public RIdGeneratorRx getIdGenerator(String name) {
+        return RxProxyBuilder.create(commandExecutor, new RedissonIdGenerator(commandExecutor, name), RIdGeneratorRx.class);
+    }
+
+    @Override
     public <V> RListRx<V> getList(String name) {
         RedissonList<V> list = new RedissonList<V>(commandExecutor, name, null);
         return RxProxyBuilder.create(commandExecutor, list, 

@@ -336,6 +336,14 @@ public interface RedissonReactiveClient {
     <V> RHyperLogLogReactive<V> getHyperLogLog(String name, Codec codec);
 
     /**
+     * Returns id generator by name.
+     *
+     * @param name - name of object
+     * @return IdGenerator object
+     */
+    RIdGeneratorReactive getIdGenerator(String name);
+
+    /**
      * Returns list instance by name.
      *
      * @param <V> type of values

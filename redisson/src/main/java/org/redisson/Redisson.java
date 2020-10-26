@@ -618,6 +618,11 @@ public class Redisson implements RedissonClient {
     }
 
     @Override
+    public RIdGenerator getIdGenerator(String name) {
+        return new RedissonIdGenerator(connectionManager.getCommandExecutor(), name);
+    }
+
+    @Override
     public RKeys getKeys() {
         return new RedissonKeys(connectionManager.getCommandExecutor());
     }

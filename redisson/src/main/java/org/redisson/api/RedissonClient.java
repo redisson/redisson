@@ -973,6 +973,14 @@ public interface RedissonClient {
     <V> RBloomFilter<V> getBloomFilter(String name, Codec codec);
 
     /**
+     * Returns id generator by name.
+     *
+     * @param name - name of object
+     * @return IdGenerator object
+     */
+    RIdGenerator getIdGenerator(String name);
+
+    /**
      * Returns script operations object
      *
      * @return Script object
