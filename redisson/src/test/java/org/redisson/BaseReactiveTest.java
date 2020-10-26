@@ -32,7 +32,7 @@ public abstract class BaseReactiveTest {
 
     @Before
     public void before() throws IOException, InterruptedException {
-        redisson.getKeys().flushall();
+        sync(redisson.getKeys().flushall());
     }
 
     public static <V> Iterable<V> sync(RScoredSortedSetReactive<V> list) {
