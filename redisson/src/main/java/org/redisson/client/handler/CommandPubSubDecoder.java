@@ -37,7 +37,6 @@ import org.redisson.misc.LogHelper;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
 /**
  * Redis Publish Subscribe protocol decoder
