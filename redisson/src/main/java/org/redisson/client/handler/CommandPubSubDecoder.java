@@ -53,8 +53,8 @@ public class CommandPubSubDecoder extends CommandDecoder {
 
     private final boolean keepOrder;
     
-    public CommandPubSubDecoder(ExecutorService executor, boolean keepOrder, boolean decodeInExecutor) {
-        super(executor, decodeInExecutor);
+    public CommandPubSubDecoder(ExecutorService executor, boolean keepOrder) {
+        super(executor);
         this.keepOrder = keepOrder;
     }
 

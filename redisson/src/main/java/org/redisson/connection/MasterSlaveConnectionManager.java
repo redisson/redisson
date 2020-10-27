@@ -470,7 +470,6 @@ public class MasterSlaveConnectionManager implements ConnectionManager {
               .setSslKeystore(config.getSslKeystore())
               .setSslKeystorePassword(config.getSslKeystorePassword())
               .setClientName(config.getClientName())
-              .setDecodeInExecutor(cfg.isDecodeInExecutor())
               .setKeepPubSubOrder(cfg.isKeepPubSubOrder())
               .setPingConnectionInterval(config.getPingConnectionInterval())
               .setKeepAlive(config.isKeepAlive())

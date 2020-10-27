@@ -68,10 +68,8 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private static final char ZERO = '0';
     
     final ExecutorService executor;
-    private final boolean decodeInExecutor;
-    
-    public CommandDecoder(ExecutorService executor, boolean decodeInExecutor) {
-        this.decodeInExecutor = decodeInExecutor;
+
+    public CommandDecoder(ExecutorService executor) {
         this.executor = executor;
     }
 
@@ -116,23 +114,7 @@ public class CommandDecoder extends ReplayingDecoder<State> {
             log.trace("reply: {}, channel: {}, command: {}", in.toString(0, in.writerIndex(), CharsetUtil.UTF_8), ctx.channel(), data);
         }
 
-        if (decodeInExecutor && !(data instanceof CommandsData)) {
-            ByteBuf copy = in.copy(in.readerIndex(), in.writerIndex() - in.readerIndex());
-            in.skipBytes(in.writerIndex() - in.readerIndex());
-            executor.execute(() -> {
-                state(new State());
-                
-                try {
-                    decodeCommand(ctx.channel(), copy, data);
-                } catch (Exception e) {
-                    log.error("Unable to decode data in separate thread: " + LogHelper.toString(data), e);
-                } finally {
-                    copy.release();
-                }
-            });
-        } else {
-            decodeCommand(ctx.channel(), in, data);
-        }
+        decodeCommand(ctx.channel(), in, data);
     }
 
     protected void sendNext(Channel channel, QueueCommand data) {
