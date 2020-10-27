@@ -44,6 +44,7 @@ import org.redisson.client.protocol.RedisCommand.ValueType;
 import org.redisson.client.protocol.decoder.MultiDecoder;
 import org.redisson.misc.LogHelper;
 import org.redisson.misc.RPromise;
+import org.redisson.misc.RedisURI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,10 +68,10 @@ public class CommandDecoder extends ReplayingDecoder<State> {
     private static final char LF = '\n';
     private static final char ZERO = '0';
     
-    final ExecutorService executor;
+    final String scheme;
 
-    public CommandDecoder(ExecutorService executor) {
-        this.executor = executor;
+    public CommandDecoder(String scheme) {
+        this.scheme = scheme;
     }
 
     @Override
@@ -314,12 +315,12 @@ public class CommandDecoder extends ReplayingDecoder<State> {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.tryFailure(new RedisMovedException(slot, addr));
+                data.tryFailure(new RedisMovedException(slot, new RedisURI(scheme + "://" + addr)));
             } else if (error.startsWith("ASK")) {
                 String[] errorParts = error.split(" ");
                 int slot = Integer.valueOf(errorParts[1]);
                 String addr = errorParts[2];
-                data.tryFailure(new RedisAskException(slot, addr));
+                data.tryFailure(new RedisAskException(slot, new RedisURI(scheme + "://" + addr)));
             } else if (error.startsWith("TRYAGAIN")) {
                 data.tryFailure(new RedisTryAgainException(error
                         + ". channel: " + channel + " data: " + data));

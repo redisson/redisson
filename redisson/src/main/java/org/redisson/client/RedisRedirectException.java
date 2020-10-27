@@ -29,9 +29,9 @@ public class RedisRedirectException extends RedisException {
     private final int slot;
     private final RedisURI url;
 
-    public RedisRedirectException(int slot, String url) {
+    public RedisRedirectException(int slot, RedisURI url) {
         this.slot = slot;
-        this.url = new RedisURI("redis://" + url);
+        this.url = url;
     }
 
     public int getSlot() {

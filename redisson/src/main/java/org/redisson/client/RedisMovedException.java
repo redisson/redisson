@@ -15,6 +15,8 @@
  */
 package org.redisson.client;
 
+import org.redisson.misc.RedisURI;
+
 /**
  * 
  * @author Nikita Koksharov
@@ -24,7 +26,7 @@ public class RedisMovedException extends RedisRedirectException {
 
     private static final long serialVersionUID = -6969734163155547631L;
 
-    public RedisMovedException(int slot, String url) {
+    public RedisMovedException(int slot, RedisURI url) {
         super(slot, url);
     }
 

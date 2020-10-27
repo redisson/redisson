@@ -95,9 +95,9 @@ public class RedisChannelInitializer extends ChannelInitializer<Channel> {
         }
         
         if (type == Type.PLAIN) {
-            ch.pipeline().addLast(new CommandDecoder(config.getExecutor()));
+            ch.pipeline().addLast(new CommandDecoder(config.getAddress().getScheme()));
         } else {
-            ch.pipeline().addLast(new CommandPubSubDecoder(config.getExecutor(), config.isKeepPubSubOrder()));
+            ch.pipeline().addLast(new CommandPubSubDecoder(config));
         }
 
         ch.pipeline().addLast(new ErrorsLoggingHandler());
