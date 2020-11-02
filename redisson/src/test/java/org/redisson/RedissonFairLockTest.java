@@ -936,9 +936,9 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
     @Test
     public void testLockBlock() throws InterruptedException{
         Config cfg = createConfig();
-        cfg.useSingleServer().setSubscriptionsPerConnection(100);
-        RedissonClient redisson = Redisson.create(cfg);
+        cfg.setLockWatchdogTimeout(30000);
 
+        RedissonClient redisson = Redisson.create(cfg);
         int totalExecutorCount = 5;
         int totalThreadCount = 100;
         int interval = 1000;
