@@ -212,7 +212,7 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                         "if (timeout > tonumber(ARGV[4])) and (redis.call('exists', KEYS[1]) == 0) then " +
                             "redis.call('lpop', KEYS[2]);" +
                             "redis.call('zrem', KEYS[3], firstThreadId);" +
-                        "else" +
+                        "else " +
                             "break;" +
                         "end;" +
                     "end;" +
