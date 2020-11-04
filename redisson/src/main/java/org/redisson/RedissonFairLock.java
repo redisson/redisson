@@ -201,22 +201,6 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                         "return nil;" +
                     "end;" +
 
-
-                    // check if the lock is not held, and other queues are not used
-                    "while true do " +
-                        "local firstThreadId = redis.call('lindex', KEYS[2], 0);" +
-                        "if (firstThreadId == false) or (firstThreadId == ARGV[2]) then " +
-                            "break;"+
-                        "end;" +
-                        "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId));" +
-                        "if (timeout > tonumber(ARGV[4])) and (redis.call('exists', KEYS[1]) == 0) then " +
-                            "redis.call('lpop', KEYS[2]);" +
-                            "redis.call('zrem', KEYS[3], firstThreadId);" +
-                        "else " +
-                            "break;" +
-                        "end;" +
-                    "end;" +
-
                     // the lock cannot be acquired
                     // check if the thread is already in the queue
                     "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
