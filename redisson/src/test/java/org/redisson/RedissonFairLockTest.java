@@ -933,5 +933,62 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         await().atMost(30, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
     }
 
+    @Test
+    public void testLockBlock() throws InterruptedException{
+        Config cfg = createConfig();
+        cfg.setLockWatchdogTimeout(30000);
 
+        RedissonClient redisson = Redisson.create(cfg);
+        int totalExecutorCount = 5;
+        int totalThreadCount = 100;
+        int interval = 1000;
+        Lock lock = redisson.getFairLock("testLockBlock");
+        for (int count = 0; count < totalExecutorCount; count++) {
+            ExecutorService executor = Executors.newFixedThreadPool(totalThreadCount);
+            for (int i = 0; i < totalThreadCount; i++) {
+                final int finalI = i;
+                executor.submit(() -> {
+                    log.info("running " + finalI + " in thread " + Thread.currentThread().getId());
+                    try {
+                        lock.lock();
+                        log.info("Thread " + finalI + " got lock");
+                    } catch (Exception ex) {
+                        log.error("Failed to get lock");
+                    } finally {
+                        lock.unlock();
+                    }
+                });
+            }
+            executor.shutdownNow();
+        }
+        redisson.shutdown();
+
+        // In case connection closed
+        redisson = Redisson.create(cfg);
+        long timeOut = redisson.getConfig().getLockWatchdogTimeout() + interval;
+        ExecutorService lockExecutor = Executors.newFixedThreadPool(1);
+        Lock lockSecond = redisson.getFairLock("testLockBlock");
+        Future<Boolean> future = lockExecutor.submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                // check if this lock can be acquired in short time
+                Thread.sleep(timeOut);
+                lockSecond.lock();
+                return Boolean.TRUE;
+            }
+        });
+
+        Boolean got = Boolean.FALSE;
+        try{
+            got = future.get(timeOut + interval, TimeUnit.MILLISECONDS);
+            if (got) {
+                log.info("Got lock immediately after startup");
+            }else{
+                log.info("Failed to get lock due to blocked");
+            }
+        }catch (Exception e){
+            log.info("Failed to get lock due to blocked");
+        }
+        Assert.assertTrue(got);
+    }
 }
