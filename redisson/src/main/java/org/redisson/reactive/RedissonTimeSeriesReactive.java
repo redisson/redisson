@@ -44,7 +44,7 @@ public class RedissonTimeSeriesReactive<V> {
         return Flux.create(new SetReactiveIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonTimeSeries) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, null, 10);
+                return ((RedissonTimeSeries) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, 10);
             }
         });
     }

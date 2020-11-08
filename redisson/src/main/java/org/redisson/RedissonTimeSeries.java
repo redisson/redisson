@@ -481,59 +481,45 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
             System.currentTimeMillis(), startScore, limit);
     }
 
-    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, String pattern, int count) {
-        RFuture<ListScanResult<Object>> f = scanIteratorAsync(name, client, startPos, pattern, count);
+    public ListScanResult<Object> scanIterator(String name, RedisClient client, long startPos, int count) {
+        RFuture<ListScanResult<Object>> f = scanIteratorAsync(name, client, startPos, count);
         return get(f);
     }
 
-    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, String pattern, int count) {
+    public RFuture<ListScanResult<Object>> scanIteratorAsync(String name, RedisClient client, long startPos, int count) {
         List<Object> params = new ArrayList<>();
         params.add(startPos);
         params.add(System.currentTimeMillis());
-        if (pattern != null) {
-            params.add(pattern);
-        }
         params.add(count);
 
         return commandExecutor.evalReadAsync(client, name, codec, RedisCommands.EVAL_ZSCAN,
                   "local result = {}; "
-                + "local res; "
-                + "if (#ARGV == 4) then "
-                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'match', ARGV[3], 'count', ARGV[4]); "
-                + "else "
-                  + " res = redis.call('zscan', KEYS[1], ARGV[1], 'count', ARGV[3]); "
-                + "end;"
-                + "for i, value in ipairs(res[2]) do "
-                    + "if i % 2 ~= 0 then " +
-                         "local expirationDate = redis.call('zscore', KEYS[2], value); " +
-                         "if tonumber(expirationDate) > tonumber(ARGV[2]) then " +
-                             "local t, val = struct.unpack('LLc0', value); " +
-                             "table.insert(result, val);" +
-                         "end;"
-                    + "end;"
-                + "end;"
-                + "return {res[1], result};",
+                + "local res = redis.call('zrange', KEYS[1], ARGV[1], tonumber(ARGV[1]) + tonumber(ARGV[3]) - 1); "
+                + "for i, value in ipairs(res) do "
+                   + "local expirationDate = redis.call('zscore', KEYS[2], value); " +
+                     "if tonumber(expirationDate) > tonumber(ARGV[2]) then " +
+                         "local t, val = struct.unpack('LLc0', value); " +
+                         "table.insert(result, val);" +
+                     "end;"
+                + "end;" +
+
+                  "local nextPos = tonumber(ARGV[1]) + tonumber(ARGV[3]); " +
+                  "if #res < tonumber(ARGV[3]) then " +
+                    "nextPos = 0;" +
+                  "end;"
+
+                + "return {nextPos, result};",
                 Arrays.asList(name, getTimeoutSetName()),
                 params.toArray());
     }
 
     @Override
     public Iterator<V> iterator(int count) {
-        return iterator(null, count);
-    }
-
-    @Override
-    public Iterator<V> iterator(String pattern) {
-        return iterator(pattern, 10);
-    }
-
-    @Override
-    public Iterator<V> iterator(String pattern, int count) {
         return new RedissonBaseIterator<V>() {
 
             @Override
             protected ListScanResult<Object> iterator(RedisClient client, long nextIterPos) {
-                return scanIterator(getName(), client, nextIterPos, pattern, count);
+                return scanIterator(getName(), client, nextIterPos, count);
             }
 
             @Override
@@ -546,7 +532,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
 
     @Override
     public Iterator<V> iterator() {
-        return iterator(null);
+        return iterator(10);
     }
 
     @Override
@@ -557,16 +543,6 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     @Override
     public Stream<V> stream(int count) {
         return toStream(iterator(count));
-    }
-
-    @Override
-    public Stream<V> stream(String pattern, int count) {
-        return toStream(iterator(pattern, count));
-    }
-
-    @Override
-    public Stream<V> stream(String pattern) {
-        return toStream(iterator(pattern));
     }
 
     @Override
