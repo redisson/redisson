@@ -86,7 +86,7 @@ public interface RTopicRx {
     Completable removeListener(MessageListener<?> listener);
     
     /**
-     * Returns continues stream of messages.
+     * Returns continues stream of published messages.
      * 
      * @param <M> - type of message
      * @param type - type of message to listen
