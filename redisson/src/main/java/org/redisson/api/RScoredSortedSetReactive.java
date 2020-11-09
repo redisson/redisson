@@ -234,7 +234,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param elements - elements
      * @return ranks or <code>null</code> if value does not exist
      */
-    Mono<List<Integer>> revRankAsync(Collection<V> elements);
+    Mono<List<Integer>> revRank(Collection<V> elements);
 
     /**
      * Returns score of element or <code>null</code> if it doesn't exist.
