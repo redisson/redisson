@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -935,23 +936,22 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
     @Test
     public void testLockBlock() throws InterruptedException{
-        Config cfg = createConfig();
-        cfg.setLockWatchdogTimeout(30000);
-
-        RedissonClient redisson = Redisson.create(cfg);
         int totalExecutorCount = 5;
         int totalThreadCount = 100;
-        int interval = 1000;
-        Lock lock = redisson.getFairLock("testLockBlock");
+        long defaultWaitTime = RedissonFairLock.DEFAULT_THREAD_WAIT_TIME;
+        String lockName = "testLockBlock";
+        List<ExecutorService> executors = new LinkedList<>();
+        RedissonClient finalRedisson = createInstance();
         for (int count = 0; count < totalExecutorCount; count++) {
             ExecutorService executor = Executors.newFixedThreadPool(totalThreadCount);
             for (int i = 0; i < totalThreadCount; i++) {
-                final int finalI = i;
+                final int index = i;
+                RedissonClient finalRedisson1 = finalRedisson;
                 executor.submit(() -> {
-                    log.info("running " + finalI + " in thread " + Thread.currentThread().getId());
+                    Lock lock = finalRedisson1.getFairLock(lockName);
                     try {
                         lock.lock();
-                        log.info("Thread " + finalI + " got lock");
+                        Thread.sleep(1000*10);
                     } catch (Exception ex) {
                         log.error("Failed to get lock");
                     } finally {
@@ -959,20 +959,19 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
                     }
                 });
             }
-            executor.shutdownNow();
+            executors.add(executor);
         }
-        redisson.shutdown();
-
+        Thread.sleep(defaultWaitTime / 2);
+        executors.forEach(it -> it.shutdownNow());
+        finalRedisson.shutdown();
+        Thread.sleep(20000);
         // In case connection closed
-        redisson = Redisson.create(cfg);
-        long timeOut = redisson.getConfig().getLockWatchdogTimeout() + interval;
-        ExecutorService lockExecutor = Executors.newFixedThreadPool(1);
-        Lock lockSecond = redisson.getFairLock("testLockBlock");
+        finalRedisson = createInstance();
+        ExecutorService lockExecutor = Executors.newSingleThreadExecutor();
+        Lock lockSecond = redisson.getFairLock(lockName);
         Future<Boolean> future = lockExecutor.submit(new Callable<Boolean>() {
             @Override
             public Boolean call() throws Exception {
-                // check if this lock can be acquired in short time
-                Thread.sleep(timeOut);
                 lockSecond.lock();
                 return Boolean.TRUE;
             }
@@ -980,9 +979,11 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
 
         Boolean got = Boolean.FALSE;
         try{
-            got = future.get(timeOut + interval, TimeUnit.MILLISECONDS);
+            long startTime = System.currentTimeMillis();
+            got = future.get(defaultWaitTime, TimeUnit.MILLISECONDS);
+            long endTime = System.currentTimeMillis();
             if (got) {
-                log.info("Got lock immediately after startup");
+                log.info("Got lock immediately after startup, costing {} ms", endTime - startTime);
             }else{
                 log.info("Failed to get lock due to blocked");
             }
@@ -990,5 +991,6 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             log.info("Failed to get lock due to blocked");
         }
         Assert.assertTrue(got);
+        finalRedisson.shutdown();
     }
 }
