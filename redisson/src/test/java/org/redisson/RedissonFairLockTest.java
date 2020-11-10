@@ -961,10 +961,9 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
             }
             executors.add(executor);
         }
-        Thread.sleep(defaultWaitTime / 2);
         executors.forEach(it -> it.shutdownNow());
         finalRedisson.shutdown();
-        Thread.sleep(20000);
+        Thread.sleep(createConfig().getLockWatchdogTimeout() + 10000);
         // In case connection closed
         finalRedisson = createInstance();
         ExecutorService lockExecutor = Executors.newSingleThreadExecutor();
