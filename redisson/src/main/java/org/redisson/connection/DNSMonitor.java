@@ -127,8 +127,13 @@ public class DNSMonitor {
                             log.error("Unable to find entry for current master {}", currentMasterAddr);
                             return;
                         }
-                        masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
-                        masters.put(entry.getKey(), newMasterAddr);
+
+                        RFuture<RedisClient> changeFuture = masterSlaveEntry.changeMaster(newMasterAddr, entry.getKey());
+                        changeFuture.onComplete((r, e) -> {
+                            if (e == null) {
+                                masters.put(entry.getKey(), newMasterAddr);
+                            }
+                        });
                     }
                 }
             });
