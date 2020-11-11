@@ -26,6 +26,7 @@ import org.redisson.client.codec.LongCodec;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.client.protocol.RedisStrictCommand;
 import org.redisson.command.CommandAsyncExecutor;
+import org.redisson.executor.FairLockCache;
 import org.redisson.pubsub.LockPubSub;
 
 /**
@@ -44,9 +45,17 @@ public class RedissonFairLock extends RedissonLock implements RLock {
     private final CommandAsyncExecutor commandExecutor;
     private final String threadsQueueName;
     private final String timeoutSetName;
+    public static final String REGISTERED_CLIENT_PREFIX = "redisson_lock_clients";
+    private FairLockCache fairLockCache;
+    public static final long DEFAULT_THREAD_WAIT_TIME = 60000*5;
 
     public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name) {
-        this(commandExecutor, name, 60000*5);
+        this(commandExecutor, name, DEFAULT_THREAD_WAIT_TIME);
+    }
+
+    public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name, FairLockCache fairLockCache) {
+        this(commandExecutor, name, DEFAULT_THREAD_WAIT_TIME);
+        this.fairLockCache = fairLockCache;
     }
 
     public RedissonFairLock(CommandAsyncExecutor commandExecutor, String name, long threadWaitTime) {
@@ -153,84 +162,132 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                     internalLockLeaseTime, getLockName(threadId), currentTime, wait);
         }
 
+        String isClientRegistered = "1";
+        String clientQueuePrefix = "";
+        String clientElementName = "";
+        long clientElementTtl = 0L;
+        if (null != fairLockCache) {
+            if (!fairLockCache.isLockRegistered(name)) {
+                isClientRegistered =  "0";
+            }
+            clientQueuePrefix = fairLockCache.getClientQueueName(name) + "*";
+            clientElementName = fairLockCache.getClientQueueElementName(name);
+            clientElementTtl = fairLockCache.getTtl();
+        }
+
         if (command == RedisCommands.EVAL_LONG) {
-            return evalWriteAsync(getName(), LongCodec.INSTANCE, command,
-                    // remove stale threads
-                    "while true do " +
-                        "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
-                        "if firstThreadId2 == false then " +
-                            "break;" +
-                        "end;" +
-
-                        "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));" +
-                        "if timeout <= tonumber(ARGV[4]) then " +
-                            // remove the item from the queue and timeout set
-                            // NOTE we do not alter any other timeout
-                            "redis.call('zrem', KEYS[3], firstThreadId2);" +
-                            "redis.call('lpop', KEYS[2]);" +
-                        "else " +
-                            "break;" +
-                        "end;" +
-                    "end;" +
-
-                    // check if the lock can be acquired now
-                    "if (redis.call('exists', KEYS[1]) == 0) " +
-                        "and ((redis.call('exists', KEYS[2]) == 0) " +
-                            "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
-
-                        // remove this thread from the queue and timeout set
-                        "redis.call('lpop', KEYS[2]);" +
-                        "redis.call('zrem', KEYS[3], ARGV[2]);" +
-
-                        // decrease timeouts for all waiting in the queue
-                        "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
-                        "for i = 1, #keys, 1 do " +
-                            "redis.call('zincrby', KEYS[3], -tonumber(ARGV[3]), keys[i]);" +
-                        "end;" +
-
-                        // acquire the lock and set the TTL for the lease
-                        "redis.call('hset', KEYS[1], ARGV[2], 1);" +
-                        "redis.call('pexpire', KEYS[1], ARGV[1]);" +
-                        "return nil;" +
-                    "end;" +
-
-                    // check if the lock is already held, and this is a re-entry
-                    "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then " +
-                        "redis.call('hincrby', KEYS[1], ARGV[2],1);" +
-                        "redis.call('pexpire', KEYS[1], ARGV[1]);" +
-                        "return nil;" +
-                    "end;" +
-
-                    // the lock cannot be acquired
-                    // check if the thread is already in the queue
-                    "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
-                    "if timeout ~= false then " +
-                        // the real timeout is the timeout of the prior thread
-                        // in the queue, but this is approximately correct, and
-                        // avoids having to traverse the queue
-                        "return timeout - tonumber(ARGV[3]) - tonumber(ARGV[4]);" +
-                    "end;" +
-
-                    // add the thread to the queue at the end, and set its timeout in the timeout set to the timeout of
-                    // the prior thread in the queue (or the timeout of the lock if the queue is empty) plus the
-                    // threadWaitTime
-                    "local lastThreadId = redis.call('lindex', KEYS[2], -1);" +
-                    "local ttl;" +
-                    "if lastThreadId ~= false and lastThreadId ~= ARGV[2] then " +
-                        "ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - tonumber(ARGV[4]);" +
-                    "else " +
-                        "ttl = redis.call('pttl', KEYS[1]);" +
-                    "end;" +
-                    "local timeout = ttl + tonumber(ARGV[3]) + tonumber(ARGV[4]);" +
-                    "if redis.call('zadd', KEYS[3], timeout, ARGV[2]) == 1 then " +
-                        "redis.call('rpush', KEYS[2], ARGV[2]);" +
-                    "end;" +
-                    "return ttl;",
-                    Arrays.asList(getName(), threadsQueueName, timeoutSetName),
-                    internalLockLeaseTime, getLockName(threadId), wait, currentTime);
+            return getLockTtl(threadId, command, wait, currentTime, isClientRegistered, clientQueuePrefix, clientElementName, clientElementTtl);
         }
 
         throw new IllegalArgumentException();
+    }
+
+    private <T> RFuture<T> getLockTtl(long threadId, RedisStrictCommand<T> command, long wait, long currentTime, String isClientRegistered, String clientQueuePrefix, String clientElementName, long clientElementTtl) {
+        RFuture<T> result = evalWriteAsync(getName(), LongCodec.INSTANCE, command,
+                // remove unnecessary lock queue
+                "if tonumber(ARGV[5]) == 0 then " +
+                            "local clientNo = 0;" +
+                            // only delete elements if there is no registered clients
+                            "local registeredClients = redis.call('keys', KEYS[4]);" +
+                            "if #registeredClients == 0 then " +
+                                "while true do " +
+                                    "local firstThreadId = redis.call('lindex', KEYS[2], 0);" +
+                                    "if firstThreadId == false then " +
+                                        "break;" +
+                                    "end;" +
+
+                                    "redis.call('zrem', KEYS[3], firstThreadId);" +
+                                    "redis.call('lpop', KEYS[2]);" +
+                                 "end; " +
+
+                                // register client ttl
+                                "if (redis.call('exists', KEYS[5]) == 0) then " +
+                                    "redis.call('set', KEYS[5], 1);" +
+                                    "redis.call('pexpire', KEYS[5], ARGV[6]);" +
+                                "end;" +
+                            "end;" +
+                        "end;" +
+
+                        // remove stale threads
+                        "while true do " +
+                            "local firstThreadId2 = redis.call('lindex', KEYS[2], 0);" +
+                            "if firstThreadId2 == false then " +
+                                 "break;" +
+                            "end;" +
+
+                            "local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));" +
+                            "if timeout <= tonumber(ARGV[4]) then " +
+                                // remove the item from the queue and timeout set
+                                // NOTE we do not alter any other timeout
+                                "redis.call('zrem', KEYS[3], firstThreadId2);" +
+                                "redis.call('lpop', KEYS[2]);" +
+                            "else " +
+                                 "break;" +
+                            "end;" +
+                        "end;" +
+
+                        // check if the lock can be acquired now
+                        "if (redis.call('exists', KEYS[1]) == 0) " +
+                            "and ((redis.call('exists', KEYS[2]) == 0) " +
+                             "or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then " +
+
+                            // remove this thread from the queue and timeout set
+                            "redis.call('lpop', KEYS[2]);" +
+                            "redis.call('zrem', KEYS[3], ARGV[2]);" +
+
+                            // decrease timeouts for all waiting in the queue
+                            "local keys = redis.call('zrange', KEYS[3], 0, -1);" +
+                            "for i = 1, #keys, 1 do " +
+                                 "redis.call('zincrby', KEYS[3], -tonumber(ARGV[3]), keys[i]);" +
+                            "end;" +
+
+                            // acquire the lock and set the TTL for the lease
+                            "redis.call('hset', KEYS[1], ARGV[2], 1);" +
+                            "redis.call('pexpire', KEYS[1], ARGV[1]);" +
+                            "return nil;" +
+                        "end;" +
+
+                        // check if the lock is already held, and this is a re-entry
+                        "if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then " +
+                            "redis.call('hincrby', KEYS[1], ARGV[2],1);" +
+                            "redis.call('pexpire', KEYS[1], ARGV[1]);" +
+                            "return nil;" +
+                        "end;" +
+
+                        // the lock cannot be acquired
+                        // check if the thread is already in the queue
+                        "local timeout = redis.call('zscore', KEYS[3], ARGV[2]);" +
+                        "if timeout ~= false then " +
+                        // the real timeout is the timeout of the prior thread
+                        // in the queue, but this is approximately correct, and
+                        // avoids having to traverse the queue
+                            "return timeout - tonumber(ARGV[3]) - tonumber(ARGV[4]);" +
+                        "end;" +
+
+                        // add the thread to the queue at the end, and set its timeout in the timeout set to the timeout of
+                        // the prior thread in the queue (or the timeout of the lock if the queue is empty) plus the
+                        // threadWaitTime
+                        "local lastThreadId = redis.call('lindex', KEYS[2], -1);" +
+                        "local ttl;" +
+                        "if lastThreadId ~= false and lastThreadId ~= ARGV[2] then " +
+                            "ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - tonumber(ARGV[4]);" +
+                        "else " +
+                            "ttl = redis.call('pttl', KEYS[1]);" +
+                        "end;" +
+                        "local timeout = ttl + tonumber(ARGV[3]) + tonumber(ARGV[4]);" +
+                        "if redis.call('zadd', KEYS[3], timeout, ARGV[2]) == 1 then " +
+                            "redis.call('rpush', KEYS[2], ARGV[2]);" +
+                        "end;" +
+                        "return ttl;",
+                Arrays.asList(getName(), threadsQueueName, timeoutSetName, clientQueuePrefix, clientElementName),
+                internalLockLeaseTime, getLockName(threadId), wait, currentTime,
+                isClientRegistered, clientElementTtl);
+
+        if (null != fairLockCache) {
+            fairLockCache.registerLockIfAbsent(name);
+        }
+
+        return result;
     }
 
     @Override
@@ -341,4 +398,11 @@ public class RedissonFairLock extends RedissonLock implements RLock {
                 LockPubSub.UNLOCK_MESSAGE, System.currentTimeMillis());
     }
 
+    public FairLockCache getFairLockCache() {
+        return fairLockCache;
+    }
+
+    public void setFairLockCache(FairLockCache fairLockCache) {
+        this.fairLockCache = fairLockCache;
+    }
 }

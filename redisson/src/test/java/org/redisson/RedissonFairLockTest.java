@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -933,5 +934,62 @@ public class RedissonFairLockTest extends BaseConcurrentTest {
         await().atMost(30, TimeUnit.SECONDS).until(() -> lockedCounter.get() == totalThreads);
     }
 
+    @Test
+    public void testLockBlock() throws InterruptedException{
+        int totalExecutorCount = 5;
+        int totalThreadCount = 100;
+        long defaultWaitTime = RedissonFairLock.DEFAULT_THREAD_WAIT_TIME;
+        String lockName = "testLockBlock";
+        List<ExecutorService> executors = new LinkedList<>();
+        RedissonClient finalRedisson = createInstance();
+        for (int count = 0; count < totalExecutorCount; count++) {
+            ExecutorService executor = Executors.newFixedThreadPool(totalThreadCount);
+            for (int i = 0; i < totalThreadCount; i++) {
+                final int index = i;
+                RedissonClient finalRedisson1 = finalRedisson;
+                executor.submit(() -> {
+                    Lock lock = finalRedisson1.getFairLock(lockName);
+                    try {
+                        lock.lock();
+                        Thread.sleep(1000*10);
+                    } catch (Exception ex) {
+                        log.error("Failed to get lock");
+                    } finally {
+                        lock.unlock();
+                    }
+                });
+            }
+            executors.add(executor);
+        }
+        executors.forEach(it -> it.shutdownNow());
+        finalRedisson.shutdown();
+        Thread.sleep(createConfig().getLockWatchdogTimeout() + 10000);
+        // In case connection closed
+        finalRedisson = createInstance();
+        ExecutorService lockExecutor = Executors.newSingleThreadExecutor();
+        Lock lockSecond = redisson.getFairLock(lockName);
+        Future<Boolean> future = lockExecutor.submit(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                lockSecond.lock();
+                return Boolean.TRUE;
+            }
+        });
 
+        Boolean got = Boolean.FALSE;
+        try{
+            long startTime = System.currentTimeMillis();
+            got = future.get(defaultWaitTime, TimeUnit.MILLISECONDS);
+            long endTime = System.currentTimeMillis();
+            if (got) {
+                log.info("Got lock immediately after startup, costing {} ms", endTime - startTime);
+            }else{
+                log.info("Failed to get lock due to blocked");
+            }
+        }catch (Exception e){
+            log.info("Failed to get lock due to blocked");
+        }
+        Assert.assertTrue(got);
+        finalRedisson.shutdown();
+    }
 }
