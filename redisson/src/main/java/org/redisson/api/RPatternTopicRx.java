@@ -20,7 +20,7 @@ import java.util.List;
 import org.redisson.api.listener.PatternMessageListener;
 import org.redisson.api.listener.PatternStatusListener;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for Pattern based observer for Publish Subscribe object.

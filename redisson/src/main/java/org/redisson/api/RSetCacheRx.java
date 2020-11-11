@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for RSetCache object

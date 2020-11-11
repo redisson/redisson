@@ -22,9 +22,9 @@ import org.redisson.api.RFuture;
 import org.redisson.misc.ProxyBuilder;
 import org.redisson.misc.ProxyBuilder.Callback;
 
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * 

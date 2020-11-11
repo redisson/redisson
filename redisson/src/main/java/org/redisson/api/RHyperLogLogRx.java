@@ -17,8 +17,8 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Probabilistic data structure that lets you maintain counts of millions of items with extreme space efficiency.

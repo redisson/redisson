@@ -15,7 +15,7 @@
  */
 package org.redisson.rx;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.RedissonBinaryStream;
 import org.redisson.api.RBinaryStream;
 import org.redisson.api.RFuture;

@@ -15,7 +15,7 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Id generator of <code>Long</code> type numbers.

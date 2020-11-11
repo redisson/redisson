@@ -21,10 +21,10 @@ import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncService;
 import org.redisson.connection.ConnectionManager;
 
-import io.reactivex.Flowable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.functions.LongConsumer;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
  *

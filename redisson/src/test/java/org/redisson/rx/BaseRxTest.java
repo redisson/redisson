@@ -14,10 +14,10 @@ import org.redisson.api.RScoredSortedSetRx;
 import org.redisson.api.RedissonRxClient;
 import org.redisson.config.Config;
 
-import io.reactivex.Completable;
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 public abstract class BaseRxTest {
 
@@ -49,7 +49,7 @@ public abstract class BaseRxTest {
     }
     
     public static void sync(Completable completable) {
-        completable.blockingGet();
+        completable.blockingAwait();
     }
 
     public static <V> V sync(Single<V> single) {

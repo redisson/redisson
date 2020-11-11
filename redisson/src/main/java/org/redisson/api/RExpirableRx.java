@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Base  interface for all Redisson objects

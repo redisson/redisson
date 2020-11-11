@@ -19,8 +19,8 @@ import java.util.Collection;
 
 import org.reactivestreams.Publisher;
 
-import io.reactivex.Flowable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Common RxJava2 interface for collection object

@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for scored sorted set data structure.

@@ -17,7 +17,7 @@ package org.redisson.rx;
 
 import org.redisson.RedissonBlockingDeque;
 
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * 

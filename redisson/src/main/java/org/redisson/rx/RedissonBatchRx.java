@@ -15,7 +15,7 @@
  */
 package org.redisson.rx;
 
-import io.reactivex.Maybe;
+import io.reactivex.rxjava3.core.Maybe;
 import org.redisson.*;
 import org.redisson.api.*;
 import org.redisson.client.codec.Codec;

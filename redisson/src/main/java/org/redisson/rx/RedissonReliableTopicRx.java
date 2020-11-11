@@ -15,8 +15,8 @@
  */
 package org.redisson.rx;
 
-import io.reactivex.Flowable;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 import org.redisson.api.RFuture;
 import org.redisson.api.RReliableTopic;
 
