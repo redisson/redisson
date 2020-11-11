@@ -19,7 +19,7 @@ public class FairLockCache {
     private volatile ConcurrentHashMap<String, String> registeredLocks = new ConcurrentHashMap<String, String>();
     private String clientId;
     private long ttl =  RedissonFairLock.DEFAULT_THREAD_WAIT_TIME;
-    private static String DEFAULT_LOCK_VALUE = "1";
+    private static String s_DEFAULT_LOCK_VALUE = "1";
 
     public FairLockCache(String clientId, long ttl){
         this.clientId = clientId;
@@ -33,18 +33,25 @@ public class FairLockCache {
 
     public void registerLockIfAbsent(String name){
         String elementName = getClientQueueElementName(name);
-        registeredLocks.putIfAbsent(elementName, DEFAULT_LOCK_VALUE);
+        registeredLocks.putIfAbsent(elementName, s_DEFAULT_LOCK_VALUE);
     }
 
-    public Set<String> getRegisteredLocks() { return registeredLocks.keySet(); }
+    public Set<String> getRegisteredLocks() {
+        return registeredLocks.keySet();
+    }
 
-    public String getClientId() { return clientId; }
+    public String getClientId() {
+        return clientId;
+    }
 
-    public long getTtl() { return ttl; }
+    public long getTtl() {
+        return ttl;
+    }
 
     public void startRefresh(CommandAsyncExecutor commandAsyncExecutor){
+        long interval = ttl > 2 ? ttl/2 : ttl;
         executorRefresh.scheduleAtFixedRate(new FairLockClientRefreshThread(this, commandAsyncExecutor),
-                0, ttl > 2 ? ttl/2 : ttl, TimeUnit.MILLISECONDS);
+                0, interval, TimeUnit.MILLISECONDS);
     }
 
     public void endRefresh(CommandAsyncExecutor commandAsyncExecutor){
@@ -71,6 +78,6 @@ public class FairLockCache {
      * @return
      */
     public String getClientQueueName(String name){
-        return RedissonObject.prefixName(RedissonFairLock.registeredClientPrefix, name);
+        return RedissonObject.prefixName(RedissonFairLock.REGISTERED_CLIENT_PREFIX, name);
     }
 }

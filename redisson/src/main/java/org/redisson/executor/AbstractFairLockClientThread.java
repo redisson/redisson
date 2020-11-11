@@ -18,12 +18,14 @@ public abstract class AbstractFairLockClientThread extends RedissonLock implemen
     }
 
     @Override
-    public String getName() { return threadName; }
+    public String getName() {
+        return threadName;
+    }
 
     @Override
     public void run() {
         if (null != fairLockCache && fairLockCache.getRegisteredLocks().size() > 0) {
-            for(String fairLockName:fairLockCache.getRegisteredLocks()) {
+            for (String fairLockName:fairLockCache.getRegisteredLocks()) {
                 try {
                     executeCommands(fairLockName);
                 }catch (Exception e){
