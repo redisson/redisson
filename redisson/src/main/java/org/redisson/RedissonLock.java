@@ -286,6 +286,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 future.onComplete((res, e) -> {
                     if (e != null) {
                         log.error("Can't update lock " + getName() + " expiration", e);
+                        EXPIRATION_RENEWAL_MAP.remove(getEntryName());
                         return;
                     }
                     
