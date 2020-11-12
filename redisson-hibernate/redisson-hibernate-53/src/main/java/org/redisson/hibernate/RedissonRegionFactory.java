@@ -23,10 +23,7 @@ import org.hibernate.cache.cfg.spi.DomainDataRegionConfig;
 import org.hibernate.cache.spi.CacheKeysFactory;
 import org.hibernate.cache.spi.DomainDataRegion;
 import org.hibernate.cache.spi.access.AccessType;
-import org.hibernate.cache.spi.support.DomainDataRegionImpl;
-import org.hibernate.cache.spi.support.DomainDataStorageAccess;
-import org.hibernate.cache.spi.support.RegionFactoryTemplate;
-import org.hibernate.cache.spi.support.StorageAccess;
+import org.hibernate.cache.spi.support.*;
 import org.hibernate.cfg.Environment;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.internal.util.config.ConfigurationHelper;
@@ -212,22 +209,26 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
         } else {
             throw new IllegalArgumentException("Unable to determine entity cache type!");
         }
-        
-        RMapCache<Object, Object> mapCache = getCache(regionConfig.getRegionName(), buildingContext.getSessionFactory().getProperties(), defaultKey);
+
+        RMapCache<Object, Object> mapCache = getCache(qualifyName(regionConfig.getRegionName()), buildingContext.getSessionFactory().getProperties(), defaultKey);
         return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), buildingContext.getSessionFactory().getProperties(), defaultKey);
     }
-    
+
+    private String qualifyName(String name) {
+        return RegionNameQualifier.INSTANCE.qualify(name, getOptions());
+    }
+
     @Override
     protected StorageAccess createQueryResultsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
-        RMapCache<Object, Object> mapCache = getCache(regionName, sessionFactory.getProperties(), QUERY_DEF);
+        RMapCache<Object, Object> mapCache = getCache(qualifyName(regionName), sessionFactory.getProperties(), QUERY_DEF);
         return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), sessionFactory.getProperties(), QUERY_DEF);
     }
 
     @Override
     protected StorageAccess createTimestampsRegionStorageAccess(String regionName,
             SessionFactoryImplementor sessionFactory) {
-        RMapCache<Object, Object> mapCache = getCache(regionName, sessionFactory.getProperties(), TIMESTAMPS_DEF);
+        RMapCache<Object, Object> mapCache = getCache(qualifyName(regionName), sessionFactory.getProperties(), TIMESTAMPS_DEF);
         return new RedissonStorage(mapCache, ((Redisson)redisson).getConnectionManager(), sessionFactory.getProperties(), TIMESTAMPS_DEF);
     }
 
