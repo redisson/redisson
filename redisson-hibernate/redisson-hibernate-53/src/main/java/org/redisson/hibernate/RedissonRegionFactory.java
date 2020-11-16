@@ -85,7 +85,10 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
     @Override
     protected void prepareForUse(SessionFactoryOptions settings, @SuppressWarnings("rawtypes") Map properties) throws CacheException {
         this.redisson = createRedissonClient(properties);
-        
+
+        String fallbackValue = (String) properties.getOrDefault(FALLBACK, "false");
+        fallback = Boolean.valueOf(fallbackValue);
+
         StrategySelector selector = settings.getServiceRegistry().getService(StrategySelector.class);
         cacheKeysFactory = selector.resolveDefaultableStrategy(CacheKeysFactory.class, 
                 properties.get(Environment.CACHE_KEYS_FACTORY), new RedissonCacheKeysFactory(redisson.getConfig().getCodec()));
@@ -110,8 +113,6 @@ public class RedissonRegionFactory extends RegionFactoryTemplate {
             throw new CacheException("Unable to locate Redisson configuration");
         }
 
-        String fallbackValue = (String) properties.getOrDefault(FALLBACK, "false");
-        fallback = Boolean.valueOf(fallbackValue);
         return Redisson.create(config);
     }
     
