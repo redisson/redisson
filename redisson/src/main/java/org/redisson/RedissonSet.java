@@ -611,6 +611,27 @@ public class RedissonSet<V> extends RedissonExpirable implements RSet<V>, ScanIt
     }
 
     @Override
+    public boolean tryAdd(V... values) {
+        return get(tryAddAsync(values));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAddAsync(V... values) {
+        return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_BOOLEAN,
+                  "for i, v in ipairs(ARGV) do " +
+                            "if redis.call('sismember', KEYS[1], v) == 1 then " +
+                                "return 0; " +
+                            "end; " +
+                        "end; " +
+
+                        "for i=1, #ARGV, 5000 do " +
+                            "redis.call('sadd', KEYS[1], unpack(ARGV, i, math.min(i+4999, #ARGV))); " +
+                        "end; " +
+                        "return 1; ",
+                       Arrays.asList(getName()), encode(values).toArray());
+    }
+
+    @Override
     public RPermitExpirableSemaphore getPermitExpirableSemaphore(V value) {
         String lockName = getLockByValue(value, "permitexpirablesemaphore");
         return new RedissonPermitExpirableSemaphore(commandExecutor, lockName);

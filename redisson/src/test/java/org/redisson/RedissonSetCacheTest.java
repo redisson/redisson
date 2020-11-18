@@ -16,7 +16,9 @@ import java.util.concurrent.TimeUnit;
 import org.joor.Reflect;
 import org.junit.Assert;
 import org.junit.Test;
+import org.redisson.api.RSet;
 import org.redisson.api.RSetCache;
+import org.redisson.client.codec.IntegerCodec;
 import org.redisson.eviction.EvictionScheduler;
 
 public class RedissonSetCacheTest extends BaseTest {
@@ -34,7 +36,31 @@ public class RedissonSetCacheTest extends BaseTest {
         }
 
     }
-    
+
+    @Test
+    public void testTryAdd() {
+        RSetCache<String> cache = redisson.getSetCache("list", IntegerCodec.INSTANCE);
+        Set<String> names = new HashSet<>();
+        int elements = 200000;
+        for (int i = 0; i < elements; i++) {
+            names.add("name" + i);
+        }
+
+        boolean s = cache.tryAdd(names.toArray(new String[]{}));
+        assertThat(s).isTrue();
+        assertThat(cache.size()).isEqualTo(elements);
+
+        Set<String> names2 = new HashSet<>();
+        for (int i = elements+1; i < elements + 10000; i++) {
+            names2.add("name" + i);
+        }
+        names2.add("name10");
+
+        boolean r = cache.tryAdd(names2.toArray(new String[]{}));
+        assertThat(r).isFalse();
+        assertThat(cache.size()).isEqualTo(elements);
+    }
+
     @Test
     public void testDestroy() {
         RSetCache<String> cache = redisson.getSetCache("test");
