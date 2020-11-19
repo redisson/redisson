@@ -3,13 +3,39 @@ package org.redisson.spring.data.connection;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.Test;
+import org.springframework.data.geo.Circle;
+import org.springframework.data.geo.GeoResults;
+import org.springframework.data.geo.Point;
+import org.springframework.data.redis.connection.RedisGeoCommands;
 import org.springframework.data.redis.connection.RedisStringCommands.SetOption;
 import org.springframework.data.redis.connection.RedisZSetCommands;
 import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testGeo() {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        String key = "test_geo_key";
+        Point point = new Point(116.401001, 40.119499);
+        redisTemplate.opsForGeo().add(key, point, "a");
+
+        point = new Point(111.545998, 36.133499);
+        redisTemplate.opsForGeo().add(key, point, "b");
+
+        point = new Point(111.483002, 36.030998);
+        redisTemplate.opsForGeo().add(key, point, "c");
+        Circle within = new Circle(116.401001, 40.119499, 80000);
+        RedisGeoCommands.GeoRadiusCommandArgs args = RedisGeoCommands.GeoRadiusCommandArgs.newGeoRadiusArgs().includeCoordinates();
+        GeoResults<RedisGeoCommands.GeoLocation<String>> res = redisTemplate.opsForGeo().radius(key, within, args);
+        assertThat(res.getContent().get(0).getContent().getName()).isEqualTo("a");
+    }
 
     @Test
     public void testZSet() {

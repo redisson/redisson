@@ -47,6 +47,7 @@ import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.core.types.Expiration;
 import org.springframework.data.redis.core.types.RedisClientInfo;
 import org.springframework.util.Assert;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
@@ -1938,7 +1939,7 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Distance geoDist(byte[] key, byte[] member1, byte[] member2, Metric metric) {
-        return read(key, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), key, member1, member2, metric.getAbbreviation());
+        return read(key, DoubleCodec.INSTANCE, new RedisCommand<Distance>("GEODIST", new DistanceConvertor(metric)), key, member1, member2, getAbbreviation(metric));
     }
 
     private static final RedisCommand<List<Object>> GEOHASH = new RedisCommand<List<Object>>("GEOHASH", new ObjectListReplayDecoder<Object>());
@@ -1976,7 +1977,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", new GeoResultsDecoder());
         return read(key, ByteArrayCodec.INSTANCE, command, key, 
                         convert(within.getCenter().getX()), convert(within.getCenter().getY()), 
-                        within.getRadius().getValue(), within.getRadius().getMetric().getAbbreviation());
+                        within.getRadius().getValue(), getAbbreviation(within.getRadius().getMetric()));
     }
     
     @Override
@@ -1986,7 +1987,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(convert(within.getCenter().getX()));
         params.add(convert(within.getCenter().getY()));
         params.add(within.getRadius().getValue());
-        params.add(within.getRadius().getMetric().getAbbreviation());
+        params.add(getAbbreviation(within.getRadius().getMetric()));
         
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
         if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
@@ -2009,6 +2010,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, command, params.toArray());
     }
 
+    private String getAbbreviation(Metric metric) {
+        if (ObjectUtils.nullSafeEquals(Metrics.NEUTRAL, metric)) {
+            return DistanceUnit.METERS.getAbbreviation();
+        }
+        return metric.getAbbreviation();
+    }
+
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, double radius) {
         return geoRadiusByMember(key, member, new Distance(radius, DistanceUnit.METERS));
@@ -2018,7 +2026,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius) {
-        return read(key, ByteArrayCodec.INSTANCE, GEORADIUSBYMEMBER, key, member, radius.getValue(), radius.getMetric().getAbbreviation());
+        return read(key, ByteArrayCodec.INSTANCE, GEORADIUSBYMEMBER, key, member, radius.getValue(), getAbbreviation(radius.getMetric()));
     }
 
     @Override
@@ -2028,7 +2036,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         params.add(key);
         params.add(member);
         params.add(radius.getValue());
-        params.add(radius.getMetric().getAbbreviation());
+        params.add(getAbbreviation(radius.getMetric()));
         
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
         if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
