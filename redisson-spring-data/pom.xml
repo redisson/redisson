@@ -21,6 +21,7 @@
         <module>redisson-spring-data-21</module>
         <module>redisson-spring-data-22</module>
         <module>redisson-spring-data-23</module>
+        <module>redisson-spring-data-24</module>
     </modules>
 
     <build>
