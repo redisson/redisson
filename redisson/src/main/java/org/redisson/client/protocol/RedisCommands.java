@@ -207,6 +207,7 @@ public interface RedisCommands {
     RedisCommand<Set<Object>> SDIFF = new RedisCommand<Set<Object>>("SDIFF", new ObjectSetReplayDecoder<Object>());
     RedisCommand<Set<Object>> SINTER = new RedisCommand<Set<Object>>("SINTER", new ObjectSetReplayDecoder<Object>());
 
+    RedisStrictCommand<Long> LPOS = new RedisStrictCommand<>("LPOS");
     RedisCommand<Void> LSET = new RedisCommand<Void>("LSET", new VoidReplayConvertor());
     RedisCommand<Object> LPOP = new RedisCommand<Object>("LPOP");
     RedisCommand<Boolean> LREM_SINGLE = new RedisCommand<Boolean>("LREM", new BooleanReplayConvertor());
