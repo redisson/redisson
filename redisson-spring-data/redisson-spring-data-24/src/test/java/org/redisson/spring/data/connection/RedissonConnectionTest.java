@@ -14,7 +14,21 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.types.Expiration;
 
+import java.util.Set;
+
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testRangeByLex() {
+        RedisTemplate<String, String> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+        RedisZSetCommands.Range range = new RedisZSetCommands.Range();
+        range.lt("c");
+        Set<String> zSetValue = redisTemplate.opsForZSet().rangeByLex("val", range);
+        assertThat(zSetValue).isEmpty();
+    }
 
     @Test
     public void testGeo() {

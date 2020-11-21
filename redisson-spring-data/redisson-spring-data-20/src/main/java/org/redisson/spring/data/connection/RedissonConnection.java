@@ -979,12 +979,16 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, ZRANGE_ENTRY, key, start, end, "WITHSCORES");
     }
 
-    private String value(Object score, boolean inclusive, String defaultValue) {
+    private String value(Range.Boundary boundary, String defaultValue) {
+        if (boundary == null) {
+            return defaultValue;
+        }
+        Object score = boundary.getValue();
         if (score == null) {
             return defaultValue;
         }
         StringBuilder element = new StringBuilder();
-        if (!inclusive) {
+        if (!boundary.isIncluding()) {
             element.append("(");
         } else {
             if (!(score instanceof Double)) {
@@ -1034,8 +1038,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<Tuple> zRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         
         List<Object> args = new ArrayList<Object>();
         args.add(key);
@@ -1092,8 +1096,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<byte[]> zRevRangeByScore(byte[] key, Range range, Limit limit) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         
         List<Object> args = new ArrayList<Object>();
         args.add(key);
@@ -1122,8 +1126,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<Tuple> zRevRangeByScoreWithScores(byte[] key, Range range, Limit limit) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         
         List<Object> args = new ArrayList<Object>();
         args.add(key);
@@ -1149,8 +1153,8 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     @Override
     public Long zCount(byte[] key, Range range) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         return read(key, StringCodec.INSTANCE, ZCOUNT, key, min, max);
     }
 
@@ -1179,8 +1183,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Long zRemRangeByScore(byte[] key, Range range) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         return write(key, StringCodec.INSTANCE, ZREMRANGEBYSCORE, key, min, max);
     }
 
@@ -1277,8 +1281,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, Range range) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.ZRANGEBYSCORE, key, min, max);
     }
 
@@ -1289,8 +1293,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<byte[]> zRangeByScore(byte[] key, Range range, Limit limit) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-inf");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+inf");
+        String min = value(range.getMin(), "-inf");
+        String max = value(range.getMax(), "+inf");
         
         List<Object> args = new ArrayList<Object>();
         args.add(key);
@@ -1318,13 +1322,13 @@ public class RedissonConnection extends AbstractRedisConnection {
         List<Object> params = new ArrayList<Object>();
         params.add(key);
         if (range.getMin() != null) {
-            String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-");
+            String min = value(range.getMin(), "-");
             params.add(min);
         } else {
             params.add("-");
         }
         if (range.getMax() != null) {
-            String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+");
+            String max = value(range.getMax(), "+");
             params.add(max);
         } else {
             params.add("+");
@@ -1334,8 +1338,8 @@ public class RedissonConnection extends AbstractRedisConnection {
 
     @Override
     public Set<byte[]> zRangeByLex(byte[] key, Range range, Limit limit) {
-        String min = value(range.getMin().getValue(), range.getMin().isIncluding(), "-");
-        String max = value(range.getMax().getValue(), range.getMax().isIncluding(), "+");
+        String min = value(range.getMin(), "-");
+        String max = value(range.getMax(), "+");
         
         List<Object> args = new ArrayList<Object>();
         args.add(key);
