@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Boot library. Depends on [Spring Data Redis](https://github.com/redisson/redisson/tree/master/redisson-spring-data#spring-data-redis-integration) module.
 
-Supports Spring Boot 1.3.x - 2.3.x
+Supports Spring Boot 1.3.x - 2.4.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
@@ -16,14 +16,14 @@ Maven
      <dependency>
          <groupId>org.redisson</groupId>
          <artifactId>redisson-spring-boot-starter</artifactId>
-         <version>3.13.6</version>
+         <version>3.14.0</version>
      </dependency>
 ```
 
 Gradle
 
 ```groovy
-     compile 'org.redisson:redisson-spring-boot-starter:3.13.6'
+     compile 'org.redisson:redisson-spring-boot-starter:3.14.0'
 ```
 
 
@@ -38,6 +38,7 @@ Downgrade `redisson-spring-data` module if necessary to support required Spring 
 |redisson-spring-data-21     |2.1.x              |
 |redisson-spring-data-22     |2.2.x              |
 |redisson-spring-data-23     |2.3.x              |
+|redisson-spring-data-24     |2.4.x              |
 
 ### 2. Add settings into `application.settings` file
 
