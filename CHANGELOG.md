@@ -3,11 +3,35 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
-### Unreleased
+### 21-Nov-2020 - 3.14.0 released
 
-Feature - `RListMultimapCacheRx` and `RSetMultimapCacheRx` interfaces added, usable from `RedissonRx` and `RBatchRx` APIs
+Spring Session implementation is deprecated now. Please refer to [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#147-spring-session) for more details  
 
-Fixed - `RedissonSetMultimapRx` could throw a class cast exception on its `get()` method because it actually contained a list based multimap instance
+Feature - __`RReliableTopic` object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#613-reliable-topic) for more details  
+Feature - __`IdGenerator` object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#614-id-generator) for more details  
+Feature - Spring Data Redis 2.4.0 integration  
+Feature - `StreamMessageId.AUTO_GENERATED` const added  
+Feature - Rx API for `RMultimapCache` object (thanks to @mlkammer)  
+Feature - cluster-safe implementation of `rename`, `renameNX` methods of `RedissonClusterConnection` object (thanks to @eager)  
+Feature - `RxJava2` API replaced with `RxJava3`  
+Feature - `tryAdd()` method added to `RSet` and `RSetCache` objects  
+
+Improvement - preventing sending CLUSTER NODES to the same host (thanks to @serssp)  
+
+Fixed - `RSetMultimap` could throw a class cast exception on its `get()` method because it actually contained a list based multimap instance (thanks to @mlkammer)  
+Fixed - Spring Data Redis `redisTemplate.opsForGeo().radius()` method doesn't work  
+Fixed - `RKeys.deleteByPattern()` method executed in batch should throw `UnsupportedOperationException` in cluster mode  
+Fixed - `CACHE_REGION_PREFIX` setting isn't applied for hibernate 5.3+  
+Fixed - deprecation error log about JSON config even though it's not used  
+Fixed - update new master record in DNS monitor only if it replaced old master successfully  
+Fixed - `RQueue.removeIf()` method should throw `UnsupportedOperationException`  
+Fixed - Lock watchdog won't renew after reconnection (thanks to @burgleaf)  
+Fixed - `TimeSeries.iterator()` method doesn't respect the ordering  
+Fixed - `RRateLimiter` throws "bad argument #2 to 'unpack' (string expected, got nil)."  
+Fixed - `CROSSSLOT` error rised when clearing a redis-spring-data cache  
+Fixed - `RLongAdder.sum()` and `RDoubleAdder.sum()` methods return wrong result  
+Fixed - getting error while connecting to sentinel using password  
+Fixed - result of `RStream.read()` method isn't sorted by key  
 
 ### 13-Oct-2020 - 3.13.6 released
 
