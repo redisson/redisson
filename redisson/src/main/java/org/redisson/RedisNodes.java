@@ -149,7 +149,7 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         for (Entry<RedisConnection, RFuture<String>> entry : result.entrySet()) {
             RFuture<String> f = entry.getValue();
             f.awaitUninterruptibly();
-            String pong = f.getNow()
+            String pong = f.getNow();
             entry.getKey().closeAsync();
             if (!"PONG".equals(pong)) {
                 res = false;
