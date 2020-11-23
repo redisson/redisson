@@ -901,9 +901,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SRANDMEMBER_SINGLE, key);
     }
 
+    private static final RedisCommand<List<Object>> SRANDMEMBER = new RedisCommand<>("SRANDMEMBER", new ObjectListReplayDecoder<>());
+
     @Override
     public List<byte[]> sRandMember(byte[] key, long count) {
-        return read(key, ByteArrayCodec.INSTANCE, RedisCommands.SRANDMEMBER, key, count);
+        return read(key, ByteArrayCodec.INSTANCE, SRANDMEMBER, key, count);
     }
 
     @Override

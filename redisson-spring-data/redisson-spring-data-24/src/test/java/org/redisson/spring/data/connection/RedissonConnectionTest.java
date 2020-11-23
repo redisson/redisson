@@ -12,11 +12,28 @@ import org.springframework.data.redis.connection.RedisZSetCommands;
 import org.springframework.data.redis.core.Cursor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ScanOptions;
+import org.springframework.data.redis.core.SetOperations;
 import org.springframework.data.redis.core.types.Expiration;
 
 import java.util.Set;
 
 public class RedissonConnectionTest extends BaseConnectionTest {
+
+    @Test
+    public void testRandomMembers() {
+        RedisTemplate<String, Integer> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(new RedissonConnectionFactory(redisson));
+        redisTemplate.afterPropertiesSet();
+
+
+        SetOperations<String, Integer> ops = redisTemplate.opsForSet();
+        ops.add("val", 1, 2, 3, 4);
+        Set<Integer> values = redisTemplate.opsForSet().distinctRandomMembers("val", 1L);
+        assertThat(values).containsAnyOf(1, 2, 3, 4);
+
+        Integer v = redisTemplate.opsForSet().randomMember("val");
+        assertThat(v).isNotNull();
+    }
 
     @Test
     public void testRangeByLex() {
