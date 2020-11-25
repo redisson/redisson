@@ -659,7 +659,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "end;"
                 + "if ARGV[1] == '2' then "
                     + "for i=tonumber(ARGV[2]) + 2 + 1, #ARGV - 1, 5000 do "
-                        + "redis.call('hmset', KEYS[3], unpack(ARGV, i, math.min(i+4999, #ARGV - 1))); "
+                        + "redis.call('zadd', KEYS[3], unpack(ARGV, i, math.min(i+4999, #ARGV - 1))); "
                     + "end; "
                     + "redis.call('publish', KEYS[2], ARGV[#ARGV]); "
                 + "end;",
@@ -671,7 +671,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 result.tryFailure(e);
                 return;
             }
-            
+
             cacheMap(map);
             result.trySuccess(null);
         });
