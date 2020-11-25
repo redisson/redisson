@@ -8,7 +8,7 @@ Redisson Releases History
 Spring Session implementation is deprecated now. Please refer to [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#147-spring-session) for more details  
 
 Feature - __`RReliableTopic` object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#613-reliable-topic) for more details  
-Feature - __`IdGenerator` object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#614-id-generator) for more details  
+Feature - __`RIdGenerator` object added__. Please refer to [documentation](https://github.com/redisson/redisson/wiki/6.-distributed-objects/#614-id-generator) for more details  
 Feature - Spring Data Redis 2.4.0 integration  
 Feature - `StreamMessageId.AUTO_GENERATED` const added  
 Feature - Rx API for `RMultimapCache` object (thanks to @mlkammer)  
