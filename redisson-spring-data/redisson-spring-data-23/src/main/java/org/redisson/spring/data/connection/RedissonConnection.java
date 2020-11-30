@@ -1980,7 +1980,7 @@ public class RedissonConnection extends AbstractRedisConnection {
     
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadius(byte[] key, Circle within) {
-        RedisCommand<GeoResults<GeoLocation<byte[]>>> command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", new GeoResultsDecoder());
+        RedisCommand<GeoResults<GeoLocation<byte[]>>> command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", new GeoResultsDecoder());
         return read(key, ByteArrayCodec.INSTANCE, command, key, 
                         convert(within.getCenter().getX()), convert(within.getCenter().getY()), 
                         within.getRadius().getValue(), getAbbreviation(within.getRadius().getMetric()));
@@ -1997,11 +1997,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
         if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", postitionDecoder);
+            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", postitionDecoder);
             params.add("WITHCOORD");
         } else {
             MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new GeoResultsDecoder(within.getRadius().getMetric()), new GeoDistanceDecoder());
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", distanceDecoder);
+            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", distanceDecoder);
             params.add("WITHDIST");
         }
         
@@ -2028,7 +2028,7 @@ public class RedissonConnection extends AbstractRedisConnection {
         return geoRadiusByMember(key, member, new Distance(radius, DistanceUnit.METERS));
     }
 
-    private static final RedisCommand<GeoResults<GeoLocation<byte[]>>> GEORADIUSBYMEMBER = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", new GeoResultsDecoder());
+    private static final RedisCommand<GeoResults<GeoLocation<byte[]>>> GEORADIUSBYMEMBER = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", new GeoResultsDecoder());
     
     @Override
     public GeoResults<GeoLocation<byte[]>> geoRadiusByMember(byte[] key, byte[] member, Distance radius) {
@@ -2046,11 +2046,11 @@ public class RedissonConnection extends AbstractRedisConnection {
         
         RedisCommand<GeoResults<GeoLocation<byte[]>>> command;
         if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", postitionDecoder);
+            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", postitionDecoder);
             params.add("WITHCOORD");
         } else {
             MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new GeoResultsDecoder(radius.getMetric()), new GeoDistanceDecoder());
-            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", distanceDecoder);
+            command = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", distanceDecoder);
             params.add("WITHDIST");
         }
         
