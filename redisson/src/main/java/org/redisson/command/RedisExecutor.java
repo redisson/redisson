@@ -310,7 +310,7 @@ public class RedisExecutor<V, R> {
         TimerTask timeoutTask = new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
-                if (attempt < attempts) {
+                if (isResendAllowed(attempt, attempts)) {
                     if (!attemptPromise.cancel(false)) {
                         return;
                     }
@@ -335,6 +335,10 @@ public class RedisExecutor<V, R> {
         };
 
         timeout = connectionManager.newTimeout(timeoutTask, timeoutTime, TimeUnit.MILLISECONDS);
+    }
+
+    protected boolean isResendAllowed(int attempt, int attempts) {
+        return attempt < attempts;
     }
 
     private void handleBlockingOperations(RPromise<R> attemptPromise, RedisConnection connection, Long popTimeout) {
