@@ -97,7 +97,7 @@ spring:
           tcpNoDelay: false
         threads: 16
         nettyThreads: 32
-        codec: !<org.redisson.codec.FstCodec> {}
+        codec: !<org.redisson.codec.MarshallingCodec> {}
         transportMode: "NIO"
 
 ```
