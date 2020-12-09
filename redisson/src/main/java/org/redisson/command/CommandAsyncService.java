@@ -759,9 +759,7 @@ public class CommandAsyncService implements CommandAsyncExecutor {
         } else {
             List<Object> params = new ArrayList<Object>(queueNames.length + 1);
             params.add(name);
-            for (Object queueName : queueNames) {
-                params.add(queueName);
-            }
+            params.addAll(Arrays.asList(queueNames));
             params.add(secondsTimeout);
             return writeAsync(name, codec, command, params.toArray());
         }
