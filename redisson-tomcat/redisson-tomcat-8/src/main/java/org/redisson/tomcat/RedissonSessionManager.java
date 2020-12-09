@@ -239,7 +239,7 @@ public class RedissonSessionManager extends ManagerBase {
             throw new LifecycleException(e);
         }
         
-        Pipeline pipeline = getEngine().getPipeline();
+        Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
                 Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).findAny();
@@ -355,7 +355,7 @@ public class RedissonSessionManager extends ManagerBase {
         
         setState(LifecycleState.STOPPING);
         
-        Pipeline pipeline = getEngine().getPipeline();
+        Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
                 Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).forEach(v -> {
