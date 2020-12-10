@@ -113,6 +113,13 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
                     if (connection.isClosed() || bootstrap.config().group().isShuttingDown()) {
+                        if (future.isSuccess()) {
+                            Channel ch = future.channel();
+                            RedisConnection con = RedisConnection.getFrom(ch);
+                            if (con != null) {
+                                con.closeAsync();
+                            }
+                        }
                         return;
                     }
 
@@ -127,7 +134,11 @@ public class ConnectionWatchdog extends ChannelInboundHandlerAdapter {
                             c.getConnectionPromise().onComplete((res, e) -> {
                                 if (e == null) {
                                     refresh(connection, channel);
-                                    log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                    if (!connection.isClosed()) {
+                                        log.debug("{} connected to {}, command: {}", connection, connection.getRedisClient().getAddr(), connection.getCurrentCommand());
+                                    } else {
+                                        channel.close();
+                                    }
                                 } else {
                                     channel.close();
                                     reconnect(connection, nextAttempt);
