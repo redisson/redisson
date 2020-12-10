@@ -16,20 +16,11 @@
 package org.redisson;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.redisson.api.MapOptions;
-import org.redisson.api.RFuture;
-import org.redisson.api.RMapCache;
-import org.redisson.api.RTopic;
-import org.redisson.api.RedissonClient;
+import org.redisson.api.*;
 import org.redisson.api.listener.MessageListener;
 import org.redisson.api.map.event.EntryCreatedListener;
 import org.redisson.api.map.event.EntryEvent;
@@ -104,31 +95,56 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     public boolean trySetMaxSize(int maxSize) {
         return get(trySetMaxSizeAsync(maxSize));
     }
-    
+
+    public boolean trySetMaxSize(int maxSize, EvictionMode mode) {
+        return get(trySetMaxSizeAsync(maxSize, mode));
+    }
+
     @Override
     public RFuture<Boolean> trySetMaxSizeAsync(int maxSize) {
-        if (maxSize < 0) {
-            throw new IllegalArgumentException("maxSize should be greater than zero");
-        }
-        
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.HSETNX, getOptionsName(), "max-size", maxSize);
+        return trySetMaxSizeAsync(maxSize, EvictionMode.LRU);
     }
     
+    public RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode) {
+        if (maxSize <= 0) {
+            throw new IllegalArgumentException("maxSize should be greater than zero");
+        }
+
+        return commandExecutor.evalWriteAsync(getName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,
+                "redis.call('hsetnx', KEYS[1], 'max-size', ARGV[1]);"
+              + "return redis.call('hsetnx', KEYS[1], 'mode', ARGV[2]);",
+                Collections.singletonList(getOptionsName()), maxSize, mode);
+    }
+
     @Override
     public void setMaxSize(int maxSize) {
         get(setMaxSizeAsync(maxSize));
     }
-    
-    @Override
-    public RFuture<Void> setMaxSizeAsync(int maxSize) {
-        if (maxSize < 0) {
-            throw new IllegalArgumentException("maxSize should be greater than zero");
-        }
-        
-        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HSET_VOID, getOptionsName(), "max-size", maxSize);
+
+    public void setMaxSize(int maxSize, EvictionMode mode) {
+        get(setMaxSizeAsync(maxSize, mode));
     }
 
-    
+    @Override
+    public RFuture<Void> setMaxSizeAsync(int maxSize) {
+        return setMaxSizeAsync(maxSize, EvictionMode.LRU);
+    }
+
+    public RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode) {
+        if (maxSize <= 0) {
+            throw new IllegalArgumentException("maxSize should be greater than zero");
+        }
+
+        List<Object> params = new ArrayList<>(3);
+        params.add(getOptionsName());
+        params.add("max-size");
+        params.add(maxSize);
+        params.add("mode");
+        params.add(mode);
+
+        return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.HMSET, params.toArray());
+    }
+
     @Override
     public RFuture<Boolean> containsKeyAsync(Object key) {
         checkKey(key);
@@ -138,12 +154,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         "local value = redis.call('hget', KEYS[1], ARGV[2]); " +
                 "local expireDate = 92233720368547758; " +
                 "if value ~= false then " +
-                "" +
+
                 "    local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
                 "    if maxSize ~= nil and maxSize ~= 0 then " +
-                "        redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
+                "        local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                "        if mode == 'LRU' then " +
+                "               redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
+                "        else " +
+                "               redis.call('zincrby', KEYS[4], 1, ARGV[2]); " +
+                "        end; " +
                 "    end;" +
-                "" +
+
                 "    local expireDateScore = redis.call('zscore', KEYS[2], ARGV[2]); " +
                 "    if expireDateScore ~= false then " +
                 "        expireDate = tonumber(expireDateScore) " +
@@ -179,12 +200,17 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "        local t, val = struct.unpack('dLc0', v); " +
                 "        if ARGV[2] == val then " +
                 "            local key = s[i - 1]; " +
-                "" +
+
                 "            local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
                 "            if maxSize ~= nil and maxSize ~= 0 then " +
-                "                redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                "                local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                "                if mode == 'LRU' then " +
+                "                    redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                "                else " +
+                "                    redis.call('zincrby', KEYS[4], 1, key); " +
+                "                end; " +
                 "            end; " +
-                "" +
+
                 "            local expireDate = 92233720368547758; " +
                 "            local expireDateScore = redis.call('zscore', KEYS[2], key); " +
                 "            if expireDateScore ~= false then " +
@@ -236,7 +262,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
             "        local t, val = struct.unpack('dLc0', value); " +
             "        map[i] = val; " +
             "        if maxSize ~= nil and maxSize ~= 0 then " +
-            "            redis.call('zadd', KEYS[4], currentTime, key); " +
+            "                local mode = redis.call('hget', KEYS[5], 'mode'); " +
+            "                if mode == 'LRU' then " +
+            "                    redis.call('zadd', KEYS[4], currentTime, key); " +
+            "                else " +
+            "                    redis.call('zincrby', KEYS[4], 1, key); " +
+            "                end; " +
             "        end; " +
             "        if hasExpire then " +
             "            local expireDate = redis.call('zscore', KEYS[2], key); " +
@@ -472,7 +503,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         + "end; "
                         + "local maxSize = tonumber(redis.call('hget', KEYS[5], 'max-size')); " +
                         "if maxSize ~= nil and maxSize ~= 0 then " +
-                        "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
+                            "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                            "if mode == 'LRU' then " +
+                                "redis.call('zadd', KEYS[4], tonumber(ARGV[1]), ARGV[2]); " +
+                            "else " +
+                                "redis.call('zincrby', KEYS[4], 1, ARGV[2]); " +
+                            "end; " +
                         "end; "
                         + "return val; ",
                 Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getLastAccessTimeSetName(name), getOptionsName(name)),
@@ -516,9 +552,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "local currentTime = tonumber(ARGV[1]);" +
                 "local lastAccessTimeSetName = KEYS[6];" +
                 "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
+                "local mode = redis.call('hget', KEYS[8], 'mode'); " +
                 "if exists == false then" +
-                "    if maxSize ~= nil and maxSize ~= 0 then" +
-                "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]);" +
+                "    if maxSize ~= nil and maxSize ~= 0 then " +
+                        "if mode == 'LRU' then " +
+                            "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                        "end; " +
                 "        local cacheSize = tonumber(redis.call('hlen', KEYS[1]));" +
                 "        if cacheSize > maxSize then" +
                 "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
@@ -538,13 +577,20 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                 "                end;" +
                 "            end" +
                 "        end;" +
+                        "if mode == 'LFU' then " +
+                            "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                        "end; " +
                 "    end;" +
                 "    local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]);" +
                 "    redis.call('publish', KEYS[4], msg);" +
                 "    return nil;" +
                 "else" +
-                "    if maxSize ~= nil and maxSize ~= 0 then" +
-                "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]);" +
+                "    if maxSize ~= nil and maxSize ~= 0 then " +
+                        "if mode == 'LRU' then " +
+                            "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                        "else " +
+                            "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                        "end; " +
                 "    end;" +
                 "end;" +
                 "" +
@@ -579,8 +625,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "end; "
                             + "end; "
                             + "if expireDate > tonumber(ARGV[1]) then "
-                                + "if maxSize ~= nil and maxSize ~= 0 then "
-                                + "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); "
+                                + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                    "local mode = redis.call('hget', KEYS[7], 'mode'); " +
+                                    "if mode == 'LRU' then " +
+                                        "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                                    "else " +
+                                        "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                                    "end; "
                                 + "end; "
                                 + "return val; "
                             + "end; "
@@ -1335,7 +1386,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "if maxSize ~= nil and maxSize ~= 0 then " +
                         "    local currentTime = tonumber(ARGV[1]); " +
                         "    local lastAccessTimeSetName = KEYS[6]; " +
-                        "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                            "local mode = redis.call('hget', KEYS[8], 'mode'); " +
+                            "if mode == 'LRU' then " +
+                                "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                            "else " +
+                                "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                            "end; " +
                         "    local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
                         "    if cacheSize > maxSize then " +
                         "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
@@ -1389,7 +1445,12 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             // last access time
 
                             "if maxSize ~= nil and maxSize ~= 0 then " +
-                            "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                                "local mode = redis.call('hget', KEYS[7], 'mode'); " +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                                "end; " +
                             "    local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
                             "    if cacheSize > maxSize then " +
                             "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
@@ -1414,8 +1475,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "return 1; "
                         + "end; "
 
-                        + "if maxSize ~= nil and maxSize ~= 0 then "
-                        + "    redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); "
+                        + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                "local mode = redis.call('hget', KEYS[7], 'mode'); " +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                                "end; "
                         + "end; "
                         + "local t, val = struct.unpack('dLc0', value); "
                         + "local expireDate = 92233720368547758; "
@@ -1537,7 +1603,14 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
                         "        local currentTime = tonumber(ARGV[1]); " +
                         "        local lastAccessTimeSetName = KEYS[5]; " +
-                        "        redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
+
+                                "local mode = redis.call('hget', KEYS[7], 'mode'); " +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[5]); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[5]); " +
+                                "end; " +
+
                         "        local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
                         "        if cacheSize >= maxSize then " +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize); " +
@@ -1704,6 +1777,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
         return commandExecutor.evalWriteAsync(getName(), codec, RedisCommands.EVAL_VOID,
                   "local currentTime = tonumber(table.remove(ARGV, 1)); " + // index is the first parameter
                   "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
+                  "local mode = redis.call('hget', KEYS[8], 'mode'); " +
                   "for i, value in ipairs(ARGV) do "
                     + "if i % 2 == 0 then " 
                       + "local key = ARGV[i-1];" +
@@ -1733,8 +1807,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         "local lastAccessTimeSetName = KEYS[6];" +
                         "if exists == false then" +
-                        "    if maxSize ~= nil and maxSize ~= 0 then" +
-                        "        redis.call('zadd', lastAccessTimeSetName, currentTime, key);" +
+                        "    if maxSize ~= nil and maxSize ~= 0 then " +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, key); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, key); " +
+                                "end; " +
+
                         "        local cacheSize = tonumber(redis.call('hlen', KEYS[1]));" +
                         "        if cacheSize > maxSize then" +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
@@ -1763,7 +1842,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "redis.call('publish', KEYS[5], msg);" + 
                             
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
-                        "        redis.call('zadd', lastAccessTimeSetName, currentTime, key);" +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, key); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, key); " +
+                                "end; " +
                         "    end;" +
                         "end;"
                     + "end;"
@@ -1798,6 +1881,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                   "local ttl = table.remove(ARGV, 1); " + // ttl is the second parameter
                   "local ttlNumber = tonumber(ttl); " +
                   "local maxSize = tonumber(redis.call('hget', KEYS[8], 'max-size'));" +
+                  "local mode = redis.call('hget', KEYS[8], 'mode'); " +
                   "for i, value in ipairs(ARGV) do "
                     + "if i % 2 == 0 then " 
                       + "local key = ARGV[i-1];" +
@@ -1833,8 +1917,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
 
                         "local lastAccessTimeSetName = KEYS[6];" +
                         "if exists == false then" +
-                        "    if maxSize ~= nil and maxSize ~= 0 then" +
-                        "        redis.call('zadd', lastAccessTimeSetName, currentTime, key);" +
+                        "    if maxSize ~= nil and maxSize ~= 0 then " +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, key); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, key); " +
+                                "end; " +
+
                         "        local cacheSize = tonumber(redis.call('hlen', KEYS[1]));" +
                         "        if cacheSize > maxSize then" +
                         "            local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1);" +
@@ -1863,7 +1952,11 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             "redis.call('publish', KEYS[5], msg);" + 
                             
                         "    if maxSize ~= nil and maxSize ~= 0 then " +
-                        "        redis.call('zadd', lastAccessTimeSetName, currentTime, key);" +
+                                "if mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, key); " +
+                                "else " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, key); " +
+                                "end; " +
                         "    end;" +
                         "end;"
                     + "end;"
@@ -2047,8 +2140,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                                 + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
-                                    + "if maxSize ~= nil and maxSize ~= 0 then "
-                                    + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
+                                    + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                        "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                                        "if mode == 'LRU' then " +
+                                            "redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                                        "else " +
+                                            "redis.call('zincrby', KEYS[4], 1, key); " +
+                                        "end; "
                                     + "end; "
                                 + "end; "
                                 + "expireDate = math.min(expireDate, tonumber(expireIdle)) "
@@ -2132,8 +2230,13 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
                             + "if expireIdle ~= false then "
                                 + "if tonumber(expireIdle) > tonumber(ARGV[1]) then "
                                     + "redis.call('zadd', KEYS[3], t + tonumber(ARGV[1]), key); "
-                                    + "if maxSize ~= nil and maxSize ~= 0 then "
-                                    + "   redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); "
+                                    + "if maxSize ~= nil and maxSize ~= 0 then " +
+                                        "local mode = redis.call('hget', KEYS[5], 'mode'); " +
+                                        "if mode == 'LRU' then " +
+                                            "redis.call('zadd', KEYS[4], tonumber(ARGV[1]), key); " +
+                                        "else " +
+                                            "redis.call('zincrby', KEYS[4], 1, key); " +
+                                        "end; "
                                     + "end; "
                                 + "end; "
                                 + "expireDate = math.min(expireDate, tonumber(expireIdle)) "

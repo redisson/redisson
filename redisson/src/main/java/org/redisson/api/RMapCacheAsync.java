@@ -39,22 +39,42 @@ public interface RMapCacheAsync<K, V> extends RMapAsync<K, V> {
 
     /**
      * Sets max size of the map and overrides current value.
-     * Superfluous elements are evicted using LRU algorithm.
+     * Superfluous elements are evicted using LRU algorithm by default.
      * 
      * @param maxSize - max size
      * @return void
      */
     RFuture<Void> setMaxSizeAsync(int maxSize);
-    
+
+    /**
+     * Sets max size of the map and overrides current value.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return void
+     */
+    RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode);
+
     /**
      * Tries to set max size of the map. 
-     * Superfluous elements are evicted using LRU algorithm. 
+     * Superfluous elements are evicted using LRU algorithm by default.
      *
      * @param maxSize - max size
      * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
      */
     RFuture<Boolean> trySetMaxSizeAsync(int maxSize);
-    
+
+    /**
+     * Tries to set max size of the map.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode);
+
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.
