@@ -34,11 +34,19 @@ public class PropertiesDecoder implements Decoder<Properties> {
     public Properties decode(ByteBuf buf, State state) {
         String value = buf.toString(CharsetUtil.UTF_8);
         Properties result = new Properties();
-        for (String entry : value.split("\r\n|\n")) {
-            String[] parts = entry.split(":");
-            if (parts.length == 2) {
-                result.put(parts[0], parts[1]);
+        for (String entry : value.split("\n")) {
+            if (entry.length() < 2) {
+                continue;
             }
+            String[] pair = entry.split(":");
+            if (pair.length != 2 || pair[0].length() == 0 ) {
+                continue;
+            }
+            String second = pair[1];
+            if (second.charAt(second.length() - 1) == '\r') {
+                second = second.substring(0, second.length() - 1);
+            }
+            result.put(pair[0], second);
         }
         return result;
     }
