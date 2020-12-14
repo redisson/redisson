@@ -136,6 +136,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private long maxIdleInMillis;
     private CacheProvider cacheProvider;
     private StoreMode storeMode;
+    private boolean allowNullValues;
     
     protected LocalCachedMapOptions() {
     }
@@ -149,6 +150,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.maxIdleInMillis = copy.maxIdleInMillis;
         this.cacheProvider = copy.cacheProvider;
         this.storeMode = copy.storeMode;
+        this.allowNullValues = copy.allowNullValues;
     }
     
     /**
@@ -161,7 +163,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      *      .evictionPolicy(EvictionPolicy.NONE)
      *      .reconnectionStrategy(ReconnectionStrategy.NONE)
      *      .cacheProvider(CacheProvider.REDISSON)
-     *      .syncStrategy(SyncStrategy.INVALIDATE);
+     *      .syncStrategy(SyncStrategy.INVALIDATE)
+     *      .allowNullValues(false);
      * </pre>
      * 
      * @param <K> key type
@@ -177,7 +180,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .reconnectionStrategy(ReconnectionStrategy.NONE)
                     .cacheProvider(CacheProvider.REDISSON)
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
-                    .syncStrategy(SyncStrategy.INVALIDATE);
+                    .syncStrategy(SyncStrategy.INVALIDATE)
+                    .allowNullValues(false);
     }
 
     public CacheProvider getCacheProvider() {
@@ -331,6 +335,21 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> cacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+        return this;
+    }
+
+    public boolean isAllowNullValues() {
+        return this.allowNullValues;
+    }
+
+    /**
+     * Defines whether the local cache allows null values.
+     *
+     * @param allowNullValues - whether the local cache allows null values
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> allowNullValues(boolean allowNullValues) {
+        this.allowNullValues = allowNullValues;
         return this;
     }
 
