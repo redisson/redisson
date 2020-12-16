@@ -56,6 +56,8 @@ public class ClientConnectionsEntry {
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
+    private volatile boolean initing = false;
+
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType nodeType) {
         this.client = client;
@@ -81,10 +83,19 @@ public class ClientConnectionsEntry {
                         && connectionManager.getConfig().getReadMode() == ReadMode.MASTER_SLAVE
                             && getNodeType() == NodeType.MASTER;
     }
+
+    public boolean isIniting() {
+        return this.initing;
+    }
+
+    public void setIniting(boolean isIniting) {
+        this.initing = isIniting;
+    }
     
     public void setNodeType(NodeType nodeType) {
         this.nodeType = nodeType;
     }
+
     public NodeType getNodeType() {
         return nodeType;
     }

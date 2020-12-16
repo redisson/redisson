@@ -138,12 +138,18 @@ public class LoadBalancerManager {
 
             if (freezeReason != FreezeReason.RECONNECT
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                entry.resetFirstFail();
-                entry.setFreezeReason(null);
-                
-                slaveConnectionPool.initConnections(entry);
-                pubSubConnectionPool.initConnections(entry);
-                return true;
+                if (!entry.isIniting()) {
+                    entry.setIniting(true);
+                    entry.resetFirstFail();
+                    slaveConnectionPool.initConnections(entry).onComplete((r, ex) -> {
+                        entry.setIniting(false);
+                        if (ex == null) {
+                            entry.setFreezeReason(null);
+                        }
+                    });
+                    pubSubConnectionPool.initConnections(entry);
+                    return true;
+                }
             }
         }
         return false;
