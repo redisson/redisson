@@ -125,6 +125,9 @@ public class ClientConnectionsEntry {
 
     public void setFreezeReason(FreezeReason freezeReason) {
         this.freezeReason = freezeReason;
+        if (freezeReason != null) {
+            this.initing = false;
+        }
     }
 
     public FreezeReason getFreezeReason() {
