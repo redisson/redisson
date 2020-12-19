@@ -24,8 +24,6 @@ import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.SentinelConnectionManager;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
@@ -40,21 +38,22 @@ import org.springframework.data.redis.connection.RedisSentinelConnection;
  * @author Nikita Koksharov
  *
  */
-public class RedissonConnectionFactory implements RedisConnectionFactory, InitializingBean, DisposableBean {
+public class RedissonConnectionFactory implements RedisConnectionFactory, AutoCloseable {
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
     public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
-    private Config config;
-    private RedissonClient redisson;
-    
+    private final RedissonClient redisson;
+    private boolean hasOwnRedisson;
+
     /**
      * Creates factory with default Redisson configuration
      */
     public RedissonConnectionFactory() {
         this(Redisson.create());
+        hasOwnRedisson=true;
     }
     
     /**
@@ -72,8 +71,8 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
      * @param config - Redisson config
      */
     public RedissonConnectionFactory(Config config) {
-        super();
-        this.config = config;
+        this(Redisson.create(config));
+        hasOwnRedisson = true;
     }
 
     @Override
@@ -82,13 +81,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory, Initia
     }
 
     @Override
-    public void destroy() throws Exception {
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        if (config != null) {
-            redisson = Redisson.create(config);
+    public void close() {
+        if (hasOwnRedisson) {
+            redisson.shutdown();
         }
     }
 

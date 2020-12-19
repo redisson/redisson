@@ -25,8 +25,6 @@ import org.redisson.client.protocol.RedisCommands;
 import org.redisson.config.Config;
 import org.redisson.connection.SentinelConnectionManager;
 import org.redisson.reactive.CommandReactiveService;
-import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.InvalidDataAccessResourceUsageException;
 import org.springframework.data.redis.ExceptionTranslationStrategy;
@@ -40,15 +38,14 @@ import org.springframework.data.redis.connection.*;
  *
  */
 public class RedissonConnectionFactory implements RedisConnectionFactory, 
-                ReactiveRedisConnectionFactory, InitializingBean, DisposableBean {
+                ReactiveRedisConnectionFactory, AutoCloseable {
 
     private final static Log log = LogFactory.getLog(RedissonConnectionFactory.class);
     
     public static final ExceptionTranslationStrategy EXCEPTION_TRANSLATION = 
                                 new PassThroughExceptionTranslationStrategy(new RedissonExceptionConverter());
 
-    private Config config;
-    private RedissonClient redisson;
+    private final RedissonClient redisson;
     private boolean hasOwnRedisson;
 
     /**
@@ -74,9 +71,8 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
      * @param config - Redisson config
      */
     public RedissonConnectionFactory(Config config) {
-        super();
-        this.config = config;
-        hasOwnRedisson = true;
+        this(Redisson.create(config));
+        hasOwnRedisson = true;;
     }
 
     @Override
@@ -85,16 +81,9 @@ public class RedissonConnectionFactory implements RedisConnectionFactory,
     }
 
     @Override
-    public void destroy() throws Exception {
+    public void close() {
         if (hasOwnRedisson) {
             redisson.shutdown();
-        }
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-        if (config != null) {
-            redisson = Redisson.create(config);
         }
     }
 
