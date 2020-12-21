@@ -140,8 +140,8 @@ public class LoadBalancerManager {
 
             if (freezeReason != FreezeReason.RECONNECT
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                if (!entry.isInited()) {
-                    entry.setInited(true);
+                if (!entry.isInitialized()) {
+                    entry.setInitialized(true);
                     AtomicInteger initedCounter = new AtomicInteger(2);
                     RPromise<Void> promise = new RedissonPromise<Void>();
                     promise.onComplete((r, ex) -> {
