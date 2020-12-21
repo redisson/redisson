@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
@@ -142,20 +141,16 @@ public class LoadBalancerManager {
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
                 if (!entry.isInitialized()) {
                     entry.setInitialized(true);
-                    AtomicInteger initedCounter = new AtomicInteger(2);
-                    RPromise<Void> promise = new RedissonPromise<Void>();
-                    promise.onComplete((r, ex) -> {
-                        if (ex == null) {
+                    CountableListener<Void> listener = new CountableListener<Void>() {
+                        @Override
+                        protected void onSuccess(Void value) {
                             entry.setFreezeReason(null);
                         }
-                    });
+                    };
+                    listener.setCounter(2);
                     BiConsumer<Void, Throwable> initCallBack = (r, ex) -> {
                         if (ex == null) {
-                            if (initedCounter.decrementAndGet() == 0) {
-                                promise.trySuccess(null);
-                            }
-                        } else {
-                            promise.tryFailure(ex);
+                            listener.decCounter();
                         }
                     };
                     entry.resetFirstFail();
