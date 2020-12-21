@@ -1490,6 +1490,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         @Override
+        public boolean isEmpty() {
+            return !iterator().hasNext();
+        }
+
+        @Override
         public Iterator<K> iterator() {
             return keyIterator(pattern, count);
         }
@@ -1540,6 +1545,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         Values(String keyPattern, int count) {
             this.keyPattern = keyPattern;
             this.count = count;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return !iterator().hasNext();
         }
 
         @Override
