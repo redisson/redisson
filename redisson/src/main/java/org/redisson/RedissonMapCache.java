@@ -106,7 +106,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
     
     public RFuture<Boolean> trySetMaxSizeAsync(int maxSize, EvictionMode mode) {
-        if (maxSize <= 0) {
+        if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
 
@@ -131,7 +131,7 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     public RFuture<Void> setMaxSizeAsync(int maxSize, EvictionMode mode) {
-        if (maxSize <= 0) {
+        if (maxSize < 0) {
             throw new IllegalArgumentException("maxSize should be greater than zero");
         }
 
