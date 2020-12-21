@@ -61,7 +61,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidateEntryOnChange;
     private SyncStrategy syncStrategy;
     private LocalCachedMapOptions.StoreMode storeMode;
-    private boolean allowNullValues;
+    private boolean storeCacheMiss;
 
     private LocalCacheListener listener;
     private LocalCacheView<K, V> localCacheView;
@@ -81,7 +81,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private void init(String name, LocalCachedMapOptions<K, V> options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
-        allowNullValues = options.isAllowNullValues();
+        storeCacheMiss = options.isStoreCacheMiss();
 
         listener = new LocalCacheListener(name, commandExecutor, this, codec, options, cacheUpdateLogTime) {
             
@@ -214,7 +214,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         CacheKey cacheKey = localCacheView.toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
-        if (cacheValue != null && (allowNullValues || cacheValue.getValue() != null)) {
+        if (cacheValue != null && (storeCacheMiss || cacheValue.getValue() != null)) {
             return RedissonPromise.newSucceededFuture((V) cacheValue.getValue());
         }
 
@@ -228,7 +228,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return;
             }
             
-            if (allowNullValues || value != null) {
+            if (storeCacheMiss || value != null) {
                 cachePut(cacheKey, key, value);
             }
         });
@@ -246,13 +246,6 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return result;
     }
 
-    @Override
-    protected void checkValue(Object value) {
-        if (allowNullValues) {
-            return;
-        }
-        super.checkValue(value);
-    }
 
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
