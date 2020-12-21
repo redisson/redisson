@@ -56,7 +56,7 @@ public class ClientConnectionsEntry {
 
     private final AtomicLong firstFailTime = new AtomicLong(0);
 
-    private volatile boolean initing = false;
+    private volatile boolean inited = false;
 
     public ClientConnectionsEntry(RedisClient client, int poolMinSize, int poolMaxSize, int subscribePoolMinSize, int subscribePoolMaxSize,
             ConnectionManager connectionManager, NodeType nodeType) {
@@ -84,12 +84,12 @@ public class ClientConnectionsEntry {
                             && getNodeType() == NodeType.MASTER;
     }
 
-    public boolean isIniting() {
-        return this.initing;
+    public boolean isInited() {
+        return this.inited;
     }
 
-    public void setIniting(boolean isIniting) {
-        this.initing = isIniting;
+    public void setInited(boolean isInited) {
+        this.inited = isInited;
     }
     
     public void setNodeType(NodeType nodeType) {
@@ -126,7 +126,7 @@ public class ClientConnectionsEntry {
     public void setFreezeReason(FreezeReason freezeReason) {
         this.freezeReason = freezeReason;
         if (freezeReason != null) {
-            this.initing = false;
+            this.inited = false;
         }
     }
 

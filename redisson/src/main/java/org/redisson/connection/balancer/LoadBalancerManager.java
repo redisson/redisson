@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -138,16 +140,27 @@ public class LoadBalancerManager {
 
             if (freezeReason != FreezeReason.RECONNECT
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                if (!entry.isIniting()) {
-                    entry.setIniting(true);
-                    entry.resetFirstFail();
-                    slaveConnectionPool.initConnections(entry).onComplete((r, ex) -> {
-                        entry.setIniting(false);
+                if (!entry.isInited()) {
+                    entry.setInited(true);
+                    AtomicInteger initedCounter = new AtomicInteger(2);
+                    RPromise<Void> promise = new RedissonPromise<Void>();
+                    promise.onComplete((r, ex) -> {
                         if (ex == null) {
                             entry.setFreezeReason(null);
                         }
                     });
-                    pubSubConnectionPool.initConnections(entry);
+                    BiConsumer<Void, Throwable> initCallBack = (r, ex) -> {
+                        if (ex == null) {
+                            if (initedCounter.decrementAndGet() == 0) {
+                                promise.trySuccess(null);
+                            }
+                        } else {
+                            promise.tryFailure(ex);
+                        }
+                    };
+                    entry.resetFirstFail();
+                    slaveConnectionPool.initConnections(entry).onComplete(initCallBack);
+                    pubSubConnectionPool.initConnections(entry).onComplete(initCallBack);
                     return true;
                 }
             }
