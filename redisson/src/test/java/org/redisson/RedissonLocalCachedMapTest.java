@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.LocalCachedMapOptions;
@@ -466,7 +468,29 @@ public class RedissonLocalCachedMapTest extends BaseMapTest {
         assertThat(map1.get("14")).isEqualTo(2);
         assertThat(map1.get("15")).isEqualTo(3);
     }
-    
+
+    @Test
+    public void testGetStoringCacheMiss() {
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().storeCacheMiss(true));
+        Map<String, Integer> cache = map.getCachedMap();
+
+        assertThat(map.get("19")).isNull();
+
+        Awaitility.await().atMost(Durations.ONE_SECOND)
+                .untilAsserted(() -> assertThat(cache.size()).isEqualTo(1));
+    }
+
+    @Test
+    public void testGetNotStoringCacheMiss() {
+        RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("test", LocalCachedMapOptions.<String, Integer>defaults().storeCacheMiss(false));
+        Map<String, Integer> cache = map.getCachedMap();
+
+        assertThat(map.get("19")).isNull();
+
+        Awaitility.await().atMost(Durations.ONE_SECOND)
+                .untilAsserted(() -> assertThat(cache.size()).isEqualTo(0));
+    }
+
     @Test
     public void testGetAllCache() {
         RLocalCachedMap<String, Integer> map = redisson.getLocalCachedMap("getAll", LocalCachedMapOptions.defaults());
