@@ -3,6 +3,26 @@ Redisson Releases History
 
 Сonsider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.
 
+### 22-Dec-2020 - 3.14.1 released
+
+Feature - added option `LocalCachedMapOptions.storeCacheMiss` to store cache miss in a local cache (thanks to @ipalbeniz)  
+Feature - LFU eviction algorithm added to `trySetMaxSize` and `setMaxSize` methods of RMapCache interface  
+
+Improvement - RedisNodes ping results check optimization (thanks to @blackstorm)  
+Improvement - keySet().isEmpty() and values().isEmpty() methods of RMap object aren't efficient  
+
+Fixed - connection leak if new discovered slaves in `LOADING Redis is loading the dataset in memory` state (thanks to @mikawudi)  
+Fixed - `RMap.putIfAbsent()` method doesn't check value for null  
+Fixed - Apache Tomcat Valve objects should be added in context pipeline instead of engine's pipeline  
+Fixed - slaves synchronization timeout isn't respected during `RLock.lock()` method invocation  
+Fixed - ConnectionWatchdog may cause connection leak (thanks to @mikawudi)  
+Fixed - `Redisson.shutdown()` method throws RejectedExecutionException  
+Fixed - `count()` and `addAll()` methods of `RScoredSortedSetReactive` and `RScoredSortedSetRx` interfaces throw ClassCastException  
+Fixed - `GEORADIUS_RO` command should be used instead of `GEORADIUS` in Spring Redis Data module  
+Fixed - Spring Data Redis `RedissonConnection.del()` method doesn't work in pipeline on Redis cluster  
+Fixed - `RLocalCachedMap.putAll()` method updates in wrong way log used for Reconnection.LOAD strategy  
+Fixed - `redisRepository.opsForSet().distinctRandomMembers()` method throws ClassCastException  
+
 ### 21-Nov-2020 - 3.14.0 released
 
 Spring Session implementation is deprecated now. Please refer to [documentation](https://github.com/redisson/redisson/wiki/14.-Integration-with-frameworks#147-spring-session) for more details  
