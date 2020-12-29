@@ -131,7 +131,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                     String ip = map.get("ip");
                     String port = map.get("port");
-                    String flags = map.get("flags");
+                    String flags = map.getOrDefault("flags", "");
 
                     RedisURI host = toURI(ip, port);
 
@@ -409,7 +409,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     
                     String ip = map.get("ip");
                     String port = map.get("port");
-                    String flags = map.get("flags");
+                    String flags = map.getOrDefault("flags", "");
                     String masterHost = map.get("master-host");
                     String masterPort = map.get("master-port");
 
@@ -464,7 +464,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             
             Set<RedisURI> newUris = list.stream().filter(m -> {
-                String flags = m.get("flags");
+                String flags = m.getOrDefault("flags", "");
                 if (!m.isEmpty() && !flags.contains("disconnected") && !flags.contains("s_down")) {
                     return true;
                 }
