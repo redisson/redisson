@@ -72,5 +72,5 @@ for Tomcat 7.x
 for Tomcat 8.x  
 [redisson-tomcat-8-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.14.1&e=jar)  
 for Tomcat 9.x  
-[redisson-tomcat-9-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.14.1e=jar)  
+[redisson-tomcat-9-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.14.1&e=jar)  
 
