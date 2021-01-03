@@ -111,7 +111,8 @@ public class AccessorInterceptor {
             
             if (arg instanceof RLiveObject) {
                 RLiveObject liveObject = (RLiveObject) arg;
-                
+
+                removeIndex(liveMap, me, field);
                 storeIndex(field, me, liveObject.getLiveObjectId());
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
@@ -196,8 +197,14 @@ public class AccessorInterceptor {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
                     || connectionManager.isClusterMode()) {
                 Object value = liveMap.remove(field.getName());
-                RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                map.removeAsync(((RLiveObject) value).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
+                if (value != null) {
+                    RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                    Object k = value;
+                    if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)) {
+                        k = ((RLiveObject) value).getLiveObjectId();
+                    }
+                    map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
+                }
             } else {
                 removeAsync(ce, indexName, liveMap.getName(), namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
             }

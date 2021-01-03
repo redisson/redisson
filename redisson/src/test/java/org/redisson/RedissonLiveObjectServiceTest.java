@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -24,6 +25,8 @@ import org.redisson.api.annotation.RFieldAccessor;
 import org.redisson.api.annotation.RId;
 import org.redisson.api.annotation.RIndex;
 import org.redisson.api.condition.Conditions;
+import org.redisson.config.Config;
+import org.redisson.connection.balancer.RandomLoadBalancer;
 import org.redisson.liveobject.resolver.DefaultNamingScheme;
 import org.redisson.liveobject.resolver.LongGenerator;
 import org.redisson.liveobject.resolver.UUIDGenerator;
@@ -631,6 +634,38 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
     }
 
     @Test
+    public void testIndexUpdateCluster() throws IOException, InterruptedException {
+        RedisRunner master1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner master3 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot1 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot2 = new RedisRunner().randomPort().randomDir().nosave();
+        RedisRunner slot3 = new RedisRunner().randomPort().randomDir().nosave();
+
+        ClusterRunner clusterRunner = new ClusterRunner()
+                .addNode(master1, slot1)
+                .addNode(master2, slot2)
+                .addNode(master3, slot3);
+        ClusterRunner.ClusterProcesses process = clusterRunner.run();
+
+        Config config = new Config();
+        config.useClusterServers()
+        .addNodeAddress(process.getNodes().stream().findAny().get().getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setName1("test1");
+        t1 = s.persist(t1);
+
+        Collection<TestIndexed> objects0 = s.find(TestIndexed.class, Conditions.eq("name1", "test1"));
+        assertThat(objects0.iterator().next().getId()).isEqualTo(t1.getId());
+
+        redisson.shutdown();
+        process.shutdown();
+    }
+
+    @Test
     public void testIndexUpdate() {
         RLiveObjectService s = redisson.getLiveObjectService();
         TestIndexed t1 = new TestIndexed("1");
@@ -646,6 +681,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(objects2.isEmpty()).isTrue();
         Collection<TestIndexed> objects3 = s.find(TestIndexed.class, Conditions.eq("name1", "test2"));
         assertThat(objects3.iterator().next().getId()).isEqualTo(t1.getId());
+    }
+
+    @Test
+    public void testIndexUpdate2() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setName1("test1");
+        t1 = s.persist(t1);
+
+        TestIndexed t2 = new TestIndexed("2");
+        t2.setName1("test2");
+        t2 = s.persist(t2);
+        t1.setObj(t2);
+
+        TestIndexed t3 = new TestIndexed("3");
+        t3.setName1("test3");
+        t3 = s.persist(t3);
+        t1.setObj(t3);
     }
 
     @Test
