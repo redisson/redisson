@@ -35,9 +35,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
@@ -175,6 +173,9 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
+    private static final Set<Class<?>> PRIMITIVE_CLASSES = new HashSet<>(Arrays.asList(
+                        byte.class, short.class, int.class, long.class, float.class, double.class));
+
     private void removeIndex(RMap<String, Object> liveMap, Object me, Field field) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
@@ -190,7 +191,7 @@ public class AccessorInterceptor {
             ce = new CommandBatchService(connectionManager);
         }
 
-        if (Number.class.isAssignableFrom(field.getType())) {
+        if (Number.class.isAssignableFrom(field.getType()) || PRIMITIVE_CLASSES.contains(field.getType())) {
             RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {

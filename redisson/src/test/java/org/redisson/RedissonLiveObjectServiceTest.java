@@ -311,6 +311,8 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         private Boolean bool1;
         @RIndex
         private TestIndexed obj;
+        @RIndex
+        private int num2;
 
         protected TestIndexed() {
         }
@@ -358,6 +360,14 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
 
         public void setName2(String name2) {
             this.name2 = name2;
+        }
+
+        public int getNum2() {
+            return num2;
+        }
+
+        public void setNum2(int num2) {
+            this.num2 = num2;
         }
     }
 
@@ -681,6 +691,24 @@ public class RedissonLiveObjectServiceTest extends BaseTest {
         assertThat(objects2.isEmpty()).isTrue();
         Collection<TestIndexed> objects3 = s.find(TestIndexed.class, Conditions.eq("name1", "test2"));
         assertThat(objects3.iterator().next().getId()).isEqualTo(t1.getId());
+    }
+
+    @Test
+    public void testIndexUpdatePrimitive() {
+        RLiveObjectService s = redisson.getLiveObjectService();
+        TestIndexed t1 = new TestIndexed("1");
+        t1.setNum2(11);
+        t1 = s.persist(t1);
+
+        Collection<TestIndexed> objects0 = s.find(TestIndexed.class, Conditions.eq("num2", 11));
+        assertThat(objects0.iterator().next().getId()).isEqualTo(t1.getId());
+
+        t1.setNum2(12);
+
+        Collection<TestIndexed> objects01 = s.find(TestIndexed.class, Conditions.eq("num2", 11));
+        assertThat(objects01).isEmpty();
+        Collection<TestIndexed> objects1 = s.find(TestIndexed.class, Conditions.eq("num2", 12));
+        assertThat(objects1.iterator().next().getId()).isEqualTo(t1.getId());
     }
 
     @Test
