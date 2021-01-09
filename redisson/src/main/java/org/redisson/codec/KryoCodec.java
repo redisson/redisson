@@ -34,7 +34,10 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
- * 
+ * Kryo 4 codec
+ * <p>
+ * Fully thread-safe.
+ *
  * @author Nikita Koksharov
  *
  */

@@ -30,6 +30,9 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 
 /**
+ * JDK's serialization codec.
+ * <p>
+ * Fully thread-safe.*
  *
  * @author Nikita Koksharov
  *
