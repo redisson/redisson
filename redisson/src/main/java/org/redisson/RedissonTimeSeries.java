@@ -62,7 +62,7 @@ public class RedissonTimeSeries<V> extends RedissonExpirable implements RTimeSer
     }
 
     String getTimeoutSetName() {
-        return prefixName("redisson__ts_ttl", name);
+        return prefixName("redisson__ts_ttl", getName());
     }
 
     @Override
