@@ -74,6 +74,13 @@ public class RedissonRedisNodesTest extends BaseTest {
     }
 
     @Test
+    public void testMemoryStatistics() {
+        RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
+        Map<String, String> stats = nodes.getInstance().getMemoryStatistics();
+        assertThat(stats.get("keys.count")).isEqualTo("0");
+    }
+
+    @Test
     public void testTime() {
         RedisSingle nodes = redisson.getRedisNodes(RedisNodes.SINGLE);
         Time time = nodes.getInstance().time();

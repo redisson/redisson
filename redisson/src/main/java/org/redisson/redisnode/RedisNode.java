@@ -222,6 +222,16 @@ public class RedisNode implements RedisClusterMaster, RedisClusterSlave, RedisMa
     }
 
     @Override
+    public Map<String, String> getMemoryStatistics() {
+        return commandExecutor.get(getMemoryStatisticsAsync());
+    }
+
+    @Override
+    public RFuture<Map<String, String>> getMemoryStatisticsAsync() {
+        return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.MEMORY_STATS);
+    }
+
+    @Override
     public RFuture<String> clusterIdAsync() {
         return commandExecutor.readAsync(client, StringCodec.INSTANCE, RedisCommands.CLUSTER_MYID);
     }

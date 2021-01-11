@@ -30,6 +30,13 @@ import java.util.concurrent.TimeUnit;
 public interface RedisNodeAsync {
 
     /**
+     * Returns Redis memory statistics
+     *
+     * @return statistics info map
+     */
+    RFuture<Map<String, String>> getMemoryStatisticsAsync();
+
+    /**
      * Returns current Redis server time in seconds
      *
      * @return time in seconds
@@ -57,7 +64,7 @@ public interface RedisNodeAsync {
      * Returns information about Redis node.
      *
      * @param section - section of information
-     * @return information
+     * @return information map
      */
     RFuture<Map<String, String>> infoAsync(RedisNode.InfoSection section);
 

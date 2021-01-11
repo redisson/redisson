@@ -438,6 +438,7 @@ public interface RedisCommands {
 
     RedisStrictCommand<Long> OBJECT_IDLETIME = new RedisStrictCommand<Long>("OBJECT", "IDLETIME", new LongReplayConvertor());
     RedisStrictCommand<Long> MEMORY_USAGE = new RedisStrictCommand<Long>("MEMORY", "USAGE", new LongReplayConvertor());
+    RedisStrictCommand<Map<String, String>> MEMORY_STATS = new RedisStrictCommand<>("MEMORY", "STATS", new StringMapReplayDecoder());
     RedisStrictCommand<Boolean> RENAMENX = new RedisStrictCommand<Boolean>("RENAMENX", new BooleanReplayConvertor());
     RedisStrictCommand<Void> RENAME = new RedisStrictCommand<Void>("RENAME", new VoidReplayConvertor());
     RedisStrictCommand<Boolean> MOVE = new RedisStrictCommand<Boolean>("MOVE", new BooleanReplayConvertor());
