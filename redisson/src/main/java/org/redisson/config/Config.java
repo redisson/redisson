@@ -87,8 +87,6 @@ public class Config {
 
     private boolean keepPubSubOrder = true;
 
-    private boolean decodeInExecutor = false;
-
     private boolean useScriptCache = false;
 
     private int minCleanUpDelay = 5;
