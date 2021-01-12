@@ -81,6 +81,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     /**
      * Password required by the Redis Sentinel servers for authentication.
+     * Used only if sentinel password differs from master and slave.
      *
      * @param sentinelPassword of Redis
      * @return config
