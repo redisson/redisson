@@ -98,27 +98,27 @@ public class JCachingProvider implements CachingProvider {
     private Config loadConfig(URI uri) {
         Config config = null;
         try {
-            URL jsonUrl = null;
+            URL yamlUrl = null;
             if (DEFAULT_URI_PATH.equals(uri.getPath())) {
-                jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
+                yamlUrl = JCachingProvider.class.getResource("/redisson-jcache.yaml");
             } else {
-                jsonUrl = uri.toURL();
+                yamlUrl = uri.toURL();
             }
-            if (jsonUrl == null) {
-                throw new IOException();
+            if (yamlUrl != null) {
+                config = Config.fromYAML(yamlUrl);
             }
-            config = Config.fromJSON(jsonUrl);
         } catch (IOException e) {
             try {
-                URL yamlUrl = null;
+                URL jsonUrl = null;
                 if (DEFAULT_URI_PATH.equals(uri.getPath())) {
-                    yamlUrl = JCachingProvider.class.getResource("/redisson-jcache.yaml");
+                    jsonUrl = JCachingProvider.class.getResource("/redisson-jcache.json");
                 } else {
-                    yamlUrl = uri.toURL();
+                    jsonUrl = uri.toURL();
                 }
-                if (yamlUrl != null) {
-                    config = Config.fromYAML(yamlUrl);
+                if (jsonUrl == null) {
+                    throw new IOException();
                 }
+                config = Config.fromJSON(jsonUrl);
             } catch (IOException e2) {
                 // skip
             }

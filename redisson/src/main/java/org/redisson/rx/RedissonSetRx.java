@@ -15,8 +15,8 @@
  */
 package org.redisson.rx;
 
-import io.reactivex.Flowable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonObject;
 import org.redisson.ScanIterator;

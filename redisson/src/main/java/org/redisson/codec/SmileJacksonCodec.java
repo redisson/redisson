@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.smile.SmileFactory;
 
 /**
- * Smile binary codec
+ * Smile binary codec.
+ * <p>
+ * Fully thread-safe.
  *
  * @author Nikita Koksharov
  *

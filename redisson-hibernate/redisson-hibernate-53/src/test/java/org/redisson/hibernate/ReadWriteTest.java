@@ -74,8 +74,8 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
-        Assert.assertEquals(0, stats.getSecondLevelCacheStatistics("item").getMissCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assert.assertEquals(0, stats.getDomainDataRegionStatistics("item").getMissCount());
 
         Thread.sleep(600);
         
@@ -87,8 +87,8 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getMissCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getMissCount());
     }
     
     @Test
@@ -113,7 +113,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("myTestQuery").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("myTestQuery").getPutCount());
 
         s = openSession();
         s.beginTransaction();
@@ -126,7 +126,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("myTestQuery").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("myTestQuery").getHitCount());
         
         stats.logSummary();
         
@@ -152,7 +152,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item_entries").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getPutCount());
         
         s = openSession();
         s.beginTransaction();
@@ -162,7 +162,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item_entries").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item_entries").getHitCount());
     }
     
     @Test
@@ -176,7 +176,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.flush();
         s.getTransaction().commit();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
         Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getPutCount());
         
         s = openSession();
@@ -187,7 +187,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
         Assert.assertEquals(1, stats.getNaturalIdCacheStatistics("item##NaturalId").getHitCount());
 
         sessionFactory().getStatistics().logSummary();
@@ -204,7 +204,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.flush();
         s.getTransaction().commit();
 
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getPutCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getPutCount());
 
         s = openSession();
         s.beginTransaction();
@@ -225,7 +225,7 @@ public class ReadWriteTest extends BaseCoreFunctionalTestCase {
         s.getTransaction().commit();
         s.close();
         
-        Assert.assertEquals(1, stats.getSecondLevelCacheStatistics("item").getHitCount());
+        Assert.assertEquals(1, stats.getDomainDataRegionStatistics("item").getHitCount());
     }
 
     

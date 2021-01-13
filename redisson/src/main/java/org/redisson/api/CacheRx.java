@@ -23,9 +23,9 @@ import javax.cache.event.CacheEntryRemovedListener;
 import javax.cache.integration.CacheLoader;
 import javax.cache.integration.CacheWriter;
 
-import io.reactivex.Completable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for JCache

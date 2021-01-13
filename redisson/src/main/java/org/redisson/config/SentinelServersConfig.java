@@ -37,6 +37,8 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
 
     private String masterName;
 
+    private String sentinelPassword;
+
     /**
      * Database index used for Redis connection
      */
@@ -60,6 +62,7 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
         setScanInterval(config.getScanInterval());
         setNatMapper(config.getNatMapper());
         setCheckSentinelsList(config.isCheckSentinelsList());
+        setSentinelPassword(config.getSentinelPassword());
     }
 
     /**
@@ -75,6 +78,22 @@ public class SentinelServersConfig extends BaseMasterSlaveServersConfig<Sentinel
     public String getMasterName() {
         return masterName;
     }
+
+    /**
+     * Password required by the Redis Sentinel servers for authentication.
+     * Used only if sentinel password differs from master and slave.
+     *
+     * @param sentinelPassword of Redis
+     * @return config
+     */
+    public SentinelServersConfig setSentinelPassword(String sentinelPassword) {
+        this.sentinelPassword = sentinelPassword;
+        return this;
+    }
+    public String getSentinelPassword() {
+        return sentinelPassword;
+    }
+
 
     /**
      * Add Redis Sentinel node address in host:port format. Multiple nodes at once could be added.

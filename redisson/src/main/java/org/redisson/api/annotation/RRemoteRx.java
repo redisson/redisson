@@ -27,17 +27,17 @@ import java.lang.annotation.Target;
  * All method signatures must match with remote service interface,
  * but return type must be one of the following:
  *   <ul>
- *      <li>io.reactivex.Completable</li>
- *      <li>io.reactivex.Single</li>
- *      <li>io.reactivex.Maybe</li>
+ *      <li>io.reactivex.rxjava3.core.Completable</li>
+ *      <li>io.reactivex.rxjava3.core.Single</li>
+ *      <li>io.reactivex.rxjava3.core.Maybe</li>
  *   </ul>
  * <p>
  * It's not necessary to add all methods from remote service.
  * Add only those which are needed. 
  * 
- * @see io.reactivex.Completable
- * @see io.reactivex.Single
- * @see io.reactivex.Maybe
+ * @see io.reactivex.rxjava3.core.Completable
+ * @see io.reactivex.rxjava3.core.Single
+ * @see io.reactivex.rxjava3.core.Maybe
  * 
  * @author Nikita Koksharov
  *

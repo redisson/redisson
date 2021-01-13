@@ -136,6 +136,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
     private long maxIdleInMillis;
     private CacheProvider cacheProvider;
     private StoreMode storeMode;
+    private boolean storeCacheMiss;
     
     protected LocalCachedMapOptions() {
     }
@@ -149,6 +150,7 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
         this.maxIdleInMillis = copy.maxIdleInMillis;
         this.cacheProvider = copy.cacheProvider;
         this.storeMode = copy.storeMode;
+        this.storeCacheMiss = copy.storeCacheMiss;
     }
     
     /**
@@ -161,7 +163,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      *      .evictionPolicy(EvictionPolicy.NONE)
      *      .reconnectionStrategy(ReconnectionStrategy.NONE)
      *      .cacheProvider(CacheProvider.REDISSON)
-     *      .syncStrategy(SyncStrategy.INVALIDATE);
+     *      .syncStrategy(SyncStrategy.INVALIDATE)
+     *      .storeCacheMiss(false);
      * </pre>
      * 
      * @param <K> key type
@@ -177,7 +180,8 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
                     .reconnectionStrategy(ReconnectionStrategy.NONE)
                     .cacheProvider(CacheProvider.REDISSON)
                     .storeMode(StoreMode.LOCALCACHE_REDIS)
-                    .syncStrategy(SyncStrategy.INVALIDATE);
+                    .syncStrategy(SyncStrategy.INVALIDATE)
+                    .storeCacheMiss(false);
     }
 
     public CacheProvider getCacheProvider() {
@@ -331,6 +335,21 @@ public class LocalCachedMapOptions<K, V> extends MapOptions<K, V> {
      */
     public LocalCachedMapOptions<K, V> cacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
+        return this;
+    }
+
+    public boolean isStoreCacheMiss() {
+        return this.storeCacheMiss;
+    }
+
+    /**
+     * Defines whether to store a cache miss into the local cache.
+     *
+     * @param storeCacheMiss - whether to store a cache miss into the local cache
+     * @return LocalCachedMapOptions instance
+     */
+    public LocalCachedMapOptions<K, V> storeCacheMiss(boolean storeCacheMiss) {
+        this.storeCacheMiss = storeCacheMiss;
         return this;
     }
 

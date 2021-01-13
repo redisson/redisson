@@ -21,6 +21,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * MsgPack binary codec
+ * <p>
+ * Fully thread-safe.
  *
  * @author Nikita Koksharov
  *

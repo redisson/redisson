@@ -149,10 +149,12 @@ public class RedisNodes<N extends Node> implements NodesGroup<N> {
         for (Entry<RedisConnection, RFuture<String>> entry : result.entrySet()) {
             RFuture<String> f = entry.getValue();
             f.awaitUninterruptibly();
-            if (!"PONG".equals(f.getNow())) {
-                res = false;
-            }
+            String pong = f.getNow();
             entry.getKey().closeAsync();
+            if (!"PONG".equals(pong)) {
+                res = false;
+                break;
+            }
         }
 
         // true and no futures were missed during client connection

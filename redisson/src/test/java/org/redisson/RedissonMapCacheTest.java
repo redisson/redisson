@@ -227,13 +227,39 @@ public class RedissonMapCacheTest extends BaseMapTest {
         map.put("3", "3", 3, TimeUnit.SECONDS);
         map.put("4", "4", 0, TimeUnit.SECONDS, 3, TimeUnit.SECONDS);
 
-        Thread.sleep(5000);
+        Thread.sleep(8000);
 
         assertThat(map.size()).isZero();
 
         assertThat(redisson.getKeys().count()).isEqualTo(2);
         redisson.shutdown();
     }
+
+    @Test
+    public void testMaxSizeLFU() {
+        RMapCache<String, String> map = redisson.getMapCache("test");
+        map.setMaxSize(3, EvictionMode.LFU);
+        map.put("1", "2");
+        map.put("2", "4");
+        map.put("3", "5");
+
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.get("2")).isEqualTo("4");
+        assertThat(map.get("3")).isEqualTo("5");
+
+        map.get("1");
+        map.get("3");
+        map.get("1");
+        map.get("3");
+        map.get("2");
+        map.put("4", "7");
+
+        assertThat(map.get("1")).isEqualTo("2");
+        assertThat(map.get("3")).isEqualTo("5");
+        assertThat(map.get("2")).isNull();
+
+    }
+
 
     @Test
     public void testMaxSize() {

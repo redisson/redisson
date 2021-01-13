@@ -21,9 +21,9 @@ import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.protocol.decoder.ListScanResult;
 
-import io.reactivex.Flowable;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.LongConsumer;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
  * 

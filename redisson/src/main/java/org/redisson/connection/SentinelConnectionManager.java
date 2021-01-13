@@ -62,9 +62,10 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
     private final Set<RedisURI> disconnectedSlaves = new HashSet<>();
     private ScheduledFuture<?> monitorFuture;
     private AddressResolver<InetSocketAddress> sentinelResolver;
-    
+
     private final NatMapper natMapper;
 
+    private final String sentinelPassword;
     private boolean usePassword = false;
     private String scheme;
 
@@ -79,6 +80,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
         }
 
         this.config = create(cfg);
+        this.sentinelPassword = cfg.getSentinelPassword();
         initTimer(this.config);
 
         this.natMapper = cfg.getNatMapper();
@@ -131,7 +133,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
 
                     String ip = map.get("ip");
                     String port = map.get("port");
-                    String flags = map.get("flags");
+                    String flags = map.getOrDefault("flags", "");
 
                     RedisURI host = toURI(ip, port);
 
@@ -252,7 +254,13 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             String sslHostname) {
         RedisClientConfig result = super.createRedisConfig(type, address, timeout, commandTimeout, sslHostname);
         if (type == NodeType.SENTINEL && !usePassword) {
+            result.setUsername(null);
             result.setPassword(null);
+        } else if (type == NodeType.SENTINEL && usePassword) {
+            result.setUsername(null);
+            if (sentinelPassword != null) {
+                result.setPassword(sentinelPassword);
+            }
         }
         return result;
     }
@@ -409,7 +417,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
                     
                     String ip = map.get("ip");
                     String port = map.get("port");
-                    String flags = map.get("flags");
+                    String flags = map.getOrDefault("flags", "");
                     String masterHost = map.get("master-host");
                     String masterPort = map.get("master-port");
 
@@ -464,7 +472,7 @@ public class SentinelConnectionManager extends MasterSlaveConnectionManager {
             }
             
             Set<RedisURI> newUris = list.stream().filter(m -> {
-                String flags = m.get("flags");
+                String flags = m.getOrDefault("flags", "");
                 if (!m.isEmpty() && !flags.contains("disconnected") && !flags.contains("s_down")) {
                     return true;
                 }

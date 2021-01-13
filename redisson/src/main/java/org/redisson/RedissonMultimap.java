@@ -285,7 +285,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 Arrays.asList(getName()), prefix, newPrefix, newName);
         f.onComplete((r, e) -> {
             if (e == null) {
-                this.name = newName;
+                setName(newName);
             }
         });
         return f;
@@ -322,7 +322,7 @@ public abstract class RedissonMultimap<K, V> extends RedissonExpirable implement
                 Arrays.asList(getName()), prefix, newPrefix, newName);
         f.onComplete((value, e) -> {
             if (e == null && value) {
-                this.name = newName;
+                setName(newName);
             }
         });
         return f;

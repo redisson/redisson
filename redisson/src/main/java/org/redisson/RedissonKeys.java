@@ -228,6 +228,10 @@ public class RedissonKeys implements RKeys {
         if (commandExecutor instanceof CommandBatchService
                 || commandExecutor instanceof CommandReactiveBatchService
                     || commandExecutor instanceof CommandRxBatchService) {
+            if (getConnectionManager().isClusterMode()) {
+                throw new IllegalStateException("This method doesn't work in batch for Redis cluster mode. For Redis cluster execute it as non-batch method");
+            }
+
             return commandExecutor.evalWriteAsync((String) null, null, RedisCommands.EVAL_LONG, 
                             "local keys = redis.call('keys', ARGV[1]) "
                               + "local n = 0 "

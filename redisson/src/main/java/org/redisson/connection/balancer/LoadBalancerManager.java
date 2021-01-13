@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 
 import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
@@ -138,12 +139,25 @@ public class LoadBalancerManager {
 
             if (freezeReason != FreezeReason.RECONNECT
                     || entry.getFreezeReason() == FreezeReason.RECONNECT) {
-                entry.resetFirstFail();
-                entry.setFreezeReason(null);
-                
-                slaveConnectionPool.initConnections(entry);
-                pubSubConnectionPool.initConnections(entry);
-                return true;
+                if (!entry.isInitialized()) {
+                    entry.setInitialized(true);
+                    CountableListener<Void> listener = new CountableListener<Void>() {
+                        @Override
+                        protected void onSuccess(Void value) {
+                            entry.setFreezeReason(null);
+                        }
+                    };
+                    listener.setCounter(2);
+                    BiConsumer<Void, Throwable> initCallBack = (r, ex) -> {
+                        if (ex == null) {
+                            listener.decCounter();
+                        }
+                    };
+                    entry.resetFirstFail();
+                    slaveConnectionPool.initConnections(entry).onComplete(initCallBack);
+                    pubSubConnectionPool.initConnections(entry).onComplete(initCallBack);
+                    return true;
+                }
             }
         }
         return false;

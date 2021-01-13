@@ -18,8 +18,13 @@ package org.redisson.codec;
 import com.fasterxml.jackson.dataformat.ion.IonObjectMapper;
 
 /**
- * Amazon Ion codec
- * 
+ * Amazon Ion codec based on Jackson implementation
+ * <a href="https://github.com/FasterXML/jackson-dataformats-binary/tree/master/ion">
+ *     https://github.com/FasterXML/jackson-dataformats-binary/tree/master/ion
+ * </a>
+ * <p>
+ * Fully thread-safe.
+ *
  * @author Nikita Koksharov
  *
  */

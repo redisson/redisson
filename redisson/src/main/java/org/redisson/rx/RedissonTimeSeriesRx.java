@@ -43,7 +43,7 @@ public class RedissonTimeSeriesRx<V> {
         return new SetRxIterator<V>() {
             @Override
             protected RFuture<ListScanResult<Object>> scanIterator(RedisClient client, long nextIterPos) {
-                return ((RedissonTimeSeries) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, null, 10);
+                return ((RedissonTimeSeries) instance).scanIteratorAsync(instance.getName(), client, nextIterPos, 10);
             }
         }.create();
     }

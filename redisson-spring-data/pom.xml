@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.13.7-SNAPSHOT</version>
+        <version>3.14.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
@@ -21,6 +21,7 @@
         <module>redisson-spring-data-21</module>
         <module>redisson-spring-data-22</module>
         <module>redisson-spring-data-23</module>
+        <module>redisson-spring-data-24</module>
     </modules>
 
     <build>
@@ -60,6 +61,13 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
             <scope>test</scope>
         </dependency>
 

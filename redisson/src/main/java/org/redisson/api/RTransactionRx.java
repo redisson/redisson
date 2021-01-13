@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import org.redisson.client.codec.Codec;
 
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 
 /**
  * RxJava2 interface for transaction object allows to execute transactions over Redisson objects.

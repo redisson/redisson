@@ -43,12 +43,15 @@ public class RedissonTimeSeriesTest extends BaseTest {
     @Test
     public void testIterator() {
         RTimeSeries<String> t = redisson.getTimeSeries("test");
-        t.add(1, "10");
-        t.add(3, "30");
+        for (int i = 0; i < 19; i++) {
+            t.add(i, "" + i*10);
+        }
 
-        Iterator<String> iter = t.iterator(2);
-        assertThat(iter.next()).isEqualTo("10");
-        assertThat(iter.next()).isEqualTo("30");
+        Iterator<String> iter = t.iterator(3);
+        for (int i = 0; i < 19; i++) {
+            assertThat(iter.hasNext()).isTrue();
+            assertThat(iter.next()).isEqualTo("" + i*10);
+        }
         assertThat(iter.hasNext()).isFalse();
     }
 

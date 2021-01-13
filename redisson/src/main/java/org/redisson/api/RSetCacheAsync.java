@@ -57,4 +57,25 @@ public interface RSetCacheAsync<V> extends RCollectionAsync<V> {
      */
     RFuture<Set<V>> readAllAsync();
 
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    RFuture<Boolean> tryAddAsync(V... values);
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @param ttl - time to live for value.
+     *              If <code>0</code> then stores infinitely.
+     * @param unit - time unit
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    RFuture<Boolean> tryAddAsync(long ttl, TimeUnit unit, V... values);
+
 }

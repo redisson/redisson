@@ -1,18 +1,18 @@
 package org.redisson;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.assertj.core.api.Assertions;
+import org.junit.Test;
+import org.redisson.api.MapOptions;
+import org.redisson.api.MapOptions.WriteMode;
+import org.redisson.api.RMap;
+import org.redisson.client.codec.Codec;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.junit.Assert;
-import org.junit.Test;
-import org.redisson.api.MapOptions;
-import org.redisson.api.MapOptions.WriteMode;
-import org.redisson.api.RMap;
-import org.redisson.client.codec.Codec;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RedissonMapTest extends BaseMapTest {
 
@@ -55,7 +55,7 @@ public class RedissonMapTest extends BaseMapTest {
 
         assertThat(map.entrySet().size()).isEqualTo(3);
         Map<Integer, String> testMap = new HashMap<Integer, String>(map);
-        assertThat(map.entrySet()).containsOnlyElementsOf(testMap.entrySet());
+        assertThat(map.entrySet()).containsExactlyElementsOf(testMap.entrySet());
     }
 
     @Test
@@ -67,7 +67,7 @@ public class RedissonMapTest extends BaseMapTest {
 
         assertThat(map.readAllEntrySet().size()).isEqualTo(3);
         Map<Integer, String> testMap = new HashMap<Integer, String>(map);
-        assertThat(map.readAllEntrySet()).containsOnlyElementsOf(testMap.entrySet());
+        assertThat(map.readAllEntrySet()).containsExactlyElementsOf(testMap.entrySet());
     }
 
     @Test
@@ -88,8 +88,7 @@ public class RedissonMapTest extends BaseMapTest {
         map.put(new SimpleKey("33"), new SimpleValue("44"));
         map.put(new SimpleKey("5"), new SimpleValue("6"));
 
-        Assert.assertTrue(map.keySet().contains(new SimpleKey("33")));
-        Assert.assertFalse(map.keySet().contains(new SimpleKey("44")));
+        assertThat(map.keySet()).containsOnly(new SimpleKey("33"), new SimpleKey("1"), new SimpleKey("5"));
     }
     
     @Test
@@ -105,7 +104,7 @@ public class RedissonMapTest extends BaseMapTest {
         for (Iterator<Integer> iterator = map.keySet().iterator(); iterator.hasNext();) {
             Integer value = iterator.next();
             if (!keys.remove(value)) {
-                Assert.fail();
+                Assertions.fail("value can't be removed");
             }
         }
 

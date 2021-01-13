@@ -90,12 +90,16 @@ public abstract class RedissonObject implements RObject {
     }
 
     @Override
-    public String getName() {
+    public final String getName() {
         return name;
     }
-    
+
     protected String getName(Object o) {
         return getName();
+    }
+
+    protected final void setName(String name) {
+        this.name = name;
     }
 
     @Override
@@ -135,7 +139,7 @@ public abstract class RedissonObject implements RObject {
         RFuture<Void> f = commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.RENAME, getName(), newName);
         f.onComplete((r, e) -> {
             if (e == null) {
-                this.name = newName;
+                setName(newName);
             }
         });
         return f;

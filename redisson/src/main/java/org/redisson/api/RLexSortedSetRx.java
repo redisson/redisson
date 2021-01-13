@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Collection;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for sorted set contained values of String type.

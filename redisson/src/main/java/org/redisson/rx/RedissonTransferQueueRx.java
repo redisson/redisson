@@ -15,10 +15,10 @@
  */
 package org.redisson.rx;
 
-import io.reactivex.Flowable;
-import io.reactivex.Single;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.functions.LongConsumer;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 import org.reactivestreams.Publisher;
 import org.redisson.RedissonTransferQueue;
 import org.redisson.api.RFuture;

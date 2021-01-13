@@ -61,6 +61,16 @@ public class SentinelRedisNode implements RedisSentinel, RedisSentinelAsync {
     }
 
     @Override
+    public Map<String, String> getMemoryStatistics() {
+        return getMemoryStatisticsAsync().syncUninterruptibly().getNow();
+    }
+
+    @Override
+    public RFuture<Map<String, String>> getMemoryStatisticsAsync() {
+        return executeAsync(null, StringCodec.INSTANCE, -1, RedisCommands.MEMORY_STATS);
+    }
+
+    @Override
     public RFuture<Boolean> pingAsync() {
         return pingAsync(1, TimeUnit.SECONDS);
     }

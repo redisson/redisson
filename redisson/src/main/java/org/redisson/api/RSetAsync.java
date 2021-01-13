@@ -129,5 +129,14 @@ public interface RSetAsync<V> extends RCollectionAsync<V>, RSortableAsync<Set<V>
      * @return values
      */
     RFuture<Set<V>> readIntersectionAsync(String... names);
-    
+
+    /**
+     * Tries to add elements only if none of them in set.
+     *
+     * @param values - values to add
+     * @return <code>true</code> if elements successfully added,
+     *          otherwise <code>false</code>.
+     */
+    RFuture<Boolean> tryAddAsync(V... values);
+
 }

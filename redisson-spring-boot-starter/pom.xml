@@ -4,12 +4,12 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-parent</artifactId>
-        <version>3.13.7-SNAPSHOT</version>
+        <version>3.14.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 
     <properties>
-        <spring-boot.version>2.3.4.RELEASE</spring-boot.version>
+        <spring-boot.version>2.4.1</spring-boot.version>
     </properties>
 
     <artifactId>redisson-spring-boot-starter</artifactId>

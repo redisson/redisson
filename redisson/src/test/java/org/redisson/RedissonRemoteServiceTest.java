@@ -33,8 +33,8 @@ import org.redisson.codec.SerializationCodec;
 import org.redisson.remote.RemoteServiceAckTimeoutException;
 import org.redisson.remote.RemoteServiceTimeoutException;
 
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
@@ -445,7 +445,7 @@ public class RedissonRemoteServiceTest extends BaseTest {
         RemoteInterfaceRx ri = r2.getRemoteService().get(RemoteInterfaceRx.class);
         
         Completable f = ri.voidMethod("someName", 100L);
-        f.blockingGet();
+        f.blockingAwait();
         Single<Long> resFuture = ri.resultMethod(100L);
         assertThat(resFuture.blockingGet()).isEqualTo(200);
 

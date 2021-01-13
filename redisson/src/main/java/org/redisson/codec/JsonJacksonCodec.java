@@ -49,6 +49,10 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 
 /**
+ * Json codec based on Jackson implementation.
+ * https://github.com/FasterXML/jackson
+ * <p>
+ * Fully thread-safe.
  *
  * @see org.redisson.codec.CborJacksonCodec
  * @see org.redisson.codec.MsgPackJacksonCodec

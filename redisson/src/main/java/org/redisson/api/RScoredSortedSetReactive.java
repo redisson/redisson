@@ -234,7 +234,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param elements - elements
      * @return ranks or <code>null</code> if value does not exist
      */
-    Mono<List<Integer>> revRankAsync(Collection<V> elements);
+    Mono<List<Integer>> revRank(Collection<V> elements);
 
     /**
      * Returns score of element or <code>null</code> if it doesn't exist.
@@ -268,7 +268,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param objects - map of elements to add
      * @return amount of added elements, not including already existing in this sorted set
      */
-    Mono<Long> addAll(Map<V, Double> objects);
+    Mono<Integer> addAll(Map<V, Double> objects);
     
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -575,7 +575,7 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @param endScoreInclusive - end score inclusive
      * @return count
      */
-    Mono<Long> count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    Mono<Integer> count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.

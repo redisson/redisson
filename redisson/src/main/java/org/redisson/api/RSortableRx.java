@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.Collection;
 import java.util.List;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * 

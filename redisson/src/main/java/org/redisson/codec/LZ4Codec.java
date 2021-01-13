@@ -33,11 +33,13 @@ import net.jpountz.lz4.LZ4SafeDecompressor;
 /**
  * LZ4 compression codec.
  * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>FstCodec</code> used by default.
+ * <code>MarshallingCodec</code> used by default.
+ *
+ * Fully thread-safe.
  *
  * https://github.com/jpountz/lz4-java
  *
- * @see org.redisson.codec.FstCodec
+ * @see org.redisson.codec.MarshallingCodec
  *
  * @author Nikita Koksharov
  *

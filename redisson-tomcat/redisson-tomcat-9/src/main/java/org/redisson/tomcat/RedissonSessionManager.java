@@ -239,7 +239,7 @@ public class RedissonSessionManager extends ManagerBase {
             throw new LifecycleException(e);
         }
         
-        Pipeline pipeline = getEngine().getPipeline();
+        Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
                 Optional<Valve> res = Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).findAny();
@@ -331,11 +331,11 @@ public class RedissonSessionManager extends ManagerBase {
     protected RedissonClient buildClient() throws LifecycleException {
         Config config = null;
         try {
-            config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
+            config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
         } catch (IOException e) {
             // trying next format
             try {
-                config = Config.fromYAML(new File(configPath), getClass().getClassLoader());
+                config = Config.fromJSON(new File(configPath), getClass().getClassLoader());
             } catch (IOException e1) {
                 log.error("Can't parse json config " + configPath, e);
                 throw new LifecycleException("Can't parse yaml config " + configPath, e1);
@@ -354,8 +354,8 @@ public class RedissonSessionManager extends ManagerBase {
         super.stopInternal();
         
         setState(LifecycleState.STOPPING);
-        
-        Pipeline pipeline = getEngine().getPipeline();
+
+        Pipeline pipeline = getContext().getPipeline();
         synchronized (pipeline) {
             if (readMode == ReadMode.REDIS) {
                 Arrays.stream(pipeline.getValves()).filter(v -> v.getClass() == UsageValve.class).forEach(v -> {

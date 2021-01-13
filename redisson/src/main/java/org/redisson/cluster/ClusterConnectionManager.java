@@ -393,6 +393,9 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                         partitionSlaves.removeAll(partition.getFailedSlaveAddresses());
                         slaves.addAll(partitionSlaves);
                     }
+                    Collections.shuffle(nodes);
+                    Collections.shuffle(slaves);
+                    
                     // master nodes first
                     nodes.addAll(slaves);
 

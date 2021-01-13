@@ -161,11 +161,11 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             
             RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", postitionDecoder);
+                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
                 MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS", distanceDecoder);
+                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUS_RO", distanceDecoder);
                 params.add("WITHDIST");
             }
             
@@ -203,11 +203,11 @@ public class RedissonReactiveGeoCommands extends RedissonBaseReactive implements
             
             RedisCommand<GeoResults<GeoLocation<byte[]>>> cmd;
             if (args.getFlags().contains(GeoRadiusCommandArgs.Flag.WITHCOORD)) {
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", postitionDecoder);
+                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", postitionDecoder);
                 params.add("WITHCOORD");
             } else {
                 MultiDecoder<GeoResults<GeoLocation<byte[]>>> distanceDecoder = new ListMultiDecoder2(new ByteBufferGeoResultsDecoder(command.getDistance().getMetric()), new GeoDistanceDecoder());
-                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER", distanceDecoder);
+                cmd = new RedisCommand<GeoResults<GeoLocation<byte[]>>>("GEORADIUSBYMEMBER_RO", distanceDecoder);
                 params.add("WITHDIST");
             }
             

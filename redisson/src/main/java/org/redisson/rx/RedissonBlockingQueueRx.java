@@ -18,7 +18,7 @@ package org.redisson.rx;
 import org.redisson.api.RBlockingQueueAsync;
 import org.redisson.api.RListAsync;
 
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  * 

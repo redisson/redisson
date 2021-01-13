@@ -49,7 +49,17 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *                  If <code>0</code> the cache is unbounded (default).
      */
     void setMaxSize(int maxSize);
-    
+
+    /**
+     * Sets max size of the map and overrides current value.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return void
+     */
+    void setMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * Tries to set max size of the map. 
      * Superfluous elements are evicted using LRU algorithm. 
@@ -59,7 +69,17 @@ public interface RMapCache<K, V> extends RMap<K, V>, RMapCacheAsync<K, V>, RDest
      *         If <code>0</code> the cache is unbounded (default).
      */
     boolean trySetMaxSize(int maxSize);
-    
+
+    /**
+     * Tries to set max size of the map.
+     * Superfluous elements are evicted using defined algorithm.
+     *
+     * @param maxSize - max size
+     * @param mode - eviction mode
+     * @return <code>true</code> if max size has been successfully set, otherwise <code>false</code>.
+     */
+    boolean trySetMaxSize(int maxSize, EvictionMode mode);
+
     /**
      * If the specified key is not already associated
      * with a value, associate it with the given value.

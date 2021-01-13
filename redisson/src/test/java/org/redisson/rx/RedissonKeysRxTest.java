@@ -1,6 +1,6 @@
 package org.redisson.rx;
 
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 import org.junit.Assert;
 import org.junit.Test;
 import org.redisson.api.RBucketRx;

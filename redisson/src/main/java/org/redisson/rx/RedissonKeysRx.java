@@ -23,9 +23,9 @@ import org.redisson.RedissonKeys;
 import org.redisson.client.RedisClient;
 import org.redisson.connection.MasterSlaveEntry;
 
-import io.reactivex.Flowable;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.LongConsumer;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
  * 

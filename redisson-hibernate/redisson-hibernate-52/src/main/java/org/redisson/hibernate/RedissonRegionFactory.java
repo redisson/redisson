@@ -111,11 +111,11 @@ public class RedissonRegionFactory implements RegionFactory {
     
     private Config loadConfig(String configPath) {
         try {
-            return Config.fromJSON(new File(configPath));
+            return Config.fromYAML(new File(configPath));
         } catch (IOException e) {
             // trying next format
             try {
-                return Config.fromYAML(new File(configPath));
+                return Config.fromJSON(new File(configPath));
             } catch (IOException e1) {
                 throw new CacheException("Can't parse default yaml config", e1);
             }
@@ -126,11 +126,11 @@ public class RedissonRegionFactory implements RegionFactory {
         InputStream is = classLoader.getResourceAsStream(fileName);
         if (is != null) {
             try {
-                return Config.fromJSON(is);
+                return Config.fromYAML(is);
             } catch (IOException e) {
                 try {
                     is = classLoader.getResourceAsStream(fileName);
-                    return Config.fromYAML(is);
+                    return Config.fromJSON(is);
                 } catch (IOException e1) {
                     throw new CacheException("Can't parse yaml config", e1);
                 }
