@@ -210,6 +210,20 @@ public class RedissonBucket<V> extends RedissonExpirable implements RBucket<V> {
     }
 
     @Override
+    public void setAndKeepTTL(V value) {
+        get(setAndKeepTTLAsync(value));
+    }
+
+    @Override
+    public RFuture<Void> setAndKeepTTLAsync(V value) {
+        if (value == null) {
+            return commandExecutor.writeAsync(getName(), RedisCommands.DEL_VOID, getName());
+        }
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.SET, getName(), encode(value), "KEEPTTL");
+    }
+
+    @Override
     public boolean setIfExists(V value, long timeToLive, TimeUnit timeUnit) {
         return get(setIfExistsAsync(value, timeToLive, timeUnit));
     }

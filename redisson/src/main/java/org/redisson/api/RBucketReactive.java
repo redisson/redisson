@@ -138,4 +138,14 @@ public interface RBucketReactive<V> extends RExpirableReactive {
      */
     Mono<Void> set(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Set value and keep existing TTL.
+     * <p>
+     * Requires <b>Redis 6.0.0 and higher.</b>
+     *
+     * @param value - value to set
+     * @return void
+     */
+    Mono<Void> setAndKeepTTL(V value);
+
 }

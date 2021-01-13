@@ -134,6 +134,16 @@ public interface RBucket<V> extends RExpirable, RBucketAsync<V> {
     void set(V value, long timeToLive, TimeUnit timeUnit);
 
     /**
+     * Set value and keep existing TTL.
+     * <p>
+     * Requires <b>Redis 6.0.0 and higher.</b>
+     *
+     * @param value - value to set
+     * @return void
+     */
+    void setAndKeepTTL(V value);
+
+    /**
      * Adds object event listener
      *
      * @see org.redisson.api.ExpiredObjectListener

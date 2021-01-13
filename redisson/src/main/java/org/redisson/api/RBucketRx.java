@@ -140,4 +140,14 @@ public interface RBucketRx<V> extends RExpirableRx {
      */
     Completable set(V value, long timeToLive, TimeUnit timeUnit);
 
+    /**
+     * Set value and keep existing TTL.
+     * <p>
+     * Requires <b>Redis 6.0.0 and higher.</b>
+     *
+     * @param value - value to set
+     * @return void
+     */
+    Completable setAndKeepTTL(V value);
+
 }

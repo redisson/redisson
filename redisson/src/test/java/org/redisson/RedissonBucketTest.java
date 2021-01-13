@@ -21,6 +21,15 @@ import org.redisson.config.Config;
 public class RedissonBucketTest extends BaseTest {
 
     @Test
+    public void testKeepTTL() {
+        RBucket<Integer> al = redisson.getBucket("test");
+        al.set(1234, 10, TimeUnit.SECONDS);
+        al.setAndKeepTTL(222);
+        assertThat(al.remainTimeToLive()).isGreaterThan(9900);
+        assertThat(al.get()).isEqualTo(222);
+    }
+
+    @Test
     public void testIdleTime() throws InterruptedException {
         RBucket<Integer> al = redisson.getBucket("test");
         al.set(1234);
