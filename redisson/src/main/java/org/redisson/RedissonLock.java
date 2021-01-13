@@ -42,6 +42,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Condition;
@@ -111,7 +112,9 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     private static final Logger log = LoggerFactory.getLogger(RedissonLock.class);
     
     private static final ConcurrentMap<String, ExpirationEntry> EXPIRATION_RENEWAL_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, AtomicInteger> EXPIRATION_RENEWAL_RETRY = new ConcurrentHashMap<>();
     protected long internalLockLeaseTime;
+    protected int internalWatchDogRetries;
 
     final String id;
     final String entryName;
@@ -125,6 +128,7 @@ public class RedissonLock extends RedissonExpirable implements RLock {
         this.commandExecutor = commandExecutor;
         this.id = commandExecutor.getConnectionManager().getId();
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
+        this.internalWatchDogRetries = commandExecutor.getConnectionManager().getCfg().getLockWatchdogRetries();
         this.entryName = id + ":" + name;
         this.pubSub = commandExecutor.getConnectionManager().getSubscribeService().getLockPubSub();
     }
@@ -265,11 +269,15 @@ public class RedissonLock extends RedissonExpirable implements RLock {
     }
 
     private void renewExpiration() {
+        renewExpiration(internalLockLeaseTime / 3);
+    }
+
+    private void renewExpiration(long delay) {
         ExpirationEntry ee = EXPIRATION_RENEWAL_MAP.get(getEntryName());
         if (ee == null) {
             return;
         }
-        
+
         Timeout task = commandExecutor.getConnectionManager().newTimeout(new TimerTask() {
             @Override
             public void run(Timeout timeout) throws Exception {
@@ -281,22 +289,33 @@ public class RedissonLock extends RedissonExpirable implements RLock {
                 if (threadId == null) {
                     return;
                 }
-                
+
                 RFuture<Boolean> future = renewExpirationAsync(threadId);
                 future.onComplete((res, e) -> {
                     if (e != null) {
-                        log.error("Can't update lock " + getName() + " expiration", e);
+                        EXPIRATION_RENEWAL_RETRY.putIfAbsent(getEntryName(), new AtomicInteger(0));
+                        if (EXPIRATION_RENEWAL_RETRY.get(getEntryName()).getAndIncrement() >= internalWatchDogRetries) {
+                            log.error("Can't update lock " + getName() + " expiration after " + internalWatchDogRetries + " retries", e);
+                            EXPIRATION_RENEWAL_MAP.remove(getEntryName());
+                            EXPIRATION_RENEWAL_RETRY.remove(getEntryName());
+                        } else {
+                            log.warn("Exception happened during updating lock " + getName(), e);
+                            // retry immediately in case of the lock is expired before next retry
+                            renewExpiration(0);
+                        }
                         return;
                     }
-                    
+
                     if (res) {
+                        // reset retries
+                        EXPIRATION_RENEWAL_RETRY.remove(getEntryName());
                         // reschedule itself
                         renewExpiration();
                     }
                 });
             }
-        }, internalLockLeaseTime / 3, TimeUnit.MILLISECONDS);
-        
+        }, delay, TimeUnit.MILLISECONDS);
+
         ee.setTimeout(task);
     }
     
