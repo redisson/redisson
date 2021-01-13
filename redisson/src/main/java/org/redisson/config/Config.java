@@ -83,6 +83,8 @@ public class Config {
 
     private long lockWatchdogTimeout = 30 * 1000;
 
+    private int lockWatchdogRetries = 0;
+
     private long reliableTopicWatchdogTimeout = TimeUnit.MINUTES.toMillis(10);
 
     private boolean keepPubSubOrder = true;
@@ -123,6 +125,7 @@ public class Config {
         setUseScriptCache(oldConf.isUseScriptCache());
         setKeepPubSubOrder(oldConf.isKeepPubSubOrder());
         setLockWatchdogTimeout(oldConf.getLockWatchdogTimeout());
+        setLockWatchdogRetries(oldConf.getLockWatchdogRetries());
         setNettyThreads(oldConf.getNettyThreads());
         setThreads(oldConf.getThreads());
         setCodec(oldConf.getCodec());
@@ -809,5 +812,20 @@ public class Config {
     public Config setReliableTopicWatchdogTimeout(long timeout) {
         this.reliableTopicWatchdogTimeout = timeout;
         return this;
+    }
+
+    public int getLockWatchdogRetries() {
+        return lockWatchdogRetries;
+    }
+
+    /**
+     * This parameter provide exception tolerance for watchdog. Eg. slowScript in redis server.
+     * Watchdog will retry within this limit.
+     * Retry logic will prevent current lock expired and other app got this lock.
+     * The default value is 0
+     * @return
+     */
+    public void setLockWatchdogRetries(int lockWatchdogRetries) {
+        this.lockWatchdogRetries = lockWatchdogRetries;
     }
 }
