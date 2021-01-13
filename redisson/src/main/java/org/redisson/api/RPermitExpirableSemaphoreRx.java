@@ -17,9 +17,9 @@ package org.redisson.api;
 
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Completable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for Semaphore object with lease time parameter support for each acquired permit.

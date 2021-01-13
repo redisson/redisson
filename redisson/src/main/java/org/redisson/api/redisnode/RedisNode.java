@@ -30,6 +30,13 @@ import java.util.concurrent.TimeUnit;
 public interface RedisNode {
 
     /**
+     * Returns Redis memory statistics
+     *
+     * @return statistics info map
+     */
+    Map<String, String> getMemoryStatistics();
+
+    /**
      * Returns current Redis server time in seconds
      *
      * @return time in seconds

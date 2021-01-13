@@ -34,6 +34,7 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.*;
+import java.util.function.Predicate;
 
 import static org.redisson.client.protocol.RedisCommands.*;
 
@@ -937,5 +938,8 @@ public class RedissonList<V> extends RedissonExpirable implements RList<V> {
         return result;
     }
 
-
+    @Override
+    public boolean removeIf(Predicate<? super V> filter) {
+        throw new UnsupportedOperationException();
+    }
 }

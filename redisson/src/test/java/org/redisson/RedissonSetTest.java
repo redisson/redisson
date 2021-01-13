@@ -43,6 +43,30 @@ public class RedissonSetTest extends BaseTest {
     }
 
     @Test
+    public void testTryAdd() {
+        RSet<String> set = redisson.getSet("list", IntegerCodec.INSTANCE);
+        Set<String> names = new HashSet<>();
+        int elements = 200000;
+        for (int i = 0; i < elements; i++) {
+            names.add("name" + i);
+        }
+
+        boolean s = set.tryAdd(names.toArray(new String[]{}));
+        assertThat(s).isTrue();
+        assertThat(set.size()).isEqualTo(elements);
+
+        Set<String> names2 = new HashSet<>();
+        for (int i = elements+1; i < elements + 10000; i++) {
+            names2.add("name" + i);
+        }
+        names2.add("name10");
+
+        boolean r = set.tryAdd(names2.toArray(new String[]{}));
+        assertThat(r).isFalse();
+        assertThat(set.size()).isEqualTo(elements);
+    }
+
+    @Test
     public void testSortOrder() {
         RSet<Integer> list = redisson.getSet("list", IntegerCodec.INSTANCE);
         list.add(1);

@@ -20,7 +20,7 @@ import java.util.concurrent.Callable;
 import org.redisson.api.RFuture;
 import org.redisson.command.CommandAsyncExecutor;
 
-import io.reactivex.Flowable;
+import io.reactivex.rxjava3.core.Flowable;
 
 /**
  *

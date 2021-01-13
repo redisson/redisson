@@ -426,10 +426,11 @@ public class MasterSlaveEntry {
         return future;
     }
     
-    public void changeMaster(InetSocketAddress address, RedisURI uri) {
+    public RFuture<RedisClient> changeMaster(InetSocketAddress address, RedisURI uri) {
         ClientConnectionsEntry oldMaster = masterEntry;
         RFuture<RedisClient> future = setupMasterEntry(address, uri);
         changeMaster(uri, oldMaster, future);
+        return future;
     }
 
 

@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.redisson</groupId>
         <artifactId>redisson-tomcat</artifactId>
-        <version>3.13.7-SNAPSHOT</version>
+        <version>3.14.2-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
 

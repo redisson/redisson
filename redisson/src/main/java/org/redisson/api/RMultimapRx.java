@@ -17,7 +17,7 @@ package org.redisson.api;
 
 import java.util.Set;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Base RxJava2 interface for Multimap object

@@ -19,9 +19,9 @@ import org.reactivestreams.Publisher;
 import org.redisson.api.RFuture;
 import org.redisson.api.RListAsync;
 
-import io.reactivex.Single;
-import io.reactivex.functions.LongConsumer;
-import io.reactivex.processors.ReplayProcessor;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.functions.LongConsumer;
+import io.reactivex.rxjava3.processors.ReplayProcessor;
 
 /**
  * Distributed and concurrent implementation of {@link java.util.List}

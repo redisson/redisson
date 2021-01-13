@@ -221,41 +221,12 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
 
     /**
      * Returns stream of elements in this time-series collection.
-     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
-     *
-     * @param pattern - search pattern
-     * @return stream of elements
-     */
-    Stream<V> stream(String pattern);
-
-    /**
-     * Returns stream of elements in this time-series collection.
      * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
      *
      * @param count - size of elements batch
      * @return stream of elements
      */
     Stream<V> stream(int count);
-
-    /**
-     * Returns stream of elements in this set.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
-     * If pattern is not null then only elements match this pattern are loaded.
-     *
-     * @param pattern - search pattern
-     * @param count - size of elements batch
-     * @return stream of elements
-     */
-    Stream<V> stream(String pattern, int count);
-
-    /**
-     * Returns an iterator over elements in this set.
-     * If <code>pattern</code> is not null then only elements match this pattern are loaded.
-     *
-     * @param pattern - search pattern
-     * @return iterator
-     */
-    Iterator<V> iterator(String pattern);
 
     /**
      * Returns an iterator over elements in this time-series collection.
@@ -265,16 +236,5 @@ public interface RTimeSeries<V> extends RExpirable, Iterable<V>, RTimeSeriesAsyn
      * @return iterator
      */
     Iterator<V> iterator(int count);
-
-    /**
-     * Returns an iterator over elements in this time-series collection.
-     * Elements are loaded in batch. Batch size is defined by <code>count</code> param.
-     * If pattern is not null then only elements match this pattern are loaded.
-     *
-     * @param pattern - search pattern
-     * @param count - size of elements batch
-     * @return iterator
-     */
-    Iterator<V> iterator(String pattern, int count);
 
 }

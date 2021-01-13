@@ -560,6 +560,14 @@ public class RedissonClusterConnection extends RedissonConnection implements Def
 
     @Override
     public Long del(byte[]... keys) {
+        if (isQueueing() || isPipelined()) {
+            for (byte[] key: keys) {
+                write(key, LongCodec.INSTANCE, RedisCommands.DEL, key);
+            }
+
+            return null;
+        }
+
         RFuture<Long> f = executeAsync(RedisCommands.DEL, keys);
         return sync(f);
     }

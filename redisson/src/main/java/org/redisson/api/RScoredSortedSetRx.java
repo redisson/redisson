@@ -24,9 +24,9 @@ import java.util.concurrent.TimeUnit;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
-import io.reactivex.Flowable;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * RxJava2 interface for scored sorted set data structure.
@@ -269,7 +269,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param objects - map of elements to add
      * @return amount of added elements, not including already existing in this sorted set
      */
-    Single<Long> addAll(Map<V, Double> objects);
+    Single<Integer> addAll(Map<V, Double> objects);
     
     /**
      * Adds element to this set, overrides previous score if it has been already added.
@@ -577,7 +577,7 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @param endScoreInclusive - end score inclusive
      * @return count
      */
-    Single<Long> count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+    Single<Integer> count(double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
     
     /**
      * Read all values at once.

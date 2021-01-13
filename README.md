@@ -1,4 +1,7 @@
 # Redisson - Redis Java client<br/>with features of In-Memory Data Grid
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.redisson/redisson)
+[![JavaDoc](http://www.javadoc.io/badge/org.redisson/redisson.svg)](http://www.javadoc.io/doc/org.redisson/redisson)
+[![License](http://img.shields.io/:license-apache-brightgreen.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 
 [Quick start](https://github.com/redisson/redisson#quick-start) | [Documentation](https://github.com/redisson/redisson/wiki/Table-of-Content) | [Javadocs](https://www.javadoc.io/doc/org.redisson/redisson/latest/index.html) | [Changelog](https://github.com/redisson/redisson/blob/master/CHANGELOG.md) | [Code examples](https://github.com/redisson/redisson-examples) | [FAQs](https://github.com/redisson/redisson/wiki/16.-FAQ) | [Report an issue](https://github.com/redisson/redisson/issues/new)
 
@@ -14,7 +17,7 @@ JDK compatibility:  1.8 - 15, Android
 * Redis single (including support of [Azure Redis Cache](https://azure.microsoft.com/en-us/services/cache/) and [Google Cloud Memorystore for Redis](https://cloud.google.com/memorystore/docs/redis/))  
 * Thread-safe implementation  
 * [Reactive Streams](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
-* [RxJava2](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
+* [RxJava3](https://github.com/redisson/redisson/wiki/3.-operations-execution#32-reactive-way) API  
 * [Asynchronous](https://github.com/redisson/redisson/wiki/3.-operations-execution#31-async-way) API  
 * Asynchronous connection pool  
 * Lua scripting  
@@ -99,14 +102,14 @@ Used by
     <dependency>
        <groupId>org.redisson</groupId>
        <artifactId>redisson</artifactId>
-       <version>3.13.6</version>
+       <version>3.14.1</version>
     </dependency>  
 
 #### Gradle
-    compile 'org.redisson:redisson:3.13.6'  
+    compile 'org.redisson:redisson:3.14.1'  
 
 #### SBT
-    libraryDependencies += "org.redisson" % "redisson" % "3.13.6"
+    libraryDependencies += "org.redisson" % "redisson" % "3.14.1"
 
 #### Java
 
@@ -164,8 +167,8 @@ Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features 
 
 ## Downloads
    
-[Redisson 3.13.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.13.6&e=jar),
-[Redisson node 3.13.6](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.6&e=jar)  
+[Redisson 3.14.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson&v=3.14.1&e=jar),
+[Redisson node 3.14.1](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.14.1&e=jar)  
 
 ## FAQs
 

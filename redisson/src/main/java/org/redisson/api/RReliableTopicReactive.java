@@ -16,6 +16,7 @@
 package org.redisson.api;
 
 import org.redisson.api.listener.MessageListener;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 /**
@@ -37,7 +38,7 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      *
      * @return amount of messages
      */
-    Mono<Long> sizeAsync();
+    Mono<Long> size();
 
     /**
      * Publish the message to all subscribers of this topic asynchronously.
@@ -46,7 +47,7 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      * @param message to send
      * @return number of subscribers that received the message
      */
-    Mono<Long> publishAsync(Object message);
+    Mono<Long> publish(Object message);
     
     /**
      * Subscribes to this topic.
@@ -63,7 +64,7 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      * @return locally unique listener id
      * @see MessageListener
      */
-    <M> Mono<String> addListenerAsync(Class<M> type, MessageListener<M> listener);
+    <M> Mono<String> addListener(Class<M> type, MessageListener<M> listener);
     
     /**
      * Removes the listener by <code>id</code> for listening this topic
@@ -71,12 +72,12 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      * @param listenerIds - listener ids
      * @return void
      */
-    Mono<Void> removeListenerAsync(String... listenerIds);
+    Mono<Void> removeListener(String... listenerIds);
 
     /**
      * Removes all listeners from this topic
      */
-    Mono<Void> removeAllListenersAsync();
+    Mono<Void> removeAllListeners();
 
     /**
      * Returns amount of subscribers to this topic across all Redisson instances.
@@ -84,6 +85,15 @@ public interface RReliableTopicReactive extends RExpirableReactive {
      *
      * @return amount of subscribers
      */
-    Mono<Integer> countSubscribersAsync();
+    Mono<Integer> countSubscribers();
+
+    /**
+     * Returns continues stream of published messages.
+     *
+     * @param <M> type of message
+     * @param type - type of message to listen
+     * @return stream of messages
+     */
+    <M> Flux<M> getMessages(Class<M> type);
 
 }

@@ -31,7 +31,7 @@ import org.redisson.client.codec.Codec;
 import org.redisson.reactive.RedissonSetReactive;
 import org.redisson.transaction.RedissonTransaction;
 
-import io.reactivex.Completable;
+import io.reactivex.rxjava3.core.Completable;
 
 /**
  * 

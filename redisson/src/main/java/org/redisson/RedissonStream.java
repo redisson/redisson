@@ -15,12 +15,7 @@
  */
 package org.redisson;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import org.redisson.api.PendingEntry;
@@ -95,9 +90,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         List<Object> params = new ArrayList<Object>();
         params.add(getName());
         params.add(groupName);
-        for (StreamMessageId id : ids) {
-            params.add(id);
-        }
+        params.addAll(Arrays.asList(ids));
         
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XACK, params.toArray());
     }
@@ -402,9 +395,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         params.add("STREAMS");
         params.add(getName());
-        for (String key : keyToId.keySet()) {
-            params.add(key);
-        }
+        params.addAll(keyToId.keySet());
 
         if (id == null) {
             params.add(">");
@@ -680,9 +671,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         params.add("STREAMS");
         params.add(getName());
-        for (String key : keyToId.keySet()) {
-            params.add(key);
-        }
+        params.addAll(keyToId.keySet());
         
         params.add(id);
         for (StreamMessageId nextId : keyToId.values()) {
@@ -891,9 +880,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     public RFuture<Long> removeAsync(StreamMessageId... ids) {
         List<Object> params = new ArrayList<Object>();
         params.add(getName());
-        for (StreamMessageId id : ids) {
-            params.add(id);
-        }
+        params.addAll(Arrays.asList(ids));
 
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XDEL, params.toArray());
     }

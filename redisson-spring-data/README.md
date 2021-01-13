@@ -2,7 +2,7 @@
 
 Integrates Redisson with Spring Data Redis library. Implements Spring Data's `RedisConnectionFactory` and `ReactiveRedisConnectionFactory` interfaces and allows to interact with Redis through `RedisTemplate` or `ReactiveRedisTemplate` object.
 
-Supports Spring Data Redis 1.6.x - 2.3.x
+Supports Spring Data Redis 1.6.x - 2.4.x
 
 <sub>Consider __[Redisson PRO](https://redisson.pro)__ version for advanced features and support by SLA.</sub>
 
@@ -29,7 +29,9 @@ Maven
          <artifactId>redisson-spring-data-22</artifactId>
          <!-- for Spring Data Redis v.2.3.x -->
          <artifactId>redisson-spring-data-23</artifactId>
-         <version>3.13.6</version>
+         <!-- for Spring Data Redis v.2.4.x -->
+         <artifactId>redisson-spring-data-24</artifactId>
+         <version>3.14.1</version>
      </dependency>
 ```
 
@@ -37,19 +39,21 @@ Gradle
 
 ```groovy
      // for Spring Data Redis v.1.6.x
-     compile 'org.redisson:redisson-spring-data-16:3.13.6'
+     compile 'org.redisson:redisson-spring-data-16:3.14.0'
      // for Spring Data Redis v.1.7.x
-     compile 'org.redisson:redisson-spring-data-17:3.13.6'
+     compile 'org.redisson:redisson-spring-data-17:3.14.1'
      // for Spring Data Redis v.1.8.x
-     compile 'org.redisson:redisson-spring-data-18:3.13.6'
+     compile 'org.redisson:redisson-spring-data-18:3.14.1'
      // for Spring Data Redis v.2.0.x
-     compile 'org.redisson:redisson-spring-data-20:3.13.6'
+     compile 'org.redisson:redisson-spring-data-20:3.14.1'
      // for Spring Data Redis v.2.1.x
-     compile 'org.redisson:redisson-spring-data-21:3.13.6'
+     compile 'org.redisson:redisson-spring-data-21:3.14.1'
      // for Spring Data Redis v.2.2.x
-     compile 'org.redisson:redisson-spring-data-22:3.13.6'
+     compile 'org.redisson:redisson-spring-data-22:3.14.1'
      // for Spring Data Redis v.2.3.x
-     compile 'org.redisson:redisson-spring-data-23:3.13.6'
+     compile 'org.redisson:redisson-spring-data-23:3.14.1'
+     // for Spring Data Redis v.2.4.x
+     compile 'org.redisson:redisson-spring-data-24:3.14.1'
 ```
 
 ### 2. Register `RedissonConnectionFactory` in Spring context

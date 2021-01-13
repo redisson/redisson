@@ -15,8 +15,9 @@
  */
 package org.redisson.api;
 
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.listener.MessageListener;
 
 /**
@@ -38,7 +39,7 @@ public interface RReliableTopicRx extends RExpirableRx {
      *
      * @return amount of messages
      */
-    Single<Long> sizeAsync();
+    Single<Long> size();
 
     /**
      * Publish the message to all subscribers of this topic asynchronously.
@@ -47,7 +48,7 @@ public interface RReliableTopicRx extends RExpirableRx {
      * @param message to send
      * @return number of subscribers that received the message
      */
-    Single<Long> publishAsync(Object message);
+    Single<Long> publish(Object message);
 
     /**
      * Subscribes to this topic.
@@ -64,7 +65,7 @@ public interface RReliableTopicRx extends RExpirableRx {
      * @return locally unique listener id
      * @see MessageListener
      */
-    <M> Single<String> addListenerAsync(Class<M> type, MessageListener<M> listener);
+    <M> Single<String> addListener(Class<M> type, MessageListener<M> listener);
     
     /**
      * Removes the listener by <code>id</code> for listening this topic
@@ -72,12 +73,12 @@ public interface RReliableTopicRx extends RExpirableRx {
      * @param listenerIds - listener ids
      * @return void
      */
-    Completable removeListenerAsync(String... listenerIds);
+    Completable removeListener(String... listenerIds);
 
     /**
      * Removes all listeners from this topic
      */
-    Completable removeAllListenersAsync();
+    Completable removeAllListeners();
 
     /**
      * Returns amount of subscribers to this topic across all Redisson instances.
@@ -85,6 +86,15 @@ public interface RReliableTopicRx extends RExpirableRx {
      *
      * @return amount of subscribers
      */
-    Single<Integer> countSubscribersAsync();
+    Single<Integer> countSubscribers();
+
+    /**
+     * Returns continues stream of published messages.
+     *
+     * @param <M> - type of message
+     * @param type - type of message to listen
+     * @return stream of messages
+     */
+    <M> Flowable<M> getMessages(Class<M> type);
 
 }

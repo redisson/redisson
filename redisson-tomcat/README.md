@@ -10,7 +10,7 @@ Supports Apache Tomcat 7.x, 8.x, 9.x
 
 ### 1. Add session manager
 
-Add `RedissonSessionManager` in `tomcat/conf/context.xml` or per context in `tomcat/conf/server.xml`
+Add `RedissonSessionManager` in global context - `tomcat/conf/context.xml` or per application context - `tomcat/conf/server.xml`
 
    ```xml
 <Manager className="org.redisson.tomcat.RedissonSessionManager"
@@ -65,12 +65,12 @@ Amount of Redisson instances created by Tomcat for multiple contexts could be re
 ### 2. Copy two jars into `TOMCAT_BASE/lib` directory:
 
   
-[redisson-all-3.13.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.13.5&e=jar)
+[redisson-all-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-all&v=3.14.1&e=jar)
   
 for Tomcat 7.x  
-[redisson-tomcat-7-3.13.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.13.5&e=jar)  
+[redisson-tomcat-7-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-7&v=3.14.1&e=jar)  
 for Tomcat 8.x  
-[redisson-tomcat-8-3.13.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.13.5&e=jar)  
+[redisson-tomcat-8-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-8&v=3.14.1&e=jar)  
 for Tomcat 9.x  
-[redisson-tomcat-9-3.13.5.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.13.5&e=jar)  
+[redisson-tomcat-9-3.14.1.jar](https://repository.sonatype.org/service/local/artifact/maven/redirect?r=central-proxy&g=org.redisson&a=redisson-tomcat-9&v=3.14.1&e=jar)  
 

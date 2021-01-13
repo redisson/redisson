@@ -336,7 +336,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 Arrays.<Object>asList(getName(), configName), newName, newConfigName);
         f.onComplete((value, e) -> {
             if (e == null) {
-                this.name = newName;
+                setName(newName);
                 this.configName = newConfigName;
             }
         });
@@ -356,7 +356,7 @@ public class RedissonBloomFilter<T> extends RedissonExpirable implements RBloomF
                 Arrays.<Object>asList(getName(), configName), newName, newConfigName);
         f.onComplete((value, e) -> {
             if (e == null && value) {
-                this.name = newName;
+                setName(newName);
                 this.configName = newConfigName;
             }
         });

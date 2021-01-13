@@ -79,6 +79,16 @@ public class RedissonSetMultimapValues<V> extends RedissonExpirable implements R
     }
     
     @Override
+    public boolean tryAdd(V... values) {
+        return get(tryAddAsync(values));
+    }
+
+    @Override
+    public RFuture<Boolean> tryAddAsync(V... values) {
+        return set.tryAddAsync(values);
+    }
+
+    @Override
     public RFuture<Boolean> clearExpireAsync() {
         throw new UnsupportedOperationException("This operation is not supported for SetMultimap values Set");
     }

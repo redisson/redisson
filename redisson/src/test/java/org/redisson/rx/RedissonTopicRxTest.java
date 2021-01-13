@@ -3,9 +3,12 @@ package org.redisson.rx;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
@@ -13,8 +16,8 @@ import org.reactivestreams.Subscription;
 import org.redisson.api.RTopicRx;
 import org.redisson.api.listener.MessageListener;
 
-import io.reactivex.Flowable;
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Single;
 
 public class RedissonTopicRxTest extends BaseRxTest {
 
@@ -116,7 +119,7 @@ public class RedissonTopicRxTest extends BaseRxTest {
         for (int i = 0; i < 15; i++) {
             sync(topic.publish("" + i));
         }
-        
-        assertThat(list).containsExactly("0", "1", "2", "3", "4", "5", "6", "7", "8", "9");
+
+        Awaitility.waitAtMost(Duration.ofSeconds(10)).until(() -> list.equals(Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")));
     }
 }

@@ -65,7 +65,9 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         if (options.getResponseTimeout() > 0) {
             this.responseTimeout = options.getResponseTimeout();
         }
-        
+        if (options.getSyncSlaves() > 0) {
+            this.responseTimeout += options.getSyncTimeout();
+        }
     }
 
     @Override
@@ -114,7 +116,12 @@ public class RedisCommonBatchExecutor extends RedisExecutor<Object, Void> {
         
         writeFuture = connection.send(new CommandsData(attemptPromise, list, options.isSkipResult(), isAtomic, isQueued, options.getSyncSlaves() > 0));
     }
-    
+
+    @Override
+    protected boolean isResendAllowed(int attempt, int attempts) {
+        return options.getSyncSlaves() == 0 && super.isResendAllowed(attempt, attempts);
+    }
+
     protected boolean isWaitCommand(CommandData<?, ?> c) {
         return c.getCommand().getName().equals(RedisCommands.WAIT.getName());
     }

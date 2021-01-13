@@ -32,6 +32,9 @@ import org.redisson.client.protocol.Encoder;
 import java.io.IOException;
 
 /**
+ * Kryo 5 codec
+ * <p>
+ * Fully thread-safe.
  *
  * @author Nikita Koksharov
  *

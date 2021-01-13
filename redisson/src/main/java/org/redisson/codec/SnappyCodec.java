@@ -30,9 +30,11 @@ import java.io.IOException;
 /**
  * Snappy compression codec.
  * Uses inner <code>Codec</code> to convert object to binary stream.
- * <code>FstCodec</code> used by default.
+ * <code>MarshallingCodec</code> used by default.
  *
- * @see org.redisson.codec.FstCodec
+ * Fully thread-safe.
+ *
+ * @see org.redisson.codec.MarshallingCodec
  *
  * @author Nikita Koksharov
  *

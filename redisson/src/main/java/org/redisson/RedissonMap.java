@@ -873,7 +873,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value) {
         checkKey(key);
-        checkValue(key);
+        checkValue(value);
         
         RFuture<V> future = putIfAbsentOperationAsync(key, value);
         if (hasNoWriter()) {
@@ -881,7 +881,7 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
         
         MapWriterTask.Add task = new MapWriterTask.Add(key, value);
-        return mapWriterFuture(future, task, r -> r == null);
+        return mapWriterFuture(future, task, Objects::isNull);
     }
 
     protected boolean hasNoWriter() {
@@ -1490,6 +1490,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         }
 
         @Override
+        public boolean isEmpty() {
+            return !iterator().hasNext();
+        }
+
+        @Override
         public Iterator<K> iterator() {
             return keyIterator(pattern, count);
         }
@@ -1540,6 +1545,11 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         Values(String keyPattern, int count) {
             this.keyPattern = keyPattern;
             this.count = count;
+        }
+
+        @Override
+        public boolean isEmpty() {
+            return !iterator().hasNext();
         }
 
         @Override

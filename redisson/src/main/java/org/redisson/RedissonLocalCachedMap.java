@@ -61,6 +61,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private int invalidateEntryOnChange;
     private SyncStrategy syncStrategy;
     private LocalCachedMapOptions.StoreMode storeMode;
+    private boolean storeCacheMiss;
 
     private LocalCacheListener listener;
     private LocalCacheView<K, V> localCacheView;
@@ -80,6 +81,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
     private void init(String name, LocalCachedMapOptions<K, V> options, RedissonClient redisson, EvictionScheduler evictionScheduler) {
         syncStrategy = options.getSyncStrategy();
         storeMode = options.getStoreMode();
+        storeCacheMiss = options.isStoreCacheMiss();
 
         listener = new LocalCacheListener(name, commandExecutor, this, codec, options, cacheUpdateLogTime) {
             
@@ -212,7 +214,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
 
         CacheKey cacheKey = localCacheView.toCacheKey(key);
         CacheValue cacheValue = cache.get(cacheKey);
-        if (cacheValue != null && cacheValue.getValue() != null) {
+        if (cacheValue != null && (storeCacheMiss || cacheValue.getValue() != null)) {
             return RedissonPromise.newSucceededFuture((V) cacheValue.getValue());
         }
 
@@ -226,7 +228,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 return;
             }
             
-            if (value != null) {
+            if (storeCacheMiss || value != null) {
                 cachePut(cacheKey, key, value);
             }
         });
@@ -244,7 +246,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return result;
     }
 
-    
+
     @Override
     protected RFuture<V> putOperationAsync(K key, V value) {
         ByteBuf mapKey = encodeMapKey(key);
@@ -659,7 +661,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 + "end;"
                 + "if ARGV[1] == '2' then "
                     + "for i=tonumber(ARGV[2]) + 2 + 1, #ARGV - 1, 5000 do "
-                        + "redis.call('hmset', KEYS[3], unpack(ARGV, i, math.min(i+4999, #ARGV - 1))); "
+                        + "redis.call('zadd', KEYS[3], unpack(ARGV, i, math.min(i+4999, #ARGV - 1))); "
                     + "end; "
                     + "redis.call('publish', KEYS[2], ARGV[#ARGV]); "
                 + "end;",
@@ -671,7 +673,7 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
                 result.tryFailure(e);
                 return;
             }
-            
+
             cacheMap(map);
             result.trySuccess(null);
         });

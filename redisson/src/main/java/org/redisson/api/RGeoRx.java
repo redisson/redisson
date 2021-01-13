@@ -18,7 +18,7 @@ package org.redisson.api;
 import java.util.List;
 import java.util.Map;
 
-import io.reactivex.Single;
+import io.reactivex.rxjava3.core.Single;
 
 /**
  * Geospatial items holder. Reactive interface.

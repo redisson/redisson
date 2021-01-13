@@ -325,7 +325,7 @@ public final class RedisClient {
 
     public RFuture<Void> shutdownAsync() {
         RPromise<Void> result = new RedissonPromise<Void>();
-        if (channels.isEmpty()) {
+        if (channels.isEmpty() || config.getGroup().isShuttingDown()) {
             shutdown(result);
             return result;
         }

@@ -35,9 +35,7 @@ import org.redisson.liveobject.resolver.NamingScheme;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.regex.Pattern;
 
@@ -111,7 +109,8 @@ public class AccessorInterceptor {
             
             if (arg instanceof RLiveObject) {
                 RLiveObject liveObject = (RLiveObject) arg;
-                
+
+                removeIndex(liveMap, me, field);
                 storeIndex(field, me, liveObject.getLiveObjectId());
                 
                 Class<? extends Object> rEntity = liveObject.getClass().getSuperclass();
@@ -174,6 +173,9 @@ public class AccessorInterceptor {
         return superMethod.call();
     }
 
+    private static final Set<Class<?>> PRIMITIVE_CLASSES = new HashSet<>(Arrays.asList(
+                        byte.class, short.class, int.class, long.class, float.class, double.class));
+
     private void removeIndex(RMap<String, Object> liveMap, Object me, Field field) {
         if (field.getAnnotation(RIndex.class) == null) {
             return;
@@ -189,15 +191,21 @@ public class AccessorInterceptor {
             ce = new CommandBatchService(connectionManager);
         }
 
-        if (Number.class.isAssignableFrom(field.getType())) {
+        if (Number.class.isAssignableFrom(field.getType()) || PRIMITIVE_CLASSES.contains(field.getType())) {
             RScoredSortedSetAsync<Object> set = new RedissonScoredSortedSet<>(namingScheme.getCodec(), ce, indexName, null);
             set.removeAsync(((RLiveObject) me).getLiveObjectId());
         } else {
             if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)
                     || connectionManager.isClusterMode()) {
                 Object value = liveMap.remove(field.getName());
-                RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
-                map.removeAsync(((RLiveObject) value).getLiveObjectId(), ((RLiveObject) me).getLiveObjectId());
+                if (value != null) {
+                    RMultimapAsync<Object, Object> map = new RedissonSetMultimap<>(namingScheme.getCodec(), ce, indexName);
+                    Object k = value;
+                    if (ClassUtils.isAnnotationPresent(field.getType(), REntity.class)) {
+                        k = ((RLiveObject) value).getLiveObjectId();
+                    }
+                    map.removeAsync(k, ((RLiveObject) me).getLiveObjectId());
+                }
             } else {
                 removeAsync(ce, indexName, liveMap.getName(), namingScheme.getCodec(), ((RLiveObject) me).getLiveObjectId(), field.getName());
             }
