@@ -132,7 +132,93 @@ public interface RStreamReactive<K, V> extends RExpirableReactive {
      * @return list
      */
     Mono<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
+    /**
+     * Returns list of common info about pending messages by group name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #pendingRange
+     *
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return list
+     */
+    Mono<List<PendingEntry>> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #pendingRange
+     *
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return list
+     */
+    Mono<List<PendingEntry>> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns stream data of pending messages by group name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #listPending
+     *
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return map
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns stream data of pending messages by group and customer name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #listPending
+     *
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return map
+     */
+    Mono<Map<StreamMessageId, Map<K, V>>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
     /**
      * Transfers ownership of pending messages by id to a new consumer 
      * by name if idle time of messages is greater than defined value. 
