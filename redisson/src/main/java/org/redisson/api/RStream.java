@@ -255,6 +255,19 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
     Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return stream data mapped by Stream ID
+     */
+    AutoClaimResult<K, V> autoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
+    /**
      * Transfers ownership of pending messages by id to a new consumer 
      * by name if idle time of messages is greater than defined value. 
      * 
@@ -279,7 +292,20 @@ public interface RStream<K, V> extends RStreamAsync<K, V>, RExpirable {
      * @return list of Stream Message IDs
      */
     List<StreamMessageId> fastClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
-    
+
+    /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return list of Stream Message IDs
+     */
+    FastAutoClaimResult fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream Message IDs.
      *

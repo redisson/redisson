@@ -10,16 +10,38 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
-import org.redisson.api.PendingEntry;
-import org.redisson.api.PendingResult;
-import org.redisson.api.RStream;
-import org.redisson.api.StreamConsumer;
-import org.redisson.api.StreamGroup;
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.*;
 import org.redisson.client.RedisException;
 
 public class RedissonStreamTest extends BaseTest {
+
+    @Test
+    public void testAutoClaim() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+
+        stream.createGroup("testGroup");
+
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add("3", "33");
+        StreamMessageId id4 = stream.add("4", "44");
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+
+        AutoClaimResult<String, String> res = stream.autoClaim("testGroup", "consumer1", 1, TimeUnit.MILLISECONDS, id3, 2);
+        assertThat(res.getMessages().size()).isEqualTo(2);
+        for (Map.Entry<StreamMessageId, Map<String, String>> entry : res.getMessages().entrySet()) {
+            assertThat(entry.getValue().keySet()).containsAnyOf("3", "4");
+            assertThat(entry.getValue().values()).containsAnyOf("33", "44");
+        }
+    }
 
     @Test
     public void testPendingIdle() {
@@ -176,7 +198,32 @@ public class RedissonStreamTest extends BaseTest {
             assertThat(map.values()).containsAnyOf("33", "44");
         }
     }
-    
+
+    @Test
+    public void testAutoClaimIds() throws InterruptedException {
+        RStream<String, String> stream = redisson.getStream("test3");
+
+        stream.add("0", "0");
+
+        stream.createGroup("testGroup3");
+
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup3", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add("3", "33");
+        StreamMessageId id4 = stream.add("4", "44");
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup3", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+
+        FastAutoClaimResult res = stream.fastAutoClaim("testGroup3", "consumer1", 1, TimeUnit.MILLISECONDS, id3, 10);
+        assertThat(res.getNextId()).isEqualTo(new StreamMessageId(0, 0));
+        assertThat(res.getIds()).containsExactly(id3, id4);
+    }
+
     @Test
     public void testClaimIds() throws InterruptedException {
         RStream<String, String> stream = redisson.getStream("test3");

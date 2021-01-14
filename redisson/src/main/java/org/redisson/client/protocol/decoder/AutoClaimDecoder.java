@@ -15,47 +15,34 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.Collections;
-import java.util.List;
-
+import org.redisson.api.AutoClaimResult;
+import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * 
  * @author Nikita Koksharov
  *
- * @param <T> type
  */
-public class ObjectListReplayDecoder<T> implements MultiDecoder<List<T>> {
-
-    private final Decoder<Object> decoder;
-    private final boolean reverse;
-
-    public ObjectListReplayDecoder() {
-        this(false);
-    }
-
-    public ObjectListReplayDecoder(boolean reverse) {
-        this(reverse, null);
-    }
-
-    public ObjectListReplayDecoder(boolean reverse, Decoder<Object> decoder) {
-        super();
-        this.reverse = reverse;
-        this.decoder = decoder;
-    }
-
-    @Override
-    public List<T> decode(List<Object> parts, State state) {
-        if (reverse) {
-            Collections.reverse(parts);
-        }
-        return (List<T>) parts;
-    }
+public class AutoClaimDecoder implements MultiDecoder<Object> {
 
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return decoder;
+        return new StreamIdDecoder();
     }
+
+    @Override
+    public Object decode(List<Object> parts, State state) {
+        if (parts.isEmpty()) {
+            return null;            
+        }
+        
+        Map<StreamMessageId, Map<Object, Object>> maps = (Map<StreamMessageId, Map<Object, Object>>) parts.get(1);
+        return new AutoClaimResult((StreamMessageId) parts.get(0), maps);
+    }
+
 }

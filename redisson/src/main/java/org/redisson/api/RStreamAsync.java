@@ -257,6 +257,32 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
     RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return stream data mapped by Stream ID
+     */
+    RFuture<AutoClaimResult<K, V>> autoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
+    /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return list of Stream Message IDs
+     */
+    RFuture<FastAutoClaimResult> fastAutoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
+    /**
      * Transfers ownership of pending messages by id to a new consumer 
      * by name if idle time of messages is greater than defined value. 
      * 
@@ -264,7 +290,7 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @param consumerName - name of consumer
      * @param idleTime - minimum idle time of messages
      * @param idleTimeUnit - idle time unit
-     * @param ids - stream ids
+     * @param ids - Stream Message IDs
      * @return stream data mapped by Stream ID
      */
     RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);

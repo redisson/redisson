@@ -146,7 +146,33 @@ public interface RStreamRx<K, V> extends RExpirableRx {
      * @return stream data mapped by Stream ID
      */
     Single<Map<StreamMessageId, Map<K, V>>> claim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId... ids);
-    
+
+    /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return stream data mapped by Stream ID
+     */
+    Single<AutoClaimResult<K, V>> autoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
+    /**
+     * Transfers ownership of pending messages by id to a new consumer
+     * by name if idle time of messages and startId are greater than defined value.
+     *
+     * @param groupName - name of group
+     * @param consumerName - name of consumer
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param startId - start Stream Message ID
+     * @return list of Stream Message IDs
+     */
+    Single<FastAutoClaimResult> fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count);
+
     /**
      * Read stream data from <code>groupName</code> by <code>consumerName</code> and specified collection of Stream IDs.
      * 

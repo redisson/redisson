@@ -15,6 +15,7 @@
  */
 package org.redisson.client.protocol;
 
+import org.redisson.api.FastAutoClaimResult;
 import org.redisson.api.RType;
 import org.redisson.api.StreamInfo;
 import org.redisson.api.StreamMessageId;
@@ -368,14 +369,24 @@ public interface RedisCommands {
     RedisCommand<StreamInfo<Object, Object>> XINFO_CONSUMERS = new RedisCommand<>("XINFO", "CONSUMERS",
             new ListMultiDecoder2(new ObjectListReplayDecoder(), new StreamConsumerInfoDecoder()));
 
-    RedisCommand<List<StreamMessageId>> XCLAIM_IDS = new RedisCommand<List<StreamMessageId>>("XCLAIM", new StreamIdListDecoder());
+    RedisCommand<Object> XCLAIM_IDS = new RedisCommand<>("XCLAIM", new ObjectDecoder(new StreamIdDecoder()));
     
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XCLAIM = new RedisCommand<>("XCLAIM",
             new ListMultiDecoder2(
                     new ObjectMapReplayDecoder2(),
                     new ObjectDecoder(new StreamIdDecoder()),
                     new StreamObjectMapReplayDecoder()), ValueType.MAP);
-            
+
+    RedisCommand<FastAutoClaimResult> XAUTOCLAIM_IDS = new RedisCommand<>("XAUTOCLAIM",
+            new ListMultiDecoder2(new FastAutoClaimDecoder(), new ObjectListReplayDecoder(false, new StreamIdDecoder())));
+
+    RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XAUTOCLAIM = new RedisCommand<>("XAUTOCLAIM",
+            new ListMultiDecoder2(
+                    new AutoClaimDecoder(),
+                    new ObjectMapReplayDecoder2(),
+                    new ObjectDecoder(new StreamIdDecoder()),
+                    new StreamObjectMapReplayDecoder()), ValueType.MAP);
+
     RedisCommand<Map<StreamMessageId, Map<Object, Object>>> XREADGROUP_BLOCKING_SINGLE = new RedisCommand<>("XREADGROUP",
             XREADGROUP_SINGLE.getReplayMultiDecoder());
 

@@ -18,14 +18,7 @@ package org.redisson;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import org.redisson.api.PendingEntry;
-import org.redisson.api.PendingResult;
-import org.redisson.api.RFuture;
-import org.redisson.api.RStream;
-import org.redisson.api.StreamConsumer;
-import org.redisson.api.StreamGroup;
-import org.redisson.api.StreamInfo;
-import org.redisson.api.StreamMessageId;
+import org.redisson.api.*;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.RedisCommand;
@@ -165,7 +158,7 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
             StreamMessageId... ids) {
         return get(fastClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, ids));
     }
-    
+
     @Override
     public RFuture<List<StreamMessageId>> fastClaimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {
@@ -183,7 +176,46 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
         
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.XCLAIM_IDS, params.toArray());
     }
-    
+
+    @Override
+    public AutoClaimResult<K, V> autoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
+        return get(autoClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, startId, count));
+    }
+
+    @Override
+    public RFuture<AutoClaimResult<K, V>> autoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
+        List<Object> params = new ArrayList<>();
+        params.add(getName());
+        params.add(groupName);
+        params.add(consumerName);
+        params.add(idleTimeUnit.toMillis(idleTime));
+        params.add(startId.toString());
+        params.add("COUNT");
+        params.add(count);
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XAUTOCLAIM, params.toArray());
+    }
+
+    @Override
+    public FastAutoClaimResult fastAutoClaim(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
+        return get(fastAutoClaimAsync(groupName, consumerName, idleTime, idleTimeUnit, startId, count));
+    }
+
+    @Override
+    public RFuture<FastAutoClaimResult> fastAutoClaimAsync(String groupName, String consumerName, long idleTime, TimeUnit idleTimeUnit, StreamMessageId startId, int count) {
+        List<Object> params = new ArrayList<>();
+        params.add(getName());
+        params.add(groupName);
+        params.add(consumerName);
+        params.add(idleTimeUnit.toMillis(idleTime));
+        params.add(startId.toString());
+        params.add("COUNT");
+        params.add(count);
+        params.add("JUSTID");
+
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.XAUTOCLAIM_IDS, params.toArray());
+    }
+
     @Override
     public RFuture<Map<StreamMessageId, Map<K, V>>> claimAsync(String groupName, String consumerName, long idleTime,
             TimeUnit idleTimeUnit, StreamMessageId... ids) {

@@ -15,36 +15,29 @@
  */
 package org.redisson.client.protocol.decoder;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import org.redisson.api.FastAutoClaimResult;
 import org.redisson.api.StreamMessageId;
 import org.redisson.client.handler.State;
 import org.redisson.client.protocol.Decoder;
-import org.redisson.client.protocol.convertor.StreamIdConvertor;
+
+import java.util.List;
 
 /**
  * 
  * @author Nikita Koksharov
  *
  */
-public class StreamIdListDecoder implements MultiDecoder<List<StreamMessageId>> {
+public class FastAutoClaimDecoder implements MultiDecoder<FastAutoClaimResult> {
 
-    private final StreamIdConvertor convertor = new StreamIdConvertor();
-    
     @Override
     public Decoder<Object> getDecoder(int paramNum, State state) {
-        return null;
+        return new StreamIdDecoder();
     }
 
     @Override
-    public List<StreamMessageId> decode(List<Object> parts, State state) {
-        List<StreamMessageId> ids = new ArrayList<StreamMessageId>();
-        for (Object id : parts) {
-            StreamMessageId streamMessageId = convertor.convert(id);
-            ids.add(streamMessageId);
-        }
-        return ids;
+    public FastAutoClaimResult decode(List<Object> parts, State state) {
+        return new FastAutoClaimResult((StreamMessageId) parts.get(0),
+                (List<StreamMessageId>) (Object) parts.get(1));
     }
 
 }
