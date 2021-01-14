@@ -22,6 +22,43 @@ import org.redisson.client.RedisException;
 public class RedissonStreamTest extends BaseTest {
 
     @Test
+    public void testPendingIdle() {
+        RStream<String, String> stream = redisson.getStream("test");
+
+        stream.add("0", "0");
+
+        stream.createGroup("testGroup");
+
+        StreamMessageId id1 = stream.add("1", "1");
+        StreamMessageId id2 = stream.add("2", "2");
+
+        Map<StreamMessageId, Map<String, String>> s = stream.readGroup("testGroup", "consumer1");
+        assertThat(s.size()).isEqualTo(2);
+
+        StreamMessageId id3 = stream.add("3", "3");
+        StreamMessageId id4 = stream.add("4", "4");
+
+        Map<StreamMessageId, Map<String, String>> s2 = stream.readGroup("testGroup", "consumer2");
+        assertThat(s2.size()).isEqualTo(2);
+
+        List<PendingEntry> list = stream.listPending("testGroup", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS, 10);
+        assertThat(list.size()).isEqualTo(4);
+        for (PendingEntry pendingEntry : list) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2, id3, id4);
+            assertThat(pendingEntry.getConsumerName()).isIn("consumer1", "consumer2");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+
+        List<PendingEntry> list2 = stream.listPending("testGroup", "consumer1", StreamMessageId.MIN, StreamMessageId.MAX, 1, TimeUnit.MILLISECONDS,10);
+        assertThat(list2.size()).isEqualTo(2);
+        for (PendingEntry pendingEntry : list2) {
+            assertThat(pendingEntry.getId()).isIn(id1, id2);
+            assertThat(pendingEntry.getConsumerName()).isEqualTo("consumer1");
+            assertThat(pendingEntry.getLastTimeDelivered()).isOne();
+        }
+    }
+
+    @Test
     public void testTrim() {
         RStream<String, String> stream = redisson.getStream("test");
 

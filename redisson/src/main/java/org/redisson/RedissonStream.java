@@ -131,6 +131,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     }
 
     @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count);
+    }
+
+    @Override
+    public RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return commandExecutor.readAsync(getName(), StringCodec.INSTANCE, RedisCommands.XPENDING_ENTRIES, getName(), groupName, "IDLE", idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
+    }
+
+    @Override
     public List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, int count) {
         return get(listPendingAsync(groupName, startId, endId, count));
     }
@@ -138,6 +148,16 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
     @Override
     public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count) {
         return get(listPendingAsync(groupName, consumerName, startId, endId, count));
+    }
+
+    @Override
+    public List<PendingEntry> listPending(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return get(listPendingAsync(groupName, startId, endId, idleTime, idleTimeUnit, count));
+    }
+
+    @Override
+    public List<PendingEntry> listPending(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return get(listPendingAsync(groupName, consumerName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
     @Override
@@ -1004,8 +1024,48 @@ public class RedissonStream<K, V> extends RedissonExpirable implements RStream<K
                     "table.insert(result, value[1]);" + 
                 "end; " +
                 "return result;",
-                Collections.<Object>singletonList(getName()), 
+                Collections.singletonList(getName()),
                 groupName, startId, endId, count, consumerName);
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId,
+            StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+                "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5]);" +
+                "local result = {}; " +
+                "for i = 1, #pendingData, 1 do " +
+                    "local value = redis.call('xrange', KEYS[1], pendingData[i][1], pendingData[i][1]);" +
+                    "table.insert(result, value[1]);" +
+                "end; " +
+                "return result;",
+                Collections.singletonList(getName()),
+                groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count);
+    }
+
+    @Override
+    public RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName,
+            StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return commandExecutor.evalReadAsync(getName(), codec, EVAL_XRANGE,
+                "local pendingData = redis.call('xpending', KEYS[1], ARGV[1], 'IDLE', ARGV[2], ARGV[3], ARGV[4], ARGV[5], ARGV[6]);" +
+                "local result = {}; " +
+                "for i = 1, #pendingData, 1 do " +
+                    "local value = redis.call('xrange', KEYS[1], pendingData[i][1], pendingData[i][1]);" +
+                    "table.insert(result, value[1]);" +
+                "end; " +
+                "return result;",
+                Collections.singletonList(getName()),
+                groupName, idleTimeUnit.toMillis(idleTime), startId, endId, count, consumerName);
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return get(pendingRangeAsync(groupName, startId, endId, idleTime, idleTimeUnit, count));
+    }
+
+    @Override
+    public Map<StreamMessageId, Map<K, V>> pendingRange(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count) {
+        return get(pendingRangeAsync(groupName, consumerName, startId, endId, idleTime, idleTimeUnit, count));
     }
 
     @Override

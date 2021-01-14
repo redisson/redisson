@@ -102,13 +102,56 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
 
     /**
      * Returns list of common info about pending messages by group name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #pendingRangeAsync
+     * 
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param endId - end Stream Message ID
+     * @param count - amount of messages
+     * @return list
+     */
+    RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+    
+    /**
+     * Returns list of common info about pending messages by group and consumer name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #pendingRangeAsync
+     * 
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return list
+     */
+    RFuture<List<PendingEntry>> listPendingAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns list of common info about pending messages by group name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
-     * 
+     *
      * @see #pendingRangeAsync
-     * 
+     *
      * @param groupName - name of group
      * @param startId - start Stream Message ID
      * @param endId - end Stream Message ID
@@ -116,16 +159,16 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return list
      */
     RFuture<List<PendingEntry>> listPendingAsync(String groupName, StreamMessageId startId, StreamMessageId endId, int count);
-    
+
     /**
      * Returns list of common info about pending messages by group and consumer name.
      * Limited by start Stream Message ID and end Stream Message ID and count.
      * <p>
      * {@link StreamMessageId#MAX} is used as max Stream Message ID
      * {@link StreamMessageId#MIN} is used as min Stream Message ID
-     * 
+     *
      * @see #pendingRangeAsync
-     * 
+     *
      * @param consumerName - name of consumer
      * @param groupName - name of group
      * @param startId - start Stream Message ID
@@ -169,6 +212,49 @@ public interface RStreamAsync<K, V> extends RExpirableAsync {
      * @return map
      */
     RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, int count);
+
+    /**
+     * Returns stream data of pending messages by group name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #listPendingAsync
+     *
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return map
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
+
+    /**
+     * Returns stream data of pending messages by group and customer name.
+     * Limited by minimum idle time, messages count, start and end Stream Message IDs.
+     * <p>
+     * {@link StreamMessageId#MAX} is used as max Stream Message ID
+     * {@link StreamMessageId#MIN} is used as min Stream Message ID
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @see #listPendingAsync
+     *
+     * @param consumerName - name of consumer
+     * @param groupName - name of group
+     * @param startId - start Stream Message ID
+     * @param endId - end Stream Message ID
+     * @param idleTime - minimum idle time of messages
+     * @param idleTimeUnit - idle time unit
+     * @param count - amount of messages
+     * @return map
+     */
+    RFuture<Map<StreamMessageId, Map<K, V>>> pendingRangeAsync(String groupName, String consumerName, StreamMessageId startId, StreamMessageId endId, long idleTime, TimeUnit idleTimeUnit, int count);
 
     /**
      * Transfers ownership of pending messages by id to a new consumer 
