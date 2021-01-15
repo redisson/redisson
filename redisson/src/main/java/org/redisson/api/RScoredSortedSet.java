@@ -317,13 +317,24 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Adds element to this set only if has not been added before.
      * <p>
-     * Works only with <b>Redis 3.0.2 and higher.</b>
+     * Requires <b>Redis 3.0.2 and higher.</b>
      *
      * @param score - object score
      * @param object - object itself
-     * @return <code>true</code> if element has added and <code>false</code> if not.
+     * @return <code>true</code> if element added and <code>false</code> if not.
      */
     boolean tryAdd(double score, V object);
+
+    /**
+     * Adds element to this set only if it's already exists.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    boolean addIfExists(double score, V object);
 
     /**
      * Returns size of this set.

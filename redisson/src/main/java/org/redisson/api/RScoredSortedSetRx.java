@@ -309,7 +309,18 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
      * @return <code>true</code> if element has added and <code>false</code> if not.
      */
     Single<Boolean> tryAdd(double score, V object);
-    
+
+    /**
+     * Adds element to this set only if it's already exists.
+     * <p>
+     * Requires <b>Redis 3.0.2 and higher.</b>
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    Single<Boolean> addIfExists(double score, V object);
+
     /**
      * Removes a single instance of the specified element from this
      * sorted set, if it is present.

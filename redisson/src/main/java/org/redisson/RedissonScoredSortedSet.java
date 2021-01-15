@@ -254,6 +254,16 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public boolean addIfExists(double score, V object) {
+        return get(addIfExistsAsync(score, object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfExistsAsync(double score, V object) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), "XX", BigDecimal.valueOf(score).toPlainString(), encode(object));
+    }
+
+    @Override
     public V first() {
         return get(firstAsync());
     }
@@ -321,7 +331,7 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Boolean> tryAddAsync(double score, V object) {
-        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_NX_BOOL, getName(), "NX", BigDecimal.valueOf(score).toPlainString(), encode(object));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), "NX", BigDecimal.valueOf(score).toPlainString(), encode(object));
     }
 
     @Override

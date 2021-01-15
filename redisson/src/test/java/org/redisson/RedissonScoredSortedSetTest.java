@@ -402,8 +402,18 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testAddIfExists() {
+        RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
+
+        assertThat(set.addIfExists(123.81, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isNull();
+        set.add(111, "1980");
+        assertThat(set.addIfExists(32, "1980")).isFalse();
+        assertThat(set.getScore("1980")).isEqualTo(32);
+    }
+
+    @Test
     public void testTryAdd() {
-        Assume.assumeTrue(RedisRunner.getDefaultRedisServerInstance().getRedisVersion().compareTo("3.0.2") >= 0);
         RScoredSortedSet<String> set = redisson.getScoredSortedSet("simple");
 
         assertThat(set.tryAdd(123.81, "1980")).isTrue();
