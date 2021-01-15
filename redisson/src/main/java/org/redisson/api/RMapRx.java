@@ -345,7 +345,7 @@ public interface RMapRx<K, V> extends RExpirableRx {
      *
      * @param key - map key
      * @param value - map value
-     * @return <code>null</code> if key is doesn't exists in the hash and value hasn't been set.
+     * @return <code>null</code> if key doesn't exist in the hash and value hasn't been set.
      *         Previous value if key already exists in the hash and new value has been stored.
      */
     Maybe<V> putIfExists(K key, V value);
