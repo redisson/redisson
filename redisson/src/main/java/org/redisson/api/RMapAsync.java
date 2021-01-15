@@ -363,4 +363,17 @@ public interface RMapAsync<K, V> extends RExpirableAsync {
      */
     RFuture<V> putIfAbsentAsync(K key, V value);
 
+    /**
+     * Stores the specified <code>value</code> mapped by <code>key</code>
+     * only if mapping already exists.
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>null</code> if key is doesn't exists in the hash and value hasn't been set.
+     *         Previous value if key already exists in the hash and new value has been stored.
+     */
+    RFuture<V> putIfExistsAsync(K key, V value);
+
 }

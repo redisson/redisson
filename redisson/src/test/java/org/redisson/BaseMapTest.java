@@ -492,7 +492,22 @@ public abstract class BaseMapTest extends BaseTest {
         assertThat(map.get(key1)).isEqualTo(value1);
         destroy(map);
     }
-    
+
+    @Test
+    public void testPutIfExists() throws Exception {
+        RMap<SimpleKey, SimpleValue> map = getMap("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+
+        assertThat(map.putIfExists(key, new SimpleValue("3"))).isNull();
+        assertThat(map.get(key)).isNull();
+
+        map.put(key, value);
+        assertThat(map.putIfExists(key, new SimpleValue("3"))).isEqualTo(value);
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        destroy(map);
+    }
+
     @Test(timeout = 5000)
     public void testDeserializationErrorReturnsErrorImmediately() throws Exception {
         RMap<String, SimpleObjectWithoutDefaultConstructor> map = getMap("deserializationFailure", new JsonJacksonCodec());

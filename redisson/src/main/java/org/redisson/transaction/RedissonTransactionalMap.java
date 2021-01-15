@@ -132,7 +132,13 @@ public class RedissonTransactionalMap<K, V> extends RedissonMap<K, V> {
         checkState();
         return transactionalMap.addAndGetOperationAsync(key, value);
     }
-    
+
+    @Override
+    protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
+        checkState();
+        return transactionalMap.putIfExistsOperationAsync(key, value);
+    }
+
     @Override
     protected RFuture<V> putIfAbsentOperationAsync(K key, V value) {
         checkState();

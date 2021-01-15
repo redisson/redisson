@@ -864,7 +864,37 @@ public class RedissonMap<K, V> extends RedissonExpirable implements RMap<K, V> {
         return commandExecutor.readAsync(getName(), codec, RedisCommands.HGETALL, getName());
     }
 
-    
+    @Override
+    public V putIfExists(K key, V value) {
+        return get(putIfExistsAsync(key, value));
+    }
+
+    @Override
+    public RFuture<V> putIfExistsAsync(K key, V value) {
+        checkKey(key);
+        checkValue(value);
+
+        RFuture<V> future = putIfExistsOperationAsync(key, value);
+        if (hasNoWriter()) {
+            return future;
+        }
+
+        MapWriterTask.Add task = new MapWriterTask.Add(key, value);
+        return mapWriterFuture(future, task, Objects::nonNull);
+    }
+
+    protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_MAP_VALUE,
+            "local value = redis.call('hget', KEYS[1], ARGV[1]); "
+                + "if value ~= false then "
+                    + "redis.call('hset', KEYS[1], ARGV[1], ARGV[2]); "
+                    + "return value; "
+                + "end; "
+                + "return nil; ",
+                Collections.singletonList(name), encodeMapKey(key), encodeMapValue(value));
+    }
+
     @Override
     public V putIfAbsent(K key, V value) {
         return get(putIfAbsentAsync(key, value));

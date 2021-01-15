@@ -146,6 +146,23 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return cache.putIfAbsent(cacheKey, new CacheValue(key, value));
     }
 
+    private CacheValue cachePutIfExists(CacheKey cacheKey, Object key, Object value) {
+        if (listener.isDisabled(cacheKey)) {
+            return null;
+        }
+
+        while (true) {
+            CacheValue v = cache.get(cacheKey);
+            if (v != null) {
+                if (cache.replace(cacheKey, v, new CacheValue(key, value))) {
+                    return v;
+                }
+            } else {
+                return null;
+            }
+        }
+    }
+
     private CacheValue cacheReplace(CacheKey cacheKey, Object key, Object value) {
         if (listener.isDisabled(cacheKey)) {
             return null;
@@ -1138,6 +1155,34 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         return future;
     }
 
+    @Override
+    public RFuture<V> putIfExistsAsync(K key, V value) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            ByteBuf mapKey = encodeMapKey(key);
+            CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
+            CacheValue prevValue = cachePutIfExists(cacheKey, key, value);
+            if (prevValue != null) {
+                broadcastLocalCacheStore((V) value, mapKey, cacheKey);
+                return RedissonPromise.newSucceededFuture((V) prevValue.getValue());
+            } else {
+                mapKey.release();
+                return RedissonPromise.newSucceededFuture(null);
+            }
+        }
+
+        RFuture<V> future = super.putIfExistsAsync(key, value);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+
+            if (res != null) {
+                CacheKey cacheKey = localCacheView.toCacheKey(key);
+                cachePut(cacheKey, key, value);
+            }
+        });
+        return future;
+    }
 
     @Override
     public RFuture<V> putIfAbsentAsync(K key, V value) {

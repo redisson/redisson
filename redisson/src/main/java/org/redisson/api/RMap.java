@@ -81,7 +81,7 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
     V put(K key, V value);
     
     /**
-     * Stores the specified <code>value</code> mapped by specified <code>key</code>
+     * Stores the specified <code>value</code> mapped by <code>key</code>
      * only if there is no value with specified<code>key</code> stored before.
      * <p>
      * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
@@ -93,6 +93,19 @@ public interface RMap<K, V> extends ConcurrentMap<K, V>, RExpirable, RMapAsync<K
      */
     @Override
     V putIfAbsent(K key, V value);
+
+    /**
+     * Stores the specified <code>value</code> mapped by <code>key</code>
+     * only if mapping already exists.
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>null</code> if key is doesn't exists in the hash and value hasn't been set.
+     *         Previous value if key already exists in the hash and new value has been stored.
+     */
+    V putIfExists(K key, V value);
     
     /**
      * Returns <code>RMapReduce</code> object associated with this map
