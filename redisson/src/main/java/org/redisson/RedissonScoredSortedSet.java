@@ -264,6 +264,26 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public boolean addIfLess(double score, V object) {
+        return get(addIfLessAsync(score, object));
+    }
+
+    @Override
+    public boolean addIfGreater(double score, V object) {
+        return get(addIfGreaterAsync(score, object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfLessAsync(double score, V object) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), "LT", BigDecimal.valueOf(score).toPlainString(), encode(object));
+    }
+
+    @Override
+    public RFuture<Boolean> addIfGreaterAsync(double score, V object) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZADD_BOOL, getName(), "GT", BigDecimal.valueOf(score).toPlainString(), encode(object));
+    }
+
+    @Override
     public V first() {
         return get(firstAsync());
     }

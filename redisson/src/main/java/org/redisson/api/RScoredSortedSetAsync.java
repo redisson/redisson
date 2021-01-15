@@ -298,6 +298,28 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Boolean> addIfExistsAsync(double score, V object);
 
     /**
+     * Adds element to this set only if new score less than current score of existed element.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    RFuture<Boolean> addIfLessAsync(double score, V object);
+
+    /**
+     * Adds element to this set only if new score greater than current score of existed element.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param score - object score
+     * @param object - object itself
+     * @return <code>true</code> if element added and <code>false</code> if not.
+     */
+    RFuture<Boolean> addIfGreaterAsync(double score, V object);
+
+    /**
      * Removes a single instance of the specified element from this
      * sorted set, if it is present.
      *
