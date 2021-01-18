@@ -698,6 +698,45 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Integer> union(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Union ScoredSortedSets specified by name with current ScoredSortedSet
+     * without state change.
+     *
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    Single<Collection<V>> readUnion(String... names);
+
+    /**
+     * Union ScoredSortedSets specified by name with defined aggregation method
+     * and current ScoredSortedSet without state change.
+     *
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    Single<Collection<V>> readUnion(Aggregate aggregate, String... names);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * and current ScoredSortedSet without state change.
+     *
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    Single<Collection<V>> readUnion(Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     *
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    Single<Collection<V>> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
      * Removes and returns the head element waiting if necessary for an element to become available.
      *
      * @return the head element
