@@ -417,7 +417,54 @@ public class BaseTransactionalMap<K, V> {
         });
         return result;
     }
-    
+
+    protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
+        long threadId = Thread.currentThread().getId();
+        return fastPutIfExistsOperationAsync(key, value, new MapFastPutIfExistsOperation(map, key, value, transactionId, threadId));
+    }
+
+    protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value, MapOperation mapOperation) {
+        RPromise<Boolean> result = new RedissonPromise<>();
+        executeLocked(result, key, new Runnable() {
+            @Override
+            public void run() {
+                HashValue keyHash = toKeyHash(key);
+                MapEntry entry = state.get(keyHash);
+                if (entry != null) {
+                    operations.add(mapOperation);
+                    if (entry != MapEntry.NULL) {
+                        state.put(keyHash, new MapEntry(key, value));
+                        if (deleted != null) {
+                            deleted = false;
+                        }
+
+                        result.trySuccess(true);
+                    } else {
+                        result.trySuccess(false);
+                    }
+                    return;
+                }
+
+                map.getAsync(key).onComplete((res, e) -> {
+                    if (e != null) {
+                        result.tryFailure(e);
+                        return;
+                    }
+
+                    operations.add(mapOperation);
+                    if (res != null) {
+                        state.put(keyHash, new MapEntry(key, value));
+                        if (deleted != null) {
+                            deleted = false;
+                        }
+                    }
+                    result.trySuccess(true);
+                });
+            }
+        });
+        return result;
+    }
+
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
         long threadId = Thread.currentThread().getId();
         return fastPutIfAbsentOperationAsync(key, value, new MapFastPutIfAbsentOperation(map, key, value, transactionId, threadId));
