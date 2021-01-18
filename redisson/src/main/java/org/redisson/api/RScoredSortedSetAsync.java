@@ -634,6 +634,53 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     RFuture<Integer> intersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - names of ScoredSortedSet
+     * @return result of intersection
+     */
+    RFuture<Collection<V>> readIntersectionAsync(String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
+     * without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return result of intersection
+     */
+    RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return result of intersection
+     */
+    RFuture<Collection<V>> readIntersectionAsync(Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with current ScoredSortedSet using defined aggregation method
+     * without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return result of intersection
+     */
+    RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
@@ -675,28 +722,34 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
     /**
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param names - names of ScoredSortedSet
-     * @return length of union
+     * @return result of union
      */
     RFuture<Collection<V>> readUnionAsync(String... names);
 
     /**
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param aggregate - score aggregation mode
      * @param names - names of ScoredSortedSet
-     * @return length of union
+     * @return result of union
      */
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names);
 
     /**
      * Union provided ScoredSortedSets mapped to weight multiplier
      * and current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
-     * @return length of union
+     * @return result of union
      */
     RFuture<Collection<V>> readUnionAsync(Map<String, Double> nameWithWeight);
 
@@ -704,10 +757,12 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * Union provided ScoredSortedSets mapped to weight multiplier
      * with defined aggregation method
      * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param aggregate - score aggregation mode
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
-     * @return length of union
+     * @return result of union
      */
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 

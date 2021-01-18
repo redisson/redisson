@@ -866,7 +866,65 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
         args.add(aggregate.name());
         return commandExecutor.writeAsync(getName(), LongCodec.INSTANCE, RedisCommands.ZINTERSTORE_INT, args.toArray());
     }
-    
+
+    @Override
+    public Collection<V> readIntersection(String... names) {
+        return get(readIntersectionAsync(names));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readIntersectionAsync(String... names) {
+        return readIntersectionAsync(Aggregate.SUM, names);
+    }
+
+    @Override
+    public Collection<V> readIntersection(Aggregate aggregate, String... names) {
+        return get(readIntersectionAsync(aggregate, names));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(names.length + 1);
+        args.add(getName());
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZINTER, args.toArray());
+    }
+
+    @Override
+    public Collection<V> readIntersection(Map<String, Double> nameWithWeight) {
+        return get(readIntersectionAsync(nameWithWeight));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readIntersectionAsync(Map<String, Double> nameWithWeight) {
+        return readIntersectionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public Collection<V> readIntersection(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(readIntersectionAsync(aggregate, nameWithWeight));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readIntersectionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(nameWithWeight.size() + 1);
+        args.add(getName());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZINTER, args.toArray());
+    }
+
     @Override
     public int union(String... names) {
         return get(unionAsync(names));        
@@ -942,8 +1000,9 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 4);
-        args.add(names.length);
+        List<Object> args = new ArrayList<>(names.length + 4);
+        args.add(names.length + 1);
+        args.add(getName());
         args.addAll(Arrays.asList(names));
         args.add("AGGREGATE");
         args.add(aggregate.name());
@@ -968,7 +1027,8 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     @Override
     public RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
         List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
-        args.add(nameWithWeight.size());
+        args.add(nameWithWeight.size() + 1);
+        args.add(getName());
         args.addAll(nameWithWeight.keySet());
         args.add("WEIGHTS");
         List<String> weights = new ArrayList<String>();

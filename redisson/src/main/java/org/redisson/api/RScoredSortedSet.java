@@ -767,6 +767,53 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     int intersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Intersect provided ScoredSortedSets
+     * with current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - names of ScoredSortedSet
+     * @return result of intersection
+     */
+    Collection<V> readIntersection(String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets with current ScoredSortedSet using defined aggregation method
+     * without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return result of intersection
+     */
+    Collection<V> readIntersection(Aggregate aggregate, String... names);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return result of intersection
+     */
+    Collection<V> readIntersection(Map<String, Double> nameWithWeight);
+
+    /**
+     * Intersect provided ScoredSortedSets mapped to weight multiplier
+     * with current ScoredSortedSet using defined aggregation method
+     * without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return result of intersection
+     */
+    Collection<V> readIntersection(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
+    /**
      * Union provided ScoredSortedSets 
      * and store result to current ScoredSortedSet
      * 
@@ -808,28 +855,34 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
     /**
      * Union ScoredSortedSets specified by name with current ScoredSortedSet
      * without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param names - names of ScoredSortedSet
-     * @return length of union
+     * @return result of union
      */
     Collection<V> readUnion(String... names);
 
     /**
      * Union ScoredSortedSets specified by name with defined aggregation method
      * and current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param aggregate - score aggregation mode
      * @param names - names of ScoredSortedSet
-     * @return length of union
+     * @return result of union
      */
     Collection<V> readUnion(Aggregate aggregate, String... names);
 
     /**
      * Union provided ScoredSortedSets mapped to weight multiplier
      * and current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
-     * @return length of union
+     * @return result of union
      */
     Collection<V> readUnion(Map<String, Double> nameWithWeight);
 
@@ -837,10 +890,12 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      * Union provided ScoredSortedSets mapped to weight multiplier
      * with defined aggregation method
      * and current ScoredSortedSet without state change
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
      *
      * @param aggregate - score aggregation mode
      * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
-     * @return length of union
+     * @return result of union
      */
     Collection<V> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
