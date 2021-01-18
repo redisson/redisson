@@ -360,7 +360,7 @@ public class RedisExecutor<V, R> {
                         connection.forceFastReconnectAsync();
                     }
                 }
-            }, popTimeout, TimeUnit.SECONDS);
+            }, popTimeout + 1, TimeUnit.SECONDS);
         } else {
             scheduledFuture = null;
         }
