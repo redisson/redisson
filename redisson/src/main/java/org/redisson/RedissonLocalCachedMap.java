@@ -753,7 +753,36 @@ public class RedissonLocalCachedMap<K, V> extends RedissonMap<K, V> implements R
         });
         return future;
     }
-    
+
+    @Override
+    public RFuture<Boolean> fastPutIfExistsAsync(K key, V value) {
+        if (storeMode == LocalCachedMapOptions.StoreMode.LOCALCACHE) {
+            ByteBuf mapKey = encodeMapKey(key);
+            CacheKey cacheKey = localCacheView.toCacheKey(mapKey);
+            CacheValue prevValue = cachePutIfExists(cacheKey, key, value);
+            if (prevValue != null) {
+                broadcastLocalCacheStore(value, mapKey, cacheKey);
+                return RedissonPromise.newSucceededFuture(true);
+            } else {
+                mapKey.release();
+                return RedissonPromise.newSucceededFuture(false);
+            }
+        }
+
+        RFuture<Boolean> future = super.fastPutIfExistsAsync(key, value);
+        future.onComplete((res, e) -> {
+            if (e != null) {
+                return;
+            }
+
+            if (res) {
+                CacheKey cacheKey = localCacheView.toCacheKey(key);
+                cachePut(cacheKey, key, value);
+            }
+        });
+        return future;
+    }
+
     @Override
     public RFuture<Collection<V>> readAllValuesAsync() {
         List<V> result = new ArrayList<V>();

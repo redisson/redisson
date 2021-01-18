@@ -1566,6 +1566,62 @@ public class RedissonMapCache<K, V> extends RedissonMap<K, V> implements RMapCac
     }
 
     @Override
+    protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
+        String name = getName(key);
+        return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,
+                "local value = redis.call('hget', KEYS[1], ARGV[2]); "
+                        + "local lastAccessTimeSetName = KEYS[5]; "
+                        + "local maxSize = tonumber(redis.call('hget', KEYS[7], 'max-size')); "
+                        + "local currentTime = tonumber(ARGV[1]); "
+                        + "if value ~= false then "
+                            + "local val = struct.pack('dLc0', 0, string.len(ARGV[3]), ARGV[3]); "
+                            + "redis.call('hset', KEYS[1], ARGV[2], val); "
+                            + "local msg = struct.pack('Lc0Lc0', string.len(ARGV[2]), ARGV[2], string.len(ARGV[3]), ARGV[3]); "
+                            + "redis.call('publish', KEYS[4], msg); "+
+
+                            // last access time
+
+                            "if maxSize ~= nil and maxSize ~= 0 then " +
+                                "local mode = redis.call('hget', KEYS[7], 'mode'); " +
+                                "if mode == false or mode == 'LRU' then " +
+                                    "redis.call('zadd', lastAccessTimeSetName, currentTime, ARGV[2]); " +
+                                "end; " +
+                            "    local cacheSize = tonumber(redis.call('hlen', KEYS[1])); " +
+                            "    if cacheSize > maxSize then " +
+                            "        local lruItems = redis.call('zrange', lastAccessTimeSetName, 0, cacheSize - maxSize - 1); " +
+                            "        for index, lruItem in ipairs(lruItems) do " +
+                            "            if lruItem and lruItem ~= ARGV[2] then " +
+                            "                local lruItemValue = redis.call('hget', KEYS[1], lruItem); " +
+                            "                redis.call('hdel', KEYS[1], lruItem); " +
+                            "                redis.call('zrem', KEYS[2], lruItem); " +
+                            "                redis.call('zrem', KEYS[3], lruItem); " +
+                            "                redis.call('zrem', lastAccessTimeSetName, lruItem); " +
+                                           " if lruItemValue ~= false then " +
+                                "                local removedChannelName = KEYS[6]; " +
+                                                "local ttl, obj = struct.unpack('dLc0', lruItemValue);" +
+                                "                local msg = struct.pack('Lc0Lc0', string.len(lruItem), lruItem, string.len(obj), obj);" +
+                                "                redis.call('publish', removedChannelName, msg); " +
+                                            "end; " +
+                            "            end; " +
+                            "        end; " +
+                            "    end; " +
+
+                                "if mode == 'LFU' then " +
+                                    "redis.call('zincrby', lastAccessTimeSetName, 1, ARGV[2]); " +
+                                "end; " +
+
+                            "end; "
+
+                            + "return 1; "
+                        + "end; "
+
+                        + "return 0; ",
+                Arrays.asList(name, getTimeoutSetName(name), getIdleSetName(name), getCreatedChannelName(name),
+                        getLastAccessTimeSetName(name), getRemovedChannelName(name), getOptionsName(name)),
+                System.currentTimeMillis(), encodeMapKey(key), encodeMapValue(value));
+    }
+
+    @Override
     protected RFuture<Boolean> fastPutIfAbsentOperationAsync(K key, V value) {
         String name = getName(key);
         return commandExecutor.evalWriteAsync(name, codec, RedisCommands.EVAL_BOOLEAN,

@@ -181,7 +181,13 @@ public class RedissonTransactionalMapCache<K, V> extends RedissonMapCache<K, V> 
         checkState();
         return transactionalMap.addAndGetOperationAsync(key, value);
     }
-    
+
+    @Override
+    protected RFuture<Boolean> fastPutIfExistsOperationAsync(K key, V value) {
+        checkState();
+        return transactionalMap.fastPutIfExistsOperationAsync(key, value);
+    }
+
     @Override
     protected RFuture<V> putIfExistsOperationAsync(K key, V value) {
         checkState();

@@ -348,6 +348,25 @@ public interface RMapReactive<K, V> extends RExpirableReactive {
     Mono<V> putIfExists(K key, V value);
 
     /**
+     * Stores the specified <code>value</code> mapped by <code>key</code>
+     * only if mapping already exists.
+     * <p>
+     * Returns <code>true</code> if key is a new one in the hash and value was set or
+     * <code>false</code> if key already exists in the hash and change hasn't been made.
+     * <p>
+     * Works faster than <code>{@link #putIfExists(Object, Object)}</code> but doesn't return
+     * previous value associated with <code>key</code>
+     * <p>
+     * If {@link MapWriter} is defined then new map entry is stored in write-through mode.
+     *
+     * @param key - map key
+     * @param value - map value
+     * @return <code>true</code> if key already exists in the hash and new value has been stored.
+     *         <code>false</code> if key doesn't exist in the hash and value hasn't been set.
+     */
+    Mono<Boolean> fastPutIfExists(K key, V value);
+
+    /**
      * Returns iterator over map entries collection. 
      * Map entries are loaded in batch. Batch size is <code>10</code>.
      * 

@@ -494,6 +494,22 @@ public abstract class BaseMapTest extends BaseTest {
     }
 
     @Test
+    public void testFastPutIfExists() throws Exception {
+        RMap<SimpleKey, SimpleValue> map = getMap("simple");
+        SimpleKey key = new SimpleKey("1");
+        SimpleValue value = new SimpleValue("2");
+
+        assertThat(map.fastPutIfExists(key, new SimpleValue("3"))).isFalse();
+        assertThat(map.get(key)).isNull();
+
+        map.put(key, value);
+        assertThat(map.fastPutIfExists(key, new SimpleValue("3"))).isTrue();
+        Thread.sleep(50);
+        assertThat(map.get(key)).isEqualTo(new SimpleValue("3"));
+        destroy(map);
+    }
+
+    @Test
     public void testPutIfExists() throws Exception {
         RMap<SimpleKey, SimpleValue> map = getMap("simple");
         SimpleKey key = new SimpleKey("1");
