@@ -671,5 +671,44 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      * @return length of union
      */
     RFuture<Integer> unionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
-    
+
+    /**
+     * Union ScoredSortedSets specified by name with current ScoredSortedSet
+     * without state change.
+     *
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    RFuture<Collection<V>> readUnionAsync(String... names);
+
+    /**
+     * Union ScoredSortedSets specified by name with defined aggregation method
+     * and current ScoredSortedSet without state change.
+     *
+     * @param aggregate - score aggregation mode
+     * @param names - names of ScoredSortedSet
+     * @return length of union
+     */
+    RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * and current ScoredSortedSet without state change.
+     *
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    RFuture<Collection<V>> readUnionAsync(Map<String, Double> nameWithWeight);
+
+    /**
+     * Union provided ScoredSortedSets mapped to weight multiplier
+     * with defined aggregation method
+     * and current ScoredSortedSet without state change
+     *
+     * @param aggregate - score aggregation mode
+     * @param nameWithWeight - name of ScoredSortedSet mapped to weight multiplier
+     * @return length of union
+     */
+    RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
+
 }

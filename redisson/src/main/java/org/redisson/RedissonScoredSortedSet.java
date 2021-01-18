@@ -926,6 +926,62 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public Collection<V> readUnion(String... names) {
+        return get(readUnionAsync(names));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readUnionAsync(String... names) {
+        return readUnionAsync(Aggregate.SUM, names);
+    }
+
+    @Override
+    public Collection<V> readUnion(Aggregate aggregate, String... names) {
+        return get(readUnionAsync(aggregate, names));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, String... names) {
+        List<Object> args = new ArrayList<Object>(names.length + 4);
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZUNION, args.toArray());
+    }
+
+    @Override
+    public Collection<V> readUnion(Map<String, Double> nameWithWeight) {
+        return get(readUnionAsync(nameWithWeight));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readUnionAsync(Map<String, Double> nameWithWeight) {
+        return readUnionAsync(Aggregate.SUM, nameWithWeight);
+    }
+
+    @Override
+    public Collection<V> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        return get(readUnionAsync(aggregate, nameWithWeight));
+    }
+
+    @Override
+    public RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight) {
+        List<Object> args = new ArrayList<Object>(nameWithWeight.size()*2 + 5);
+        args.add(nameWithWeight.size());
+        args.addAll(nameWithWeight.keySet());
+        args.add("WEIGHTS");
+        List<String> weights = new ArrayList<String>();
+        for (Double weight : nameWithWeight.values()) {
+            weights.add(BigDecimal.valueOf(weight).toPlainString());
+        }
+        args.addAll(weights);
+        args.add("AGGREGATE");
+        args.add(aggregate.name());
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZUNION, args.toArray());
+    }
+
+    @Override
     public Set<V> readSort(SortOrder order) {
         return get(readSortAsync(order));
     }
