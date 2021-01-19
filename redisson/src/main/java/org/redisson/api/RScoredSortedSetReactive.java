@@ -790,6 +790,17 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
     Mono<Collection<V>> readUnion(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
     /**
+     * Diff ScoredSortedSets specified by name
+     * with current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return result of diff
+     */
+    Mono<Collection<V>> readDiff(String... names);
+
+    /**
      * Removes and returns the head element waiting if necessary for an element to become available.
      *
      * @return the head element

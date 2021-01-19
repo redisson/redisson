@@ -766,4 +766,15 @@ public interface RScoredSortedSetAsync<V> extends RExpirableAsync, RSortableAsyn
      */
     RFuture<Collection<V>> readUnionAsync(Aggregate aggregate, Map<String, Double> nameWithWeight);
 
+    /**
+     * Diff ScoredSortedSets specified by name
+     * with current ScoredSortedSet without state change.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return result of diff
+     */
+    RFuture<Collection<V>> readDiffAsync(String... names);
+
 }
