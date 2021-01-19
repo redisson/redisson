@@ -62,7 +62,11 @@ public class BaseRedisBatchExecutor<V, R> extends RedisExecutor<V, R> {
 
     protected final MasterSlaveEntry getEntry(NodeSource source) {
         if (source.getSlot() != null) {
-            return connectionManager.getEntry(source.getSlot());
+            MasterSlaveEntry entry = connectionManager.getEntry(source.getSlot());
+            if (entry == null) {
+                throw connectionManager.createNodeNotFoundException(source);
+            }
+            return entry;
         }
         return source.getEntry();
     }

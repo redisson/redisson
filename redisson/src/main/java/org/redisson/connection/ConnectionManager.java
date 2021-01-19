@@ -25,6 +25,7 @@ import org.redisson.api.NodeType;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisClient;
 import org.redisson.client.RedisConnection;
+import org.redisson.client.RedisNodeNotFoundException;
 import org.redisson.client.codec.Codec;
 import org.redisson.client.protocol.RedisCommand;
 import org.redisson.command.CommandSyncService;
@@ -115,5 +116,7 @@ public interface ConnectionManager {
     InfinitySemaphoreLatch getShutdownLatch();
     
     Future<Void> getShutdownPromise();
+
+    RedisNodeNotFoundException createNodeNotFoundException(NodeSource source);
 
 }
