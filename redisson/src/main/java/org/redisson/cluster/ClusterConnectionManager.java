@@ -313,11 +313,16 @@ public class ClusterConnectionManager extends MasterSlaveConnectionManager {
                 if (!config.checkSkipSlavesInit()) {
                     List<RFuture<Void>> fs = entry.initSlaveBalancer(partition.getFailedSlaveAddresses(), masterClient);
                     AtomicInteger counter = new AtomicInteger(fs.size());
+                    AtomicInteger errorCounter = new AtomicInteger(fs.size());
                     for (RFuture<Void> future : fs) {
                         future.onComplete((r, ex) -> {
                             if (ex != null) {
                                 log.error("unable to add slave for: " + partition.getMasterAddress()
                                                 + " slot ranges: " + partition.getSlotRanges(), ex);
+                                if (errorCounter.decrementAndGet() == 0) {
+                                    result.tryFailure(ex);
+                                    return;
+                                }
                             }
 
                             if (counter.decrementAndGet() == 0) {
