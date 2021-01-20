@@ -910,4 +910,15 @@ public interface RScoredSortedSet<V> extends RScoredSortedSetAsync<V>, Iterable<
      */
     Collection<V> readDiff(String... names);
 
+    /**
+     * Diff provided ScoredSortedSets
+     * and store result to current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return length of diff
+     */
+    int diff(String... names);
+
 }

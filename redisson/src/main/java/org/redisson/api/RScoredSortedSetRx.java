@@ -803,6 +803,17 @@ public interface RScoredSortedSetRx<V> extends RExpirableRx, RSortableRx<Set<V>>
     Single<Collection<V>> readDiff(String... names);
 
     /**
+     * Diff provided ScoredSortedSets
+     * and store result to current ScoredSortedSet
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param names - name of sets
+     * @return length of diff
+     */
+    Single<Integer> diff(String... names);
+
+    /**
      * Removes and returns the head element waiting if necessary for an element to become available.
      *
      * @return the head element

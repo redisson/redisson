@@ -1283,11 +1283,25 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
 
     @Override
     public RFuture<Collection<V>> readDiffAsync(String... names) {
-        List<Object> args = new ArrayList<Object>(names.length + 1);
+        List<Object> args = new ArrayList<Object>(names.length + 2);
         args.add(names.length + 1);
         args.add(getName());
         args.addAll(Arrays.asList(names));
         return commandExecutor.readAsync(getName(), codec, RedisCommands.ZDIFF, args.toArray());
+    }
+
+    @Override
+    public int diff(String... names) {
+        return get(diffAsync(names));
+    }
+
+    @Override
+    public RFuture<Integer> diffAsync(String... names) {
+        List<Object> args = new ArrayList<>(names.length + 2);
+        args.add(getName());
+        args.add(names.length);
+        args.addAll(Arrays.asList(names));
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZDIFFSTORE_INT, args.toArray());
     }
 
     @Override
