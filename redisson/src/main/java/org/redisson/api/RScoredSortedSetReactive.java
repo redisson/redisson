@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.rxjava3.core.Single;
 import org.redisson.api.RScoredSortedSet.Aggregate;
 import org.redisson.client.protocol.ScoredEntry;
 
@@ -616,6 +617,56 @@ public interface RScoredSortedSetReactive<V> extends RExpirableReactive, RSortab
      * @return values
      */
     Mono<Collection<V>> readAll();
+
+    /**
+     * Stores to defined ScoredSortedSet values by rank range. Indexes are zero based.
+     * <code>-1</code> means the highest score, <code>-2</code> means the second highest score.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param startIndex - start index
+     * @param endIndex - end index
+     * @return elements
+     */
+    Mono<Integer> rangeTo(String destName, int startIndex, int endIndex);
+
+    /**
+     * Stores to defined ScoredSortedSet values between <code>startScore</code> and <code>endScore</code>.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param startScore - start score.
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code>
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code>
+     *                     to define infinity numbers
+     *
+     * @param endScoreInclusive - end score inclusive
+     * @return values
+     */
+    Mono<Integer> rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive);
+
+    /**
+     * Stores to defined ScoredSortedSet values between <code>startScore</code> and <code>endScore</code>.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param startScore - start score.
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code>
+     *                     to define infinity numbers
+     * @param startScoreInclusive - start score inclusive
+     * @param endScore - end score
+     *                     Use <code>Double.POSITIVE_INFINITY</code> or <code>Double.NEGATIVE_INFINITY</code>
+     *                     to define infinity numbers
+     *
+     * @param endScoreInclusive - end score inclusive
+     * @param offset - offset of sorted data
+     * @param count - amount of sorted data
+     * @return values
+     */
+    Mono<Integer> rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count);
 
     /**
      * Intersect provided ScoredSortedSets 

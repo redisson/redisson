@@ -1381,6 +1381,32 @@ public class RedissonScoredSortedSetTest extends BaseTest {
     }
 
     @Test
+    public void testRangeTo() {
+        RScoredSortedSet<Integer> set1 = redisson.getScoredSortedSet("simple1");
+        for (int i = 0; i < 10; i++) {
+            set1.add(i, i);
+
+        }
+
+        set1.rangeTo("simple2", 0, 3);
+        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.readAll()).containsOnly(0, 1, 2, 3, 4);
+    }
+
+    @Test
+    public void testRangeToScored() {
+        RScoredSortedSet<Integer> set1 = redisson.getScoredSortedSet("simple1");
+        for (int i = 0; i < 10; i++) {
+            set1.add(i, i);
+
+        }
+
+        set1.rangeTo("simple2", 0, false, 3, true);
+        RScoredSortedSet<Integer> set2 = redisson.getScoredSortedSet("simple2");
+        assertThat(set2.readAll()).containsOnly(1, 2, 3);
+    }
+
+    @Test
     public void testReadUnion() {
         RScoredSortedSet<String> set1 = redisson.getScoredSortedSet("simple1");
         set1.add(1, "one");

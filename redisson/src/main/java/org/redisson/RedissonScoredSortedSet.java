@@ -1305,6 +1305,40 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public int rangeTo(String destName, int startIndex, int endIndex) {
+        return get(rangeToAsync(destName, startIndex, endIndex));
+    }
+
+    @Override
+    public int rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        return get(rangeToAsync(destName, startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+
+    @Override
+    public int rangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        return get(rangeToAsync(destName, startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count));
+    }
+
+    @Override
+    public RFuture<Integer> rangeToAsync(String destName, int startIndex, int endIndex) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startIndex, endIndex);
+    }
+
+    @Override
+    public RFuture<Integer> rangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startValue, endValue, "BYSCORE");
+    }
+
+    @Override
+    public RFuture<Integer> rangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startValue, endValue, "BYSCORE", "LIMIT", offset, count);
+    }
+
+    @Override
     public RFuture<V> takeFirstAsync() {
         return pollFirstAsync(0, TimeUnit.SECONDS);
     }
