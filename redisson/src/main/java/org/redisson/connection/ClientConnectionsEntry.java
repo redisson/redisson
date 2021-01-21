@@ -169,7 +169,7 @@ public class ClientConnectionsEntry {
             return;
         }
 
-        connection.setLastUsageTime(System.currentTimeMillis());
+        connection.setLastUsageTime(System.nanoTime());
         freeConnections.add(connection);
     }
 
@@ -247,7 +247,7 @@ public class ClientConnectionsEntry {
             return;
         }
         
-        connection.setLastUsageTime(System.currentTimeMillis());
+        connection.setLastUsageTime(System.nanoTime());
         freeSubscribeConnections.add(connection);
     }
 

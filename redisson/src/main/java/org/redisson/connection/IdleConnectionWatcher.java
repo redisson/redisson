@@ -63,14 +63,14 @@ public class IdleConnectionWatcher {
 
             @Override
             public void run() {
-                long currTime = System.currentTimeMillis();
+                long currTime = System.nanoTime();
                 for (Entry entry : entries) {
                     if (!validateAmount(entry)) {
                         continue;
                     }
 
                     for (RedisConnection c : entry.connections) {
-                        long timeInPool = currTime - c.getLastUsageTime();
+                        long timeInPool = TimeUnit.NANOSECONDS.toMillis(currTime - c.getLastUsageTime());
                         if (timeInPool > config.getIdleConnectionTimeout()
                                 && validateAmount(entry)
                                     && entry.deleteHandler.apply(c)) {

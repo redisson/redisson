@@ -62,7 +62,7 @@ public class RedisConnection implements RedisCommands {
         this.connectionPromise = connectionPromise;
 
         updateChannel(channel);
-        lastUsageTime = System.currentTimeMillis();
+        lastUsageTime = System.nanoTime();
     }
     
     protected RedisConnection(RedisClient redisClient) {
