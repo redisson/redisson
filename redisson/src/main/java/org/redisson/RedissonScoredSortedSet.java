@@ -1320,6 +1320,40 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     }
 
     @Override
+    public int revRangeTo(String destName, int startIndex, int endIndex) {
+        return get(revRangeToAsync(destName, startIndex, endIndex));
+    }
+
+    @Override
+    public int revRangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        return get(revRangeToAsync(destName, startScore, startScoreInclusive, endScore, endScoreInclusive));
+    }
+
+    @Override
+    public int revRangeTo(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        return get(revRangeToAsync(destName, startScore, startScoreInclusive, endScore, endScoreInclusive, offset, count));
+    }
+
+    @Override
+    public RFuture<Integer> revRangeToAsync(String destName, int startIndex, int endIndex) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startIndex, endIndex, "REV");
+    }
+
+    @Override
+    public RFuture<Integer> revRangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startValue, endValue, "BYSCORE", "REV");
+    }
+
+    @Override
+    public RFuture<Integer> revRangeToAsync(String destName, double startScore, boolean startScoreInclusive, double endScore, boolean endScoreInclusive, int offset, int count) {
+        String startValue = value(startScore, startScoreInclusive);
+        String endValue = value(endScore, endScoreInclusive);
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startValue, endValue, "BYSCORE", "REV", "LIMIT", offset, count);
+    }
+
+    @Override
     public RFuture<Integer> rangeToAsync(String destName, int startIndex, int endIndex) {
         return commandExecutor.writeAsync(getName(), codec, RedisCommands.ZRANGESTORE, destName, getName(), startIndex, endIndex);
     }
