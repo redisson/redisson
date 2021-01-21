@@ -481,6 +481,7 @@ public interface RedissonClient {
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
+     * Lock doesn't use a pub/sub mechanism
      *
      * @param name - name of object
      * @return Lock object
@@ -492,6 +493,7 @@ public interface RedissonClient {
      * <p>
      * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
      * <p>
+     * Lock doesn't use a pub/sub mechanism
      *
      * @param name - name of object
      * @return Lock object

@@ -15,7 +15,6 @@
  */
 package org.redisson;
 
-import io.netty.util.concurrent.GlobalEventExecutor;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.LongCodec;
@@ -25,8 +24,8 @@ import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
-import java.security.SecureRandom;
 import java.util.Collections;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,6 +33,8 @@ import java.util.concurrent.atomic.AtomicLong;
  * Distributed implementation of {@link java.util.concurrent.locks.Lock}
  * Implements reentrant lock.<br>
  * Lock will be removed automatically if client disconnects.
+ * This lock implementation doesn't use pub/sub mechanism. It can be used in large Redis clusters despite current naive
+ * pub/sub implementation.
  * <p>
  * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order.
  *
@@ -65,6 +66,9 @@ public class RedissonSpinLock extends RedissonBaseLock {
         }
 
         public ExponentialBackOffOptions maxDelay(long maxDelay) {
+            if (maxDelay <= 0) {
+                throw new IllegalArgumentException("maxDelay should be positive");
+            }
             this.maxDelay = maxDelay;
             return this;
         }
@@ -74,6 +78,9 @@ public class RedissonSpinLock extends RedissonBaseLock {
         }
 
         public ExponentialBackOffOptions initialDelay(long initialDelay) {
+            if (initialDelay <= 0) {
+                throw new IllegalArgumentException("initialDelay should be positive");
+            }
             this.initialDelay = initialDelay;
             return this;
         }
@@ -83,14 +90,15 @@ public class RedissonSpinLock extends RedissonBaseLock {
         }
 
         public ExponentialBackOffOptions multiplier(int multiplier) {
+            if (multiplier <= 0) {
+                throw new IllegalArgumentException("multiplier should be positive");
+            }
             this.multiplier = multiplier;
             return this;
         }
     }
 
     private static final class ExponentialBackOffPolicy implements BackOffPolicy {
-
-        private static final SecureRandom RANDOM = new SecureRandom();
 
         private final long maxDelay;
         private final int multiplier;
@@ -109,7 +117,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
                 return maxDelay;
             }
             long result = nextSleep;
-            nextSleep = nextSleep * multiplier + RANDOM.nextInt(++fails);
+            nextSleep = nextSleep * multiplier + ThreadLocalRandom.current().nextInt(++fails);
             nextSleep = Math.min(maxDelay, nextSleep);
             return result;
         }
@@ -127,8 +135,11 @@ public class RedissonSpinLock extends RedissonBaseLock {
             return delay;
         }
 
-        public ConstantBackOffOptions delay(long maxDelay) {
-            this.delay = maxDelay;
+        public ConstantBackOffOptions delay(long delay) {
+            if (delay <= 0) {
+                throw new IllegalArgumentException("delay should be positive");
+            }
+            this.delay = delay;
             return this;
         }
     }
@@ -374,14 +385,8 @@ public class RedissonSpinLock extends RedissonBaseLock {
             }
 
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
-            try {
-                Thread.sleep(nextSleepPeriod);
-            } catch (InterruptedException interruptedException) {
-                result.tryFailure(interruptedException);
-                return;
-            }
-            GlobalEventExecutor.INSTANCE.schedule(
-                    () -> lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy),
+            commandExecutor.getConnectionManager().newTimeout(
+                    timeout -> lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy),
                     nextSleepPeriod, TimeUnit.MILLISECONDS);
         });
     }
@@ -458,12 +463,6 @@ public class RedissonSpinLock extends RedissonBaseLock {
             }
 
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
-            try {
-                Thread.sleep(nextSleepPeriod);
-            } catch (InterruptedException interruptedException) {
-                result.tryFailure(interruptedException);
-                return;
-            }
             commandExecutor.getConnectionManager().newTimeout(
                     timeout -> tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy),
                     nextSleepPeriod, TimeUnit.MILLISECONDS);
