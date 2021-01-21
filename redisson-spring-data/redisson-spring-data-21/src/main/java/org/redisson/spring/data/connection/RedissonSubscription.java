@@ -80,18 +80,20 @@ public class RedissonSubscription extends AbstractSubscription {
 
     @Override
     protected void doPsubscribe(byte[]... patterns) {
-        RedisPubSubListener<?> listener2 = new BaseRedisPubSubListener() {
-            @Override
-            public void onPatternMessage(CharSequence pattern, CharSequence channel, Object message) {
-                byte[] m = toBytes(message);
-                DefaultMessage msg = new DefaultMessage(((ChannelName)channel).getName(), m);
-                getListener().onMessage(msg, ((ChannelName)pattern).getName());
-            }
-        };
-        
         List<RFuture<?>> list = new ArrayList<RFuture<?>>();
         for (byte[] channel : patterns) {
-            RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, listener2);
+            RFuture<PubSubConnectionEntry> f = subscribeService.psubscribe(new ChannelName(channel), ByteArrayCodec.INSTANCE, new BaseRedisPubSubListener() {
+                @Override
+                public void onPatternMessage(CharSequence pattern, CharSequence ch, Object message) {
+                    if (!Arrays.equals(((ChannelName) pattern).getName(), channel)) {
+                        return;
+                    }
+
+                    byte[] m = toBytes(message);
+                    DefaultMessage msg = new DefaultMessage(((ChannelName)ch).getName(), m);
+                    getListener().onMessage(msg, ((ChannelName)pattern).getName());
+                }
+            });
             list.add(f);
         }
         for (RFuture<?> future : list) {
