@@ -15,6 +15,7 @@
  */
 package org.redisson.api;
 
+import org.redisson.RedissonSpinLock;
 import org.redisson.client.codec.Codec;
 import org.redisson.config.Config;
 
@@ -164,6 +165,30 @@ public interface RedissonReactiveClient {
      * @return Lock object
      */
     RLockReactive getLock(String name);
+
+    /**
+     * Returns Spin lock instance by name.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * Lock doesn't use a pub/sub mechanism
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getSpinLock(String name);
+
+    /**
+     * Returns Spin lock instance by name with specified back off options.
+     * <p>
+     * Implements a <b>non-fair</b> locking so doesn't guarantees an acquire order by threads.
+     * <p>
+     * Lock doesn't use a pub/sub mechanism
+     *
+     * @param name - name of object
+     * @return Lock object
+     */
+    RLockReactive getSpinLock(String name, RedissonSpinLock.BackOffOptions backOffOptions);
     
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>
