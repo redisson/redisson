@@ -2,6 +2,7 @@ package org.redisson;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -19,15 +21,13 @@ import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Test;
-import org.redisson.api.RFuture;
-import org.redisson.api.RLexSortedSet;
-import org.redisson.api.RList;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RSortedSet;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
+import org.redisson.api.listener.ScoredSortedSetAddListener;
+import org.redisson.api.listener.SetObjectListener;
 import org.redisson.client.codec.IntegerCodec;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.client.protocol.ScoredEntry;
+import org.redisson.config.Config;
 
 public class RedissonScoredSortedSetTest extends BaseTest {
 
@@ -1357,6 +1357,38 @@ public class RedissonScoredSortedSetTest extends BaseTest {
 
         assertThat(out.readAll()).isEmpty();
     }
+
+    @Test
+    public void testAddListener() throws RedisRunner.FailedToStartRedisException, IOException, InterruptedException {
+        RedisRunner.RedisProcess instance = new RedisRunner()
+                .nosave()
+                .randomPort()
+                .randomDir()
+                .notifyKeyspaceEvents(
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.E,
+                                    RedisRunner.KEYSPACE_EVENTS_OPTIONS.z)
+                .run();
+
+        Config config = new Config();
+        config.useSingleServer().setAddress(instance.getRedisServerAddressAndPort());
+        RedissonClient redisson = Redisson.create(config);
+
+        RScoredSortedSet<Integer> ss = redisson.getScoredSortedSet("test");
+        CountDownLatch latch = new CountDownLatch(1);
+        ss.addListener(new ScoredSortedSetAddListener() {
+            @Override
+            public void onAdd(String name) {
+                latch.countDown();
+            }
+        });
+        ss.add(1, 1);
+
+        assertThat(latch.await(1, TimeUnit.SECONDS)).isTrue();
+
+        redisson.shutdown();
+        instance.stop();
+    }
+
 
     @Test
     public void testIntersectionWithWeight() {

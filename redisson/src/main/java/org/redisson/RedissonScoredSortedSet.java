@@ -15,10 +15,8 @@
  */
 package org.redisson;
 
-import org.redisson.api.RFuture;
-import org.redisson.api.RScoredSortedSet;
-import org.redisson.api.RedissonClient;
-import org.redisson.api.SortOrder;
+import org.redisson.api.*;
+import org.redisson.api.listener.ScoredSortedSetAddListener;
 import org.redisson.api.mapreduce.RCollectionMapReduce;
 import org.redisson.client.RedisClient;
 import org.redisson.client.codec.Codec;
@@ -33,6 +31,8 @@ import org.redisson.client.protocol.decoder.ListScanResult;
 import org.redisson.command.CommandAsyncExecutor;
 import org.redisson.iterator.RedissonBaseIterator;
 import org.redisson.mapreduce.RedissonCollectionMapReduce;
+import org.redisson.misc.CountableListener;
+import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.math.BigDecimal;
@@ -1426,4 +1426,40 @@ public class RedissonScoredSortedSet<V> extends RedissonExpirable implements RSc
     public Stream<V> stream(String pattern, int count) {
         return toStream(iterator(pattern, count));
     }
+
+    @Override
+    public int addListener(ObjectListener listener) {
+        if (listener instanceof ScoredSortedSetAddListener) {
+            return addListener("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
+        }
+        return super.addListener(listener);
+    };
+
+    @Override
+    public RFuture<Integer> addListenerAsync(ObjectListener listener) {
+        if (listener instanceof ScoredSortedSetAddListener) {
+            return addListenerAsync("__keyevent@*:zadd", (ScoredSortedSetAddListener) listener, ScoredSortedSetAddListener::onAdd);
+        }
+        return super.addListenerAsync(listener);
+    }
+
+    @Override
+    public void removeListener(int listenerId) {
+        RPatternTopic expiredTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:zadd");
+        expiredTopic.removeListener(listenerId);
+
+        super.removeListener(listenerId);
+    }
+
+    @Override
+    public RFuture<Void> removeListenerAsync(int listenerId) {
+        RPromise<Void> result = new RedissonPromise<>();
+        CountableListener<Void> listener = new CountableListener<>(result, null, 3);
+
+        RPatternTopic setTopic = new RedissonPatternTopic(StringCodec.INSTANCE, commandExecutor, "__keyevent@*:zadd");
+        setTopic.removeListenerAsync(listenerId).onComplete(listener);
+        removeListenersAsync(listenerId, listener);
+        return result;
+    }
+
 }
