@@ -348,11 +348,11 @@ public class Redisson implements RedissonClient {
 
     @Override
     public RLock getSpinLock(String name) {
-        return getSpinLock(name, RedissonSpinLock.DEFAULT);
+        return getSpinLock(name, LockOptions.defaults());
     }
 
     @Override
-    public RLock getSpinLock(String name, RedissonSpinLock.BackOffOptions backOffOptions) {
+    public RLock getSpinLock(String name, LockOptions.BackOffOptions backOffOptions) {
         return new RedissonSpinLock(connectionManager.getCommandExecutor(), name, backOffOptions);
     }
 

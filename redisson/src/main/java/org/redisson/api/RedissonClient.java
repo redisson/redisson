@@ -15,7 +15,6 @@
  */
 package org.redisson.api;
 
-import org.redisson.RedissonSpinLock;
 import org.redisson.api.redisnode.BaseRedisNodes;
 import org.redisson.api.redisnode.RedisNodes;
 import org.redisson.client.codec.Codec;
@@ -498,7 +497,7 @@ public interface RedissonClient {
      * @param name - name of object
      * @return Lock object
      */
-    RLock getSpinLock(String name, RedissonSpinLock.BackOffOptions backOffOptions);
+    RLock getSpinLock(String name, LockOptions.BackOffOptions backOffOptions);
 
     /**
      * Returns MultiLock instance associated with specified <code>locks</code>

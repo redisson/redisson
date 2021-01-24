@@ -1,19 +1,20 @@
 package org.redisson;
 
 import org.junit.Test;
+import org.redisson.api.LockOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RedissonSpinLockBackoffTest {
+public class LockOptionsTest {
 
     @Test
     public void testExponentialBackoff() {
-        RedissonSpinLock.BackOffOptions backOffOptions = new RedissonSpinLock.ExponentialBackOffOptions()
+        LockOptions.BackOffOptions backOffOptions = new LockOptions.ExponentialBackOffOptions()
                 .initialDelay(10)
                 .maxDelay(100)
                 .multiplier(3);
 
-        RedissonSpinLock.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
 
 
         assertThat(backOffPolicy.getNextSleepPeriod()).isBetween(10L, 10L);
@@ -25,10 +26,10 @@ public class RedissonSpinLockBackoffTest {
 
     @Test
     public void testConstantBackoff() {
-        RedissonSpinLock.ConstantBackOffOptions backOffOptions = new RedissonSpinLock.ConstantBackOffOptions()
+        LockOptions.ConstantBackOffOptions backOffOptions = new LockOptions.ConstantBackOffOptions()
                 .delay(30);
 
-        RedissonSpinLock.BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
 
         for (int i = 0; i < 10; i++) {
             assertThat(backOffPolicy.getNextSleepPeriod()).isEqualTo(30L);

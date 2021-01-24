@@ -15,6 +15,7 @@
  */
 package org.redisson;
 
+import org.redisson.api.LockOptions;
 import org.redisson.api.RFuture;
 import org.redisson.client.RedisException;
 import org.redisson.client.codec.LongCodec;
@@ -25,7 +26,6 @@ import org.redisson.misc.RPromise;
 import org.redisson.misc.RedissonPromise;
 
 import java.util.Collections;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -42,131 +42,14 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class RedissonSpinLock extends RedissonBaseLock {
 
-    public interface BackOffOptions {
-        BackOffPolicy create();
-    }
-
-    public interface BackOffPolicy {
-
-        long getNextSleepPeriod();
-    }
-
-    public static class ExponentialBackOffOptions implements BackOffOptions {
-        private long maxDelay = 128;
-        private long initialDelay = 1;
-        private int multiplier = 2;
-
-        @Override
-        public BackOffPolicy create() {
-            return new ExponentialBackOffPolicy(initialDelay, maxDelay, multiplier);
-        }
-
-        public long getMaxDelay() {
-            return maxDelay;
-        }
-
-        public ExponentialBackOffOptions maxDelay(long maxDelay) {
-            if (maxDelay <= 0) {
-                throw new IllegalArgumentException("maxDelay should be positive");
-            }
-            this.maxDelay = maxDelay;
-            return this;
-        }
-
-        public long getInitialDelay() {
-            return initialDelay;
-        }
-
-        public ExponentialBackOffOptions initialDelay(long initialDelay) {
-            if (initialDelay <= 0) {
-                throw new IllegalArgumentException("initialDelay should be positive");
-            }
-            this.initialDelay = initialDelay;
-            return this;
-        }
-
-        public int getMultiplier() {
-            return multiplier;
-        }
-
-        public ExponentialBackOffOptions multiplier(int multiplier) {
-            if (multiplier <= 0) {
-                throw new IllegalArgumentException("multiplier should be positive");
-            }
-            this.multiplier = multiplier;
-            return this;
-        }
-    }
-
-    private static final class ExponentialBackOffPolicy implements BackOffPolicy {
-
-        private final long maxDelay;
-        private final int multiplier;
-        private int fails;
-        private long nextSleep;
-
-        private ExponentialBackOffPolicy(long initialDelay, long maxDelay, int multiplier) {
-            this.nextSleep = initialDelay;
-            this.maxDelay = maxDelay;
-            this.multiplier = multiplier;
-        }
-
-        @Override
-        public long getNextSleepPeriod() {
-            if (nextSleep == maxDelay) {
-                return maxDelay;
-            }
-            long result = nextSleep;
-            nextSleep = nextSleep * multiplier + ThreadLocalRandom.current().nextInt(++fails);
-            nextSleep = Math.min(maxDelay, nextSleep);
-            return result;
-        }
-    }
-
-    public static class ConstantBackOffOptions implements BackOffOptions {
-        private long delay = 64;
-
-        @Override
-        public BackOffPolicy create() {
-            return new ConstantBackOffPolicy(delay);
-        }
-
-        public long getDelay() {
-            return delay;
-        }
-
-        public ConstantBackOffOptions delay(long delay) {
-            if (delay <= 0) {
-                throw new IllegalArgumentException("delay should be positive");
-            }
-            this.delay = delay;
-            return this;
-        }
-    }
-
-    private static final class ConstantBackOffPolicy implements BackOffPolicy {
-
-        private final long delay;
-
-        private ConstantBackOffPolicy(long delay) {
-            this.delay = delay;
-        }
-
-        @Override
-        public long getNextSleepPeriod() {
-            return delay;
-        }
-    }
-
-    public static final BackOffOptions DEFAULT = new ExponentialBackOffOptions();
-
     protected long internalLockLeaseTime;
 
-    protected final BackOffOptions backOffOptions;
+    protected final LockOptions.BackOffOptions backOffOptions;
 
     final CommandAsyncExecutor commandExecutor;
 
-    public RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name, BackOffOptions backOffOptions) {
+    public RedissonSpinLock(CommandAsyncExecutor commandExecutor, String name,
+                            LockOptions.BackOffOptions backOffOptions) {
         super(commandExecutor, name);
         this.commandExecutor = commandExecutor;
         this.internalLockLeaseTime = commandExecutor.getConnectionManager().getCfg().getLockWatchdogTimeout();
@@ -204,7 +87,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
         if (ttl == null) {
             return;
         }
-        BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
         while (ttl != null) {
             long nextSleepPeriod = backOffPolicy.getNextSleepPeriod();
             Thread.sleep(nextSleepPeriod);
@@ -275,7 +158,7 @@ public class RedissonSpinLock extends RedissonBaseLock {
             return false;
         }
 
-        BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
         while (ttl != null) {
             current = System.currentTimeMillis();
             Thread.sleep(backOffPolicy.getNextSleepPeriod());
@@ -361,14 +244,14 @@ public class RedissonSpinLock extends RedissonBaseLock {
     @Override
     public RFuture<Void> lockAsync(long leaseTime, TimeUnit unit, long currentThreadId) {
         RPromise<Void> result = new RedissonPromise<>();
-        BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
 
         lockAsync(leaseTime, unit, currentThreadId, result, backOffPolicy);
         return result;
     }
 
     private void lockAsync(long leaseTime, TimeUnit unit, long currentThreadId, RPromise<Void> result,
-                           BackOffPolicy backOffPolicy) {
+                           LockOptions.BackOffPolicy backOffPolicy) {
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.onComplete((ttl, e) -> {
             if (e != null) {
@@ -430,14 +313,14 @@ public class RedissonSpinLock extends RedissonBaseLock {
         RPromise<Boolean> result = new RedissonPromise<>();
 
         AtomicLong time = new AtomicLong(unit.toMillis(waitTime));
-        BackOffPolicy backOffPolicy = backOffOptions.create();
+        LockOptions.BackOffPolicy backOffPolicy = backOffOptions.create();
 
         tryLock(leaseTime, unit, currentThreadId, result, time, backOffPolicy);
         return result;
     }
 
     private void tryLock(long leaseTime, TimeUnit unit, long currentThreadId, RPromise<Boolean> result,
-                         AtomicLong time, BackOffPolicy backOffPolicy) {
+                         AtomicLong time, LockOptions.BackOffPolicy backOffPolicy) {
         long startTime = System.currentTimeMillis();
         RFuture<Long> ttlFuture = tryAcquireAsync(leaseTime, unit, currentThreadId);
         ttlFuture.onComplete((ttl, e) -> {

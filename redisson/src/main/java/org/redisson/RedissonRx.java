@@ -117,11 +117,11 @@ public class RedissonRx implements RedissonRxClient {
 
     @Override
     public RLockRx getSpinLock(String name) {
-        return getSpinLock(name, RedissonSpinLock.DEFAULT);
+        return getSpinLock(name, LockOptions.defaults());
     }
 
     @Override
-    public RLockRx getSpinLock(String name, RedissonSpinLock.BackOffOptions backOffOptions) {
+    public RLockRx getSpinLock(String name, LockOptions.BackOffOptions backOffOptions) {
         RedissonSpinLock spinLock = new RedissonSpinLock(commandExecutor, name, backOffOptions);
         return RxProxyBuilder.create(commandExecutor, spinLock, RLockRx.class);
     }
