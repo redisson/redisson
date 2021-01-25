@@ -52,6 +52,28 @@ public interface RGeoReactive<V> extends RScoredSortedSetReactive<V> {
     Mono<Long> add(GeoEntry... entries);
 
     /**
+     * Adds geospatial member only if it's already exists.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param longitude - longitude of object
+     * @param latitude - latitude of object
+     * @param member - object itself
+     * @return number of elements added to the sorted set
+     */
+    Mono<Long> addIfExists(double longitude, double latitude, V member);
+
+    /**
+     * Adds geospatial members only if it's already exists.
+     * <p>
+     * Requires <b>Redis 6.2.0 and higher.</b>
+     *
+     * @param entries - objects
+     * @return number of elements added to the sorted set
+     */
+    Mono<Long> addIfExists(GeoEntry... entries);
+
+    /**
      * Returns distance between members in <code>GeoUnit</code> units.
      * 
      * @param firstMember - first object

@@ -100,14 +100,42 @@ public class RedissonGeo<V> extends RedissonScoredSortedSet<V> implements RGeo<V
 
     @Override
     public RFuture<Long> addAsync(GeoEntry... entries) {
-        List<Object> params = new ArrayList<Object>(entries.length + 1);
+        return addAsync("", entries);
+    }
+
+    private RFuture<Long> addAsync(String subCommand, GeoEntry... entries) {
+        List<Object> params = new ArrayList<Object>(entries.length + 2);
         params.add(getName());
+        if (!subCommand.isEmpty()) {
+            params.add(subCommand);
+        }
         for (GeoEntry entry : entries) {
             params.add(entry.getLongitude());
             params.add(entry.getLatitude());
             params.add(encode(entry.getMember()));
         }
         return commandExecutor.writeAsync(getName(), StringCodec.INSTANCE, RedisCommands.GEOADD, params.toArray());
+    }
+
+    @Override
+    public long addIfExists(double longitude, double latitude, V member) {
+        return get(addIfExistsAsync(longitude, latitude, member));
+    }
+
+    @Override
+    public long addIfExists(GeoEntry... entries) {
+        return get(addIfExistsAsync(entries));
+    }
+
+    @Override
+    public RFuture<Long> addIfExistsAsync(double longitude, double latitude, V member) {
+        return commandExecutor.writeAsync(getName(), codec, RedisCommands.GEOADD, getName(), "XX", convert(longitude),
+                convert(latitude), encode(member));
+    }
+
+    @Override
+    public RFuture<Long> addIfExistsAsync(GeoEntry... entries) {
+        return addAsync("XX", entries);
     }
 
     @Override
